@@ -95,8 +95,6 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8m
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/open-telemetry/otel-arrow v0.24.0 h1:hNUEbwHW/1gEOUiN+HoI+ITiXe2vSBaPWlE9FRwJwDE=
 github.com/open-telemetry/otel-arrow v0.24.0/go.mod h1:uzoHixEh6CUBZkP+vkRvyiHYUnYsAOUwCcfByQkSMM0=
-github.com/open-telemetry/otel-arrow/collector v0.24.0 h1:NYTcgtwG0lQnoGcEomTTtueZxzk03xt+XEXN4L5kqHA=
-github.com/open-telemetry/otel-arrow/collector v0.24.0/go.mod h1:+jJ3Vfhh685hXSw2Z1P1wl/rTqEKlSaJ4FocZI+xs+0=
 github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ=
 github.com/pierrec/lz4/v4 v4.1.21/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

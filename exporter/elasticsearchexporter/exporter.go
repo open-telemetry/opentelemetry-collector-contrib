@@ -4,6 +4,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -30,7 +31,7 @@ type elasticsearchExporter struct {
 	dynamicIndex   bool
 	model          mappingModel
 
-	bulkIndexer *esBulkIndexerCurrent
+	bulkIndexer bulkIndexer
 }
 
 func newExporter(
@@ -89,8 +90,13 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
-	var errs []error
+	session, err := e.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer session.End()
 
+	var errs []error
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
@@ -101,7 +107,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 			scope := ill.Scope()
 			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope); err != nil {
+				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -112,10 +118,22 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 		}
 	}
 
+	if err := session.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
+func (e *elasticsearchExporter) pushLogRecord(
+	ctx context.Context,
+	resource pcommon.Resource,
+	record plog.LogRecord,
+	scope pcommon.InstrumentationScope,
+	bulkIndexerSession bulkIndexerSession,
+) error {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeLogRecord(record, scope, resource, fIndex)
@@ -133,15 +151,20 @@ func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcom
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document))
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
 	ctx context.Context,
 	metrics pmetric.Metrics,
 ) error {
-	var errs []error
+	session, err := e.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer session.End()
 
+	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
@@ -156,27 +179,64 @@ func (e *elasticsearchExporter) pushMetricsData(
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 
-				// We only support Sum and Gauge metrics at the moment.
-				var dataPoints pmetric.NumberDataPointSlice
-				switch metric.Type() {
-				case pmetric.MetricTypeSum:
-					dataPoints = metric.Sum().DataPoints()
-				case pmetric.MetricTypeGauge:
-					dataPoints = metric.Gauge().DataPoints()
-				}
-
-				for l := 0; l < dataPoints.Len(); l++ {
-					dataPoint := dataPoints.At(l)
-					fIndex, err := e.getMetricDataPointIndex(resource, scope, dataPoint)
+				upsertDataPoint := func(dp dataPoint, dpValue pcommon.Value) error {
+					fIndex, err := e.getMetricDataPointIndex(resource, scope, dp)
 					if err != nil {
-						errs = append(errs, err)
-						continue
+						return err
 					}
 					if _, ok := resourceDocs[fIndex]; !ok {
 						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
 					}
-					if err := e.model.upsertMetricDataPoint(resourceDocs[fIndex], resource, scope, metric, dataPoint); err != nil {
-						errs = append(errs, err)
+
+					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource, scope, metric, dp, dpValue); err != nil {
+						return err
+					}
+					return nil
+				}
+
+				// TODO: support exponential histogram
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dps := metric.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, err := numberToValue(dp)
+						if err != nil {
+							errs = append(errs, err)
+							continue
+						}
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
+					}
+				case pmetric.MetricTypeGauge:
+					dps := metric.Gauge().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, err := numberToValue(dp)
+						if err != nil {
+							errs = append(errs, err)
+							continue
+						}
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, err := histogramToValue(dp)
+						if err != nil {
+							errs = append(errs, err)
+							continue
+						}
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
 					}
 				}
 			}
@@ -193,8 +253,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					errs = append(errs, err)
 					continue
 				}
-
-				if err := pushDocuments(ctx, fIndex, docBytes, e.bulkIndexer); err != nil {
+				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes)); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -204,13 +263,19 @@ func (e *elasticsearchExporter) pushMetricsData(
 		}
 	}
 
+	if err := session.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
 func (e *elasticsearchExporter) getMetricDataPointIndex(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
-	dataPoint pmetric.NumberDataPoint,
+	dataPoint dataPoint,
 ) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
@@ -231,6 +296,12 @@ func (e *elasticsearchExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
+	session, err := e.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer session.End()
+
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -243,7 +314,7 @@ func (e *elasticsearchExporter) pushTraceData(
 			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if err := e.pushTraceRecord(ctx, resource, span, scope); err != nil {
+				if err := e.pushTraceRecord(ctx, resource, span, scope, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -253,10 +324,22 @@ func (e *elasticsearchExporter) pushTraceData(
 		}
 	}
 
+	if err := session.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
+func (e *elasticsearchExporter) pushTraceRecord(
+	ctx context.Context,
+	resource pcommon.Resource,
+	span ptrace.Span,
+	scope pcommon.InstrumentationScope,
+	bulkIndexerSession bulkIndexerSession,
+) error {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeSpan(span, scope, resource, fIndex)
@@ -274,5 +357,5 @@ func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pc
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document))
 }

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -10,7 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
 
-type Batcher struct {
+type batcher struct {
 	pmetric.Metrics
 
 	resourceMetrics map[identity.Resource]pmetric.ResourceMetrics
@@ -18,8 +18,8 @@ type Batcher struct {
 	metrics         map[identity.Metric]pmetric.Metric
 }
 
-func newBatcher() Batcher {
-	return Batcher{
+func newBatcher() batcher {
+	return batcher{
 		Metrics:         pmetric.NewMetrics(),
 		resourceMetrics: make(map[identity.Resource]pmetric.ResourceMetrics),
 		scopeMetrics:    make(map[identity.Scope]pmetric.ScopeMetrics),
@@ -30,7 +30,7 @@ func newBatcher() Batcher {
 // Dimensions stores the properties of the series that are needed in order
 // to unique identify the series. This is needed in order to batch metrics by
 // resource, scope, and datapoint attributes
-type Dimensions struct {
+type dimensions struct {
 	name          string
 	metricType    pmetric.MetricType
 	resourceAttrs pcommon.Map
@@ -47,9 +47,9 @@ var metricTypeMap = map[string]pmetric.MetricType{
 	"sketch":        pmetric.MetricTypeExponentialHistogram,
 }
 
-func parseSeriesProperties(name string, metricType string, tags []string, host string, version string, stringPool *StringPool) Dimensions {
+func parseSeriesProperties(name string, metricType string, tags []string, host string, version string, stringPool *StringPool) dimensions {
 	resourceAttrs, scopeAttrs, dpAttrs := tagsToAttributes(tags, host, stringPool)
-	return Dimensions{
+	return dimensions{
 		name:          name,
 		metricType:    metricTypeMap[metricType],
 		buildInfo:     version,
@@ -59,7 +59,7 @@ func parseSeriesProperties(name string, metricType string, tags []string, host s
 	}
 }
 
-func (b Batcher) Lookup(dim Dimensions) (pmetric.Metric, identity.Metric) {
+func (b batcher) Lookup(dim dimensions) (pmetric.Metric, identity.Metric) {
 	resource := dim.Resource()
 	resourceID := identity.OfResource(resource)
 	resourceMetrics, ok := b.resourceMetrics[resourceID]
@@ -90,13 +90,13 @@ func (b Batcher) Lookup(dim Dimensions) (pmetric.Metric, identity.Metric) {
 	return metric, metricID
 }
 
-func (d Dimensions) Resource() pcommon.Resource {
+func (d dimensions) Resource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	d.resourceAttrs.CopyTo(resource.Attributes()) // TODO(jesus.vazquez) review this copy
 	return resource
 }
 
-func (d Dimensions) Scope() pcommon.InstrumentationScope {
+func (d dimensions) Scope() pcommon.InstrumentationScope {
 	scope := pcommon.NewInstrumentationScope()
 	scope.SetName("otelcol/datadogreceiver")
 	scope.SetVersion(d.buildInfo)
@@ -104,7 +104,7 @@ func (d Dimensions) Scope() pcommon.InstrumentationScope {
 	return scope
 }
 
-func (d Dimensions) Metric() pmetric.Metric {
+func (d dimensions) Metric() pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(d.name)
 	switch d.metricType {
