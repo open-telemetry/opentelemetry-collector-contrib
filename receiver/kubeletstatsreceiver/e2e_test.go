@@ -27,6 +27,13 @@ import (
 
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 
+// The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in
+// `/tmp/kube-config-otelcol-e2e-testing`. Run the following command prior to running the test locally:
+//
+//	kind create cluster --kubeconfig=/tmp/kube-config-otelcol-e2e-testing --config=./.github/workflows/configs/e2e-kind-config.yaml (from the top level dir of the repository).
+//	make docker-otelcontribcol
+//	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
+//	kubectl --kubeconfig=/tmp/kube-config-otelcol-e2e-testing get csr -o=jsonpath='{range.items[?(@.spec.signerName=="kubernetes.io/kubelet-serving")]}{.metadata.name}{" "}{end}' | xargs kubectl --kubeconfig=/tmp/kube-config-otelcol-e2e-testing certificate approve
 func TestE2E(t *testing.T) {
 
 	var expected pmetric.Metrics
@@ -52,6 +59,10 @@ func TestE2E(t *testing.T) {
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// md := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
+	// golden.WriteMetrics(t, expectedFile, md)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
