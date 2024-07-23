@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"sync"
@@ -337,15 +338,14 @@ func TestOTelArrowShutdown(t *testing.T) {
 
 			conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
-			defer conn.Close()
+			defer func() {
+				require.NoError(t, conn.Close())
+			}()
 
 			client := arrowpb.NewArrowTracesServiceClient(conn)
 			stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
 			require.NoError(t, err)
 			producer := arrowRecord.NewProducer()
-			defer func() {
-				require.NoError(t, conn.Close())
-			}()
 
 			start := time.Now()
 
@@ -800,4 +800,95 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 	for i := 0; i < itemsPerStream; i++ {
 		require.Equal(t, numStreams, counts[i])
 	}
+}
+
+// TestOTelArrowHalfOpenShutdown exercises a known condition in which Shutdown
+// can't succeed until the stream is canceled by an external signal.
+func TestOTelArrowHalfOpenShutdown(t *testing.T) {
+	ctx, testCancel := context.WithCancel(context.Background())
+	defer testCancel()
+
+	endpointGrpc := testutil.GetAvailableLocalAddress(t)
+
+	nextSink := new(consumertest.TracesSink)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
+		ServerParameters: &configgrpc.KeepaliveServerParameters{},
+	}
+	// No keepalive parameters are set
+	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+	set := receivertest.NewNopSettings()
+
+	set.ID = testReceiverID
+	r, err := NewFactory().CreateTracesReceiver(
+		ctx,
+		set,
+		cfg,
+		nextSink)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+
+	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, conn.Close())
+	}()
+
+	client := arrowpb.NewArrowTracesServiceClient(conn)
+	stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
+	require.NoError(t, err)
+	producer := arrowRecord.NewProducer()
+
+	start := time.Now()
+
+	// Send traces to the receiver until we signal.
+	go func() {
+		for time.Since(start) < 5*time.Second {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			td := testdata.GenerateTraces(1)
+			batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
+			require.NoError(t, batchErr)
+
+			sendErr := stream.Send(batch)
+			select {
+			case <-ctx.Done():
+				if sendErr != nil {
+					require.ErrorIs(t, sendErr, io.EOF)
+				}
+				return
+			default:
+				require.NoError(t, sendErr)
+			}
+		}
+	}()
+
+	// Do not receive batch responses.
+
+	// Wait until the receiver outputs anything to the sink.
+	assert.Eventually(t, func() bool {
+		return nextSink.SpanCount() > 0
+	}, time.Second, 10*time.Millisecond)
+
+	// Let more load pile up.
+	time.Sleep(time.Second)
+
+	// The receiver has wedged itself in a call to Send() that is blocked
+	// and there is not a graceful way to recover.  Schedule an operation
+	// that will unblock it un-gracefully.
+	go func() {
+		// Without this cancel, the test hangs.
+		time.Sleep(3 * time.Second)
+		testCancel()
+	}()
+
+	// Now shutdown the receiver, while continuing sending traces to it.
+	err = r.Shutdown(context.Background())
+	assert.NoError(t, err)
 }
