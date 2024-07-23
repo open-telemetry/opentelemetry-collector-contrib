@@ -6,6 +6,7 @@ package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -23,6 +25,7 @@ type brokerScraper struct {
 	settings     receiver.Settings
 	config       Config
 	saramaConfig *sarama.Config
+	clusterAdmin sarama.ClusterAdmin
 	mb           *metadata.MetricsBuilder
 }
 
@@ -51,9 +54,42 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		s.client = client
 	}
 
-	brokers := s.client.Brokers()
+	if s.clusterAdmin == nil {
+		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("failed to create client in brokers scraper: %w", err)
+		}
+		s.clusterAdmin = admin
+	}
 
-	s.mb.RecordKafkaBrokersDataPoint(pcommon.NewTimestampFromTime(time.Now()), int64(len(brokers)))
+	var scrapeErrors = scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	brokers := s.client.Brokers()
+	s.mb.RecordKafkaBrokersDataPoint((now), int64(len(brokers)))
+
+	for _, broker := range brokers {
+		ID := strconv.Itoa(int(broker.ID()))
+		configEntries, err := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
+			Type:        sarama.BrokerResource,
+			Name:        ID,
+			ConfigNames: []string{"log.retention.hours"},
+		})
+		if err != nil {
+			scrapeErrors.AddPartial(1, fmt.Errorf("failed to fetch log.retention.hours config for %s: %w", broker.Addr(), err))
+			continue
+		}
+		for _, config := range configEntries {
+			if config.Name != "log.retention.hours" {
+				continue
+			}
+			val, err := strconv.Atoi(config.Value)
+			if err != nil {
+				scrapeErrors.AddPartial(1, fmt.Errorf("error processing log.retention.hours for %s", broker.Addr()))
+			}
+			s.mb.RecordKafkaBrokerLogRetentionHoursDataPoint(now, int64(val), ID)
+		}
+	}
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetClusterAlias(s.config.ClusterAlias)

@@ -28,6 +28,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for kafkametrics metrics.
 type MetricsConfig struct {
+	KafkaBrokerLogRetentionHours MetricConfig `mapstructure:"kafka.broker.log_retention_hours"`
 	KafkaBrokers                 MetricConfig `mapstructure:"kafka.brokers"`
 	KafkaConsumerGroupLag        MetricConfig `mapstructure:"kafka.consumer_group.lag"`
 	KafkaConsumerGroupLagSum     MetricConfig `mapstructure:"kafka.consumer_group.lag_sum"`
@@ -47,6 +48,9 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		KafkaBrokerLogRetentionHours: MetricConfig{
+			Enabled: true,
+		},
 		KafkaBrokers: MetricConfig{
 			Enabled: true,
 		},

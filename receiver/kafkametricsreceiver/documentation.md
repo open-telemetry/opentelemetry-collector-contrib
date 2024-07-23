@@ -12,6 +12,20 @@ metrics:
     enabled: false
 ```
 
+### kafka.broker.log_retention_hours
+
+log retention time (hours) of a broker
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| h | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID of the kafka broker | Any Str |
+
 ### kafka.brokers
 
 Number of brokers in the cluster.

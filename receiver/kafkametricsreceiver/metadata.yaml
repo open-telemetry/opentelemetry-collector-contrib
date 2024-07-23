@@ -16,6 +16,9 @@ resource_attributes:
     type: string
 
 attributes:
+  broker:
+    description: The ID of the kafka broker
+    type: string
   topic:
     description: The ID (integer) of a topic
     type: string
@@ -36,6 +39,13 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
+  kafka.broker.log_retention_hours:
+    enabled: true
+    description: log retention time (hours) of a broker
+    unit: "h"
+    gauge:
+      value_type: int
+    attributes: [broker]
   #  topics scraper
   kafka.topic.partitions:
     enabled: true

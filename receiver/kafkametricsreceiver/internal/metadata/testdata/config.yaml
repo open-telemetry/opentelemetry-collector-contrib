@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    kafka.broker.log_retention_hours:
+      enabled: true
     kafka.brokers:
       enabled: true
     kafka.consumer_group.lag:
@@ -36,6 +38,8 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    kafka.broker.log_retention_hours:
+      enabled: false
     kafka.brokers:
       enabled: false
     kafka.consumer_group.lag:

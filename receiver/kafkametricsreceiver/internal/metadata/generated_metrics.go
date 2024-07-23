@@ -12,6 +12,57 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+type metricKafkaBrokerLogRetentionHours struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.broker.log_retention_hours metric with initial data.
+func (m *metricKafkaBrokerLogRetentionHours) init() {
+	m.data.SetName("kafka.broker.log_retention_hours")
+	m.data.SetDescription("log retention time (hours) of a broker")
+	m.data.SetUnit("h")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokerLogRetentionHours) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, brokerAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokerLogRetentionHours) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokerLogRetentionHours) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokerLogRetentionHours(cfg MetricConfig) metricKafkaBrokerLogRetentionHours {
+	m := metricKafkaBrokerLogRetentionHours{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricKafkaBrokers struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -805,6 +856,7 @@ type MetricsBuilder struct {
 	buildInfo                          component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter     map[string]filter.Filter
 	resourceAttributeExcludeFilter     map[string]filter.Filter
+	metricKafkaBrokerLogRetentionHours metricKafkaBrokerLogRetentionHours
 	metricKafkaBrokers                 metricKafkaBrokers
 	metricKafkaConsumerGroupLag        metricKafkaConsumerGroupLag
 	metricKafkaConsumerGroupLagSum     metricKafkaConsumerGroupLagSum
@@ -838,6 +890,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                      pmetric.NewMetrics(),
 		buildInfo:                          settings.BuildInfo,
+		metricKafkaBrokerLogRetentionHours: newMetricKafkaBrokerLogRetentionHours(mbc.Metrics.KafkaBrokerLogRetentionHours),
 		metricKafkaBrokers:                 newMetricKafkaBrokers(mbc.Metrics.KafkaBrokers),
 		metricKafkaConsumerGroupLag:        newMetricKafkaConsumerGroupLag(mbc.Metrics.KafkaConsumerGroupLag),
 		metricKafkaConsumerGroupLagSum:     newMetricKafkaConsumerGroupLagSum(mbc.Metrics.KafkaConsumerGroupLagSum),
@@ -923,6 +976,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/kafkametricsreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricKafkaBrokerLogRetentionHours.emit(ils.Metrics())
 	mb.metricKafkaBrokers.emit(ils.Metrics())
 	mb.metricKafkaConsumerGroupLag.emit(ils.Metrics())
 	mb.metricKafkaConsumerGroupLagSum.emit(ils.Metrics())
@@ -967,6 +1021,11 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordKafkaBrokerLogRetentionHoursDataPoint adds a data point to kafka.broker.log_retention_hours metric.
+func (mb *MetricsBuilder) RecordKafkaBrokerLogRetentionHoursDataPoint(ts pcommon.Timestamp, val int64, brokerAttributeValue string) {
+	mb.metricKafkaBrokerLogRetentionHours.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
 // RecordKafkaBrokersDataPoint adds a data point to kafka.brokers metric.

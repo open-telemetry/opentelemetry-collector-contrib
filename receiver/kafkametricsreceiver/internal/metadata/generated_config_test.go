@@ -25,6 +25,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					KafkaBrokerLogRetentionHours: MetricConfig{Enabled: true},
 					KafkaBrokers:                 MetricConfig{Enabled: true},
 					KafkaConsumerGroupLag:        MetricConfig{Enabled: true},
 					KafkaConsumerGroupLagSum:     MetricConfig{Enabled: true},
@@ -50,6 +51,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					KafkaBrokerLogRetentionHours: MetricConfig{Enabled: false},
 					KafkaBrokers:                 MetricConfig{Enabled: false},
 					KafkaConsumerGroupLag:        MetricConfig{Enabled: false},
 					KafkaConsumerGroupLagSum:     MetricConfig{Enabled: false},

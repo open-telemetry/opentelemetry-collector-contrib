@@ -70,6 +70,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordKafkaBrokerLogRetentionHoursDataPoint(ts, 1, "broker-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordKafkaBrokersDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -152,6 +156,21 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "kafka.broker.log_retention_hours":
+					assert.False(t, validatedMetrics["kafka.broker.log_retention_hours"], "Found a duplicate in the metrics slice: kafka.broker.log_retention_hours")
+					validatedMetrics["kafka.broker.log_retention_hours"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "log retention time (hours) of a broker", ms.At(i).Description())
+					assert.Equal(t, "h", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, "broker-val", attrVal.Str())
 				case "kafka.brokers":
 					assert.False(t, validatedMetrics["kafka.brokers"], "Found a duplicate in the metrics slice: kafka.brokers")
 					validatedMetrics["kafka.brokers"] = true

@@ -103,16 +103,25 @@ func TestBrokerScraper_scrape(t *testing.T) {
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			ClusterAlias:         defaultClusterAlias,
 		},
+		clusterAdmin: newMockClusterAdmin(),
 	}
 	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
 	md, err := bs.scrape(context.Background())
 	assert.NoError(t, err)
-	expectedDp := int64(len(testBrokers))
-	receivedMetrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	receivedDp := receivedMetrics.Sum().DataPoints().At(0).IntValue()
-	assert.Equal(t, expectedDp, receivedDp)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("cluster_alias"); ok {
 		require.Equal(t, defaultClusterAlias, val.Str())
+	}
+	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < ms.Len(); i++ {
+		m := ms.At(i)
+		switch m.Name() {
+		case "kafka.brokers":
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testBrokers)))
+		case "kafka.broker.log_retention_hours":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionHours))
+		}
 	}
 }
 
