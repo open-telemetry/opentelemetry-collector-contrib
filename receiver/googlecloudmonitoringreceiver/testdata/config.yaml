@@ -1,7 +1,7 @@
 googlecloudmonitoring:
   collection_interval: 120s
   project_id: my-project-id
-  services:
+  metrics_list:
     - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
       delay: 60s # Second
     - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"

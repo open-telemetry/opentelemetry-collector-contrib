@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 				InitialDelay:       1 * time.Second,
 			},
 			ProjectID: "my-project-id",
-			Services: []Service{
+			MetricsList: []MetricConfig{
 				{
 					MetricName: "compute.googleapis.com/instance/cpu/usage_time",
 					Delay:      60 * time.Second,
@@ -52,21 +52,21 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidateService(t *testing.T) {
 	testCases := map[string]struct {
-		service      Service
+		metric       MetricConfig
 		requireError bool
 	}{
 		"Valid Service": {
-			Service{
+			MetricConfig{
 				MetricName: "metric_name",
 				Delay:      0 * time.Second,
 			}, false},
 		"Empty MetricName": {
-			Service{
+			MetricConfig{
 				MetricName: "",
 				Delay:      0,
 			}, true},
 		"Negative Delay": {
-			Service{
+			MetricConfig{
 				MetricName: "metric_name",
 				Delay:      -1 * time.Second,
 			}, true},
@@ -74,7 +74,7 @@ func TestValidateService(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := testCase.service.Validate()
+			err := testCase.metric.Validate()
 			if testCase.requireError {
 				fmt.Println("\n err", err)
 				require.Error(t, err)
@@ -86,20 +86,20 @@ func TestValidateService(t *testing.T) {
 }
 
 func TestValidateConfig(t *testing.T) {
-	validService := Service{
+	validMetric := MetricConfig{
 		MetricName: "metric_name",
 		Delay:      0 * time.Second,
 	}
 
 	testCases := map[string]struct {
-		services           []Service
+		metricsList        []MetricConfig
 		collectionInterval time.Duration
 		requireError       bool
 	}{
-		"Valid Config":                {[]Service{validService}, 60 * time.Second, false},
+		"Valid Config":                {[]MetricConfig{validMetric}, 60 * time.Second, false},
 		"Empty Services":              {nil, 60 * time.Second, true},
-		"Invalid Service in Services": {[]Service{{}}, 60 * time.Second, true},
-		"Invalid Collection Interval": {[]Service{validService}, 0 * time.Second, true},
+		"Invalid Service in Services": {[]MetricConfig{{}}, 60 * time.Second, true},
+		"Invalid Collection Interval": {[]MetricConfig{validMetric}, 0 * time.Second, true},
 	}
 
 	for name, testCase := range testCases {
@@ -108,7 +108,7 @@ func TestValidateConfig(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: testCase.collectionInterval,
 				},
-				Services: testCase.services,
+				MetricsList: testCase.metricsList,
 			}
 
 			err := cfg.Validate()

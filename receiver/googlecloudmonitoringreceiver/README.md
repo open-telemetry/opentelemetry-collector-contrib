@@ -28,7 +28,7 @@ receivers:
   googlecloudmonitoring:
     collection_interval: 120s
     project_id: my-project-id
-    services:
+    metrics_list:
       - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
         delay: 60s
       - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
@@ -39,9 +39,9 @@ receivers:
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `timeout`: (default = `1m`) The timeout of running commands against the GCP Monitoring REST API.
 - `project_id` (Required): The GCP project ID.
-- `services` (Required): A list of services to monitor.
+- `metrics_list` (Required): A list of services metrics to monitor.
 
-Each service can have the following configuration:
+Each single metric can have the following configuration:
 
 - `metric_name` (Required): The specific metric name to collect.
 - `delay` (Optional): The delay before starting the collection of metrics for this service. Default is 0s.
