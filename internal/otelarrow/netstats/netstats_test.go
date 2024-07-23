@@ -58,17 +58,17 @@ func TestNetStatsExporterNone(t *testing.T) {
 
 func TestNetStatsExporterNormal(t *testing.T) {
 	testNetStatsExporter(t, configtelemetry.LevelNormal, map[string]any{
-		"exporter_sent":      int64(1000),
-		"exporter_sent_wire": int64(100),
+		"otelcol_exporter_sent":      int64(1000),
+		"otelcol_exporter_sent_wire": int64(100),
 	})
 }
 
 func TestNetStatsExporterDetailed(t *testing.T) {
 	testNetStatsExporter(t, configtelemetry.LevelDetailed, map[string]any{
-		"exporter_sent":            int64(1000),
-		"exporter_sent_wire":       int64(100),
-		"exporter_recv_wire":       int64(10),
-		"exporter_compressed_size": int64(100), // same as sent_wire b/c sum metricValue uses histogram sum
+		"otelcol_exporter_sent":            int64(1000),
+		"otelcol_exporter_sent_wire":       int64(100),
+		"otelcol_exporter_recv_wire":       int64(10),
+		"otelcol_exporter_compressed_size": int64(100), // same as sent_wire b/c sum metricValue uses histogram sum
 	})
 }
 
@@ -198,17 +198,17 @@ func TestNetStatsReceiverNone(t *testing.T) {
 
 func TestNetStatsReceiverNormal(t *testing.T) {
 	testNetStatsReceiver(t, configtelemetry.LevelNormal, map[string]any{
-		"receiver_recv":      int64(1000),
-		"receiver_recv_wire": int64(100),
+		"otelcol_receiver_recv":      int64(1000),
+		"otelcol_receiver_recv_wire": int64(100),
 	})
 }
 
 func TestNetStatsReceiverDetailed(t *testing.T) {
 	testNetStatsReceiver(t, configtelemetry.LevelDetailed, map[string]any{
-		"receiver_recv":            int64(1000),
-		"receiver_recv_wire":       int64(100),
-		"receiver_sent_wire":       int64(10),
-		"receiver_compressed_size": int64(100), // same as recv_wire b/c sum metricValue uses histogram sum
+		"otelcol_receiver_recv":            int64(1000),
+		"otelcol_receiver_recv_wire":       int64(100),
+		"otelcol_receiver_sent_wire":       int64(10),
+		"otelcol_receiver_compressed_size": int64(100), // same as recv_wire b/c sum metricValue uses histogram sum
 	})
 }
 
@@ -317,10 +317,10 @@ func TestUncompressedSizeBypass(t *testing.T) {
 	require.NoError(t, err)
 
 	expect := map[string]any{
-		"exporter_sent":            int64(1000),
-		"exporter_sent_wire":       int64(100),
-		"exporter_recv_wire":       int64(10),
-		"exporter_compressed_size": int64(100),
+		"otelcol_exporter_sent":            int64(1000),
+		"otelcol_exporter_sent_wire":       int64(100),
+		"otelcol_exporter_recv_wire":       int64(10),
+		"otelcol_exporter_compressed_size": int64(100),
 	}
 	require.Equal(t, expect, metricValues(t, rm, "my.arrow.v1.method"))
 }
