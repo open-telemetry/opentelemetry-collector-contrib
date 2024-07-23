@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
 import (
 	"bytes"
@@ -83,7 +83,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	require.NoError(t, traces.UnmarshalMsgDictionary(payload), "Must not error when marshaling content")
 	req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
 
-	translated := toTraces(&pb.TracerPayload{
+	translated := ToTraces(&pb.TracerPayload{
 		LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 		LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 		TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
@@ -115,7 +115,7 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	bytez, _ := apiPayload.MarshalMsg(reqBytes)
 	req, _ := http.NewRequest(http.MethodPost, "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
 
-	translatedPayloads, _ := handleTracesPayload(req)
+	translatedPayloads, _ := HandleTracesPayload(req)
 	assert.Equal(t, len(translatedPayloads), 1, "Expected one translated payload")
 	translated := translatedPayloads[0]
 	span := translated.GetChunks()[0].GetSpans()[0]
@@ -151,7 +151,7 @@ func TestTracePayloadApiV02Unmarshalling(t *testing.T) {
 	bytez, _ := proto.Marshal(&agentPayload)
 	req, _ := http.NewRequest(http.MethodPost, "/api/v0.2/traces", io.NopCloser(bytes.NewReader(bytez)))
 
-	translatedPayloads, _ := handleTracesPayload(req)
+	translatedPayloads, _ := HandleTracesPayload(req)
 	assert.Equal(t, len(translatedPayloads), 2, "Expected two translated payload")
 	for _, translated := range translatedPayloads {
 		assert.NotNil(t, translated)
