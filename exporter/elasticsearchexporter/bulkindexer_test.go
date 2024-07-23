@@ -50,7 +50,7 @@ const successResp = `{
   ]
 }`
 
-func TestBulkIndexer_flushOnClose(t *testing.T) {
+func TestAsyncBulkIndexer_flushOnClose(t *testing.T) {
 	cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 2 << 30}}
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
 		RoundTripFunc: func(*http.Request) (*http.Response, error) {
@@ -61,14 +61,18 @@ func TestBulkIndexer_flushOnClose(t *testing.T) {
 		},
 	}})
 	require.NoError(t, err)
-	bulkIndexer, err := newBulkIndexer(zap.NewNop(), client, &cfg)
+
+	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &cfg)
 	require.NoError(t, err)
-	assert.NoError(t, bulkIndexer.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`)))
+	session, err := bulkIndexer.StartSession(context.Background())
+	require.NoError(t, err)
+
+	assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`)))
 	assert.NoError(t, bulkIndexer.Close(context.Background()))
 	assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
 }
 
-func TestBulkIndexer_flush(t *testing.T) {
+func TestAsyncBulkIndexer_flush(t *testing.T) {
 	tests := []struct {
 		name   string
 		config Config
@@ -96,9 +100,13 @@ func TestBulkIndexer_flush(t *testing.T) {
 				},
 			}})
 			require.NoError(t, err)
-			bulkIndexer, err := newBulkIndexer(zap.NewNop(), client, &tt.config)
+
+			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config)
 			require.NoError(t, err)
-			assert.NoError(t, bulkIndexer.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`)))
+			session, err := bulkIndexer.StartSession(context.Background())
+			require.NoError(t, err)
+
+			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`)))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
@@ -107,7 +115,7 @@ func TestBulkIndexer_flush(t *testing.T) {
 	}
 }
 
-func TestBulkIndexer_flush_error(t *testing.T) {
+func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 	tests := []struct {
 		name          string
 		roundTripFunc func(*http.Request) (*http.Response, error)
@@ -150,9 +158,13 @@ func TestBulkIndexer_flush_error(t *testing.T) {
 			}})
 			require.NoError(t, err)
 			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
-			bulkIndexer, err := newBulkIndexer(zap.New(core), client, &cfg)
+
+			bulkIndexer, err := newAsyncBulkIndexer(zap.New(core), client, &cfg)
 			require.NoError(t, err)
-			assert.NoError(t, bulkIndexer.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`)))
+			session, err := bulkIndexer.StartSession(context.Background())
+			require.NoError(t, err)
+
+			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`)))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
