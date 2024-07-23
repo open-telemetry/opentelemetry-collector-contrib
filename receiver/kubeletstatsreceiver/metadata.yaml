@@ -83,7 +83,7 @@ attributes:
 
 metrics:
   k8s.node.cpu.usage:
-    enabled: false
+    enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
     gauge:
@@ -198,7 +198,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   k8s.pod.cpu.usage:
-    enabled: false
+    enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
     gauge:
@@ -355,7 +355,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   container.cpu.usage:
-    enabled: false
+    enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
     gauge:
