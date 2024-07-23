@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 
 		sub, err := cm.Sub("sqlserver")
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		assert.NoError(t, component.ValidateConfig(cfg))
 		assert.Equal(t, factory.CreateDefaultConfig(), cfg)
@@ -118,7 +118,7 @@ func TestLoadConfig(t *testing.T) {
 
 		sub, err := cm.Sub("sqlserver/named")
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		assert.NoError(t, component.ValidateConfig(cfg))
 		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {

@@ -75,8 +75,8 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 		return loadResponse("login.xml")
 	case "Logout":
 		return loadResponse("logout.xml")
-	case "RetrieveProperties":
-		return routeRetreiveProperties(t, body)
+	case "RetrievePropertiesEx":
+		return routeRetreivePropertiesEx(t, body)
 	case "QueryPerf":
 		return routePerformanceQuery(t, body)
 	case "CreateContainerView":
@@ -86,8 +86,8 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 	return []byte{}, errNotFound
 }
 
-func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) {
-	rp, ok := body["RetrieveProperties"].(map[string]any)
+func routeRetreivePropertiesEx(t *testing.T, body map[string]any) ([]byte, error) {
+	rp, ok := body["RetrievePropertiesEx"].(map[string]any)
 	require.True(t, ok)
 	specSet := rp["specSet"].(map[string]any)
 
@@ -108,7 +108,11 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 	var contentType string
 	if !objectSetArray {
 		obj = objectSet["obj"].(map[string]any)
-		content = obj["#content"].(string)
+		if value, exists := obj["#content"]; exists {
+			content = value.(string)
+		} else {
+			content = ""
+		}
 		contentType = obj["-type"].(string)
 	}
 
@@ -117,103 +121,23 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 		for _, i := range propSetArray {
 			m, ok := i.(map[string]any)
 			require.True(t, ok)
-			if m["pathSet"] == "parentVApp" && m["type"] == "VirtualMachine" {
-				return loadResponse("datacenter-list.xml")
+			if m["type"] == "Folder" {
+				return loadResponse("datacenter.xml")
 			}
 		}
-		return loadResponse("datacenter.xml")
+		return loadResponse("datacenter-folder.xml")
 
 	case content == "datacenter-3" && contentType == "Datacenter":
 		return loadResponse("datacenter-properties.xml")
 
-	case content == "datastore-1003" && contentType == "Datastore":
-		if objectSetArray {
-			return loadResponse("datastore-list.xml")
-		}
-		return loadResponse("datastore-properties.xml")
-
 	case content == "domain-c8" && contentType == "ClusterComputeResource":
-		for _, prop := range propSetArray {
-			spec := prop.(map[string]any)
-			specType := spec["type"].(string)
-			if specType == "ResourcePool" {
-				return loadResponse("cluster-children.xml")
-			}
-		}
-		path := propSet["pathSet"].(string)
-		switch path {
-		case "datastore":
-			return loadResponse("cluster-datastore.xml")
-		case "summary":
-			return loadResponse("cluster-summary.xml")
-		case "host":
-			return loadResponse("cluster-host.xml")
-		}
+		return loadResponse("cluster-children.xml")
 
 	case content == "domain-c9" && contentType == "ComputeResource":
-		for _, prop := range propSetArray {
-			spec := prop.(map[string]any)
-			specType := spec["type"].(string)
-			if specType == "ResourcePool" {
-				return loadResponse("compute-children.xml")
-			}
-		}
-		path := propSet["pathSet"].(string)
-		switch path {
-		case "datastore":
-			return loadResponse("compute-datastore.xml")
-		case "host":
-			return loadResponse("compute-host.xml")
-		}
+		return loadResponse("compute-children.xml")
 
 	case contentType == "ResourcePool":
-		if ps, ok := propSet["pathSet"].([]any); ok {
-			for _, prop := range ps {
-				if prop == "summary" {
-					if content == "resgroup-9" {
-						return loadResponse("cluster-resource-pool-properties.xml")
-					}
-					if content == "resgroup-10" {
-						return loadResponse("compute-resource-pool-properties.xml")
-					}
-				}
-			}
-		}
-		if ps, ok := propSet["pathSet"].(string); ok {
-			if ps == "owner" {
-				if content == "resgroup-9" {
-					return loadResponse("cluster-resource-pool-owner.xml")
-				}
-				if content == "resgroup-10" {
-					return loadResponse("compute-resource-pool-owner.xml")
-				}
-			}
-		}
-		if ss, ok := objectSet["selectSet"].(map[string]any); ok && ss["path"] == "resourcePool" {
-			if content == "resgroup-9" {
-				return loadResponse("retrieve-properties-empty.xml")
-			}
-			if content == "resgroup-10" {
-				return loadResponse("retrieve-properties-empty.xml")
-			}
-		}
-
-	case content == "resgroup-v10" && contentType == "VirtualApp":
-		for _, prop := range propSetArray {
-			innerPropSet, ok := prop.(map[string]any)
-			require.True(t, ok)
-			if innerPropSet["type"] == "VirtualMachine" {
-				return loadResponse("virtual-app-children.xml")
-			}
-		}
-		if _, ok := propSet["pathSet"].([]any); ok {
-			return loadResponse("virtual-app-properties.xml")
-		}
-		if ps, ok := propSet["pathSet"].(string); ok {
-			if ps == "owner" {
-				return loadResponse("virtual-app-owner.xml")
-			}
-		}
+		return loadResponse("retrieve-properties-empty.xml")
 
 	case content == "group-h5" && contentType == "Folder":
 		for _, i := range propSetArray {
@@ -224,39 +148,6 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 			}
 		}
 		return loadResponse("host-folder-parent.xml")
-
-	case contentType == "HostSystem":
-		if ps, ok := propSet["pathSet"].([]any); ok {
-			for _, v := range ps {
-				if v == "summary.hardware" || v == "summary.hardware.cpuMhz" {
-					if content == "host-1002" {
-						return loadResponse("cluster-host-properties.xml")
-					}
-					if content == "host-1003" {
-						return loadResponse("compute-host-properties.xml")
-					}
-				}
-			}
-		} else {
-			ps, ok := propSet["pathSet"].(string)
-			require.True(t, ok)
-			if ps == "name" {
-				if content == "host-1002" {
-					return loadResponse("cluster-host-name.xml")
-				}
-				if content == "host-1003" {
-					return loadResponse("compute-host-name.xml")
-				}
-			}
-			if ps == "summary.hardware" {
-				if content == "host-1002" {
-					return loadResponse("cluster-host-properties.xml")
-				}
-				if content == "host-1003" {
-					return loadResponse("compute-host-properties.xml")
-				}
-			}
-		}
 
 	case content == "group-v4" && contentType == "Folder":
 		for _, i := range propSetArray {
@@ -271,8 +162,25 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 	case (content == "group-v1034" || content == "group-v1001") && contentType == "Folder":
 		return loadResponse("retrieve-properties-empty.xml")
 
-	case contentType == "ContainerView" && propSet["type"] == "VirtualMachine":
-		return loadResponse("vm-default-properties.xml")
+	case contentType == "ContainerView":
+		if propSet["type"] == "Datacenter" {
+			return loadResponse("datacenter.xml")
+		}
+		if propSet["type"] == "Datastore" {
+			return loadResponse("datastore-default-properties.xml")
+		}
+		if propSet["type"] == "ComputeResource" {
+			return loadResponse("compute-default-properties.xml")
+		}
+		if propSet["type"] == "HostSystem" {
+			return loadResponse("host-default-properties.xml")
+		}
+		if propSet["type"] == "ResourcePool" {
+			return loadResponse("resource-pool-default-properties.xml")
+		}
+		if propSet["type"] == "VirtualMachine" {
+			return loadResponse("vm-default-properties.xml")
+		}
 
 	case content == "PerfMgr" && contentType == "PerformanceManager":
 		return loadResponse("perf-manager.xml")
@@ -292,12 +200,7 @@ func routePerformanceQuery(t *testing.T, body map[string]any) ([]byte, error) {
 	entity := querySpec["entity"].(map[string]any)
 	switch entity["-type"] {
 	case "HostSystem":
-		if entity["#content"] == "host-1002" {
-			return loadResponse("cluster-host-perf-counters.xml")
-		}
-		if entity["#content"] == "host-1003" {
-			return loadResponse("compute-host-perf-counters.xml")
-		}
+		return loadResponse("host-performance-counters.xml")
 	case "VirtualMachine":
 		return loadResponse("vm-performance-counters.xml")
 	}

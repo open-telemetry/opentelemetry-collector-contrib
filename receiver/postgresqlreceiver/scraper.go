@@ -71,7 +71,7 @@ func (e *errsMux) combine() error {
 }
 
 func newPostgreSQLScraper(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {

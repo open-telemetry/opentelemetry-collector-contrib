@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
-						Endpoint:  "0.0.0.0:55678",
+						Endpoint:  "localhost:55678",
 						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
-						Endpoint:  "0.0.0.0:55678",
+						Endpoint:  "localhost:55678",
 						Transport: confignet.TransportTypeTCP,
 					},
 					MaxRecvMsgSizeMiB:    32,
@@ -91,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
-						Endpoint:  "0.0.0.0:55678",
+						Endpoint:  "localhost:55678",
 						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
@@ -109,7 +109,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
-						Endpoint:  "0.0.0.0:55678",
+						Endpoint:  "localhost:55678",
 						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
@@ -138,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

@@ -13,7 +13,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -253,9 +258,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							Value: value{
-								FunctionName: (ottltest.Strp("Sha256")),
-							},
+							FunctionName: ottltest.Strp("Sha256"),
 						},
 					},
 				},
@@ -1952,6 +1955,7 @@ func Test_parseCondition(t *testing.T) {
 		{`One() == 1`, false},
 		{`test(fail())`, true},
 		{`Test()`, false},
+		{`"test" == Foo`, true},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
@@ -2050,10 +2054,11 @@ func Test_Condition_Eval(t *testing.T) {
 
 func Test_Statements_Execute_Error(t *testing.T) {
 	tests := []struct {
-		name      string
-		condition boolExpressionEvaluator[any]
-		function  ExprFunc[any]
-		errorMode ErrorMode
+		name          string
+		condition     boolExpressionEvaluator[any]
+		function      ExprFunc[any]
+		errorMode     ErrorMode
+		expectedSpans []expectedSpan
 	}{
 		{
 			name: "IgnoreError error from condition",
@@ -2064,6 +2069,31 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, nil
 			},
 			errorMode: IgnoreError,
+			expectedSpans: []expectedSpan{
+				{
+					name: "ottl/StatementExecution",
+					attributes: []attribute.KeyValue{
+						{
+							Key:   "statement",
+							Value: attribute.StringValue("test"),
+						},
+						{
+							Key:   "condition.matched",
+							Value: attribute.BoolValue(false),
+						},
+					},
+					status: trace.Status{
+						Code:        codes.Error,
+						Description: "failed to execute statement 'test': test",
+					},
+				},
+				{
+					name: "ottl/StatementSequenceExecution",
+					status: trace.Status{
+						Code: codes.Ok,
+					},
+				},
+			},
 		},
 		{
 			name: "PropagateError error from condition",
@@ -2074,6 +2104,32 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, nil
 			},
 			errorMode: PropagateError,
+			expectedSpans: []expectedSpan{
+				{
+					name: "ottl/StatementExecution",
+					attributes: []attribute.KeyValue{
+						{
+							Key:   "statement",
+							Value: attribute.StringValue("test"),
+						},
+						{
+							Key:   "condition.matched",
+							Value: attribute.BoolValue(false),
+						},
+					},
+					status: trace.Status{
+						Code:        codes.Error,
+						Description: "failed to execute statement 'test': test",
+					},
+				},
+				{
+					name: "ottl/StatementSequenceExecution",
+					status: trace.Status{
+						Code:        codes.Error,
+						Description: "failed to execute statement 'test': test",
+					},
+				},
+			},
 		},
 		{
 			name: "IgnoreError error from function",
@@ -2084,6 +2140,31 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: IgnoreError,
+			expectedSpans: []expectedSpan{
+				{
+					name: "ottl/StatementExecution",
+					attributes: []attribute.KeyValue{
+						{
+							Key:   "statement",
+							Value: attribute.StringValue("test"),
+						},
+						{
+							Key:   "condition.matched",
+							Value: attribute.BoolValue(true),
+						},
+					},
+					status: trace.Status{
+						Code:        codes.Error,
+						Description: "failed to execute statement 'test': test",
+					},
+				},
+				{
+					name: "ottl/StatementSequenceExecution",
+					status: trace.Status{
+						Code: codes.Ok,
+					},
+				},
+			},
 		},
 		{
 			name: "PropagateError error from function",
@@ -2094,6 +2175,32 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: PropagateError,
+			expectedSpans: []expectedSpan{
+				{
+					name: "ottl/StatementExecution",
+					attributes: []attribute.KeyValue{
+						{
+							Key:   "statement",
+							Value: attribute.StringValue("test"),
+						},
+						{
+							Key:   "condition.matched",
+							Value: attribute.BoolValue(true),
+						},
+					},
+					status: trace.Status{
+						Code:        codes.Error,
+						Description: "failed to execute statement 'test': test",
+					},
+				},
+				{
+					name: "ottl/StatementSequenceExecution",
+					status: trace.Status{
+						Code:        codes.Error,
+						Description: "failed to execute statement 'test': test",
+					},
+				},
+			},
 		},
 		{
 			name: "SilentError error from condition",
@@ -2104,6 +2211,31 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, nil
 			},
 			errorMode: SilentError,
+			expectedSpans: []expectedSpan{
+				{
+					name: "ottl/StatementExecution",
+					attributes: []attribute.KeyValue{
+						{
+							Key:   "statement",
+							Value: attribute.StringValue("test"),
+						},
+						{
+							Key:   "condition.matched",
+							Value: attribute.BoolValue(false),
+						},
+					},
+					status: trace.Status{
+						Code:        codes.Error,
+						Description: "failed to execute statement 'test': test",
+					},
+				},
+				{
+					name: "ottl/StatementSequenceExecution",
+					status: trace.Status{
+						Code: codes.Ok,
+					},
+				},
+			},
 		},
 		{
 			name: "SilentError error from function",
@@ -2114,6 +2246,31 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: SilentError,
+			expectedSpans: []expectedSpan{
+				{
+					name: "ottl/StatementExecution",
+					attributes: []attribute.KeyValue{
+						{
+							Key:   "statement",
+							Value: attribute.StringValue("test"),
+						},
+						{
+							Key:   "condition.matched",
+							Value: attribute.BoolValue(true),
+						},
+					},
+					status: trace.Status{
+						Code:        codes.Error,
+						Description: "failed to execute statement 'test': test",
+					},
+				},
+				{
+					name: "ottl/StatementSequenceExecution",
+					status: trace.Status{
+						Code: codes.Ok,
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -2123,17 +2280,29 @@ func Test_Statements_Execute_Error(t *testing.T) {
 					{
 						condition: BoolExpr[any]{tt.condition},
 						function:  Expr[any]{exprFunc: tt.function},
+						origText:  "test",
 					},
 				},
 				errorMode:         tt.errorMode,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 			}
+			spanRecorder := tracetest.NewSpanRecorder()
+			statements.telemetrySettings.TracerProvider = trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
+			statements.tracer = statements.telemetrySettings.TracerProvider.Tracer("ottl")
 
 			err := statements.Execute(context.Background(), nil)
 			if tt.errorMode == PropagateError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+			}
+
+			require.Len(t, spanRecorder.Ended(), len(tt.expectedSpans))
+
+			for i, es := range tt.expectedSpans {
+				require.Equal(t, es.name, spanRecorder.Ended()[i].Name())
+				require.Equal(t, es.attributes, spanRecorder.Ended()[i].Attributes())
+				require.Equal(t, es.status, spanRecorder.Ended()[i].Status())
 			}
 		})
 	}
@@ -2337,4 +2506,10 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 			}
 		})
 	}
+}
+
+type expectedSpan struct {
+	name       string
+	attributes []attribute.KeyValue
+	status     trace.Status
 }

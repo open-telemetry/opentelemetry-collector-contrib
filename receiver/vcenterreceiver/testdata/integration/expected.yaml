@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_H0
@@ -35,6 +38,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.cluster.name
           value:
             stringValue: DC0_C0
@@ -69,11 +75,23 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_H0
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -113,6 +131,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.datastore.name
           value:
             stringValue: LocalDS_0
@@ -151,6 +172,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.vm.name
           value:
             stringValue: DC0_H0_VM0
@@ -237,6 +261,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.vm.name
           value:
             stringValue: DC0_H0_VM1
@@ -323,6 +350,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_C0_H0
@@ -331,6 +361,15 @@ resourceMetrics:
             stringValue: DC0_C0
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -370,6 +409,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_C0_H1
@@ -378,6 +420,15 @@ resourceMetrics:
             stringValue: DC0_C0
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -417,6 +468,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_C0_H2
@@ -425,6 +479,15 @@ resourceMetrics:
             stringValue: DC0_C0
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -464,47 +527,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: vcenter.cluster.name
+        - key: vcenter.datacenter.name
           value:
-            stringValue: DC0_C0
-        - key: vcenter.datastore.name
-          value:
-            stringValue: LocalDS_0
-    scopeMetrics:
-      - metrics:
-          - description: The amount of space in the datastore.
-            name: vcenter.datastore.disk.usage
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "42949672960"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: used
-                  startTimeUnixNano: "1707407684042820000"
-                  timeUnixNano: "1707407733803628000"
-                - asInt: "10952166604800"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: available
-                  startTimeUnixNano: "1707407684042820000"
-                  timeUnixNano: "1707407733803628000"
-            unit: By
-          - description: The utilization of the datastore.
-            gauge:
-              dataPoints:
-                - asDouble: 0.390625
-                  startTimeUnixNano: "1707407684042820000"
-                  timeUnixNano: "1707407733803628000"
-            name: vcenter.datastore.disk.utilization
-            unit: "%"
-        scope:
-          name: otelcol/vcenterreceiver
-          version: latest
-  - resource:
-      attributes:
+            stringValue: DC0
         - key: vcenter.vm.name
           value:
             stringValue: DC0_C0_RP0_VM0
@@ -594,6 +619,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.vm.name
           value:
             stringValue: DC0_C0_RP0_VM1
@@ -683,6 +711,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.cluster.name
           value:
             stringValue: DC0_C0
@@ -771,6 +802,15 @@ resourceMetrics:
                   startTimeUnixNano: "1707407684042820000"
                   timeUnixNano: "1707407733803628000"
             unit: "{virtual_machines}"
+          - description: The number of virtual machine templates in the cluster.
+            name: vcenter.cluster.vm_template.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+            unit: "{virtual_machine_templates}"
         scope:
           name: otelcol/vcenterreceiver
           version: latest

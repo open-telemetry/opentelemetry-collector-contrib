@@ -6,7 +6,9 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -19,6 +21,7 @@ import (
 const (
 	logsContainerName   = "logs"
 	tracesContainerName = "traces"
+	defaultCloud        = AzureCloudType
 )
 
 var (
@@ -44,14 +47,16 @@ func NewFactory() receiver.Factory {
 
 func (f *blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
-		Logs:   LogsConfig{ContainerName: logsContainerName},
-		Traces: TracesConfig{ContainerName: tracesContainerName},
+		Logs:           LogsConfig{ContainerName: logsContainerName},
+		Traces:         TracesConfig{ContainerName: tracesContainerName},
+		Authentication: ConnectionStringAuth,
+		Cloud:          defaultCloud,
 	}
 }
 
 func (f *blobReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
@@ -70,7 +75,7 @@ func (f *blobReceiverFactory) createLogsReceiver(
 
 func (f *blobReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
@@ -87,7 +92,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 }
 
 func (f *blobReceiverFactory) getReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config) (component.Component, error) {
 
 	var err error
@@ -118,9 +123,26 @@ func (f *blobReceiverFactory) getReceiver(
 }
 
 func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
-	bc, err := newBlobClient(cfg.ConnectionString, logger)
-	if err != nil {
-		return nil, err
+	var bc blobClient
+	var err error
+
+	switch cfg.Authentication {
+	case ConnectionStringAuth:
+		bc, err = newBlobClientFromConnectionString(cfg.ConnectionString, logger)
+		if err != nil {
+			return nil, err
+		}
+	case ServicePrincipalAuth:
+		cred, err := azidentity.NewClientSecretCredential(cfg.ServicePrincipal.TenantID, cfg.ServicePrincipal.ClientID, string(cfg.ServicePrincipal.ClientSecret), nil)
+		if err != nil {
+			return nil, err
+		}
+		bc, err = newBlobClientFromCredential(cfg.StorageAccountURL, cred, logger)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unknown authentication %v", cfg.Authentication)
 	}
 
 	return newBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),

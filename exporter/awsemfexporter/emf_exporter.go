@@ -27,6 +27,10 @@ const (
 	// OutputDestination Options
 	outputDestinationCloudWatch = "cloudwatch"
 	outputDestinationStdout     = "stdout"
+
+	// AppSignals EMF config
+	appSignalsMetricNamespace    = "AppSignals"
+	appSignalsLogGroupNamePrefix = "/aws/appsignals/"
 )
 
 type emfExporter struct {
@@ -42,7 +46,7 @@ type emfExporter struct {
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
-func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, error) {
+func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
@@ -55,8 +59,22 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		return nil, err
 	}
 
+	var userAgentExtras []string
+	if config.isAppSignalsEnabled() {
+		userAgentExtras = append(userAgentExtras, "AppSignals")
+	}
+
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(set.Logger, awsConfig, set.BuildInfo, config.LogGroupName, config.LogRetention, config.Tags, session, metadata.Type.String())
+	svcStructuredLog := cwlogs.NewClient(set.Logger,
+		awsConfig,
+		set.BuildInfo,
+		config.LogGroupName,
+		config.LogRetention,
+		config.Tags,
+		session,
+		metadata.Type.String(),
+		cwlogs.WithUserAgentExtras(userAgentExtras...),
+	)
 	collectorIdentifier, err := uuid.NewRandom()
 
 	if err != nil {

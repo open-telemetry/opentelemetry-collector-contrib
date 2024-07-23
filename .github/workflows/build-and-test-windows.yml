@@ -2,10 +2,10 @@ name: build-and-test-windows
 on:
   push:
     branches:
-      - 'main'
-      - 'releases/**'
+      - "main"
+      - "releases/**"
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - "v[0-9]+.[0-9]+.[0-9]+*"
   merge_group:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
@@ -58,7 +58,7 @@ jobs:
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.9"
+          go-version: "1.21.12"
           cache: false
       - name: Cache Go
         id: go-mod-cache

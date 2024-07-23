@@ -39,5 +39,5 @@ type Operator interface {
 	// Process will process an entry from an operator.
 	Process(context.Context, *entry.Entry) error
 	// Logger returns the operator's logger
-	Logger() *zap.SugaredLogger
+	Logger() *zap.Logger
 }

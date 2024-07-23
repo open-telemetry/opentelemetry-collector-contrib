@@ -59,7 +59,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			rec, err := newLogsReceiver(receivertest.NewNopCreateSettings(), test.cfg, test.consumer)
+			rec, err := newLogsReceiver(receivertest.NewNopSettings(), test.cfg, test.consumer)
 			if test.err == nil {
 				require.NotNil(t, rec)
 			} else {
@@ -121,7 +121,7 @@ func TestHandleReq(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			consumer := consumertest.NewNop()
-			receiver, err := newLogsReceiver(receivertest.NewNopCreateSettings(), test.cfg, consumer)
+			receiver, err := newLogsReceiver(receivertest.NewNopSettings(), test.cfg, consumer)
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
@@ -203,7 +203,7 @@ func TestFailedReq(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			consumer := consumertest.NewNop()
-			receiver, err := newLogsReceiver(receivertest.NewNopCreateSettings(), test.cfg, consumer)
+			receiver, err := newLogsReceiver(receivertest.NewNopSettings(), test.cfg, consumer)
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
@@ -225,7 +225,7 @@ func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	defaultConfig.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
-	receiver, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *defaultConfig, consumer)
+	receiver, err := newLogsReceiver(receivertest.NewNopSettings(), *defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
 	r := receiver.(*eventReceiver)

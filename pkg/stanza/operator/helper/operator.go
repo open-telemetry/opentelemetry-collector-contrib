@@ -62,10 +62,11 @@ func (c BasicConfig) Build(set component.TelemetrySettings) (BasicOperator, erro
 		)
 	}
 
+	set.Logger = set.Logger.With(zap.String("operator_id", c.ID()), zap.String("operator_type", c.Type()))
 	operator := BasicOperator{
-		OperatorID:    c.ID(),
-		OperatorType:  c.Type(),
-		SugaredLogger: set.Logger.Sugar().With("operator_id", c.ID(), "operator_type", c.Type()),
+		OperatorID:   c.ID(),
+		OperatorType: c.Type(),
+		set:          set,
 	}
 
 	return operator, nil
@@ -75,7 +76,7 @@ func (c BasicConfig) Build(set component.TelemetrySettings) (BasicOperator, erro
 type BasicOperator struct {
 	OperatorID   string
 	OperatorType string
-	*zap.SugaredLogger
+	set          component.TelemetrySettings
 }
 
 // ID will return the operator id.
@@ -92,8 +93,8 @@ func (p *BasicOperator) Type() string {
 }
 
 // Logger returns the operator's scoped logger.
-func (p *BasicOperator) Logger() *zap.SugaredLogger {
-	return p.SugaredLogger
+func (p *BasicOperator) Logger() *zap.Logger {
+	return p.set.Logger
 }
 
 // Start will start the operator.

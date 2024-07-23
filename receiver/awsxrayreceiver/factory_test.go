@@ -37,7 +37,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)
@@ -48,7 +48,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)

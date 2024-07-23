@@ -47,7 +47,7 @@ type ocReceiver struct {
 
 	stopWG sync.WaitGroup
 
-	settings    receiver.CreateSettings
+	settings    receiver.Settings
 	multiplexer cmux.CMux
 }
 
@@ -58,7 +58,7 @@ func newOpenCensusReceiver(
 	cfg *Config,
 	tc consumer.Traces,
 	mc consumer.Metrics,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	opts ...ocOption,
 ) *ocReceiver {
 	ocr := &ocReceiver{
@@ -113,10 +113,12 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 	if !hasConsumer {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
+
 	ocr.ln, err = net.Listen(string(ocr.cfg.NetAddr.Transport), ocr.cfg.NetAddr.Endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %q: %w", ocr.cfg.NetAddr.Endpoint, err)
 	}
+
 	// Register the grpc-gateway on the HTTP server mux
 	var c context.Context
 	c, ocr.cancel = context.WithCancel(context.Background())
@@ -155,14 +157,14 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 	}()
 	go func() {
 		startWG.Done()
-		if err := ocr.multiplexer.Serve(); !errors.Is(err, cmux.ErrServerClosed) && err != nil {
+		if err := ocr.multiplexer.Serve(); !errors.Is(err, cmux.ErrServerClosed) && !errors.Is(err, cmux.ErrListenerClosed) && err != nil {
 			ocr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 
 	startWG.Wait()
 
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock()}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts); err != nil {
 		return err
 	}

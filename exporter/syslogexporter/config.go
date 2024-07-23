@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 )
 
 var (
@@ -74,7 +73,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if len(invalidFields) > 0 {
-		return multierr.Combine(invalidFields...)
+		return errors.Join(invalidFields...)
 	}
 
 	return nil

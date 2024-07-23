@@ -16,14 +16,15 @@
 
 This is an exporter that will consistently export spans, metrics and logs depending on the `routing_key` configured.
 
-The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`.
+The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`.
 
-| routing_key        | can be used for |
-| ------------- |-----------|
-| service | logs, spans, metrics |
-| traceID | logs, spans |
-| resource | metrics |
-| metric | metrics |
+| routing_key | can be used for      |
+| ----------- | -------------------- |
+| service     | logs, spans, metrics |
+| traceID     | logs, spans          |
+| resource    | metrics              |
+| metric      | metrics              |
+| streamID    | metrics              |
 
 If no `routing_key` is configured, the default routing mechanism is `traceID`  for traces, while `service` is the default for metrics. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend.
 
@@ -33,7 +34,7 @@ Note that either the Trace ID or Service name is used for the decision on which 
 
 This load balancer is especially useful for backends configured with tail-based samplers or red-metrics-collectors, which make a decision based on the view of the full trace.
 
-When a list of backends is updated, some of the signals will be rerouted to different backends. 
+When a list of backends is updated, some of the signals will be rerouted to different backends.
 Around R/N of the "routes" will be rerouted differently, where:
 
 * A "route" is either a trace ID or a service name mapped to a certain backend.
@@ -45,10 +46,11 @@ This should be stable enough for most cases, and the larger the number of backen
 This also supports service name based exporting for traces. If you have two or more collectors that collect traces and then use spanmetrics connector to generate metrics and push to prometheus, there is a high chance of facing label collisions on prometheus if the routing is based on `traceID` because every collector sees the `service+operation` label. With service name based routing, each collector can only see one service name and can push metrics without any label collisions.
 
 ## Resilience and scaling considerations
+
 The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`, `dns`, `k8s`), create one exporter per endpoint. The exporter conforms to its published configuration regarding sending queue and retry mechanisms. Importantly, the `loadbalancingexporter` will not attempt to re-route data to a healthy endpoint on delivery failure, and data loss is therefore possible if the exporter's target remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
 
-- When using the `static` resolver and a target is unavailable, all the target's load-balanced telemetry will fail to be delivered until either the target is restored or removed from the static list. The same principle applies to the `dns` resolver.
-- When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
+* When using the `static` resolver and a target is unavailable, all the target's load-balanced telemetry will fail to be delivered until either the target is restored or removed from the static list. The same principle applies to the `dns` resolver.
+* When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
 
 ## Configuration
 
@@ -72,22 +74,24 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `30s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `port` port to be used for exporting the traces to the addresses resolved from `service`. By default, the port is set in Cloud Map, but can be be overridden with a static value in this config
-  * `health_status` filter in AWS Cloud Map, you can specify the health status of the instances that you want to discover. The health_status filter is optional and allows you to query based on the health status of the instances. 
-    * Available values are 
+  * `health_status` filter in AWS Cloud Map, you can specify the health status of the instances that you want to discover. The health_status filter is optional and allows you to query based on the health status of the instances.
+    * Available values are
       * `HEALTHY`: Only return instances that are healthy.
       * `UNHEALTHY`: Only return instances that are unhealthy.
       * `ALL`: Return all instances, regardless of their health status.
       * `HEALTHY_OR_ELSE_ALL`: Returns healthy instances, unless none are reporting a healthy state. In that case, return all instances. This is also called failing open.
     * Resolver's default filter is set to `HEALTHY` when none is explicitly defined
-  * **Notes:** 
-    * This resolver currently returns a maximum of 100 hosts. 
+  * **Notes:**
+    * This resolver currently returns a maximum of 100 hosts.
     * `TODO`: Feature request [29771](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29771) aims to cover the pagination for this scenario
-* The `routing_key` property is used to route spans to exporters based on different parameters. This functionality is currently enabled only for `trace` pipeline types. It supports one of the following values:
-    * `service`: exports spans based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate. 
-    * `traceID` (default): exports spans based on their `traceID`.
-    * If not configured, defaults to `traceID` based routing.
+* The `routing_key` property is used to specify how to route values (spans or metrics) to exporters based on different parameters. This functionality is currently enabled only for `trace` and `metric` pipeline types. It supports one of the following values:
+  * `service`: Routes values based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate.
+  * `traceID`: Routes spans based on their `traceID`. Invalid for metrics.
+  * `metric`: Routes metrics based on their metric name. Invalid for spans.
+  * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data
 
 Simple example
+
 ```yaml
 receivers:
   otlp:
@@ -133,6 +137,7 @@ service:
 ```
 
 Kubernetes resolver example (For a more specific example: [example/k8s-resolver](./example/k8s-resolver/README.md))
+
 ```yaml
 receivers:
   otlp:
@@ -175,6 +180,7 @@ service:
 ```
 
 AWS CloudMap resolver example
+
 ```yaml
 receivers:
   otlp:
@@ -214,6 +220,7 @@ service:
 ```
 
 For testing purposes, the following configuration can be used, where both the load balancer and all backends are running locally:
+
 ```yaml
 receivers:
   otlp/loadbalancer:

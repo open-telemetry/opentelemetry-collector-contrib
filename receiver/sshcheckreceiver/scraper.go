@@ -125,7 +125,7 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
-func newScraper(conf *Config, settings receiver.CreateSettings) *sshcheckScraper {
+func newScraper(conf *Config, settings receiver.Settings) *sshcheckScraper {
 	return &sshcheckScraper{
 		Config:   conf,
 		settings: settings.TelemetrySettings,

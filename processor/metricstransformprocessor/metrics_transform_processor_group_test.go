@@ -69,7 +69,7 @@ func TestMetricsGrouping(t *testing.T) {
 
 				mtp, err := processorhelper.NewMetricsProcessor(
 					context.Background(),
-					processortest.NewNopCreateSettings(),
+					processortest.NewNopSettings(),
 					&Config{},
 					next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
 				require.NoError(t, err)

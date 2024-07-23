@@ -49,7 +49,7 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	}()
 
 	// Start the SQL Query receiver.
-	receiverCreateSettings := receivertest.NewNopCreateSettings()
+	receiverCreateSettings := receivertest.NewNopSettings()
 	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.Queries = []sqlquery.Query{
@@ -136,7 +136,7 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	storageExtension := storagetest.NewFileBackedStorageExtension("test", storageDir)
 
 	// create SQL Query receiver configured with the File Storage extension
-	receiverCreateSettings := receivertest.NewNopCreateSettings()
+	receiverCreateSettings := receivertest.NewNopSettings()
 	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
@@ -279,7 +279,7 @@ func startPostgresDbContainer(t *testing.T, externalPort string) testcontainers.
 	return container
 }
 
-func createTestLogsReceiverForPostgres(t *testing.T, externalPort string, receiverCreateSettings receiver.CreateSettings) (*logsReceiver, *Config, *consumertest.LogsSink) {
+func createTestLogsReceiverForPostgres(t *testing.T, externalPort string, receiverCreateSettings receiver.Settings) (*logsReceiver, *Config, *consumertest.LogsSink) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
 	config.CollectionInterval = time.Second

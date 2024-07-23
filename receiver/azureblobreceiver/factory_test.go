@@ -23,7 +23,7 @@ func TestNewFactory(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	receiver, err := f.CreateTracesReceiver(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
@@ -33,7 +33,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	receiver, err := f.CreateLogsReceiver(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	config := getConfig()
 	logsReceiver, err := f.CreateLogsReceiver(ctx, params, config, consumertest.NewNop())
 	require.NoError(t, err)
@@ -56,6 +56,7 @@ func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 
 func getConfig() component.Config {
 	return &Config{
+		Authentication:   "connection_string",
 		ConnectionString: goodConnectionString,
 		Logs:             LogsConfig{ContainerName: logsContainerName},
 		Traces:           TracesConfig{ContainerName: tracesContainerName},

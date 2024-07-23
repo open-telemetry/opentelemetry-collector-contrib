@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 func TestLogEmitter(t *testing.T) {
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
+	emitter := NewLogEmitter(componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, emitter.Start(nil))
 
@@ -43,7 +43,7 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 		maxBatchSize = 100
 		timeout      = time.Second
 	)
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
+	emitter := NewLogEmitter(componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, emitter.Start(nil))
 	defer func() {
@@ -74,7 +74,7 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 		flushInterval = 100 * time.Millisecond
 		timeout       = time.Second
 	)
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
+	emitter := NewLogEmitter(componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, emitter.Start(nil))
 	defer func() {

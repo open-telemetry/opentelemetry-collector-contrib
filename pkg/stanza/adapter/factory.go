@@ -37,7 +37,7 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rc
 func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 	return func(
 		_ context.Context,
-		params rcvr.CreateSettings,
+		params rcvr.Settings,
 		cfg component.Config,
 		nextConsumer consumer.Logs,
 	) (rcvr.Logs, error) {
@@ -53,7 +53,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		if baseCfg.flushInterval > 0 {
 			emitterOpts = append(emitterOpts, helper.WithFlushInterval(baseCfg.flushInterval))
 		}
-		emitter := helper.NewLogEmitter(params.Logger.Sugar(), emitterOpts...)
+		emitter := helper.NewLogEmitter(params.TelemetrySettings, emitterOpts...)
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
@@ -66,7 +66,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		if baseCfg.numWorkers > 0 {
 			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
 		}
-		converter := NewConverter(params.Logger, converterOpts...)
+		converter := NewConverter(params.TelemetrySettings, converterOpts...)
 		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 			ReceiverID:             params.ID,
 			ReceiverCreateSettings: params,
@@ -75,11 +75,11 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			return nil, err
 		}
 		return &receiver{
+			set:       params.TelemetrySettings,
 			id:        params.ID,
 			pipe:      pipe,
 			emitter:   emitter,
 			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
-			logger:    params.Logger,
 			converter: converter,
 			obsrecv:   obsrecv,
 			storageID: baseCfg.StorageID,

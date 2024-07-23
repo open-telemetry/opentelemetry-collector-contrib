@@ -210,7 +210,7 @@ func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) *aler
 	}
 }
 
-func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.CreateSettings) (exporter.Traces, error) {
+func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.Settings) (exporter.Traces, error) {
 
 	config := cfg.(*Config)
 

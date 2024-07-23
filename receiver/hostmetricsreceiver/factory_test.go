@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 )
 
-var creationSet = receivertest.NewNopCreateSettings()
+var creationSet = receivertest.NewNopSettings()
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
@@ -39,8 +39,8 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, mReceiver)
 
 	tLogs, err := factory.CreateLogsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
-	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
-	assert.Nil(t, tLogs)
+	assert.NoError(t, err)
+	assert.NotNil(t, tLogs)
 }
 
 func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {

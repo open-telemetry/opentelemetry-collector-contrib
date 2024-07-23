@@ -48,6 +48,8 @@ Number of lock requests resulting in a wait.
 
 Average wait time for all lock requests that had to wait.
 
+This metric is only available when running on Windows.
+
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | ms | Gauge | Double |
@@ -64,6 +66,8 @@ Pages found in the buffer pool without having to read from disk.
 
 Number of pages flushed by operations requiring dirty pages to be flushed.
 
+This metric is only available when running on Windows.
+
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {pages}/s | Gauge | Double |
@@ -71,6 +75,8 @@ Number of pages flushed by operations requiring dirty pages to be flushed.
 ### sqlserver.page.lazy_write.rate
 
 Number of lazy writes moving dirty pages to disk.
+
+This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -80,6 +86,8 @@ Number of lazy writes moving dirty pages to disk.
 
 Time a page will stay in the buffer pool.
 
+This metric is only available when running on Windows.
+
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
@@ -87,6 +95,8 @@ Time a page will stay in the buffer pool.
 ### sqlserver.page.operation.rate
 
 Number of physical database page operations issued.
+
+This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -102,6 +112,8 @@ Number of physical database page operations issued.
 
 Number of pages split as a result of overflowing index pages.
 
+This metric is only available when running on Windows.
+
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {pages}/s | Gauge | Double |
@@ -109,6 +121,8 @@ Number of pages split as a result of overflowing index pages.
 ### sqlserver.transaction.rate
 
 Number of transactions started for the database (not including XTP-only transactions).
+
+This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -118,6 +132,8 @@ Number of transactions started for the database (not including XTP-only transact
 
 Number of transactions that wrote to the database and committed.
 
+This metric is only available when running on Windows.
+
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {transactions}/s | Gauge | Double |
@@ -125,6 +141,8 @@ Number of transactions that wrote to the database and committed.
 ### sqlserver.transaction_log.flush.data.rate
 
 Total number of log bytes flushed.
+
+This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -134,6 +152,8 @@ Total number of log bytes flushed.
 
 Number of log flushes.
 
+This metric is only available when running on Windows.
+
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {flushes}/s | Gauge | Double |
@@ -141,6 +161,8 @@ Number of log flushes.
 ### sqlserver.transaction_log.flush.wait.rate
 
 Number of commits waiting for a transaction log flush.
+
+This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -150,6 +172,8 @@ Number of commits waiting for a transaction log flush.
 
 Total number of transaction log expansions for a database.
 
+This metric is only available when running on Windows.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {growths} | Sum | Int | Cumulative | true |
@@ -158,6 +182,8 @@ Total number of transaction log expansions for a database.
 
 Total number of transaction log shrinks for a database.
 
+This metric is only available when running on Windows.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {shrinks} | Sum | Int | Cumulative | true |
@@ -165,6 +191,8 @@ Total number of transaction log shrinks for a database.
 ### sqlserver.transaction_log.usage
 
 Percent of transaction log space used.
+
+This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -188,9 +216,44 @@ metrics:
     enabled: true
 ```
 
-### sqlserver.database.io.read_latency
+### sqlserver.database.count
 
-Total time that the users waited for reads issued on this file.
+The number of databases
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {databases} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` |
+
+### sqlserver.database.io
+
+The number of bytes of I/O on this file.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| physical_filename | The physical filename of the file being monitored. | Any Str |
+| logical_filename | The logical filename of the file being monitored. | Any Str |
+| file_type | The type of file being monitored. | Any Str |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+
+### sqlserver.database.latency
+
+Total time that the users waited for I/O issued on this file.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -205,6 +268,56 @@ This metric is only available when the receiver is configured to directly connec
 | physical_filename | The physical filename of the file being monitored. | Any Str |
 | logical_filename | The logical filename of the file being monitored. | Any Str |
 | file_type | The type of file being monitored. | Any Str |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+
+### sqlserver.database.operations
+
+The number of operations issued on the file.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| physical_filename | The physical filename of the file being monitored. | Any Str |
+| logical_filename | The logical filename of the file being monitored. | Any Str |
+| file_type | The type of file being monitored. | Any Str |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+
+### sqlserver.processes.blocked
+
+The number of processes that are currently blocked
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {processes} | Gauge | Int |
+
+### sqlserver.resource_pool.disk.throttled.read.rate
+
+The number of read operations that were throttled in the last second
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {reads}/s | Gauge | Int |
+
+### sqlserver.resource_pool.disk.throttled.write.rate
+
+The number of write operations that were throttled in the last second
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {writes}/s | Gauge | Double |
 
 ## Resource Attributes
 

@@ -32,7 +32,7 @@ func TestScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	scraper := newIisReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -61,7 +61,7 @@ func TestScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings := receivertest.NewNopSettings()
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -97,7 +97,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings := receivertest.NewNopSettings()
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -128,7 +128,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings := receivertest.NewNopSettings()
 
 	scraper := newIisReceiver(
 		rcvrSettings,
@@ -188,5 +188,9 @@ func (mpc *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error)
 
 // Close
 func (mpc *mockPerfCounter) Close() error {
+	return nil
+}
+
+func (mpc *mockPerfCounter) Reset() error {
 	return nil
 }

@@ -11,6 +11,8 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
 func TestRegistry_Register(t *testing.T) {
@@ -92,7 +94,7 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		sender, err := registry.Register(capabilityString, withMaxQueuedMessages(0))
+		sender, err := registry.Register(capabilityString, opampcustommessages.WithMaxQueuedMessages(0))
 		require.NotNil(t, sender)
 		require.NoError(t, err)
 

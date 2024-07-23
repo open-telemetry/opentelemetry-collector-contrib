@@ -121,7 +121,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			factory := NewFactory()
 			mgp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				cfg,
 				next,
 			)

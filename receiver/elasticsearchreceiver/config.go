@@ -11,14 +11,11 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
-var (
-	defaultEndpoint = "http://localhost:9200"
-)
+var defaultEndpoint = "http://localhost:9200"
 
 var (
 	errEndpointBadScheme    = errors.New("endpoint scheme must be http or https")
@@ -54,16 +51,16 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	var combinedErr error
 	if err := invalidCredentials(cfg.Username, string(cfg.Password)); err != nil {
-		combinedErr = multierr.Append(combinedErr, err)
+		combinedErr = err
 	}
 
 	if cfg.Endpoint == "" {
-		return multierr.Append(combinedErr, errEmptyEndpoint)
+		return errors.Join(combinedErr, errEmptyEndpoint)
 	}
 
 	u, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return multierr.Append(
+		return errors.Join(
 			combinedErr,
 			fmt.Errorf("invalid endpoint '%s': %w", cfg.Endpoint, err),
 		)
@@ -72,7 +69,7 @@ func (cfg *Config) Validate() error {
 	switch u.Scheme {
 	case "http", "https": // ok
 	default:
-		return multierr.Append(combinedErr, errEndpointBadScheme)
+		return errors.Join(combinedErr, errEndpointBadScheme)
 	}
 
 	return combinedErr

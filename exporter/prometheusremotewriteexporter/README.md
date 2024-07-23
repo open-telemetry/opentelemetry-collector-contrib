@@ -100,6 +100,13 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
 
+### Feature gates
+This exporter has feature gate: `exporter.prometheusremotewritexporter.RetryOn429`.
+When this feature gate is enable the prometheus remote write exporter will retry on 429 http status code with the provided retry configuration.
+It currently doesn't support respecting the http header `Retry-After` if provided since the retry library used doesn't support this feature.
+
+To enable it run collector with enabled feature gate `exporter.prometheusremotewritexporter.RetryOn429`. This can be done by executing it with one additional parameter - `--feature-gates=telemetry.useOtelForInternalMetrics`.
+
 ## Metric names and labels normalization
 
 OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).

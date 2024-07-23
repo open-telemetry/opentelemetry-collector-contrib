@@ -24,7 +24,7 @@ type s3Exporter struct {
 }
 
 func newS3Exporter(config *Config,
-	params exporter.CreateSettings) *s3Exporter {
+	params exporter.Settings) *s3Exporter {
 
 	s3Exporter := &s3Exporter{
 		config:     config,

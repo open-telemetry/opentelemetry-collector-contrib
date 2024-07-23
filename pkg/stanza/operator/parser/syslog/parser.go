@@ -10,11 +10,11 @@ import (
 	"regexp"
 	"time"
 
-	sl "github.com/influxdata/go-syslog/v3"
-	"github.com/influxdata/go-syslog/v3/nontransparent"
-	"github.com/influxdata/go-syslog/v3/octetcounting"
-	"github.com/influxdata/go-syslog/v3/rfc3164"
-	"github.com/influxdata/go-syslog/v3/rfc5424"
+	sl "github.com/leodido/go-syslog/v4"
+	"github.com/leodido/go-syslog/v4/nontransparent"
+	"github.com/leodido/go-syslog/v4/octetcounting"
+	"github.com/leodido/go-syslog/v4/rfc3164"
+	"github.com/leodido/go-syslog/v4/rfc5424"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -33,6 +33,7 @@ type Parser struct {
 	enableOctetCounting          bool
 	allowSkipPriHeader           bool
 	nonTransparentFramingTrailer *string
+	maxOctets                    int
 }
 
 // Process will parse an entry field as syslog.
@@ -96,7 +97,7 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 		switch {
 		// Octet Counting Parsing RFC6587
 		case p.enableOctetCounting:
-			return newOctetCountingParseFunc(), nil
+			return newOctetCountingParseFunc(p.maxOctets), nil
 		// Non-Transparent-Framing Parsing RFC6587
 		case p.nonTransparentFramingTrailer != nil && *p.nonTransparentFramingTrailer == LFTrailer:
 			return newNonTransparentFramingParseFunc(nontransparent.LF), nil
@@ -291,13 +292,23 @@ func postprocess(e *entry.Entry) error {
 	return cleanupTimestamp(e)
 }
 
-func newOctetCountingParseFunc() parseFunc {
+func newOctetCountingParseFunc(maxOctets int) parseFunc {
 	return func(input []byte) (message sl.Message, err error) {
 		listener := func(res *sl.Result) {
 			message = res.Message
 			err = res.Error
 		}
-		parser := octetcounting.NewParser(sl.WithBestEffort(), sl.WithListener(listener))
+
+		parserOpts := []sl.ParserOption{
+			sl.WithBestEffort(),
+			sl.WithListener(listener),
+		}
+
+		if maxOctets > 0 {
+			parserOpts = append(parserOpts, sl.WithMaxMessageLength(maxOctets))
+		}
+
+		parser := octetcounting.NewParser(parserOpts...)
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
 		return

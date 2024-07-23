@@ -45,6 +45,7 @@ func TestLoadConfig(t *testing.T) {
 					ReboundTriggerThresholdMiB: 16,
 					ReboundNeededThresholdMiB:  128,
 					CheckInterval:              time.Second * 5,
+					CleanupOnStart:             true,
 				},
 				Timeout: 2 * time.Second,
 				FSync:   true,
@@ -59,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

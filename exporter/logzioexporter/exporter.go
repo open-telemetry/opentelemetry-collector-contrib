@@ -46,7 +46,7 @@ type logzioExporter struct {
 	serviceCache cache.Cache
 }
 
-func newLogzioExporter(cfg *Config, params exporter.CreateSettings) (*logzioExporter, error) {
+func newLogzioExporter(cfg *Config, params exporter.Settings) (*logzioExporter, error) {
 	logger := hclog2ZapLogger{
 		Zap:  params.Logger,
 		name: loggerName,
@@ -67,7 +67,7 @@ func newLogzioExporter(cfg *Config, params exporter.CreateSettings) (*logzioExpo
 	}, nil
 }
 
-func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (exporter.Traces, error) {
+func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Traces, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (expor
 		exporterhelper.WithRetry(config.BackOffConfig),
 	)
 }
-func newLogzioLogsExporter(config *Config, set exporter.CreateSettings) (exporter.Logs, error) {
+func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
 		return nil, err
@@ -130,10 +130,10 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logRecords := scopeLogs.At(j).LogRecords()
 			scope := scopeLogs.At(j).Scope()
-			details := mergeMapEntries(resource.Attributes(), scope.Attributes())
-			details.PutStr(`scopeName`, scope.Name())
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
+				details := mergeMapEntries(resource.Attributes(), scope.Attributes(), log.Attributes())
+				details.PutStr(`scopeName`, scope.Name())
 				jsonLog, err := json.Marshal(convertLogRecordToJSON(log, details))
 				if err != nil {
 					return err

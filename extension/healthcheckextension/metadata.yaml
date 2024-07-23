@@ -12,8 +12,3 @@ status:
 tests:
   config:
     endpoint: localhost:0
-  goleak:
-    ignore:
-      top:
-        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
-        - "go.opencensus.io/stats/view.(*worker).start"

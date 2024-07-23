@@ -37,15 +37,21 @@ func NewProvider() Provider {
 	}
 }
 
+type ComputeTagsListMetadata struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 // ComputeMetadata is the Azure IMDS compute metadata response format
 type ComputeMetadata struct {
-	Location          string `json:"location"`
-	Name              string `json:"name"`
-	VMID              string `json:"vmID"`
-	VMSize            string `json:"vmSize"`
-	SubscriptionID    string `json:"subscriptionID"`
-	ResourceGroupName string `json:"resourceGroupName"`
-	VMScaleSetName    string `json:"vmScaleSetName"`
+	Location          string                    `json:"location"`
+	Name              string                    `json:"name"`
+	VMID              string                    `json:"vmID"`
+	VMSize            string                    `json:"vmSize"`
+	SubscriptionID    string                    `json:"subscriptionID"`
+	ResourceGroupName string                    `json:"resourceGroupName"`
+	VMScaleSetName    string                    `json:"vmScaleSetName"`
+	TagsList          []ComputeTagsListMetadata `json:"tagsList"`
 }
 
 // Metadata queries a given endpoint and parses the output to the Azure IMDS format

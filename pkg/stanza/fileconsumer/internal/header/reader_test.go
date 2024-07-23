@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/text/encoding/unicode"
 
@@ -19,8 +20,6 @@ import (
 )
 
 func TestReader(t *testing.T) {
-	logger := zaptest.NewLogger(t).Sugar()
-
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header_line>.*)"
 	regexConf.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
@@ -29,13 +28,15 @@ func TestReader(t *testing.T) {
 	kvConf.ParseFrom = entry.NewBodyField("header_line")
 	kvConf.Delimiter = ":"
 
-	cfg, err := NewConfig("^#", []operator.Config{
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	cfg, err := NewConfig(set, "^#", []operator.Config{
 		{Builder: regexConf},
 		{Builder: kvConf},
 	}, unicode.UTF8)
 	require.NoError(t, err)
 
-	reader, err := NewReader(logger, *cfg)
+	reader, err := NewReader(set, *cfg)
 	assert.NoError(t, err)
 
 	attrs := make(map[string]any)
@@ -50,8 +51,6 @@ func TestReader(t *testing.T) {
 }
 
 func TestSkipUnmatchedHeaderLine(t *testing.T) {
-	logger := zaptest.NewLogger(t).Sugar()
-
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header_line>.*)"
 	regexConf.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
@@ -60,13 +59,15 @@ func TestSkipUnmatchedHeaderLine(t *testing.T) {
 	kvConf.ParseFrom = entry.NewBodyField("header_line")
 	kvConf.Delimiter = ":"
 
-	cfg, err := NewConfig("^#", []operator.Config{
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	cfg, err := NewConfig(set, "^#", []operator.Config{
 		{Builder: regexConf},
 		{Builder: kvConf},
 	}, unicode.UTF8)
 	require.NoError(t, err)
 
-	reader, err := NewReader(logger, *cfg)
+	reader, err := NewReader(set, *cfg)
 	assert.NoError(t, err)
 
 	attrs := make(map[string]any)
@@ -82,6 +83,8 @@ func TestSkipUnmatchedHeaderLine(t *testing.T) {
 }
 
 func TestNewReaderErr(t *testing.T) {
-	_, err := NewReader(zaptest.NewLogger(t).Sugar(), Config{})
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	_, err := NewReader(set, Config{})
 	assert.Error(t, err)
 }

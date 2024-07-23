@@ -24,15 +24,11 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-const (
-	targetMetricName  = "target_info"
-	scopeMetricName   = "otel_scope_info"
-	scopeNameLabel    = "otel_scope_name"
-	scopeVersionLabel = "otel_scope_version"
-	receiverName      = "otelcol/prometheusreceiver"
-)
+const receiverName = "otelcol/prometheusreceiver"
 
 type transaction struct {
 	isNew                  bool
@@ -65,7 +61,7 @@ func newTransaction(
 	metricAdjuster MetricsAdjuster,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
 	trimSuffixes bool,
 	enableNativeHistograms bool) *transaction {
@@ -138,13 +134,13 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	}
 
 	// For the `target_info` metric we need to convert it to resource attributes.
-	if metricName == targetMetricName {
+	if metricName == prometheus.TargetInfoMetricName {
 		t.AddTargetInfo(ls)
 		return 0, nil
 	}
 
 	// For the `otel_scope_info` metric we need to convert it to scope attributes.
-	if metricName == scopeMetricName {
+	if metricName == prometheus.ScopeInfoMetricName {
 		t.addScopeInfo(ls)
 		return 0, nil
 	}
@@ -349,10 +345,10 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 func getScopeID(ls labels.Labels) scopeID {
 	var scope scopeID
 	ls.Range(func(lbl labels.Label) {
-		if lbl.Name == scopeNameLabel {
+		if lbl.Name == prometheus.ScopeNameLabelKey {
 			scope.name = lbl.Value
 		}
-		if lbl.Name == scopeVersionLabel {
+		if lbl.Name == prometheus.ScopeVersionLabelKey {
 			scope.version = lbl.Value
 		}
 	})
@@ -369,13 +365,39 @@ func (t *transaction) initTransaction(labels labels.Labels) error {
 		return errors.New("unable to find MetricMetadataStore in context")
 	}
 
-	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
-	if job == "" || instance == "" {
-		return errNoJobInstance
+	job, instance, err := t.getJobAndInstance(labels)
+	if err != nil {
+		return err
 	}
 	t.nodeResource = CreateResource(job, instance, target.DiscoveredLabels())
 	t.isNew = false
 	return nil
+}
+
+func (t *transaction) getJobAndInstance(labels labels.Labels) (string, string, error) {
+	// first, try to get job and instance from the labels
+	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
+	if job != "" && instance != "" {
+		return job, instance, nil
+	}
+
+	// if not available in the labels, try to fall back to the scrape job associated
+	// with the transaction.
+	// this can be the case for, e.g., aggregated metrics coming from a federate endpoint
+	// that represent the whole cluster, rather than an individual workload.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32555 for reference
+	if target, ok := scrape.TargetFromContext(t.ctx); ok {
+		if job == "" {
+			job = target.GetValue(model.JobLabel)
+		}
+		if instance == "" {
+			instance = target.GetValue(model.InstanceLabel)
+		}
+		if job != "" && instance != "" {
+			return job, instance, nil
+		}
+	}
+	return "", "", errNoJobInstance
 }
 
 func (t *transaction) Commit() error {
@@ -431,11 +453,11 @@ func (t *transaction) addScopeInfo(ls labels.Labels) {
 		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
 			return
 		}
-		if lbl.Name == scopeNameLabel {
+		if lbl.Name == prometheus.ScopeNameLabelKey {
 			scope.name = lbl.Value
 			return
 		}
-		if lbl.Name == scopeVersionLabel {
+		if lbl.Name == prometheus.ScopeVersionLabelKey {
 			scope.version = lbl.Value
 			return
 		}

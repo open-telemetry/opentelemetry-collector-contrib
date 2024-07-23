@@ -37,7 +37,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct{}
 
-func NewDetector(processor.CreateSettings, internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{}, nil
 }
 

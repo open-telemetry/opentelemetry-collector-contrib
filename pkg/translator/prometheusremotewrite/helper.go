@@ -21,7 +21,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
@@ -38,12 +38,7 @@ const (
 	// according to the prometheus specification
 	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
 	maxExemplarRunes = 128
-	// Trace and Span id keys are defined as part of the spec:
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification%2Fmetrics%2Fdatamodel.md#exemplars-2
-	traceIDKey       = "trace_id"
-	spanIDKey        = "span_id"
 	infoType         = "info"
-	targetMetricName = "target_info"
 )
 
 type bucketBoundsData struct {
@@ -303,18 +298,18 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 		}
 		if traceID := exemplar.TraceID(); !traceID.IsEmpty() {
 			val := hex.EncodeToString(traceID[:])
-			exemplarRunes += utf8.RuneCountInString(traceIDKey) + utf8.RuneCountInString(val)
+			exemplarRunes += utf8.RuneCountInString(prometheustranslator.ExemplarTraceIDKey) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
-				Name:  traceIDKey,
+				Name:  prometheustranslator.ExemplarTraceIDKey,
 				Value: val,
 			}
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
 		}
 		if spanID := exemplar.SpanID(); !spanID.IsEmpty() {
 			val := hex.EncodeToString(spanID[:])
-			exemplarRunes += utf8.RuneCountInString(spanIDKey) + utf8.RuneCountInString(val)
+			exemplarRunes += utf8.RuneCountInString(prometheustranslator.ExemplarSpanIDKey) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
-				Name:  spanIDKey,
+				Name:  prometheustranslator.ExemplarSpanIDKey,
 				Value: val,
 			}
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
@@ -534,7 +529,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		return
 	}
 
-	name := targetMetricName
+	name := prometheustranslator.TargetInfoMetricName
 	if len(settings.Namespace) > 0 {
 		name = settings.Namespace + "_" + name
 	}
