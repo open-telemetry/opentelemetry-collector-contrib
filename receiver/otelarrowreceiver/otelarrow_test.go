@@ -891,4 +891,16 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 	// Now shutdown the receiver, while continuing sending traces to it.
 	err = r.Shutdown(context.Background())
 	assert.NoError(t, err)
+
+	// Ensure that calls to Recv() get canceled
+	for {
+		_, err := stream.Recv()
+		if err == nil {
+			continue
+		}
+		status, ok := status.FromError(err)
+		require.True(t, ok, "is a status error")
+		require.Equal(t, codes.Canceled, status.Code())
+		break
+	}
 }
