@@ -358,3 +358,9 @@ type ReplicaSet struct {
 	UID        string
 	Deployment Deployment
 }
+
+type AddOnMetadata struct {
+	Key string `mapstructure:"key"`
+
+	Value string `mapstructure:"value"`
+}

@@ -163,6 +163,9 @@ func createProcessorOpts(cfg component.Config) []option {
 
 	opts = append(opts, withExtractPodAssociations(oCfg.Association...))
 
+	//Opsramp Metadata Addons
+	opts = append(opts, withAddOnFields(oCfg.MetadataAddOn...))
+
 	opts = append(opts, withExcludes(oCfg.Exclude))
 
 	return opts

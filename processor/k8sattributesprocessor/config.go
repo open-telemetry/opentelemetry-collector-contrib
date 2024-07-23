@@ -38,6 +38,9 @@ type Config struct {
 	// Exclude section allows to define names of pod that should be
 	// ignored while tagging.
 	Exclude ExcludeConfig `mapstructure:"exclude"`
+
+	//Opsramp Metadata Addons Section
+	MetadataAddOn []AddOnMetadata `mapstructure:"metadata_addon"`
 }
 
 func (cfg *Config) Validate() error {
@@ -313,4 +316,10 @@ type PodAssociationSourceConfig struct {
 	// Name represents extracted key name.
 	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
+}
+
+type AddOnMetadata struct {
+	Key string `mapstructure:"key"`
+
+	Value string `mapstructure:"value"`
 }

@@ -372,3 +372,20 @@ func withExcludes(podExclude ExcludeConfig) option {
 		return nil
 	}
 }
+
+func withAddOnFields(filters ...AddOnMetadata) option {
+	return func(p *kubernetesprocessor) error {
+		var fields []kube.AddOnMetadata
+		for _, f := range filters {
+
+			fmt.Println("The value of key : ", f.Key, " Value : ", f.Value)
+
+			fields = append(fields, kube.AddOnMetadata{
+				Key:   f.Key,
+				Value: f.Value,
+			})
+		}
+		p.addons = fields
+		return nil
+	}
+}

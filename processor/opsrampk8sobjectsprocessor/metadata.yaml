@@ -1,0 +1,11 @@
+type: opsrampk8sobjects
+scope_name: otelcol/opsrampk8sobjects
+
+status:
+  class: processor
+  stability:
+    beta: [logs]
+  distributions:
+  - contrib
+  codeowners:
+    active: [mithunbelur]
