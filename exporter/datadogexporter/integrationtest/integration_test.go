@@ -51,6 +51,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
+// seriesMap represents an unmarshalled series payload
+type seriesMap struct {
+	Series []series
+}
+
+// series represents a metric series map
+type series struct {
+	Metric string
+	Points []point
+}
+
+// point represents a series metric datapoint
+type point struct {
+	Timestamp int
+	Value     float64
+}
+
 func TestIntegration_NativeOTelAPMStatsIngest(t *testing.T) {
 	previousVal := datadogconnector.NativeIngestFeatureGate.IsEnabled()
 	err := featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), true)
@@ -422,15 +439,6 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T) {
 	time.Sleep(1 * time.Second)
 }
 
-func sendLogs(t *testing.T) {
-	ctx := context.Background()
-
-	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure())
-	assert.NoError(t, err)
-	lr := make([]log.Record, 1)
-	assert.NoError(t, logExporter.Export(ctx, lr))
-}
-
 func TestIntegrationLogs(t *testing.T) {
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
@@ -470,30 +478,49 @@ func TestIntegrationLogs(t *testing.T) {
 	waitForReadiness(app)
 
 	// 3. Generate and send logs
-	sendLogs(t)
-	sendLogs(t)
-	sendLogs(t)
-	sendLogs(t)
-	sendLogs(t)
-	time.Sleep(10 * time.Millisecond)
+	sendLogs(t, 5)
 
 	// 4. Validate logs and metrics from the mock server
-	// Wait until `doneChannel` is closed.
-	var actualStr string
-	for i := 0; i < 60; i++ {
+	// Wait until `doneChannel` is closed and prometheus metrics are received.
+	var metricMap seriesMap
+	var metricMapStr string
+	for !strings.Contains(metricMapStr, "otelcol_receiver_accepted_log_records") && !strings.Contains(metricMapStr, "otelcol_exporter_sent_log_records") {
 		select {
 		case <-doneChannel:
-			fmt.Println(logsData)
+			assert.Len(t, logsData, 5)
 		case metricsBytes := <-seriesRec.ReqChan:
 			gz := getGzipReader(t, metricsBytes)
 			dec := json.NewDecoder(gz)
-			var actual map[string]any
-			assert.NoError(t, dec.Decode(&actual))
-			actualStr = fmt.Sprint(actual)
-			fmt.Println(actualStr)
+			assert.NoError(t, dec.Decode(&metricMap))
+			metricMapStr = fmt.Sprint(metricMap)
 		case <-time.After(60 * time.Second):
 			t.Fail()
 		}
-		time.Sleep(1 * time.Millisecond)
 	}
+
+	// 5. Validate mock server received expected otelcol metric values
+	containsAcceptedLogRecords := false
+	containsSentLogRecords := false
+	for _, s := range metricMap.Series {
+		if s.Metric == "otelcol_receiver_accepted_log_records" {
+			containsAcceptedLogRecords = true
+			assert.Len(t, s.Points, 1)
+			assert.Equal(t, s.Points[0].Value, 5.0)
+		}
+		if s.Metric == "otelcol_exporter_sent_log_records" {
+			containsSentLogRecords = true
+			assert.Len(t, s.Points, 1)
+			assert.Equal(t, s.Points[0].Value, 5.0)
+		}
+	}
+	assert.True(t, containsAcceptedLogRecords)
+	assert.True(t, containsSentLogRecords)
+}
+
+func sendLogs(t *testing.T, numLogs int) {
+	ctx := context.Background()
+	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure())
+	assert.NoError(t, err)
+	lr := make([]log.Record, numLogs)
+	assert.NoError(t, logExporter.Export(ctx, lr))
 }
