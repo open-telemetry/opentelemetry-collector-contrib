@@ -6,6 +6,7 @@ package solarwindsapmsettingsextension // import "github.com/open-telemetry/open
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/binary"
 	"encoding/json"
 	"math"
@@ -45,12 +46,15 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 	extension.logger.Info("starting up solarwinds apm settings extension")
 	ctx := context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
-	var err error
-	extension.conn, err = grpc.NewClient(extension.config.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	systemCertPool, err := x509.SystemCertPool()
 	if err != nil {
 		return err
 	}
-	extension.logger.Info("dialed to endpoint", zap.String("endpoint", extension.config.Endpoint))
+	extension.conn, err = grpc.NewClient(extension.config.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool})))
+	if err != nil {
+		return err
+	}
+	extension.logger.Info("created a gRPC client", zap.String("endpoint", extension.config.Endpoint))
 	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
 
 	// initial refresh
