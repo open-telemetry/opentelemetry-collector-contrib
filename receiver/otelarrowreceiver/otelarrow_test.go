@@ -392,7 +392,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 			err = r.Shutdown(context.Background())
 			assert.NoError(t, err)
 
-			// recvWG ensures the stream has been read before the test exists.
+			// recvWG ensures the stream has been read before the test exits.
 			recvWG.Wait()
 
 			// Remember how many spans the sink received. This number should not change after this
