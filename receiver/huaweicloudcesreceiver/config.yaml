@@ -1,9 +1,10 @@
 receivers:
   huaweicloudcesreceiver:
     collection_interval: 20s
-    region_name: region_test
-    project_id: project_test
+    region_name: eu-west-101
+    project_id: 059174727d164185aaa3fc48e756b820
     endpoint: "localhost:12345"
+    no_verify_ssl: True
 
 exporters:
   debug: # Use the debug exporter with no additional configuration

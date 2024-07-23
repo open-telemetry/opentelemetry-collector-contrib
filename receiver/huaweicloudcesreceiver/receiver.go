@@ -46,10 +46,11 @@ func (rcvr *cesReceiver) Start(ctx context.Context, host component.Host) (err er
 	ctx, rcvr.cancel = context.WithCancel(ctx)
 
 	if rcvr.client == nil {
-		// rcvr.client, err = rcvr.createClient()
-		// if err != nil {
-		// 	return
-		// }
+		rcvr.client, err = rcvr.createClient()
+		if err != nil {
+			rcvr.logger.Error(err.Error())
+			return
+		}
 	}
 
 	go rcvr.startPollingMetrics(ctx)
@@ -59,7 +60,8 @@ func (rcvr *cesReceiver) Start(ctx context.Context, host component.Host) (err er
 
 func (rcvr *cesReceiver) createClient() (*ces.CesClient, error) {
 	auth, err := basic.NewCredentialsBuilder().
-		// Authentication can be configured through environment variables and other methods. Please refer to Chapter 2.4 Authentication Management
+		// Authentication can be configured through environment variables and other methods.
+		// Please refer to Chapter 2.4 Authentication Management
 		WithAk(os.Getenv("HUAWEICLOUD_SDK_AK")).
 		WithSk(os.Getenv("HUAWEICLOUD_SDK_SK")).
 		WithProjectId(rcvr.config.ProjectId).
@@ -132,16 +134,10 @@ func (rcvr *cesReceiver) startPollingMetrics(ctx context.Context) {
 func (rcvr *cesReceiver) generateMetrics(numberOfMetrics int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
-	for i := 0; i <= numberOfMetrics; i++ {
-
-		// TODO get data from CES API and transform model
-		genFakeMetrics(metrics, i)
+	err := rcvr.retrieveCesMetricData(metrics)
+	if err != nil {
+		rcvr.logger.Error(err.Error())
 	}
-
-	// err := rcvr.retrieveCesMetricData(metrics)
-	// if err != nil {
-	// 	rcvr.logger.Error(err.Error())
-	// }
 
 	return metrics
 }
@@ -164,16 +160,68 @@ func (rcvr *cesReceiver) retrieveCesMetricData(otlpMetrics pmetric.Metrics) erro
 	return nil
 }
 
-func (rcvr *cesReceiver) appendToResourceMetrics(metrics pmetric.Metrics, cesListMetricsResp *model.ListMetricsResponse) {
-	for i := 0; i < int(cesListMetricsResp.MetaData.Count); i++ {
-		// resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+func (rcvr *cesReceiver) appendToResourceMetrics(metrics pmetric.Metrics, response *model.ListMetricsResponse) {
+	if response == nil || response.Metrics == nil {
+		return
+	}
+	rcvr.logger.Sugar().Info(*response.Metrics)
+	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+	for i := 0; i < len(*response.Metrics); i++ {
+		responseMetric := (*response.Metrics)[i]
+		resourceMetric.Resource().
+		if responseMetric.MetricName != nil {
+			resourceMetrics.SetName(*response.MetricName)
+		}
+		if responseMetric.Unit != nil {
+			resourceMetrics.SetUnit(*response.Unit)
+		}
+			// Assuming we want to store dimensions as labels
+			attributes := pcommon.NewMap()
+			if responseMetric.Dimensions != nil {
+				for _, dim := range *response.Dimensions {
+					attributes.Insert(dim.Name, pcommon.NewValueString(dim.Value))
+				}
+			}
+			// Set attributes to the metric (you might need to adapt this part to fit your exact needs)
+			metric.Attributes().InitFromMap(attributes)
 		// resource := resourceMetrics.Resource()
+		// if !cesListMetricsResp.Metrics {
+
+		// }
+		// for j := 0; j < len(cesListMetricsResp.Metrics); j++ {
+
+		// }
 		// (*cesListMetricsResp.Metrics)[1]
 
 		//rAttr := resource.Attributes()
 
 	}
 }
+
+// func convertToOpenTelemetry(response *model.ListMetricsResponse) pmetric.Metric {
+// 	if response.Metrics == nil {
+// 		return
+// 	}
+// 	metric := pmetric.NewMetric()
+// 	if response.MetricName != nil {
+// 		metric.SetName(*response.MetricName)
+// 	}
+// 	if response.Unit != nil {
+// 		metric.SetUnit(*response.Unit)
+// 	}
+
+// 	// Assuming we want to store dimensions as labels
+// 	attributes := pcommon.NewMap()
+// 	if response.Dimensions != nil {
+// 		for _, dim := range *response.Dimensions {
+// 			attributes.Insert(dim.Name, pcommon.NewValueString(dim.Value))
+// 		}
+// 	}
+// 	// Set attributes to the metric (you might need to adapt this part to fit your exact needs)
+// 	metric.Attributes().InitFromMap(attributes)
+
+// 	return metric
+// }
 
 func genFakeMetrics(metrics pmetric.Metrics, i int) {
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
