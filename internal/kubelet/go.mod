@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240716231837-5753a58f712b
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	k8s.io/client-go v0.29.3
+	k8s.io/client-go v0.30.3
 )
 
 require (
