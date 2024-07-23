@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -60,7 +59,7 @@ func routeLogRecord(
 // routeDataPoint returns the name of the index to send the data point to according to data stream routing attributes.
 // This function may mutate record attributes.
 func routeDataPoint(
-	dataPoint pmetric.NumberDataPoint,
+	dataPoint dataPoint,
 	scope pcommon.InstrumentationScope,
 	resource pcommon.Resource,
 	fIndex string,

@@ -144,17 +144,17 @@ func NewExporterNetworkReporter(settings exporter.Settings) (*NetworkReporter, e
 
 	var errors, err error
 	if level > configtelemetry.LevelNormal {
-		rep.compSizeHisto, err = meter.Int64Histogram(ExporterKey+"_"+CompSize, metric.WithDescription(compSizeDescription), metric.WithUnit(bytesUnit))
+		rep.compSizeHisto, err = meter.Int64Histogram("otelcol_"+ExporterKey+"_"+CompSize, metric.WithDescription(compSizeDescription), metric.WithUnit(bytesUnit))
 		errors = multierr.Append(errors, err)
 	}
 
-	rep.sentBytes, rep.sentWireBytes, err = makeSentMetrics(ExporterKey, meter, true)
+	rep.sentBytes, rep.sentWireBytes, err = makeSentMetrics("otelcol_"+ExporterKey, meter, true)
 	errors = multierr.Append(errors, err)
 
 	// Normally, an exporter counts sent bytes, and skips received
 	// bytes.  LevelDetailed will reveal exporter-received bytes.
 	if level > configtelemetry.LevelNormal {
-		rep.recvBytes, rep.recvWireBytes, err = makeRecvMetrics(ExporterKey, meter, false)
+		rep.recvBytes, rep.recvWireBytes, err = makeRecvMetrics("otelcol_"+ExporterKey, meter, false)
 		errors = multierr.Append(errors, err)
 	}
 
@@ -179,17 +179,17 @@ func NewReceiverNetworkReporter(settings receiver.Settings) (*NetworkReporter, e
 
 	var errors, err error
 	if level > configtelemetry.LevelNormal {
-		rep.compSizeHisto, err = meter.Int64Histogram(ReceiverKey+"_"+CompSize, metric.WithDescription(compSizeDescription), metric.WithUnit(bytesUnit))
+		rep.compSizeHisto, err = meter.Int64Histogram("otelcol_"+ReceiverKey+"_"+CompSize, metric.WithDescription(compSizeDescription), metric.WithUnit(bytesUnit))
 		errors = multierr.Append(errors, err)
 	}
 
-	rep.recvBytes, rep.recvWireBytes, err = makeRecvMetrics(ReceiverKey, meter, true)
+	rep.recvBytes, rep.recvWireBytes, err = makeRecvMetrics("otelcol_"+ReceiverKey, meter, true)
 	errors = multierr.Append(errors, err)
 
 	// Normally, a receiver counts received bytes, and skips sent
 	// bytes.  LevelDetailed will reveal receiver-sent bytes.
 	if level > configtelemetry.LevelNormal {
-		rep.sentBytes, rep.sentWireBytes, err = makeSentMetrics(ReceiverKey, meter, false)
+		rep.sentBytes, rep.sentWireBytes, err = makeSentMetrics("otelcol_"+ReceiverKey, meter, false)
 		errors = multierr.Append(errors, err)
 	}
 
