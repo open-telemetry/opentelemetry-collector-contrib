@@ -5,7 +5,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	jsoniter "github.com/json-iterator/go"
@@ -61,7 +60,8 @@ func parseJSON[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 			result := pcommon.NewMap()
 			err = result.FromRaw(v)
 			return result, err
+		default:
+			return nil, fmt.Errorf("could not convert parsed value of type %T to JSON object", v)
 		}
-		return nil, errors.New("could not unmarshal json")
 	}
 }
