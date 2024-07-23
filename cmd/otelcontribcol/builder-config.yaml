@@ -57,6 +57,7 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.104.0
   - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter v0.104.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opsrampdebugexporter v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.104.0
@@ -486,3 +487,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter => ../../exporter/otelarrowexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver => ../../receiver/otelarrowreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter => ../../exporter/rabbitmqexporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opsrampdebugexporter => ../../exporter/opsrampdebugexporter
