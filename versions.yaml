@@ -106,6 +106,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
@@ -129,6 +130,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery

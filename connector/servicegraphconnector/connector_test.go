@@ -476,7 +476,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	require.Len(t, sm.Metrics, 1)
 	got := sm.Metrics[0]
 	want := metricdata.Metrics{
-		Name:        "connector_servicegraph_total_edges",
+		Name:        "otelcol_connector_servicegraph_total_edges",
 		Description: "Total number of unique edges",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{

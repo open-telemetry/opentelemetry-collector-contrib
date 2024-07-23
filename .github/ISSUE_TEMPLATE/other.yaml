@@ -111,6 +111,7 @@ body:
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
+      - extension/storage/redisstorage
       - extension/sumologic
       - internal/aws
       - internal/collectd
@@ -123,6 +124,7 @@ body:
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
+      - internal/otelarrow
       - internal/pdatautil
       - internal/sharedcomponent
       - internal/splunk

@@ -62,46 +62,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.cluster.count`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.cpu.limit`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.datastore.count`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.disk.space`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.host.count`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.memory.limit`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.vm.count`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.ballooned`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.granted`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.swapped`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -136,24 +96,31 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterClusterVMTemplateCountDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterClusterCountDataPoint(ts, 1, AttributeEntityStatusRed)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterCPULimitDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, 1, AttributeDiskStateAvailable)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterHostCountDataPoint(ts, 1, AttributeEntityStatusRed, AttributeHostPowerStateOn)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterMemoryLimitDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterVMCountDataPoint(ts, 1, AttributeEntityStatusRed, AttributeVMCountPowerStateOn)
 
@@ -229,9 +196,11 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, 1, AttributeMemoryGrantedTypePrivate)
 
@@ -239,6 +208,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, 1)
 
