@@ -352,7 +352,7 @@ Examples:
 
 `scale_metric(factor, Optional[unit])`
 
-The `scale_metric` function multiplies the values in the data points in the metric by the `factor`.
+The `scale_metric` function multiplies the values in the data points in the metric by the float value `factor`.
 If the optional string `unit` is provided, the metric's unit will be set to this value.
 The supported data types are:
 
