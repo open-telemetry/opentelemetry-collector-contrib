@@ -8,12 +8,13 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.105.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.104.1-0.20240705135726-e014c1ed756c
-	go.opentelemetry.io/collector/pdata v1.11.1-0.20240705135726-e014c1ed756c
-	go.opentelemetry.io/collector/semconv v0.104.1-0.20240705135726-e014c1ed756c
+	go.opentelemetry.io/collector/component v0.105.0
+	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/semconv v0.105.0
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/sdk v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
@@ -40,7 +41,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.104.1-0.20240705135726-e014c1ed756c // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.105.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
@@ -65,3 +66,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../stanza

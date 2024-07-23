@@ -410,6 +410,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 
 - [Base64Decode](#base64decode)
+- [Decode](#decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Day](#day)
@@ -459,7 +460,9 @@ Available Converters:
 - [UUID](#UUID)
 - [Year](#year)
 
-### Base64Decode
+### Base64Decode (Deprecated)
+
+*This function has been deprecated. Please use the [Decode](#decode) function instead.*
 
 `Base64Decode(value)`
 
