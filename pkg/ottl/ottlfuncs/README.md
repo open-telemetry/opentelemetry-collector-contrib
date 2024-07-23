@@ -457,6 +457,7 @@ Available Converters:
 - [UnixMilli](#unixmilli)
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
+- [UserAgent](#useragent)
 - [UUID](#UUID)
 - [Year](#year)
 
@@ -1415,6 +1416,31 @@ The returned type is `int64`.
 Examples:
 
 - `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UserAgent
+
+`UserAgent(value)`
+
+The `UserAgent` Converter parses the string argument trying to match it against well-known user-agent strings as defined
+[here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml)
+
+The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version` and `user_agent.original`
+as defined in semconv v1.25.0.
+
+Examples:
+
+- `UserAgent("curl/7.81.0")`
+  ```yaml
+  "user_agent.name": "curl"
+  "user_agent.version": "7.81.0"
+  "user_agent.original": "curl/7.81.0"
+  ```
+- `Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0`
+  ```yaml
+  "user_agent.name": "Firefox"
+  "user_agent.version": "126.0"
+  "user_agent.original": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0"
+  ```
 
 ### URL
 
