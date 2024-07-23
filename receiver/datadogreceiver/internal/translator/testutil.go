@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
 	"testing"
@@ -13,12 +13,11 @@ import (
 )
 
 func createMetricsTranslator() *MetricsTranslator {
-	mt := newMetricsTranslator()
-	mt.buildInfo = component.BuildInfo{
+	mt := NewMetricsTranslator(component.BuildInfo{
 		Command:     "otelcol",
 		Description: "OpenTelemetry Collector",
 		Version:     "latest",
-	}
+	})
 	return mt
 }
 

@@ -119,6 +119,7 @@ extension/solarwindsapmsettingsextension/                           @open-teleme
 extension/storage/                                                  @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                                        @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 extension/storage/filestorage/                                      @open-telemetry/collector-contrib-approvers @djaglowski
+extension/storage/redisstorageextension/                            @open-telemetry/collector-contrib-approvers @atoulme
 extension/sumologicextension/                                       @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @kkujawa-sumo @mat-rumian @rnishtala-sumo @sumo-drosiek
 
 internal/aws/                                                       @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
