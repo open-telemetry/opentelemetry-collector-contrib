@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.105.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.105.0
 	github.com/prometheus-community/windows_exporter v0.25.1
 	github.com/prometheus/procfs v0.15.1
