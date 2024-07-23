@@ -63,4 +63,4 @@ the `vcenter.resource_pool.memory.usage` metric.
 
 This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
 to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
-is v0.106.0.
+is v0.107.0.

@@ -173,17 +173,17 @@ metrics, this component provides network-level measurement instruments
 which we anticipate will become part of `exporterhelper` and/or
 `obsreport` in the future.  At the `normal` level of metrics detail:
 
-- `exporter_sent`: uncompressed bytes sent, prior to compression
-- `exporter_sent_wire`: compressed bytes sent, on the wire.
+- `otelcol_exporter_sent`: uncompressed bytes sent, prior to compression
+- `otelcol_exporter_sent_wire`: compressed bytes sent, on the wire.
 
 Arrow's compression performance can be derived by dividing the average
-`exporter_sent` value by the average `exporter_sent_wire` value.
+`otelcol_exporter_sent` value by the average `otelcol_exporter_sent_wire` value.
 
 At the `detailed` metrics detail level, information about the stream
 of data being returned to the exporter will be instrumented:
 
-- `exporter_recv`: uncompressed bytes received, prior to compression
-- `exporter_recv_wire`: compressed bytes received, on the wire.
+- `otelcol_exporter_recv`: uncompressed bytes received, prior to compression
+- `otelcol_exporter_recv_wire`: compressed bytes received, on the wire.
 
 ### Compression Configuration
 
