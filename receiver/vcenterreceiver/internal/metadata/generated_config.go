@@ -108,25 +108,25 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterDatacenterClusterCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatacenterCPULimit: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatacenterDatastoreCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatacenterDiskSpace: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatacenterHostCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatacenterMemoryLimit: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatacenterVMCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatastoreDiskUsage: MetricConfig{
 			Enabled: true,
@@ -183,16 +183,16 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterResourcePoolMemoryBallooned: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterResourcePoolMemoryGranted: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterResourcePoolMemoryShares: MetricConfig{
 			Enabled: true,
 		},
 		VcenterResourcePoolMemorySwapped: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterResourcePoolMemoryUsage: MetricConfig{
 			Enabled: true,
