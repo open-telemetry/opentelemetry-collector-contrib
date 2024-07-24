@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
@@ -46,6 +47,9 @@ func (s *brokerScraper) shutdown(context.Context) error {
 }
 
 func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
+
+	var scrapeErrors = scrapererror.ScrapeErrors{}
+
 	if s.client == nil {
 		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
 		if err != nil {
@@ -54,19 +58,21 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		s.client = client
 	}
 
-	if s.clusterAdmin == nil {
-		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
-		if err != nil {
-			return pmetric.Metrics{}, fmt.Errorf("failed to create client in brokers scraper: %w", err)
-		}
-		s.clusterAdmin = admin
-	}
-
-	var scrapeErrors = scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
+	rb := s.mb.NewResourceBuilder()
+	rb.SetClusterAlias(s.config.ClusterAlias)
 
 	brokers := s.client.Brokers()
 	s.mb.RecordKafkaBrokersDataPoint((now), int64(len(brokers)))
+
+	if s.clusterAdmin == nil {
+		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			s.settings.Logger.Error("Error creating kafka client with admin priviledges", zap.Error(err))
+			return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
+		}
+		s.clusterAdmin = admin
+	}
 
 	for _, broker := range brokers {
 		ID := strconv.Itoa(int(broker.ID()))
@@ -91,10 +97,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	rb := s.mb.NewResourceBuilder()
-	rb.SetClusterAlias(s.config.ClusterAlias)
-
-	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
 }
 
 func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,

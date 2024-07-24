@@ -186,6 +186,7 @@ func newMockClusterAdmin() *mockClusterAdmin {
 	strMinInsyncReplicas := strconv.Itoa(testMinInsyncReplicas)
 	strLogRetentionMs := strconv.Itoa(testLogRetentionMs)
 	strLogRetentionBytes := strconv.Itoa(testLogRetentionBytes)
+
 	brokerConfigEntry := sarama.ConfigEntry{
 		Name:  "log.retention.ms",
 		Value: strconv.Itoa(testLogRetentionHours),
