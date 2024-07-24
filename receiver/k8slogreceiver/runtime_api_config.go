@@ -9,16 +9,14 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	runtimeAPIBuilderFactories = map[string]func() runtimeAPIBuilder{
-		"docker": func() runtimeAPIBuilder {
-			return &DockerConfig{}
-		},
-		"cri": func() runtimeAPIBuilder {
-			return &CRIConfig{}
-		},
-	}
-)
+var runtimeAPIBuilderFactories = map[string]func() runtimeAPIBuilder{
+	"docker": func() runtimeAPIBuilder {
+		return &DockerConfig{}
+	},
+	"cri": func() runtimeAPIBuilder {
+		return &CRIConfig{}
+	},
+}
 
 type RuntimeAPIConfig struct {
 	runtimeAPIBuilder
@@ -82,6 +80,7 @@ func (c *CRIConfig) Validate() error {
 func (c *CRIConfig) Type() string {
 	return "cri"
 }
+
 func (c *CRIConfig) NewClient(logger *zap.Logger, hostRoot string) (any, error) {
 	_ = logger
 	_ = hostRoot

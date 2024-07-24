@@ -11,8 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-type k8slogReceiver struct {
-}
+type k8slogReceiver struct{}
 
 func (k *k8slogReceiver) Start(_ context.Context, _ component.Host) error {
 	return nil
@@ -23,7 +22,7 @@ func (k *k8slogReceiver) Shutdown(_ context.Context) error {
 }
 
 func newReceiver(
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	_ *Config,
 	_ consumer.Logs,
 ) (receiver.Logs, error) {
