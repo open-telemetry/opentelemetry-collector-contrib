@@ -318,9 +318,6 @@ processors:
     * cloud.platform ("aws_eks")
     * k8s.cluster.name
 
-Note: The kubernetes cluster name is only available when running on EC2 instances, and requires permission to run the `EC2:DescribeInstances` [action](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html).
-If you see an error with the message `context deadline exceeded`, please increase the timeout setting in your config.
-
 Example:
 
 ```yaml
@@ -330,6 +327,26 @@ processors:
     timeout: 15s
     override: false
 ```
+
+#### Cluster Name
+
+Cluster name detection is disabled by default, and can be enabled with the
+following configuration:
+
+```yaml
+processors:
+  resourcedetection/eks:
+    detectors: [env, eks]
+    timeout: 15s
+    override: false
+    eks:
+      resource_attributes:
+        k8s.cluster.name:
+          enabled: true
+```
+
+Note: The kubernetes cluster name is only available when running on EC2 instances, and requires permission to run the `EC2:DescribeInstances` [action](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html).
+If you see an error with the message `context deadline exceeded`, please increase the timeout setting in your config.
 
 ### AWS Lambda
 
