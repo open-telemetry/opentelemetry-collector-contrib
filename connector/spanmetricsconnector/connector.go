@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/simplelru"
+	"github.com/jonboulle/clockwork"
 	"github.com/lightstep/go-expohisto/structure"
-	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -63,8 +63,8 @@ type connectorImp struct {
 	// e.g. { "foo/barOK": { "serviceName": "foo", "span.name": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache[metrics.Key, pcommon.Map]
 
-	clock   clock.Clock
-	ticker  *clock.Ticker
+	clock   clockwork.Clock
+	ticker  clockwork.Ticker
 	done    chan struct{}
 	started bool
 
@@ -110,7 +110,7 @@ func newDimensions(cfgDims []Dimension) []dimension {
 	return dims
 }
 
-func newConnector(logger *zap.Logger, config component.Config, clock clock.Clock) (*connectorImp, error) {
+func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock) (*connectorImp, error) {
 	logger.Info("Building spanmetrics connector")
 	cfg := config.(*Config)
 
@@ -213,7 +213,7 @@ func (p *connectorImp) Start(ctx context.Context, _ component.Host) error {
 			select {
 			case <-p.done:
 				return
-			case <-p.ticker.C:
+			case <-p.ticker.Chan():
 				p.exportMetrics(ctx)
 			}
 		}
