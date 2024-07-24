@@ -17,6 +17,8 @@ kafka:
       backoff: 5s
 kafka/logs:
   topic: logs
+  session_timeout: 45s
+  heartbeat_interval: 15s
   encoding: direct
   brokers:
     - "coffee:123"

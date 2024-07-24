@@ -10,13 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/now"
+	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
 )
 
 func TestFileReader_FingerprintUpdated(t *testing.T) {
@@ -207,25 +206,9 @@ func TestFlushPeriodEOF(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), r.Offset)
 
-	now.Now = newAlwaysIncreasingClock().Now
-	defer func() { now.Now = time.Now }()
+	internaltime.Now = internaltime.NewAlwaysIncreasingClock().Now
+	defer func() { internaltime.Now = time.Now }()
 
 	r.ReadToEnd(context.Background())
 	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})
-}
-
-// Clock where Now() always returns a greater value than the previous return value
-type alwaysIncreasingClock struct {
-	clockwork.FakeClock
-}
-
-func newAlwaysIncreasingClock() alwaysIncreasingClock {
-	return alwaysIncreasingClock{
-		FakeClock: clockwork.NewFakeClock(),
-	}
-}
-
-func (c alwaysIncreasingClock) Now() time.Time {
-	c.FakeClock.Advance(time.Nanosecond)
-	return c.FakeClock.Now()
 }
