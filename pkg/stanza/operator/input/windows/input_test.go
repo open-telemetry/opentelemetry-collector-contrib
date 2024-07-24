@@ -10,11 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func newTestInput() *Input {
