@@ -154,9 +154,19 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		evaluated[k] = val
+		switch t := val.(type) {
+		case pcommon.Map:
+			evaluated[k] = t.AsRaw()
+		default:
+			evaluated[k] = t
+		}
+
 	}
-	return evaluated, nil
+	result := pcommon.NewMap()
+	if err := result.FromRaw(evaluated); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // TypeError represents that a value was not an expected type.
