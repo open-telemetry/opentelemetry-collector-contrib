@@ -23,7 +23,7 @@ func (k *k8slogReceiver) Shutdown(_ context.Context) error {
 }
 
 func newReceiver(
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	_ *Config,
 	_ consumer.Logs,
 ) (receiver.Logs, error) {
