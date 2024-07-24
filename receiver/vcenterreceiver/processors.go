@@ -198,6 +198,16 @@ func (v *vcenterMetricScraper) buildHostMetrics(
 	if hostPerfMetrics != nil {
 		v.recordHostPerformanceMetrics(hostPerfMetrics)
 	}
+
+	if hs.Config == nil || hs.Config.VsanHostConfig == nil || hs.Config.VsanHostConfig.ClusterInfo == nil {
+		v.logger.Info(fmt.Sprintf("couldn't determine UUID necessary for vSAN metrics for host %s", hs.Name))
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		return vmRefToComputeRef, nil
+	}
+	vSANMetrics := v.scrapeData.hostVSANMetricsByUUID[hs.Config.VsanHostConfig.ClusterInfo.NodeUuid]
+	if vSANMetrics != nil {
+		v.recordHostVSANMetrics(vSANMetrics)
+	}
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return vmRefToComputeRef, nil
@@ -322,6 +332,7 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 	if perfMetrics != nil {
 		v.recordVMPerformanceMetrics(perfMetrics)
 	}
+
 	vSANMetrics := v.scrapeData.vmVSANMetricsByUUID[vm.Config.InstanceUuid]
 	if vSANMetrics != nil {
 		v.recordVMVSANMetrics(vSANMetrics)

@@ -61,6 +61,16 @@ all_set:
       enabled: true
     vcenter.host.network.usage:
       enabled: true
+    vcenter.host.vsan.cache.hit_rate:
+      enabled: true
+    vcenter.host.vsan.congestions:
+      enabled: true
+    vcenter.host.vsan.latency.avg:
+      enabled: true
+    vcenter.host.vsan.operations:
+      enabled: true
+    vcenter.host.vsan.throughput:
+      enabled: true
     vcenter.resource_pool.cpu.shares:
       enabled: true
     vcenter.resource_pool.cpu.usage:
@@ -201,6 +211,16 @@ none_set:
     vcenter.host.network.throughput:
       enabled: false
     vcenter.host.network.usage:
+      enabled: false
+    vcenter.host.vsan.cache.hit_rate:
+      enabled: false
+    vcenter.host.vsan.congestions:
+      enabled: false
+    vcenter.host.vsan.latency.avg:
+      enabled: false
+    vcenter.host.vsan.operations:
+      enabled: false
+    vcenter.host.vsan.throughput:
       enabled: false
     vcenter.resource_pool.cpu.shares:
       enabled: false
