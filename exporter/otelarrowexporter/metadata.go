@@ -193,8 +193,6 @@ func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.
 			return nil, fmt.Errorf("failed to create exporter: %w", err)
 		}
 
-		// aset.ToSlice() returns the sorted, deduplicated,
-		// and name-downcased list of attributes.
 		var loaded bool
 		v, loaded = e.exporters.LoadOrStore(s, newExp)
 		if !loaded {
