@@ -28,28 +28,28 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for kafkametrics metrics.
 type MetricsConfig struct {
-	KafkaBrokerLogRetentionHours MetricConfig `mapstructure:"kafka.broker.log_retention_hours"`
-	KafkaBrokers                 MetricConfig `mapstructure:"kafka.brokers"`
-	KafkaConsumerGroupLag        MetricConfig `mapstructure:"kafka.consumer_group.lag"`
-	KafkaConsumerGroupLagSum     MetricConfig `mapstructure:"kafka.consumer_group.lag_sum"`
-	KafkaConsumerGroupMembers    MetricConfig `mapstructure:"kafka.consumer_group.members"`
-	KafkaConsumerGroupOffset     MetricConfig `mapstructure:"kafka.consumer_group.offset"`
-	KafkaConsumerGroupOffsetSum  MetricConfig `mapstructure:"kafka.consumer_group.offset_sum"`
-	KafkaPartitionCurrentOffset  MetricConfig `mapstructure:"kafka.partition.current_offset"`
-	KafkaPartitionOldestOffset   MetricConfig `mapstructure:"kafka.partition.oldest_offset"`
-	KafkaPartitionReplicas       MetricConfig `mapstructure:"kafka.partition.replicas"`
-	KafkaPartitionReplicasInSync MetricConfig `mapstructure:"kafka.partition.replicas_in_sync"`
-	KafkaTopicLogRetentionBytes  MetricConfig `mapstructure:"kafka.topic.log_retention_bytes"`
-	KafkaTopicLogRetentionMs     MetricConfig `mapstructure:"kafka.topic.log_retention_ms"`
-	KafkaTopicMinInsyncReplicas  MetricConfig `mapstructure:"kafka.topic.min_insync_replicas"`
-	KafkaTopicPartitions         MetricConfig `mapstructure:"kafka.topic.partitions"`
-	KafkaTopicReplicationFactor  MetricConfig `mapstructure:"kafka.topic.replication_factor"`
+	KafkaBrokerLogRetentionPeriod MetricConfig `mapstructure:"kafka.broker.log_retention_period"`
+	KafkaBrokers                  MetricConfig `mapstructure:"kafka.brokers"`
+	KafkaConsumerGroupLag         MetricConfig `mapstructure:"kafka.consumer_group.lag"`
+	KafkaConsumerGroupLagSum      MetricConfig `mapstructure:"kafka.consumer_group.lag_sum"`
+	KafkaConsumerGroupMembers     MetricConfig `mapstructure:"kafka.consumer_group.members"`
+	KafkaConsumerGroupOffset      MetricConfig `mapstructure:"kafka.consumer_group.offset"`
+	KafkaConsumerGroupOffsetSum   MetricConfig `mapstructure:"kafka.consumer_group.offset_sum"`
+	KafkaPartitionCurrentOffset   MetricConfig `mapstructure:"kafka.partition.current_offset"`
+	KafkaPartitionOldestOffset    MetricConfig `mapstructure:"kafka.partition.oldest_offset"`
+	KafkaPartitionReplicas        MetricConfig `mapstructure:"kafka.partition.replicas"`
+	KafkaPartitionReplicasInSync  MetricConfig `mapstructure:"kafka.partition.replicas_in_sync"`
+	KafkaTopicLogRetentionPeriod  MetricConfig `mapstructure:"kafka.topic.log_retention_period"`
+	KafkaTopicLogRetentionSize    MetricConfig `mapstructure:"kafka.topic.log_retention_size"`
+	KafkaTopicMinInsyncReplicas   MetricConfig `mapstructure:"kafka.topic.min_insync_replicas"`
+	KafkaTopicPartitions          MetricConfig `mapstructure:"kafka.topic.partitions"`
+	KafkaTopicReplicationFactor   MetricConfig `mapstructure:"kafka.topic.replication_factor"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		KafkaBrokerLogRetentionHours: MetricConfig{
-			Enabled: true,
+		KafkaBrokerLogRetentionPeriod: MetricConfig{
+			Enabled: false,
 		},
 		KafkaBrokers: MetricConfig{
 			Enabled: true,
@@ -81,20 +81,20 @@ func DefaultMetricsConfig() MetricsConfig {
 		KafkaPartitionReplicasInSync: MetricConfig{
 			Enabled: true,
 		},
-		KafkaTopicLogRetentionBytes: MetricConfig{
-			Enabled: true,
+		KafkaTopicLogRetentionPeriod: MetricConfig{
+			Enabled: false,
 		},
-		KafkaTopicLogRetentionMs: MetricConfig{
-			Enabled: true,
+		KafkaTopicLogRetentionSize: MetricConfig{
+			Enabled: false,
 		},
 		KafkaTopicMinInsyncReplicas: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		KafkaTopicPartitions: MetricConfig{
 			Enabled: true,
 		},
 		KafkaTopicReplicationFactor: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

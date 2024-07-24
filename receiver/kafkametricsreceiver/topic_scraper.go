@@ -146,13 +146,13 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 				}
 			case "retention.ms":
 				if val, err := strconv.Atoi(config.Value); err == nil {
-					s.mb.RecordKafkaTopicLogRetentionMsDataPoint(now, int64(val), name)
+					s.mb.RecordKafkaTopicLogRetentionPeriodDataPoint(now, int64(val/1000), name)
 				} else {
 					errors.AddPartial(1, err)
 				}
 			case "retention.bytes":
 				if val, err := strconv.Atoi(config.Value); err == nil {
-					s.mb.RecordKafkaTopicLogRetentionBytesDataPoint(now, int64(val), name)
+					s.mb.RecordKafkaTopicLogRetentionSizeDataPoint(now, int64(val), name)
 				} else {
 					errors.AddPartial(1, err)
 				}

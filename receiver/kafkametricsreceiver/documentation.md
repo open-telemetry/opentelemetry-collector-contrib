@@ -12,20 +12,6 @@ metrics:
     enabled: false
 ```
 
-### kafka.broker.log_retention_hours
-
-log retention time (hours) of a broker
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| h | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID of the kafka broker | Any Str |
-
 ### kafka.brokers
 
 Number of brokers in the cluster.
@@ -170,9 +156,61 @@ Number of synchronized replicas of partition
 | topic | The ID (integer) of a topic | Any Str |
 | partition | The number (integer) of the partition | Any Int |
 
-### kafka.topic.log_retention_bytes
+### kafka.topic.partitions
 
-log retention size of a topic in Bytes, Default value is infinite (-1).
+Number of partitions in topic.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {partitions} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### kafka.broker.log_retention_period
+
+log retention time (s) of a broker.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID of the kafka broker | Any Str |
+
+### kafka.topic.log_retention_period
+
+log retention period of a topic (s).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
+### kafka.topic.log_retention_size
+
+log retention size of a topic in Bytes, The value (-1) indicates infinite size.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -184,41 +222,13 @@ log retention size of a topic in Bytes, Default value is infinite (-1).
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 
-### kafka.topic.log_retention_ms
-
-log retention period of a topic (ms), Default value is 7 days (604800000ms).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
-
 ### kafka.topic.min_insync_replicas
 
-minimum insync replicas of a topic. Default is 1 replica.
+minimum insync replicas of a topic.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {replicas} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
-
-### kafka.topic.partitions
-
-Number of partitions in topic.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {partitions} | Sum | Int | Cumulative | false |
 
 #### Attributes
 

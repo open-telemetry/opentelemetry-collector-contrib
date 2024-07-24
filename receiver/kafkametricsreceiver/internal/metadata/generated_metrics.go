@@ -12,22 +12,22 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-type metricKafkaBrokerLogRetentionHours struct {
+type metricKafkaBrokerLogRetentionPeriod struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.broker.log_retention_hours metric with initial data.
-func (m *metricKafkaBrokerLogRetentionHours) init() {
-	m.data.SetName("kafka.broker.log_retention_hours")
-	m.data.SetDescription("log retention time (hours) of a broker")
-	m.data.SetUnit("h")
+// init fills kafka.broker.log_retention_period metric with initial data.
+func (m *metricKafkaBrokerLogRetentionPeriod) init() {
+	m.data.SetName("kafka.broker.log_retention_period")
+	m.data.SetDescription("log retention time (s) of a broker.")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaBrokerLogRetentionHours) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, brokerAttributeValue string) {
+func (m *metricKafkaBrokerLogRetentionPeriod) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, brokerAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -39,14 +39,14 @@ func (m *metricKafkaBrokerLogRetentionHours) recordDataPoint(start pcommon.Times
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricKafkaBrokerLogRetentionHours) updateCapacity() {
+func (m *metricKafkaBrokerLogRetentionPeriod) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricKafkaBrokerLogRetentionHours) emit(metrics pmetric.MetricSlice) {
+func (m *metricKafkaBrokerLogRetentionPeriod) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -54,8 +54,8 @@ func (m *metricKafkaBrokerLogRetentionHours) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaBrokerLogRetentionHours(cfg MetricConfig) metricKafkaBrokerLogRetentionHours {
-	m := metricKafkaBrokerLogRetentionHours{config: cfg}
+func newMetricKafkaBrokerLogRetentionPeriod(cfg MetricConfig) metricKafkaBrokerLogRetentionPeriod {
+	m := metricKafkaBrokerLogRetentionPeriod{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -589,22 +589,22 @@ func newMetricKafkaPartitionReplicasInSync(cfg MetricConfig) metricKafkaPartitio
 	return m
 }
 
-type metricKafkaTopicLogRetentionBytes struct {
+type metricKafkaTopicLogRetentionPeriod struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.topic.log_retention_bytes metric with initial data.
-func (m *metricKafkaTopicLogRetentionBytes) init() {
-	m.data.SetName("kafka.topic.log_retention_bytes")
-	m.data.SetDescription("log retention size of a topic in Bytes, Default value is infinite (-1).")
-	m.data.SetUnit("By")
+// init fills kafka.topic.log_retention_period metric with initial data.
+func (m *metricKafkaTopicLogRetentionPeriod) init() {
+	m.data.SetName("kafka.topic.log_retention_period")
+	m.data.SetDescription("log retention period of a topic (s).")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaTopicLogRetentionBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+func (m *metricKafkaTopicLogRetentionPeriod) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -616,14 +616,14 @@ func (m *metricKafkaTopicLogRetentionBytes) recordDataPoint(start pcommon.Timest
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricKafkaTopicLogRetentionBytes) updateCapacity() {
+func (m *metricKafkaTopicLogRetentionPeriod) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricKafkaTopicLogRetentionBytes) emit(metrics pmetric.MetricSlice) {
+func (m *metricKafkaTopicLogRetentionPeriod) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -631,8 +631,8 @@ func (m *metricKafkaTopicLogRetentionBytes) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaTopicLogRetentionBytes(cfg MetricConfig) metricKafkaTopicLogRetentionBytes {
-	m := metricKafkaTopicLogRetentionBytes{config: cfg}
+func newMetricKafkaTopicLogRetentionPeriod(cfg MetricConfig) metricKafkaTopicLogRetentionPeriod {
+	m := metricKafkaTopicLogRetentionPeriod{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -640,22 +640,22 @@ func newMetricKafkaTopicLogRetentionBytes(cfg MetricConfig) metricKafkaTopicLogR
 	return m
 }
 
-type metricKafkaTopicLogRetentionMs struct {
+type metricKafkaTopicLogRetentionSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.topic.log_retention_ms metric with initial data.
-func (m *metricKafkaTopicLogRetentionMs) init() {
-	m.data.SetName("kafka.topic.log_retention_ms")
-	m.data.SetDescription("log retention period of a topic (ms), Default value is 7 days (604800000ms).")
-	m.data.SetUnit("ms")
+// init fills kafka.topic.log_retention_size metric with initial data.
+func (m *metricKafkaTopicLogRetentionSize) init() {
+	m.data.SetName("kafka.topic.log_retention_size")
+	m.data.SetDescription("log retention size of a topic in Bytes, The value (-1) indicates infinite size.")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaTopicLogRetentionMs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+func (m *metricKafkaTopicLogRetentionSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -667,14 +667,14 @@ func (m *metricKafkaTopicLogRetentionMs) recordDataPoint(start pcommon.Timestamp
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricKafkaTopicLogRetentionMs) updateCapacity() {
+func (m *metricKafkaTopicLogRetentionSize) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricKafkaTopicLogRetentionMs) emit(metrics pmetric.MetricSlice) {
+func (m *metricKafkaTopicLogRetentionSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -682,8 +682,8 @@ func (m *metricKafkaTopicLogRetentionMs) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaTopicLogRetentionMs(cfg MetricConfig) metricKafkaTopicLogRetentionMs {
-	m := metricKafkaTopicLogRetentionMs{config: cfg}
+func newMetricKafkaTopicLogRetentionSize(cfg MetricConfig) metricKafkaTopicLogRetentionSize {
+	m := metricKafkaTopicLogRetentionSize{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -700,7 +700,7 @@ type metricKafkaTopicMinInsyncReplicas struct {
 // init fills kafka.topic.min_insync_replicas metric with initial data.
 func (m *metricKafkaTopicMinInsyncReplicas) init() {
 	m.data.SetName("kafka.topic.min_insync_replicas")
-	m.data.SetDescription("minimum insync replicas of a topic. Default is 1 replica.")
+	m.data.SetDescription("minimum insync replicas of a topic.")
 	m.data.SetUnit("{replicas}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -849,29 +849,29 @@ func newMetricKafkaTopicReplicationFactor(cfg MetricConfig) metricKafkaTopicRepl
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                             MetricsBuilderConfig // config of the metrics builder.
-	startTime                          pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                    int                  // maximum observed number of metrics per resource.
-	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                          component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter     map[string]filter.Filter
-	resourceAttributeExcludeFilter     map[string]filter.Filter
-	metricKafkaBrokerLogRetentionHours metricKafkaBrokerLogRetentionHours
-	metricKafkaBrokers                 metricKafkaBrokers
-	metricKafkaConsumerGroupLag        metricKafkaConsumerGroupLag
-	metricKafkaConsumerGroupLagSum     metricKafkaConsumerGroupLagSum
-	metricKafkaConsumerGroupMembers    metricKafkaConsumerGroupMembers
-	metricKafkaConsumerGroupOffset     metricKafkaConsumerGroupOffset
-	metricKafkaConsumerGroupOffsetSum  metricKafkaConsumerGroupOffsetSum
-	metricKafkaPartitionCurrentOffset  metricKafkaPartitionCurrentOffset
-	metricKafkaPartitionOldestOffset   metricKafkaPartitionOldestOffset
-	metricKafkaPartitionReplicas       metricKafkaPartitionReplicas
-	metricKafkaPartitionReplicasInSync metricKafkaPartitionReplicasInSync
-	metricKafkaTopicLogRetentionBytes  metricKafkaTopicLogRetentionBytes
-	metricKafkaTopicLogRetentionMs     metricKafkaTopicLogRetentionMs
-	metricKafkaTopicMinInsyncReplicas  metricKafkaTopicMinInsyncReplicas
-	metricKafkaTopicPartitions         metricKafkaTopicPartitions
-	metricKafkaTopicReplicationFactor  metricKafkaTopicReplicationFactor
+	config                              MetricsBuilderConfig // config of the metrics builder.
+	startTime                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                     int                  // maximum observed number of metrics per resource.
+	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                           component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter      map[string]filter.Filter
+	resourceAttributeExcludeFilter      map[string]filter.Filter
+	metricKafkaBrokerLogRetentionPeriod metricKafkaBrokerLogRetentionPeriod
+	metricKafkaBrokers                  metricKafkaBrokers
+	metricKafkaConsumerGroupLag         metricKafkaConsumerGroupLag
+	metricKafkaConsumerGroupLagSum      metricKafkaConsumerGroupLagSum
+	metricKafkaConsumerGroupMembers     metricKafkaConsumerGroupMembers
+	metricKafkaConsumerGroupOffset      metricKafkaConsumerGroupOffset
+	metricKafkaConsumerGroupOffsetSum   metricKafkaConsumerGroupOffsetSum
+	metricKafkaPartitionCurrentOffset   metricKafkaPartitionCurrentOffset
+	metricKafkaPartitionOldestOffset    metricKafkaPartitionOldestOffset
+	metricKafkaPartitionReplicas        metricKafkaPartitionReplicas
+	metricKafkaPartitionReplicasInSync  metricKafkaPartitionReplicasInSync
+	metricKafkaTopicLogRetentionPeriod  metricKafkaTopicLogRetentionPeriod
+	metricKafkaTopicLogRetentionSize    metricKafkaTopicLogRetentionSize
+	metricKafkaTopicMinInsyncReplicas   metricKafkaTopicMinInsyncReplicas
+	metricKafkaTopicPartitions          metricKafkaTopicPartitions
+	metricKafkaTopicReplicationFactor   metricKafkaTopicReplicationFactor
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -886,28 +886,28 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                             mbc,
-		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                      pmetric.NewMetrics(),
-		buildInfo:                          settings.BuildInfo,
-		metricKafkaBrokerLogRetentionHours: newMetricKafkaBrokerLogRetentionHours(mbc.Metrics.KafkaBrokerLogRetentionHours),
-		metricKafkaBrokers:                 newMetricKafkaBrokers(mbc.Metrics.KafkaBrokers),
-		metricKafkaConsumerGroupLag:        newMetricKafkaConsumerGroupLag(mbc.Metrics.KafkaConsumerGroupLag),
-		metricKafkaConsumerGroupLagSum:     newMetricKafkaConsumerGroupLagSum(mbc.Metrics.KafkaConsumerGroupLagSum),
-		metricKafkaConsumerGroupMembers:    newMetricKafkaConsumerGroupMembers(mbc.Metrics.KafkaConsumerGroupMembers),
-		metricKafkaConsumerGroupOffset:     newMetricKafkaConsumerGroupOffset(mbc.Metrics.KafkaConsumerGroupOffset),
-		metricKafkaConsumerGroupOffsetSum:  newMetricKafkaConsumerGroupOffsetSum(mbc.Metrics.KafkaConsumerGroupOffsetSum),
-		metricKafkaPartitionCurrentOffset:  newMetricKafkaPartitionCurrentOffset(mbc.Metrics.KafkaPartitionCurrentOffset),
-		metricKafkaPartitionOldestOffset:   newMetricKafkaPartitionOldestOffset(mbc.Metrics.KafkaPartitionOldestOffset),
-		metricKafkaPartitionReplicas:       newMetricKafkaPartitionReplicas(mbc.Metrics.KafkaPartitionReplicas),
-		metricKafkaPartitionReplicasInSync: newMetricKafkaPartitionReplicasInSync(mbc.Metrics.KafkaPartitionReplicasInSync),
-		metricKafkaTopicLogRetentionBytes:  newMetricKafkaTopicLogRetentionBytes(mbc.Metrics.KafkaTopicLogRetentionBytes),
-		metricKafkaTopicLogRetentionMs:     newMetricKafkaTopicLogRetentionMs(mbc.Metrics.KafkaTopicLogRetentionMs),
-		metricKafkaTopicMinInsyncReplicas:  newMetricKafkaTopicMinInsyncReplicas(mbc.Metrics.KafkaTopicMinInsyncReplicas),
-		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(mbc.Metrics.KafkaTopicPartitions),
-		metricKafkaTopicReplicationFactor:  newMetricKafkaTopicReplicationFactor(mbc.Metrics.KafkaTopicReplicationFactor),
-		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
+		config:                              mbc,
+		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                       pmetric.NewMetrics(),
+		buildInfo:                           settings.BuildInfo,
+		metricKafkaBrokerLogRetentionPeriod: newMetricKafkaBrokerLogRetentionPeriod(mbc.Metrics.KafkaBrokerLogRetentionPeriod),
+		metricKafkaBrokers:                  newMetricKafkaBrokers(mbc.Metrics.KafkaBrokers),
+		metricKafkaConsumerGroupLag:         newMetricKafkaConsumerGroupLag(mbc.Metrics.KafkaConsumerGroupLag),
+		metricKafkaConsumerGroupLagSum:      newMetricKafkaConsumerGroupLagSum(mbc.Metrics.KafkaConsumerGroupLagSum),
+		metricKafkaConsumerGroupMembers:     newMetricKafkaConsumerGroupMembers(mbc.Metrics.KafkaConsumerGroupMembers),
+		metricKafkaConsumerGroupOffset:      newMetricKafkaConsumerGroupOffset(mbc.Metrics.KafkaConsumerGroupOffset),
+		metricKafkaConsumerGroupOffsetSum:   newMetricKafkaConsumerGroupOffsetSum(mbc.Metrics.KafkaConsumerGroupOffsetSum),
+		metricKafkaPartitionCurrentOffset:   newMetricKafkaPartitionCurrentOffset(mbc.Metrics.KafkaPartitionCurrentOffset),
+		metricKafkaPartitionOldestOffset:    newMetricKafkaPartitionOldestOffset(mbc.Metrics.KafkaPartitionOldestOffset),
+		metricKafkaPartitionReplicas:        newMetricKafkaPartitionReplicas(mbc.Metrics.KafkaPartitionReplicas),
+		metricKafkaPartitionReplicasInSync:  newMetricKafkaPartitionReplicasInSync(mbc.Metrics.KafkaPartitionReplicasInSync),
+		metricKafkaTopicLogRetentionPeriod:  newMetricKafkaTopicLogRetentionPeriod(mbc.Metrics.KafkaTopicLogRetentionPeriod),
+		metricKafkaTopicLogRetentionSize:    newMetricKafkaTopicLogRetentionSize(mbc.Metrics.KafkaTopicLogRetentionSize),
+		metricKafkaTopicMinInsyncReplicas:   newMetricKafkaTopicMinInsyncReplicas(mbc.Metrics.KafkaTopicMinInsyncReplicas),
+		metricKafkaTopicPartitions:          newMetricKafkaTopicPartitions(mbc.Metrics.KafkaTopicPartitions),
+		metricKafkaTopicReplicationFactor:   newMetricKafkaTopicReplicationFactor(mbc.Metrics.KafkaTopicReplicationFactor),
+		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.ClusterAlias.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["cluster_alias"] = filter.CreateFilter(mbc.ResourceAttributes.ClusterAlias.MetricsInclude)
@@ -976,7 +976,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/kafkametricsreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricKafkaBrokerLogRetentionHours.emit(ils.Metrics())
+	mb.metricKafkaBrokerLogRetentionPeriod.emit(ils.Metrics())
 	mb.metricKafkaBrokers.emit(ils.Metrics())
 	mb.metricKafkaConsumerGroupLag.emit(ils.Metrics())
 	mb.metricKafkaConsumerGroupLagSum.emit(ils.Metrics())
@@ -987,8 +987,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricKafkaPartitionOldestOffset.emit(ils.Metrics())
 	mb.metricKafkaPartitionReplicas.emit(ils.Metrics())
 	mb.metricKafkaPartitionReplicasInSync.emit(ils.Metrics())
-	mb.metricKafkaTopicLogRetentionBytes.emit(ils.Metrics())
-	mb.metricKafkaTopicLogRetentionMs.emit(ils.Metrics())
+	mb.metricKafkaTopicLogRetentionPeriod.emit(ils.Metrics())
+	mb.metricKafkaTopicLogRetentionSize.emit(ils.Metrics())
 	mb.metricKafkaTopicMinInsyncReplicas.emit(ils.Metrics())
 	mb.metricKafkaTopicPartitions.emit(ils.Metrics())
 	mb.metricKafkaTopicReplicationFactor.emit(ils.Metrics())
@@ -1023,9 +1023,9 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
-// RecordKafkaBrokerLogRetentionHoursDataPoint adds a data point to kafka.broker.log_retention_hours metric.
-func (mb *MetricsBuilder) RecordKafkaBrokerLogRetentionHoursDataPoint(ts pcommon.Timestamp, val int64, brokerAttributeValue string) {
-	mb.metricKafkaBrokerLogRetentionHours.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
+// RecordKafkaBrokerLogRetentionPeriodDataPoint adds a data point to kafka.broker.log_retention_period metric.
+func (mb *MetricsBuilder) RecordKafkaBrokerLogRetentionPeriodDataPoint(ts pcommon.Timestamp, val int64, brokerAttributeValue string) {
+	mb.metricKafkaBrokerLogRetentionPeriod.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
 // RecordKafkaBrokersDataPoint adds a data point to kafka.brokers metric.
@@ -1078,14 +1078,14 @@ func (mb *MetricsBuilder) RecordKafkaPartitionReplicasInSyncDataPoint(ts pcommon
 	mb.metricKafkaPartitionReplicasInSync.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
 }
 
-// RecordKafkaTopicLogRetentionBytesDataPoint adds a data point to kafka.topic.log_retention_bytes metric.
-func (mb *MetricsBuilder) RecordKafkaTopicLogRetentionBytesDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
-	mb.metricKafkaTopicLogRetentionBytes.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
+// RecordKafkaTopicLogRetentionPeriodDataPoint adds a data point to kafka.topic.log_retention_period metric.
+func (mb *MetricsBuilder) RecordKafkaTopicLogRetentionPeriodDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+	mb.metricKafkaTopicLogRetentionPeriod.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
 }
 
-// RecordKafkaTopicLogRetentionMsDataPoint adds a data point to kafka.topic.log_retention_ms metric.
-func (mb *MetricsBuilder) RecordKafkaTopicLogRetentionMsDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
-	mb.metricKafkaTopicLogRetentionMs.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
+// RecordKafkaTopicLogRetentionSizeDataPoint adds a data point to kafka.topic.log_retention_size metric.
+func (mb *MetricsBuilder) RecordKafkaTopicLogRetentionSizeDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+	mb.metricKafkaTopicLogRetentionSize.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
 }
 
 // RecordKafkaTopicMinInsyncReplicasDataPoint adds a data point to kafka.topic.min_insync_replicas metric.

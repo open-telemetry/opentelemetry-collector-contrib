@@ -119,8 +119,8 @@ func TestBrokerScraper_scrape(t *testing.T) {
 		switch m.Name() {
 		case "kafka.brokers":
 			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testBrokers)))
-		case "kafka.broker.log_retention_hours":
-			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionHours))
+		case "kafka.broker.log_retention_period":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionHours*3600))
 		}
 	}
 }

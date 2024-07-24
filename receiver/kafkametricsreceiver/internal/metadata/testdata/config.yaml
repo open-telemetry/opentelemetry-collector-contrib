@@ -1,7 +1,7 @@
 default:
 all_set:
   metrics:
-    kafka.broker.log_retention_hours:
+    kafka.broker.log_retention_period:
       enabled: true
     kafka.brokers:
       enabled: true
@@ -23,9 +23,9 @@ all_set:
       enabled: true
     kafka.partition.replicas_in_sync:
       enabled: true
-    kafka.topic.log_retention_bytes:
+    kafka.topic.log_retention_period:
       enabled: true
-    kafka.topic.log_retention_ms:
+    kafka.topic.log_retention_size:
       enabled: true
     kafka.topic.min_insync_replicas:
       enabled: true
@@ -38,7 +38,7 @@ all_set:
       enabled: true
 none_set:
   metrics:
-    kafka.broker.log_retention_hours:
+    kafka.broker.log_retention_period:
       enabled: false
     kafka.brokers:
       enabled: false
@@ -60,9 +60,9 @@ none_set:
       enabled: false
     kafka.partition.replicas_in_sync:
       enabled: false
-    kafka.topic.log_retention_bytes:
+    kafka.topic.log_retention_period:
       enabled: false
-    kafka.topic.log_retention_ms:
+    kafka.topic.log_retention_size:
       enabled: false
     kafka.topic.min_insync_replicas:
       enabled: false

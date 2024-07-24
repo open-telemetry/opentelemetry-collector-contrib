@@ -134,9 +134,9 @@ func TestTopicScraper_scrapes(t *testing.T) {
 			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testReplicationFactor))
 		case "kafka.topic.min_insync_replicas":
 			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testMinInsyncReplicas))
-		case "kafka.topic.log_retention_ms":
-			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionMs))
-		case "kafka.topic.log_retention_bytes":
+		case "kafka.topic.log_retention_period":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionMs/1000))
+		case "kafka.topic.log_retention_size":
 			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionBytes))
 		case "kafka.partition.current_offset":
 			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)

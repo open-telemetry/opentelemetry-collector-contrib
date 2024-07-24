@@ -68,9 +68,8 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
-			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaBrokerLogRetentionHoursDataPoint(ts, 1, "broker-val")
+			mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(ts, 1, "broker-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -112,15 +111,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "topic-val", 9)
 
-			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaTopicLogRetentionBytesDataPoint(ts, 1, "topic-val")
+			mb.RecordKafkaTopicLogRetentionPeriodDataPoint(ts, 1, "topic-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaTopicLogRetentionMsDataPoint(ts, 1, "topic-val")
+			mb.RecordKafkaTopicLogRetentionSizeDataPoint(ts, 1, "topic-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts, 1, "topic-val")
 
@@ -128,7 +124,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaTopicReplicationFactorDataPoint(ts, 1, "topic-val")
 
@@ -156,13 +151,13 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "kafka.broker.log_retention_hours":
-					assert.False(t, validatedMetrics["kafka.broker.log_retention_hours"], "Found a duplicate in the metrics slice: kafka.broker.log_retention_hours")
-					validatedMetrics["kafka.broker.log_retention_hours"] = true
+				case "kafka.broker.log_retention_period":
+					assert.False(t, validatedMetrics["kafka.broker.log_retention_period"], "Found a duplicate in the metrics slice: kafka.broker.log_retention_period")
+					validatedMetrics["kafka.broker.log_retention_period"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "log retention time (hours) of a broker", ms.At(i).Description())
-					assert.Equal(t, "h", ms.At(i).Unit())
+					assert.Equal(t, "log retention time (s) of a broker.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -356,13 +351,13 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
-				case "kafka.topic.log_retention_bytes":
-					assert.False(t, validatedMetrics["kafka.topic.log_retention_bytes"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_bytes")
-					validatedMetrics["kafka.topic.log_retention_bytes"] = true
+				case "kafka.topic.log_retention_period":
+					assert.False(t, validatedMetrics["kafka.topic.log_retention_period"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_period")
+					validatedMetrics["kafka.topic.log_retention_period"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "log retention size of a topic in Bytes, Default value is infinite (-1).", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, "log retention period of a topic (s).", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -371,13 +366,13 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
 					assert.EqualValues(t, "topic-val", attrVal.Str())
-				case "kafka.topic.log_retention_ms":
-					assert.False(t, validatedMetrics["kafka.topic.log_retention_ms"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_ms")
-					validatedMetrics["kafka.topic.log_retention_ms"] = true
+				case "kafka.topic.log_retention_size":
+					assert.False(t, validatedMetrics["kafka.topic.log_retention_size"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_size")
+					validatedMetrics["kafka.topic.log_retention_size"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "log retention period of a topic (ms), Default value is 7 days (604800000ms).", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, "log retention size of a topic in Bytes, The value (-1) indicates infinite size.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -391,7 +386,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["kafka.topic.min_insync_replicas"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "minimum insync replicas of a topic. Default is 1 replica.", ms.At(i).Description())
+					assert.Equal(t, "minimum insync replicas of a topic.", ms.At(i).Description())
 					assert.Equal(t, "{replicas}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
