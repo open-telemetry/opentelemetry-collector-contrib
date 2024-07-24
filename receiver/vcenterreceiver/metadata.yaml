@@ -146,7 +146,7 @@ attributes:
 
 metrics:
   vcenter.datacenter.cluster.count:
-    enabled: false
+    enabled: true
     description: The number of clusters in the datacenter.
     unit: "{clusters}"
     sum:
@@ -154,10 +154,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [entity_status]
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.host.count:
-    enabled: false
+    enabled: true
     description: The number of hosts in the datacenter.
     unit: "{hosts}"
     sum:
@@ -165,10 +163,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [entity_status, host_power_state]
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.vm.count:
-    enabled: false
+    enabled: true
     description: The number of VM's in the datacenter.
     unit: "{virtual_machines}"
     sum:
@@ -176,10 +172,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [entity_status, vm_count_power_state]
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.datastore.count:
-    enabled: false
+    enabled: true
     description: The number of datastores in the datacenter.
     unit: "{datastores}"
     sum:
@@ -187,10 +181,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.disk.space:
-    enabled: false
+    enabled: true
     description: The amount of available and used disk space in the datacenter.
     unit: "By"
     sum:
@@ -198,10 +190,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [disk_state]
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.cpu.limit:
-    enabled: false
+    enabled: true
     description: The total amount of CPU available to the datacenter.
     unit: "{MHz}"
     sum:
@@ -209,10 +199,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.memory.limit:
-    enabled: false
+    enabled: true
     description: The total amount of memory available to the datacenter.
     unit: "By"
     sum:
@@ -220,8 +208,6 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.cluster.cpu.limit:
     enabled: true
     description: The amount of CPU available to the cluster.
@@ -440,7 +426,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.resource_pool.memory.swapped:
-    enabled: false
+    enabled: true
     description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
     unit: MiBy
     sum:
@@ -448,10 +434,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.resource_pool.memory.ballooned:
-    enabled: false
+    enabled: true 
     description: The amount of memory in a resource pool that is ballooned due to virtualization.
     unit: MiBy
     sum:
@@ -459,10 +443,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.resource_pool.memory.granted:
-    enabled: false
+    enabled: true
     description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
     unit: MiBy
     sum:
@@ -470,8 +452,6 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [memory_granted_type]
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.resource_pool.cpu.usage:
     enabled: true
     description: The usage of the CPU used by the resource pool.

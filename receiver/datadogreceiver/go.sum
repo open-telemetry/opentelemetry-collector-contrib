@@ -1,7 +1,7 @@
-github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.4 h1:nOSyRWX5tkxkGm0n9F7ZZP3Mw3VozNcBZJgeBj7leTY=
-github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.4/go.mod h1:gHkSUTn6H6UEZQHY3XWBIGNjfI3Tdi0IxlrxIFBWDwU=
-github.com/DataDog/datadog-api-client-go/v2 v2.27.0 h1:AGZj41frjnjMufQHQbJH2fzmifOs20wpmVDtIBCv33E=
-github.com/DataDog/datadog-api-client-go/v2 v2.27.0/go.mod h1:QKOu6vscsh87fMY1lHfLEmNSunyXImj8BUaUWJXOehc=
+github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.6 h1:KyUOJ/0bJPAFzp/r/7OK41v7JQqTLMTeCq9FkYteoiI=
+github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.6/go.mod h1:gHkSUTn6H6UEZQHY3XWBIGNjfI3Tdi0IxlrxIFBWDwU=
+github.com/DataDog/datadog-api-client-go/v2 v2.28.0 h1:seA/bTwKnB/7ELtZrXIw5csksdR78eGtMrpOUK5XJKA=
+github.com/DataDog/datadog-api-client-go/v2 v2.28.0/go.mod h1:QKOu6vscsh87fMY1lHfLEmNSunyXImj8BUaUWJXOehc=
 github.com/DataDog/zstd v1.5.2 h1:vUG4lAyuPCXO0TLbXvPv7EB7cNK1QV/luu55UHLrrn8=
 github.com/DataDog/zstd v1.5.2/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
