@@ -22,7 +22,7 @@ func TestExporter(t *testing.T) {
 			name string
 
 			// batcherEnabled enables/disables the batch sender. If this is
-			// nil, then the exporter buffers data itself (legacy behaviour),
+			// nil, then the exporter buffers data itself (legacy behavior),
 			// whereas if it is non-nil then the exporter will not perform
 			// any buffering itself.
 			batcherEnabled *bool
