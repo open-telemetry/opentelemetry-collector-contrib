@@ -217,6 +217,8 @@ Other metric types (Histogram, Exponential Histogram, Summary) are ignored.
 
 ## ECS Mapping
 
+`elasticsearchexporter` follows ECS mapping defined here: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#elastic-common-schema
+
 When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
 
 If the target ECS field name is specified as an empty string (""), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
