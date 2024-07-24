@@ -940,12 +940,13 @@ func TestExporterBatcher(t *testing.T) {
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.LogRecords().AppendEmpty().Body().SetStr("log record body")
 
-	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), "key", "value1"), logs)
-	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), "key", "value2"), logs)
+	type key struct{}
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value1"), logs)
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value2"), logs)
 	require.Len(t, requests, 2) // flushed immediately by Consume
 
-	assert.Equal(t, "value1", requests[0].Context().Value("key"))
-	assert.Equal(t, "value2", requests[1].Context().Value("key"))
+	assert.Equal(t, "value1", requests[0].Context().Value(key{}))
+	assert.Equal(t, "value2", requests[1].Context().Value(key{}))
 }
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Traces {

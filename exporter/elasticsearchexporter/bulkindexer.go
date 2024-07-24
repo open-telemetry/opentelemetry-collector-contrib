@@ -52,12 +52,12 @@ type bulkIndexerSession interface {
 
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (bulkIndexer, error) {
 	if config.Batcher.Enabled != nil {
-		return newSyncBulkIndexer(logger, client, config)
+		return newSyncBulkIndexer(logger, client, config), nil
 	}
 	return newAsyncBulkIndexer(logger, client, config)
 }
 
-func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (*syncBulkIndexer, error) {
+func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) *syncBulkIndexer {
 	var maxDocRetry int
 	if config.Retry.Enabled {
 		// max_requests includes initial attempt
@@ -73,7 +73,7 @@ func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config
 		},
 		retryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 		logger:       logger,
-	}, nil
+	}
 }
 
 type syncBulkIndexer struct {
@@ -98,7 +98,7 @@ func (s *syncBulkIndexer) StartSession(context.Context) (bulkIndexerSession, err
 }
 
 // Close is a no-op.
-func (a *syncBulkIndexer) Close(ctx context.Context) error {
+func (s *syncBulkIndexer) Close(context.Context) error {
 	return nil
 }
 
@@ -110,7 +110,7 @@ type syncBulkIndexerSession struct {
 }
 
 // Add adds an item to the sync bulk indexer session.
-func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, document io.WriterTo) error {
+func (s *syncBulkIndexerSession) Add(_ context.Context, index string, document io.WriterTo) error {
 	return s.bi.Add(docappender.BulkIndexerItem{Index: index, Body: document})
 }
 
