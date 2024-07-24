@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -384,16 +385,40 @@ func (vc *vcenterClient) getLabelsForQueryType(queryType vSANQueryType) []string
 // VSANVirtualMachines returns back virtual machine vSAN performance metrics
 func (vc *vcenterClient) VSANVirtualMachines(
 	ctx context.Context,
+	clusterRefs []*vt.ManagedObjectReference,
 ) (*VSANQueryResults, error) {
-	results, err := vc.vSANQuery(ctx, VSANQueryTypeVirtualMachines)
+	results, err := vc.vSANQuery(ctx, VSANQueryTypeVirtualMachines, clusterRefs)
 	err = vc.handleVSANError(err, VSANQueryTypeVirtualMachines)
 	return results, err
 }
 
-// vSANQuery performs a vSAN query for the specified type
+// vSANQuery performs a vSAN query for the specified type across all clusters
 func (vc *vcenterClient) vSANQuery(
 	ctx context.Context,
 	queryType vSANQueryType,
+	clusterRefs []*vt.ManagedObjectReference,
+) (*VSANQueryResults, error) {
+	allResults := VSANQueryResults{
+		MetricResultsByUUID: map[string]*VSANMetricResults{},
+	}
+
+	for _, clusterRef := range clusterRefs {
+		results, err := vc.vSANQueryByCluster(ctx, queryType, clusterRef)
+		if err != nil {
+			return &allResults, err
+		}
+
+		maps.Copy(allResults.MetricResultsByUUID, results.MetricResultsByUUID)
+	}
+
+	return &allResults, nil
+}
+
+// vSANQueryByCluster performs a vSAN query for the specified type for one cluster
+func (vc *vcenterClient) vSANQueryByCluster(
+	ctx context.Context,
+	queryType vSANQueryType,
+	clusterRef *vt.ManagedObjectReference,
 ) (*VSANQueryResults, error) {
 	queryResults := VSANQueryResults{
 		MetricResultsByUUID: map[string]*VSANMetricResults{},
@@ -412,24 +437,23 @@ func (vc *vcenterClient) vSANQuery(
 			Labels:      vc.getLabelsForQueryType(queryType),
 		},
 	}
-	rawResults, err := vc.vsanDriver.VsanPerfQueryPerf(ctx, nil, querySpec)
+	rawResults, err := vc.vsanDriver.VsanPerfQueryPerf(ctx, clusterRef, querySpec)
 	if err != nil {
-		return nil, fmt.Errorf("problem retrieving %s vSAN metrics: %w", queryType, err)
+		return nil, fmt.Errorf("problem retrieving %s vSAN metrics for cluster %s: %w", queryType, clusterRef.Value, err)
 	}
 
 	queryResults.MetricResultsByUUID = map[string]*VSANMetricResults{}
 	for _, rawResult := range rawResults {
 		metricResults, err := vc.convertVSANResultToMetricResults(rawResult)
 		if err != nil && metricResults != nil {
-			return &queryResults, fmt.Errorf("problem processing %s vSAN metrics for UUID %s: %w", queryType, metricResults.UUID, err)
+			return &queryResults, fmt.Errorf("problem processing %s [%s] vSAN metrics for cluster %s: %w", queryType, metricResults.UUID, clusterRef.Value, err)
 		}
 		if err != nil {
-			return &queryResults, fmt.Errorf("problem processing %s vSAN metrics: %w", queryType, err)
+			return &queryResults, fmt.Errorf("problem processing %s vSAN metrics for cluster %s: %w", queryType, clusterRef.Value, err)
 		}
 
 		queryResults.MetricResultsByUUID[metricResults.UUID] = metricResults
 	}
-
 	return &queryResults, nil
 }
 
@@ -475,10 +499,14 @@ func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanP
 	}
 
 	// Parse all timestamps
+	localZone, _ := time.Now().Local().Zone()
 	timeStrings := strings.Split(vSANResult.SampleInfo, ",")
 	timestamps := []time.Time{}
 	for _, timeString := range timeStrings {
-		timestamp, err := time.Parse("2006-01-02 15:04:05", timeString)
+		// Assuming the collector is making the request in the same time zone as the localized response
+		// from the vSAN API. Not a great assumption, but otherwise it will almost definitely be wrong
+		// if we assume that it is UTC. There is precedent for this method at least.
+		timestamp, err := time.Parse("2006-01-02 15:04:05 MST", fmt.Sprintf("%s %s", timeString, localZone))
 		if err != nil {
 			return &metricResults, fmt.Errorf("problem parsing timestamp from %s: %w", timeString, err)
 		}

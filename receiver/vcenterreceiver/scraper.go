@@ -30,6 +30,7 @@ type vmGroupInfo struct {
 type vcenterScrapeData struct {
 	datacenters          []*mo.Datacenter
 	datastores           []*mo.Datastore
+	clusterRefs          []*types.ManagedObjectReference
 	rPoolIPathsByRef     map[string]*string
 	vAppIPathsByRef      map[string]*string
 	rPoolsByRef          map[string]*mo.ResourcePool
@@ -70,6 +71,7 @@ func newVcenterScrapeData() *vcenterScrapeData {
 	return &vcenterScrapeData{
 		datacenters:          make([]*mo.Datacenter, 0),
 		datastores:           make([]*mo.Datastore, 0),
+		clusterRefs:          make([]*types.ManagedObjectReference, 0),
 		rPoolIPathsByRef:     make(map[string]*string),
 		vAppIPathsByRef:      make(map[string]*string),
 		computesByRef:        make(map[string]*mo.ComputeResource),
@@ -221,6 +223,7 @@ func (v *vcenterMetricScraper) scrapeDatastores(ctx context.Context, dc *mo.Data
 func (v *vcenterMetricScraper) scrapeComputes(ctx context.Context, dc *mo.Datacenter, errs *scrapererror.ScrapeErrors) {
 	// Init for current collection
 	v.scrapeData.computesByRef = make(map[string]*mo.ComputeResource)
+	v.scrapeData.clusterRefs = []*types.ManagedObjectReference{}
 
 	// Get ComputeResources/ClusterComputeResources w/properties and store for later retrieval
 	computes, err := v.client.ComputeResources(ctx, dc.Reference())
@@ -230,7 +233,11 @@ func (v *vcenterMetricScraper) scrapeComputes(ctx context.Context, dc *mo.Datace
 	}
 
 	for i := range computes {
-		v.scrapeData.computesByRef[computes[i].Reference().Value] = &computes[i]
+		computeRef := computes[i].Reference()
+		v.scrapeData.computesByRef[computeRef.Value] = &computes[i]
+		if computeRef.Type == "ClusterComputeResource" {
+			v.scrapeData.clusterRefs = append(v.scrapeData.clusterRefs, &computeRef)
+		}
 	}
 }
 
@@ -316,10 +323,11 @@ func (v *vcenterMetricScraper) scrapeVirtualMachines(ctx context.Context, dc *mo
 	}
 
 	// Get all VirtualMachine vSAN metrics and store for later retrieval
-	vSANMetrics, err := v.client.VSANVirtualMachines(ctx)
+	vSANMetrics, err := v.client.VSANVirtualMachines(ctx, v.scrapeData.clusterRefs)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for VirtualMachines: %w", err))
 		return
 	}
+
 	v.scrapeData.vmVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }
