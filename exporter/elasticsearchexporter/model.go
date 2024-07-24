@@ -64,7 +64,7 @@ var resourceAttrsToPreserve = map[string]bool{
 }
 
 type mappingModel interface {
-	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
+	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
 	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, pcommon.InstrumentationScope, pmetric.Metric, dataPoint, pcommon.Value) error
 	encodeDocument(objmodel.Document) ([]byte, error)
@@ -92,18 +92,20 @@ const (
 	attributeField = "attribute"
 )
 
-func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) ([]byte, error) {
+func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
 	var document objmodel.Document
 	switch m.mode {
 	case MappingECS:
 		document = m.encodeLogECSMode(resource, record, scope)
+	case MappingOTel:
+		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
 	document.Dedup()
 
 	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot)
+	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
 	return buf.Bytes(), err
 }
 
@@ -126,7 +128,126 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 
 	return document
+}
 
+var datastreamKeys = []string{dataStreamType, dataStreamDataset, dataStreamNamespace}
+
+func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
+	var document objmodel.Document
+
+	docTimeStamp := record.Timestamp()
+	if docTimeStamp.AsTime().UnixNano() == 0 {
+		docTimeStamp = record.ObservedTimestamp()
+	}
+
+	document.AddTimestamp("@timestamp", docTimeStamp)
+	document.AddTimestamp("observed_timestamp", record.ObservedTimestamp())
+
+	document.AddTraceID("trace_id", record.TraceID())
+	document.AddSpanID("span_id", record.SpanID())
+	document.AddInt("trace_flags", int64(record.Flags()))
+	document.AddString("severity_text", record.SeverityText())
+	document.AddInt("severity_number", int64(record.SeverityNumber()))
+	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
+
+	// At this point the data_stream attributes are expected to be in the record attributes,
+	// updated by the router.
+	// Move them to the top of the document and remove them from the record
+	attributeMap := record.Attributes()
+
+	forEachDataStreamKey := func(fn func(key string)) {
+		for _, key := range datastreamKeys {
+			fn(key)
+		}
+	}
+
+	forEachDataStreamKey(func(key string) {
+		if value, exists := attributeMap.Get(key); exists {
+			document.AddAttribute(key, value)
+			attributeMap.Remove(key)
+		}
+	})
+
+	document.AddAttributes("attributes", attributeMap)
+
+	// Resource
+	resourceMapVal := pcommon.NewValueMap()
+	resourceMap := resourceMapVal.Map()
+	resourceMap.PutStr("schema_url", resourceSchemaURL)
+	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
+	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
+
+	resource.Attributes().CopyTo(resourceAttrMap)
+
+	// Remove data_stream attributes from the resources attributes if present
+	forEachDataStreamKey(func(key string) {
+		resourceAttrMap.Remove(key)
+	})
+
+	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
+
+	// Scope
+	scopeMapVal := pcommon.NewValueMap()
+	scopeMap := scopeMapVal.Map()
+	if scope.Name() != "" {
+		scopeMap.PutStr("name", scope.Name())
+	}
+	if scope.Version() != "" {
+		scopeMap.PutStr("version", scope.Version())
+	}
+	if scopeSchemaURL != "" {
+		scopeMap.PutStr("schema_url", scopeSchemaURL)
+	}
+	if scope.DroppedAttributesCount() > 0 {
+		scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
+	}
+	scopeAttributes := scope.Attributes()
+	if scopeAttributes.Len() > 0 {
+		scopeAttrMap := scopeMap.PutEmptyMap("attributes")
+		scopeAttributes.CopyTo(scopeAttrMap)
+
+		// Remove data_stream attributes from the scope attributes if present
+		forEachDataStreamKey(func(key string) {
+			scopeAttrMap.Remove(key)
+		})
+	}
+
+	if scopeMap.Len() > 0 {
+		document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
+	}
+
+	// Body
+	setOTelLogBody(&document, record.Body())
+
+	return document
+}
+
+func setOTelLogBody(doc *objmodel.Document, body pcommon.Value) {
+	switch body.Type() {
+	case pcommon.ValueTypeMap:
+		doc.AddAttribute("body_structured", body)
+	case pcommon.ValueTypeSlice:
+		slice := body.Slice()
+		for i := 0; i < slice.Len(); i++ {
+			switch slice.At(i).Type() {
+			case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
+				doc.AddAttribute("body_structured", body)
+				return
+			}
+		}
+
+		bodyTextVal := pcommon.NewValueSlice()
+		bodyTextSlice := bodyTextVal.Slice()
+		bodyTextSlice.EnsureCapacity(slice.Len())
+
+		for i := 0; i < slice.Len(); i++ {
+			elem := slice.At(i)
+			bodyTextSlice.AppendEmpty().SetStr(elem.AsString())
+		}
+		doc.AddAttribute("body_text", bodyTextVal)
+	default:
+		doc.AddString("body_text", body.AsString())
+	}
 }
 
 func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
@@ -175,7 +296,7 @@ func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error)
 	document.Dedup()
 
 	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot)
+	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +405,8 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	document.Dedup()
 
 	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot)
+	// OTel serialization is not supported for traces yet
+	err := document.Serialize(&buf, m.dedot, false)
 	return buf.Bytes(), err
 }
 

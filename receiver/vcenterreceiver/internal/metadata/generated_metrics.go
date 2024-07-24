@@ -3163,36 +3163,6 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
-	if !mbc.Metrics.VcenterDatacenterClusterCount.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.cluster.count`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterDatacenterCPULimit.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.cpu.limit`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterDatacenterDatastoreCount.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.datastore.count`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterDatacenterDiskSpace.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.disk.space`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterDatacenterHostCount.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.host.count`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterDatacenterMemoryLimit.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.memory.limit`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterDatacenterVMCount.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.vm.count`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterResourcePoolMemoryBallooned.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.ballooned`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterResourcePoolMemoryGranted.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.granted`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterResourcePoolMemorySwapped.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.swapped`: this metric will be enabled by default starting in release v0.106.0")
-	}
 	mb := &MetricsBuilder{
 		config:                                   mbc,
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
