@@ -173,17 +173,17 @@ metrics, this component provides network-level measurement instruments
 which we anticipate will become part of `obsreport` in the future.  At
 the `normal` level of metrics detail:
 
-- `receiver_recv`: uncompressed bytes received, prior to compression
-- `receiver_recv_wire`: compressed bytes received, on the wire.
+- `otelcol_receiver_recv`: uncompressed bytes received, prior to compression
+- `otelcol_receiver_recv_wire`: compressed bytes received, on the wire.
 
 Arrow's compression performance can be derived by dividing the average
-`receiver_recv` value by the average `receiver_recv_wire` value.
+`otelcol_receiver_recv` value by the average `otelcol_receiver_recv_wire` value.
 
 At the `detailed` metrics detail level, information about the stream
 of data being returned from the receiver will be instrumented:
 
-- `receiver_sent`: uncompressed bytes sent, prior to compression
-- `receiver_sent_wire`: compressed bytes sent, on the wire.
+- `otelcol_receiver_sent`: uncompressed bytes sent, prior to compression
+- `otelcol_receiver_sent_wire`: compressed bytes sent, on the wire.
 
 There several OpenTelemetry Protocol with Apache Arrow-consumer
 related metrics available to help diagnose internal performance.

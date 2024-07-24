@@ -18,14 +18,16 @@ import (
 )
 
 const (
-	defaultTracesTopic   = "otlp_spans"
-	defaultMetricsTopic  = "otlp_metrics"
-	defaultLogsTopic     = "otlp_logs"
-	defaultEncoding      = "otlp_proto"
-	defaultBroker        = "localhost:9092"
-	defaultClientID      = "otel-collector"
-	defaultGroupID       = defaultClientID
-	defaultInitialOffset = offsetLatest
+	defaultTracesTopic       = "otlp_spans"
+	defaultMetricsTopic      = "otlp_metrics"
+	defaultLogsTopic         = "otlp_logs"
+	defaultEncoding          = "otlp_proto"
+	defaultBroker            = "localhost:9092"
+	defaultClientID          = "otel-collector"
+	defaultGroupID           = defaultClientID
+	defaultInitialOffset     = offsetLatest
+	defaultSessionTimeout    = 10 * time.Second
+	defaultHeartbeatInterval = 3 * time.Second
 
 	// default from sarama.NewConfig()
 	defaultMetadataRetryMax = 3
@@ -93,11 +95,13 @@ func NewFactory(options ...FactoryOption) receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Encoding:      defaultEncoding,
-		Brokers:       []string{defaultBroker},
-		ClientID:      defaultClientID,
-		GroupID:       defaultGroupID,
-		InitialOffset: defaultInitialOffset,
+		Encoding:          defaultEncoding,
+		Brokers:           []string{defaultBroker},
+		ClientID:          defaultClientID,
+		GroupID:           defaultGroupID,
+		InitialOffset:     defaultInitialOffset,
+		SessionTimeout:    defaultSessionTimeout,
+		HeartbeatInterval: defaultHeartbeatInterval,
 		Metadata: kafkaexporter.Metadata{
 			Full: defaultMetadataFull,
 			Retry: kafkaexporter.MetadataRetry{
