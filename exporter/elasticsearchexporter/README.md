@@ -221,7 +221,7 @@ When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for re
 
 If the target ECS field name is specified as an empty string (""), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
 
-"Preserved" means the convention should be preserved in ECS mode. This can happen when an attribute needs to be mapped to an ECS equivalent but also preserved in its original form.
+When "Preserved" is true, the attribute will be preserved in the payload and duplicated as mapped to its ECS equivalent.
 
 | Semantic Convention Name | ECS Name | Preserve |
 |--------------------------|----------|----------|
