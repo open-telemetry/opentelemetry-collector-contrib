@@ -766,11 +766,11 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T00:00:00.000000000Z"}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo.counts":[1,2,3,4],"metric.foo.values":[0.5,1.5,2.5,3]},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T00:00:00.000000000Z"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3]}},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T00:00:00.000000000Z"}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo.counts":[4,5,6,7],"metric.foo.values":[2,4.5,5.5,6]},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T00:00:00.000000000Z"}`),
 			},
 		}
 

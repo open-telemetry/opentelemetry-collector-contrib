@@ -375,7 +375,8 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 		if err := w.OnKey(fieldName); err != nil {
 			return err
 		}
-		if err := fld.value.iterJSON(w, true, otel); err != nil {
+		dedot := fieldName != "metrics" // FIXME: HACK: workaround nested Docs
+		if err := fld.value.iterJSON(w, dedot, otel); err != nil {
 			return err
 		}
 	}
