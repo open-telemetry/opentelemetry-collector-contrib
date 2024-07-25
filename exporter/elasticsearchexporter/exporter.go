@@ -194,7 +194,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
 					}
 
-					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource, scope, metric, dp, dpValue); err != nil {
+					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource,
+						resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), metric, dp, dpValue); err != nil {
 						return err
 					}
 					return nil

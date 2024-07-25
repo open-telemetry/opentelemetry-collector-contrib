@@ -732,6 +732,50 @@ func TestExporterMetrics(t *testing.T) {
 
 		assertItemsEqual(t, expected, rec.Items(), false)
 	})
+
+	t.Run("publish histogram otel mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooDps := fooMetric.SetEmptyHistogram().DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+		fooOtherDp := fooDps.AppendEmpty()
+		fooOtherDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
+		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(2)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T00:00:00.000000000Z"}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3]}},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T00:00:00.000000000Z"}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
 }
 
 func TestExporterTraces(t *testing.T) {
