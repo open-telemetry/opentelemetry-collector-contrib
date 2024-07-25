@@ -416,9 +416,27 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	v := metricsMap.SetEmptyMap().PutEmpty(metric.Name())
 	value.CopyTo(v)
 	document.Add("metrics", objmodel.ValueFromAttribute(metricsMap))
-
+	document.AddDynamicTemplate("metrics."+metric.Name(), metricDpToEsType(metric, dp))
 	documents[hash] = document
 	return nil
+}
+
+func metricDpToEsType(metric pmetric.Metric, dp dataPoint) string {
+	switch metric.Type() {
+	case pmetric.MetricTypeSum, pmetric.MetricTypeGauge:
+		switch dp.(pmetric.NumberDataPoint).ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			return "double"
+		case pmetric.NumberDataPointValueTypeInt:
+			return "long"
+			// FIXME: NumberDataPointValueTypeEmpty handling
+		}
+	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram:
+		return "exponential_histogram"
+	case pmetric.MetricTypeSummary:
+		return "aggregate_metric_double"
+	}
+	return ""
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
