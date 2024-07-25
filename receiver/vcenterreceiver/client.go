@@ -91,6 +91,7 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]mo.Datacenter, erro
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve Datacenters: %w", err)
 	}
+	defer func() { _ = v.Destroy(ctx) }()
 
 	var datacenters []mo.Datacenter
 	err = v.Retrieve(ctx, []string{"Datacenter"}, []string{
@@ -109,6 +110,7 @@ func (vc *vcenterClient) Datastores(ctx context.Context, containerMoRef vt.Manag
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve Datastores: %w", err)
 	}
+	defer func() { _ = v.Destroy(ctx) }()
 
 	var datastores []mo.Datastore
 	err = v.Retrieve(ctx, []string{"Datastore"}, []string{
@@ -129,6 +131,7 @@ func (vc *vcenterClient) ComputeResources(ctx context.Context, containerMoRef vt
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve ComputeResources (& ClusterComputeResources): %w", err)
 	}
+	defer func() { _ = v.Destroy(ctx) }()
 
 	var computes []mo.ComputeResource
 	err = v.Retrieve(ctx, []string{"ComputeResource"}, []string{
@@ -150,6 +153,7 @@ func (vc *vcenterClient) HostSystems(ctx context.Context, containerMoRef vt.Mana
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve HostSystems: %w", err)
 	}
+	defer func() { _ = v.Destroy(ctx) }()
 
 	var hosts []mo.HostSystem
 	err = v.Retrieve(ctx, []string{"HostSystem"}, []string{
@@ -177,6 +181,7 @@ func (vc *vcenterClient) ResourcePools(ctx context.Context, containerMoRef vt.Ma
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve ResourcePools (&VirtualApps): %w", err)
 	}
+	defer func() { _ = v.Destroy(ctx) }()
 
 	var rps []mo.ResourcePool
 	err = v.Retrieve(ctx, []string{"ResourcePool"}, []string{
@@ -198,6 +203,7 @@ func (vc *vcenterClient) VMs(ctx context.Context, containerMoRef vt.ManagedObjec
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)
 	}
+	defer func() { _ = v.Destroy(ctx) }()
 
 	var vms []mo.VirtualMachine
 	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{
