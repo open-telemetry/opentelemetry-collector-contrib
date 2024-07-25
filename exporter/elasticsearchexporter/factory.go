@@ -191,6 +191,7 @@ func exporterhelperOptions(
 			MaxSizeConfig: cfg.Batcher.MaxSizeConfig,
 		}
 		opts = append(opts, exporterhelper.WithBatcher(batcherConfig))
+		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0})) // effectively disable timeout_sender because timeout is enforced in bulk indexer
 	}
 	return opts
 }
