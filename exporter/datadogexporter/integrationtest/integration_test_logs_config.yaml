@@ -13,10 +13,12 @@ receivers:
           scrape_interval: 1s
           static_configs:
             - targets: [ 'localhost:8888' ]
+          metric_relabel_configs:
+            - source_labels: [ __name__ ]
+              regex: "(otelcol_receiver_accepted_log_records|otelcol_exporter_sent_log_records)"
+              action: keep
 
 exporters:
-  debug:
-    verbosity: detailed
   datadog:
     api:
       key: "key"

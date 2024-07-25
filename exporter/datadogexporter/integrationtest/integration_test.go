@@ -466,8 +466,10 @@ func TestIntegrationLogs(t *testing.T) {
 	t.Setenv("SERVER_URL", server.URL)
 
 	// 2. Start in-process collector
-	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, err)
+	assert.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true))
+	defer func() {
+		assert.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false))
+	}()
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_logs_config.yaml", factories)
 	go func() {
@@ -483,38 +485,43 @@ func TestIntegrationLogs(t *testing.T) {
 	// 4. Validate logs and metrics from the mock server
 	// Wait until `doneChannel` is closed and prometheus metrics are received.
 	var metricMap seriesMap
-	var metricMapStr string
-	for !strings.Contains(metricMapStr, "otelcol_receiver_accepted_log_records") && !strings.Contains(metricMapStr, "otelcol_exporter_sent_log_records") {
+	for len(metricMap.Series) < 4 {
 		select {
 		case <-doneChannel:
 			assert.Len(t, logsData, 5)
 		case metricsBytes := <-seriesRec.ReqChan:
+			var smap seriesMap
 			gz := getGzipReader(t, metricsBytes)
 			dec := json.NewDecoder(gz)
-			assert.NoError(t, dec.Decode(&metricMap))
-			metricMapStr = fmt.Sprint(metricMap)
+			assert.NoError(t, dec.Decode(&smap))
+			for _, s := range smap.Series {
+				if s.Metric == "otelcol_receiver_accepted_log_records" || s.Metric == "otelcol_exporter_sent_log_records" {
+					metricMap.Series = append(metricMap.Series, s)
+				}
+			}
 		case <-time.After(60 * time.Second):
 			t.Fail()
 		}
 	}
 
 	// 5. Validate mock server received expected otelcol metric values
-	containsAcceptedLogRecords := false
-	containsSentLogRecords := false
+	numAcceptedLogRecords := 0
+	numSentLogRecords := 0
+	assert.Len(t, metricMap.Series, 4)
 	for _, s := range metricMap.Series {
 		if s.Metric == "otelcol_receiver_accepted_log_records" {
-			containsAcceptedLogRecords = true
+			numAcceptedLogRecords++
 			assert.Len(t, s.Points, 1)
 			assert.Equal(t, s.Points[0].Value, 5.0)
 		}
 		if s.Metric == "otelcol_exporter_sent_log_records" {
-			containsSentLogRecords = true
+			numSentLogRecords++
 			assert.Len(t, s.Points, 1)
 			assert.Equal(t, s.Points[0].Value, 5.0)
 		}
 	}
-	assert.True(t, containsAcceptedLogRecords)
-	assert.True(t, containsSentLogRecords)
+	assert.Equal(t, 2, numAcceptedLogRecords)
+	assert.Equal(t, 2, numSentLogRecords)
 }
 
 func sendLogs(t *testing.T, numLogs int) {
