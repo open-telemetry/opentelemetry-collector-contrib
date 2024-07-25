@@ -34,9 +34,12 @@ func TestExporter(t *testing.T) {
 			mockESFailure    bool
 		}{
 			{name: "basic"},
-			{name: "batcher_enabled", batcherEnabled: ptrTo(true)},
-			{name: "batcher_disabled", batcherEnabled: ptrTo(false)},
 			{name: "es_intermittent_failure", mockESFailure: true},
+
+			{name: "batcher_enabled", batcherEnabled: ptrTo(true)},
+			{name: "batcher_enabled_es_intermittent_failure", batcherEnabled: ptrTo(true), mockESFailure: true},
+			{name: "batcher_disabled", batcherEnabled: ptrTo(false)},
+			{name: "batcher_disabled_es_intermittent_failure", batcherEnabled: ptrTo(false), mockESFailure: true},
 
 			/* TODO: Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
 			{name: "collector_restarts", restartCollector: true},
