@@ -114,6 +114,8 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.104.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sattributesprocessor v0.104.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sobjectsprocessor v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.104.0
@@ -264,6 +266,8 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => ../../receiver/postgresqlreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ../../receiver/receivercreator
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../../processor/k8sattributesprocessor
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sattributesprocessor => ../../processor/opsrampk8sattributesprocessor
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sobjectsprocessor => ../../processor/opsrampk8sobjectsprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ../../exporter/awsemfexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../../receiver/opencensusreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../../receiver/splunkhecreceiver

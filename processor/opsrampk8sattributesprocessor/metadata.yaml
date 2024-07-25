@@ -1,0 +1,20 @@
+type: opsrampk8sattributes
+scope_name: otelcol/opsrampk8sattributes
+
+status:
+  class: processor
+  stability:
+    beta: [logs, metrics, traces]
+  distributions: [contrib]
+  codeowners:
+    active: [mithunbelur]
+# resource attributes are exposed through a different configuration interface (extract::metadata).
+resource_attributes:
+  opsramp.k8s.cluster.name:
+    description: Gives cluster name
+    type: string
+    enabled: true
+  opsramp.resource.uuid:
+    description: The uuid of the resource.
+    type: string
+    enabled: true

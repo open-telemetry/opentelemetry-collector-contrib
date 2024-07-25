@@ -107,6 +107,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sattributesprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sobjectsprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.104.0
@@ -889,6 +890,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sobjectsprocessor => ../../processor/opsrampk8sobjectsprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opsrampdebugexporter => ../../exporter/opsrampdebugexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sattributesprocessor => ../../processor/opsrampk8sattributesprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ../../exporter/awsemfexporter
 

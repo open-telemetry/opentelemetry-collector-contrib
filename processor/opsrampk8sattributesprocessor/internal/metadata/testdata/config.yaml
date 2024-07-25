@@ -1,0 +1,13 @@
+default:
+all_set:
+  resource_attributes:
+    opsramp.k8s.cluster.name:
+      enabled: true
+    opsramp.resource.uuid:
+      enabled: true
+none_set:
+  resource_attributes:
+    opsramp.k8s.cluster.name:
+      enabled: false
+    opsramp.resource.uuid:
+      enabled: false
