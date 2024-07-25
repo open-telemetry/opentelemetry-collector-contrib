@@ -34,17 +34,17 @@ func newReceiverCreator(params receiver.Settings, cfg *Config) receiver.Metrics 
 	}
 }
 
-// Host is an interface that the component.Host passed to receivercreator's Start function must implement
-type Host interface {
+// host is an interface that the component.Host passed to receivercreator's Start function must implement
+type host interface {
 	component.Host
 	GetFactory(component.Kind, component.Type) component.Factory
 }
 
 // Start receiver_creator.
-func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
-	rcHost, ok := host.(Host)
+func (rc *receiverCreator) Start(_ context.Context, h component.Host) error {
+	rcHost, ok := h.(host)
 	if !ok {
-		return fmt.Errorf("the receivercreator is not compatible with the provided component.Host")
+		return fmt.Errorf("the receivercreator is not compatible with the provided component.host")
 	}
 
 	rc.observerHandler = &observerHandler{
@@ -61,7 +61,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 
 	// Match all configured observables to the extensions that are running.
 	for _, watchObserver := range rc.cfg.WatchObservers {
-		for cid, ext := range host.GetExtensions() {
+		for cid, ext := range rcHost.GetExtensions() {
 			if cid != watchObserver {
 				continue
 			}
