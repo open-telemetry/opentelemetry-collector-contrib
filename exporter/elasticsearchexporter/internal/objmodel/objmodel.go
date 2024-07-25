@@ -283,6 +283,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 	return nil
 }
 
+// FIXME: metrics.* as well
 // Set of prefixes for the OTel attributes that needs to stay flattened
 var otelPrefixSet = map[string]struct{}{
 	"attributes.":          {},
