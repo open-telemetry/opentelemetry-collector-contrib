@@ -40,6 +40,24 @@ func (c *connectorLogs) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeLogs method is called for each instance of a log sent to the connector
-func (c *connectorLogs) ConsumeLogs(_ context.Context, _ plog.Logs) error {
+func (c *connectorLogs) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
+	// loop through the levels of logs
+	logsUnmarshaler := &plog.JSONUnmarshaler{}
+	for i := 0; i < pl.ResourceLogs().Len(); i++ {
+		li := pl.ResourceLogs().At(i)
+		for j := 0; j < li.ScopeLogs().Len(); j++ {
+			logRecord := li.ScopeLogs().At(j)
+			for k := 0; k < logRecord.LogRecords().Len(); k++ {
+				lRecord := logRecord.LogRecords().At(k)
+				token := lRecord.Body()
+				var l plog.Logs
+				l, _ = logsUnmarshaler.UnmarshalLogs([]byte(token.AsString()))
+				err := c.logsConsumer.ConsumeLogs(ctx, l)
+				if err != nil {
+					c.logger.Error("could not extract logs from otlp json", zap.Error(err))
+				}
+			}
+		}
+	}
 	return nil
 }

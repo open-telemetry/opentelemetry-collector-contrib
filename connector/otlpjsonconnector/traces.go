@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -40,6 +41,24 @@ func (c *connectorTraces) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeLogs method is called for each instance of a log sent to the connector
-func (c *connectorTraces) ConsumeLogs(_ context.Context, _ plog.Logs) error {
+func (c *connectorTraces) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
+	// loop through the levels of logs
+	tracesUnmarshaler := &ptrace.JSONUnmarshaler{}
+	for i := 0; i < pl.ResourceLogs().Len(); i++ {
+		li := pl.ResourceLogs().At(i)
+		for j := 0; j < li.ScopeLogs().Len(); j++ {
+			logRecord := li.ScopeLogs().At(j)
+			for k := 0; k < logRecord.LogRecords().Len(); k++ {
+				lRecord := logRecord.LogRecords().At(k)
+				token := lRecord.Body()
+				var t ptrace.Traces
+				t, _ = tracesUnmarshaler.UnmarshalTraces([]byte(token.AsString()))
+				err := c.tracesConsumer.ConsumeTraces(ctx, t)
+				if err != nil {
+					c.logger.Error("could not extract traces from otlp json", zap.Error(err))
+				}
+			}
+		}
+	}
 	return nil
 }
