@@ -71,14 +71,16 @@ func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config
 			Pipeline:              config.Pipeline,
 			RetryOnDocumentStatus: config.Retry.RetryOnStatus,
 		},
-		retryBackoff: createElasticsearchBackoffFunc(&config.Retry),
+		flushTimeout: config.Timeout,
+		retryConfig:  config.Retry,
 		logger:       logger,
 	}
 }
 
 type syncBulkIndexer struct {
 	config       docappender.BulkIndexerConfig
-	retryBackoff func(int) time.Duration
+	flushTimeout time.Duration
+	retryConfig  RetrySettings
 	logger       *zap.Logger
 }
 
@@ -90,10 +92,8 @@ func (s *syncBulkIndexer) StartSession(context.Context) (bulkIndexerSession, err
 		return nil, err
 	}
 	return &syncBulkIndexerSession{
-		s:            s,
-		bi:           bi,
-		retryBackoff: s.retryBackoff,
-		logger:       s.logger,
+		s:  s,
+		bi: bi,
 	}, nil
 }
 
@@ -103,10 +103,8 @@ func (s *syncBulkIndexer) Close(context.Context) error {
 }
 
 type syncBulkIndexerSession struct {
-	s            *syncBulkIndexer
-	bi           *docappender.BulkIndexer
-	retryBackoff func(int) time.Duration
-	logger       *zap.Logger
+	s  *syncBulkIndexer
+	bi *docappender.BulkIndexer
 }
 
 // Add adds an item to the sync bulk indexer session.
@@ -121,21 +119,25 @@ func (s *syncBulkIndexerSession) End() {
 
 // Flush flushes documents added to the bulk indexer session.
 func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
+	var retryBackoff func(int) time.Duration
 	for attempts := 0; ; attempts++ {
-		if _, err := flushBulkIndexer(ctx, s.bi, s.logger); err != nil {
+		if _, err := flushBulkIndexer(ctx, s.bi, s.s.flushTimeout, s.s.logger); err != nil {
 			return err
 		}
 		if s.bi.Items() == 0 {
 			// No documents in buffer waiting for per-document retry, exit retry loop.
 			return nil
 		}
-		if s.retryBackoff == nil {
-			// BUG: This should never happen in practice.
-			// When retry is disabled / document level retry limit is reached,
-			// documents should go into FailedDocs instead of indexer buffer.
-			return errors.New("bulk indexer contains documents pending retry but retry is disabled")
+		if retryBackoff == nil {
+			retryBackoff = createElasticsearchBackoffFunc(&s.s.retryConfig)
+			if retryBackoff == nil {
+				// BUG: This should never happen in practice.
+				// When retry is disabled / document level retry limit is reached,
+				// documents should go into FailedDocs instead of indexer buffer.
+				return errors.New("bulk indexer contains documents pending retry but retry is disabled")
+			}
 		}
-		backoff := s.retryBackoff(attempts + 1) // TODO: use exporterhelper retry_sender
+		backoff := retryBackoff(attempts + 1) // TODO: use exporterhelper retry_sender
 		timer := time.NewTimer(backoff)
 		select {
 		case <-ctx.Done():
@@ -306,20 +308,21 @@ func (w *asyncBulkIndexerWorker) run() {
 
 func (w *asyncBulkIndexerWorker) flush() {
 	ctx := context.Background()
-	if w.flushTimeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, w.flushTimeout)
-		defer cancel()
-	}
-	stat, _ := flushBulkIndexer(ctx, w.indexer, w.logger)
+	stat, _ := flushBulkIndexer(ctx, w.indexer, w.flushTimeout, w.logger)
 	w.stats.docsIndexed.Add(stat.Indexed)
 }
 
 func flushBulkIndexer(
 	ctx context.Context,
 	bi *docappender.BulkIndexer,
+	timeout time.Duration,
 	logger *zap.Logger,
 ) (docappender.BulkIndexerResponseStat, error) {
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
 	stat, err := bi.Flush(ctx)
 	if err != nil {
 		logger.Error("bulk indexer flush error", zap.Error(err))
