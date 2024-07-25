@@ -164,6 +164,7 @@ const (
 	createTracesTableSQL = `
 CREATE TABLE IF NOT EXISTS %s %s (
      Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
+		 TimestampTime DateTime DEFAULT toDateTime(Timestamp),
      TraceId String CODEC(ZSTD(1)),
      SpanId String CODEC(ZSTD(1)),
      ParentSpanId String CODEC(ZSTD(1)),
@@ -196,9 +197,10 @@ CREATE TABLE IF NOT EXISTS %s %s (
      INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_duration Duration TYPE minmax GRANULARITY 1
 ) ENGINE = %s
+PARTITION BY toDate(TimestampTime)
+PRIMARY KEY (ServiceName, SpanName, TimestampTime)
+ORDER BY (ServiceName, SpanName, TimestampTime, Timestamp, TraceId)
 %s
-PARTITION BY toDate(Timestamp)
-ORDER BY (ServiceName, SpanName, toUnixTimestamp(Timestamp), TraceId)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
