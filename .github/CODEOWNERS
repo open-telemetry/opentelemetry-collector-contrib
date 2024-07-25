@@ -16,7 +16,7 @@
 * @open-telemetry/collector-contrib-approvers
 
 cmd/githubgen/                                                      @open-telemetry/collector-contrib-approvers @atoulme
-cmd/opampsupervisor/                                                @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
+cmd/opampsupervisor/                                                @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan @BinaryFissionGames
 cmd/otelcontribcol/                                                 @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                                 @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                                   @open-telemetry/collector-contrib-approvers @mx-psi @codeboten
@@ -112,7 +112,7 @@ extension/observer/hostobserver/                                    @open-teleme
 extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
 extension/oidcauthextension/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/opampcustommessages/                                      @open-telemetry/collector-contrib-approvers @BinaryFissionGames @evan-bradley
-extension/opampextension/                                           @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan
+extension/opampextension/                                           @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan @BinaryFissionGames
 extension/pprofextension/                                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/remotetapextension/                                       @open-telemetry/collector-contrib-approvers @atoulme
 extension/sigv4authextension/                                       @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
