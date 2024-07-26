@@ -14,6 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.105.0
@@ -1265,6 +1266,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/exce
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector => ../../connector/failoverconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector => ../../connector/grafanacloudconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector => ../../connector/otlpjsonconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector => ../../connector/roundrobinconnector
 
