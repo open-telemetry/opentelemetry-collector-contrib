@@ -82,6 +82,9 @@ type MetricsConfig struct {
 	VcenterVMNetworkPacketRate         MetricConfig `mapstructure:"vcenter.vm.network.packet.rate"`
 	VcenterVMNetworkThroughput         MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
 	VcenterVMNetworkUsage              MetricConfig `mapstructure:"vcenter.vm.network.usage"`
+	VcenterVMVsanLatencyAvg            MetricConfig `mapstructure:"vcenter.vm.vsan.latency.avg"`
+	VcenterVMVsanOperations            MetricConfig `mapstructure:"vcenter.vm.vsan.operations"`
+	VcenterVMVsanThroughput            MetricConfig `mapstructure:"vcenter.vm.vsan.throughput"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -247,6 +250,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterVMNetworkUsage: MetricConfig{
 			Enabled: true,
+		},
+		VcenterVMVsanLatencyAvg: MetricConfig{
+			Enabled: false,
+		},
+		VcenterVMVsanOperations: MetricConfig{
+			Enabled: false,
+		},
+		VcenterVMVsanThroughput: MetricConfig{
+			Enabled: false,
 		},
 	}
 }

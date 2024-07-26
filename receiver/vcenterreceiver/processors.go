@@ -317,10 +317,14 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 	}
 
 	// Record VM metric data points
-	perfMetrics := v.scrapeData.vmPerfMetricsByRef[vm.Reference().Value]
 	v.recordVMStats(ts, vm, hs)
+	perfMetrics := v.scrapeData.vmPerfMetricsByRef[vm.Reference().Value]
 	if perfMetrics != nil {
 		v.recordVMPerformanceMetrics(perfMetrics)
+	}
+	vSANMetrics := v.scrapeData.vmVSANMetricsByUUID[vm.Config.InstanceUuid]
+	if vSANMetrics != nil {
+		v.recordVMVSANMetrics(vSANMetrics)
 	}
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
