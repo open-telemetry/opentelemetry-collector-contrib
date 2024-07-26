@@ -75,19 +75,23 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 		return loadResponse("login.xml")
 	case "Logout":
 		return loadResponse("logout.xml")
-	case "RetrieveProperties":
-		return routeRetreiveProperties(t, body)
+	case "RetrievePropertiesEx":
+		return routeRetreivePropertiesEx(t, body)
 	case "QueryPerf":
 		return routePerformanceQuery(t, body)
 	case "CreateContainerView":
 		return loadResponse("create-container-view.xml")
+	case "DestroyView":
+		return loadResponse("destroy-view.xml")
+	case "VsanPerfQueryPerf":
+		return routeVsanPerfQueryPerf(t, body)
 	}
 
 	return []byte{}, errNotFound
 }
 
-func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) {
-	rp, ok := body["RetrieveProperties"].(map[string]any)
+func routeRetreivePropertiesEx(t *testing.T, body map[string]any) ([]byte, error) {
+	rp, ok := body["RetrievePropertiesEx"].(map[string]any)
 	require.True(t, ok)
 	specSet := rp["specSet"].(map[string]any)
 
@@ -108,13 +112,24 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 	var contentType string
 	if !objectSetArray {
 		obj = objectSet["obj"].(map[string]any)
-		content = obj["#content"].(string)
+		if value, exists := obj["#content"]; exists {
+			content = value.(string)
+		} else {
+			content = ""
+		}
 		contentType = obj["-type"].(string)
 	}
 
 	switch {
 	case content == "group-d1" && contentType == "Folder":
-		return loadResponse("datacenter.xml")
+		for _, i := range propSetArray {
+			m, ok := i.(map[string]any)
+			require.True(t, ok)
+			if m["type"] == "Folder" {
+				return loadResponse("datacenter.xml")
+			}
+		}
+		return loadResponse("datacenter-folder.xml")
 
 	case content == "datacenter-3" && contentType == "Datacenter":
 		return loadResponse("datacenter-properties.xml")
@@ -192,6 +207,20 @@ func routePerformanceQuery(t *testing.T, body map[string]any) ([]byte, error) {
 		return loadResponse("host-performance-counters.xml")
 	case "VirtualMachine":
 		return loadResponse("vm-performance-counters.xml")
+	}
+	return []byte{}, errNotFound
+}
+
+func routeVsanPerfQueryPerf(t *testing.T, body map[string]any) ([]byte, error) {
+	queryPerf := body["VsanPerfQueryPerf"].(map[string]any)
+	require.NotNil(t, queryPerf)
+	querySpecs, ok := queryPerf["querySpecs"].(map[string]any)
+	if !ok {
+		return []byte{}, errNotFound
+	}
+	entityRefID := querySpecs["entityRefId"].(string)
+	if entityRefID == "virtual-machine:*" {
+		return loadResponse("vm-vsan.xml")
 	}
 	return []byte{}, errNotFound
 }

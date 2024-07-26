@@ -87,5 +87,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewURLFactory[K](),
 		NewAppendFactory[K](),
 		NewYearFactory[K](),
+		NewHexFactory[K](),
 	}
 }

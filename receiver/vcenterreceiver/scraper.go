@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
@@ -29,6 +30,7 @@ type vmGroupInfo struct {
 type vcenterScrapeData struct {
 	datacenters          []*mo.Datacenter
 	datastores           []*mo.Datastore
+	clusterRefs          []*types.ManagedObjectReference
 	rPoolIPathsByRef     map[string]*string
 	vAppIPathsByRef      map[string]*string
 	rPoolsByRef          map[string]*mo.ResourcePool
@@ -37,6 +39,7 @@ type vcenterScrapeData struct {
 	hostPerfMetricsByRef map[string]*performance.EntityMetric
 	vmsByRef             map[string]*mo.VirtualMachine
 	vmPerfMetricsByRef   map[string]*performance.EntityMetric
+	vmVSANMetricsByUUID  map[string]*VSANMetricResults
 }
 
 type vcenterMetricScraper struct {
@@ -52,7 +55,7 @@ func newVmwareVcenterScraper(
 	config *Config,
 	settings receiver.Settings,
 ) *vcenterMetricScraper {
-	client := newVcenterClient(config)
+	client := newVcenterClient(logger, config)
 	scrapeData := newVcenterScrapeData()
 
 	return &vcenterMetricScraper{
@@ -68,6 +71,7 @@ func newVcenterScrapeData() *vcenterScrapeData {
 	return &vcenterScrapeData{
 		datacenters:          make([]*mo.Datacenter, 0),
 		datastores:           make([]*mo.Datastore, 0),
+		clusterRefs:          make([]*types.ManagedObjectReference, 0),
 		rPoolIPathsByRef:     make(map[string]*string),
 		vAppIPathsByRef:      make(map[string]*string),
 		computesByRef:        make(map[string]*mo.ComputeResource),
@@ -76,6 +80,7 @@ func newVcenterScrapeData() *vcenterScrapeData {
 		rPoolsByRef:          make(map[string]*mo.ResourcePool),
 		vmsByRef:             make(map[string]*mo.VirtualMachine),
 		vmPerfMetricsByRef:   make(map[string]*performance.EntityMetric),
+		vmVSANMetricsByUUID:  make(map[string]*VSANMetricResults),
 	}
 }
 
@@ -92,7 +97,7 @@ func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 }
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if v.client == nil {
-		v.client = newVcenterClient(v.config)
+		v.client = newVcenterClient(v.logger, v.config)
 	}
 	// ensure connection before scraping
 	if err := v.client.EnsureConnection(ctx); err != nil {
@@ -108,8 +113,9 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 // scrapeAndProcessAllMetrics collects & converts all relevant resources managed by vCenter to OTEL resources & metrics
 func (v *vcenterMetricScraper) scrapeAndProcessAllMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) error {
 	v.scrapeData = newVcenterScrapeData()
-	v.scrapeResourcePoolInventoryListObjects(ctx, errs)
-	v.scrapeVAppInventoryListObjects(ctx, errs)
+	dcObjects := v.scrapeDatacenterInventoryListObjects(ctx, errs)
+	v.scrapeResourcePoolInventoryListObjects(ctx, dcObjects, errs)
+	v.scrapeVAppInventoryListObjects(ctx, dcObjects, errs)
 	v.scrapeDatacenters(ctx, errs)
 
 	for _, dc := range v.scrapeData.datacenters {
@@ -128,13 +134,30 @@ func (v *vcenterMetricScraper) scrapeAndProcessAllMetrics(ctx context.Context, e
 	return errs.Combine()
 }
 
-// scrapeResourcePoolInventoryListObjects scrapes and store all ResourcePool objects with their InventoryLists
-func (v *vcenterMetricScraper) scrapeResourcePoolInventoryListObjects(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+// scrapeDatacenterInventoryListObjects scrapes and stores all Datacenter objects with their InventoryLists
+func (v *vcenterMetricScraper) scrapeDatacenterInventoryListObjects(
+	ctx context.Context,
+	errs *scrapererror.ScrapeErrors,
+) []*object.Datacenter {
+	// Get Datacenters with InventoryLists and store for later retrieval
+	dcs, err := v.client.DatacenterInventoryListObjects(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+	}
+	return dcs
+}
+
+// scrapeResourcePoolInventoryListObjects scrapes and stores all ResourcePool objects with their InventoryLists
+func (v *vcenterMetricScraper) scrapeResourcePoolInventoryListObjects(
+	ctx context.Context,
+	dcs []*object.Datacenter,
+	errs *scrapererror.ScrapeErrors,
+) {
 	// Init for current collection
 	v.scrapeData.rPoolIPathsByRef = make(map[string]*string)
 
 	// Get ResourcePools with InventoryLists and store for later retrieval
-	rPools, err := v.client.ResourcePoolInventoryListObjects(ctx)
+	rPools, err := v.client.ResourcePoolInventoryListObjects(ctx, dcs)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
@@ -145,12 +168,16 @@ func (v *vcenterMetricScraper) scrapeResourcePoolInventoryListObjects(ctx contex
 }
 
 // scrapeVAppInventoryListObjects scrapes and stores all vApp objects with their InventoryLists
-func (v *vcenterMetricScraper) scrapeVAppInventoryListObjects(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+func (v *vcenterMetricScraper) scrapeVAppInventoryListObjects(
+	ctx context.Context,
+	dcs []*object.Datacenter,
+	errs *scrapererror.ScrapeErrors,
+) {
 	// Init for current collection
 	v.scrapeData.vAppIPathsByRef = make(map[string]*string)
 
 	// Get vApps with InventoryLists and store for later retrieval
-	vApps, err := v.client.VAppInventoryListObjects(ctx)
+	vApps, err := v.client.VAppInventoryListObjects(ctx, dcs)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
@@ -196,6 +223,7 @@ func (v *vcenterMetricScraper) scrapeDatastores(ctx context.Context, dc *mo.Data
 func (v *vcenterMetricScraper) scrapeComputes(ctx context.Context, dc *mo.Datacenter, errs *scrapererror.ScrapeErrors) {
 	// Init for current collection
 	v.scrapeData.computesByRef = make(map[string]*mo.ComputeResource)
+	v.scrapeData.clusterRefs = []*types.ManagedObjectReference{}
 
 	// Get ComputeResources/ClusterComputeResources w/properties and store for later retrieval
 	computes, err := v.client.ComputeResources(ctx, dc.Reference())
@@ -205,7 +233,11 @@ func (v *vcenterMetricScraper) scrapeComputes(ctx context.Context, dc *mo.Datace
 	}
 
 	for i := range computes {
-		v.scrapeData.computesByRef[computes[i].Reference().Value] = &computes[i]
+		computeRef := computes[i].Reference()
+		v.scrapeData.computesByRef[computeRef.Value] = &computes[i]
+		if computeRef.Type == "ClusterComputeResource" {
+			v.scrapeData.clusterRefs = append(v.scrapeData.clusterRefs, &computeRef)
+		}
 	}
 }
 
@@ -213,7 +245,6 @@ func (v *vcenterMetricScraper) scrapeComputes(ctx context.Context, dc *mo.Datace
 func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacenter, errs *scrapererror.ScrapeErrors) {
 	// Init for current collection
 	v.scrapeData.hostsByRef = make(map[string]*mo.HostSystem)
-
 	// Get HostSystems w/properties and store for later retrieval
 	hosts, err := v.client.HostSystems(ctx, dc.Reference())
 	if err != nil {
@@ -287,7 +318,16 @@ func (v *vcenterMetricScraper) scrapeVirtualMachines(ctx context.Context, dc *mo
 	results, err := v.client.PerfMetricsQuery(ctx, spec, vmPerfMetricList, vmRefs)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to retrieve perf metrics for VirtualMachines: %w", err))
+	} else {
+		v.scrapeData.vmPerfMetricsByRef = results.resultsByRef
+	}
+
+	// Get all VirtualMachine vSAN metrics and store for later retrieval
+	vSANMetrics, err := v.client.VSANVirtualMachines(ctx, v.scrapeData.clusterRefs)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for VirtualMachines: %w", err))
 		return
 	}
-	v.scrapeData.vmPerfMetricsByRef = results.resultsByRef
+
+	v.scrapeData.vmVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }

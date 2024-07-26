@@ -93,7 +93,12 @@ func initQuery(counterPath string, collectOnStartup bool) (*win_perf_counters.Pe
 	if collectOnStartup {
 		err = query.CollectData()
 		if err != nil {
-			return nil, nil, err
+			// Ignore PDH_NO_DATA error, it is expected when there are no
+			// matching instances.
+			var pdhErr *win_perf_counters.PdhError
+			if !errors.As(err, &pdhErr) || pdhErr.ErrorCode != win_perf_counters.PDH_NO_DATA {
+				return nil, nil, err
+			}
 		}
 	}
 
@@ -124,16 +129,23 @@ func (pc *perfCounter) Path() string {
 func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 	if err := pc.query.CollectData(); err != nil {
 		var pdhErr *win_perf_counters.PdhError
-		if !errors.As(err, &pdhErr) || pdhErr.ErrorCode != win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR {
+		if !errors.As(err, &pdhErr) || (pdhErr.ErrorCode != win_perf_counters.PDH_NO_DATA && pdhErr.ErrorCode != win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR) {
 			return nil, fmt.Errorf("failed to collect data for performance counter '%s': %w", pc.path, err)
 		}
 
-		// A counter rolled over, so the value is invalid
-		// See https://support.microfocus.com/kb/doc.php?id=7010545
-		// Wait one second and retry once
-		time.Sleep(time.Second)
-		if retryErr := pc.query.CollectData(); retryErr != nil {
-			return nil, fmt.Errorf("failed retry for performance counter '%s': %w", pc.path, err)
+		if pdhErr.ErrorCode == win_perf_counters.PDH_NO_DATA {
+			// No data is available for the counter, so return an empty slice.
+			return nil, nil
+		}
+
+		if pdhErr.ErrorCode == win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR {
+			// A counter rolled over, so the value is invalid
+			// See https://support.microfocus.com/kb/doc.php?id=7010545
+			// Wait one second and retry once
+			time.Sleep(time.Second)
+			if retryErr := pc.query.CollectData(); retryErr != nil {
+				return nil, fmt.Errorf("failed retry for performance counter '%s': %w", pc.path, err)
+			}
 		}
 	}
 
@@ -142,7 +154,7 @@ func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 		return nil, fmt.Errorf("failed to format data for performance counter '%s': %w", pc.path, err)
 	}
 
-	vals = removeTotalIfMultipleValues(vals)
+	vals = cleanupScrapedValues(vals)
 	return vals, nil
 }
 
@@ -151,24 +163,42 @@ func ExpandWildCardPath(counterPath string) ([]string, error) {
 	return win_perf_counters.ExpandWildCardPath(counterPath)
 }
 
-func removeTotalIfMultipleValues(vals []CounterValue) []CounterValue {
+// cleanupScrapedValues handles instance name collisions and standardizes names.
+// It cleans up the list in-place to avoid unnecessary copies.
+func cleanupScrapedValues(vals []CounterValue) []CounterValue {
 	if len(vals) == 0 {
 		return vals
 	}
 
-	if len(vals) == 1 {
-		// if there is only one item & the instance name is "_Total", clear the instance name
-		if vals[0].InstanceName == totalInstanceName {
-			vals[0].InstanceName = ""
-		}
+	// If there is only one "_Total" instance, clear the instance name.
+	if len(vals) == 1 && vals[0].InstanceName == totalInstanceName {
+		vals[0].InstanceName = ""
 		return vals
 	}
 
-	// if there is more than one item, remove an item that has the instance name "_Total"
-	for i, val := range vals {
-		if val.InstanceName == totalInstanceName {
-			return removeItemAt(vals, i)
+	occurrences := map[string]int{}
+	totalIndex := -1
+
+	for i := range vals {
+		instanceName := vals[i].InstanceName
+
+		if instanceName == totalInstanceName {
+			// Remember if a "_Total" instance was present.
+			totalIndex = i
 		}
+
+		if n, ok := occurrences[instanceName]; ok {
+			// Append indices to duplicate instance names.
+			occurrences[instanceName]++
+			vals[i].InstanceName = fmt.Sprintf("%s#%d", instanceName, n)
+		} else {
+			occurrences[instanceName] = 1
+		}
+	}
+
+	// Remove the "_Total" instance, as it can be computed with a sum aggregation.
+	if totalIndex >= 0 {
+		return removeItemAt(vals, totalIndex)
 	}
 
 	return vals

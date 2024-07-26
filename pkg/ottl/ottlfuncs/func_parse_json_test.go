@@ -16,9 +16,10 @@ import (
 
 func Test_ParseJSON(t *testing.T) {
 	tests := []struct {
-		name   string
-		target ottl.StringGetter[any]
-		want   func(pcommon.Map)
+		name      string
+		target    ottl.StringGetter[any]
+		wantMap   func(pcommon.Map)
+		wantSlice func(pcommon.Slice)
 	}{
 		{
 			name: "handle string",
@@ -27,7 +28,7 @@ func Test_ParseJSON(t *testing.T) {
 					return `{"test":"string value"}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "string value")
 			},
 		},
@@ -38,7 +39,7 @@ func Test_ParseJSON(t *testing.T) {
 					return `{"test":true}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutBool("test", true)
 			},
 		},
@@ -49,7 +50,7 @@ func Test_ParseJSON(t *testing.T) {
 					return `{"test":1}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutDouble("test", 1)
 			},
 		},
@@ -60,7 +61,7 @@ func Test_ParseJSON(t *testing.T) {
 					return `{"test":1.1}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutDouble("test", 1.1)
 			},
 		},
@@ -71,7 +72,7 @@ func Test_ParseJSON(t *testing.T) {
 					return `{"test":null}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutEmpty("test")
 			},
 		},
@@ -82,10 +83,35 @@ func Test_ParseJSON(t *testing.T) {
 					return `{"test":["string","value"]}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				emptySlice := expectedMap.PutEmptySlice("test")
 				emptySlice.AppendEmpty().SetStr("string")
 				emptySlice.AppendEmpty().SetStr("value")
+			},
+		},
+		{
+			name: "handle top level array",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return `["string","value"]`, nil
+				},
+			},
+			wantSlice: func(expectedSlice pcommon.Slice) {
+				expectedSlice.AppendEmpty().SetStr("string")
+				expectedSlice.AppendEmpty().SetStr("value")
+			},
+		},
+		{
+			name: "handle top level array of objects",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return `[{"test":"value"},{"test":"value"}]`, nil
+				},
+			},
+			wantSlice: func(expectedSlice pcommon.Slice) {
+
+				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
+				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
 			},
 		},
 		{
@@ -95,7 +121,7 @@ func Test_ParseJSON(t *testing.T) {
 					return `{"test":{"nested":"true"}}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				newMap := expectedMap.PutEmptyMap("test")
 				newMap.PutStr("nested", "true")
 			},
@@ -107,7 +133,7 @@ func Test_ParseJSON(t *testing.T) {
 					return `{"existing":"pass"}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("existing", "pass")
 			},
 		},
@@ -118,7 +144,7 @@ func Test_ParseJSON(t *testing.T) {
 					return `{"test1":{"nested":"true"},"test2":"string","test3":1,"test4":1.1,"test5":[[1], [2, 3],[]],"test6":null}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				newMap := expectedMap.PutEmptyMap("test1")
 				newMap.PutStr("nested", "true")
 				expectedMap.PutStr("test2", "string")
@@ -141,19 +167,26 @@ func Test_ParseJSON(t *testing.T) {
 			result, err := exprFunc(context.Background(), nil)
 			assert.NoError(t, err)
 
-			resultMap, ok := result.(pcommon.Map)
-			require.True(t, ok)
+			if tt.wantMap != nil {
+				resultMap, ok := result.(pcommon.Map)
+				require.True(t, ok)
+				expected := pcommon.NewMap()
+				tt.wantMap(expected)
+				assert.Equal(t, expected.Len(), resultMap.Len())
+				expected.Range(func(k string, _ pcommon.Value) bool {
+					ev, _ := expected.Get(k)
+					av, _ := resultMap.Get(k)
+					assert.Equal(t, ev, av)
+					return true
+				})
+			} else if tt.wantSlice != nil {
+				resultSlice, ok := result.(pcommon.Slice)
+				require.True(t, ok)
+				expected := pcommon.NewSlice()
+				tt.wantSlice(expected)
+				assert.Equal(t, expected, resultSlice)
+			}
 
-			expected := pcommon.NewMap()
-			tt.want(expected)
-
-			assert.Equal(t, expected.Len(), resultMap.Len())
-			expected.Range(func(k string, _ pcommon.Value) bool {
-				ev, _ := expected.Get(k)
-				av, _ := resultMap.Get(k)
-				assert.Equal(t, ev, av)
-				return true
-			})
 		})
 	}
 }
