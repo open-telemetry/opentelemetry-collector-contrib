@@ -1,9 +1,10 @@
 type: otlpjson
+scope_name: otelcol/otlpjson
 
 status:
   class: connector
   stability:
-    development: [logs_to_metrics, logs_to_traces, logs_to_logs]
+    alpha: [logs_to_metrics, logs_to_traces, logs_to_logs]
   distributions: [contrib]
   codeowners:
     active: [djaglowski, ChrsMark]

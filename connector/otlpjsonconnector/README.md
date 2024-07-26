@@ -7,16 +7,16 @@
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fotlpjson%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fotlpjson) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fotlpjson%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fotlpjson) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski), [@ChrsMark](https://www.github.com/ChrsMark) |
 
-[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 
 ## Supported Pipeline Types
 
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
 | ------------------------ | ------------------------ | ----------------- |
-| logs | metrics | [development] |
-| logs | traces | [development] |
-| logs | logs | [development] |
+| logs | metrics | [alpha] |
+| logs | traces | [alpha] |
+| logs | logs | [alpha] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
