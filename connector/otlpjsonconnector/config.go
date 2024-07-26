@@ -4,7 +4,3 @@
 package otlpjsonconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector"
 
 type Config struct{}
-
-func (c *Config) Validate() error {
-	return nil
-}
