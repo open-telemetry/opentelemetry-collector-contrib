@@ -196,7 +196,8 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	err = connector.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
 
-	for {
+	timeout := time.Now().Add(1 * time.Minute)
+	for time.Now().Before(timeout) {
 		if len(metricsSink.AllMetrics()) > 0 {
 			break
 		}
@@ -204,7 +205,7 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	}
 
 	metrics := metricsSink.AllMetrics()
-	assert.Equal(t, 1, len(metrics))
+	require.Equal(t, 1, len(metrics))
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
