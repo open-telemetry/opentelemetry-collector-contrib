@@ -29,10 +29,7 @@ build-ci-image-main:
   stage: e2e
   image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/test-infra-definitions/runner$TEST_INFRA_DEFINITIONS_BUILDIMAGES_SUFFIX:$TEST_INFRA_DEFINITIONS_BUILDIMAGES
   tags: ["arch:amd64"]
-  needs:
-    - !reference [.needs_new_e2e_template]
   before_script:
-    - !reference [.retrieve_linux_go_e2e_deps]
     # Setup AWS Credentials
     - mkdir -p ~/.aws
     - $CI_PROJECT_DIR/tools/ci/aws_ssm_get_wrapper.sh ci.opentelemetry-collector-contrib.agent-qa-profile >> ~/.aws/config
