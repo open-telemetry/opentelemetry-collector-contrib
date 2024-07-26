@@ -167,7 +167,10 @@ func isProfilingData(sl plog.ScopeLogs) bool {
 // ld log records are parsed to Splunk events.
 func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers map[string]string) error {
 	buf := c.bufferPool.get()
-	defer c.bufferPool.put(buf)
+	buf.OnClose(func() error {
+		c.bufferPool.put(buf)
+		return nil
+	})
 	is := iterState{}
 	var permanentErrors []error
 
@@ -374,7 +377,10 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 // md metrics are parsed to Splunk events.
 func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
 	buf := c.bufferPool.get()
-	defer c.bufferPool.put(buf)
+	buf.OnClose(func() error {
+		c.bufferPool.put(buf)
+		return nil
+	})
 	is := iterState{}
 
 	var permanentErrors []error
@@ -419,7 +425,10 @@ func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.M
 // md metrics are parsed to Splunk events.
 func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
 	buf := c.bufferPool.get()
-	defer c.bufferPool.put(buf)
+	buf.OnClose(func() error {
+		c.bufferPool.put(buf)
+		return nil
+	})
 	is := iterState{}
 	var permanentErrors []error
 

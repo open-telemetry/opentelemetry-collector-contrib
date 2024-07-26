@@ -126,7 +126,7 @@ func (c *cancellableGzipWriter) Reset() {
 }
 
 func (c *cancellableGzipWriter) Flush() error {
-	return c.innerWriter.Close()
+	return c.innerWriter.Flush()
 }
 
 func (c *cancellableGzipWriter) OnClose(onClose func() error) {
@@ -134,6 +134,9 @@ func (c *cancellableGzipWriter) OnClose(onClose func() error) {
 }
 
 func (c *cancellableGzipWriter) Close() error {
+	if err := c.innerWriter.Close(); err != nil {
+		return err
+	}
 	return c.onClose()
 }
 
