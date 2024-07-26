@@ -25,3 +25,41 @@ build-ci-image-main:
     DOCKERFILE: ci/Dockerfile
     IMAGE_TAG_PREFIX: otelcolcontrib
 
+.new_e2e_template:
+  stage: e2e
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/test-infra-definitions/runner$TEST_INFRA_DEFINITIONS_BUILDIMAGES_SUFFIX:$TEST_INFRA_DEFINITIONS_BUILDIMAGES
+  tags: ["arch:amd64"]
+  needs:
+    - !reference [.needs_new_e2e_template]
+  before_script:
+    - !reference [.retrieve_linux_go_e2e_deps]
+    # Setup AWS Credentials
+    - mkdir -p ~/.aws
+    - $CI_PROJECT_DIR/tools/ci/aws_ssm_get_wrapper.sh ci.opentelemetry-collector-contrib.agent-qa-profile >> ~/.aws/config
+    - export AWS_PROFILE=agent-qa-ci
+    # Now all `aws` commands target the agent-qa profile
+    - $CI_PROJECT_DIR/tools/ci/aws_ssm_get_wrapper.sh ci.opentelemetry-collector-contrib.ssh_public_key > $E2E_PUBLIC_KEY_PATH
+    - touch $E2E_PRIVATE_KEY_PATH && chmod 600 $E2E_PRIVATE_KEY_PATH && $CI_PROJECT_DIR/tools/ci/aws_ssm_get_wrapper.sh ci.opentelemetry-collector-contrib.ssh_private_key > $E2E_PRIVATE_KEY_PATH
+    # Use S3 backend
+    - pulumi login "s3://dd-pulumi-state?region=us-east-1&awssdk=v2&profile=$AWS_PROFILE"
+    # Generate external links to CI VISIBILITY, used by artifacts:reports:annotations
+    - inv -e gitlab.generate-ci-visibility-links --output=$EXTERNAL_LINKS_PATH
+  variables:
+    KUBERNETES_MEMORY_REQUEST: 12Gi
+    KUBERNETES_MEMORY_LIMIT: 16Gi
+    KUBERNETES_CPU_REQUEST: 6
+    E2E_PUBLIC_KEY_PATH: /tmp/agent-qa-ssh-key.pub
+    E2E_PRIVATE_KEY_PATH: /tmp/agent-qa-ssh-key
+    E2E_KEY_PAIR_NAME: ci.open-elemetry-collector-contrib
+    E2E_PIPELINE_ID: $CI_PIPELINE_ID
+    E2E_COMMIT_SHA: $CI_COMMIT_SHORT_SHA
+    E2E_OUTPUT_DIR: $CI_PROJECT_DIR/e2e-output
+  script:
+    - gotest $TARGETS/... -v timeout 0
+
+new-e2e-remote-config:
+  extends: .new_e2e_template
+  variables:
+    TARGETS: ./e2e-tests
+    TEAM: otel
+
