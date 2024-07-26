@@ -28,18 +28,19 @@ type vmGroupInfo struct {
 }
 
 type vcenterScrapeData struct {
-	datacenters          []*mo.Datacenter
-	datastores           []*mo.Datastore
-	clusterRefs          []*types.ManagedObjectReference
-	rPoolIPathsByRef     map[string]*string
-	vAppIPathsByRef      map[string]*string
-	rPoolsByRef          map[string]*mo.ResourcePool
-	computesByRef        map[string]*mo.ComputeResource
-	hostsByRef           map[string]*mo.HostSystem
-	hostPerfMetricsByRef map[string]*performance.EntityMetric
-	vmsByRef             map[string]*mo.VirtualMachine
-	vmPerfMetricsByRef   map[string]*performance.EntityMetric
-	vmVSANMetricsByUUID  map[string]*VSANMetricResults
+	datacenters           []*mo.Datacenter
+	datastores            []*mo.Datastore
+	clusterRefs           []*types.ManagedObjectReference
+	rPoolIPathsByRef      map[string]*string
+	vAppIPathsByRef       map[string]*string
+	rPoolsByRef           map[string]*mo.ResourcePool
+	computesByRef         map[string]*mo.ComputeResource
+	hostsByRef            map[string]*mo.HostSystem
+	hostPerfMetricsByRef  map[string]*performance.EntityMetric
+	vmsByRef              map[string]*mo.VirtualMachine
+	vmPerfMetricsByRef    map[string]*performance.EntityMetric
+	vmVSANMetricsByUUID   map[string]*VSANMetricResults
+	hostVSANMetricsByUUID map[string]*VSANMetricResults
 }
 
 type vcenterMetricScraper struct {
@@ -69,18 +70,19 @@ func newVmwareVcenterScraper(
 
 func newVcenterScrapeData() *vcenterScrapeData {
 	return &vcenterScrapeData{
-		datacenters:          make([]*mo.Datacenter, 0),
-		datastores:           make([]*mo.Datastore, 0),
-		clusterRefs:          make([]*types.ManagedObjectReference, 0),
-		rPoolIPathsByRef:     make(map[string]*string),
-		vAppIPathsByRef:      make(map[string]*string),
-		computesByRef:        make(map[string]*mo.ComputeResource),
-		hostsByRef:           make(map[string]*mo.HostSystem),
-		hostPerfMetricsByRef: make(map[string]*performance.EntityMetric),
-		rPoolsByRef:          make(map[string]*mo.ResourcePool),
-		vmsByRef:             make(map[string]*mo.VirtualMachine),
-		vmPerfMetricsByRef:   make(map[string]*performance.EntityMetric),
-		vmVSANMetricsByUUID:  make(map[string]*VSANMetricResults),
+		datacenters:           make([]*mo.Datacenter, 0),
+		datastores:            make([]*mo.Datastore, 0),
+		clusterRefs:           make([]*types.ManagedObjectReference, 0),
+		rPoolIPathsByRef:      make(map[string]*string),
+		vAppIPathsByRef:       make(map[string]*string),
+		computesByRef:         make(map[string]*mo.ComputeResource),
+		hostsByRef:            make(map[string]*mo.HostSystem),
+		hostPerfMetricsByRef:  make(map[string]*performance.EntityMetric),
+		rPoolsByRef:           make(map[string]*mo.ResourcePool),
+		vmsByRef:              make(map[string]*mo.VirtualMachine),
+		vmPerfMetricsByRef:    make(map[string]*performance.EntityMetric),
+		vmVSANMetricsByUUID:   make(map[string]*VSANMetricResults),
+		hostVSANMetricsByUUID: make(map[string]*VSANMetricResults),
 	}
 }
 
@@ -269,9 +271,16 @@ func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacente
 	results, err := v.client.PerfMetricsQuery(ctx, spec, hostPerfMetricList, hsRefs)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to retrieve perf metrics for HostSystems: %w", err))
+	} else {
+		v.scrapeData.hostPerfMetricsByRef = results.resultsByRef
+	}
+
+	vSANMetrics, err := v.client.VSANHosts(ctx, v.scrapeData.clusterRefs)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for Hosts: %w", err))
 		return
 	}
-	v.scrapeData.hostPerfMetricsByRef = results.resultsByRef
+	v.scrapeData.hostVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }
 
 // scrapeResourcePools scrapes and stores all relevant property data for a Datacenter's ResourcePools/vApps

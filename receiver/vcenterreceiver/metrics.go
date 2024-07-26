@@ -195,6 +195,36 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(ts, cpuUtilization)
 }
 
+// recordHostVSANMetrics records vSAN metrics for a vSphere host
+func (v *vcenterMetricScraper) recordHostVSANMetrics(vSANMetrics *VSANMetricResults) {
+	for _, metric := range vSANMetrics.MetricDetails {
+		for i, value := range metric.Values {
+			timestamp := metric.Timestamps[i]
+			switch metric.MetricLabel {
+			case "iopsRead":
+				v.mb.RecordVcenterHostVsanOperationsDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanOperationTypeRead)
+			case "iopsWrite":
+				v.mb.RecordVcenterHostVsanOperationsDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanOperationTypeWrite)
+			case "throughputRead":
+				readRate := float64(value) / float64(metric.Interval)
+				v.mb.RecordVcenterHostVsanThroughputDataPoint(pcommon.NewTimestampFromTime(*timestamp), readRate, metadata.AttributeVsanThroughputDirectionRead)
+			case "throughputWrite":
+				writeRate := float64(value) / float64(metric.Interval)
+				v.mb.RecordVcenterHostVsanThroughputDataPoint(pcommon.NewTimestampFromTime(*timestamp), writeRate, metadata.AttributeVsanThroughputDirectionWrite)
+			case "latencyAvgRead":
+				v.mb.RecordVcenterHostVsanLatencyAvgDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanLatencyTypeRead)
+			case "latencyAvgWrite":
+				v.mb.RecordVcenterHostVsanLatencyAvgDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanLatencyTypeWrite)
+			case "congestion":
+				congestionRate := float64(value) / float64(metric.Interval)
+				v.mb.RecordVcenterHostVsanCongestionsDataPoint(pcommon.NewTimestampFromTime(*timestamp), congestionRate)
+			case "clientCacheHitRate":
+				v.mb.RecordVcenterHostVsanCacheHitRateDataPoint(pcommon.NewTimestampFromTime(*timestamp), value)
+			}
+		}
+	}
+}
+
 // recordVMStats records stat metrics for a vSphere Virtual Machine
 func (v *vcenterMetricScraper) recordVMStats(
 	ts pcommon.Timestamp,

@@ -58,6 +58,11 @@ type MetricsConfig struct {
 	VcenterHostNetworkPacketRate       MetricConfig `mapstructure:"vcenter.host.network.packet.rate"`
 	VcenterHostNetworkThroughput       MetricConfig `mapstructure:"vcenter.host.network.throughput"`
 	VcenterHostNetworkUsage            MetricConfig `mapstructure:"vcenter.host.network.usage"`
+	VcenterHostVsanCacheHitRate        MetricConfig `mapstructure:"vcenter.host.vsan.cache.hit_rate"`
+	VcenterHostVsanCongestions         MetricConfig `mapstructure:"vcenter.host.vsan.congestions"`
+	VcenterHostVsanLatencyAvg          MetricConfig `mapstructure:"vcenter.host.vsan.latency.avg"`
+	VcenterHostVsanOperations          MetricConfig `mapstructure:"vcenter.host.vsan.operations"`
+	VcenterHostVsanThroughput          MetricConfig `mapstructure:"vcenter.host.vsan.throughput"`
 	VcenterResourcePoolCPUShares       MetricConfig `mapstructure:"vcenter.resource_pool.cpu.shares"`
 	VcenterResourcePoolCPUUsage        MetricConfig `mapstructure:"vcenter.resource_pool.cpu.usage"`
 	VcenterResourcePoolMemoryBallooned MetricConfig `mapstructure:"vcenter.resource_pool.memory.ballooned"`
@@ -178,6 +183,21 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterHostNetworkUsage: MetricConfig{
 			Enabled: true,
+		},
+		VcenterHostVsanCacheHitRate: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostVsanCongestions: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostVsanLatencyAvg: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostVsanOperations: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostVsanThroughput: MetricConfig{
+			Enabled: false,
 		},
 		VcenterResourcePoolCPUShares: MetricConfig{
 			Enabled: true,

@@ -219,7 +219,10 @@ func routeVsanPerfQueryPerf(t *testing.T, body map[string]any) ([]byte, error) {
 		return []byte{}, errNotFound
 	}
 	entityRefID := querySpecs["entityRefId"].(string)
-	if entityRefID == "virtual-machine:*" {
+	switch entityRefID {
+	case "host-domclient:*":
+		return loadResponse("host-vsan.xml")
+	case "virtual-machine:*":
 		return loadResponse("vm-vsan.xml")
 	}
 	return []byte{}, errNotFound
