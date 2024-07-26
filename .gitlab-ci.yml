@@ -2,7 +2,11 @@ variables:
   CI_IMAGE: registry.ddbuild.io/images/docker:20.10.13
   RESTORE_CACHE_ATTEMPTS: 2
   BUILD_STABLE_REGISTRY: '486234852809.dkr.ecr.us-east-1.amazonaws.com'
-
+  # To use images from test-infra-definitions dev branches, set the SUFFIX variable to -dev
+  # and check the job creating the image to make sure you have the right SHA prefix
+  TEST_INFRA_DEFINITIONS_BUILDIMAGES_SUFFIX: ""
+  # Make sure to update test-infra-definitions version in go.mod as well
+  TEST_INFRA_DEFINITIONS_BUILDIMAGES: b02a714d7de7
 stages:
   - e2e
   - build
@@ -33,15 +37,13 @@ build-ci-image-main:
   before_script:
     # Setup AWS Credentials
     - mkdir -p ~/.aws
-    - $CI_PROJECT_DIR/tools/ci/aws_ssm_get_wrapper.sh ci.opentelemetry-collector-contrib.agent-qa-profile >> ~/.aws/config
+    - aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.agent-qa-profile" --with-decryption --query "Parameter.Value" --output text >> ~/.aws/config
     - export AWS_PROFILE=agent-qa-ci
     # Now all `aws` commands target the agent-qa profile
-    - $CI_PROJECT_DIR/tools/ci/aws_ssm_get_wrapper.sh ci.opentelemetry-collector-contrib.ssh_public_key > $E2E_PUBLIC_KEY_PATH
-    - touch $E2E_PRIVATE_KEY_PATH && chmod 600 $E2E_PRIVATE_KEY_PATH && $CI_PROJECT_DIR/tools/ci/aws_ssm_get_wrapper.sh ci.opentelemetry-collector-contrib.ssh_private_key > $E2E_PRIVATE_KEY_PATH
+    - aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.ssh_public_key" --with-decryption --query "Parameter.Value" --output text > $E2E_PUBLIC_KEY_PATH
+    - touch $E2E_PRIVATE_KEY_PATH && chmod 600 $E2E_PRIVATE_KEY_PATH && aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.ssh_private_key" --with-decryption --query "Parameter.Value" --output text > $E2E_PRIVATE_KEY_PATH
     # Use S3 backend
     - pulumi login "s3://dd-pulumi-state?region=us-east-1&awssdk=v2&profile=$AWS_PROFILE"
-    # Generate external links to CI VISIBILITY, used by artifacts:reports:annotations
-    - inv -e gitlab.generate-ci-visibility-links --output=$EXTERNAL_LINKS_PATH
   variables:
     KUBERNETES_MEMORY_REQUEST: 12Gi
     KUBERNETES_MEMORY_LIMIT: 16Gi
@@ -51,11 +53,11 @@ build-ci-image-main:
     E2E_KEY_PAIR_NAME: ci.open-elemetry-collector-contrib
     E2E_OUTPUT_DIR: $CI_PROJECT_DIR/e2e-output
   script:
-    - gotest $TARGETS/... -v timeout 0
+    - cd e2e-tests && go test $TARGETS/... -v timeout 0
 
 new-e2e-remote-config:
   extends: .new_e2e_template
   variables:
-    TARGETS: ./e2e-tests
+    TARGETS: ./
     TEAM: otel
 
