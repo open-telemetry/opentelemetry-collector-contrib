@@ -48,8 +48,9 @@ exporters:
 
 extensions:
   basicauth:
-    username: elastic
-    password: changeme
+    client_auth:
+      username: elastic
+      password: changeme
 
 ······
 
@@ -126,15 +127,16 @@ behaviours, which may be configured through the following settings:
   - `mode` (default=none): The fields naming mode. valid modes are:
     - `none`: Use original fields and event structure from the OTLP event.
     - `ecs`: Try to map fields to [Elastic Common Schema (ECS)][ECS]
+    - `otel`: Elastic's preferred "OTel-native" mapping mode. Uses original fields and event structure from the OTLP event.
+          :warning: This mode's behavior is unstable, it is currently is experimental and undergoing changes.
+          There's a special treatment for the following attributes: `data_stream.type`, `data_stream.dataset`, `data_stream.namespace`. Instead of serializing these values under the `*attributes.*` namespace, they're put at the root of the document, to conform with the conventions of the data stream naming scheme that maps these as `constant_keyword` fields.
+
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 
-  - `fields` (optional): Configure additional fields mappings.
-  - `file` (optional): Read additional field mappings from the provided YAML file.
-  - `dedup` (default=true; DEPRECATED, in future deduplication will always be enabled):
-    Try to find and remove duplicate fields/attributes from events before publishing
-    to Elasticsearch. Some structured logging libraries can produce duplicate fields
-    (for example zap). Elasticsearch will reject documents that have duplicate fields.
+  - `dedup` (DEPRECATED). This configuration is deprecated and non-operational,
+    and will be removed in the future. Object keys are always deduplicated to
+    avoid Elasticsearch rejecting documents.
   - `dedot` (default=true; DEPRECATED, in future dedotting will always be enabled
     for ECS mode, and never for other modes): When enabled attributes with `.`
     will be split into proper json objects.
@@ -183,6 +185,16 @@ Settings related to node discovery are:
   - `interval` (optional): Interval to update the list of Elasticsearch nodes.
 
 Node discovery can be disabled by setting `discover.interval` to 0.
+
+### Telemetry settings
+
+The Elasticsearch Exporter's own telemetry settings for testing and debugging purposes.
+
+⚠️ This is experimental and may change at any time.
+
+- `telemetry`:
+  - `log_request_body` (default=false): Logs Elasticsearch client request body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
+  - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
 
 ## Exporting metrics
 

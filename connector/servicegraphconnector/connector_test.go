@@ -66,31 +66,69 @@ func TestConnectorShutdown(t *testing.T) {
 }
 
 func TestConnectorConsume(t *testing.T) {
-	// Prepare
-	cfg := &Config{
-		Dimensions: []string{"some-attribute", "non-existing-attribute"},
-		Store:      StoreConfig{MaxItems: 10},
-	}
+	t.Run("test common case", func(t *testing.T) {
+		// Prepare
+		cfg := &Config{
+			Dimensions: []string{"some-attribute", "non-existing-attribute"},
+			Store:      StoreConfig{MaxItems: 10},
+		}
 
-	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zaptest.NewLogger(t)
-	conn, err := newConnector(set, cfg, newMockMetricsExporter())
-	require.NoError(t, err)
-	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+		set := componenttest.NewNopTelemetrySettings()
+		set.Logger = zaptest.NewLogger(t)
+		conn, err := newConnector(set, cfg, newMockMetricsExporter())
+		require.NoError(t, err)
+		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
-	// Test & verify
-	td := buildSampleTrace(t, "val")
-	// The assertion is part of verifyHappyCaseMetrics func.
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+		// Test & verify
+		td := buildSampleTrace(t, "val")
+		// The assertion is part of verifyHappyCaseMetrics func.
+		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
-	// Force collection
-	conn.store.Expire()
-	md, err := conn.buildMetrics()
-	assert.NoError(t, err)
-	verifyHappyCaseMetrics(t, md)
+		// Force collection
+		conn.store.Expire()
+		md, err := conn.buildMetrics()
+		assert.NoError(t, err)
+		verifyHappyCaseMetrics(t, md)
 
-	// Shutdown the connector
-	assert.NoError(t, conn.Shutdown(context.Background()))
+		// Shutdown the connector
+		assert.NoError(t, conn.Shutdown(context.Background()))
+	})
+	t.Run("test fix failed label not work", func(t *testing.T) {
+		cfg := &Config{
+			Store: StoreConfig{MaxItems: 10},
+		}
+		set := componenttest.NewNopTelemetrySettings()
+		set.Logger = zaptest.NewLogger(t)
+		conn, err := newConnector(set, cfg, newMockMetricsExporter())
+		require.NoError(t, err)
+
+		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+		defer require.NoError(t, conn.Shutdown(context.Background()))
+
+		// this trace simulate two services' trace: foo, bar
+		// foo called bar three times, two success, one failed
+		td, err := golden.ReadTraces("testdata/failed-label-not-work-simple-trace.yaml")
+		assert.NoError(t, err)
+		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+		// Force collection
+		conn.store.Expire()
+		actualMetrics, err := conn.buildMetrics()
+		assert.NoError(t, err)
+
+		// Verify
+		expectedMetrics, err := golden.ReadMetrics("testdata/failed-label-not-work-expect-metrics.yaml")
+		assert.NoError(t, err)
+
+		err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreDatapointAttributesOrder(),
+		)
+		require.NoError(t, err)
+	})
 }
 
 func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
@@ -262,7 +300,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 			Dimensions: []string{},
 		},
 	}
-	metricKey := p.buildMetricKey("foo", "bar", "", map[string]string{})
+	metricKey := p.buildMetricKey("foo", "bar", "", "false", map[string]string{})
 
 	testCases := []struct {
 		caseStr  string
@@ -438,7 +476,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	require.Len(t, sm.Metrics, 1)
 	got := sm.Metrics[0]
 	want := metricdata.Metrics{
-		Name:        "connector_servicegraph_total_edges",
+		Name:        "otelcol_connector_servicegraph_total_edges",
 		Description: "Total number of unique edges",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{

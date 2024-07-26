@@ -128,7 +128,8 @@ It is always preferred to find a sponsor. However in an effort to ensure vendor 
 component using a round-robin fashion if the following circumstances are met:
 
 1. A member of the OpenTelemetry project proposes to contribute and support the component on behalf of the vendor.
-2. The vendor does not yet have a component of the same class (i.e. receiver, processor, exporter, connector, or extension) in the repository.
+2. The proposed component is either a receiver or exporter. With this, we aim to foster an interoperable ecosystem.
+3. The vendor does not yet have a component of the same kind (receiver or exporter) in the repository.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
@@ -253,6 +254,7 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
+* [@mwear](https://github.com/mwear)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@mx-psi](https://github.com/mx-psi)

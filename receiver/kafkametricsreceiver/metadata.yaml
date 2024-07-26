@@ -43,14 +43,14 @@ metrics:
   kafka.partition.current_offset:
     enabled: true
     description: Current offset of partition of topic.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [topic, partition]
   kafka.partition.oldest_offset:
     enabled: true
     description: Oldest offset of partition of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [topic, partition]
@@ -85,28 +85,28 @@ metrics:
   kafka.consumer_group.offset:
     enabled: true
     description: Current offset of the consumer group at partition of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [group, topic, partition]
   kafka.consumer_group.offset_sum:
     enabled: true
     description: Sum of consumer group offset across partitions of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [group, topic]
   kafka.consumer_group.lag:
     enabled: true
     description: Current approximate lag of consumer group at partition of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [group, topic, partition]
   kafka.consumer_group.lag_sum:
     enabled: true
     description: Current approximate sum of consumer group lag across all partitions of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [group, topic]
