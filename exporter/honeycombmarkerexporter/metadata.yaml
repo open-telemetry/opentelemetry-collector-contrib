@@ -1,5 +1,4 @@
 type: honeycombmarker
-scope_name: otelcol/honeycombmarker
 
 status:
   class: exporter
