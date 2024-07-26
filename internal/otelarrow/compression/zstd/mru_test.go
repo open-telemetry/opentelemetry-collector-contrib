@@ -77,7 +77,7 @@ func TestMRUReset(t *testing.T) {
 	// Ensure the monotonic clock has has advanced before resetting.
 	time.Sleep(10 * time.Millisecond)
 
-	g2 := m.Reset()
+	m.Reset()
 	require.Equal(t, 0, m.Size())
 
 	// This doesn't take because its generation is before the reset.
