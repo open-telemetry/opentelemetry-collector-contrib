@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/config v0.56.0-rc.6
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.56.0-rc.6
 	github.com/DataDog/datadog-agent/comp/core/log v0.56.0-rc.6
-	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.56.0-rc.6
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.56.0-rc.6
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.56.0-rc.6
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.56.0-rc.6
@@ -21,6 +21,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/sds v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/sources v0.56.0-rc.6
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.6
 	github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.6 // indirect
@@ -114,7 +115,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/metrics v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/processor v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/sender v0.56.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/sources v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0-rc.6 // indirect
