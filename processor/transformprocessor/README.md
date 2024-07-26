@@ -29,11 +29,11 @@ Each condition and statement can access and transform telemetry using functions 
 
 The transform processor allows configuring multiple context statements for traces, metrics, and logs.
 The value of `context` specifies which [OTTL Context](#contexts) to use when interpreting the associated statements.
-The conditions and statement strings, which must be OTTL compatible, will be passed to the OTTL and interpreted using the associated context.
-The condition string should contain a string with a WHERE clause body without the `where` keyword at the beginning.
+The global conditions and statement strings, which must be OTTL compatible, will be passed to OTTL and interpreted using the associated context.
+The condition string should contain a Where clause body without the `where` keyword at the beginning.
 
 Each context will be processed in the order specified.
-Within a context, each condition is checked and if any evaluates to true, the statements are executed in order.
+Within a context, each global condition is checked and if any evaluates to true, the statements are executed in order.
 If a context doesn't meet any of the conditions, then the associated statement will be skipped.
 
 Each statement may have a Where clause that acts as an additional check for whether to execute the statement.
