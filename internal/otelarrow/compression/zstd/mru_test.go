@@ -5,6 +5,7 @@ package zstd
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -73,7 +74,10 @@ func TestMRUReset(t *testing.T) {
 	})
 	require.Equal(t, 1, m.Size())
 
-	m.Reset()
+	// Ensure the monotonic clock has has advanced before resetting.
+	time.Sleep(10 * time.Millisecond)
+
+	g2 := m.Reset()
 	require.Equal(t, 0, m.Size())
 
 	// This doesn't take because its generation is before the reset.
