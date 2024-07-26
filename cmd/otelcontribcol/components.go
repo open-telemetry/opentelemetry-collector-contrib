@@ -27,6 +27,7 @@ import (
 	exceptionsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector"
 	failoverconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 	grafanacloudconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector"
+	otlpjsonconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector"
 	roundrobinconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector"
 	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 	servicegraphconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
@@ -647,6 +648,7 @@ func components() (otelcol.Factories, error) {
 		exceptionsconnector.NewFactory(),
 		failoverconnector.NewFactory(),
 		grafanacloudconnector.NewFactory(),
+		otlpjsonconnector.NewFactory(),
 		roundrobinconnector.NewFactory(),
 		routingconnector.NewFactory(),
 		servicegraphconnector.NewFactory(),
@@ -662,6 +664,7 @@ func components() (otelcol.Factories, error) {
 	factories.ConnectorModules[exceptionsconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.105.0"
 	factories.ConnectorModules[failoverconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.105.0"
 	factories.ConnectorModules[grafanacloudconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector v0.105.0"
+	factories.ConnectorModules[otlpjsonconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector v0.105.0"
 	factories.ConnectorModules[roundrobinconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector v0.105.0"
 	factories.ConnectorModules[routingconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.105.0"
 	factories.ConnectorModules[servicegraphconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.105.0"

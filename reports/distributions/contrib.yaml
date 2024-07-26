@@ -8,6 +8,7 @@ components:
         - exceptions
         - failover
         - grafanacloud
+        - otlpjson
         - roundrobin
         - routing
         - servicegraph
