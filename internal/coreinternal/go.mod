@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/consumer v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/pdata v1.12.1-0.20240726211759-a108bb31a4fd
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/receiver v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/semconv v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/otel v1.28.0
