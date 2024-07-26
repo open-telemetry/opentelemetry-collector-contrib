@@ -202,6 +202,8 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 		name    string
 		target  ottl.StringGetter[any]
 		pattern string
+
+		definitions []string
 	}{
 		{
 			name: "regex - target is non-string",
@@ -210,7 +212,8 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 					return 123, nil
 				},
 			},
-			pattern: "(?P<line>.*)",
+			pattern:     "(?P<line>.*)",
+			definitions: nil,
 		},
 		{
 			name: "regex - target is nil",
@@ -219,7 +222,8 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 					return nil, nil
 				},
 			},
-			pattern: "(?P<line>.*)",
+			pattern:     "(?P<line>.*)",
+			definitions: nil,
 		},
 		{
 			name: "target is nil",
@@ -228,7 +232,8 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 					return nil, nil
 				},
 			},
-			pattern: "%{URI}",
+			pattern:     "%{URI}",
+			definitions: nil,
 		},
 		{
 			name: "target is non-string",
@@ -237,14 +242,38 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 					return 123, nil
 				},
 			},
+			pattern:     "%{URI}",
+			definitions: nil,
+		},
+		{
+			name: "custom pattern name invalid",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "http://user:password@example.com:80/path?query=string", nil
+				},
+			},
 			pattern: "%{URI}",
+			definitions: []string{
+				"PAT:TERN=invalid",
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			nco := ottl.NewTestingOptional(false)
-			definitions := ottl.NewTestingOptional[[]ottl.StringGetter[any]](nil)
+			var defGetters []ottl.StringGetter[any]
+			for _, def := range tt.definitions {
+				patternDefinition := def
+				dg := &ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return patternDefinition, nil
+					},
+				}
+				defGetters = append(defGetters, dg)
+			}
+
+			definitions := ottl.NewTestingOptional[[]ottl.StringGetter[any]](defGetters)
 			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nco, definitions)
 			assert.NoError(t, err)
 

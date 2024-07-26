@@ -596,6 +596,16 @@ The `ExtractGrokPatterns` Converter returns a `pcommon.Map` struct that is a res
 
 `target` is a Getter that returns a string. `pattern` is a grok pattern string. `namedCapturesOnly` specifies if non-named captures should be returned. `patternDefinitions` is a list of custom pattern definition strings used `pattern` in a form of `PATTERN_NAME=PATTERN`. 
 
+Use `patternDefinition` to improve readability when extracted `pattern` is not part of the default set or you need custom naming. 
+For example to parse password from `/etc/passwd` and keep `pattern` readable:
+- `pattern`: `%{USERNAME:user.name}:%{PASSWORD:user.password}:%{USERINFO}`
+- `patternDefinitions` as `USERNAME` is in default set:
+  - `PASSWORD=%{WORD}`
+  - `USERINFO=%{GREEDYDATA}`
+- `smith:x:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh` resulting in:
+ - `user.name`: smith
+ - `user.password`: pass123
+
 If `target` is not a string or nil `ExtractGrokPatterns` will return an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` will error on startup.
 
 Parsing is done using [Elastic Go-Grok](https://github.com/elastic/go-grok?tab=readme-ov-file#default-set-of-patterns) library.
