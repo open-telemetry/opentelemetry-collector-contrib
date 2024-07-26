@@ -374,7 +374,9 @@ Examples:
 
 `aggregate_on_attributes(function, Optional[attributes])`
 
-The `aggregate_on_attributes` function aggregates all datapoints in the metric based on the supplied attributes. `function` is a string that represents the function to use for the aggregation and `attributes` is an optional list of attribute keys to aggregate upon. If `attributes` is not specified, all attributes of the metric are taken into consideration for aggregation.
+The `aggregate_on_attributes` function aggregates all datapoints in the metric based on the supplied attributes. To have the datapoints aggregated, each datapoint has to contain all of the specified attribute keys. If one of the key is missing in the attributes list, the datapoint will be left out from the aggregation. If no attributes are specified, all attributes of the metric datapoints are taken into consideration for aggregation, which means that every datapoint needs to have the same keys present in its attribute list.
+
+`function` is a string that represents the function to use for the aggregation and `attributes` is an optional list of attribute keys to aggregate upon.
 
 The following metric types can be aggregated:
 
