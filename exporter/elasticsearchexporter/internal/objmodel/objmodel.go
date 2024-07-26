@@ -497,6 +497,15 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 	case KindNil:
 		return w.OnNil()
 	case KindBool:
+		if otel {
+			// FIXME: workaround for TSDB not supporting bool dimension
+			// https://github.com/elastic/elasticsearch/issues/111338
+			if v.primitive == 1 {
+				return w.OnString("true")
+			} else {
+				return w.OnString("false")
+			}
+		}
 		return w.OnBool(v.primitive == 1)
 	case KindInt:
 		return w.OnInt64(int64(v.primitive))
