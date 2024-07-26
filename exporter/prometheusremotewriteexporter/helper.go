@@ -13,9 +13,9 @@ import (
 
 // Track batch sizes sent to avoid over allocating huge buffers.
 // This helps in the case where large batches are sent to avoid allocating too much unused memory
-var nextTimeSeriesBufferSize int = math.MaxInt
-var nextMetricMetadataBufferSize int = math.MaxInt
-var nextRequestBufferSize int = 0
+var nextTimeSeriesBufferSize = math.MaxInt
+var nextMetricMetadataBufferSize = math.MaxInt
+var nextRequestBufferSize int
 
 // batchTimeSeries splits series into multiple batch write requests.
 func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, m []*prompb.MetricMetadata) ([]*prompb.WriteRequest, error) {
