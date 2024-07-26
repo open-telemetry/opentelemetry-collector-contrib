@@ -218,11 +218,8 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
-<<<<<<< HEAD
 - [scale_metric](#scale_metric)
-=======
 - [aggregate_on_attributes](#aggregate_on_attributes)
->>>>>>> f8c7263222 ([processor/transform] introduce aggregate_on_attributes function for metrics)
 
 ### convert_sum_to_gauge
 
