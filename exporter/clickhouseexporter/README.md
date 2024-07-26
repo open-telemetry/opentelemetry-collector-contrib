@@ -312,6 +312,8 @@ Processing:
 
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
+    - `enabled` (default = true)
+    - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
     - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping data.
 - `retry_on_failure`
     - `enabled` (default = true)
