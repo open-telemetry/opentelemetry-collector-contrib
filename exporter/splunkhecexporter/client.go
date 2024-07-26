@@ -444,7 +444,10 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 // td traces are parsed to Splunk events.
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, headers map[string]string) error {
 	buf := c.bufferPool.get()
-	defer c.bufferPool.put(buf)
+	buf.OnClose(func() error {
+		c.bufferPool.put(buf)
+		return nil
+	})
 	is := iterState{}
 	var permanentErrors []error
 
@@ -464,7 +467,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 }
 
 func (c *client) postEvents(ctx context.Context, buf buffer, headers map[string]string) error {
-	if err := buf.Close(); err != nil {
+	if err := buf.Flush(); err != nil {
 		return err
 	}
 	return c.hecWorker.send(ctx, buf, headers)

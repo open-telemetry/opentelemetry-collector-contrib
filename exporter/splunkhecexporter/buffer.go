@@ -19,7 +19,9 @@ type buffer interface {
 	io.Writer
 	io.Reader
 	io.Closer
+	OnClose(func() error)
 	Reset()
+	Flush() error
 	Len() int
 	Empty() bool
 }
@@ -27,6 +29,7 @@ type buffer interface {
 type cancellableBytesWriter struct {
 	innerWriter *bytes.Buffer
 	maxCapacity uint
+	onClose     func() error
 }
 
 func (c *cancellableBytesWriter) Write(b []byte) (int, error) {
@@ -47,8 +50,16 @@ func (c *cancellableBytesWriter) Reset() {
 	c.innerWriter.Reset()
 }
 
-func (c *cancellableBytesWriter) Close() error {
+func (c *cancellableBytesWriter) Flush() error {
 	return nil
+}
+
+func (c *cancellableBytesWriter) OnClose(onClose func() error) {
+	c.onClose = onClose
+}
+
+func (c *cancellableBytesWriter) Close() error {
+	return c.onClose()
 }
 
 func (c *cancellableBytesWriter) Len() int {
@@ -64,6 +75,7 @@ type cancellableGzipWriter struct {
 	innerWriter *gzip.Writer
 	maxCapacity uint
 	rawLen      int
+	onClose     func() error
 }
 
 func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
@@ -113,8 +125,16 @@ func (c *cancellableGzipWriter) Reset() {
 	c.rawLen = 0
 }
 
-func (c *cancellableGzipWriter) Close() error {
+func (c *cancellableGzipWriter) Flush() error {
 	return c.innerWriter.Close()
+}
+
+func (c *cancellableGzipWriter) OnClose(onClose func() error) {
+	c.onClose = onClose
+}
+
+func (c *cancellableGzipWriter) Close() error {
+	return c.onClose()
 }
 
 func (c *cancellableGzipWriter) Len() int {
