@@ -602,7 +602,7 @@ For example to parse password from `/etc/passwd` and keep `pattern` readable:
 - `patternDefinitions` as `USERNAME` is in default set:
   - `PASSWORD=%{WORD}`
   - `USERINFO=%{GREEDYDATA}`
-- `smith:x:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh` resulting in:
+- `smith:pass123:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh` resulting in:
  - `user.name`: smith
  - `user.password`: pass123
 
