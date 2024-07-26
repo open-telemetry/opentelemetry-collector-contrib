@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/coreos/go-oidc/v3 v3.11.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/client v0.0.0-20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/component v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/confmap v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/extension v0.105.1-0.20240726220702-a6287aca1a43
@@ -22,7 +22,7 @@ require (
 	github.com/go-jose/go-jose/v4 v4.0.2 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect

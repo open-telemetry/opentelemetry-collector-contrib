@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/confmap v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/consumer v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726175034-c3a11297650a
 	go.opentelemetry.io/collector/exporter v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.105.1-0.20240726220702-a6287aca1a43
@@ -62,7 +63,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -105,6 +106,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.105.1-0.20240726220702-a6287aca1a43 // indirect
@@ -119,6 +121,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/connector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
 	go.opentelemetry.io/collector/extension v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240726220702-a6287aca1a43 // indirect

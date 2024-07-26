@@ -25,7 +25,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -44,6 +44,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.11.0 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240726220702-a6287aca1a43 // indirect

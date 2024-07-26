@@ -22,7 +22,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -31,7 +31,11 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726175034-c3a11297650a // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.105.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect

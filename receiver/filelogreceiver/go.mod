@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/confmap v0.105.1-0.20240726220702-a6287aca1a43
-	go.opentelemetry.io/collector/consumer v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/consumer v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/pdata v1.12.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/receiver v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/semconv v0.105.1-0.20240726220702-a6287aca1a43 // indirect
@@ -17,6 +17,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/goleak v1.3.0
 )
+
+require go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726175034-c3a11297650a
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -27,7 +29,7 @@ require (
 	github.com/expr-lang/expr v1.16.9 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -52,9 +54,11 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
 	go.opentelemetry.io/collector/extension v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.105.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect

@@ -24,6 +24,8 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
+require go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726175034-c3a11297650a
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -70,7 +72,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -138,8 +140,10 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.105.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect

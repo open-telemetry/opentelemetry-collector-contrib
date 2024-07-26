@@ -50,7 +50,7 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
@@ -127,6 +127,7 @@ require (
 	go.etcd.io/bbolt v1.3.10 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.105.1-0.20240726220702-a6287aca1a43 // indirect
@@ -137,6 +138,8 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/internal v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/connector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726175034-c3a11297650a // indirect
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.105.1-0.20240726220702-a6287aca1a43 // indirect
@@ -144,6 +147,7 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/semconv v0.105.1-0.20240726220702-a6287aca1a43 // indirect

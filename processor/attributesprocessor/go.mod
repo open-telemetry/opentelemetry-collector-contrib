@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/component v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/confmap v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/consumer v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726175034-c3a11297650a
 	go.opentelemetry.io/collector/pdata v1.12.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/processor v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/semconv v0.105.1-0.20240726220702-a6287aca1a43
@@ -28,7 +29,7 @@ require (
 	github.com/expr-lang/expr v1.16.9 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -51,7 +52,9 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726211759-a108bb31a4fd // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.105.1-0.20240726220702-a6287aca1a43 // indirect

@@ -14,7 +14,7 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
-require github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+require github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
