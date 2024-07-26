@@ -54,37 +54,41 @@ func TestPrometheusAPIServer(t *testing.T) {
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
-	require.NoError(t, err)
-	receiver := newPrometheusReceiver(receivertest.NewNopSettings(), &Config{
-		PrometheusConfig: (*PromConfig)(cfg),
-		PrometheusAPIServer: &PrometheusAPIServer{
-			Enabled: true,
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: "localhost:9090",
+	endpoints := []string{"localhost:9090", "localhost:9091"}
+	for _, endpoint := range endpoints {
+		require.NoError(t, err)
+		receiver := newPrometheusReceiver(receivertest.NewNopSettings(), &Config{
+			PrometheusConfig: (*PromConfig)(cfg),
+			APIServer: &APIServer{
+				Enabled: true,
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: endpoint,
+				},
 			},
-		},
-	}, new(consumertest.MetricsSink))
+		}, new(consumertest.MetricsSink))
 
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-	t.Cleanup(func() {
-		require.NoError(t, receiver.Shutdown(ctx))
-		response, err := callAPI("/scrape_pools")
-		require.Error(t, err)
-		require.Nil(t, response)
-	})
+		require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+		t.Cleanup(func() {
+			require.NoError(t, receiver.Shutdown(ctx))
+			response, err := callAPI(endpoint, "/scrape_pools")
+			require.Error(t, err)
+			require.Nil(t, response)
+		})
+	}
 
-	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
-	mp.wg.Wait()
+		mp.wg.Wait()
 
-	testScrapePools(t)
-	testTargets(t)
-	testTargetsMetadata(t)
-	testPrometheusConfig(t)
-	testMetricsEndpoint(t)
+		for _, endpoint := range endpoints {
+			testScrapePools(t, endpoint)
+			testTargets(t, endpoint)
+			testTargetsMetadata(t, endpoint)
+			testPrometheusConfig(t, endpoint)
+			testMetricsEndpoint(t, endpoint)
+		}
 }
 
-func callAPI(path string) (*apiResponse, error) {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:9090/api/v1%s", path))
+func callAPI(endpoint, path string) (*apiResponse, error) {
+	resp, err := http.Get(fmt.Sprintf("http://%s/api/v1%s", endpoint, path))
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +107,8 @@ func callAPI(path string) (*apiResponse, error) {
 	return &apiResponse, nil
 }
 
-func testScrapePools(t *testing.T) {
-	scrapePoolsResponse, err := callAPI("/scrape_pools")
+func testScrapePools(t *testing.T, endpoint string) {
+	scrapePoolsResponse, err := callAPI(endpoint, "/scrape_pools")
 	assert.NoError(t, err)
 	var scrapePoolsData scrapePoolsData
 	json.Unmarshal([]byte(scrapePoolsResponse.Data), &scrapePoolsData)
@@ -113,8 +117,8 @@ func testScrapePools(t *testing.T) {
 	assert.Contains(t, scrapePoolsData.ScrapePools, "target1")
 }
 
-func testTargets(t *testing.T) {
-	targetsResponse, err := callAPI("/targets")
+func testTargets(t *testing.T, endpoint string) {
+	targetsResponse, err := callAPI(endpoint, "/targets")
 	assert.NoError(t, err)
 	var targets v1.TargetsResult
 	json.Unmarshal([]byte(targetsResponse.Data), &targets)
@@ -127,8 +131,8 @@ func testTargets(t *testing.T) {
 	}
 }
 
-func testTargetsMetadata(t *testing.T) {
-	targetsMetadataResponse, err := callAPI("/targets/metadata?match_target={job=\"target1\"}")
+func testTargetsMetadata(t *testing.T, endpoint string) {
+	targetsMetadataResponse, err := callAPI(endpoint, "/targets/metadata?match_target={job=\"target1\"}")
 	assert.NoError(t, err)
 	assert.NotNil(t, targetsMetadataResponse)
 
@@ -143,8 +147,8 @@ func testTargetsMetadata(t *testing.T) {
 	}
 }
 
-func testPrometheusConfig(t *testing.T) {
-	prometheusConfigResponse, err := callAPI("/status/config")
+func testPrometheusConfig(t *testing.T, endpoint string) {
+	prometheusConfigResponse, err := callAPI(endpoint, "/status/config")
 	assert.NoError(t, err)
 	var prometheusConfigResult v1.ConfigResult
 	json.Unmarshal([]byte(prometheusConfigResponse.Data), &prometheusConfigResult)
@@ -155,8 +159,8 @@ func testPrometheusConfig(t *testing.T) {
 	assert.NotNil(t, prometheusConfig)
 }
 
-func testMetricsEndpoint(t *testing.T) {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:9090/metrics"))
+func testMetricsEndpoint(t *testing.T, endpoint string) {
+	resp, err := http.Get(fmt.Sprintf("http://%s/metrics", endpoint))
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	defer resp.Body.Close()

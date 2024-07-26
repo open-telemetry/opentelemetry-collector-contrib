@@ -115,8 +115,8 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if r.cfg.PrometheusAPIServer != nil && r.cfg.PrometheusAPIServer.Enabled {
-		r.initPrometheusAPI(discoveryCtx, host)
+	if r.cfg.APIServer != nil && r.cfg.APIServer.Enabled {
+		r.initAPIServer(discoveryCtx, host)
 	}
 
 	allocConf := r.cfg.TargetAllocator
@@ -373,16 +373,16 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 	return nil
 }
 
-func (r *pReceiver) initPrometheusAPI(ctx context.Context, host component.Host) error {
+func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) error {
 	r.settings.Logger.Info("Starting Prometheus API server")
 
 	o := &web.Options{
 		ScrapeManager: r.scrapeManager,
 		Context:       ctx,
-		ListenAddress: r.cfg.PrometheusAPIServer.ServerConfig.Endpoint,
+		ListenAddress: r.cfg.APIServer.ServerConfig.Endpoint,
 		ExternalURL: &url.URL{
 			Scheme: "http",
-			Host:   r.cfg.PrometheusAPIServer.ServerConfig.Endpoint,
+			Host:   r.cfg.APIServer.ServerConfig.Endpoint,
 			Path:   "",
 		},
 		RoutePrefix:    "/",
@@ -391,8 +391,8 @@ func (r *pReceiver) initPrometheusAPI(ctx context.Context, host component.Host) 
 		Flags:          make(map[string]string),
 		MaxConnections: maxConnections,
 		IsAgent:        true,
-		Gatherer:       prometheus.DefaultGatherer,
 		Registerer:     r.registerer,
+		Gatherer:      prometheus.DefaultGatherer,
 	}
 
 	// Creates the API object in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L314-L354
@@ -449,7 +449,7 @@ func (r *pReceiver) initPrometheusAPI(ctx context.Context, host component.Host) 
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
-	listener, err := r.cfg.PrometheusAPIServer.ServerConfig.ToListener(ctx)
+	listener, err := r.cfg.APIServer.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create listener: %s", err.Error())
 	}
@@ -477,7 +477,7 @@ func (r *pReceiver) initPrometheusAPI(ctx context.Context, host component.Host) 
 	spanNameFormatter := otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 		return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 	})
-	r.apiServer, err = r.cfg.PrometheusAPIServer.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, otelhttp.NewHandler(mux, "", spanNameFormatter))
+	r.apiServer, err = r.cfg.APIServer.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, otelhttp.NewHandler(mux, "", spanNameFormatter))
 	if err != nil {
 		return err
 	}

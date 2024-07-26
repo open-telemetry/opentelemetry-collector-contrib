@@ -192,7 +192,7 @@ The Prometheus API server can be enabled to host info about the Prometheus targe
 ```
 receivers:
   prometheus:
-    prometheus_api_server_extension:
+    api_server:
       enabled: true
       server_config:
         endpoint: "localhost:9090"

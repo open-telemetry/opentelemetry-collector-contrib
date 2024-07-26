@@ -39,10 +39,10 @@ type Config struct {
 
 	TargetAllocator *TargetAllocator `mapstructure:"target_allocator"`
 
-	// EnablePrometheusAPIServer enables the receiver to host the Prometheus UI API
+	//  APIServer has the settings to enable the receiver to host the Prometheus API
 	// server in agent mode. This allows the user to call the endpoint to get
 	// the config, service discovery, and targets for debugging purposes.
-	PrometheusAPIServer *PrometheusAPIServer `mapstructure:"prometheus_api_server"`
+	APIServer *APIServer `mapstructure:"api_server"`
 }
 
 // Validate checks the receiver configuration is valid.
@@ -214,7 +214,7 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 	return nil
 }
 
-type PrometheusAPIServer struct {
+type APIServer struct {
 	Enabled      bool                    `mapstructure:"enabled"`
 	ServerConfig confighttp.ServerConfig `mapstructure:"server_config"`
 }

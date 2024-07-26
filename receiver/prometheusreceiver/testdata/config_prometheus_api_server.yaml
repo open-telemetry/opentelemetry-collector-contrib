@@ -1,5 +1,5 @@
-prometheus/withAPI:
-  prometheus_api_server_extension:
+prometheus/withAPIEnabled:
+  api_server:
     enabled: true
     server_config:
       endpoint: "localhost:9090"
@@ -8,7 +8,7 @@ prometheus/withAPI:
       - job_name: 'demo'
         scrape_interval: 5s
 prometheus/withAPIDisabled:
-  prometheus_api_server_extension:
+  api_server:
     enabled: false
   config:
     scrape_configs:
