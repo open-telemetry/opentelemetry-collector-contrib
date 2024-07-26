@@ -51,8 +51,6 @@ build-ci-image-main:
     E2E_PUBLIC_KEY_PATH: /tmp/agent-qa-ssh-key.pub
     E2E_PRIVATE_KEY_PATH: /tmp/agent-qa-ssh-key
     E2E_KEY_PAIR_NAME: ci.open-elemetry-collector-contrib
-    E2E_PIPELINE_ID: $CI_PIPELINE_ID
-    E2E_COMMIT_SHA: $CI_COMMIT_SHORT_SHA
     E2E_OUTPUT_DIR: $CI_PROJECT_DIR/e2e-output
   script:
     - gotest $TARGETS/... -v timeout 0
