@@ -5,6 +5,7 @@ package aggregateutil // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -32,7 +33,7 @@ const (
 	Count AggregationType = "count"
 )
 
-var AggregationTypes = []AggregationType{Sum, Mean, Min, Max, Count}
+var AggregationTypes = []AggregationType{Sum, Mean, Min, Max, Median, Count}
 
 func (at AggregationType) IsValid() bool {
 	for _, AggregationType := range AggregationTypes {
@@ -44,6 +45,14 @@ func (at AggregationType) IsValid() bool {
 	return false
 }
 
+func GetSupportedAggregationFunctionsList() string {
+	slice := make([]string, 0, len(AggregationTypes))
+	for _, a := range AggregationTypes {
+		slice = append(slice, string(a))
+	}
+	return strings.Join(slice, ", ")
+}
+
 type AggGroups struct {
 	gauge        map[string]pmetric.NumberDataPointSlice
 	sum          map[string]pmetric.NumberDataPointSlice
@@ -51,7 +60,7 @@ type AggGroups struct {
 	expHistogram map[string]pmetric.ExponentialHistogramDataPointSlice
 }
 
-func ConvertToAggregationType(str string) (AggregationType, error) {
+func ConvertToAggregationFunction(str string) (AggregationType, error) {
 	a := AggregationType(str)
 	if a.IsValid() {
 		return a, nil
