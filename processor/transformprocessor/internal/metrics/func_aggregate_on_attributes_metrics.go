@@ -38,7 +38,7 @@ func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Argu
 	return AggregateOnAttributes(t, args.Attributes)
 }
 
-func AggregateOnAttributes(AggregationFunction aggregateutil.AggregationType, attributes ottl.Optional[[]string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func AggregateOnAttributes(aggregationFunction aggregateutil.AggregationType, attributes ottl.Optional[[]string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
@@ -51,7 +51,7 @@ func AggregateOnAttributes(AggregationFunction aggregateutil.AggregationType, at
 		newMetric := pmetric.NewMetric()
 		aggregateutil.CopyMetricDetails(metric, newMetric)
 		aggregateutil.GroupDataPoints(metric, &ag)
-		aggregateutil.MergeDataPoints(newMetric, AggregationFunction, ag)
+		aggregateutil.MergeDataPoints(newMetric, aggregationFunction, ag)
 		newMetric.MoveTo(metric)
 
 		return nil, nil

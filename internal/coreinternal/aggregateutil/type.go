@@ -36,8 +36,8 @@ const (
 var AggregationTypes = []AggregationType{Sum, Mean, Min, Max, Median, Count}
 
 func (at AggregationType) IsValid() bool {
-	for _, AggregationType := range AggregationTypes {
-		if at == AggregationType {
+	for _, aggregationType := range AggregationTypes {
+		if at == aggregationType {
 			return true
 		}
 	}
