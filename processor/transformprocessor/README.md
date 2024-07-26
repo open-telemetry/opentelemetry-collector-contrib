@@ -71,7 +71,7 @@ Valid values for `context` are:
 | metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
 | log_statements    | `resource`, `scope`, and `log`                 |
 
-`conditions` is a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements.
+`conditions` is a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements. The conditions are ORed together, which means only one condition needs to evaluate to true in order for the statements (including their individual Where clauses) to be executed.
 
 ```yaml
 transform:
