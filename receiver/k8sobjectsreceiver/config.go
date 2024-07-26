@@ -19,8 +19,9 @@ import (
 type mode string
 
 const (
-	PullMode  mode = "pull"
-	WatchMode mode = "watch"
+	PullMode      mode = "pull"
+	WatchMode     mode = "watch"
+	ListWatchMode mode = "list-watch"
 
 	defaultPullInterval    time.Duration = time.Hour
 	defaultMode            mode          = PullMode
@@ -28,8 +29,9 @@ const (
 )
 
 var modeMap = map[mode]bool{
-	PullMode:  true,
-	WatchMode: true,
+	PullMode:      true,
+	WatchMode:     true,
+	ListWatchMode: true,
 }
 
 type K8sObjectsConfig struct {

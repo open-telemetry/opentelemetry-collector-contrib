@@ -34,6 +34,7 @@ type kubernetesprocessor struct {
 	passthroughMode   bool
 	rules             kube.ExtractionRules
 	filters           kube.Filters
+	addons            []kube.AddOnMetadata
 	podAssociations   []kube.Association
 	podIgnore         kube.Excludes
 }
@@ -120,6 +121,11 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
 	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
+
+	for _, addon := range kp.addons {
+		//fmt.Println(">>>>>> Addons Added key : ", addon.Key, " Value ", addon.Value)
+		resource.Attributes().PutStr(addon.Key, addon.Value)
+	}
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
