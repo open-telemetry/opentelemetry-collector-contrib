@@ -274,8 +274,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	if errMarshal != nil {
 		return consumererror.NewPermanent(errMarshal)
 	}
-	buf := make([]byte, len(data), cap(data))
-	compressedData := snappy.Encode(buf, data)
+	compressedData := snappy.Encode(nil, data)
 
 	// executeFunc can be used for backoff and non backoff scenarios.
 	executeFunc := func() error {
