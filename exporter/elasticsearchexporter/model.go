@@ -416,25 +416,40 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	v := metricsMap.SetEmptyMap().PutEmpty(metric.Name())
 	value.CopyTo(v)
 	document.Add("metrics", objmodel.ValueFromAttribute(metricsMap))
-	document.AddDynamicTemplate("metrics."+metric.Name(), metricDpToEsType(metric, dp))
+	document.AddDynamicTemplate("metrics."+metric.Name(), metricDpToDynamicTemplate(metric, dp))
 	documents[hash] = document
 	return nil
 }
 
-func metricDpToEsType(metric pmetric.Metric, dp dataPoint) string {
+func metricDpToDynamicTemplate(metric pmetric.Metric, dp dataPoint) string {
 	switch metric.Type() {
-	case pmetric.MetricTypeSum, pmetric.MetricTypeGauge:
+	case pmetric.MetricTypeSum:
 		switch dp.(pmetric.NumberDataPoint).ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
-			return "double"
+			if metric.Sum().IsMonotonic() {
+				return "counter_double"
+			}
+			return "gauge_double"
 		case pmetric.NumberDataPointValueTypeInt:
-			return "long"
+			if metric.Sum().IsMonotonic() {
+				return "counter_long"
+			}
+			return "gauge_long"
+			// FIXME: NumberDataPointValueTypeEmpty handling
+		}
+	case pmetric.MetricTypeGauge:
+		switch dp.(pmetric.NumberDataPoint).ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			return "gauge_double"
+		case pmetric.NumberDataPointValueTypeInt:
+			return "gauge_long"
 			// FIXME: NumberDataPointValueTypeEmpty handling
 		}
 	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram:
-		return "exponential_histogram"
+		return "histogram"
 	case pmetric.MetricTypeSummary:
-		return "aggregate_metric_double"
+		// FIXME: summary_gauge / summary_counter
+		//return "aggregate_metric_double"
 	}
 	return ""
 }
