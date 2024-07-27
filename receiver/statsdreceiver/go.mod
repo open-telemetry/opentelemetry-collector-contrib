@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.105.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v0.0.0-20240726211759-a108bb31a4fd
+	go.opentelemetry.io/collector/client v0.0.0-20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/component v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/config/confignet v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240726220702-a6287aca1a43

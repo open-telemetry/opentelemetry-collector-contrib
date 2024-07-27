@@ -71,7 +71,7 @@ require (
 	go.elastic.co/apm/v2 v2.6.0 // indirect
 	go.elastic.co/fastjson v1.3.0 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
-	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240726220702-a6287aca1a43 // indirect

@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.105.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a
+	go.opentelemetry.io/collector/client v0.0.0-20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/component v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/confmap v0.105.1-0.20240726220702-a6287aca1a43

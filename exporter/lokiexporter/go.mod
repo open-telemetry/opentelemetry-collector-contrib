@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.105.0
 	github.com/prometheus/common v0.55.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a
+	go.opentelemetry.io/collector/client v0.0.0-20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/component v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/config/confighttp v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240726220702-a6287aca1a43

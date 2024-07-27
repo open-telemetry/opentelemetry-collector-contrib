@@ -307,7 +307,7 @@ require (
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
-	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/internal v0.105.1-0.20240726220702-a6287aca1a43 // indirect

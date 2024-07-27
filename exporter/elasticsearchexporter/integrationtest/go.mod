@@ -127,7 +127,7 @@ require (
 	go.etcd.io/bbolt v1.3.10 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
-	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.105.1-0.20240726220702-a6287aca1a43 // indirect
@@ -139,7 +139,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/connector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726175034-c3a11297650a // indirect
+	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.105.1-0.20240726220702-a6287aca1a43 // indirect

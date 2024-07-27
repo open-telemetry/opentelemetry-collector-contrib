@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/confmap v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/consumer v0.105.1-0.20240726220702-a6287aca1a43
-	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726175034-c3a11297650a
+	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/exporter v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/pdata v1.12.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/receiver v0.105.1-0.20240726220702-a6287aca1a43
@@ -63,7 +63,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.11.0 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
-	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240726220702-a6287aca1a43 // indirect
