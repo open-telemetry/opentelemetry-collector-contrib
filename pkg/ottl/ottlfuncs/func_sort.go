@@ -76,13 +76,22 @@ func Sort[K any](target ottl.Getter[K], order string) (ottl.ExprFunc[K], error) 
 	}, nil
 }
 
+// sortSlice sorts a pcommon.Slice based on the specified order.
+// It gets the common type for all elements in the slice and converts all elements to this common type, creating a new copy
+// Parameters:
+//   - slice: The pcommon.Slice to be sorted
+//   - order: The sort order. "asc" for ascending, "desc" for descending
+//
+// Returns:
+//   - A sorted slice as []any or the original pcommon.Slice
+//   - An error if an unsupported type is encountered
 func sortSlice(slice pcommon.Slice, order string) (any, error) {
 	length := slice.Len()
 	if length == 0 {
 		return slice, nil
 	}
 
-	commonType, ok := getCommonValueType(slice)
+	commonType, ok := findCommonValueType(slice)
 	if !ok {
 		return slice, nil
 	}
@@ -95,7 +104,12 @@ func sortSlice(slice pcommon.Slice, order string) (any, error) {
 		return sortTypedSlice(arr, order), nil
 	case pcommon.ValueTypeDouble:
 		arr := makeTypedCopy(length, func(idx int) float64 {
-			return slice.At(idx).Double()
+			s := slice.At(idx)
+			if s.Type() == pcommon.ValueTypeInt {
+				return float64(s.Int())
+			}
+
+			return s.Double()
 		})
 		return sortTypedSlice(arr, order), nil
 	case pcommon.ValueTypeStr:
@@ -112,14 +126,14 @@ type TargetType interface {
 	~int64 | ~float64 | ~string
 }
 
-// getCommonValueType determines the most appropriate common type for all elements in a pcommon.Slice.
+// findCommonValueType determines the most appropriate common type for all elements in a pcommon.Slice.
 // It returns two values:
 //   - A pcommon.ValueType representing the desired common type for all elements.
-//     Mixed types, String, Bool, and Empty types return ValueTypeStr as they require string conversion for comparison.
-//     Numeric types return either ValueTypeInt or ValueTypeDouble.
+//     Mixed Numeric types return ValueTypeDouble. Integer type returns ValueTypeInt. Double type returns ValueTypeDouble.
+//     String, Bool, Empty and mixed of the mentioned types return ValueTypeStr, as they require string conversion for comparison.
 //   - A boolean indicating whether a common type could be determined (true) or not (false).
 //     returns false for ValueTypeMap, ValueTypeSlice and ValueTypeBytes. They are unsupported types for sort.
-func getCommonValueType(slice pcommon.Slice) (pcommon.ValueType, bool) {
+func findCommonValueType(slice pcommon.Slice) (pcommon.ValueType, bool) {
 	length := slice.Len()
 	if length == 0 {
 		return pcommon.ValueTypeEmpty, false
@@ -127,17 +141,21 @@ func getCommonValueType(slice pcommon.Slice) (pcommon.ValueType, bool) {
 
 	wantType := slice.At(0).Type()
 	wantStr := false
+	wantDouble := false
 
 	for i := 0; i < length; i++ {
 		value := slice.At(i)
 		currType := value.Type()
 
-		if currType != wantType {
-			wantStr = true
-		}
-
 		switch currType {
-		case pcommon.ValueTypeInt, pcommon.ValueTypeDouble:
+		case pcommon.ValueTypeInt:
+			if wantType == pcommon.ValueTypeDouble {
+				wantDouble = true
+			}
+		case pcommon.ValueTypeDouble:
+			if wantType == pcommon.ValueTypeInt {
+				wantDouble = true
+			}
 		case pcommon.ValueTypeStr, pcommon.ValueTypeBool, pcommon.ValueTypeEmpty:
 			wantStr = true
 		default:
@@ -147,6 +165,8 @@ func getCommonValueType(slice pcommon.Slice) (pcommon.ValueType, bool) {
 
 	if wantStr {
 		wantType = pcommon.ValueTypeStr
+	} else if wantDouble {
+		wantType = pcommon.ValueTypeDouble
 	}
 
 	return wantType, true

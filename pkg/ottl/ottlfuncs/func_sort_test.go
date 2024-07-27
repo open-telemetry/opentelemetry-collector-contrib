@@ -62,6 +62,18 @@ func Test_Sort(t *testing.T) {
 			expected: []string{"am", "awesome", "i", "slice"},
 		},
 		{
+			name: "double slice desc",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					s := pcommon.NewValueSlice().SetEmptySlice()
+					_ = s.FromRaw([]any{0.1829374652374, -3.4029435828374, 9.7425639845731})
+					return s, nil
+				},
+			},
+			order:    sortDesc,
+			expected: []float64{9.7425639845731, 0.1829374652374, -3.4029435828374},
+		},
+		{
 			name: "bool slice compares as string",
 			getter: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
@@ -84,6 +96,30 @@ func Test_Sort(t *testing.T) {
 			},
 			order:    sortAsc,
 			expected: []string{"1", "3.33", "false", "two"},
+		},
+		{
+			name: "mixed numeric types slice compares as double",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					s := pcommon.NewValueSlice().SetEmptySlice()
+					_ = s.FromRaw([]any{0, 2, 3.33, 0})
+					return s, nil
+				},
+			},
+			order:    sortAsc,
+			expected: []float64{0, 0, 2, 3.33},
+		},
+		{
+			name: "mixed numeric types slice compares as double desc",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					s := pcommon.NewValueSlice().SetEmptySlice()
+					_ = s.FromRaw([]any{3.14, 2, 3.33, 0})
+					return s, nil
+				},
+			},
+			order:    sortDesc,
+			expected: []float64{3.33, 3.14, 2, 0},
 		},
 		{
 			name: "[]any compares as string",
@@ -116,6 +152,16 @@ func Test_Sort(t *testing.T) {
 			expected: []byte("still fine"),
 		},
 		{
+			name: "unsupported string remains unchanged",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "no change", nil
+				},
+			},
+			order:    sortAsc,
+			expected: "no change",
+		},
+		{
 			name: "invalid slice remains unchanged",
 			getter: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
@@ -124,6 +170,17 @@ func Test_Sort(t *testing.T) {
 			},
 			order:    sortAsc,
 			expected: []any{map[string]string{"some": "invalid kv"}},
+		},
+		{
+			name: "invalid sort order",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []any{1, 2, 3}, nil
+				},
+			},
+			order:    "dddd",
+			expected: nil,
+			err:      true,
 		},
 	}
 	for _, tt := range tests {

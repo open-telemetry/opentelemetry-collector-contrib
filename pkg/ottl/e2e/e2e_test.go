@@ -629,7 +629,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Sort([Double(11), Double(2.2), Double(-1)]))`,
+			statement: `set(attributes["test"], Sort([Int(11), Double(2.2), Double(-1)]))`,
 			want: func(tCtx ottllog.TransformContext) {
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
 				s.AppendEmpty().SetDouble(-1)
