@@ -620,6 +620,24 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Sort(attributes["slice.any"], "desc"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				s.AppendEmpty().SetStr("slice")
+				s.AppendEmpty().SetStr("am")
+				s.AppendEmpty().SetStr("1")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Sort([Double(11), Double(2.2), Double(-1)]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				s.AppendEmpty().SetDouble(-1)
+				s.AppendEmpty().SetDouble(2.2)
+				s.AppendEmpty().SetDouble(11)
+			},
+		},
+		{
 			statement: `set(span_id, SpanID(0x0000000000000000))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().SetSpanID(pcommon.NewSpanIDEmpty())
@@ -921,6 +939,8 @@ func constructLogTransformContext() ottllog.TransformContext {
 	v.SetStr("val")
 	m2 := m.PutEmptyMap("nested")
 	m2.PutStr("test", "pass")
+	ss := logRecord.Attributes().PutEmptySlice("slice.any")
+	_ = ss.FromRaw([]any{1, "am", "slice"})
 
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
