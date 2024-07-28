@@ -12,7 +12,7 @@ metrics:
     enabled: false
 ```
 
-### git.repository.branch.commit.aheadby.count
+### vcs.repository.branch.commit.aheadby.count
 
 The number of commits a branch is ahead of the default branch (trunk).
 
@@ -24,10 +24,10 @@ The number of commits a branch is ahead of the default branch (trunk).
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-| branch.name | The name of a Git branch | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
+| branch.name | The name of a VCS branch | Any Str |
 
-### git.repository.branch.commit.behindby.count
+### vcs.repository.branch.commit.behindby.count
 
 The number of commits a branch is behind the default branch (trunk).
 
@@ -39,10 +39,10 @@ The number of commits a branch is behind the default branch (trunk).
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-| branch.name | The name of a Git branch | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
+| branch.name | The name of a VCS branch | Any Str |
 
-### git.repository.branch.count
+### vcs.repository.branch.count
 
 The number of branches in a repository.
 
@@ -54,9 +54,9 @@ The number of branches in a repository.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
 
-### git.repository.branch.line.addition.count
+### vcs.repository.branch.line.addition.count
 
 The number of lines added in a branch relative to the default branch (trunk).
 
@@ -68,10 +68,10 @@ The number of lines added in a branch relative to the default branch (trunk).
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-| branch.name | The name of a Git branch | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
+| branch.name | The name of a VCS branch | Any Str |
 
-### git.repository.branch.line.deletion.count
+### vcs.repository.branch.line.deletion.count
 
 The number of lines deleted in a branch relative to the default branch (trunk).
 
@@ -83,10 +83,10 @@ The number of lines deleted in a branch relative to the default branch (trunk).
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-| branch.name | The name of a Git branch | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
+| branch.name | The name of a VCS branch | Any Str |
 
-### git.repository.branch.time
+### vcs.repository.branch.time
 
 Time a branch created from the default branch (trunk) has existed.
 
@@ -98,10 +98,10 @@ Time a branch created from the default branch (trunk) has existed.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-| branch.name | The name of a Git branch | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
+| branch.name | The name of a VCS branch | Any Str |
 
-### git.repository.count
+### vcs.repository.count
 
 The number of repositories in an organization.
 
@@ -109,7 +109,7 @@ The number of repositories in an organization.
 | ---- | ----------- | ---------- |
 | {repository} | Gauge | Int |
 
-### git.repository.pull_request.count
+### vcs.repository.pull_request.count
 
 The number of pull requests in a repository, categorized by their state (either open or merged).
 
@@ -122,9 +122,9 @@ The number of pull requests in a repository, categorized by their state (either 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | pull_request.state | The state of a pull request | Str: ``open``, ``merged`` |
-| repository.name | The name of a Git repository | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
 
-### git.repository.pull_request.time_open
+### vcs.repository.pull_request.time_open
 
 The amount of time a pull request has been open.
 
@@ -136,10 +136,10 @@ The amount of time a pull request has been open.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-| branch.name | The name of a Git branch | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
+| branch.name | The name of a VCS branch | Any Str |
 
-### git.repository.pull_request.time_to_approval
+### vcs.repository.pull_request.time_to_approval
 
 The amount of time it took a pull request to go from open to approved.
 
@@ -151,10 +151,10 @@ The amount of time it took a pull request to go from open to approved.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-| branch.name | The name of a Git branch | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
+| branch.name | The name of a VCS branch | Any Str |
 
-### git.repository.pull_request.time_to_merge
+### vcs.repository.pull_request.time_to_merge
 
 The amount of time it took a pull request to go from open to merged.
 
@@ -166,8 +166,8 @@ The amount of time it took a pull request to go from open to merged.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-| branch.name | The name of a Git branch | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
+| branch.name | The name of a VCS branch | Any Str |
 
 ## Optional Metrics
 
@@ -179,7 +179,7 @@ metrics:
     enabled: true
 ```
 
-### git.repository.contributor.count
+### vcs.repository.contributor.count
 
 The number of unique contributors to a repository.
 
@@ -191,11 +191,11 @@ The number of unique contributors to a repository.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
+| repository.name | The name of a VCS repository | Any Str |
 
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| git.vendor.name | The name of the Git vendor/provider (ie. GitHub / GitLab) | Any Str | true |
-| organization.name | Git Organization or Project Name | Any Str | true |
+| organization.name | VCS Organization or Project Name | Any Str | true |
+| vcs.vendor.name | The name of the VCS vendor/provider (ie. GitHub) | Any Str | true |

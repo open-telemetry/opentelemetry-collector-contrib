@@ -1,13 +1,13 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: git.vendor.name
-          value:
-            stringValue: github
         - key: organization.name
           value:
             stringValue: open-telemetry
-    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+        - key: vcs.vendor.name
+          value:
+            stringValue: github
+    schemaUrl: https://opentelemetry.io/schemas/1.25.0
     scopeMetrics:
       - metrics:
           - description: The number of commits a branch is ahead of the default branch (trunk).
@@ -23,7 +23,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.branch.commit.aheadby.count
+            name: vcs.repository.branch.commit.aheadby.count
             unit: '{commit}'
           - description: The number of commits a branch is behind the default branch (trunk).
             gauge:
@@ -38,7 +38,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.branch.commit.behindby.count
+            name: vcs.repository.branch.commit.behindby.count
             unit: '{commit}'
           - description: The number of branches in a repository.
             gauge:
@@ -50,7 +50,7 @@ resourceMetrics:
                         stringValue: repo1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.branch.count
+            name: vcs.repository.branch.count
             unit: '{branch}'
           - description: The number of lines added in a branch relative to the default branch (trunk).
             gauge:
@@ -65,7 +65,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.branch.line.addition.count
+            name: vcs.repository.branch.line.addition.count
             unit: '{line}'
           - description: The number of lines deleted in a branch relative to the default branch (trunk).
             gauge:
@@ -80,7 +80,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.branch.line.deletion.count
+            name: vcs.repository.branch.line.deletion.count
             unit: '{line}'
           - description: Time a branch created from the default branch (trunk) has existed.
             gauge:
@@ -95,7 +95,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.branch.time
+            name: vcs.repository.branch.time
             unit: s
           - description: The number of repositories in an organization.
             gauge:
@@ -103,7 +103,7 @@ resourceMetrics:
                 - asInt: "1"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.count
+            name: vcs.repository.count
             unit: '{repository}'
           - description: The number of pull requests in a repository, categorized by their state (either open or merged).
             gauge:
@@ -128,7 +128,7 @@ resourceMetrics:
                         stringValue: repo1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.pull_request.count
+            name: vcs.repository.pull_request.count
             unit: '{pull_request}'
           - description: The amount of time a pull request has been open.
             gauge:
@@ -143,7 +143,7 @@ resourceMetrics:
                         stringValue: repo1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.pull_request.time_open
+            name: vcs.repository.pull_request.time_open
             unit: s
           - description: The amount of time it took a pull request to go from open to merged.
             gauge:
@@ -158,7 +158,7 @@ resourceMetrics:
                         stringValue: repo1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: git.repository.pull_request.time_to_merge
+            name: vcs.repository.pull_request.time_to_merge
             unit: s
         scope:
           name: otelcol/gitproviderreceiver
