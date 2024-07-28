@@ -54,7 +54,7 @@ receivers:
         scrapers:
             github:
                 metrics:
-                    git.repository.contributor.count:
+                    vcs.repository.contributor.count:
                         enabled: true
                 github_org: myfancyorg
                 search_query: "org:myfancyorg topic:o11yalltheway" #Recommended optional query override, defaults to "{org,user}:<github_org>"
@@ -79,7 +79,7 @@ found [here](https://grafana.com/grafana/dashboards/20976-engineering-effectiven
 The available scrapers are:
 | Scraper  | Description             |
 |----------|-------------------------|
-| [github] | Git Metrics from [GitHub](https://github.com/) |
+| [github] | VCS Metrics from [GitHub](https://github.com/) |
 
 ## GitHub Scraper
 
@@ -94,23 +94,3 @@ For additional context on GitHub scraper limitations and inner workings please
 see the [GitHub Scraper README][ghsread].
 
 [ghsread]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
-
-
-The current metrics available via scraping from GitHub are:
-
-- [x] Repository count
-- [x] Repository contributor count
-- [x] Repository branch count
-- [x] Repository branch time
-- [x] Repository branch commit aheadby count
-- [x] Repository branch commit behindby count
-- [x] Repository branch line addition count
-- [x] Repository branch line deletion count
-- [x] Repository pull request open time
-- [x] Repository pull request time to merge
-- [x] Repository pull request time to approval
-- [x] Repository pull request count | stores an attribute of `pull_request.state` equal to `open` or `merged`
-
-> Note: Some metrics may be disabled by default and have to be explicitly enabled.
-> For example, the repository contributor count metric is one such metric. This is
-> because this metric relies on the REST API which is subject to lower rate limits.
