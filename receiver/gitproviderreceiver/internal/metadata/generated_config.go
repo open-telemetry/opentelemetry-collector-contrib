@@ -33,13 +33,13 @@ type MetricsConfig struct {
 	VcsRepositoryBranchCount               MetricConfig `mapstructure:"vcs.repository.branch.count"`
 	VcsRepositoryBranchLineAdditionCount   MetricConfig `mapstructure:"vcs.repository.branch.line.addition.count"`
 	VcsRepositoryBranchLineDeletionCount   MetricConfig `mapstructure:"vcs.repository.branch.line.deletion.count"`
-	VcsRepositoryBranchTime                MetricConfig `mapstructure:"vcs.repository.branch.time"`
 	VcsRepositoryContributorCount          MetricConfig `mapstructure:"vcs.repository.contributor.count"`
 	VcsRepositoryCount                     MetricConfig `mapstructure:"vcs.repository.count"`
 	VcsRepositoryPullRequestCount          MetricConfig `mapstructure:"vcs.repository.pull_request.count"`
 	VcsRepositoryPullRequestTimeOpen       MetricConfig `mapstructure:"vcs.repository.pull_request.time_open"`
 	VcsRepositoryPullRequestTimeToApproval MetricConfig `mapstructure:"vcs.repository.pull_request.time_to_approval"`
 	VcsRepositoryPullRequestTimeToMerge    MetricConfig `mapstructure:"vcs.repository.pull_request.time_to_merge"`
+	VcsRepositoryRefTime                   MetricConfig `mapstructure:"vcs.repository.ref.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -59,9 +59,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcsRepositoryBranchLineDeletionCount: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryBranchTime: MetricConfig{
-			Enabled: true,
-		},
 		VcsRepositoryContributorCount: MetricConfig{
 			Enabled: false,
 		},
@@ -78,6 +75,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcsRepositoryPullRequestTimeToMerge: MetricConfig{
+			Enabled: true,
+		},
+		VcsRepositoryRefTime: MetricConfig{
 			Enabled: true,
 		},
 	}

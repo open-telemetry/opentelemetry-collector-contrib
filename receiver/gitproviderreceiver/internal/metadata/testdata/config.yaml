@@ -11,8 +11,6 @@ all_set:
       enabled: true
     vcs.repository.branch.line.deletion.count:
       enabled: true
-    vcs.repository.branch.time:
-      enabled: true
     vcs.repository.contributor.count:
       enabled: true
     vcs.repository.count:
@@ -24,6 +22,8 @@ all_set:
     vcs.repository.pull_request.time_to_approval:
       enabled: true
     vcs.repository.pull_request.time_to_merge:
+      enabled: true
+    vcs.repository.ref.time:
       enabled: true
   resource_attributes:
     organization.name:
@@ -42,8 +42,6 @@ none_set:
       enabled: false
     vcs.repository.branch.line.deletion.count:
       enabled: false
-    vcs.repository.branch.time:
-      enabled: false
     vcs.repository.contributor.count:
       enabled: false
     vcs.repository.count:
@@ -55,6 +53,8 @@ none_set:
     vcs.repository.pull_request.time_to_approval:
       enabled: false
     vcs.repository.pull_request.time_to_merge:
+      enabled: false
+    vcs.repository.ref.time:
       enabled: false
   resource_attributes:
     organization.name:

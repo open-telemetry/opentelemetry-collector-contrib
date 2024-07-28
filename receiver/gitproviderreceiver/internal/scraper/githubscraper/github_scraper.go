@@ -147,7 +147,8 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					continue
 				}
 
-				ghs.mb.RecordVcsRepositoryBranchTimeDataPoint(now, age, branch.Repository.Name, branch.Name)
+				refType := metadata.AttributeRefTypeBranch
+				ghs.mb.RecordVcsRepositoryRefTimeDataPoint(now, age, branch.Repository.Name, branch.Name, refType)
 				ghs.mb.RecordVcsRepositoryBranchLineAdditionCountDataPoint(now, int64(additions), branch.Repository.Name, branch.Name)
 				ghs.mb.RecordVcsRepositoryBranchLineDeletionCountDataPoint(now, int64(deletions), branch.Repository.Name, branch.Name)
 

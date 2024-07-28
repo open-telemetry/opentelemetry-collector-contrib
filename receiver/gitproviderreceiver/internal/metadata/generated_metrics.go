@@ -39,6 +39,32 @@ var MapAttributePullRequestState = map[string]AttributePullRequestState{
 	"merged": AttributePullRequestStateMerged,
 }
 
+// AttributeRefType specifies the a value ref.type attribute.
+type AttributeRefType int
+
+const (
+	_ AttributeRefType = iota
+	AttributeRefTypeBranch
+	AttributeRefTypeTag
+)
+
+// String returns the string representation of the AttributeRefType.
+func (av AttributeRefType) String() string {
+	switch av {
+	case AttributeRefTypeBranch:
+		return "branch"
+	case AttributeRefTypeTag:
+		return "tag"
+	}
+	return ""
+}
+
+// MapAttributeRefType is a helper map of string to AttributeRefType attribute value.
+var MapAttributeRefType = map[string]AttributeRefType{
+	"branch": AttributeRefTypeBranch,
+	"tag":    AttributeRefTypeTag,
+}
+
 type metricVcsRepositoryBranchCommitAheadbyCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -54,7 +80,7 @@ func (m *metricVcsRepositoryBranchCommitAheadbyCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryBranchCommitAheadbyCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryBranchCommitAheadbyCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -63,7 +89,7 @@ func (m *metricVcsRepositoryBranchCommitAheadbyCount) recordDataPoint(start pcom
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -106,7 +132,7 @@ func (m *metricVcsRepositoryBranchCommitBehindbyCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryBranchCommitBehindbyCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryBranchCommitBehindbyCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -115,7 +141,7 @@ func (m *metricVcsRepositoryBranchCommitBehindbyCount) recordDataPoint(start pco
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -209,7 +235,7 @@ func (m *metricVcsRepositoryBranchLineAdditionCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryBranchLineAdditionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryBranchLineAdditionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -218,7 +244,7 @@ func (m *metricVcsRepositoryBranchLineAdditionCount) recordDataPoint(start pcomm
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -261,7 +287,7 @@ func (m *metricVcsRepositoryBranchLineDeletionCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryBranchLineDeletionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryBranchLineDeletionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -270,7 +296,7 @@ func (m *metricVcsRepositoryBranchLineDeletionCount) recordDataPoint(start pcomm
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -291,58 +317,6 @@ func (m *metricVcsRepositoryBranchLineDeletionCount) emit(metrics pmetric.Metric
 
 func newMetricVcsRepositoryBranchLineDeletionCount(cfg MetricConfig) metricVcsRepositoryBranchLineDeletionCount {
 	m := metricVcsRepositoryBranchLineDeletionCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcsRepositoryBranchTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcs.repository.branch.time metric with initial data.
-func (m *metricVcsRepositoryBranchTime) init() {
-	m.data.SetName("vcs.repository.branch.time")
-	m.data.SetDescription("Time a branch created from the default branch (trunk) has existed.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcsRepositoryBranchTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcsRepositoryBranchTime) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcsRepositoryBranchTime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcsRepositoryBranchTime(cfg MetricConfig) metricVcsRepositoryBranchTime {
-	m := metricVcsRepositoryBranchTime{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -517,7 +491,7 @@ func (m *metricVcsRepositoryPullRequestTimeOpen) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryPullRequestTimeOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryPullRequestTimeOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -526,7 +500,7 @@ func (m *metricVcsRepositoryPullRequestTimeOpen) recordDataPoint(start pcommon.T
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -569,7 +543,7 @@ func (m *metricVcsRepositoryPullRequestTimeToApproval) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryPullRequestTimeToApproval) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryPullRequestTimeToApproval) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -578,7 +552,7 @@ func (m *metricVcsRepositoryPullRequestTimeToApproval) recordDataPoint(start pco
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -621,7 +595,7 @@ func (m *metricVcsRepositoryPullRequestTimeToMerge) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryPullRequestTimeToMerge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryPullRequestTimeToMerge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -630,7 +604,7 @@ func (m *metricVcsRepositoryPullRequestTimeToMerge) recordDataPoint(start pcommo
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -658,6 +632,59 @@ func newMetricVcsRepositoryPullRequestTimeToMerge(cfg MetricConfig) metricVcsRep
 	return m
 }
 
+type metricVcsRepositoryRefTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.repository.ref.time metric with initial data.
+func (m *metricVcsRepositoryRefTime) init() {
+	m.data.SetName("vcs.repository.ref.time")
+	m.data.SetDescription("Time a ref (branch) created from the default branch (trunk) has existed. The `ref.type` attribute will always be `branch`.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsRepositoryRefTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsRepositoryRefTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsRepositoryRefTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsRepositoryRefTime(cfg MetricConfig) metricVcsRepositoryRefTime {
+	m := metricVcsRepositoryRefTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -673,13 +700,13 @@ type MetricsBuilder struct {
 	metricVcsRepositoryBranchCount               metricVcsRepositoryBranchCount
 	metricVcsRepositoryBranchLineAdditionCount   metricVcsRepositoryBranchLineAdditionCount
 	metricVcsRepositoryBranchLineDeletionCount   metricVcsRepositoryBranchLineDeletionCount
-	metricVcsRepositoryBranchTime                metricVcsRepositoryBranchTime
 	metricVcsRepositoryContributorCount          metricVcsRepositoryContributorCount
 	metricVcsRepositoryCount                     metricVcsRepositoryCount
 	metricVcsRepositoryPullRequestCount          metricVcsRepositoryPullRequestCount
 	metricVcsRepositoryPullRequestTimeOpen       metricVcsRepositoryPullRequestTimeOpen
 	metricVcsRepositoryPullRequestTimeToApproval metricVcsRepositoryPullRequestTimeToApproval
 	metricVcsRepositoryPullRequestTimeToMerge    metricVcsRepositoryPullRequestTimeToMerge
+	metricVcsRepositoryRefTime                   metricVcsRepositoryRefTime
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -703,13 +730,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcsRepositoryBranchCount:               newMetricVcsRepositoryBranchCount(mbc.Metrics.VcsRepositoryBranchCount),
 		metricVcsRepositoryBranchLineAdditionCount:   newMetricVcsRepositoryBranchLineAdditionCount(mbc.Metrics.VcsRepositoryBranchLineAdditionCount),
 		metricVcsRepositoryBranchLineDeletionCount:   newMetricVcsRepositoryBranchLineDeletionCount(mbc.Metrics.VcsRepositoryBranchLineDeletionCount),
-		metricVcsRepositoryBranchTime:                newMetricVcsRepositoryBranchTime(mbc.Metrics.VcsRepositoryBranchTime),
 		metricVcsRepositoryContributorCount:          newMetricVcsRepositoryContributorCount(mbc.Metrics.VcsRepositoryContributorCount),
 		metricVcsRepositoryCount:                     newMetricVcsRepositoryCount(mbc.Metrics.VcsRepositoryCount),
 		metricVcsRepositoryPullRequestCount:          newMetricVcsRepositoryPullRequestCount(mbc.Metrics.VcsRepositoryPullRequestCount),
 		metricVcsRepositoryPullRequestTimeOpen:       newMetricVcsRepositoryPullRequestTimeOpen(mbc.Metrics.VcsRepositoryPullRequestTimeOpen),
 		metricVcsRepositoryPullRequestTimeToApproval: newMetricVcsRepositoryPullRequestTimeToApproval(mbc.Metrics.VcsRepositoryPullRequestTimeToApproval),
 		metricVcsRepositoryPullRequestTimeToMerge:    newMetricVcsRepositoryPullRequestTimeToMerge(mbc.Metrics.VcsRepositoryPullRequestTimeToMerge),
+		metricVcsRepositoryRefTime:                   newMetricVcsRepositoryRefTime(mbc.Metrics.VcsRepositoryRefTime),
 		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
 	}
@@ -792,13 +819,13 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcsRepositoryBranchCount.emit(ils.Metrics())
 	mb.metricVcsRepositoryBranchLineAdditionCount.emit(ils.Metrics())
 	mb.metricVcsRepositoryBranchLineDeletionCount.emit(ils.Metrics())
-	mb.metricVcsRepositoryBranchTime.emit(ils.Metrics())
 	mb.metricVcsRepositoryContributorCount.emit(ils.Metrics())
 	mb.metricVcsRepositoryCount.emit(ils.Metrics())
 	mb.metricVcsRepositoryPullRequestCount.emit(ils.Metrics())
 	mb.metricVcsRepositoryPullRequestTimeOpen.emit(ils.Metrics())
 	mb.metricVcsRepositoryPullRequestTimeToApproval.emit(ils.Metrics())
 	mb.metricVcsRepositoryPullRequestTimeToMerge.emit(ils.Metrics())
+	mb.metricVcsRepositoryRefTime.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(rm)
@@ -831,13 +858,13 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordVcsRepositoryBranchCommitAheadbyCountDataPoint adds a data point to vcs.repository.branch.commit.aheadby.count metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryBranchCommitAheadbyCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricVcsRepositoryBranchCommitAheadbyCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryBranchCommitAheadbyCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryBranchCommitAheadbyCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
 }
 
 // RecordVcsRepositoryBranchCommitBehindbyCountDataPoint adds a data point to vcs.repository.branch.commit.behindby.count metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryBranchCommitBehindbyCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricVcsRepositoryBranchCommitBehindbyCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryBranchCommitBehindbyCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryBranchCommitBehindbyCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
 }
 
 // RecordVcsRepositoryBranchCountDataPoint adds a data point to vcs.repository.branch.count metric.
@@ -846,18 +873,13 @@ func (mb *MetricsBuilder) RecordVcsRepositoryBranchCountDataPoint(ts pcommon.Tim
 }
 
 // RecordVcsRepositoryBranchLineAdditionCountDataPoint adds a data point to vcs.repository.branch.line.addition.count metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryBranchLineAdditionCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricVcsRepositoryBranchLineAdditionCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryBranchLineAdditionCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryBranchLineAdditionCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
 }
 
 // RecordVcsRepositoryBranchLineDeletionCountDataPoint adds a data point to vcs.repository.branch.line.deletion.count metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryBranchLineDeletionCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricVcsRepositoryBranchLineDeletionCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
-}
-
-// RecordVcsRepositoryBranchTimeDataPoint adds a data point to vcs.repository.branch.time metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryBranchTimeDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricVcsRepositoryBranchTime.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryBranchLineDeletionCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryBranchLineDeletionCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
 }
 
 // RecordVcsRepositoryContributorCountDataPoint adds a data point to vcs.repository.contributor.count metric.
@@ -876,18 +898,23 @@ func (mb *MetricsBuilder) RecordVcsRepositoryPullRequestCountDataPoint(ts pcommo
 }
 
 // RecordVcsRepositoryPullRequestTimeOpenDataPoint adds a data point to vcs.repository.pull_request.time_open metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryPullRequestTimeOpenDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricVcsRepositoryPullRequestTimeOpen.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryPullRequestTimeOpenDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryPullRequestTimeOpen.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
 }
 
 // RecordVcsRepositoryPullRequestTimeToApprovalDataPoint adds a data point to vcs.repository.pull_request.time_to_approval metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryPullRequestTimeToApprovalDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricVcsRepositoryPullRequestTimeToApproval.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryPullRequestTimeToApprovalDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryPullRequestTimeToApproval.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
 }
 
 // RecordVcsRepositoryPullRequestTimeToMergeDataPoint adds a data point to vcs.repository.pull_request.time_to_merge metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryPullRequestTimeToMergeDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricVcsRepositoryPullRequestTimeToMerge.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryPullRequestTimeToMergeDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryPullRequestTimeToMerge.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
+}
+
+// RecordVcsRepositoryRefTimeDataPoint adds a data point to vcs.repository.ref.time metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryRefTimeDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
+	mb.metricVcsRepositoryRefTime.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -25,7 +25,7 @@ The number of commits a branch is ahead of the default branch (trunk).
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
-| branch.name | The name of a VCS branch | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
 
 ### vcs.repository.branch.commit.behindby.count
 
@@ -40,7 +40,7 @@ The number of commits a branch is behind the default branch (trunk).
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
-| branch.name | The name of a VCS branch | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
 
 ### vcs.repository.branch.count
 
@@ -69,7 +69,7 @@ The number of lines added in a branch relative to the default branch (trunk).
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
-| branch.name | The name of a VCS branch | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
 
 ### vcs.repository.branch.line.deletion.count
 
@@ -84,22 +84,7 @@ The number of lines deleted in a branch relative to the default branch (trunk).
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
-| branch.name | The name of a VCS branch | Any Str |
-
-### vcs.repository.branch.time
-
-Time a branch created from the default branch (trunk) has existed.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The name of a VCS repository | Any Str |
-| branch.name | The name of a VCS branch | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
 
 ### vcs.repository.count
 
@@ -137,7 +122,7 @@ The amount of time a pull request has been open.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
-| branch.name | The name of a VCS branch | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
 
 ### vcs.repository.pull_request.time_to_approval
 
@@ -152,7 +137,7 @@ The amount of time it took a pull request to go from open to approved.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
-| branch.name | The name of a VCS branch | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
 
 ### vcs.repository.pull_request.time_to_merge
 
@@ -167,7 +152,23 @@ The amount of time it took a pull request to go from open to merged.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
-| branch.name | The name of a VCS branch | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
+
+### vcs.repository.ref.time
+
+Time a ref (branch) created from the default branch (trunk) has existed. The `ref.type` attribute will always be `branch`.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a VCS repository | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
+| ref.type | The type of ref (branch, tag). | Str: ``branch``, ``tag`` |
 
 ## Optional Metrics
 
@@ -197,5 +198,5 @@ The number of unique contributors to a repository.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| organization.name | VCS Organization or Project Name | Any Str | true |
+| organization.name | VCS Organization | Any Str | true |
 | vcs.vendor.name | The name of the VCS vendor/provider (ie. GitHub) | Any Str | true |
