@@ -446,6 +446,7 @@ Available Converters:
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
+- [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
 - [String](#string)
@@ -1207,6 +1208,30 @@ Examples:
 - `SHA256("name")`
 
 **Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+
+### Sort
+
+`Sort(target, Optional[order])`
+
+The `Sort` Converter sorts the `target` array in ascending or descending order.
+
+`target` is a `pcommon.Slice` type field. `order` is a string that must be one of `asc` or `desc`. The default `order` is `asc`.
+
+If elements in `target` are
+
+- Integers: Returns a sorted array of integers.
+- Doubles: Returns a sorted array of doubles.
+- Integers and doubles: Converts to doubles and returns a sorted array of doubles.
+- Strings: Returns a sorted array of strings.
+- Booleans: Converts to strings and returns a sorted array of strings.
+- Integers, doubles, booleans, and strings: Converts to strings and returns a sorted array of strings.
+- Other types: Returns the `target` unchanged.
+
+Examples:
+
+- `Sort(attributes["device.tags"])`
+
+- `Sort(attributes["device.tags"], "desc")`
 
 ### SpanID
 
