@@ -70,23 +70,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryBranchCommitAheadbyCountDataPoint(ts, 1, "repository.name-val", "ref.name-val")
+			mb.RecordVcsRepositoryChangeCountDataPoint(ts, 1, AttributeChangeStateOpen, "repository.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryBranchCommitBehindbyCountDataPoint(ts, 1, "repository.name-val", "ref.name-val")
+			mb.RecordVcsRepositoryChangeTimeOpenDataPoint(ts, 1, "repository.name-val", "ref.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryBranchCountDataPoint(ts, 1, "repository.name-val")
+			mb.RecordVcsRepositoryChangeTimeToApprovalDataPoint(ts, 1, "repository.name-val", "ref.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryBranchLineAdditionCountDataPoint(ts, 1, "repository.name-val", "ref.name-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcsRepositoryBranchLineDeletionCountDataPoint(ts, 1, "repository.name-val", "ref.name-val")
+			mb.RecordVcsRepositoryChangeTimeToMergeDataPoint(ts, 1, "repository.name-val", "ref.name-val")
 
 			allMetricsCount++
 			mb.RecordVcsRepositoryContributorCountDataPoint(ts, 1, "repository.name-val")
@@ -97,19 +93,23 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryPullRequestCountDataPoint(ts, 1, AttributePullRequestStateOpen, "repository.name-val")
+			mb.RecordVcsRepositoryRefCountDataPoint(ts, 1, "repository.name-val", AttributeRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryPullRequestTimeOpenDataPoint(ts, 1, "repository.name-val", "ref.name-val")
+			mb.RecordVcsRepositoryRefLinesAddedDataPoint(ts, 1, "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryPullRequestTimeToApprovalDataPoint(ts, 1, "repository.name-val", "ref.name-val")
+			mb.RecordVcsRepositoryRefLinesDeletedDataPoint(ts, 1, "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryPullRequestTimeToMergeDataPoint(ts, 1, "repository.name-val", "ref.name-val")
+			mb.RecordVcsRepositoryRefRevisionsAheadDataPoint(ts, 1, "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcsRepositoryRefRevisionsBehindDataPoint(ts, 1, "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -140,13 +140,31 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "vcs.repository.branch.commit.aheadby.count":
-					assert.False(t, validatedMetrics["vcs.repository.branch.commit.aheadby.count"], "Found a duplicate in the metrics slice: vcs.repository.branch.commit.aheadby.count")
-					validatedMetrics["vcs.repository.branch.commit.aheadby.count"] = true
+				case "vcs.repository.change.count":
+					assert.False(t, validatedMetrics["vcs.repository.change.count"], "Found a duplicate in the metrics slice: vcs.repository.change.count")
+					validatedMetrics["vcs.repository.change.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of commits a branch is ahead of the default branch (trunk).", ms.At(i).Description())
-					assert.Equal(t, "{commit}", ms.At(i).Unit())
+					assert.Equal(t, "The number of changes (pull requests) in a repository, categorized by their state (either open or merged).", ms.At(i).Description())
+					assert.Equal(t, "{change}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("change.state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "open", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "repository.name-val", attrVal.Str())
+				case "vcs.repository.change.time_open":
+					assert.False(t, validatedMetrics["vcs.repository.change.time_open"], "Found a duplicate in the metrics slice: vcs.repository.change.time_open")
+					validatedMetrics["vcs.repository.change.time_open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The amount of time a change (pull request) has been open.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -158,13 +176,13 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("ref.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "ref.name-val", attrVal.Str())
-				case "vcs.repository.branch.commit.behindby.count":
-					assert.False(t, validatedMetrics["vcs.repository.branch.commit.behindby.count"], "Found a duplicate in the metrics slice: vcs.repository.branch.commit.behindby.count")
-					validatedMetrics["vcs.repository.branch.commit.behindby.count"] = true
+				case "vcs.repository.change.time_to_approval":
+					assert.False(t, validatedMetrics["vcs.repository.change.time_to_approval"], "Found a duplicate in the metrics slice: vcs.repository.change.time_to_approval")
+					validatedMetrics["vcs.repository.change.time_to_approval"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of commits a branch is behind the default branch (trunk).", ms.At(i).Description())
-					assert.Equal(t, "{commit}", ms.At(i).Unit())
+					assert.Equal(t, "The amount of time it took a change (pull request) to go from open to approved.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -176,46 +194,13 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("ref.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "ref.name-val", attrVal.Str())
-				case "vcs.repository.branch.count":
-					assert.False(t, validatedMetrics["vcs.repository.branch.count"], "Found a duplicate in the metrics slice: vcs.repository.branch.count")
-					validatedMetrics["vcs.repository.branch.count"] = true
+				case "vcs.repository.change.time_to_merge":
+					assert.False(t, validatedMetrics["vcs.repository.change.time_to_merge"], "Found a duplicate in the metrics slice: vcs.repository.change.time_to_merge")
+					validatedMetrics["vcs.repository.change.time_to_merge"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of branches in a repository.", ms.At(i).Description())
-					assert.Equal(t, "{branch}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "repository.name-val", attrVal.Str())
-				case "vcs.repository.branch.line.addition.count":
-					assert.False(t, validatedMetrics["vcs.repository.branch.line.addition.count"], "Found a duplicate in the metrics slice: vcs.repository.branch.line.addition.count")
-					validatedMetrics["vcs.repository.branch.line.addition.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of lines added in a branch relative to the default branch (trunk).", ms.At(i).Description())
-					assert.Equal(t, "{line}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "repository.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("ref.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "ref.name-val", attrVal.Str())
-				case "vcs.repository.branch.line.deletion.count":
-					assert.False(t, validatedMetrics["vcs.repository.branch.line.deletion.count"], "Found a duplicate in the metrics slice: vcs.repository.branch.line.deletion.count")
-					validatedMetrics["vcs.repository.branch.line.deletion.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of lines deleted in a branch relative to the default branch (trunk).", ms.At(i).Description())
-					assert.Equal(t, "{line}", ms.At(i).Unit())
+					assert.Equal(t, "The amount of time it took a change (pull request) to go from open to merged.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -254,31 +239,31 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "vcs.repository.pull_request.count":
-					assert.False(t, validatedMetrics["vcs.repository.pull_request.count"], "Found a duplicate in the metrics slice: vcs.repository.pull_request.count")
-					validatedMetrics["vcs.repository.pull_request.count"] = true
+				case "vcs.repository.ref.count":
+					assert.False(t, validatedMetrics["vcs.repository.ref.count"], "Found a duplicate in the metrics slice: vcs.repository.ref.count")
+					validatedMetrics["vcs.repository.ref.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of pull requests in a repository, categorized by their state (either open or merged).", ms.At(i).Description())
-					assert.Equal(t, "{pull_request}", ms.At(i).Unit())
+					assert.Equal(t, "The number of refs of type branch in a repository.", ms.At(i).Description())
+					assert.Equal(t, "{ref}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("pull_request.state")
-					assert.True(t, ok)
-					assert.EqualValues(t, "open", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
-				case "vcs.repository.pull_request.time_open":
-					assert.False(t, validatedMetrics["vcs.repository.pull_request.time_open"], "Found a duplicate in the metrics slice: vcs.repository.pull_request.time_open")
-					validatedMetrics["vcs.repository.pull_request.time_open"] = true
+					attrVal, ok = dp.Attributes().Get("ref.type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "branch", attrVal.Str())
+				case "vcs.repository.ref.lines_added":
+					assert.False(t, validatedMetrics["vcs.repository.ref.lines_added"], "Found a duplicate in the metrics slice: vcs.repository.ref.lines_added")
+					validatedMetrics["vcs.repository.ref.lines_added"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time a pull request has been open.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, "The number of lines added in a ref (branch) relative to the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "{line}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -290,13 +275,16 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("ref.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "ref.name-val", attrVal.Str())
-				case "vcs.repository.pull_request.time_to_approval":
-					assert.False(t, validatedMetrics["vcs.repository.pull_request.time_to_approval"], "Found a duplicate in the metrics slice: vcs.repository.pull_request.time_to_approval")
-					validatedMetrics["vcs.repository.pull_request.time_to_approval"] = true
+					attrVal, ok = dp.Attributes().Get("ref.type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "branch", attrVal.Str())
+				case "vcs.repository.ref.lines_deleted":
+					assert.False(t, validatedMetrics["vcs.repository.ref.lines_deleted"], "Found a duplicate in the metrics slice: vcs.repository.ref.lines_deleted")
+					validatedMetrics["vcs.repository.ref.lines_deleted"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time it took a pull request to go from open to approved.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, "The number of lines deleted in a ref (branch) relative to the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "{line}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -308,13 +296,16 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("ref.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "ref.name-val", attrVal.Str())
-				case "vcs.repository.pull_request.time_to_merge":
-					assert.False(t, validatedMetrics["vcs.repository.pull_request.time_to_merge"], "Found a duplicate in the metrics slice: vcs.repository.pull_request.time_to_merge")
-					validatedMetrics["vcs.repository.pull_request.time_to_merge"] = true
+					attrVal, ok = dp.Attributes().Get("ref.type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "branch", attrVal.Str())
+				case "vcs.repository.ref.revisions_ahead":
+					assert.False(t, validatedMetrics["vcs.repository.ref.revisions_ahead"], "Found a duplicate in the metrics slice: vcs.repository.ref.revisions_ahead")
+					validatedMetrics["vcs.repository.ref.revisions_ahead"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time it took a pull request to go from open to merged.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, "The number of revisions (commits) a ref (branch) is ahead of the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "{revision}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -326,6 +317,30 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("ref.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "ref.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("ref.type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "branch", attrVal.Str())
+				case "vcs.repository.ref.revisions_behind":
+					assert.False(t, validatedMetrics["vcs.repository.ref.revisions_behind"], "Found a duplicate in the metrics slice: vcs.repository.ref.revisions_behind")
+					validatedMetrics["vcs.repository.ref.revisions_behind"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of revisions (commits) a ref (branch) is behind the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "{revision}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "repository.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("ref.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "ref.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("ref.type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "branch", attrVal.Str())
 				case "vcs.repository.ref.time":
 					assert.False(t, validatedMetrics["vcs.repository.ref.time"], "Found a duplicate in the metrics slice: vcs.repository.ref.time")
 					validatedMetrics["vcs.repository.ref.time"] = true

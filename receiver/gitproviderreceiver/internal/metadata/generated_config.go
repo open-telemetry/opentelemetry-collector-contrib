@@ -28,35 +28,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for gitprovider metrics.
 type MetricsConfig struct {
-	VcsRepositoryBranchCommitAheadbyCount  MetricConfig `mapstructure:"vcs.repository.branch.commit.aheadby.count"`
-	VcsRepositoryBranchCommitBehindbyCount MetricConfig `mapstructure:"vcs.repository.branch.commit.behindby.count"`
-	VcsRepositoryBranchCount               MetricConfig `mapstructure:"vcs.repository.branch.count"`
-	VcsRepositoryBranchLineAdditionCount   MetricConfig `mapstructure:"vcs.repository.branch.line.addition.count"`
-	VcsRepositoryBranchLineDeletionCount   MetricConfig `mapstructure:"vcs.repository.branch.line.deletion.count"`
-	VcsRepositoryContributorCount          MetricConfig `mapstructure:"vcs.repository.contributor.count"`
-	VcsRepositoryCount                     MetricConfig `mapstructure:"vcs.repository.count"`
-	VcsRepositoryPullRequestCount          MetricConfig `mapstructure:"vcs.repository.pull_request.count"`
-	VcsRepositoryPullRequestTimeOpen       MetricConfig `mapstructure:"vcs.repository.pull_request.time_open"`
-	VcsRepositoryPullRequestTimeToApproval MetricConfig `mapstructure:"vcs.repository.pull_request.time_to_approval"`
-	VcsRepositoryPullRequestTimeToMerge    MetricConfig `mapstructure:"vcs.repository.pull_request.time_to_merge"`
-	VcsRepositoryRefTime                   MetricConfig `mapstructure:"vcs.repository.ref.time"`
+	VcsRepositoryChangeCount          MetricConfig `mapstructure:"vcs.repository.change.count"`
+	VcsRepositoryChangeTimeOpen       MetricConfig `mapstructure:"vcs.repository.change.time_open"`
+	VcsRepositoryChangeTimeToApproval MetricConfig `mapstructure:"vcs.repository.change.time_to_approval"`
+	VcsRepositoryChangeTimeToMerge    MetricConfig `mapstructure:"vcs.repository.change.time_to_merge"`
+	VcsRepositoryContributorCount     MetricConfig `mapstructure:"vcs.repository.contributor.count"`
+	VcsRepositoryCount                MetricConfig `mapstructure:"vcs.repository.count"`
+	VcsRepositoryRefCount             MetricConfig `mapstructure:"vcs.repository.ref.count"`
+	VcsRepositoryRefLinesAdded        MetricConfig `mapstructure:"vcs.repository.ref.lines_added"`
+	VcsRepositoryRefLinesDeleted      MetricConfig `mapstructure:"vcs.repository.ref.lines_deleted"`
+	VcsRepositoryRefRevisionsAhead    MetricConfig `mapstructure:"vcs.repository.ref.revisions_ahead"`
+	VcsRepositoryRefRevisionsBehind   MetricConfig `mapstructure:"vcs.repository.ref.revisions_behind"`
+	VcsRepositoryRefTime              MetricConfig `mapstructure:"vcs.repository.ref.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		VcsRepositoryBranchCommitAheadbyCount: MetricConfig{
+		VcsRepositoryChangeCount: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryBranchCommitBehindbyCount: MetricConfig{
+		VcsRepositoryChangeTimeOpen: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryBranchCount: MetricConfig{
+		VcsRepositoryChangeTimeToApproval: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryBranchLineAdditionCount: MetricConfig{
-			Enabled: true,
-		},
-		VcsRepositoryBranchLineDeletionCount: MetricConfig{
+		VcsRepositoryChangeTimeToMerge: MetricConfig{
 			Enabled: true,
 		},
 		VcsRepositoryContributorCount: MetricConfig{
@@ -65,16 +62,19 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcsRepositoryCount: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryPullRequestCount: MetricConfig{
+		VcsRepositoryRefCount: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryPullRequestTimeOpen: MetricConfig{
+		VcsRepositoryRefLinesAdded: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryPullRequestTimeToApproval: MetricConfig{
+		VcsRepositoryRefLinesDeleted: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryPullRequestTimeToMerge: MetricConfig{
+		VcsRepositoryRefRevisionsAhead: MetricConfig{
+			Enabled: true,
+		},
+		VcsRepositoryRefRevisionsBehind: MetricConfig{
 			Enabled: true,
 		},
 		VcsRepositoryRefTime: MetricConfig{

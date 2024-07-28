@@ -12,13 +12,28 @@ metrics:
     enabled: false
 ```
 
-### vcs.repository.branch.commit.aheadby.count
+### vcs.repository.change.count
 
-The number of commits a branch is ahead of the default branch (trunk).
+The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {commit} | Gauge | Int |
+| {change} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
+| repository.name | The name of a VCS repository | Any Str |
+
+### vcs.repository.change.time_open
+
+The amount of time a change (pull request) has been open.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
 
 #### Attributes
 
@@ -27,13 +42,13 @@ The number of commits a branch is ahead of the default branch (trunk).
 | repository.name | The name of a VCS repository | Any Str |
 | ref.name | The name of a VCS branch | Any Str |
 
-### vcs.repository.branch.commit.behindby.count
+### vcs.repository.change.time_to_approval
 
-The number of commits a branch is behind the default branch (trunk).
+The amount of time it took a change (pull request) to go from open to approved.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {commit} | Gauge | Int |
+| s | Gauge | Int |
 
 #### Attributes
 
@@ -42,42 +57,13 @@ The number of commits a branch is behind the default branch (trunk).
 | repository.name | The name of a VCS repository | Any Str |
 | ref.name | The name of a VCS branch | Any Str |
 
-### vcs.repository.branch.count
+### vcs.repository.change.time_to_merge
 
-The number of branches in a repository.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {branch} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The name of a VCS repository | Any Str |
-
-### vcs.repository.branch.line.addition.count
-
-The number of lines added in a branch relative to the default branch (trunk).
+The amount of time it took a change (pull request) to go from open to merged.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {line} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The name of a VCS repository | Any Str |
-| ref.name | The name of a VCS branch | Any Str |
-
-### vcs.repository.branch.line.deletion.count
-
-The number of lines deleted in a branch relative to the default branch (trunk).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {line} | Gauge | Int |
+| s | Gauge | Int |
 
 #### Attributes
 
@@ -94,43 +80,28 @@ The number of repositories in an organization.
 | ---- | ----------- | ---------- |
 | {repository} | Gauge | Int |
 
-### vcs.repository.pull_request.count
+### vcs.repository.ref.count
 
-The number of pull requests in a repository, categorized by their state (either open or merged).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pull_request} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| pull_request.state | The state of a pull request | Str: ``open``, ``merged`` |
-| repository.name | The name of a VCS repository | Any Str |
-
-### vcs.repository.pull_request.time_open
-
-The amount of time a pull request has been open.
+The number of refs of type branch in a repository.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| {ref} | Gauge | Int |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
-| ref.name | The name of a VCS branch | Any Str |
+| ref.type | The type of ref (branch, tag). | Str: ``branch``, ``tag`` |
 
-### vcs.repository.pull_request.time_to_approval
+### vcs.repository.ref.lines_added
 
-The amount of time it took a pull request to go from open to approved.
+The number of lines added in a ref (branch) relative to the default branch (trunk).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| {line} | Gauge | Int |
 
 #### Attributes
 
@@ -138,14 +109,15 @@ The amount of time it took a pull request to go from open to approved.
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
 | ref.name | The name of a VCS branch | Any Str |
+| ref.type | The type of ref (branch, tag). | Str: ``branch``, ``tag`` |
 
-### vcs.repository.pull_request.time_to_merge
+### vcs.repository.ref.lines_deleted
 
-The amount of time it took a pull request to go from open to merged.
+The number of lines deleted in a ref (branch) relative to the default branch (trunk).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| {line} | Gauge | Int |
 
 #### Attributes
 
@@ -153,6 +125,39 @@ The amount of time it took a pull request to go from open to merged.
 | ---- | ----------- | ------ |
 | repository.name | The name of a VCS repository | Any Str |
 | ref.name | The name of a VCS branch | Any Str |
+| ref.type | The type of ref (branch, tag). | Str: ``branch``, ``tag`` |
+
+### vcs.repository.ref.revisions_ahead
+
+The number of revisions (commits) a ref (branch) is ahead of the default branch (trunk).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {revision} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a VCS repository | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
+| ref.type | The type of ref (branch, tag). | Str: ``branch``, ``tag`` |
+
+### vcs.repository.ref.revisions_behind
+
+The number of revisions (commits) a ref (branch) is behind the default branch (trunk).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {revision} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a VCS repository | Any Str |
+| ref.name | The name of a VCS branch | Any Str |
+| ref.type | The type of ref (branch, tag). | Str: ``branch``, ``tag`` |
 
 ### vcs.repository.ref.time
 

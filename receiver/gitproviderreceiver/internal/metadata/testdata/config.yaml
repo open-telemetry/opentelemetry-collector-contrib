@@ -1,27 +1,27 @@
 default:
 all_set:
   metrics:
-    vcs.repository.branch.commit.aheadby.count:
+    vcs.repository.change.count:
       enabled: true
-    vcs.repository.branch.commit.behindby.count:
+    vcs.repository.change.time_open:
       enabled: true
-    vcs.repository.branch.count:
+    vcs.repository.change.time_to_approval:
       enabled: true
-    vcs.repository.branch.line.addition.count:
-      enabled: true
-    vcs.repository.branch.line.deletion.count:
+    vcs.repository.change.time_to_merge:
       enabled: true
     vcs.repository.contributor.count:
       enabled: true
     vcs.repository.count:
       enabled: true
-    vcs.repository.pull_request.count:
+    vcs.repository.ref.count:
       enabled: true
-    vcs.repository.pull_request.time_open:
+    vcs.repository.ref.lines_added:
       enabled: true
-    vcs.repository.pull_request.time_to_approval:
+    vcs.repository.ref.lines_deleted:
       enabled: true
-    vcs.repository.pull_request.time_to_merge:
+    vcs.repository.ref.revisions_ahead:
+      enabled: true
+    vcs.repository.ref.revisions_behind:
       enabled: true
     vcs.repository.ref.time:
       enabled: true
@@ -32,27 +32,27 @@ all_set:
       enabled: true
 none_set:
   metrics:
-    vcs.repository.branch.commit.aheadby.count:
+    vcs.repository.change.count:
       enabled: false
-    vcs.repository.branch.commit.behindby.count:
+    vcs.repository.change.time_open:
       enabled: false
-    vcs.repository.branch.count:
+    vcs.repository.change.time_to_approval:
       enabled: false
-    vcs.repository.branch.line.addition.count:
-      enabled: false
-    vcs.repository.branch.line.deletion.count:
+    vcs.repository.change.time_to_merge:
       enabled: false
     vcs.repository.contributor.count:
       enabled: false
     vcs.repository.count:
       enabled: false
-    vcs.repository.pull_request.count:
+    vcs.repository.ref.count:
       enabled: false
-    vcs.repository.pull_request.time_open:
+    vcs.repository.ref.lines_added:
       enabled: false
-    vcs.repository.pull_request.time_to_approval:
+    vcs.repository.ref.lines_deleted:
       enabled: false
-    vcs.repository.pull_request.time_to_merge:
+    vcs.repository.ref.revisions_ahead:
+      enabled: false
+    vcs.repository.ref.revisions_behind:
       enabled: false
     vcs.repository.ref.time:
       enabled: false
