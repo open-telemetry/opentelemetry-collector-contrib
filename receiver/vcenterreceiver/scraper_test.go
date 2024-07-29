@@ -49,6 +49,10 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs.Metrics.VcenterHostVsanOperations.Enabled = true
 	optConfigs.Metrics.VcenterHostVsanLatencyAvg.Enabled = true
 	optConfigs.Metrics.VcenterHostVsanCongestions.Enabled = true
+	optConfigs.Metrics.VcenterClusterVsanLatencyAvg.Enabled = true
+	optConfigs.Metrics.VcenterClusterVsanOperations.Enabled = true
+	optConfigs.Metrics.VcenterClusterVsanThroughput.Enabled = true
+	optConfigs.Metrics.VcenterClusterVsanCongestions.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
