@@ -217,26 +217,26 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.105.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.105.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.105.1-0.20240729082905-fb5b1e6aa550
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.105.1-0.20240729082905-fb5b1e6aa550
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.105.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/connector v0.105.1-0.20240729082905-fb5b1e6aa550
-	go.opentelemetry.io/collector/connector/forwardconnector v0.105.1-0.20240729082905-fb5b1e6aa550
+	go.opentelemetry.io/collector/connector/forwardconnector v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/exporter v0.105.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/exporter/debugexporter v0.105.1-0.20240729082905-fb5b1e6aa550
-	go.opentelemetry.io/collector/exporter/nopexporter v0.105.1-0.20240729082905-fb5b1e6aa550
+	go.opentelemetry.io/collector/exporter/nopexporter v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.105.1-0.20240729082905-fb5b1e6aa550
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.105.1-0.20240729082905-fb5b1e6aa550
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/extension v0.105.1-0.20240729082905-fb5b1e6aa550
-	go.opentelemetry.io/collector/extension/ballastextension v0.105.1-0.20240729082905-fb5b1e6aa550
-	go.opentelemetry.io/collector/extension/zpagesextension v0.105.1-0.20240729082905-fb5b1e6aa550
+	go.opentelemetry.io/collector/extension/ballastextension v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/extension/zpagesextension v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/otelcol v0.105.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/pdata v1.12.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/processor v0.105.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/processor/batchprocessor v0.105.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.105.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/receiver v0.105.1-0.20240729082905-fb5b1e6aa550
-	go.opentelemetry.io/collector/receiver/nopreceiver v0.105.1-0.20240729082905-fb5b1e6aa550
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.105.1-0.20240729082905-fb5b1e6aa550
 	golang.org/x/sys v0.22.0
 )
