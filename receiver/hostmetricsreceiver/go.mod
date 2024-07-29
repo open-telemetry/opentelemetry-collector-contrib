@@ -17,10 +17,10 @@ require (
 	go.opentelemetry.io/collector/confmap v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/consumer v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726175034-c3a11297650a
-	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/filter v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.105.1-0.20240726220702-a6287aca1a43
-	go.opentelemetry.io/collector/pdata v1.12.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240729082905-fb5b1e6aa550
 	go.opentelemetry.io/collector/receiver v0.105.1-0.20240726220702-a6287aca1a43
 	go.opentelemetry.io/collector/semconv v0.105.1-0.20240726220702-a6287aca1a43
 	go.uber.org/goleak v1.3.0
