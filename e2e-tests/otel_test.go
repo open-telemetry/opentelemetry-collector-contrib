@@ -6,34 +6,31 @@
 package e2etests
 
 import (
-	"flag"
+	"context"
+	otelcollector "e2e-tests/otel-collector"
 	"testing"
 
 	"github.com/DataDog/datadog-agent/test/new-e2e/pkg/e2e"
 	"github.com/DataDog/datadog-agent/test/new-e2e/pkg/environments"
-	awshost "github.com/DataDog/datadog-agent/test/new-e2e/pkg/environments/aws/host"
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var devMode = flag.Bool("devmode", false, "enable dev mode")
-
 type vmSuite struct {
-	e2e.BaseSuite[environments.Host]
+	e2e.BaseSuite[environments.Kubernetes]
 }
 
 // TestVMSuite runs tests for the VM interface to ensure its implementation is correct.
 func TestVMSuite(t *testing.T) {
-	suiteParams := []e2e.SuiteOption{e2e.WithProvisioner(awshost.ProvisionerNoAgentNoFakeIntake())}
-	if *devMode {
-		suiteParams = append(suiteParams, e2e.WithDevMode())
-	}
+	suiteParams := []e2e.SuiteOption{e2e.WithProvisioner(otelcollector.Provisioner())}
 
 	e2e.Run(t, &vmSuite{}, suiteParams...)
 }
 
 func (v *vmSuite) TestExecute() {
-	vm := v.Env().RemoteHost
-
-	out, err := vm.Execute("whoami")
-	v.Require().NoError(err)
-	v.Require().NotEmpty(out)
+	res, _ := v.Env().KubernetesCluster.Client().CoreV1().Pods("default").List(context.TODO(), v1.ListOptions{})
+	for _, pod := range res.Items {
+		v.T().Logf("Pod: %s", pod.Name)
+	}
+	assert.Equal(v.T(), 1, len(res.Items))
 }

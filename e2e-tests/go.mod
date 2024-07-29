@@ -2,7 +2,14 @@ module e2e-tests
 
 go 1.22.4
 
-require github.com/DataDog/datadog-agent/test/new-e2e v0.55.0
+require (
+	github.com/DataDog/datadog-agent/test/new-e2e v0.55.0
+	github.com/DataDog/test-infra-definitions v0.0.0-20240527153959-63d1aae5f639
+	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.9.0
+	github.com/pulumi/pulumi/sdk/v3 v3.115.0
+	github.com/stretchr/testify v1.9.0
+	k8s.io/apimachinery v0.28.4
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -13,7 +20,6 @@ require (
 	github.com/DataDog/datadog-agent/test/fakeintake v0.55.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.26.0 // indirect
 	github.com/DataDog/mmh3 v0.0.0-20200805151601-30884ca2197a // indirect
-	github.com/DataDog/test-infra-definitions v0.0.0-20240527153959-63d1aae5f639 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/DataDog/zstd_0 v0.0.0-20210310093942-586c1286621f // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
@@ -126,10 +132,8 @@ require (
 	github.com/pulumi/pulumi-command/sdk v0.9.2 // indirect
 	github.com/pulumi/pulumi-docker/sdk/v4 v4.5.1 // indirect
 	github.com/pulumi/pulumi-eks/sdk/v2 v2.2.1 // indirect
-	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.9.0 // indirect
 	github.com/pulumi/pulumi-random/sdk/v4 v4.16.0 // indirect
 	github.com/pulumi/pulumi-tls/sdk/v4 v4.11.1 // indirect
-	github.com/pulumi/pulumi/sdk/v3 v3.115.0 // indirect
 	github.com/pulumiverse/pulumi-time/sdk v0.0.16 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
@@ -142,7 +146,6 @@ require (
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/texttheater/golang-levenshtein v1.0.1 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/tweekmonster/luser v0.0.0-20161003172636-3fa38070dbd7 // indirect
@@ -173,7 +176,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.28.4 // indirect
-	k8s.io/apimachinery v0.28.4 // indirect
 	k8s.io/client-go v0.28.4 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
