@@ -1225,7 +1225,7 @@ If elements in `target` are
 - Strings: Returns a sorted array of strings.
 - Booleans: Converts to strings and returns a sorted array of strings.
 - Integers, doubles, booleans, and strings: Converts to strings and returns a sorted array of strings.
-- Other types: Returns the `target` unchanged.
+- Other types: Returns error.
 
 Examples:
 
