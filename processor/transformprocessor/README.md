@@ -219,6 +219,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
+- [aggregate_on_attributes](#aggregate_on_attributes)
 
 ### convert_sum_to_gauge
 
@@ -368,6 +369,51 @@ Examples:
 
 - `scale_metric(0.1)`: Scale the metric by a factor of `0.1`. The unit of the metric will not be modified.
 - `scale_metric(10.0, "kWh")`: Scale the metric by a factor of `10.0` and sets the unit to `kWh`.
+
+### aggregate_on_attributes
+
+`aggregate_on_attributes(function, Optional[attributes])`
+
+The `aggregate_on_attributes` function aggregates all datapoints in the metric based on the supplied attributes. `function` is a case-sensitive string that represents the aggregation function and `attributes` is an optional list of attribute keys to aggregate upon.
+
+`aggregate_on_attributes` function removes all attributes that are present in datapoints except the ones that are specified in the `attributes` parameter. If `attributes` parameter is not set, all attributes are removed from datapoints. Afterwards all datapoints are aggregated depending on the attributes left (none or the ones present in the list).
+
+The following metric types can be aggregated:
+
+- sum
+- gauge
+- histogram
+- exponential histogram
+
+Supported aggregation functions are:
+
+- sum
+- max
+- min
+- mean
+- median
+- count
+
+**NOTE:** Only the `sum` aggregation function is supported for histogram and exponential histogram datatypes.
+
+Examples:
+
+- `aggregate_on_attributes("sum", ["attr1", "attr2"]) where name == "system.memory.usage"`
+- `aggregate_on_attributes("max") where name == "system.memory.usage"`
+
+The `aggregate_on_attributes` function can also be used in conjunction with 
+[keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
+[delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
+
+For example, to remove attribute keys matching a regex and aggregate the metrics on the remaining attributes, you can perform the following statement sequence:
+
+```yaml
+statements:
+   - delete_matching_keys(attributes, "(?i).*myRegex.*") where name == "system.memory.usage"
+   - aggregate_on_attributes("sum") where name == "system.memory.usage"
+```
+
+To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
 
 ## Examples
 
