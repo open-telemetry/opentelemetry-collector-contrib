@@ -412,10 +412,15 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		}
 	}
 
-	metricsMap := pcommon.NewValueMap()
-	v := metricsMap.SetEmptyMap().PutEmpty(metric.Name())
-	value.CopyTo(v)
-	document.Add("metrics", objmodel.ValueFromAttribute(metricsMap))
+	switch value.Type() {
+	case pcommon.ValueTypeMap:
+		histogramMap := pcommon.NewMap()
+		value.Map().CopyTo(histogramMap)
+		document.Add("metrics."+metric.Name(), objmodel.ComplexObjectValue(histogramMap))
+	default:
+		document.Add("metrics."+metric.Name(), objmodel.ValueFromAttribute(value))
+	}
+
 	document.AddDynamicTemplate("metrics."+metric.Name(), metricDpToDynamicTemplate(metric, dp))
 	documents[hash] = document
 	return nil

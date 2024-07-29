@@ -83,6 +83,7 @@ const (
 	KindObject
 	KindTimestamp
 	KindIgnore
+	KindComplexObject // Complex object is an object that cannot be flattened FIXME: better name
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
@@ -432,6 +433,12 @@ func TimestampValue(ts time.Time) Value {
 	return Value{kind: KindTimestamp, ts: ts}
 }
 
+// ComplexObjectValue creates a complex object from a map
+func ComplexObjectValue(m pcommon.Map) Value {
+	sub := DocumentFromAttributes(m)
+	return Value{kind: KindComplexObject, doc: sub}
+}
+
 // ValueFromAttribute converts a AttributeValue into a value.
 func ValueFromAttribute(attr pcommon.Value) Value {
 	switch attr.Type() {
@@ -525,6 +532,11 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 			return w.OnNil()
 		}
 		return v.doc.iterJSON(w, dedot, otel)
+	case KindComplexObject:
+		if len(v.doc.fields) == 0 {
+			return w.OnNil()
+		}
+		return v.doc.iterJSON(w, true, otel)
 	case KindArr:
 		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
 			return err
