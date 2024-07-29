@@ -620,12 +620,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Sort(attributes["slice.any"], "desc"))`,
+			statement: `set(attributes["test"], Sort(Split(attributes["flags"], "|"), "desc"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
-				s.AppendEmpty().SetStr("slice")
-				s.AppendEmpty().SetStr("am")
-				s.AppendEmpty().SetStr("1")
+				s.AppendEmpty().SetStr("C")
+				s.AppendEmpty().SetStr("B")
+				s.AppendEmpty().SetStr("A")
 			},
 		},
 		{
@@ -939,8 +939,6 @@ func constructLogTransformContext() ottllog.TransformContext {
 	v.SetStr("val")
 	m2 := m.PutEmptyMap("nested")
 	m2.PutStr("test", "pass")
-	ss := logRecord.Attributes().PutEmptySlice("slice.any")
-	_ = ss.FromRaw([]any{1, "am", "slice"})
 
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }

@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -70,6 +71,22 @@ func Sort[K any](target ottl.Getter[K], order string) (ottl.ExprFunc[K], error) 
 				return v, nil
 			}
 			return sortSlice(slice, order)
+		case []string:
+			// handle value from Split()
+			dup := makeCopy(v)
+			return sortTypedSlice(dup, order), nil
+		case []int64:
+			dup := makeCopy(v)
+			return sortTypedSlice(dup, order), nil
+		case []float64:
+			dup := makeCopy(v)
+			return sortTypedSlice(dup, order), nil
+		case []bool:
+			var arr []string
+			for _, b := range v {
+				arr = append(arr, strconv.FormatBool(b))
+			}
+			return sortTypedSlice(arr, order), nil
 		default:
 			return v, nil
 		}
@@ -178,6 +195,12 @@ func makeTypedCopy[T TargetType](length int, converter func(idx int) T) []T {
 		arr = append(arr, converter(i))
 	}
 	return arr
+}
+
+func makeCopy[T TargetType](src []T) []T {
+	dup := make([]T, len(src))
+	copy(dup, src)
+	return dup
 }
 
 func sortTypedSlice[T TargetType](arr []T, order string) []T {

@@ -132,6 +132,46 @@ func Test_Sort(t *testing.T) {
 			expected: []string{"1", "3.33", "false", "two"},
 		},
 		{
+			name: "[]string",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []string{"A", "a", "aa"}, nil
+				},
+			},
+			order:    sortAsc,
+			expected: []string{"A", "a", "aa"},
+		},
+		{
+			name: "[]bool compares as string",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []bool{true, false}, nil
+				},
+			},
+			order:    sortAsc,
+			expected: []string{"false", "true"},
+		},
+		{
+			name: "[]int64",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []int64{6, 3, 9}, nil
+				},
+			},
+			order:    sortAsc,
+			expected: []int64{3, 6, 9},
+		},
+		{
+			name: "[]float64",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []float64{0.1829374652374, -3.4029435828374, 9.7425639845731}, nil
+				},
+			},
+			order:    sortAsc,
+			expected: []float64{-3.4029435828374, 0.1829374652374, 9.7425639845731},
+		},
+		{
 			name: "unsupported ValueTypeMap remains unchanged",
 			getter: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
