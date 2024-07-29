@@ -274,7 +274,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	if errMarshal != nil {
 		return consumererror.NewPermanent(errMarshal)
 	}
-	// If we don't pass a bugger large enough, Snappy Encode function will not use it and instead will allocate a new buffer.
+	// If we don't pass a buffer large enough, Snappy Encode function will not use it and instead will allocate a new buffer.
 	// Therefore we always let Snappy decide the size of the buffer.
 	compressedData := snappy.Encode(nil, data)
 
