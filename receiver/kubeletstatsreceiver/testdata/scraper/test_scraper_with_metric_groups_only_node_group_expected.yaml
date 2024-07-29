@@ -115,10 +115,30 @@ resourceMetrics:
                   attributes:
                     - key: direction
                       value:
+                        stringValue: receive
+                    - key: interface
+                      value:
+                        stringValue: sit0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
                         stringValue: transmit
                     - key: interface
                       value:
                         stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                    - key: interface
+                      value:
+                        stringValue: sit0
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -138,6 +158,16 @@ resourceMetrics:
                         stringValue: eth0
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: receive
+                    - key: interface
+                      value:
+                        stringValue: sit0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12542266"
                   attributes:
                     - key: direction
@@ -146,6 +176,16 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                    - key: interface
+                      value:
+                        stringValue: sit0
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
