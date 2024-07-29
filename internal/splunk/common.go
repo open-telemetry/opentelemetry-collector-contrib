@@ -67,6 +67,9 @@ func (e *Event) IsMetric() bool {
 // checks if the field name matches the requirements for a metric datapoint field,
 // and returns the metric name and a bool indicating whether the field is a metric.
 func getMetricNameFromField(fieldName string) (string, bool) {
+	// only consider metric name if it fits regex criteria.
+	// use matches[1] since first element contains entire string.
+	// first subgroup will be the actual metric name.
 	if matches := metricNameRegexp.FindStringSubmatch(fieldName); len(matches) > 1 {
 		return matches[1], !strings.Contains(matches[1], "metric_name")
 	}
@@ -81,9 +84,6 @@ func (e *Event) GetMetricValues() map[string]any {
 
 	values := map[string]any{}
 	for k, v := range e.Fields {
-		// only consider metric name if it fits regex criteria.
-		// use matches[1] since first element contains entire string.
-		// first subgroup will be the actual metric name.
 		if metricName, ok := getMetricNameFromField(k); ok {
 			values[metricName] = v
 		}
