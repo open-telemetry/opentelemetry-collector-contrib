@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -307,10 +308,21 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 }
 
 func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
+	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
+
+	configuredChan := make(chan struct{})
 	connected := atomic.Bool{}
 	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{
 		OnConnectedFunc: func(ctx context.Context, conn types.Connection) {
 			connected.Store(true)
+		},
+		OnMessageFunc: func(ctx context.Context, conn types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			lastCfgHash := message.GetRemoteConfigStatus().GetLastRemoteConfigHash()
+			if bytes.Equal(lastCfgHash, hash) {
+				close(configuredChan)
+			}
+
+			return &protobufs.ServerToAgent{}
 		},
 	})
 	defer server.shutdown()
@@ -344,6 +356,40 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	require.True(t, connected.Load(), "Supervisor failed to connect")
+
+	// Verify that the collector can run a new config sent to it
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	select {
+	case <-configuredChan:
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "timed out waiting for collector to reconfigure")
+	}
+
+	sampleLog := `{"body":"hello, world"}`
+	n, err := inputFile.WriteString(sampleLog + "\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+
+		n, err = outputFile.Read(logRecord)
+		if !errors.Is(err, io.EOF) {
+			require.NoError(t, err)
+		}
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
 
 }
 
