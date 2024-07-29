@@ -50,7 +50,7 @@ func createSortFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	return Sort(args.Target, order)
 }
 
-func Sort[K any](target ottl.Getter[K], order string) (ottl.ExprFunc[K], error) {
+func sort[K any](target ottl.Getter[K], order string) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
