@@ -68,6 +68,34 @@ func Test_batchTimeSeries(t *testing.T) {
 	}
 }
 
+// Benchmark_batchTimeSeries checks batchTimeSeries
+// To run and gather alloc data:
+// go test -bench ^Benchmark_batchTimeSeries$ -benchmem -count=1 -run=^$ -memprofile memprofile.out
+// go tool pprof -svg memprofile.out
+func Benchmark_batchTimeSeries(b *testing.B) {
+	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
+	sample1 := getSample(floatVal1, msTime1)
+	sample2 := getSample(floatVal2, msTime2)
+	sample3 := getSample(floatVal3, msTime3)
+
+	// Benchmark for large data sizes
+	// First allocate 100k time series
+	tsArray := make([]*prompb.TimeSeries, 0, 100000)
+	for i := 0; i < 100000; i++ {
+		ts := getTimeSeries(labels, sample1, sample2, sample3)
+		tsArray = append(tsArray, ts)
+	}
+
+	tsMap1 := getTimeseriesMap(tsArray)
+
+	// Run batchTimeSeries 100 times with a 1mb max request size
+	for i := 0; i < 100; i++ {
+		requests, err := batchTimeSeries(tsMap1, 1000000, nil)
+		assert.NoError(b, err)
+		assert.Equal(b, 18, len(requests))
+	}
+}
+
 // Ensure that before a prompb.WriteRequest is created, that the points per TimeSeries
 // are sorted by Timestamp value, to prevent Prometheus from barfing when it gets poorly
 // sorted values. See issues:
