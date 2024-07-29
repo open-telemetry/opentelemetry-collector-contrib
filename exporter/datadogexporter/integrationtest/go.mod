@@ -83,7 +83,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240716154421-697b001e760f // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240722160158-ad956a31a730 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.56.0-rc.6 // indirect
