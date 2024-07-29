@@ -342,7 +342,9 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	)
 	if document, ok = documents[hash]; !ok {
 		document.AddTimestamp("@timestamp", dp.Timestamp())
-		document.AddTimestamp("start_timestamp", dp.StartTimestamp())
+		if dp.StartTimestamp() != 0 {
+			document.AddTimestamp("start_timestamp", dp.StartTimestamp())
+		}
 		document.AddString("unit", metric.Unit())
 
 		// At this point the data_stream attributes are expected to be in the record attributes,
