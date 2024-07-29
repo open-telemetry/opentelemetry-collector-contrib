@@ -733,7 +733,7 @@ func TestExporterMetrics(t *testing.T) {
 		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
-	t.Run("publish histogram otel mode", func(t *testing.T) {
+	t.Run("otel mode", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -759,6 +759,14 @@ func TestExporterMetrics(t *testing.T) {
 		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
 		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
 
+		sumMetric := metricSlice.AppendEmpty()
+		sumMetric.SetName("metric.sum")
+		sumDps := sumMetric.SetEmptySum().DataPoints()
+		sumDp := sumDps.AppendEmpty()
+		sumDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		sumDp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		sumDp.SetDoubleValue(1.5)
+
 		mustSendMetrics(t, exporter, metrics)
 
 		rec.WaitItems(2)
@@ -771,6 +779,10 @@ func TestExporterMetrics(t *testing.T) {
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}},"resource":{"dropped_attributes_count":0,"schema_url":""}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T02:00:00.000000000Z"}`),
 			},
 		}
 
