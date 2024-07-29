@@ -220,12 +220,15 @@ func routeVsanPerfQueryPerf(t *testing.T, body map[string]any) ([]byte, error) {
 	}
 	entityRefID := querySpecs["entityRefId"].(string)
 	switch entityRefID {
+	case "cluster-domclient:*":
+		return loadResponse("cluster-vsan.xml")
 	case "host-domclient:*":
 		return loadResponse("host-vsan.xml")
 	case "virtual-machine:*":
 		return loadResponse("vm-vsan.xml")
+	default:
+		return []byte{}, errNotFound
 	}
-	return []byte{}, errNotFound
 }
 
 func loadResponse(filename string) ([]byte, error) {
