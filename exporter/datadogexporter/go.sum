@@ -163,8 +163,8 @@ github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.6 h1:l6vgnYVtUg86z
 github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.6/go.mod h1:sNLVlyEtkYal/+kTj+mTp239DdwVuYBYOnpS90RKk5E=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.6 h1:QY8IhqW9t6nXlg6HxURhFOT5GFHCpbNTyoffbDe6bbU=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.6/go.mod h1:rUexndyX0/drZbyDBS/ySjOZv/sdbyCy/e+i+vjME60=
-github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240716154421-697b001e760f h1:qhko+fLzYmtbqHkgT/GbShyTLAmq5MFeYbknldWsPDs=
-github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240716154421-697b001e760f/go.mod h1:2NvzQC8eTtIHI94ymG1UqXZanSXlL3KOiZ5oIoTAdsI=
+github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240722160158-ad956a31a730 h1:VBc0OeRq1y4Ns8q0vWsWWT4JxgDTHwAeqcyRXEAPF7g=
+github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240722160158-ad956a31a730/go.mod h1:2NvzQC8eTtIHI94ymG1UqXZanSXlL3KOiZ5oIoTAdsI=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.56.0-rc.6 h1:nAQ0IxRzcz/wSMIAf6JkjWaPZ8e1PIHCrHNrE9sRNM4=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.56.0-rc.6/go.mod h1:HcSwqoxWLfevi1vuDZuFeRHfSuHGakTN6/u42WbxQHE=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.56.0-rc.6 h1:686C9eoF82jeKmFqOpgAzHinbWkm24xSeUPV3IpHQF0=
