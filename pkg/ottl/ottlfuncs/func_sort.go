@@ -7,6 +7,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"go.uber.org/multierr"
 	"slices"
 	"strconv"
 
@@ -47,7 +48,7 @@ func createSortFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		}
 	}
 
-	return Sort(args.Target, order)
+	return sort(args.Target, order)
 }
 
 func sort[K any](target ottl.Getter[K], order string) (ottl.ExprFunc[K], error) {
@@ -57,18 +58,20 @@ func sort[K any](target ottl.Getter[K], order string) (ottl.ExprFunc[K], error) 
 			return nil, err
 		}
 
-		if order != sortAsc && order != sortDesc {
-			return nil, fmt.Errorf("invalid arguments: %s. Order should be either \"%s\" or \"%s\"", order, sortAsc, sortDesc)
-		}
-
 		switch v := val.(type) {
 		case pcommon.Slice:
 			return sortSlice(v, order)
+		case pcommon.Value:
+			if v.Type() == pcommon.ValueTypeSlice {
+				return sortSlice(v.Slice(), order)
+			}
+			return nil, fmt.Errorf("sort with unsupported type: '%s'. Target is not a list", v.Type().String())
 		case []any:
 			// handle Sort([1,2,3])
 			slice := pcommon.NewValueSlice().SetEmptySlice()
 			if err := slice.FromRaw(v); err != nil {
-				return v, nil
+				errs := multierr.Append(err, fmt.Errorf("sort with unsupported type: '%T'. Target is not a list of primitive types", v))
+				return nil, errs
 			}
 			return sortSlice(slice, order)
 		case []string:
@@ -88,7 +91,7 @@ func sort[K any](target ottl.Getter[K], order string) (ottl.ExprFunc[K], error) 
 			}
 			return sortTypedSlice(arr, order), nil
 		default:
-			return v, nil
+			return nil, fmt.Errorf("sort with unsupported type: '%T'. Target is not a list", v)
 		}
 	}, nil
 }

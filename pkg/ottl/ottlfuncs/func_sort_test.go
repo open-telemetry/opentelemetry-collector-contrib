@@ -172,60 +172,78 @@ func Test_Sort(t *testing.T) {
 			expected: []float64{-3.4029435828374, 0.1829374652374, 9.7425639845731},
 		},
 		{
-			name: "unsupported ValueTypeMap remains unchanged",
+			name: "pcommon.Value is a slice",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					pv := pcommon.NewValueEmpty()
+					s := pv.SetEmptySlice()
+					s.FromRaw([]any{"a", "slice", "a"})
+					return pv, nil
+				},
+			},
+			order:    sortAsc,
+			expected: []string{"a", "a", "slice"},
+		},
+		{
+			name: "pcommon.Value is empty",
+			getter: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					pv := pcommon.NewValueEmpty()
+					return pv, nil
+				},
+			},
+			order:    sortAsc,
+			expected: nil,
+			err:      true,
+		},
+		{
+			name: "unsupported ValueTypeMap",
 			getter: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return pMap, nil
 				},
 			},
 			order:    sortAsc,
-			expected: pMap,
+			expected: nil,
+			err:      true,
 		},
 		{
-			name: "unsupported bytes remains unchanged",
+			name: "unsupported bytes",
 			getter: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return []byte("still fine"), nil
 				},
 			},
 			order:    sortAsc,
-			expected: []byte("still fine"),
+			expected: nil,
+			err:      true,
 		},
 		{
-			name: "unsupported string remains unchanged",
+			name: "unsupported string",
 			getter: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return "no change", nil
 				},
 			},
 			order:    sortAsc,
-			expected: "no change",
+			expected: nil,
+			err:      true,
 		},
 		{
-			name: "invalid slice remains unchanged",
+			name: "[]any with a map",
 			getter: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return []any{map[string]string{"some": "invalid kv"}}, nil
 				},
 			},
 			order:    sortAsc,
-			expected: []any{map[string]string{"some": "invalid kv"}},
-		},
-		{
-			name: "invalid sort order",
-			getter: ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return []any{1, 2, 3}, nil
-				},
-			},
-			order:    "dddd",
 			expected: nil,
 			err:      true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Sort(tt.getter, tt.order)
+			exprFunc, err := sort(tt.getter, tt.order)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
