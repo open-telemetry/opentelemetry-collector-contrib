@@ -7,10 +7,18 @@ import (
 	"fmt"
 	"regexp"
 
+	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+)
+
+var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
+	"k8sattr.fieldExtractConfigRegex.disallow",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, usage of the FieldExtractConfig.Regex field is disallowed"),
+	featuregate.WithRegisterFromVersion("v0.106.0"),
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -63,6 +71,9 @@ func (cfg *Config) Validate() error {
 		}
 
 		if f.Regex != "" {
+			if disallowFieldExtractConfigRegex.IsEnabled() {
+				return fmt.Errorf("the extract.annotations.regex and extract.labels.regex fields have been deprecated, please use the `ExtractPatterns` function in the transform processor instead")
+			}
 			r, err := regexp.Compile(f.Regex)
 			if err != nil {
 				return err
@@ -213,6 +224,8 @@ type FieldExtractConfig struct {
 	//       regex: JENKINS=(?P<value>[\w]+)
 	//
 	// this will add the `git.sha` and `ci.build` resource attributes.
+	// Deprecated: [v0.106.0] Use the `ExtractPatterns` function in the transform processor instead.
+	// More information about how to replace the regex field can be found in the k8sattributes processor readme.
 	Regex string `mapstructure:"regex"`
 
 	// From represents the source of the labels/annotations.
