@@ -17,8 +17,8 @@ import (
 type ExtractGrokPatternsArguments[K any] struct {
 	Target             ottl.StringGetter[K]
 	Pattern            string
-	PatternDefinitions []string
 	NamedCapturesOnly  ottl.Optional[bool]
+	PatternDefinitions ottl.Optional[[]string]
 }
 
 func NewExtractGrokPatternsFactory[K any]() ottl.Factory[K] {
@@ -32,27 +32,28 @@ func createExtractGrokPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl
 		return nil, fmt.Errorf("ExtractGrokPatternsFactory args must be of type *ExtractGrokPatternsArguments[K]")
 	}
 
-	return extractGrokPatterns(args.Target, args.Pattern, args.PatternDefinitions, args.NamedCapturesOnly)
+	return extractGrokPatterns(args.Target, args.Pattern, args.NamedCapturesOnly, args.PatternDefinitions)
 }
 
-func extractGrokPatterns[K any](target ottl.StringGetter[K], pattern string, patternDefinitions []string, nco ottl.Optional[bool]) (ottl.ExprFunc[K], error) {
+func extractGrokPatterns[K any](target ottl.StringGetter[K], pattern string, nco ottl.Optional[bool], patternDefinitions ottl.Optional[[]string]) (ottl.ExprFunc[K], error) {
 	g := grok.NewComplete()
 	namedCapturesOnly := !nco.IsEmpty() && nco.Get()
 
-	for i, patternDefinition := range patternDefinitions {
-		// split pattern in format key=val
-		parts := strings.SplitN(patternDefinition, "=", 2)
-		if len(parts) == 1 {
-			return nil, fmt.Errorf("pattern supplied to ExtractGrokPatterns at index %d has incorrect format, expecting PATTERNNAME=pattern definition", i)
-		}
+	if !patternDefinitions.IsEmpty() {
+		for i, patternDefinition := range patternDefinitions.Get() {
+			// split pattern in format key=val
+			parts := strings.SplitN(patternDefinition, "=", 2)
+			if len(parts) == 1 {
+				return nil, fmt.Errorf("pattern supplied to ExtractGrokPatterns at index %d has incorrect format, expecting PATTERNNAME=pattern definition", i)
+			}
 
-		if strings.ContainsRune(parts[0], ':') {
-			return nil, fmt.Errorf("pattern ID %q should not contain ':'", parts[0])
-		}
+			if strings.ContainsRune(parts[0], ':') {
+				return nil, fmt.Errorf("pattern ID %q should not contain ':'", parts[0])
+			}
 
-		g.AddPattern(parts[0], parts[1])
+			g.AddPattern(parts[0], parts[1])
+		}
 	}
-
 	err := g.Compile(pattern, namedCapturesOnly)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to ExtractGrokPatterns is not a valid pattern: %w", err)

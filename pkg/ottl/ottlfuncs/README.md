@@ -595,7 +595,7 @@ Examples:
 
 The `ExtractGrokPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If no matches are found then an empty `pcommon.Map` is returned.
 
-`target` is a Getter that returns a string. `pattern` is a grok pattern string. `namedCapturesOnly` specifies if non-named captures should be returned. `patternDefinitions` is a list of custom pattern definition strings used `pattern` in a form of `PATTERN_NAME=PATTERN`. 
+`target` is a Getter that returns a string. `pattern` is a grok pattern string. `namedCapturesOnly` specifies if non-named captures should be returned. `patternDefinitions` is a list of custom pattern definition strings used inside `pattern` in a form of `PATTERN_NAME=PATTERN`. 
 
 Use `patternDefinition` to improve readability when extracted `pattern` is not part of the default set or you need custom naming. 
 For example to parse password from `/etc/passwd` and keep `pattern` readable:

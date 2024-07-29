@@ -109,7 +109,9 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 					return tt.targetString, nil
 				},
 			}
-			exprFunc, err := extractGrokPatterns(target, tt.pattern, tt.definitions, nco)
+
+			patternDefinitionOptional := ottl.NewTestingOptional[[]string](tt.definitions)
+			exprFunc, err := extractGrokPatterns(target, tt.pattern, nco, patternDefinitionOptional)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), nil)
@@ -180,7 +182,8 @@ func Test_extractGrokPatterns_validation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			nco := ottl.NewTestingOptional(tt.namedCapturesOnly)
-			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, tt.definitions, nco)
+			patternDefinitionOptional := ottl.NewTestingOptional[[]string](tt.definitions)
+			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nco, patternDefinitionOptional)
 			if tt.expectedFactoryError {
 				require.Error(t, err)
 				return
@@ -241,8 +244,9 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			nco := ottl.NewTestingOptional(false)
+			patternDefinitionOptional := ottl.NewTestingOptional[[]string](nil)
 
-			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nil, nco)
+			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nco, patternDefinitionOptional)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, nil)
