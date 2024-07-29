@@ -35,6 +35,10 @@ type MetricsConfig struct {
 	VcenterClusterMemoryLimit          MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
 	VcenterClusterVMCount              MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
 	VcenterClusterVMTemplateCount      MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
+	VcenterClusterVsanCongestions      MetricConfig `mapstructure:"vcenter.cluster.vsan.congestions"`
+	VcenterClusterVsanLatencyAvg       MetricConfig `mapstructure:"vcenter.cluster.vsan.latency.avg"`
+	VcenterClusterVsanOperations       MetricConfig `mapstructure:"vcenter.cluster.vsan.operations"`
+	VcenterClusterVsanThroughput       MetricConfig `mapstructure:"vcenter.cluster.vsan.throughput"`
 	VcenterDatacenterClusterCount      MetricConfig `mapstructure:"vcenter.datacenter.cluster.count"`
 	VcenterDatacenterCPULimit          MetricConfig `mapstructure:"vcenter.datacenter.cpu.limit"`
 	VcenterDatacenterDatastoreCount    MetricConfig `mapstructure:"vcenter.datacenter.datastore.count"`
@@ -114,6 +118,18 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterClusterVMTemplateCount: MetricConfig{
 			Enabled: true,
+		},
+		VcenterClusterVsanCongestions: MetricConfig{
+			Enabled: false,
+		},
+		VcenterClusterVsanLatencyAvg: MetricConfig{
+			Enabled: false,
+		},
+		VcenterClusterVsanOperations: MetricConfig{
+			Enabled: false,
+		},
+		VcenterClusterVsanThroughput: MetricConfig{
+			Enabled: false,
 		},
 		VcenterDatacenterClusterCount: MetricConfig{
 			Enabled: true,

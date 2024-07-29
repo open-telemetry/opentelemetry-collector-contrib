@@ -215,6 +215,39 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).SetDoubleValue(37.0)
 			},
 		},
+		{
+			statements: []string{`aggregate_on_attributes("sum", ["attr1", "attr2"]) where name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+
+				dataPoints := pmetric.NewNumberDataPointSlice()
+				dataPoint1 := dataPoints.AppendEmpty()
+				dataPoint1.SetStartTimestamp(StartTimestamp)
+				dataPoint1.SetDoubleValue(4.7)
+				dataPoint1.Attributes().PutStr("attr1", "test1")
+				dataPoint1.Attributes().PutStr("attr2", "test2")
+
+				dataPoints.CopyTo(m.Sum().DataPoints())
+			},
+		},
+		{
+			statements: []string{`aggregate_on_attributes("min") where name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+
+				dataPoints := pmetric.NewNumberDataPointSlice()
+				dataPoint1 := dataPoints.AppendEmpty()
+				dataPoint1.SetStartTimestamp(StartTimestamp)
+				dataPoint1.SetDoubleValue(1.0)
+				dataPoint1.Attributes().PutStr("attr1", "test1")
+				dataPoint1.Attributes().PutStr("attr2", "test2")
+				dataPoint1.Attributes().PutStr("attr3", "test3")
+				dataPoint1.Attributes().PutStr("flags", "A|B|C")
+				dataPoint1.Attributes().PutStr("total.string", "123456789")
+
+				dataPoints.CopyTo(m.Sum().DataPoints())
+			},
+		},
 	}
 
 	for _, tt := range tests {

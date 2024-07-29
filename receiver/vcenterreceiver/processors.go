@@ -381,6 +381,18 @@ func (v *vcenterMetricScraper) buildClusterMetrics(
 	}
 	// Record and emit Cluster metric data points
 	v.recordClusterStats(ts, cr, vmGroupInfo)
+	vSANConfig := cr.ConfigurationEx.(*types.ClusterConfigInfoEx).VsanConfigInfo
+	if vSANConfig == nil || vSANConfig.Enabled == nil || !*vSANConfig.Enabled || vSANConfig.DefaultConfig == nil {
+		v.logger.Info(fmt.Sprintf("couldn't determine UUID necessary for vSAN metrics for cluster %s", cr.Name))
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		return err
+	}
+
+	vSANMetrics := v.scrapeData.clusterVSANMetricsByUUID[vSANConfig.DefaultConfig.Uuid]
+	if vSANMetrics != nil {
+		v.recordClusterVSANMetrics(vSANMetrics)
+	}
+
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return err
