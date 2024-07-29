@@ -674,9 +674,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	return nil
 }
 
-func (s *Supervisor) composeBootstrapConfig() ([]byte, error) {
-	var k = koanf.New("::")
-
+func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	var cfg bytes.Buffer
 	err := s.bootstrapTemplate.Execute(&cfg, map[string]any{
 		"InstanceUid":    s.persistentState.InstanceID.String(),
@@ -686,7 +684,17 @@ func (s *Supervisor) composeBootstrapConfig() ([]byte, error) {
 		return nil, err
 	}
 
-	if err = k.Load(rawbytes.Provider(cfg.Bytes()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	return cfg.Bytes(), nil
+}
+
+func (s *Supervisor) composeBootstrapConfig() ([]byte, error) {
+	var k = koanf.New("::")
+
+	cfg, err := s.composeNoopPipeline()
+	if err != nil {
+		return nil, err
+	}
+	if err = k.Load(rawbytes.Provider(cfg), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
 		return nil, err
 	}
 	if err = k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
@@ -900,6 +908,17 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 			if err != nil {
 				return false, fmt.Errorf("cannot merge config named %s: %w", name, err)
 			}
+		}
+	} else {
+		// Add noop pipeline
+		var noopConfig []byte
+		noopConfig, err = s.composeNoopPipeline()
+		if err != nil {
+			return false, fmt.Errorf("could not compose noop pipeline: %w", err)
+		}
+
+		if err = k.Load(rawbytes.Provider(noopConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+			return false, fmt.Errorf("could not merge noop pipeline: %w", err)
 		}
 	}
 

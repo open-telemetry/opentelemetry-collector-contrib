@@ -322,6 +322,21 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	})
 	defer s.Shutdown()
 
+	// Verify the collector is running by checking the metrics endpoint
+	require.Eventually(t, func() bool {
+		resp, err := http.DefaultClient.Get("http://localhost:8888/metrics")
+		if err != nil {
+			t.Logf("Failed check for prometheus metrics: %s", err)
+			return false
+		}
+		require.NoError(t, resp.Body.Close())
+		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 3*time.Second, 100*time.Millisecond)
+
 	// Start the server and wait for the supervisor to connect
 	server.start()
 
