@@ -8,11 +8,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.105.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.0
-	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240729082905-fb5b1e6aa550
+	go.opentelemetry.io/collector/config/configtls v1.12.0
 	go.opentelemetry.io/collector/confmap v0.106.0
 	go.opentelemetry.io/collector/consumer v0.106.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.0
-	go.opentelemetry.io/collector/pdata v1.12.1-0.20240729082905-fb5b1e6aa550
+	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/collector/receiver v0.106.0
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
@@ -68,10 +68,10 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/collector v0.106.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240729082905-fb5b1e6aa550 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.106.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240729082905-fb5b1e6aa550 // indirect
+	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.106.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.106.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect

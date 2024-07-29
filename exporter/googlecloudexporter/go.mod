@@ -8,8 +8,8 @@ require (
 	go.opentelemetry.io/collector/component v0.106.0
 	go.opentelemetry.io/collector/confmap v0.106.0
 	go.opentelemetry.io/collector/exporter v0.106.0
-	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240729082905-fb5b1e6aa550
-	go.opentelemetry.io/collector/pdata v1.12.1-0.20240729082905-fb5b1e6aa550
+	go.opentelemetry.io/collector/featuregate v1.12.0
+	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/goleak v1.3.0
@@ -64,7 +64,7 @@ require (
 	github.com/tidwall/wal v1.1.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.106.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.12.1-0.20240729082905-fb5b1e6aa550 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.106.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.106.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.0 // indirect
