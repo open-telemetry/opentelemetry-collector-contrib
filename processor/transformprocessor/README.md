@@ -29,8 +29,14 @@ Each condition and statement can access and transform telemetry using functions 
 
 The transform processor allows configuring multiple context statements for traces, metrics, and logs.
 The value of `context` specifies which [OTTL Context](#contexts) to use when interpreting the associated statements.
-The conditions and statement strings, which must be OTTL compatible, will be passed to the OTTL and interpreted using the associated context. The conditions string should contain a string with a WHERE clause body without the `where` keyword at the beginning.
-Each context will be processed in the order specified and each condition and statement for a context will be executed in the order specified. Conditions are executed first, if a context doesn't meet the conditions, the associated statement will be skipped.
+The global conditions and statement strings, which must be OTTL compatible, will be passed to OTTL and interpreted using the associated context.
+The condition string should contain a Where clause body without the `where` keyword at the beginning.
+
+Each context will be processed in the order specified.
+Within a context, each global condition is checked and if any evaluates to true, the statements are executed in order.
+If a context doesn't meet any of the conditions, then the associated statement will be skipped.
+
+Each statement may have a Where clause that acts as an additional check for whether to execute the statement.
 
 The transform processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing a statement.
 
@@ -71,7 +77,7 @@ Valid values for `context` are:
 | metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
 | log_statements    | `resource`, `scope`, and `log`                 |
 
-`conditions` is a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements.
+`conditions` is a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements. The conditions are ORed together, which means only one condition needs to evaluate to true in order for the statements (including their individual Where clauses) to be executed.
 
 ```yaml
 transform:
@@ -212,6 +218,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
+- [scale_metric](#scale_metric)
 
 ### convert_sum_to_gauge
 
@@ -346,6 +353,21 @@ Examples:
 
 
 - `copy_metric(desc="new desc") where description == "old desc"`
+
+### scale_metric
+
+`scale_metric(factor, Optional[unit])`
+
+The `scale_metric` function multiplies the values in the data points in the metric by the float value `factor`.
+If the optional string `unit` is provided, the metric's unit will be set to this value.
+The supported data types are:
+
+Supported metric types are `Gauge`, `Sum`, `Histogram`, and `Summary`.
+
+Examples:
+
+- `scale_metric(0.1)`: Scale the metric by a factor of `0.1`. The unit of the metric will not be modified.
+- `scale_metric(10.0, "kWh")`: Scale the metric by a factor of `10.0` and sets the unit to `kWh`.
 
 ## Examples
 

@@ -416,6 +416,7 @@ Available Converters:
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
+- [Format](#format)
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
@@ -640,6 +641,25 @@ Examples:
 
 
 - `FNV("name")`
+
+### Format
+
+```Format(formatString, []formatArguments)```
+
+The `Format` Converter takes the given format string and formats it using `fmt.Sprintf` and the given arguments.
+
+`formatString` is a string. `formatArguments` is an array of values.
+
+If the `formatString` is not a string or does not exist, the `Format` Converter will return an error.
+If any of the `formatArgs` are incorrect (e.g. missing, or an incorrect type for the corresponding format specifier), then a string will still be returned, but with Go's default error handling for `fmt.Sprintf`.
+
+Format specifiers that can be used in `formatString` are documented in Go's [fmt package documentation](https://pkg.go.dev/fmt#hdr-Printing)
+
+Examples:
+
+- `Format("%02d", [attributes["priority"]])`
+- `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
+- `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
 
 ### Hex
 
@@ -1045,7 +1065,7 @@ Examples:
 
 `ParseJSON(target)`
 
-The `ParseJSON` Converter returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+The `ParseJSON` Converter returns a `pcommon.Map` or `pcommon.Slice` struct that is a result of parsing the target string as JSON
 
 `target` is a Getter that returns a string. This string should be in json format.
 If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
@@ -1065,6 +1085,9 @@ JSON objects -> map[string]any
 Examples:
 
 - `ParseJSON("{\"attr\":true}")`
+
+
+- `ParseJSON("[\"attr1\",\"attr2\"]")`
 
 
 - `ParseJSON(attributes["kubernetes"])`
