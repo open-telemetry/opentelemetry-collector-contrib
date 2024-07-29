@@ -462,7 +462,9 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL)
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
 		dp := pmetric.NewNumberDataPoint()
 		dp.SetDoubleValue(123.456)
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -485,6 +487,7 @@ func TestExporterMetrics(t *testing.T) {
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
 			cfg.MetricsIndex = "metrics.index"
+			cfg.Mapping.Mode = "ecs"
 		})
 		metrics := newMetricsWithAttributeAndResourceMap(
 			map[string]string{
@@ -515,6 +518,7 @@ func TestExporterMetrics(t *testing.T) {
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
 			cfg.MetricsIndex = "metrics.index"
+			cfg.Mapping.Mode = "ecs"
 		})
 		metrics := newMetricsWithAttributeAndResourceMap(
 			map[string]string{
