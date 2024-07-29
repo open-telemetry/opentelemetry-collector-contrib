@@ -73,7 +73,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.105.1-0.20240729082905-fb5b1e6aa550 // indirect
-	go.opentelemetry.io/collector/client v0.0.0-20240726175034-c3a11297650a // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240729082905-fb5b1e6aa550 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.1-0.20240729082905-fb5b1e6aa550 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240729082905-fb5b1e6aa550 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240729082905-fb5b1e6aa550 // indirect
