@@ -303,6 +303,7 @@ var otelPrefixSet = map[string]struct{}{
 	"attributes.":          {},
 	"resource.attributes.": {},
 	"scope.attributes.":    {},
+	"metrics.":             {},
 }
 
 func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
@@ -389,8 +390,7 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 		if err := w.OnKey(fieldName); err != nil {
 			return err
 		}
-		dedot := fieldName != "metrics" // FIXME: HACK: workaround nested Docs
-		if err := fld.value.iterJSON(w, dedot, otel); err != nil {
+		if err := fld.value.iterJSON(w, true, otel); err != nil {
 			return err
 		}
 	}
