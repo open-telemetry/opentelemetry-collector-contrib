@@ -6,7 +6,6 @@ package sccconnector // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/sccconnector/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -15,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/sccconnector/internal/metadata"
 )
 
 // this is the name used to refer to the connector in the config.yaml
