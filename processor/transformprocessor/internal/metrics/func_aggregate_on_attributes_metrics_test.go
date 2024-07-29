@@ -47,7 +47,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 				sumMetric.SetEmptySum()
 				sumMetric.SetName("sum_metric")
 				input := sumMetric.Sum().DataPoints().AppendEmpty()
-				input.SetDoubleValue(150)
+				input.SetDoubleValue(170)
 			},
 		},
 		{
@@ -64,6 +64,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 				input := sumMetric.Sum().DataPoints().AppendEmpty()
 				input.SetDoubleValue(150)
 				input.Attributes().PutStr("key1", "val1")
+				input2 := sumMetric.Sum().DataPoints().AppendEmpty()
+				input2.SetDoubleValue(20)
 			},
 		},
 		{
@@ -80,6 +82,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 				input := sumMetric.Sum().DataPoints().AppendEmpty()
 				input.SetDoubleValue(150)
 				input.Attributes().PutStr("key1", "val1")
+				input2 := sumMetric.Sum().DataPoints().AppendEmpty()
+				input2.SetDoubleValue(20)
 			},
 		},
 		{
@@ -354,6 +358,10 @@ func getTestSumMetricMultipleAttributes() pmetric.Metric {
 	input2 := metricInput.Sum().DataPoints().AppendEmpty()
 	input2.SetDoubleValue(50)
 	input2.Attributes().PutStr("key1", "val1")
+
+	input3 := metricInput.Sum().DataPoints().AppendEmpty()
+	input3.SetDoubleValue(20)
+	input3.Attributes().PutStr("key2", "val1")
 
 	return metricInput
 }
