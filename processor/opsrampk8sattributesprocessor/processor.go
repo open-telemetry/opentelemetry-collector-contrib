@@ -169,6 +169,6 @@ func (op *opsrampk8sattributesprocessor) processResource(ctx context.Context, re
 	}
 
 	if resourceUuid != "" {
-		resource.Attributes().PutStr("opsramp.resource.uuid", resourceUuid)
+		resource.Attributes().PutStr("uuid", resourceUuid)
 	}
 }
