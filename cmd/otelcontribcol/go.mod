@@ -14,6 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.105.0
@@ -207,36 +208,36 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.105.0
 	github.com/prometheus/prometheus v0.53.1
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/config/configgrpc v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/config/confighttp v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240716231837-5753a58f712b
-	go.opentelemetry.io/collector/confmap v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/connector v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/connector/forwardconnector v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/consumer v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/exporter v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/exporter/debugexporter v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/exporter/nopexporter v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/extension v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/extension/ballastextension v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/extension/zpagesextension v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/otelcol v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/pdata v1.12.1-0.20240716231837-5753a58f712b
-	go.opentelemetry.io/collector/processor v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/processor/batchprocessor v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/receiver v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/receiver/nopreceiver v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.105.1-0.20240717163034-43ed6184f9fe
+	go.opentelemetry.io/collector/component v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/config/configgrpc v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/config/confighttp v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/confmap v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/connector v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/connector/forwardconnector v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/consumer/consumertest v0.0.0-20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/exporter v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/exporter/debugexporter v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/exporter/nopexporter v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/extension v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/extension/ballastextension v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/extension/zpagesextension v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/otelcol v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/processor v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/processor/batchprocessor v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/receiver v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.105.1-0.20240726220702-a6287aca1a43
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.105.1-0.20240726220702-a6287aca1a43
 	golang.org/x/sys v0.22.0
 )
 
@@ -244,16 +245,16 @@ require (
 	bitbucket.org/atlassian/go-asap/v2 v2.9.0 // indirect
 	cel.dev/expr v0.15.0 // indirect
 	cloud.google.com/go v0.115.0 // indirect
-	cloud.google.com/go/auth v0.7.0 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
+	cloud.google.com/go/auth v0.7.2 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.3 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/iam v1.1.10 // indirect
 	cloud.google.com/go/logging v1.10.0 // indirect
 	cloud.google.com/go/longrunning v0.5.9 // indirect
-	cloud.google.com/go/monitoring v1.20.1 // indirect
+	cloud.google.com/go/monitoring v1.20.2 // indirect
 	cloud.google.com/go/pubsub v1.40.0 // indirect
 	cloud.google.com/go/spanner v1.64.0 // indirect
-	cloud.google.com/go/trace v1.10.9 // indirect
+	cloud.google.com/go/trace v1.10.10 // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible // indirect
@@ -264,7 +265,7 @@ require (
 	github.com/AthenZ/athenz v1.10.39 // indirect
 	github.com/Azure/azure-amqp-common-go/v4 v4.2.0 // indirect
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.2 // indirect
-	github.com/Azure/azure-kusto-go v0.15.3 // indirect
+	github.com/Azure/azure-kusto-go v0.16.0 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.13.0 // indirect
@@ -274,7 +275,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor v0.11.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.2.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.2 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.4.0 // indirect
 	github.com/Azure/azure-storage-queue-go v0.0.0-20230531184854-c06a8eff66fe // indirect
 	github.com/Azure/go-amqp v1.0.5 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -289,64 +290,64 @@ require (
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.26.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.124 // indirect
-	github.com/DataDog/datadog-agent/comp/core/config v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/core/flare/types v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/core/log v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/core/secrets v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/core/telemetry v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/def v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/env v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/model v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/setup v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/utils v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/client v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/message v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/metrics v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/processor v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/sds v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/sender v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/sources v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.4 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.125 // indirect
+	github.com/DataDog/datadog-agent/comp/core/config v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/core/flare/types v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/core/log v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/core/secrets v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/core/telemetry v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/def v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/env v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/model v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/utils v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/client v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/message v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/metrics v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/processor v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/sds v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/sender v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/sources v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240716154421-697b001e760f // indirect
-	github.com/DataDog/datadog-agent/pkg/util/backoff v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/executable v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/http v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/optional v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/startstop v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/statstracker v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/system v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/winutil v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.27.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/backoff v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/executable v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/http v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/optional v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/startstop v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/statstracker v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/winutil v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.56.0-rc.6 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.28.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240419161837-f1b2f553edfe // indirect
 	github.com/DataDog/go-sqllexer v0.0.12 // indirect
@@ -363,20 +364,20 @@ require (
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
 	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.48.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.48.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.48.1 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.48.1 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.48.1-0.20240618202726-8ffe2564d48b // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/IBM/sarama v1.43.2 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
-	github.com/SAP/go-hdb v1.10.0 // indirect
+	github.com/SAP/go-hdb v1.10.1 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/aerospike/aerospike-client-go/v6 v6.13.0 // indirect
+	github.com/aerospike/aerospike-client-go/v7 v7.6.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.80 // indirect
@@ -484,7 +485,7 @@ require (
 	github.com/go-openapi/swag v0.22.9 // indirect
 	github.com/go-resty/resty/v2 v2.13.1 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/go-zookeeper/zk v1.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
@@ -562,6 +563,7 @@ require (
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
+	github.com/jonboulle/clockwork v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -691,7 +693,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/redis/go-redis/v9 v9.5.4 // indirect
+	github.com/redis/go-redis/v9 v9.6.0 // indirect
 	github.com/relvacode/iso8601 v1.4.0 // indirect
 	github.com/rs/cors v1.11.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
@@ -725,14 +727,13 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.965 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.969 // indirect
 	github.com/tg123/go-htpasswd v1.2.2 // indirect
 	github.com/tidwall/gjson v1.17.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	github.com/tidwall/wal v1.1.7 // indirect
-	github.com/tilinna/clock v1.1.0 // indirect
 	github.com/tinylib/msgp v1.2.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
@@ -741,7 +742,7 @@ require (
 	github.com/vishvananda/netlink v1.1.1-0.20201029203352-d40f9887b852 // indirect
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
 	github.com/vmware/go-vmware-nsxt v0.0.0-20230223012718-d31b8a1ca05e // indirect
-	github.com/vmware/govmomi v0.38.0 // indirect
+	github.com/vmware/govmomi v0.39.0 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
@@ -749,7 +750,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.elastic.co/apm/module/apmzap/v2 v2.6.0 // indirect
@@ -759,20 +760,24 @@ require (
 	go.mongodb.org/atlas v0.36.0 // indirect
 	go.mongodb.org/mongo-driver v1.16.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/config/configauth v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240716231837-5753a58f712b // indirect
-	go.opentelemetry.io/collector/config/confignet v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/config/configretry v1.12.1-0.20240716231837-5753a58f712b // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240716231837-5753a58f712b // indirect
-	go.opentelemetry.io/collector/config/internal v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/extension/auth v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240716231837-5753a58f712b // indirect
-	go.opentelemetry.io/collector/filter v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/semconv v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/service v0.105.1-0.20240717163034-43ed6184f9fe // indirect
+	go.opentelemetry.io/collector v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/client v0.0.0-20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/config/confignet v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.12.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/config/internal v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/consumer v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.105.0 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/filter v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/semconv v0.105.1-0.20240726220702-a6287aca1a43 // indirect
+	go.opentelemetry.io/collector/service v0.105.1-0.20240726220702-a6287aca1a43 // indirect
 	go.opentelemetry.io/contrib/config v0.8.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
@@ -813,10 +818,10 @@ require (
 	golang.org/x/tools v0.22.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect
-	google.golang.org/api v0.188.0 // indirect
-	google.golang.org/genproto v0.0.0-20240708141625-4ad9e859172b // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240708141625-4ad9e859172b // indirect
+	google.golang.org/api v0.189.0 // indirect
+	google.golang.org/genproto v0.0.0-20240722135656-d784300faade // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240709173604-40e1e62336c5 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240722135656-d784300faade // indirect
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -1265,6 +1270,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/exce
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector => ../../connector/failoverconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector => ../../connector/grafanacloudconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector => ../../connector/otlpjsonconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector => ../../connector/roundrobinconnector
 
