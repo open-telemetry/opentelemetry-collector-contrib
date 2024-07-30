@@ -7,10 +7,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"golang.org/x/text/encoding/ianaindex"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type DecodeArguments[K any] struct {
