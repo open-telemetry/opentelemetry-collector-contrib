@@ -1,19 +1,18 @@
 package otelcollector
 
 import (
-	"e2e-tests/otel-collector/helm"
-
 	"github.com/DataDog/datadog-agent/test/new-e2e/pkg/e2e"
-	"github.com/DataDog/datadog-agent/test/new-e2e/pkg/environments"
 	"github.com/DataDog/datadog-agent/test/new-e2e/pkg/runner"
 	"github.com/DataDog/datadog-agent/test/new-e2e/pkg/utils/optional"
+	"github.com/DataDog/opentelemetry-collector-contrib/e2e-tests/otel-collector/helm"
+	"github.com/DataDog/opentelemetry-collector-contrib/e2e-tests/otel-collector/otelparams"
 	"github.com/DataDog/test-infra-definitions/common/utils"
-	"github.com/DataDog/test-infra-definitions/components/datadog/kubernetesagentparams"
+	fakeintakeComp "github.com/DataDog/test-infra-definitions/components/datadog/fakeintake"
 	kubeComp "github.com/DataDog/test-infra-definitions/components/kubernetes"
 	"github.com/DataDog/test-infra-definitions/resources/aws"
 	"github.com/DataDog/test-infra-definitions/resources/local"
 	"github.com/DataDog/test-infra-definitions/scenarios/aws/ec2"
-	"github.com/DataDog/test-infra-definitions/scenarios/aws/fakeintake"
+	fakeintake "github.com/DataDog/test-infra-definitions/scenarios/aws/fakeintake"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
@@ -27,63 +26,61 @@ const (
 type ProvisionerOption func(*ProvisionerParams) error
 
 type ProvisionerParams struct {
-	name              string
-	vmOptions         []ec2.VMOption
-	agentOptions      []kubernetesagentparams.Option
-	fakeintakeOptions []fakeintake.Option
-	extraConfigParams runner.ConfigMap
-
-	eksLinuxNodeGroup        bool
-	eksLinuxARMNodeGroup     bool
-	eksBottlerocketNodeGroup bool
-	eksWindowsNodeGroup      bool
-	awsEnv                   *aws.Environment
-	deployDogstatsd          bool
+	name        string
+	otelOptions []otelparams.Option
+	extraParams runner.ConfigMap
 }
 
 func newProvisionerParams() *ProvisionerParams {
 	return &ProvisionerParams{
-		name:              defaultVMName,
-		vmOptions:         []ec2.VMOption{},
-		agentOptions:      []kubernetesagentparams.Option{},
-		fakeintakeOptions: []fakeintake.Option{},
-		extraConfigParams: runner.ConfigMap{},
+		name:        defaultVMName,
+		otelOptions: []otelparams.Option{},
+	}
+}
 
-		eksLinuxNodeGroup:        false,
-		eksLinuxARMNodeGroup:     false,
-		eksBottlerocketNodeGroup: false,
-		eksWindowsNodeGroup:      false,
-		deployDogstatsd:          false,
+// WithOTelOptions sets the options for the OTel collector
+func WithOTelOptions(opts ...otelparams.Option) ProvisionerOption {
+	return func(params *ProvisionerParams) error {
+		params.otelOptions = append(params.otelOptions, opts...)
+		return nil
+	}
+}
+
+// WithExtraParams sets the extra parameters for the provisioner
+func WithExtraParams(params runner.ConfigMap) ProvisionerOption {
+	return func(p *ProvisionerParams) error {
+		p.extraParams = params
+		return nil
 	}
 }
 
 // Provisioner creates a new provisioner
-func Provisioner(opts ...ProvisionerOption) e2e.TypedProvisioner[environments.Kubernetes] {
+func Provisioner(opts ...ProvisionerOption) e2e.TypedProvisioner[Kubernetes] {
 	// We ALWAYS need to make a deep copy of `params`, as the provisioner can be called multiple times.
 	// and it's easy to forget about it, leading to hard to debug issues.
 	params := newProvisionerParams()
 	_ = optional.ApplyOptions(params, opts)
 
-	provisioner := e2e.NewTypedPulumiProvisioner(provisionerBaseID+params.name, func(ctx *pulumi.Context, env *environments.Kubernetes) error {
+	provisioner := e2e.NewTypedPulumiProvisioner(provisionerBaseID+params.name, func(ctx *pulumi.Context, env *Kubernetes) error {
 		// We ALWAYS need to make a deep copy of `params`, as the provisioner can be called multiple times.
 		// and it's easy to forget about it, leading to hard to debug issues.
 		params := newProvisionerParams()
 		_ = optional.ApplyOptions(params, opts)
 
-		return LocalRunFunc(ctx, env, params)
-	}, params.extraConfigParams)
+		return RunFunc(ctx, env, params)
+	}, params.extraParams)
 
 	return provisioner
 }
 
 // RunFunc is the Pulumi run function that runs the provisioner
-func RunFunc(ctx *pulumi.Context, env *environments.Kubernetes, params *ProvisionerParams) error {
+func RunFunc(ctx *pulumi.Context, env *Kubernetes, params *ProvisionerParams) error {
 	awsEnv, err := aws.NewEnvironment(ctx)
 	if err != nil {
 		return err
 	}
 
-	host, err := ec2.NewVM(awsEnv, params.name, params.vmOptions...)
+	host, err := ec2.NewVM(awsEnv, params.name)
 	if err != nil {
 		return err
 	}
@@ -103,7 +100,7 @@ func RunFunc(ctx *pulumi.Context, env *environments.Kubernetes, params *Provisio
 		return err
 	}
 
-	_, err = kubernetes.NewProvider(ctx, awsEnv.Namer.ResourceName("k8s-provider"), &kubernetes.ProviderArgs{
+	kubeProvider, err := kubernetes.NewProvider(ctx, awsEnv.Namer.ResourceName("k8s-provider"), &kubernetes.ProviderArgs{
 		EnableServerSideApply: pulumi.Bool(true),
 		Kubeconfig:            kindCluster.KubeConfig,
 	})
@@ -111,12 +108,24 @@ func RunFunc(ctx *pulumi.Context, env *environments.Kubernetes, params *Provisio
 		return err
 	}
 
-	env.Agent = nil
+	fi, err := fakeintake.NewECSFargateInstance(awsEnv, params.name)
+	if err != nil {
+		return err
+	}
+	fi.Export(ctx, &env.FakeIntake.FakeintakeOutput)
+
+	otelCollector, err := helm.NewOtelCollector(&awsEnv, "otel-collector", otelparams.WithPulumiResourceOptions(pulumi.Provider(kubeProvider)), otelparams.WithFakeintake(fi))
+	if err != nil {
+		return err
+	}
+
+	otelCollector.Export(ctx, &env.OtelCollector.OtelCollectorOutput)
+
 	return nil
 }
 
 // LocalRunFunc is the Pulumi run function that runs the provisioner
-func LocalRunFunc(ctx *pulumi.Context, env *environments.Kubernetes, params *ProvisionerParams) error {
+func LocalRunFunc(ctx *pulumi.Context, env *Kubernetes, params *ProvisionerParams) error {
 	localEnv, err := local.NewEnvironment(ctx)
 	if err != nil {
 		return err
@@ -140,9 +149,17 @@ func LocalRunFunc(ctx *pulumi.Context, env *environments.Kubernetes, params *Pro
 		return err
 	}
 
-	helm.NewOtelCollector(&localEnv, "otel-collector", kubeProvider)
+	fakeintake, err := fakeintakeComp.NewLocalDockerFakeintake(&localEnv, "fakeintake")
+	if err != nil {
+		return err
+	}
+	fakeintake.Export(ctx, &env.FakeIntake.FakeintakeOutput)
 
-	env.Agent = nil
-	env.FakeIntake = nil
+	otelCollector, err := helm.NewOtelCollector(&localEnv, "otel-collector", otelparams.WithPulumiResourceOptions(pulumi.Provider(kubeProvider)), otelparams.WithFakeintake(fakeintake))
+	if err != nil {
+		return err
+	}
+
+	otelCollector.Export(ctx, &env.OtelCollector.OtelCollectorOutput)
 	return nil
 }

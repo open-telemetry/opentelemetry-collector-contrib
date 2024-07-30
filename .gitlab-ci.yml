@@ -55,9 +55,9 @@ build-ci-image-main:
   script:
     - cd e2e-tests && go test $TARGETS/... -v timeout 0
 
-new-e2e-otel-collector:
-  extends: .new_e2e_template
-  variables:
-    TARGETS: ./
-    TEAM: otel
+# new-e2e-otel-collector:
+#   extends: .new_e2e_template
+#   variables:
+#     TARGETS: ./
+#     TEAM: otel
 
