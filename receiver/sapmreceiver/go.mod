@@ -66,7 +66,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/internal v0.106.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
-	go.opentelemetry.io/collector/exporter v0.106.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.106.1 // indirect
 	go.opentelemetry.io/collector/extension v0.106.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.106.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
