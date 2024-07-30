@@ -76,10 +76,10 @@ func (m *mockCustomCapabilityRegistry) SendMessage(messageType string, message [
 	if m.unregisterCalled {
 		return nil, fmt.Errorf("unregister called")
 	}
-	m.sentMessages = append(m.sentMessages, customMessage{messageType: messageType, message: message})
 	if m.shouldReturnPending {
 		return m.pendingChannel, types.ErrCustomMessagePending
 	}
+	m.sentMessages = append(m.sentMessages, customMessage{messageType: messageType, message: message})
 	return nil, nil
 }
 
