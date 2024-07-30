@@ -27,7 +27,7 @@ type S3DownloaderConfig struct {
 }
 
 type Notifications struct {
-	OpAMP *component.ID `mapstructure:"opamp"`
+	OpAMP *component.ID `mapstructure:"opampextension"`
 }
 
 type Encoding struct {
