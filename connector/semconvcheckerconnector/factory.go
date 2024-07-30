@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sccconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/sccconnector"
+package semconvcheckerconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/semconvcheckerconnector"
 
 import (
 	"context"
@@ -15,13 +15,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/sccconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/semconvcheckerconnector/internal/metadata"
 )
 
 // this is the name used to refer to the connector in the config.yaml
 const (
-	typeStr      = "scc"
-	scopeName    = "otelcol/sccconnector"
+	scopeName    = "otelcol/semconvchecker"
 	scopeVersion = "v0.0.1"
 )
 
@@ -29,7 +28,7 @@ const (
 func NewFactory() connector.Factory {
 	// OpenTelemetry connector factory to make a factory for connectors
 	return connector.NewFactory(
-		component.MustNewType(typeStr),
+		metadata.Type,
 		createDefaultConfig,
 		connector.WithTracesToLogs(createTracesToLogsConnector, metadata.TracesToLogsStability),
 		connector.WithMetricsToLogs(createMetricToLogsConnector, metadata.MetricsToLogsStability),
@@ -74,7 +73,7 @@ type connectorImp struct {
 
 // newConnector is a function to create a new connector
 func newConnector(params connector.Settings, config component.Config) (*connectorImp, error) {
-	params.Logger.Info("Building sccconnector connector")
+	params.Logger.Info("Building semconvcheckerconnector connector")
 	cfg := config.(*Config)
 
 	if err := cfg.Validate(); err != nil {
@@ -83,7 +82,7 @@ func newConnector(params connector.Settings, config component.Config) (*connecto
 
 	res := pcommon.NewResource()
 	params.Resource.CopyTo(res)
-	res.Attributes().PutStr("service.name", "sccconnector")
+	res.Attributes().PutStr("service.name", "semconvcheckerconnector")
 
 	return &connectorImp{
 		logger:   params.Logger,

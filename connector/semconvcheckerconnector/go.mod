@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/connector/sccconnector
+module github.com/open-telemetry/opentelemetry-collector-contrib/connector/semconvcheckerconnector
 
 go 1.21.0
 

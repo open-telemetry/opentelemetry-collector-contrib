@@ -3,7 +3,7 @@
 | Status        |           |
 | ------------- |-----------|
 | Distributions | [] |
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fscc%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fscc) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fscc%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fscc) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fsemconvchecker%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fsemconvchecker) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fsemconvchecker%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fsemconvchecker) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@madvikinggod](https://www.github.com/madvikinggod), [@codeboten](https://www.github.com/codeboten) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
@@ -27,7 +27,7 @@ To use a collector with this built in add this to your config:
 
 ```
 connectors:
-  scc:
+  semconvchecker:
     trace:
     - match: "POST admin/.*"
       groups: # semantic convention groups to match
@@ -41,21 +41,21 @@ connectors:
 
 service:
   pipelines:
-    # This is your normal pipeline, add scc to it.
+    # This is your normal pipeline, add semconvchecker to it.
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, scc]
+      exporters: [otlp, semconvchecker]
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, scc]
+      exporters: [otlp, semconvchecker]
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, scc]
-    # This is your scc logs data
+      exporters: [otlp, semconvchecker]
+    # This is your semconvchecker logs data
     logs/2:
-      receivers: [scc]
+      receivers: [semconvchecker]
       exporters: [otlp]
 ```

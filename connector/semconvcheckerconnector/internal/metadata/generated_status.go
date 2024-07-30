@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type = component.MustNewType("scc")
+	Type = component.MustNewType("semconvchecker")
 )
 
 const (

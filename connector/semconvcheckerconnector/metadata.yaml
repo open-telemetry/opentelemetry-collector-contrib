@@ -1,5 +1,5 @@
-type: scc
-scope_name: otelcol/scc
+type: semconvchecker
+scope_name: otelcol/semconvchecker
 
 status:
   class: connector
