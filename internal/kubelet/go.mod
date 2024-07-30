@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubele
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.106.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/configtls v1.12.0
 	go.uber.org/goleak v1.3.0
