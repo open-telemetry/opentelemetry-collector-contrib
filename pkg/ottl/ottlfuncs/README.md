@@ -1213,24 +1213,29 @@ Examples:
 
 `Sort(target, Optional[order])`
 
-The `Sort` Converter sorts the `target` array in ascending or descending order.
+The `Sort` Converter sorts the `target` array in either ascending or descending order.
 
-`target` is a `pcommon.Slice` type field. `order` is a string that must be one of `asc` or `desc`. The default `order` is `asc`.
+`target` is a `pcommon.Slice` type field containing the elements to be sorted. 
 
-If elements in `target` are
+`order` is a string specifying the sort order. Must be either `asc` or `desc`. The default value is `asc`.
 
-- Integers: Returns a sorted array of integers.
-- Doubles: Returns a sorted array of doubles.
-- Integers and doubles: Converts to doubles and returns a sorted array of doubles.
-- Strings: Returns a sorted array of strings.
-- Booleans: Converts to strings and returns a sorted array of strings.
-- Integers, doubles, booleans, and strings: Converts to strings and returns a sorted array of strings.
-- Other types: Returns error.
+The Sort Converter preserves the data type of the original elements while sorting. 
+The behavior varies based on the types of elements in the target slice:
+
+| Element Types | Sorting Behavior                    | Return Value |
+|---------------|-------------------------------------|--------------|
+| Integers | Sorts as integers                   | Sorted array of integers |
+| Doubles | Sorts as doubles                    | Sorted array of doubles |
+| Integers and doubles | Converts all to doubles, then sorts | Sorted array of integers and doubles |
+| Strings | Sorts as strings                    | Sorted array of strings |
+| Booleans | Converts all to strings, then sorts | Sorted array of booleans |
+| Mix of integers, doubles, booleans, and strings | Converts all to strings, then sorts | Sorted array of mixed types |
+| Any other types | N/A                                 | Returns an error |
+
 
 Examples:
 
 - `Sort(attributes["device.tags"])`
-
 - `Sort(attributes["device.tags"], "desc")`
 
 ### SpanID
