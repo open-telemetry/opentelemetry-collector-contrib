@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/jaegertracing/jaeger v1.59.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/collector/semconv v0.106.1
