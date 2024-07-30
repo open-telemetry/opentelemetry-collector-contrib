@@ -177,7 +177,7 @@ func Test_Sort(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					pv := pcommon.NewValueEmpty()
 					s := pv.SetEmptySlice()
-					s.FromRaw([]any{"a", "slice", "a"})
+					_ = s.FromRaw([]any{"a", "slice", "a"})
 					return pv, nil
 				},
 			},
@@ -243,8 +243,7 @@ func Test_Sort(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := sort(tt.getter, tt.order)
-			assert.NoError(t, err)
+			exprFunc := sort(tt.getter, tt.order)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)

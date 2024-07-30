@@ -7,11 +7,11 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"go.uber.org/multierr"
 	"slices"
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -48,10 +48,10 @@ func createSortFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		}
 	}
 
-	return sort(args.Target, order)
+	return sort(args.Target, order), nil
 }
 
-func sort[K any](target ottl.Getter[K], order string) (ottl.ExprFunc[K], error) {
+func sort[K any](target ottl.Getter[K], order string) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -93,7 +93,7 @@ func sort[K any](target ottl.Getter[K], order string) (ottl.ExprFunc[K], error) 
 		default:
 			return nil, fmt.Errorf("sort with unsupported type: '%T'. Target is not a list", v)
 		}
-	}, nil
+	}
 }
 
 // sortSlice sorts a pcommon.Slice based on the specified order.
