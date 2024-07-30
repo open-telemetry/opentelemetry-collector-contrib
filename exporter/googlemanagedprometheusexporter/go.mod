@@ -6,10 +6,10 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.48.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.48.1
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.106.0
-	go.opentelemetry.io/collector/confmap v0.106.0
-	go.opentelemetry.io/collector/exporter v0.106.0
-	go.opentelemetry.io/collector/otelcol/otelcoltest v0.106.0
+	go.opentelemetry.io/collector/component v0.106.1
+	go.opentelemetry.io/collector/confmap v0.106.1
+	go.opentelemetry.io/collector/exporter v0.106.1
+	go.opentelemetry.io/collector/otelcol/otelcoltest v0.106.1
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
@@ -77,28 +77,28 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.106.0 // indirect
+	go.opentelemetry.io/collector v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.106.0 // indirect
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.106.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.106.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.106.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.106.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.106.0 // indirect
-	go.opentelemetry.io/collector/connector v0.106.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.106.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumertest v0.106.0 // indirect
-	go.opentelemetry.io/collector/extension v0.106.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.106.1 // indirect
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.106.1 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.106.1 // indirect
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.106.1 // indirect
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.106.1 // indirect
+	go.opentelemetry.io/collector/connector v0.106.1 // indirect
+	go.opentelemetry.io/collector/consumer v0.106.1 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
+	go.opentelemetry.io/collector/consumer/consumertest v0.106.1 // indirect
+	go.opentelemetry.io/collector/extension v0.106.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.106.0 // indirect
-	go.opentelemetry.io/collector/otelcol v0.106.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.106.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.106.0 // indirect
-	go.opentelemetry.io/collector/processor v0.106.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.106.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.106.0 // indirect
-	go.opentelemetry.io/collector/service v0.106.0 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
+	go.opentelemetry.io/collector/otelcol v0.106.1 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.106.1 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.106.1 // indirect
+	go.opentelemetry.io/collector/processor v0.106.1 // indirect
+	go.opentelemetry.io/collector/receiver v0.106.1 // indirect
+	go.opentelemetry.io/collector/semconv v0.106.1 // indirect
+	go.opentelemetry.io/collector/service v0.106.1 // indirect
 	go.opentelemetry.io/contrib/config v0.8.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
