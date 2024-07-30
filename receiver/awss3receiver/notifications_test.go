@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
@@ -24,6 +25,9 @@ type mockCustomCapabilityRegistry struct {
 
 	shouldFailRegister  bool
 	shouldReturnPending bool
+	shouldFailSend      bool
+
+	sendMessageCalls int
 
 	pendingChannel   chan struct{}
 	unregisterCalled bool
@@ -73,11 +77,15 @@ func (m *mockCustomCapabilityRegistry) Message() <-chan *protobufs.CustomMessage
 }
 
 func (m *mockCustomCapabilityRegistry) SendMessage(messageType string, message []byte) (messageSendingChannel chan struct{}, err error) {
+	m.sendMessageCalls++
 	if m.unregisterCalled {
 		return nil, fmt.Errorf("unregister called")
 	}
 	if m.shouldReturnPending {
 		return m.pendingChannel, types.ErrCustomMessagePending
+	}
+	if m.shouldFailSend {
+		return nil, fmt.Errorf("send failed")
 	}
 	m.sentMessages = append(m.sentMessages, customMessage{messageType: messageType, message: message})
 	return nil, nil
@@ -132,7 +140,7 @@ func Test_opampNotifier_Start(t *testing.T) {
 
 func Test_opampNotifier_Shutdown(t *testing.T) {
 	registry := mockCustomCapabilityRegistry{}
-	notifier := &opampNotifier{handler: &registry}
+	notifier := &opampNotifier{handler: &registry, logger: zap.NewNop()}
 	err := notifier.Shutdown(context.Background())
 	require.NoError(t, err)
 	require.True(t, registry.unregisterCalled)
@@ -140,7 +148,7 @@ func Test_opampNotifier_Shutdown(t *testing.T) {
 
 func Test_opampNotifier_SendStatus(t *testing.T) {
 	registry := mockCustomCapabilityRegistry{}
-	notifier := &opampNotifier{handler: &registry}
+	notifier := &opampNotifier{handler: &registry, logger: zap.NewNop()}
 	ingestTime := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
 	toSend := statusNotification{
 		TelemetryType: "telemetry",
@@ -191,7 +199,7 @@ func Test_opampNotifier_SendStatus_MessagePending(t *testing.T) {
 		shouldReturnPending: true,
 		pendingChannel:      make(chan struct{}),
 	}
-	notifier := &opampNotifier{handler: &registry}
+	notifier := &opampNotifier{handler: &registry, logger: zap.NewNop()}
 	toSend := statusNotification{
 		TelemetryType: "telemetry",
 		IngestStatus:  IngestStatusIngesting,
@@ -201,12 +209,59 @@ func Test_opampNotifier_SendStatus_MessagePending(t *testing.T) {
 	var completionTime time.Time
 	now := time.Now()
 	go func() {
-		time.Sleep(10 * time.Millisecond)
-		registry.pendingChannel <- struct{}{}
+		notifier.SendStatus(context.Background(), toSend)
+		completionTime = time.Now()
 	}()
-	notifier.SendStatus(context.Background(), toSend)
-	completionTime = time.Now()
+	time.Sleep(10 * time.Millisecond)
+	registry.shouldReturnPending = false
+	require.Len(t, registry.sentMessages, 0)
+	registry.pendingChannel <- struct{}{}
+	// Allow retry logic time to send a message
+	time.Sleep(time.Millisecond)
 	require.True(t, completionTime.After(now))
 	require.Len(t, registry.sentMessages, 1)
 	require.Equal(t, "TimeBasedIngestStatus", registry.sentMessages[0].messageType)
+}
+
+func Test_opampNotifier_SendStatus_Error(t *testing.T) {
+	registry := mockCustomCapabilityRegistry{
+		shouldFailSend: true,
+	}
+	notifier := &opampNotifier{handler: &registry, logger: zap.NewNop()}
+	toSend := statusNotification{
+		TelemetryType: "telemetry",
+		IngestStatus:  IngestStatusIngesting,
+		IngestTime:    time.Time{},
+	}
+
+	notifier.SendStatus(context.Background(), toSend)
+	require.Len(t, registry.sentMessages, 0)
+	require.Equal(t, registry.sendMessageCalls, 1)
+}
+
+func Test_opampNotifier_SendStatus_MaxRetries(t *testing.T) {
+	registry := mockCustomCapabilityRegistry{
+		shouldReturnPending: true,
+		pendingChannel:      make(chan struct{}),
+	}
+	notifier := &opampNotifier{handler: &registry, logger: zap.NewNop()}
+	toSend := statusNotification{
+		TelemetryType: "telemetry",
+		IngestStatus:  IngestStatusIngesting,
+		IngestTime:    time.Time{},
+	}
+	var completionTime time.Time
+	now := time.Now()
+	go func() {
+		notifier.SendStatus(context.Background(), toSend)
+		completionTime = time.Now()
+	}()
+
+	for attempt := 0; attempt < maxNotificationAttempts; attempt++ {
+		registry.pendingChannel <- struct{}{}
+	}
+
+	require.True(t, completionTime.After(now))
+	require.Len(t, registry.sentMessages, 0)
+	require.Equal(t, registry.sendMessageCalls, maxNotificationAttempts)
 }

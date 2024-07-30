@@ -45,7 +45,7 @@ type awss3Receiver struct {
 }
 
 func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, settings receiver.Settings, processor receiverProcessor) (*awss3Receiver, error) {
-	notifier := newNotifier(cfg)
+	notifier := newNotifier(cfg, settings.Logger)
 	reader, err := newS3Reader(ctx, notifier, cfg)
 	if err != nil {
 		return nil, err

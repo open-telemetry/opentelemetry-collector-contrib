@@ -12,15 +12,17 @@ import (
 	"github.com/open-telemetry/opamp-go/client/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
 const (
-	IngestStatusCompleted = "completed"
-	IngestStatusFailed    = "failed"
-	IngestStatusIngesting = "ingesting"
-	CustomCapability      = "org.opentelemetry.collector.receiver.awss3"
+	IngestStatusCompleted   = "completed"
+	IngestStatusFailed      = "failed"
+	IngestStatusIngesting   = "ingesting"
+	CustomCapability        = "org.opentelemetry.collector.receiver.awss3"
+	maxNotificationAttempts = 3
 )
 
 type statusNotification struct {
@@ -39,13 +41,14 @@ type statusNotifier interface {
 }
 
 type opampNotifier struct {
+	logger           *zap.Logger
 	opampExtensionID component.ID
 	handler          opampcustommessages.CustomCapabilityHandler
 }
 
-func newNotifier(config *Config) statusNotifier {
+func newNotifier(config *Config, logger *zap.Logger) statusNotifier {
 	if config.Notifications.OpAMP != nil {
-		return &opampNotifier{opampExtensionID: *config.Notifications.OpAMP}
+		return &opampNotifier{opampExtensionID: *config.Notifications.OpAMP, logger: logger}
 	}
 	return nil
 }
@@ -93,13 +96,19 @@ func (n *opampNotifier) SendStatus(_ context.Context, message statusNotification
 	if err != nil {
 		return
 	}
-	sendingChan, err := n.handler.SendMessage("TimeBasedIngestStatus", bytes)
-	switch {
-	case err == nil:
-		break
-	case errors.Is(err, types.ErrCustomMessagePending):
-		<-sendingChan
-	default:
-		return
+	for attempt := 0; attempt < maxNotificationAttempts; attempt++ {
+		sendingChan, sendingErr := n.handler.SendMessage("TimeBasedIngestStatus", bytes)
+		switch {
+		case sendingErr == nil:
+			return
+		case errors.Is(sendingErr, types.ErrCustomMessagePending):
+			<-sendingChan
+		default:
+			// The only other errors returned by the OpAmp extension are unrecoverable, ie ErrCustomCapabilityNotSupported
+			// so just log an error and return.
+			n.logger.Error("Failed to send notification", zap.Error(sendingErr), zap.Int("attempt", attempt))
+			return
+		}
 	}
+	n.logger.Error("Failed to send notification after multiple attempts", zap.Int("max_attempts", maxNotificationAttempts))
 }
