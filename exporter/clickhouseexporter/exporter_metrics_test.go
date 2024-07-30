@@ -17,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
 func TestMetricsClusterConfig(t *testing.T) {
@@ -31,6 +33,29 @@ func TestMetricsTableEngineConfig(t *testing.T) {
 		exporter := newTestMetricsExporter(t, dsn, fns...)
 		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
 	})
+}
+
+func Test_generateMetricTableNames(t *testing.T) {
+	cfg := Config{
+		MetricsTables: TableNames{
+			Gauge:                "otel_metrics_custom_gauge",
+			Sum:                  "otel_metrics_custom_sum",
+			Summary:              "otel_metrics_custom_summary",
+			Histogram:            "otel_metrics_custom_histogram",
+			ExponentialHistogram: "otel_metrics_custom_exp_histogram",
+		},
+	}
+	exporter := metricsExporter{
+		cfg: &cfg,
+	}
+
+	require.Equal(t, internal.MetricTableNames{
+		pmetric.MetricTypeGauge:                cfg.MetricsTables.Gauge,
+		pmetric.MetricTypeSum:                  cfg.MetricsTables.Sum,
+		pmetric.MetricTypeSummary:              cfg.MetricsTables.Summary,
+		pmetric.MetricTypeHistogram:            cfg.MetricsTables.Histogram,
+		pmetric.MetricTypeExponentialHistogram: cfg.MetricsTables.ExponentialHistogram,
+	}, exporter.generateTableNames())
 }
 
 func TestExporter_pushMetricsData(t *testing.T) {

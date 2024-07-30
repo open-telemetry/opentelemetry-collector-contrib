@@ -18,15 +18,17 @@ import (
 	"go.uber.org/zap"
 )
 
-var supportedMetricTypes = map[string]struct{}{
-	createGaugeTableSQL:        {},
-	createSumTableSQL:          {},
-	createHistogramTableSQL:    {},
-	createExpHistogramTableSQL: {},
-	createSummaryTableSQL:      {},
+var supportedMetricTypes = MetricTableNames{
+	pmetric.MetricTypeGauge:                createGaugeTableSQL,
+	pmetric.MetricTypeSum:                  createSumTableSQL,
+	pmetric.MetricTypeHistogram:            createHistogramTableSQL,
+	pmetric.MetricTypeExponentialHistogram: createExpHistogramTableSQL,
+	pmetric.MetricTypeSummary:              createSummaryTableSQL,
 }
 
 var logger *zap.Logger
+
+type MetricTableNames map[pmetric.MetricType]string
 
 // MetricsModel is used to group metric data and insert into clickhouse
 // any type of metrics need implement it.
@@ -51,9 +53,9 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tableName, cluster, engine, ttlExpr string, db *sql.DB) error {
-	for table := range supportedMetricTypes {
-		query := fmt.Sprintf(table, tableName, cluster, engine, ttlExpr)
+func NewMetricsTable(ctx context.Context, tableNames MetricTableNames, cluster, engine, ttlExpr string, db *sql.DB) error {
+	for key, table := range supportedMetricTypes {
+		query := fmt.Sprintf(table, tableNames[key], cluster, engine, ttlExpr)
 		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
@@ -62,22 +64,22 @@ func NewMetricsTable(ctx context.Context, tableName, cluster, engine, ttlExpr st
 }
 
 // NewMetricsModel create a model for contain different metric data
-func NewMetricsModel(tableName string) map[pmetric.MetricType]MetricsModel {
+func NewMetricsModel(tableNames MetricTableNames) map[pmetric.MetricType]MetricsModel {
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
-			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tableNames[pmetric.MetricTypeGauge]),
 		},
 		pmetric.MetricTypeSum: &sumMetrics{
-			insertSQL: fmt.Sprintf(insertSumTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertSumTableSQL, tableNames[pmetric.MetricTypeSum]),
 		},
 		pmetric.MetricTypeHistogram: &histogramMetrics{
-			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tableNames[pmetric.MetricTypeHistogram]),
 		},
 		pmetric.MetricTypeExponentialHistogram: &expHistogramMetrics{
-			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tableNames[pmetric.MetricTypeExponentialHistogram]),
 		},
 		pmetric.MetricTypeSummary: &summaryMetrics{
-			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tableNames[pmetric.MetricTypeSummary]),
 		},
 	}
 }

@@ -38,10 +38,16 @@ func createDefaultConfig() component.Config {
 		Database:         defaultDatabase,
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
-		MetricsTableName: "otel_metrics",
 		TTL:              0,
 		CreateSchema:     true,
 		AsyncInsert:      true,
+		MetricsTables: TableNames{
+			Gauge:                defaultMetricTableName + defaultGaugeSuffix,
+			Sum:                  defaultMetricTableName + defaultSumSuffix,
+			Summary:              defaultMetricTableName + defaultSummarySuffix,
+			Histogram:            defaultMetricTableName + defaultHistogramSuffix,
+			ExponentialHistogram: defaultMetricTableName + defaultExpHistogramSuffix,
+		},
 	}
 }
 
