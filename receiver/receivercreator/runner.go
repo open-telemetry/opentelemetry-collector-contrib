@@ -31,12 +31,12 @@ type receiverRunner struct {
 	logger      *zap.Logger
 	params      rcvr.Settings
 	idNamespace component.ID
-	host        component.Host
+	host        host
 	receivers   map[string]*wrappedReceiver
 	lock        *sync.Mutex
 }
 
-func newReceiverRunner(params rcvr.Settings, host component.Host) *receiverRunner {
+func newReceiverRunner(params rcvr.Settings, host host) *receiverRunner {
 	return &receiverRunner{
 		logger:      params.Logger,
 		params:      params,
