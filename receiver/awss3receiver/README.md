@@ -33,7 +33,7 @@ The following exporter configuration parameters are supported.
 | `extension`             | Extension to use for decoding a key with a matching suffix.                                                                                |             | Required |
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
 | `notifications:`        |                                                                                                                                            |             |          |
-| `opamp`                 | Name of the OpAMP Extension to use to send notifications of ingest progress.                                                               |             |          |
+| `opamp`                 | Name of the OpAMP Extension to use to send ingest progress notifications.                                                               |             |          |
 
 ### Time format for `starttime` and `endtime`
 The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data. 
