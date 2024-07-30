@@ -220,6 +220,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
+- [aggregate_on_attribute_value](#aggregate_on_attribute_value)
 
 ### convert_sum_to_gauge
 
@@ -414,6 +415,34 @@ statements:
 ```
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
+
+### aggregate_on_attribute_value
+
+`aggregate_on_attribute_value(function, label, valueSet, newValue)`
+
+The `aggregate_on_attribute_value` function aggreates all metrics having the label `label` set with one of the values present in `valueSet` using the aggregation function specified in `function`. Additionally it substitutes the values of `label` present in `valueSet` with a new value specified by `newValue`.
+
+The function supports the following data types:
+
+- sum
+- gauge
+- histogram
+- exponential histogram
+
+Supported aggregation functions are:
+
+- sum
+- max
+- min
+- mean
+- median
+- count
+
+**NOTE:** Only the `sum` agregation function is supported for histogram and exponential histogram datatypes.
+
+Examples:
+
+- `aggregate_on_attribute_value(sum, attr1, [val1, val2], new_val) where name == "system.memory.usage`
 
 ## Examples
 
