@@ -15,13 +15,15 @@ import (
 )
 
 const (
-	v32  = "32"
-	v128 = "128" // default
+	v32Hash  = "v32_hash"
+	v32Hex   = "v32_hex"
+	v128Hash = "v128_hash" // default
+	v128Hex  = "v128_hex"
 )
 
 type MurmurHash3Arguments[K any] struct {
 	Target  ottl.StringGetter[K]
-	Version ottl.Optional[string] // 32-bit or 128-bit
+	Version ottl.Optional[string]
 }
 
 func NewMurmurHash3Factory[K any]() ottl.Factory[K] {
@@ -35,25 +37,22 @@ func createMurmurHash3Function[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		return nil, fmt.Errorf("MurmurHash3Factory args must be of type *MurmurHash3Arguments[K]")
 	}
 
-	version := v128
+	version := v128Hash
 	if !args.Version.IsEmpty() {
 		v := args.Version.Get()
 
 		switch v {
-		case v32, v128:
+		case v32Hash, v32Hex, v128Hash, v128Hex:
 			version = v
 		default:
-			return nil, fmt.Errorf("invalid arguments: %s. Version should be either \"32\" or \"128\"", v)
+			return nil, fmt.Errorf("invalid arguments: %s", v)
 		}
 	}
 
-	return HexStringLittleEndianVariant(args.Target, version)
+	return murmurHash3(args.Target, version)
 }
 
-// HexStringLittleEndianVariant returns the hexadecimal representation of the hash in little-endian format.
-// MurmurHash3, developed by Austin Appleby, is sensitive to endianness. Other languages like Python, Ruby,
-// and Java (using Guava) return a hexadecimal string in the little-endian variant. This function does the same.
-func HexStringLittleEndianVariant[K any](target ottl.StringGetter[K], version string) (ottl.ExprFunc[K], error) {
+func murmurHash3[K any](target ottl.StringGetter[K], version string) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -61,19 +60,37 @@ func HexStringLittleEndianVariant[K any](target ottl.StringGetter[K], version st
 		}
 
 		switch version {
-		case v32:
+		case v32Hash:
 			h := murmur3.Sum32([]byte(val))
-			b := make([]byte, 4)
-			binary.LittleEndian.PutUint32(b, h)
-			return hex.EncodeToString(b), nil
-		case v128:
+			return int64(h), nil
+		case v128Hash:
 			h1, h2 := murmur3.Sum128([]byte(val))
-			b := make([]byte, 16)
-			binary.LittleEndian.PutUint64(b[:8], h1)
-			binary.LittleEndian.PutUint64(b[8:], h2)
-			return hex.EncodeToString(b), nil
+			return []int64{int64(h1), int64(h2)}, nil
+		case v32Hex, v128Hex:
+			return hexStringLittleEndianVariant(val, version)
 		default:
 			return nil, fmt.Errorf("invalid argument: %s", version)
 		}
 	}, nil
+}
+
+// hexStringLittleEndianVariant returns the hexadecimal representation of the hash in little-endian format.
+// MurmurHash3, developed by Austin Appleby, is sensitive to endianness. Other languages like Python, Ruby,
+// and Java (using Guava) return a hexadecimal string in the little-endian variant. This function does the same.
+func hexStringLittleEndianVariant(target string, version string) (string, error) {
+	switch version {
+	case v32Hex:
+		h := murmur3.Sum32([]byte(target))
+		b := make([]byte, 4)
+		binary.LittleEndian.PutUint32(b, h)
+		return hex.EncodeToString(b), nil
+	case v128Hex:
+		h1, h2 := murmur3.Sum128([]byte(target))
+		b := make([]byte, 16)
+		binary.LittleEndian.PutUint64(b[:8], h1)
+		binary.LittleEndian.PutUint64(b[8:], h2)
+		return hex.EncodeToString(b), nil
+	default:
+		return "", fmt.Errorf("invalid argument: %s", version)
+	}
 }

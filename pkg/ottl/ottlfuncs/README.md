@@ -952,18 +952,21 @@ Examples:
 
 `MurmurHash3(target, Optional[version])`
 
-The `MurmurHash3` Converter converts the `target` to a hexadecimal string of murmurHash3 hash/digest
+The `MurmurHash3` Converter converts the `target` to murmurHash3 hash/digest.
 
-`target` is a Getter that returns a string.
+`target` is a Getter that returns a string. The default `version` is `v128_hash`.
 
-`version` is an optional string. MurmurHash3 has 32-bit and 128-bit versions. The default value is `128`. Valid values are `32` and `128`.
+If `version` is
 
-The returned type is `string`.
+- `v32_hash`: Uses 32-bit version and returns a signed integer hash.
+- `v128_hash`: Use 128-bit version and returns an array of two signed integer hash.
+- `v32_hex`: Uses 32-bit version and returns a hash in hexadecimal string format.
+- `v128_hex`: Uses 128-bit version and returns a hash in hexadecimal string format.
 
 Examples:
 
-- `MurmurHash3(attributes["device.name"])`
-- `MurmurHash3("sometext", version="32")`
+- `MurmurHash3(attributes["order.productId"])`
+- `MurmurHash3("sometext", version="v32_hex")`
 
 ### Nanoseconds
 

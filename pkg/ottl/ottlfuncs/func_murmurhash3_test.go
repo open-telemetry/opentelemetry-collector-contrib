@@ -17,12 +17,24 @@ func Test_MurmurHash3(t *testing.T) {
 	tests := []struct {
 		name        string
 		oArgs       ottl.Arguments
-		expected    string
+		expected    any
 		createError string
 		funcError   string
 	}{
 		{
-			name: "string",
+			name: "string in v32_hash",
+			oArgs: &MurmurHash3Arguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return "Hello World", nil
+					},
+				},
+				Version: ottl.NewTestingOptional[string]("v32_hash"),
+			},
+			expected: int64(427197390),
+		},
+		{
+			name: "string in v128_hash",
 			oArgs: &MurmurHash3Arguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
@@ -30,7 +42,7 @@ func Test_MurmurHash3(t *testing.T) {
 					},
 				},
 			},
-			expected: "dbc2a0c1ab26631a27b4c09fcf1fe683",
+			expected: []int64{int64(1901405986810282715), int64(-8942425033498643417)},
 		},
 		{
 			name: "empty string",
@@ -40,31 +52,31 @@ func Test_MurmurHash3(t *testing.T) {
 						return "", nil
 					},
 				},
-				Version: ottl.NewTestingOptional[string]("128"),
+				Version: ottl.NewTestingOptional[string]("v128_hex"),
 			},
 			expected: "00000000000000000000000000000000",
 		},
 		{
-			name: "string in v128",
+			name: "string in v128_hex",
 			oArgs: &MurmurHash3Arguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
 						return "Hello World", nil
 					},
 				},
-				Version: ottl.NewTestingOptional[string]("128"),
+				Version: ottl.NewTestingOptional[string]("v128_hex"),
 			},
 			expected: "dbc2a0c1ab26631a27b4c09fcf1fe683",
 		},
 		{
-			name: "string in v32",
+			name: "string in v32_hex",
 			oArgs: &MurmurHash3Arguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
 						return "Hello World", nil
 					},
 				},
-				Version: ottl.NewTestingOptional[string]("32"),
+				Version: ottl.NewTestingOptional[string]("v32_hex"),
 			},
 			expected: "ce837619",
 		},
