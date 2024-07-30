@@ -1188,10 +1188,11 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 		nil,
 	}
 
-	var recvBatches []*arrowpb.BatchStatus
+	recvBatches := make([]*arrowpb.BatchStatus, len(expectData))
 
 	ctc.stream.EXPECT().Send(gomock.Any()).Times(len(expectData)).DoAndReturn(func(batch *arrowpb.BatchStatus) error {
-		recvBatches = append(recvBatches, batch)
+		require.Nil(t, recvBatches[batch.BatchId])
+		recvBatches[batch.BatchId] = batch
 		return nil
 	})
 

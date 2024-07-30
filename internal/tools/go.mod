@@ -15,8 +15,8 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.14.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.14.0
 	go.opentelemetry.io/build-tools/multimod v0.14.0
-	go.opentelemetry.io/collector/cmd/builder v0.105.1-0.20240717163034-43ed6184f9fe
-	go.opentelemetry.io/collector/cmd/mdatagen v0.105.1-0.20240717163034-43ed6184f9fe
+	go.opentelemetry.io/collector/cmd/builder v0.106.0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.106.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.23.0
 	golang.org/x/vuln v1.1.3
@@ -226,14 +226,14 @@ require (
 	go-simpler.org/musttag v0.12.2 // indirect
 	go-simpler.org/sloglint v0.7.1 // indirect
 	go.opentelemetry.io/build-tools v0.14.0 // indirect
-	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/confmap v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240716231837-5753a58f712b // indirect
-	go.opentelemetry.io/collector/filter v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.105.1-0.20240717163034-43ed6184f9fe // indirect
-	go.opentelemetry.io/collector/pdata v1.12.1-0.20240716231837-5753a58f712b // indirect
+	go.opentelemetry.io/collector/component v0.106.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.106.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.106.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.106.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
+	go.opentelemetry.io/collector/filter v0.106.0 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.106.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.12.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
