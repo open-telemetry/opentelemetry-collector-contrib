@@ -67,6 +67,13 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
+				MetricsTables: TableNames{
+					Gauge:                "otel_metrics_custom_gauge",
+					Sum:                  "otel_metrics_custom_sum",
+					Summary:              "otel_metrics_custom_summary",
+					Histogram:            "otel_metrics_custom_histogram",
+					ExponentialHistogram: "otel_metrics_custom_exp_histogram",
+				},
 				ConnectionParams: map[string]string{},
 				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
@@ -100,6 +107,159 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 		fn(cfg)
 	}
 	return cfg
+}
+
+func TestValidateMetricTableNames(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     Config
+		wantErr error
+	}{
+		{
+			name:    "metric_table_name not set",
+			cfg:     Config{},
+			wantErr: nil,
+		},
+		{
+			name: "metric_table_name set",
+			cfg: Config{
+				MetricsTableName: "table",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "metric_table_name set with metric_tables",
+			cfg: Config{
+				MetricsTableName: "table",
+				MetricsTables: TableNames{
+					Gauge: "gauge",
+				},
+			},
+			wantErr: fmt.Errorf("Warning: 'metrics_table_name' is deprecated, use 'metrics_tables' instead"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.wantErr, tt.cfg.ValidateMetricTableNames())
+		})
+	}
+}
+
+func TestBuildMetricTableNames(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+		want Config
+	}{
+		{
+			name: "nothing set",
+			cfg:  Config{},
+			want: Config{
+				MetricsTables: TableNames{
+					Gauge:                "otel_metrics_gauge",
+					Sum:                  "otel_metrics_sum",
+					Summary:              "otel_metrics_summary",
+					Histogram:            "otel_metrics_histogram",
+					ExponentialHistogram: "otel_metrics_exponential_histogram",
+				},
+			},
+		},
+		{
+			name: "only metric_table_name set",
+			cfg: Config{
+				MetricsTableName: "table_name",
+			},
+			want: Config{
+				MetricsTableName: "table_name",
+				MetricsTables: TableNames{
+					Gauge:                "table_name_gauge",
+					Sum:                  "table_name_sum",
+					Summary:              "table_name_summary",
+					Histogram:            "table_name_histogram",
+					ExponentialHistogram: "table_name_exponential_histogram",
+				},
+			},
+		},
+		{
+			name: "only metric_tables set fully",
+			cfg: Config{
+				MetricsTables: TableNames{
+					Gauge:                "table_name_gauge",
+					Sum:                  "table_name_sum",
+					Summary:              "table_name_summary",
+					Histogram:            "table_name_histogram",
+					ExponentialHistogram: "table_name_exponential_histogram",
+				},
+			},
+			want: Config{
+				MetricsTables: TableNames{
+					Gauge:                "table_name_gauge",
+					Sum:                  "table_name_sum",
+					Summary:              "table_name_summary",
+					Histogram:            "table_name_histogram",
+					ExponentialHistogram: "table_name_exponential_histogram",
+				},
+			},
+		},
+		{
+			name: "only metric_tables set partially",
+			cfg: Config{
+				MetricsTables: TableNames{
+					Summary:              "table_name_summary",
+					Histogram:            "table_name_histogram",
+					ExponentialHistogram: "table_name_exp_histogram",
+				},
+			},
+			want: Config{
+				MetricsTables: TableNames{
+					Gauge:                "otel_metrics_gauge",
+					Sum:                  "otel_metrics_sum",
+					Summary:              "table_name_summary",
+					Histogram:            "table_name_histogram",
+					ExponentialHistogram: "table_name_exp_histogram",
+				},
+			},
+		},
+		{
+			name: "only metric_tables set partially with metric_table_name",
+			cfg: Config{
+				MetricsTableName: "custom_name",
+				MetricsTables: TableNames{
+					Summary:              "table_name_summary",
+					Histogram:            "table_name_histogram",
+					ExponentialHistogram: "table_name_exp_histogram",
+				},
+			},
+			want: Config{
+				MetricsTableName: "custom_name",
+				MetricsTables: TableNames{
+					Gauge:                "otel_metrics_gauge",
+					Sum:                  "otel_metrics_sum",
+					Summary:              "table_name_summary",
+					Histogram:            "table_name_histogram",
+					ExponentialHistogram: "table_name_exp_histogram",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.cfg.buildTableNames()
+			require.Equal(t, tt.want, tt.cfg)
+		})
+	}
+}
+
+func TestAreTableNamesSet(t *testing.T) {
+	cfg := Config{}
+	require.False(t, cfg.areTableNamesSet())
+
+	cfg = Config{
+		MetricsTables: TableNames{
+			Gauge: "gauge",
+		},
+	}
+	require.True(t, cfg.areTableNamesSet())
 }
 
 func TestConfig_buildDSN(t *testing.T) {

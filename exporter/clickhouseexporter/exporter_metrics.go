@@ -48,7 +48,18 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	ttlExpr := generateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
-	return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.client)
+	tableNames := e.generateTableNames()
+	return internal.NewMetricsTable(ctx, tableNames, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.client)
+}
+
+func (e *metricsExporter) generateTableNames() internal.MetricTableNames {
+	return internal.MetricTableNames{
+		pmetric.MetricTypeGauge:                e.cfg.MetricsTables.Gauge,
+		pmetric.MetricTypeSum:                  e.cfg.MetricsTables.Sum,
+		pmetric.MetricTypeSummary:              e.cfg.MetricsTables.Summary,
+		pmetric.MetricTypeHistogram:            e.cfg.MetricsTables.Histogram,
+		pmetric.MetricTypeExponentialHistogram: e.cfg.MetricsTables.ExponentialHistogram,
+	}
 }
 
 // shutdown will shut down the exporter.
@@ -60,7 +71,8 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	metricsMap := internal.NewMetricsModel(e.cfg.MetricsTableName)
+	tableNames := e.generateTableNames()
+	metricsMap := internal.NewMetricsModel(tableNames)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := attributesToMap(metrics.Resource().Attributes())

@@ -52,6 +52,21 @@ type Config struct {
 	// Ignored if async inserts are configured in the `endpoint` or `connection_params`.
 	// Async inserts may still be overridden server-side.
 	AsyncInsert bool `mapstructure:"async_insert"`
+	// MetricsTables defines the table names for metric types.
+	MetricsTables TableNames `mapstructure:"metrics_tables"`
+}
+
+type TableNames struct {
+	// Gauge is the table name for gauge metric type. default is `otel_metrics_gauge`.
+	Gauge string `mapstructure:"gauge"`
+	// Sum is the table name for sum metric type. default is `otel_metrics_sum`.
+	Sum string `mapstructure:"sum"`
+	// Summary is the table name for summary metric type. default is `otel_metrics_summary`.
+	Summary string `mapstructure:"summary"`
+	// Histogram is the table name for histogram metric type. default is `otel_metrics_histogram`.
+	Histogram string `mapstructure:"histogram"`
+	// ExponentialHistogram is the table name for exponential histogram metric type. default is `otel_metrics_exponential_histogram`.
+	ExponentialHistogram string `mapstructure:"exponential_histogram"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -62,6 +77,12 @@ type TableEngine struct {
 
 const defaultDatabase = "default"
 const defaultTableEngineName = "MergeTree"
+const defaultMetricTableName = "otel_metrics"
+const defaultGaugeSuffix = "_gauge"
+const defaultSumSuffix = "_sum"
+const defaultSummarySuffix = "_summary"
+const defaultHistogramSuffix = "_histogram"
+const defaultExpHistogramSuffix = "_exponential_histogram"
 
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
@@ -76,6 +97,12 @@ func (cfg *Config) Validate() (err error) {
 	dsn, e := cfg.buildDSN()
 	if e != nil {
 		err = errors.Join(err, e)
+	}
+
+	if e := cfg.ValidateMetricTableNames(); err != nil {
+		err = errors.Join(err, e)
+	} else {
+		cfg.buildTableNames()
 	}
 
 	// Validate DSN with clickhouse driver.
@@ -151,6 +178,48 @@ func (cfg *Config) buildDB() (*sql.DB, error) {
 // shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
 func (cfg *Config) shouldCreateSchema() bool {
 	return cfg.CreateSchema
+}
+
+func (cfg *Config) ValidateMetricTableNames() error {
+	if len(cfg.MetricsTableName) == 0 {
+		return nil
+	}
+	if cfg.areTableNamesSet() {
+		return fmt.Errorf("Warning: 'metrics_table_name' is deprecated, use 'metrics_tables' instead")
+	}
+	return nil
+}
+
+func (cfg *Config) buildTableNames() {
+	tableName := defaultMetricTableName
+
+	if len(cfg.MetricsTableName) != 0 && !cfg.areTableNamesSet() {
+		tableName = cfg.MetricsTableName
+	}
+
+	if len(cfg.MetricsTables.Gauge) == 0 {
+		cfg.MetricsTables.Gauge = tableName + defaultGaugeSuffix
+	}
+	if len(cfg.MetricsTables.Sum) == 0 {
+		cfg.MetricsTables.Sum = tableName + defaultSumSuffix
+	}
+	if len(cfg.MetricsTables.Summary) == 0 {
+		cfg.MetricsTables.Summary = tableName + defaultSummarySuffix
+	}
+	if len(cfg.MetricsTables.Histogram) == 0 {
+		cfg.MetricsTables.Histogram = tableName + defaultHistogramSuffix
+	}
+	if len(cfg.MetricsTables.ExponentialHistogram) == 0 {
+		cfg.MetricsTables.ExponentialHistogram = tableName + defaultExpHistogramSuffix
+	}
+}
+
+func (cfg *Config) areTableNamesSet() bool {
+	return len(cfg.MetricsTables.Gauge) != 0 ||
+		len(cfg.MetricsTables.Sum) != 0 ||
+		len(cfg.MetricsTables.Summary) != 0 ||
+		len(cfg.MetricsTables.Histogram) != 0 ||
+		len(cfg.MetricsTables.ExponentialHistogram) != 0
 }
 
 // tableEngineString generates the ENGINE string.
