@@ -39,3 +39,25 @@ func TestCloneStringMap(t *testing.T) {
 
 	require.Equal(t, expected, actual)
 }
+
+func TestOrderMapByKey(t *testing.T) {
+	ordered := map[string]string{
+		"a": "val-1",
+		"b": "val-2",
+		"c": "val-3",
+		"d": "val-4",
+		"e": "val-5",
+	}
+
+	require.Equal(t, ordered, OrderMapByKey(ordered))
+
+	unordered := map[string]string{
+		"e": "val-5",
+		"a": "val-1",
+		"c": "val-3",
+		"d": "val-4",
+		"b": "val-2",
+	}
+
+	require.Equal(t, ordered, OrderMapByKey(unordered))
+}
