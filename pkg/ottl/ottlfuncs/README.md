@@ -415,6 +415,8 @@ Available Converters:
 - [Day](#day)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Format](#format)
+- [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
 - [Double](#double)
@@ -423,6 +425,7 @@ Available Converters:
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
 - [IsInt](#isint)
+- [IsRootSpan](#isrootspan)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsList](#islist)
@@ -604,6 +607,52 @@ Examples:
 
 - `FNV("name")`
 
+### Format
+
+```Format(formatString, []formatArguments)```
+
+The `Format` Converter takes the given format string and formats it using `fmt.Sprintf` and the given arguments.
+
+`formatString` is a string. `formatArguments` is an array of values.
+
+If the `formatString` is not a string or does not exist, the `Format` Converter will return an error.
+If any of the `formatArgs` are incorrect (e.g. missing, or an incorrect type for the corresponding format specifier), then a string will still be returned, but with Go's default error handling for `fmt.Sprintf`.
+
+Format specifiers that can be used in `formatString` are documented in Go's [fmt package documentation](https://pkg.go.dev/fmt#hdr-Printing)
+
+Examples:
+
+- `Format("%02d", [attributes["priority"]])`
+- `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
+- `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
+
+### Hex
+
+`Hex(value)`
+
+The `Hex` converter converts the `value` to its hexadecimal representation.
+
+The returned type is string representation of the hexadecimal value.
+
+The input `value` types:
+
+- float64 (`1.1` will result to `0x3ff199999999999a`)
+- string (`"1"` will result in `0x31`)
+- bool (`true` will result in `0x01`; `false` to `0x00`)
+- int64 (`12` will result in `0xC`)
+- []byte (without any changes - `0x02` will result to `0x02`)
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Hex(attributes["http.status_code"])`
+
+
+- `Hex(2.0)`
+
 ### Hour
 
 `Hour(value)`
@@ -715,6 +764,23 @@ Examples:
 - `IsInt(body)`
 
 - `IsInt(attributes["maybe a int"])`
+
+### IsRootSpan
+
+`IsRootSpan()`
+
+The `IsRootSpan` Converter returns `true` if the span in the corresponding context is root, which means
+its `parent_span_id` is equal to hexadecimal representation of zero.
+
+This function is supported with [OTTL span context](../contexts/ottlspan/README.md). In any other context it is not supported.
+
+The function returns `false` in all other scenarios, including `parent_span_id == ""` or `parent_span_id == nil`.
+
+Examples:
+
+- `IsRootSpan()`
+
+- `set(attributes["isRoot"], "true") where IsRootSpan()`
 
 ### IsMap
 
@@ -964,7 +1030,7 @@ Examples:
 
 `ParseJSON(target)`
 
-The `ParseJSON` Converter returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+The `ParseJSON` Converter returns a `pcommon.Map` or `pcommon.Slice` struct that is a result of parsing the target string as JSON
 
 `target` is a Getter that returns a string. This string should be in json format.
 If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
@@ -984,6 +1050,9 @@ JSON objects -> map[string]any
 Examples:
 
 - `ParseJSON("{\"attr\":true}")`
+
+
+- `ParseJSON("[\"attr1\",\"attr2\"]")`
 
 
 - `ParseJSON(attributes["kubernetes"])`

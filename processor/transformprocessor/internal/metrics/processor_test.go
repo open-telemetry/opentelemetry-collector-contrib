@@ -40,6 +40,12 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 			want: func(_ pmetric.Metrics) {
 			},
 		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).SetSchemaUrl("test_schema_url")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -73,6 +79,12 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
 			want: func(_ pmetric.Metrics) {
+			},
+		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl("test_schema_url")
 			},
 		},
 	}
@@ -186,6 +198,54 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).CopyTo(newMetric)
 				newMetric.SetName("http.request.status_code")
 				newMetric.SetUnit("s")
+			},
+		},
+		{
+			statements: []string{`scale_metric(10.0,"s") where name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).SetDoubleValue(10.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).SetDoubleValue(37.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetUnit("s")
+			},
+		},
+		{
+			statements: []string{`scale_metric(10.0) where name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).SetDoubleValue(10.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).SetDoubleValue(37.0)
+			},
+		},
+		{
+			statements: []string{`aggregate_on_attributes("sum", ["attr1", "attr2"]) where name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+
+				dataPoints := pmetric.NewNumberDataPointSlice()
+				dataPoint1 := dataPoints.AppendEmpty()
+				dataPoint1.SetStartTimestamp(StartTimestamp)
+				dataPoint1.SetDoubleValue(4.7)
+				dataPoint1.Attributes().PutStr("attr1", "test1")
+				dataPoint1.Attributes().PutStr("attr2", "test2")
+
+				dataPoints.CopyTo(m.Sum().DataPoints())
+			},
+		},
+		{
+			statements: []string{`aggregate_on_attributes("min") where name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+
+				dataPoints := pmetric.NewNumberDataPointSlice()
+				dataPoint1 := dataPoints.AppendEmpty()
+				dataPoint1.SetStartTimestamp(StartTimestamp)
+				dataPoint1.SetDoubleValue(1.0)
+				dataPoint1.Attributes().PutStr("attr1", "test1")
+				dataPoint1.Attributes().PutStr("attr2", "test2")
+				dataPoint1.Attributes().PutStr("attr3", "test3")
+				dataPoint1.Attributes().PutStr("flags", "A|B|C")
+				dataPoint1.Attributes().PutStr("total.string", "123456789")
+
+				dataPoints.CopyTo(m.Sum().DataPoints())
 			},
 		},
 	}
@@ -810,8 +870,10 @@ func Test_ProcessMetrics_Error(t *testing.T) {
 func constructMetrics() pmetric.Metrics {
 	td := pmetric.NewMetrics()
 	rm0 := td.ResourceMetrics().AppendEmpty()
+	rm0.SetSchemaUrl("test_schema_url")
 	rm0.Resource().Attributes().PutStr("host.name", "myhost")
 	rm0ils0 := rm0.ScopeMetrics().AppendEmpty()
+	rm0ils0.SetSchemaUrl("test_schema_url")
 	rm0ils0.Scope().SetName("scope")
 	fillMetricOne(rm0ils0.Metrics().AppendEmpty())
 	fillMetricTwo(rm0ils0.Metrics().AppendEmpty())

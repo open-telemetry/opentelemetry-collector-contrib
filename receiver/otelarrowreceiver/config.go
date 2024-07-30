@@ -6,9 +6,10 @@ package otelarrowreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"fmt"
 
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
 
 // Protocols is the configuration for the supported protocols.

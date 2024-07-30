@@ -4,7 +4,6 @@
 package datasetexporter
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -12,32 +11,11 @@ import (
 
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
-
-func TestCreateTracesExporter(t *testing.T) {
-	ctx := context.Background()
-	createSettings := exportertest.NewNopSettings()
-	tests := createExporterTests()
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(*testing.T) {
-			logs, err := createTracesExporter(ctx, createSettings, tt.config)
-
-			if err == nil {
-				assert.Nil(t, tt.expectedError)
-				assert.NotNil(t, logs)
-			} else {
-				assert.Equal(t, tt.expectedError.Error(), err.Error())
-				assert.Nil(t, logs)
-			}
-		})
-	}
-}
 
 func generateTEvent1Raw() *add_events.Event {
 	return &add_events.Event{

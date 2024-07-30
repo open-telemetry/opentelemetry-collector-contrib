@@ -4,12 +4,9 @@
 package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"net"
-	"strings"
 
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -53,9 +50,7 @@ func (u *udpServer) ListenAndServe(
 	for {
 		n, addr, err := u.packetConn.ReadFrom(buf)
 		if n > 0 {
-			bufCopy := make([]byte, n)
-			copy(bufCopy, buf)
-			u.handlePacket(bufCopy, addr, transferChan)
+			u.handlePacket(n, buf, addr, transferChan)
 		}
 		if err != nil {
 			reporter.OnDebugf("%s Transport (%s) - ReadFrom error: %v",
@@ -80,22 +75,16 @@ func (u *udpServer) Close() error {
 
 // handlePacket is helper that parses the buffer and split it line by line to be parsed upstream.
 func (u *udpServer) handlePacket(
+	numBytes int,
 	data []byte,
 	addr net.Addr,
 	transferChan chan<- Metric,
 ) {
-	buf := bytes.NewBuffer(data)
-	for {
-		bytes, err := buf.ReadBytes((byte)('\n'))
-		if errors.Is(err, io.EOF) {
-			if len(bytes) == 0 {
-				// Completed without errors.
-				break
-			}
-		}
-		line := strings.TrimSpace(string(bytes))
-		if line != "" {
-			transferChan <- Metric{line, addr}
+	splitPacket := NewSplitBytes(data[:numBytes], '\n')
+	for splitPacket.Next() {
+		chunk := splitPacket.Chunk()
+		if len(chunk) > 0 {
+			transferChan <- Metric{string(chunk), addr}
 		}
 	}
 }

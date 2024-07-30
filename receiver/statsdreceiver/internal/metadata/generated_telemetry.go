@@ -53,7 +53,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.ReceiverReceivedStatsdMetrics, err = builder.meter.Int64Counter(
-		"receiver_received_statsd_metrics",
+		"otelcol_receiver_received_statsd_metrics",
 		metric.WithDescription("Number of statsd metrics received."),
 		metric.WithUnit("1"),
 	)

@@ -36,13 +36,7 @@ func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*
 		zap.String("id.string", set.ID.String()),
 		zap.String("id.name", set.ID.Name()),
 	)
-	exporterCfg, err := config.convert()
-	if err != nil {
-		return nil, fmt.Errorf(
-			"cannot convert config: %s; %w",
-			config.String(), err,
-		)
-	}
+	exporterCfg := config.convert()
 	userAgent := fmt.Sprintf(
 		"%s;%s;%s",
 		"OtelCollector",

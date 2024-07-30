@@ -205,7 +205,7 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	db, err := cfg.buildDB(cfg.Database)
+	db, err := cfg.buildDB()
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 		return nil
 	}
 
-	db, err := cfg.buildDB(defaultDatabase)
+	db, err := cfg.buildDB()
 	if err != nil {
 		return err
 	}
@@ -228,7 +228,7 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.clusterString())
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
-		return fmt.Errorf("create database:%w", err)
+		return fmt.Errorf("create database: %w", err)
 	}
 	return nil
 }
