@@ -23,7 +23,7 @@ const (
 	CustomCapability      = "org.opentelemetry.collector.receiver.awss3"
 )
 
-type StatusNotification struct {
+type statusNotification struct {
 	TelemetryType  string
 	IngestStatus   string
 	StartTime      time.Time
@@ -35,7 +35,7 @@ type StatusNotification struct {
 type statusNotifier interface {
 	Start(ctx context.Context, host component.Host) error
 	Shutdown(ctx context.Context) error
-	SendStatus(ctx context.Context, message StatusNotification)
+	SendStatus(ctx context.Context, message statusNotification)
 }
 
 type opampNotifier struct {
@@ -74,7 +74,7 @@ func (n *opampNotifier) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (n *opampNotifier) SendStatus(_ context.Context, message StatusNotification) {
+func (n *opampNotifier) SendStatus(_ context.Context, message statusNotification) {
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.Body().SetStr("status")

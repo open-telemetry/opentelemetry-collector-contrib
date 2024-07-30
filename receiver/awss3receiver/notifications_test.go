@@ -142,7 +142,7 @@ func Test_opampNotifier_SendStatus(t *testing.T) {
 	registry := mockCustomCapabilityRegistry{}
 	notifier := &opampNotifier{handler: &registry}
 	ingestTime := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
-	toSend := StatusNotification{
+	toSend := statusNotification{
 		TelemetryType: "telemetry",
 		IngestStatus:  IngestStatusIngesting,
 		IngestTime:    ingestTime,
@@ -192,7 +192,7 @@ func Test_opampNotifier_SendStatus_MessagePending(t *testing.T) {
 		pendingChannel:      make(chan struct{}),
 	}
 	notifier := &opampNotifier{handler: &registry}
-	toSend := StatusNotification{
+	toSend := statusNotification{
 		TelemetryType: "telemetry",
 		IngestStatus:  IngestStatusIngesting,
 		IngestTime:    time.Time{},

@@ -67,7 +67,7 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 	}
 
 	for currentTime := s3Reader.startTime; currentTime.Before(s3Reader.endTime); currentTime = currentTime.Add(timeStep) {
-		s3Reader.sendStatus(ctx, StatusNotification{
+		s3Reader.sendStatus(ctx, statusNotification{
 			TelemetryType: telemetryType,
 			IngestStatus:  IngestStatusIngesting,
 			StartTime:     s3Reader.startTime,
@@ -77,7 +77,7 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 
 		select {
 		case <-ctx.Done():
-			s3Reader.sendStatus(ctx, StatusNotification{
+			s3Reader.sendStatus(ctx, statusNotification{
 				TelemetryType: telemetryType,
 				IngestStatus:  IngestStatusCompleted,
 				StartTime:     s3Reader.startTime,
@@ -87,7 +87,7 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 			return nil
 		default:
 			if err := s3Reader.readTelemetryForTime(ctx, currentTime, telemetryType, dataCallback); err != nil {
-				s3Reader.sendStatus(ctx, StatusNotification{
+				s3Reader.sendStatus(ctx, statusNotification{
 					TelemetryType:  telemetryType,
 					IngestStatus:   IngestStatusFailed,
 					StartTime:      s3Reader.startTime,
@@ -99,7 +99,7 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 			}
 		}
 	}
-	s3Reader.sendStatus(ctx, StatusNotification{
+	s3Reader.sendStatus(ctx, statusNotification{
 		TelemetryType: telemetryType,
 		IngestStatus:  IngestStatusCompleted,
 		StartTime:     s3Reader.startTime,
@@ -167,7 +167,7 @@ func (s3Reader *s3Reader) retrieveObject(ctx context.Context, key string) ([]byt
 	return contents, nil
 }
 
-func (s3Reader *s3Reader) sendStatus(ctx context.Context, status StatusNotification) {
+func (s3Reader *s3Reader) sendStatus(ctx context.Context, status statusNotification) {
 	if s3Reader.notifier != nil {
 		s3Reader.notifier.SendStatus(ctx, status)
 	}

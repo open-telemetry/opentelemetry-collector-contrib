@@ -312,7 +312,7 @@ func Test_readTelemetryForTime_NextPageError(t *testing.T) {
 }
 
 type mockNotifier struct {
-	messages []StatusNotification
+	messages []statusNotification
 }
 
 func (m *mockNotifier) Start(_ context.Context, _ component.Host) error {
@@ -321,7 +321,7 @@ func (m *mockNotifier) Start(_ context.Context, _ component.Host) error {
 func (m *mockNotifier) Shutdown(_ context.Context) error {
 	return nil
 }
-func (m *mockNotifier) SendStatus(_ context.Context, notification StatusNotification) {
+func (m *mockNotifier) SendStatus(_ context.Context, notification statusNotification) {
 	m.messages = append(m.messages, notification)
 }
 
@@ -417,7 +417,7 @@ func Test_readAll_StatusMessages(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, dataCallbackKeys, "year=2021/month=02/day=01/hour=17/minute=32/traces_1")
 	require.Contains(t, dataCallbackKeys, "year=2021/month=02/day=01/hour=17/minute=33/traces_1")
-	require.Equal(t, []StatusNotification{
+	require.Equal(t, []statusNotification{
 		{
 			TelemetryType: "traces",
 			IngestStatus:  IngestStatusIngesting,
@@ -485,7 +485,7 @@ func Test_readAll_ContextDone(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, dataCallbackKeys, 0)
-	require.Equal(t, []StatusNotification{
+	require.Equal(t, []statusNotification{
 		{
 			TelemetryType: "traces",
 			IngestStatus:  IngestStatusIngesting,
