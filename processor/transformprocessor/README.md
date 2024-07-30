@@ -418,11 +418,13 @@ To aggregate only using a specified set of attributes, you can use `keep_matchin
 
 ### aggregate_on_attribute_value
 
-`aggregate_on_attribute_value(function, label, valueSet, newValue)`
+`aggregate_on_attribute_value(function, attribute, values, newValue)`
 
-The `aggregate_on_attribute_value` function aggreates all metrics having the label `label` set with one of the values present in `valueSet` using the aggregation function specified in `function`. Additionally it substitutes the values of `label` present in `valueSet` with a new value specified by `newValue`.
+The `aggregate_on_attribute_value` function aggreates all datapoints in the metric containing the attribute `attribute` with one of the values present in the `values` parameter using the aggregation function specified in `function` parameter. Additionally it substitutes the values of the specified `attribute` with a new value in `newValue` parameter.
 
-The function supports the following data types:
+The `aggregate_on_attribute_value` function fetches all datapoints in the metric, which have the attribute `attribute` present with one of the values speficied in `values` and substitues these values with `newValue`. Afterwards all datapoints are aggregated depending on the attributes.
+
+The following metric types can be aggregated:
 
 - sum
 - gauge
@@ -443,6 +445,20 @@ Supported aggregation functions are:
 Examples:
 
 - `aggregate_on_attribute_value(sum, attr1, [val1, val2], new_val) where name == "system.memory.usage`
+
+The `aggregate_on_attributes` function can also be used in conjunction with 
+[keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
+[delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
+
+For example, to remove attribute keys matching a regex and aggregate the metrics on the remaining attributes, you can perform the following statement sequence:
+
+```yaml
+statements:
+   - delete_matching_keys(attributes, "(?i).*myRegex.*") where name == "system.memory.usage"
+   - aggregate_on_attribute_value(sum, attr1, [val1, val2], new_val) where name == "system.memory.usage"
+```
+
+To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
 
 ## Examples
 

@@ -16,10 +16,10 @@ import (
 )
 
 type aggregateOnAttributeValueArguments struct {
-	Type      string
-	Attribute string
-	Values    []string
-	NewValue  string
+	AggregationFunction string
+	Attribute           string
+	Values              []string
+	NewValue            string
 }
 
 func newAggregateOnAttributeValueFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -33,9 +33,9 @@ func createAggregateOnAttributeValueFunction(_ ottl.FunctionContext, oArgs ottl.
 		return nil, fmt.Errorf("AggregateOnAttributeValueFactory args must be of type *AggregateOnAttributeValueArguments")
 	}
 
-	t, err := aggregateutil.ConvertToAggregationFunction(args.Type)
+	t, err := aggregateutil.ConvertToAggregationFunction(args.AggregationFunction)
 	if err != nil {
-		return nil, fmt.Errorf("aggregation function invalid: %s", err.Error())
+		return nil, fmt.Errorf("invalid aggregation function: '%s', valid options: %s", err.Error(), aggregateutil.GetSupportedAggregationFunctionsList())
 	}
 
 	return AggregateOnAttributeValue(t, args.Attribute, args.Values, args.NewValue)
