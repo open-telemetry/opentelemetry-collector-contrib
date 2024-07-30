@@ -72,6 +72,30 @@ func Test_aggregateOnAttributeValues(t *testing.T) {
 			},
 		},
 		{
+			name:  "non-matching attribute",
+			input: getTestSumMetricMultipleAggregateOnAttributeValueAdditionalAttribute(),
+			t:     aggregateutil.Sum,
+			values: []string{
+				"test1",
+			},
+			attribute: "testyy",
+			newValue:  "test_new",
+			want: func(metrics pmetric.MetricSlice) {
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.SetName("sum_metric")
+
+				input := sumMetric.Sum().DataPoints().AppendEmpty()
+				input.SetDoubleValue(100)
+				input.Attributes().PutStr("test", "test1")
+
+				input2 := sumMetric.Sum().DataPoints().AppendEmpty()
+				input2.SetDoubleValue(50)
+				input2.Attributes().PutStr("test", "test2")
+				input2.Attributes().PutStr("test3", "test3")
+			},
+		},
+		{
 			name:  "sum sum",
 			input: getTestSumMetricMultipleAggregateOnAttributeValue(),
 			t:     aggregateutil.Sum,
@@ -425,6 +449,23 @@ func getTestSumMetricMultipleAggregateOnAttributeValue() pmetric.Metric {
 	input2 := metricInput.Sum().DataPoints().AppendEmpty()
 	input2.SetDoubleValue(50)
 	input2.Attributes().PutStr("test", "test2")
+
+	return metricInput
+}
+
+func getTestSumMetricMultipleAggregateOnAttributeValueAdditionalAttribute() pmetric.Metric {
+	metricInput := pmetric.NewMetric()
+	metricInput.SetEmptySum()
+	metricInput.SetName("sum_metric")
+
+	input := metricInput.Sum().DataPoints().AppendEmpty()
+	input.SetDoubleValue(100)
+	input.Attributes().PutStr("test", "test1")
+
+	input2 := metricInput.Sum().DataPoints().AppendEmpty()
+	input2.SetDoubleValue(50)
+	input2.Attributes().PutStr("test", "test2")
+	input2.Attributes().PutStr("test3", "test3")
 
 	return metricInput
 }
