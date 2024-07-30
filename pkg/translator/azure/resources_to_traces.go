@@ -5,7 +5,6 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"bytes"
-
 	"encoding/hex"
 	"net/url"
 
@@ -45,14 +44,14 @@ type azureTracesRecord struct {
 	ClientType            string             `json:"ClientType"`
 	IKey                  string             `json:"IKey"`
 	OperationName         string             `json:"OperationName"`
-	OperationId           string             `json:"OperationId"`
-	ParentId              string             `json:"ParentId"`
+	OperationID           string             `json:"OperationId"`
+	ParentID              string             `json:"ParentId"`
 	SDKVersion            string             `json:"SDKVersion"`
 	Properties            map[string]string  `json:"Properties"`
 	Measurements          map[string]float64 `json:"Measurements"`
-	SpanId                string             `json:"Id"`
+	SpanID                string             `json:"Id"`
 	Name                  string             `json:"Name"`
-	Url                   string             `json:"Url"`
+	URL                   string             `json:"Url"`
 	Source                string             `json:"Source"`
 	Success               bool               `json:"Success"`
 	ResultCode            string             `json:"ResultCode"`
@@ -103,35 +102,35 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 			continue
 		}
 
-		var trace_id, trace_err = TraceIDFromHex(azureTrace.OperationId)
-		if trace_err != nil {
-			r.Logger.Warn("Invalid TraceID", zap.String("trace_id", azureTrace.OperationId))
+		var traceID, traceErr = TraceIDFromHex(azureTrace.OperationID)
+		if traceErr != nil {
+			r.Logger.Warn("Invalid TraceID", zap.String("traceID", azureTrace.OperationID))
 			return t, err
 		}
-		var span_id, span_err = SpanIDFromHex(azureTrace.SpanId)
-		if span_err != nil {
-			r.Logger.Warn("Invalid SpanID", zap.String("span_id", azureTrace.SpanId))
+		var spanID, spanErr = SpanIDFromHex(azureTrace.SpanID)
+		if spanErr != nil {
+			r.Logger.Warn("Invalid SpanID", zap.String("spanID", azureTrace.SpanID))
 			return t, err
 		}
-		var parent_id, parent_err = SpanIDFromHex(azureTrace.ParentId)
-		if parent_err != nil {
-			r.Logger.Warn("Invalid ParentID", zap.String("parent_id", azureTrace.ParentId))
+		var parentID, parentErr = SpanIDFromHex(azureTrace.ParentID)
+		if parentErr != nil {
+			r.Logger.Warn("Invalid ParentID", zap.String("parentID", azureTrace.ParentID))
 			return t, err
 		}
 
 		span := spans.AppendEmpty()
-		span.SetTraceID(trace_id)
-		span.SetSpanID(span_id)
-		span.SetParentSpanID(parent_id)
+		span.SetTraceID(traceID)
+		span.SetSpanID(spanID)
+		span.SetParentSpanID(parentID)
 
 		span.Attributes().PutStr("OperationName", azureTrace.OperationName)
 		span.Attributes().PutStr("AppRoleName", azureTrace.AppRoleName)
 		span.Attributes().PutStr("AppRoleInstance", azureTrace.AppRoleInstance)
 		span.Attributes().PutStr("Type", azureTrace.Type)
 
-		span.Attributes().PutStr("http.url", azureTrace.Url)
+		span.Attributes().PutStr("http.url", azureTrace.URL)
 
-		urlObj, _ := url.Parse(azureTrace.Url)
+		urlObj, _ := url.Parse(azureTrace.URL)
 		hostname := urlObj.Host
 		hostpath := urlObj.Path
 		scheme := urlObj.Scheme
