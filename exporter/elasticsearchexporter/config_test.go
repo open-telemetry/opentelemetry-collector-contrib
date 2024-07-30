@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -107,6 +108,15 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
+				},
 			},
 		},
 		{
@@ -167,6 +177,15 @@ func TestConfig(t *testing.T) {
 					Enabled:         false,
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
+				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
 				},
 			},
 		},
@@ -229,6 +248,15 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
+				},
 			},
 		},
 		{
@@ -261,6 +289,16 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "batcher_disabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				enabled := false
+				cfg.Batcher.Enabled = &enabled
 			}),
 		},
 	}
