@@ -7,6 +7,78 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.106.0
+
+### 🛑 Breaking changes 🛑
+
+- `vcenterreceiver`: Enables various vCenter metrics that were disabled by default until v0.106.0 (#33607)
+  The following metrics will be enabled by default "vcenter.datacenter.cluster.count", "vcenter.datacenter.vm.count", "vcenter.datacenter.datastore.count",
+  "vcenter.datacenter.host.count", "vcenter.datacenter.disk.space", "vcenter.datacenter.cpu.limit", "vcenter.datacenter.memory.limit",
+  "vcenter.resource_pool.memory.swapped", "vcenter.resource_pool.memory.ballooned", and "vcenter.resource_pool.memory.granted". The 
+  "resourcePoolMemoryUsageAttribute" has also been bumped up to release v.0.107.0
+  
+- `googlemanagedprometheusexporter`: Fix typo in `exporter.googlemanagedpromethues.intToDouble` feature gate (#34232)
+
+### 🚩 Deprecations 🚩
+
+- `k8sattributesprocessor`: Deprecate `extract.annotations.regex` and `extract.labels.regex` config fields in favor of the `ExtractPatterns` function in the transform processor. The `FieldExtractConfig.Regex` parameter will be removed in version v0.111.0. (#25128)
+  Deprecating of FieldExtractConfig.Regex parameter means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the `FieldExtractConfig.Regex` parameter.
+
+### 🚀 New components 🚀
+
+- `otlpjsonconnector`: New component that will allow extracting otlpjson data from incoming Logs. (#34239, #34208)
+- `redis_storage`: Adds a new storage extension using Redis to store data in transit (#31682)
+
+### 💡 Enhancements 💡
+
+- `processor/transform`: Add `scale_metric` function that scales all data points in a metric. (#16214)
+- `vcenterreceiver`: Adds vCenter vSAN host metrics. (#33556)
+  Introduces the following vSAN host metrics to the vCenter receiver:
+    - vcenter.host.vsan.throughput
+    - vcenter.host.vsan.iops
+    - vcenter.host.vsan.congestions
+    - vcenter.host.vsan.cache.hit_rate
+    - vcenter.host.vsan.latency.avg
+  
+- `transformprocessor`: Support aggregating metrics based on their attributes. (#16224)
+- `metricstransformprocessor`: Adds the 'median' aggregation type to the Metrics Transform Processor. Also uses the refactored aggregation business logic from internal/core package. (#16224)
+- `telemetrygen`: uses the go logging SDK instead of pdata (#18902)
+- `elasticsearchexporter`: Add explicit bounds histogram support to metrics (#34045)
+- `hostmetricsreceiver`: allow configuring log pipeline to send host EntityState event (#33927)
+- `elasticsearchexporter`: Introduce an experimental OTel native mapping mode for logs (#33290)
+- `extension/healthcheckv2`: Add extension/subcomponent management logic. (#26661)
+- `otlpjsonconnector`: Add connector's implementations (#34249, #34208)
+- `windowsperfcountersreceiver`: Improve handling of non-existing instances for Windows Performance Counters (#33815)
+  It is an expected that when querying Windows Performance Counters the targeted instances may not be present.
+  The receiver will no longer require the use of `recreate_query` to handle non-existing instances.
+  As soon as the instances are available, the receiver will start collecting metrics for them.
+  There won't be warning log messages when there are no matches for the configured instances.
+  
+- `kafkareceiver`: Add settings session_timeout and heartbeat_interval to Kafka Receiver for group management facilities (#28630)
+- `otelarrowreceiver, otelarrowexporter`: OTel-Arrow internal packages moved into this repository. (#33567)
+  New integration testing between otelarrowexporter and otelarrowreceiver.
+- `otlpjsonconnector`: Move connector's stability to alpha. (#34208, #34253)
+- `pkg/ottl`: Adds an `Format` function to OTTL that calls `fmt.Sprintf` (#33405)
+- `vcenterreceiver`: Adds a number of default disabled vSAN metrics for Clusters. (#33556)
+- `vcenterreceiver`: Adds a number of default disabled vSAN metrics for Virtual Machines. (#33556)
+
+### 🧰 Bug fixes 🧰
+
+- `clickhouseexporter`: Increase the default number of queue consumers to 10 (#34176)
+- `opencensusreceiver`: Do not report an error into resource status during receiver shutdown when the listener connection was closed. (#33865)
+- `datadogconnector`: Produce stats for non-root client and producer spans when `connector.datadogconnector.NativeIngest` and `compute_top_level_by_span_kind` are enabled (#34197)
+  You should have only run into this bug when ALL the conditions below are met | 1. feature gate `connector.datadogconnector.NativeIngest` is enabled | 2. config `compute_top_level_by_span_kind` is set to true | 3. config `compute_stats_by_span_kind` is unset or set to false | 4. you have child spans with client or producer span kind
+- `datadogconnector`: Respect `_dd.measured` when `connector.datadogconnector.NativeIngest` is enabled (#34197)
+  Spans with attribute `_dd.measured` set to 1 will always get Datadog APM stats
+- `deltatocumulativeprocessor`: fix bucket counts when downscaling exp histograms with odd offsets (#33831)
+- `otelarrowreceiver`: Fix potential goroutine leak when in stream-shutdown. (#34236)
+- `otelarrowreceiver`: Eliminate one spurious span error. (#34175)
+- `pkg/ottl`: Handle JSON array provided to ParseJSON function (#33535)
+- `exporter/datadog`: Fixes a bug where `otelcol_exporter_sent_log_records` was reporting double as many logs sent when using the logs agent feature gate. (#33887)
+- `statsdeceiver`: Log only non-EOF errors when reading payload received via TCP. (#33951)
+- `vcenterreceiver`: Adds destroys to the ContainerViews in the client. (#34254)
+  This may not be necessary, but it should be better practice than not.
+
 ## v0.105.0
 
 ### 🛑 Breaking changes 🛑

@@ -43,6 +43,7 @@ defined in the OpenTelemetry Semantic Conventions.
 | `aws.request_id` | AWS-generated unique identifier for the request.                       | No        |
 | `aws.queue_url`  | For operations on an Amazon SQS queue, the queue's URL.                | No        |
 | `aws.table_name` | For operations on a DynamoDB table, the name of the table.             | No        |
+| `aws.xray.annotations` | The attribute is a slice(list) attribute that contains each of the string keys. If found on the span, the `awsxrayexporter` will use them in addition to the `indexed_attributes` configuration field when categorizing which attributes to index. This can be configured with `"aws.xray.annotations"=["key1", "key2"]` (Java example: `span.setAttribute(stringArrayKey("aws.xray.annotations"), List.of("key1", "key2"))`)             | No        |
 
 Any of these values supplied are used to populate the `aws` object in addition to any relevant data supplied
 by the Span Resource object. X-Ray uses this data to generate inferred segments for the remote APIs.
