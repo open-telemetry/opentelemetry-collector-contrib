@@ -7,11 +7,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"golang.org/x/text/encoding/ianaindex"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type DecodeArguments[K any] struct {
@@ -68,7 +67,7 @@ func Decode[K any](target ottl.Getter[K], encoding string) (ottl.ExprFunc[K], er
 			}
 			return string(decodedBytes), nil
 		default:
-			e, err := decode.LookupEncoding(encoding)
+			e, err := ianaindex.IANA.Encoding(encoding)
 			if err != nil {
 				return nil, fmt.Errorf("could not get encoding for %s: %w", encoding, err)
 			}
@@ -78,13 +77,11 @@ func Decode[K any](target ottl.Getter[K], encoding string) (ottl.ExprFunc[K], er
 				return nil, fmt.Errorf("no decoder available for encoding: %s", encoding)
 			}
 
-			decoder := decode.New(e)
-
-			decodedBytes, err := decoder.Decode([]byte(stringValue))
+			decodedString, err := e.NewDecoder().String(stringValue)
 			if err != nil {
 				return nil, fmt.Errorf("could not decode: %w", err)
 			}
-			return string(decodedBytes), nil
+			return decodedString, nil
 		}
 	}, nil
 }
