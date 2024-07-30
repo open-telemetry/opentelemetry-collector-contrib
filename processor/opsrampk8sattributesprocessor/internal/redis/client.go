@@ -3,8 +3,13 @@ package redis
 import (
 	"context"
 
+	lru "github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sattributesprocessor/internal/lru"
 	goredis "github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+)
+
+const (
+	CACHE_SIZE = 16
 )
 
 type Client struct {
@@ -70,25 +75,36 @@ func (c *Client) TestConnection(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) GetValueInString(ctx context.Context, key string) (value string) {
-
+func (c *Client) GetValueInString(ctx context.Context, key string) string {
 	logger := c.logger
 
-	if c.Enabled {
-		if c.Connected {
-			val, err := c.GoClient.Get(ctx, key).Result()
-			if err == goredis.Nil {
-				logger.Debug("key does not exist", zap.Any("key", key))
-			} else if err != nil {
+	// Try to init the cache if it is firt time
+	cache, err := lru.GetInstance(CACHE_SIZE)
+	if err != nil {
+		logger.Debug("Failed to initilize the cache for ", zap.Any("size", CACHE_SIZE), zap.Any(" error found was ", err))
+		//TODO: Need to check whether I shuould return from here or not
+	}
+	value, ok := cache.Get(key)
+	if !ok {
+		logger.Debug("Failed to fetch the key from the cache ", zap.Any("value : ", key))
+		if c.Enabled {
+			if c.Connected {
+				val, err := c.GoClient.Get(ctx, key).Result()
+				if err == goredis.Nil {
+					logger.Debug("key does not exist", zap.Any("key", key))
+				} else if err != nil {
+					logger.Info("Trying to reconnect")
+					c.Init()
+				} else {
+					value = val
+				}
+			} else {
 				logger.Info("Trying to reconnect")
 				c.Init()
-			} else {
-				value = val
 			}
-		} else {
-			logger.Info("Trying to reconnect")
-			c.Init()
 		}
+		//Before returning ; it should update the cache
+		cache.Add(key, value)
 	}
-	return
+	return value
 }
