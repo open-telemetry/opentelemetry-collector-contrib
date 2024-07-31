@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/klauspost/compress v1.17.9
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.106.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.1
 	go.opentelemetry.io/collector/config/configauth v0.106.1
