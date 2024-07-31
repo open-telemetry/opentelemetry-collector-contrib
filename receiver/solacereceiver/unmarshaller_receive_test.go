@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
@@ -918,8 +919,9 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 }
 
 func newTestReceiveV1Unmarshaller(t *testing.T) (*brokerTraceReceiveUnmarshallerV1, componentTestTelemetry) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tt := setupTestTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
 	require.NoError(t, err)
-	return &brokerTraceReceiveUnmarshallerV1{zap.NewNop(), telemetryBuilder}, tel
+	metricAttr := attribute.NewSet(attribute.String("broker_component_name", tt.NewSettings().ID.Name()))
+	return &brokerTraceReceiveUnmarshallerV1{zap.NewNop(), telemetryBuilder, metricAttr}, tt
 }

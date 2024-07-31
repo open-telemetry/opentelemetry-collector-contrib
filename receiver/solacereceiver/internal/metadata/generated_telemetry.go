@@ -3,7 +3,7 @@
 package metadata
 
 import (
-	"errors"
+    "errors"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
@@ -21,7 +21,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol/solacereceiver")
 }
 
-// TelemetryBuilder provides an interface for components to report telemetry
+// TelemetryBuilder provides an interface for components to report telemetry 
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                                                      metric.Meter
@@ -54,7 +54,7 @@ func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
+    builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
 	for _, op := range options {
 		op(&builder)
 	}
