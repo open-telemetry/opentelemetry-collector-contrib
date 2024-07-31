@@ -253,7 +253,7 @@ require (
 	cloud.google.com/go/longrunning v0.5.9 // indirect
 	cloud.google.com/go/monitoring v1.20.2 // indirect
 	cloud.google.com/go/pubsub v1.40.0 // indirect
-	cloud.google.com/go/spanner v1.64.0 // indirect
+	cloud.google.com/go/spanner v1.65.0 // indirect
 	cloud.google.com/go/trace v1.10.10 // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
