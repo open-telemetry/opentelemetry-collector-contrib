@@ -29,6 +29,18 @@ func HandleHTTPCode(resp *http.Response) error {
 		resp.StatusCode,
 		http.StatusText(resp.StatusCode))
 
+	// Check if there is any error text returned by Splunk that we can append to error message
+	var jsonResponse map[string]any
+	bodyString, _ := io.ReadAll(resp.Body)
+	e := json.Unmarshal(bodyString, &jsonResponse)
+	
+	if e == nil {
+		errorValue, ok := jsonResponse["text"]
+		if ok {
+			err = multierr.Append(err, fmt.Errorf("Reason: %q", errorValue))
+		}
+	}
+	
 	switch resp.StatusCode {
 	// Check for responses that may include "Retry-After" header.
 	case http.StatusTooManyRequests, http.StatusServiceUnavailable:
