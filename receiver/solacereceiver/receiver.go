@@ -82,8 +82,12 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 	}
 
 	// solaceBrokerAttrs - including the component name of the connected Solace broker
+	componentName := set.ID.Name()
+	if componentName == "" {
+		componentName = "solace"
+	}
 	solaceBrokerAttrs := attribute.NewSet(
-		attribute.String(brokerComponenteNameAttr, set.ID.Name()),
+		attribute.String(brokerComponenteNameAttr, componentName),
 	)
 
 	unmarshaller := newTracesUnmarshaller(set.Logger, telemetryBuilder, solaceBrokerAttrs)
