@@ -154,6 +154,7 @@ func (vc *vcenterClient) ComputeResources(ctx context.Context, containerMoRef vt
 		"datastore",
 		"host",
 		"summary",
+		"configurationEx",
 	}, &computes)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve ComputeResources (& ClusterComputeResources): %w", err)
@@ -177,6 +178,7 @@ func (vc *vcenterClient) HostSystems(ctx context.Context, containerMoRef vt.Mana
 		"summary.hardware.memorySize",
 		"summary.hardware.numCpuCores",
 		"summary.hardware.cpuMhz",
+		"config.vsanHostConfig.clusterInfo.nodeUuid",
 		"summary.quickStats.overallMemoryUsage",
 		"summary.quickStats.overallCpuUsage",
 		"summary.overallStatus",
@@ -366,12 +368,24 @@ type VSANMetricDetails struct {
 type vSANQueryType string
 
 const (
+	VSANQueryTypeClusters        vSANQueryType = "cluster-domclient:*"
+	VSANQueryTypeHosts           vSANQueryType = "host-domclient:*"
 	VSANQueryTypeVirtualMachines vSANQueryType = "virtual-machine:*"
 )
 
 // getLabelsForQueryType returns the appropriate labels for each query type
 func (vc *vcenterClient) getLabelsForQueryType(queryType vSANQueryType) []string {
 	switch queryType {
+	case VSANQueryTypeClusters:
+		return []string{
+			"iopsRead", "iopsWrite", "throughputRead", "throughputWrite",
+			"latencyAvgRead", "latencyAvgWrite", "congestion",
+		}
+	case VSANQueryTypeHosts:
+		return []string{
+			"iopsRead", "iopsWrite", "throughputRead", "throughputWrite",
+			"latencyAvgRead", "latencyAvgWrite", "congestion", "clientCacheHitRate",
+		}
 	case VSANQueryTypeVirtualMachines:
 		return []string{
 			"iopsRead", "iopsWrite", "throughputRead", "throughputWrite",
@@ -382,7 +396,27 @@ func (vc *vcenterClient) getLabelsForQueryType(queryType vSANQueryType) []string
 	}
 }
 
-// VSANVirtualMachines returns back virtual machine vSAN performance metrics
+// VSANClusters returns back cluster vSAN performance metrics
+func (vc *vcenterClient) VSANClusters(
+	ctx context.Context,
+	clusterRefs []*vt.ManagedObjectReference,
+) (*VSANQueryResults, error) {
+	results, err := vc.vSANQuery(ctx, VSANQueryTypeClusters, clusterRefs)
+	err = vc.handleVSANError(err, VSANQueryTypeClusters)
+	return results, err
+}
+
+// VSANHosts returns host VSAN performance metrics for a group of clusters
+func (vc *vcenterClient) VSANHosts(
+	ctx context.Context,
+	clusterRefs []*vt.ManagedObjectReference,
+) (*VSANQueryResults, error) {
+	results, err := vc.vSANQuery(ctx, VSANQueryTypeHosts, clusterRefs)
+	err = vc.handleVSANError(err, VSANQueryTypeHosts)
+	return results, err
+}
+
+// VSANVirtualMachines returns virtual machine vSAN performance metrics for a group of clusters
 func (vc *vcenterClient) VSANVirtualMachines(
 	ctx context.Context,
 	clusterRefs []*vt.ManagedObjectReference,

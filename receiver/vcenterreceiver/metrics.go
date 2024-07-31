@@ -147,6 +147,34 @@ func (v *vcenterMetricScraper) recordClusterStats(
 	v.mb.RecordVcenterClusterHostCountDataPoint(ts, int64(s.NumEffectiveHosts), true)
 }
 
+// recordClusterVSANMetrics records vSAN metrics for a vSphere Cluster
+func (v *vcenterMetricScraper) recordClusterVSANMetrics(vSANMetrics *VSANMetricResults) {
+	for _, metric := range vSANMetrics.MetricDetails {
+		for i, value := range metric.Values {
+			timestamp := metric.Timestamps[i]
+			switch metric.MetricLabel {
+			case "iopsRead":
+				v.mb.RecordVcenterClusterVsanOperationsDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanOperationTypeRead)
+			case "iopsWrite":
+				v.mb.RecordVcenterClusterVsanOperationsDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanOperationTypeWrite)
+			case "throughputRead":
+				readRate := float64(value) / float64(metric.Interval)
+				v.mb.RecordVcenterClusterVsanThroughputDataPoint(pcommon.NewTimestampFromTime(*timestamp), readRate, metadata.AttributeVsanThroughputDirectionRead)
+			case "throughputWrite":
+				writeRate := float64(value) / float64(metric.Interval)
+				v.mb.RecordVcenterClusterVsanThroughputDataPoint(pcommon.NewTimestampFromTime(*timestamp), writeRate, metadata.AttributeVsanThroughputDirectionWrite)
+			case "latencyAvgRead":
+				v.mb.RecordVcenterClusterVsanLatencyAvgDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanLatencyTypeRead)
+			case "latencyAvgWrite":
+				v.mb.RecordVcenterClusterVsanLatencyAvgDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanLatencyTypeWrite)
+			case "congestion":
+				rate := float64(value) / float64(metric.Interval)
+				v.mb.RecordVcenterClusterVsanCongestionsDataPoint(pcommon.NewTimestampFromTime(*timestamp), rate)
+			}
+		}
+	}
+}
+
 // recordResourcePoolStats records stat metrics for a vSphere Resource Pool
 func (v *vcenterMetricScraper) recordResourcePoolStats(
 	ts pcommon.Timestamp,
@@ -193,6 +221,36 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 	v.mb.RecordVcenterHostCPUCapacityDataPoint(ts, int64(cpuCapacity))
 	cpuUtilization := 100 * float64(z.OverallCpuUsage) / cpuCapacity
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(ts, cpuUtilization)
+}
+
+// recordHostVSANMetrics records vSAN metrics for a vSphere host
+func (v *vcenterMetricScraper) recordHostVSANMetrics(vSANMetrics *VSANMetricResults) {
+	for _, metric := range vSANMetrics.MetricDetails {
+		for i, value := range metric.Values {
+			timestamp := metric.Timestamps[i]
+			switch metric.MetricLabel {
+			case "iopsRead":
+				v.mb.RecordVcenterHostVsanOperationsDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanOperationTypeRead)
+			case "iopsWrite":
+				v.mb.RecordVcenterHostVsanOperationsDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanOperationTypeWrite)
+			case "throughputRead":
+				readRate := float64(value) / float64(metric.Interval)
+				v.mb.RecordVcenterHostVsanThroughputDataPoint(pcommon.NewTimestampFromTime(*timestamp), readRate, metadata.AttributeVsanThroughputDirectionRead)
+			case "throughputWrite":
+				writeRate := float64(value) / float64(metric.Interval)
+				v.mb.RecordVcenterHostVsanThroughputDataPoint(pcommon.NewTimestampFromTime(*timestamp), writeRate, metadata.AttributeVsanThroughputDirectionWrite)
+			case "latencyAvgRead":
+				v.mb.RecordVcenterHostVsanLatencyAvgDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanLatencyTypeRead)
+			case "latencyAvgWrite":
+				v.mb.RecordVcenterHostVsanLatencyAvgDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanLatencyTypeWrite)
+			case "congestion":
+				congestionRate := float64(value) / float64(metric.Interval)
+				v.mb.RecordVcenterHostVsanCongestionsDataPoint(pcommon.NewTimestampFromTime(*timestamp), congestionRate)
+			case "clientCacheHitRate":
+				v.mb.RecordVcenterHostVsanCacheHitRateDataPoint(pcommon.NewTimestampFromTime(*timestamp), value)
+			}
+		}
+	}
 }
 
 // recordVMStats records stat metrics for a vSphere Virtual Machine
