@@ -165,7 +165,7 @@ func (s *mockClusterAdmin) DescribeConfig(cr sarama.ConfigResource) ([]sarama.Co
 		return s.brokerConfigs, nil
 	}
 	if s.topics[topicName].ConfigEntries == nil {
-		return nil, fmt.Errorf("no config entries found for topic")
+		return nil, fmt.Errorf("no config Entries found for topic")
 	}
 	configEntry := make([]sarama.ConfigEntry, 1)
 	for name, entry := range s.topics[topicName].ConfigEntries {
@@ -188,7 +188,7 @@ func newMockClusterAdmin() *mockClusterAdmin {
 	strLogRetentionBytes := strconv.Itoa(testLogRetentionBytes)
 
 	brokerConfigEntry := sarama.ConfigEntry{
-		Name:  "log.retention.ms",
+		Name:  "log.retention.hours",
 		Value: strconv.Itoa(testLogRetentionHours),
 	}
 	configEntries := make([]sarama.ConfigEntry, 1)
