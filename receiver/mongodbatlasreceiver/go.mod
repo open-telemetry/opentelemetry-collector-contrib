@@ -12,17 +12,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.106.0
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/atlas v0.36.0
-	go.opentelemetry.io/collector/component v0.106.0
+	go.opentelemetry.io/collector/component v0.106.1
 	go.opentelemetry.io/collector/config/configopaque v1.12.0
 	go.opentelemetry.io/collector/config/configretry v1.12.0
 	go.opentelemetry.io/collector/config/configtls v1.12.0
-	go.opentelemetry.io/collector/confmap v0.106.0
-	go.opentelemetry.io/collector/consumer v0.106.0
-	go.opentelemetry.io/collector/extension v0.106.0
-	go.opentelemetry.io/collector/filter v0.106.0
+	go.opentelemetry.io/collector/confmap v0.106.1
+	go.opentelemetry.io/collector/consumer v0.106.1
+	go.opentelemetry.io/collector/extension v0.106.1
+	go.opentelemetry.io/collector/filter v0.106.1
 	go.opentelemetry.io/collector/pdata v1.12.0
-	go.opentelemetry.io/collector/receiver v0.106.0
-	go.opentelemetry.io/collector/semconv v0.106.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.106.1
+	go.opentelemetry.io/collector/semconv v0.106.1 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/goleak v1.3.0
@@ -30,7 +30,7 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
-require go.opentelemetry.io/collector/consumer/consumertest v0.106.0
+require go.opentelemetry.io/collector/consumer/consumertest v0.106.1
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -66,12 +66,12 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	go.opentelemetry.io/collector v0.106.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.106.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.0 // indirect
+	go.opentelemetry.io/collector v0.106.1 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.106.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.106.0 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.106.1 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
