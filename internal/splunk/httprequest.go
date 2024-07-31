@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 	"io"
-    "encoding/json"
+	"encoding/json"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
