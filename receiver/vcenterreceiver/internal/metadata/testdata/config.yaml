@@ -15,6 +15,14 @@ all_set:
       enabled: true
     vcenter.cluster.vm_template.count:
       enabled: true
+    vcenter.cluster.vsan.congestions:
+      enabled: true
+    vcenter.cluster.vsan.latency.avg:
+      enabled: true
+    vcenter.cluster.vsan.operations:
+      enabled: true
+    vcenter.cluster.vsan.throughput:
+      enabled: true
     vcenter.datacenter.cluster.count:
       enabled: true
     vcenter.datacenter.cpu.limit:
@@ -165,6 +173,14 @@ none_set:
     vcenter.cluster.vm.count:
       enabled: false
     vcenter.cluster.vm_template.count:
+      enabled: false
+    vcenter.cluster.vsan.congestions:
+      enabled: false
+    vcenter.cluster.vsan.latency.avg:
+      enabled: false
+    vcenter.cluster.vsan.operations:
+      enabled: false
+    vcenter.cluster.vsan.throughput:
       enabled: false
     vcenter.datacenter.cluster.count:
       enabled: false
