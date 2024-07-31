@@ -27,7 +27,7 @@ func ParseStrptime(layout string, value any, location *time.Location) (time.Time
 
 // ParseLocalizedStrptime is like ParseStrptime, but instead of parsing a formatted time in
 // English, it parses a value in foreign language, and returns the [time.Time] it represents.
-// The language argument must be a well-formed BCP 47 language tag, e.g ("en", "en-US") and
+// The language argument must be a well-formed BCP 47 language tag (e.g.: "en", "en-US"), and
 // a known CLDR locale.
 func ParseLocalizedStrptime(layout string, value any, location *time.Location, language string) (time.Time, error) {
 	goLayout, err := strptime.ToNative(layout)
