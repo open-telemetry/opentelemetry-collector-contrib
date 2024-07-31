@@ -134,7 +134,7 @@ func getRoutingKeyOrDefault(config *Config, fallback string) string {
 
 func newPublisherFactory(set exporter.Settings) publisherFactory {
 	return func(dialConfig publisher.DialConfig) (publisher.Publisher, error) {
-		return publisher.NewConnection(set.Logger, rabbitmq.NewAmqpClient(), dialConfig)
+		return publisher.NewConnection(set.Logger, rabbitmq.NewAmqpClient(set.Logger), dialConfig)
 	}
 }
 
