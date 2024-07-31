@@ -7,7 +7,7 @@
 | ------------- |-----------|
 | Stability     | [development]: traces, metrics, logs   |
 | Distributions | [contrib] |
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fawss3%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fawss3) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fawss3%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fawss3) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fazureblob%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fazureblob) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fazureblob%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fazureblob) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hgaol](https://www.github.com/hgaol) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
@@ -18,7 +18,7 @@
 
 The following settings are required:
 
-- url (no default): Azure storage account endpoint. e.g. https://<account-name>.blob.core.windows.net/
+- url: Must be specified if auth type is not connection_string. If auth type is connection_string, it's optional or will be override by the auth.connection_string. Azure storage account endpoint. e.g. https://<account-name>.blob.core.windows.net/
 - auth (no default): Authentication method for exporter to ingest data.
   - type (no default): Authentication type for expoter. supported values are: connection_string, service_principal, system_managed_identity, user_managed_identity and etc.
   - tenand_id: Tenand Id for the client, only needed when type is service_principal.
@@ -33,11 +33,18 @@ The following settings can be optionally configured and have default values:
   - metrics (default `metrics`): container to store metrics. default value is `metrics`.
   - logs (default `logs`): container to store logs. default value is `logs`.
   - traces (default `traces`): container to store traces. default value is `traces`.
-- blob_name: blob name.
-  - metrics (default `metrics`): default is `metrics`.
-  - traces (default is `traces`): default is `traces`.
-  - logs (default is `logs`): default is `logs`.
-- path_format (defaul `/2006/01/02/<blob_name>_15_04_05_<serial_num>.<format_file_extension>`): blob path format. The date format follows constants in Golang, refer [here](https://go.dev/src/time/format.go).
+- blob_name_format:
+  - format (default `{{.Year}}/{{.Month}}/{{.Day}}/{{.BlobName}}_{{.Hour}}_{{.Minute}}_{{.Second}}_{{.SerialNum}}.{{.FileExtension}}`): blob name format.
+  - blob_name: value of `BlobName`.
+    - metrics (default `metrics`): default is `metrics`.
+    - traces (default is `traces`): default is `traces`.
+    - logs (default is `logs`): default is `logs`.
+  - year (default `2006`): The date format follows constants in Golang, refer [here](https://go.dev/src/time/format.go).
+  - month (default `01`): similar as year.
+  - day (default `02`): similar as year.
+  - hour (default `15`): similar as year.
+  - minute (default `04`): similar as year.
+  - second (default `05`): similar as year.
 - format (default `json`): `json` or `proto`. which present otel json or otel protobuf format, the file extension will be `json` or `pb`.
 - encoding (default none): if specified, uses an encoding extension to encode telemetry data. Overrides format.
 
