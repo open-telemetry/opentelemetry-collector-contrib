@@ -126,12 +126,12 @@ func sortSlice(slice pcommon.Slice, order string) (any, error) {
 
 	switch commonType {
 	case pcommon.ValueTypeInt:
-		arr := makeTypedValCopy(slice, func(idx int) int64 {
+		arr := makeConvertedCopy(slice, func(idx int) int64 {
 			return slice.At(idx).Int()
 		})
-		return sortTypedValSlice(arr, order), nil
+		return sortConvertedSlice(arr, order), nil
 	case pcommon.ValueTypeDouble:
-		arr := makeTypedValCopy(slice, func(idx int) float64 {
+		arr := makeConvertedCopy(slice, func(idx int) float64 {
 			s := slice.At(idx)
 			if s.Type() == pcommon.ValueTypeInt {
 				return float64(s.Int())
@@ -139,12 +139,12 @@ func sortSlice(slice pcommon.Slice, order string) (any, error) {
 
 			return s.Double()
 		})
-		return sortTypedValSlice(arr, order), nil
+		return sortConvertedSlice(arr, order), nil
 	case pcommon.ValueTypeStr:
-		arr := makeTypedValCopy(slice, func(idx int) string {
+		arr := makeConvertedCopy(slice, func(idx int) string {
 			return slice.At(idx).AsString()
 		})
-		return sortTypedValSlice(arr, order), nil
+		return sortConvertedSlice(arr, order), nil
 	default:
 		return nil, fmt.Errorf("sort with unsupported type: '%T'", commonType)
 	}
@@ -221,35 +221,35 @@ func sortTypedSlice[T targetType](arr []T, order string) []T {
 	return arr
 }
 
-type typedValue[T targetType] struct {
-	convertedVal T
-	originalVal  any
+type convertedValue[T targetType] struct {
+	value         T
+	originalValue any
 }
 
-func makeTypedValCopy[T targetType](slice pcommon.Slice, converter func(idx int) T) []typedValue[T] {
+func makeConvertedCopy[T targetType](slice pcommon.Slice, converter func(idx int) T) []convertedValue[T] {
 	length := slice.Len()
-	var out []typedValue[T]
+	var out []convertedValue[T]
 	for i := 0; i < length; i++ {
-		val := typedValue[T]{
-			convertedVal: converter(i),
-			originalVal:  slice.At(i).AsRaw(),
+		cv := convertedValue[T]{
+			value:         converter(i),
+			originalValue: slice.At(i).AsRaw(),
 		}
-		out = append(out, val)
+		out = append(out, cv)
 	}
 	return out
 }
 
-func sortTypedValSlice[T targetType](vals []typedValue[T], order string) []any {
-	slices.SortFunc(vals, func(a, b typedValue[T]) int {
+func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) []any {
+	slices.SortFunc(cvs, func(a, b convertedValue[T]) int {
 		if order == sortDesc {
-			return cmp.Compare(b.convertedVal, a.convertedVal)
+			return cmp.Compare(b.value, a.value)
 		}
-		return cmp.Compare(a.convertedVal, b.convertedVal)
+		return cmp.Compare(a.value, b.value)
 	})
 
 	var out []any
-	for _, val := range vals {
-		out = append(out, val.originalVal)
+	for _, cv := range cvs {
+		out = append(out, cv.originalValue)
 	}
 
 	return out
