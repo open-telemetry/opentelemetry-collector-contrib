@@ -17,7 +17,7 @@ issues: [34150]
 # Use pipe (|) for multiline entries.
 subtext:
   Some OpenTelemetry libraries do not send timestamp for logs, but they should always send
-  | the observed timestamp. In these cases the clickhouse exporter just stored a zero timestamp
+  | the observed timestamp. In these cases the ClickHouse exporter just stored a zero timestamp
   | to the database. This changes the behavior to look into the observed timestamp if the timestamp
   | is zero.
 
