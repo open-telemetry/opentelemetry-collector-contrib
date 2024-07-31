@@ -7,6 +7,8 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.106.1
+
 ## v0.106.0
 
 ## v0.105.0
