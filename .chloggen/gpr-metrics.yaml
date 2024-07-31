@@ -20,8 +20,10 @@ subtext: |
     - `branch.name` is now `ref.name`
     - Added a `ref.type` attribute
     - `pull_request.state` is now `change.state`
+    - `git.vendor.name` is now `vcs.vendor.name`
   Metric Changes:
     - `git.repository.count` is now `vcs.repository.count`
+    - `git.repository.contributor.count` is now `vcs.repository.contributor.count`
     - `git.repository.branch.count` is now `vcs.repository.ref.count`
     - `git.repository.branch.time` is now `vcs.repository.ref.time
     - `git.repository.branch.commit.aheadby.count` is now `vcs.repository.ref.revisions_ahead`

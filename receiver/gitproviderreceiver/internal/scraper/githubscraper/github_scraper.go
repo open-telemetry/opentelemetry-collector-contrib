@@ -96,7 +96,8 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	ghs.mb.RecordVcsRepositoryCountDataPoint(now, int64(count))
 
-	// Get the branch count (future branch data) for each repo and record the given metrics
+	// Get the ref (branch) count (future branch data) for each repo and record
+	// the given metrics
 	var wg sync.WaitGroup
 	wg.Add(len(repos))
 	var mux sync.Mutex
@@ -122,7 +123,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			refType := metadata.AttributeRefTypeBranch
 			ghs.mb.RecordVcsRepositoryRefCountDataPoint(now, int64(count), name, refType)
 
-			// Iterate through the branches populating the Branch focused
+			// Iterate through the refs (branches) populating the Branch focused
 			// metrics
 			for _, branch := range branches {
 				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
@@ -162,7 +163,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			}
 			ghs.mb.RecordVcsRepositoryContributorCountDataPoint(now, int64(contribs), name)
 
-			// Get Pull Request data
+			// Get change (pull request) data
 			prs, err := ghs.getPullRequests(ctx, genClient, name)
 			if err != nil {
 				ghs.logger.Sugar().Errorf("error getting pull requests: %v", zap.Error(err))
