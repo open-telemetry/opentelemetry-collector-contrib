@@ -7,6 +7,13 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.106.1
+
+### 🧰 Bug fixes 🧰
+
+- `configauth`: Fix unmarshaling of authentication in HTTP servers. (#34325)
+  This brings in a bug fix from the core collector. See https://github.com/open-telemetry/opentelemetry-collector/issues/10750.
+
 ## v0.106.0
 
 ### 🛑 Breaking changes 🛑

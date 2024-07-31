@@ -8,8 +8,8 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/elastic/go-structform v0.0.10
 	github.com/lestrrat-go/strftime v1.0.6
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.17.1
 	go.opentelemetry.io/collector/component v0.106.1
