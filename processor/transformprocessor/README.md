@@ -350,21 +350,21 @@ Examples:
 
 ### convert_exponential_hist_to_explicit_hist
 
-`convert_exponential_hist_to_explicit_hist([ExplicitBounds])`
+`convert_exponential_hist_to_explicit_hist(distribution, [ExplicitBounds])`
 
-the `convert_exponential_hist_to_explicit_hist` function converts an ExponentialHistogram to an Explicit (_normal_) Histogram.
+The `convert_exponential_hist_to_explicit_hist` function converts an ExponentialHistogram to an Explicit (_normal_) Histogram.
 
 This function requires 2 arguments:
 
-- `distribution` - This argument is defines the convertion algorithm used to distribute the exponential datapoints into a new Explicit Histogram. There are 4 distribution options:
+- `distribution` - This argument defines the convertion algorithm used to distribute the exponential datapoints into a new Explicit Histogram. There are 4 distribution options:
 <br>
-  - __upper__ - This approach identifies the highest possible value of each exponential bucket (_the upper bound_) and uses it to distribute the datapoints by comparing the upper bound of each bucket with the ExplicitBounds. This approach works better for small/narrow exponential histograms.
+  - __upper__ - This approach identifies the highest possible value of each exponential bucket (_the upper bound_) and uses it to distribute the datapoints by comparing the upper bound of each bucket with the ExplicitBounds provided. This approach works better for small/narrow exponential histograms where the difference between the upper bounds and lower bounds are small.
 <br>
-  - __midpoint__ - This approach works in a similar way to the __upper__ approach, but instead of using the upper bound, it uses the midpoint of each exponential bucket. This approach also works better for small/narrow exponential histograms.
+  - __midpoint__ - This approach works in a similar way to the __upper__ approach, but instead of using the upper bound, it uses the midpoint of each exponential bucket. The midpoint is identified by calculationg the average of the upper and lower bounds. This approach also works better for small/narrow exponential histograms.
 <br>
-  - __uniform__ - This approach distributes the datapoints for each bucket uniformly across the __ExplicitBounds__. This approach works better for large/wide exponential histograms.
+  - __uniform__ - This approach distributes the datapoints for each bucket uniformly across the overlapping __ExplicitBounds__. This approach works better for large/wide exponential histograms.
 <br>
-  - __random__ - This approach distributes the datapoints for each bucket randomly across the __ExplicitBounds__. This approach works better for large/wide exponential histograms.
+  - __random__ - This approach distributes the datapoints for each bucket randomly across the overlapping __ExplicitBounds__. This approach works better for large/wide exponential histograms.
 <br>
 - `ExplicitBounds` represents the list of bucket boundaries for the new histogram. This argument is __required__ and __cannot be empty__.
 
