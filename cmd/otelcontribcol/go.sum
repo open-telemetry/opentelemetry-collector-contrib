@@ -723,8 +723,8 @@ github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
 github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ+JlNzwDqpNU=
-github.com/DataDog/agent-payload/v5 v5.0.127 h1:xM7UUJAr1ird4mZJ3uzweBBlGUdrG3g3d5lvUeZoKq8=
-github.com/DataDog/agent-payload/v5 v5.0.127/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
+github.com/DataDog/agent-payload/v5 v5.0.128 h1:DztqQQXfq+TPIy2/izVjS4clAQjW0qcBoVGXx2zimME=
+github.com/DataDog/agent-payload/v5 v5.0.128/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
 github.com/DataDog/datadog-agent/cmd/agent/common/path v0.56.0-rc.7 h1:oNjMIH0nd4GH63+/WRwEdChJRAZDMdWuIG/QTCtRT9Q=
 github.com/DataDog/datadog-agent/cmd/agent/common/path v0.56.0-rc.7/go.mod h1:fjV0Ix1tsjWKgZmuonOr8wZAMcJE/gqYq+uR6ucbQnI=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.56.0-rc.7 h1:jsupYSgEnQDU8jWpRCfjlgMb4/2oiXL7OfMK1PS3ZEw=
