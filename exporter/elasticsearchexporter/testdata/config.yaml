@@ -82,3 +82,7 @@ elasticsearch/deprecated_index:
   index: my_log_index
 elasticsearch/confighttp_endpoint:
   endpoint: https://elastic.example.com:9200
+elasticsearch/batcher_disabled:
+  endpoint: https://elastic.example.com:9200
+  batcher:
+    enabled: false

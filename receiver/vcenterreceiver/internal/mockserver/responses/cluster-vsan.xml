@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Body>
+        <VsanPerfQueryPerfResponse xmlns="urn:vsan">
+            <returnval xsi:type="VsanPerfEntityMetricCSV">
+                <entityRefId xsi:type="xsd:string">cluster-domclient:a8c9996d-be82-4487-94fe-821dff259a6a</entityRefId>
+                <sampleInfo xsi:type="xsd:string">2022-05-24 15:45:00,2022-05-24 15:46:00</sampleInfo>
+                <value xsi:type="VsanPerfMetricSeriesCSV">
+                    <metricId xsi:type="VsanPerfMetricId">
+                        <label xsi:type="xsd:string">iopsRead</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
+                    </metricId>
+                    <values xsi:type="xsd:string">10,11</values>
+                </value>
+                <value xsi:type="VsanPerfMetricSeriesCSV">
+                    <metricId xsi:type="VsanPerfMetricId">
+                        <label xsi:type="xsd:string">iopsWrite</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
+                    </metricId>
+                    <values xsi:type="xsd:string">12,13</values>
+                </value>
+                <value xsi:type="VsanPerfMetricSeriesCSV">
+                    <metricId xsi:type="VsanPerfMetricId">
+                        <label xsi:type="xsd:string">throughputRead</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
+                    </metricId>
+                    <values xsi:type="xsd:string">300,600</values>
+                </value>
+                <value xsi:type="VsanPerfMetricSeriesCSV">
+                    <metricId xsi:type="VsanPerfMetricId">
+                        <label xsi:type="xsd:string">throughputWrite</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
+                    </metricId>
+                    <values xsi:type="xsd:string">900,1200</values>
+                </value>
+                <value xsi:type="VsanPerfMetricSeriesCSV">
+                    <metricId xsi:type="VsanPerfMetricId">
+                        <label xsi:type="xsd:string">latencyAvgRead</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
+                    </metricId>
+                    <values xsi:type="xsd:string">14,15</values>
+                </value>
+                <value xsi:type="VsanPerfMetricSeriesCSV">
+                    <metricId xsi:type="VsanPerfMetricId">
+                        <label xsi:type="xsd:string">latencyAvgWrite</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
+                    </metricId>
+                    <values xsi:type="xsd:string">16,17</values>
+                </value>
+                <value xsi:type="VsanPerfMetricSeriesCSV">
+                    <metricId xsi:type="VsanPerfMetricId">
+                        <label xsi:type="xsd:string">congestion</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
+                    </metricId>
+                    <values xsi:type="xsd:string">1500,1800</values>
+                </value>
+            </returnval>
+        </VsanPerfQueryPerfResponse>
+    </soapenv:Body>
+</soapenv:Envelope>
