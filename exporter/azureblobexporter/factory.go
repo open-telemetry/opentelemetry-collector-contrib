@@ -13,6 +13,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter/internal/metadata"
 )
 
+const (
+	// the format of encoded telemetry data
+	formatTypeJSON  = "json"
+	formatTypeProto = "proto"
+)
+
 // NewFactory creates a factory for Azure Blob exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
@@ -25,14 +31,38 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Auth: &Authentication{
+			Type: ConnectionString,
+		},
+		Container: &Container{
+			Metrics: "metrics",
+			Logs:    "logs",
+			Traces:  "traces",
+		},
+		BlobNameFormat: &BlobNameFormat{
+			FormatType: "{{.Year}}/{{.Month}}/{{.Day}}/{{.BlobName}}_{{.Hour}}_{{.Minute}}_{{.Second}}_{{.SerialNum}}.{{.FileExtension}}",
+			BlobName: &BlobName{
+				Metrics: "metrics",
+				Logs:    "logs",
+				Traces:  "traces",
+			},
+			Year:   "2006",
+			Month:  "01",
+			Day:    "02",
+			Hour:   "15",
+			Minute: "04",
+			Second: "05",
+		},
+		FormatType: "json",
+	}
 }
 
 func createLogsExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config) (exporter.Logs, error) {
 
-	azBlobExporter := newAzureBlobExporter(config.(*Config), params)
+	azBlobExporter := newAzureBlobExporter(config.(*Config), params.Logger)
 
 	return exporterhelper.NewLogsExporter(ctx, params,
 		config,
@@ -44,7 +74,7 @@ func createMetricsExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config) (exporter.Metrics, error) {
 
-	azBlobExporter := newAzureBlobExporter(config.(*Config), params)
+	azBlobExporter := newAzureBlobExporter(config.(*Config), params.Logger)
 
 	return exporterhelper.NewMetricsExporter(ctx, params,
 		config,
@@ -56,7 +86,7 @@ func createTracesExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config) (exporter.Traces, error) {
 
-	azBlobExporter := newAzureBlobExporter(config.(*Config), params)
+	azBlobExporter := newAzureBlobExporter(config.(*Config), params.Logger)
 
 	return exporterhelper.NewTracesExporter(ctx,
 		params,
