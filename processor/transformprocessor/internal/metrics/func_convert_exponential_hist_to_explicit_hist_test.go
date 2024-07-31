@@ -716,11 +716,16 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				assert.Equal(t, expectedDp.ExplicitBounds().Len(), dp.ExplicitBounds().Len())
 
 				// even though the distribution is random, we know that for this
-				// particular test case, the min value is 40, therefore the 1st 3 buckets
+				// particular test case, the min value is 40, therefore the 1st 3 bucket
 				// counts should be 0, as they represent values  10 - 30
 				for i := 0; i < 3; i++ {
 					assert.Equal(t, uint64(0), dp.BucketCounts().At(i), "bucket %d", i)
 				}
+
+				// since the max value in the exponential histogram is 245
+				// we can assert that the overflow bucket has a count > 0
+				overflow := dp.BucketCounts().At(dp.BucketCounts().Len() - 1)
+				assert.Greater(t, overflow, uint64(0), "overflow bucket count should be > 0")
 				return
 			}
 
