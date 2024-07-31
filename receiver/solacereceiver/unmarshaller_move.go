@@ -9,6 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -19,6 +21,7 @@ import (
 type brokerTraceMoveUnmarshallerV1 struct {
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
+	metricAttrs      attribute.Set // othere Otel attributes (to add to the metrics)
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal
@@ -140,7 +143,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		attributes.PutStr(sourceKindKey, queueKind)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown source endpoint type %T", casted))
-		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 		sourceEndpointName = unknownEndpointName
 	}
 	span.SetName(sourceEndpointName + moveNameSuffix)
@@ -156,7 +159,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		attributes.PutStr(destinationKindKey, queueKind)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown endpoint type %T", casted))
-		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 	}
 
 	// do not fatal out when we don't have a valid move reason name
@@ -173,6 +176,6 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		attributes.PutStr(moveOperationReasonKey, maxRedeliveriesExceeded)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown move reason info type %T", casted))
-		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 	}
 }
