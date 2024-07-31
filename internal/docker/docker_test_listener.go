@@ -13,12 +13,11 @@ import (
 )
 
 func testListener(t *testing.T) (net.Listener, string) {
-	f, err := os.CreateTemp(t.TempDir(), "testListener")
+	f, err := os.CreateTemp(os.TempDir(), "testListener")
 	if err != nil {
 		t.Fatal(err)
 	}
 	addr := f.Name()
-	require.NoError(t, f.Close())
 	require.NoError(t, os.Remove(addr))
 
 	listener, err := net.Listen("unix", addr)
