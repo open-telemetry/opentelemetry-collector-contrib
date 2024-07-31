@@ -100,7 +100,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 				return
 			}
-			go p.crioConsumer(ctx)
+			go p.criConsumer(ctx)
 			p.asyncConsumerStarted = true
 		})
 
@@ -151,9 +151,9 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	return nil
 }
 
-// crioConsumer receives log entries from the crioLogEmitter and
+// criConsumer receives log entries from the crioLogEmitter and
 // writes them to the output of the main parser
-func (p *Parser) crioConsumer(ctx context.Context) {
+func (p *Parser) criConsumer(ctx context.Context) {
 	entriesChan := p.crioLogEmitter.OutChannel()
 	p.criConsumers.Add(1)
 	defer p.criConsumers.Done()
@@ -162,7 +162,6 @@ func (p *Parser) crioConsumer(ctx context.Context) {
 			err := p.Write(ctx, e)
 			if err != nil {
 				p.Logger().Error("failed to write entry", zap.Error(err))
-				return
 			}
 		}
 	}
