@@ -68,7 +68,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if s.clusterAdmin == nil {
 		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
 		if err != nil {
-			s.settings.Logger.Error("Error creating kafka client with admin priviledges", zap.Error(err))
+			s.settings.Logger.Error("Error creating kafka client with admin privileges", zap.Error(err))
 			return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
 		}
 		s.clusterAdmin = admin
