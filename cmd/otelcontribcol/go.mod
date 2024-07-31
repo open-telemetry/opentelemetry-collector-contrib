@@ -253,7 +253,7 @@ require (
 	cloud.google.com/go/longrunning v0.5.9 // indirect
 	cloud.google.com/go/monitoring v1.20.2 // indirect
 	cloud.google.com/go/pubsub v1.40.0 // indirect
-	cloud.google.com/go/spanner v1.64.0 // indirect
+	cloud.google.com/go/spanner v1.65.0 // indirect
 	cloud.google.com/go/trace v1.10.10 // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
@@ -693,7 +693,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/redis/go-redis/v9 v9.6.0 // indirect
+	github.com/redis/go-redis/v9 v9.6.1 // indirect
 	github.com/relvacode/iso8601 v1.4.0 // indirect
 	github.com/rs/cors v1.11.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
