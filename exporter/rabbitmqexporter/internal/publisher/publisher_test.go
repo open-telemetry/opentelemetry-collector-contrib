@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq"
+
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -294,11 +296,11 @@ type mockClient struct {
 	mock.Mock
 }
 
-func (m *mockClient) DialConfig(url string, config amqp.Config) (Connection, error) {
+func (m *mockClient) DialConfig(url string, config amqp.Config) (rabbitmq.Connection, error) {
 	args := m.Called(url, config)
 
 	if connection := args.Get(0); connection != nil {
-		return connection.(Connection), args.Error(1)
+		return connection.(rabbitmq.Connection), args.Error(1)
 	}
 	return nil, args.Error(1)
 }
@@ -312,10 +314,10 @@ func (m *mockConnection) IsClosed() bool {
 	return args.Bool(0)
 }
 
-func (m *mockConnection) Channel() (Channel, error) {
+func (m *mockConnection) Channel() (rabbitmq.Channel, error) {
 	args := m.Called()
 	if channel := args.Get(0); channel != nil {
-		return channel.(Channel), args.Error(1)
+		return channel.(rabbitmq.Channel), args.Error(1)
 	}
 	return nil, args.Error(1)
 }
@@ -339,10 +341,10 @@ func (m *mockChannel) Confirm(noWait bool) error {
 	return args.Error(0)
 }
 
-func (m *mockChannel) PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (DeferredConfirmation, error) {
+func (m *mockChannel) PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (rabbitmq.DeferredConfirmation, error) {
 	args := m.Called(ctx, exchange, key, mandatory, immediate, msg)
 	if confirmation := args.Get(0); confirmation != nil {
-		return confirmation.(DeferredConfirmation), args.Error(1)
+		return confirmation.(rabbitmq.DeferredConfirmation), args.Error(1)
 	}
 	return nil, args.Error(1)
 }

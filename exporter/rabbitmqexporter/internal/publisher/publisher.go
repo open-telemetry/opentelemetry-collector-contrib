@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq"
+
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
@@ -33,7 +35,7 @@ type Message struct {
 	Body       []byte
 }
 
-func NewConnection(logger *zap.Logger, client AmqpClient, config DialConfig) (Publisher, error) {
+func NewConnection(logger *zap.Logger, client rabbitmq.AmqpClient, config DialConfig) (Publisher, error) {
 	p := publisher{
 		logger:           logger,
 		client:           client,
@@ -56,10 +58,10 @@ type Publisher interface {
 
 type publisher struct {
 	logger           *zap.Logger
-	client           AmqpClient
+	client           rabbitmq.AmqpClient
 	config           DialConfig
 	connLock         *sync.Mutex
-	connection       Connection
+	connection       rabbitmq.Connection
 	connectionErrors chan *amqp.Error
 }
 
@@ -73,7 +75,7 @@ func (p *publisher) Publish(ctx context.Context, message Message) error {
 	// This could later be optimized to re-use channels which avoids repeated network calls to create and close them.
 	// Concurrency-control through something like a resource pool would be necessary since aqmp channels are not thread safe.
 	channel, err := p.connection.Channel()
-	defer func(channel Channel) {
+	defer func(channel rabbitmq.Channel) {
 		if channel != nil {
 			err2 := channel.Close()
 			if err2 != nil {
