@@ -14,7 +14,7 @@
 
 The primary objective of the Google Cloud Monitoring Receiver is to gather time series metrics data from all Google services and convert this data into a pipeline format that facilitates further use.
 
-This receiver gets GCP (Google Clout Platform) metrics from [GCP Monitoring REST API] via the [Google SDK for GCP Metrics] and then convert those timeseries data into OTel Format [Pipeline Data].
+This receiver gets GCP (Google Cloud Platform) metrics from [GCP Monitoring REST API] via the [Google SDK for GCP Metrics] and then convert those timeseries data into OTel Format [Pipeline Data].
 
 [GCP Monitoring REST API]: https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries/list
 [Google SDK for GCP Metrics]: https://pkg.go.dev/cloud.google.com/go/monitoring/apiv3
@@ -46,13 +46,10 @@ Each single metric can have the following configuration:
 - `metric_name` (Required): The specific metric name to collect.
 - `delay` (Optional): The delay before starting the collection of metrics for this service. Default is 0s.
 
-## Exporting Google Application Credentials
 
-To authenticate with Google Cloud services, set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your service account key file (google_application_credentials.json). This file contains the necessary credentials for accessing Google Cloud APIs securely.
+## Authentication with Google Cloud
 
-```
-export GOOGLE_APPLICATION_CREDENTIALS='google_application_credentials.json'
-```
+For more details on authentication, refer to the Google Cloud [Application Default Credentials documentation](https://cloud.google.com/docs/authentication/application-default-credentials). Note that if your workload is running on Google Cloud Platform (GCP), the service account credentials will be used automatically without needing to set the environment variable manually.
 
 ### Filtering
 
