@@ -18,12 +18,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/semconvcheckerconnector/internal/metadata"
 )
 
-// this is the name used to refer to the connector in the config.yaml
-const (
-	scopeName    = "otelcol/semconvchecker"
-	scopeVersion = "v0.0.1"
-)
-
 // NewFactory creates a factory for example connector.
 func NewFactory() connector.Factory {
 	// OpenTelemetry connector factory to make a factory for connectors
