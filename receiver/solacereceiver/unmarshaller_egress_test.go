@@ -308,7 +308,7 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 				assert.Equal(t, 0, actual.Len())
 				tel.assertMetrics(t, []metricdata.Metrics{
 					{
-						Name:        "solacereceiver_dropped_egress_spans",
+						Name:        "otelcol_solacereceiver_dropped_egress_spans",
 						Description: "Number of dropped egress spans",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -431,7 +431,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -741,7 +741,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -922,7 +922,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{

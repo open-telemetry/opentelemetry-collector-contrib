@@ -16,8 +16,6 @@ import (
 	"sync/atomic"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/admission"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -43,6 +41,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
@@ -266,9 +266,8 @@ func (h *headerReceiver) newContext(ctx context.Context, hdrs map[string][]strin
 }
 
 // logStreamError decides how to log an error.
-func (r *Receiver) logStreamError(err error, where string) {
+func (r *Receiver) logStreamError(err error, where string) (occode otelcodes.Code, msg string) {
 	var code codes.Code
-	var msg string
 	// gRPC tends to supply status-wrapped errors, so we always
 	// unpack them.  A wrapped Canceled code indicates intentional
 	// shutdown, which can be due to normal causes (EOF, e.g.,
@@ -286,10 +285,14 @@ func (r *Receiver) logStreamError(err error, where string) {
 	}
 
 	if code == codes.Canceled {
+		occode = otelcodes.Unset
 		r.telemetry.Logger.Debug("arrow stream shutdown", zap.String("message", msg), zap.String("where", where))
 	} else {
+		occode = otelcodes.Error
 		r.telemetry.Logger.Error("arrow stream error", zap.Int("code", int(code)), zap.String("message", msg), zap.String("where", where))
 	}
+
+	return occode, msg
 }
 
 func gRPCName(desc grpc.ServiceDesc) string {
@@ -458,8 +461,8 @@ func (id *inFlightData) recvDone(ctx context.Context, recvErrPtr *error) {
 
 	if retErr != nil {
 		// logStreamError because this response will break the stream.
-		id.logStreamError(retErr, "recv")
-		id.span.SetStatus(otelcodes.Error, retErr.Error())
+		occode, msg := id.logStreamError(retErr, "recv")
+		id.span.SetStatus(occode, msg)
 	}
 
 	id.anyDone(ctx)
@@ -474,14 +477,19 @@ func (id *inFlightData) consumeDone(ctx context.Context, consumeErrPtr *error) {
 		id.span.SetStatus(otelcodes.Error, retErr.Error())
 	}
 
-	id.replyToCaller(retErr)
+	id.replyToCaller(ctx, retErr)
 	id.anyDone(ctx)
 }
 
-func (id *inFlightData) replyToCaller(callerErr error) {
-	id.pendingCh <- batchResp{
+func (id *inFlightData) replyToCaller(ctx context.Context, callerErr error) {
+	select {
+	case id.pendingCh <- batchResp{
 		id:  id.batchID,
 		err: callerErr,
+	}:
+		// OK: Responded.
+	case <-ctx.Done():
+		// OK: Never responded due to cancelation.
 	}
 }
 
@@ -550,8 +558,16 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return err
+
 		} else if errors.Is(err, context.Canceled) {
-			return status.Error(codes.Canceled, "server stream shutdown")
+			// This is a special case to avoid introducing a span error
+			// for a canceled operation.
+			return io.EOF
+
+		} else if status, ok := status.FromError(err); ok && status.Code() == codes.Canceled {
+			// This is a special case to avoid introducing a span error
+			// for a canceled operation.
+			return io.EOF
 		}
 		// Note: err is directly from gRPC, should already have status.
 		return err
@@ -574,7 +590,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		var authErr error
 		inflightCtx, authErr = r.authServer.Authenticate(inflightCtx, authHdrs)
 		if authErr != nil {
-			flight.replyToCaller(status.Error(codes.Unauthenticated, authErr.Error()))
+			flight.replyToCaller(inflightCtx, status.Error(codes.Unauthenticated, authErr.Error()))
 			return nil
 		}
 	}
@@ -700,7 +716,7 @@ func (r *receiverStream) sendOne(serverStream anyStreamServer, resp batchResp) e
 
 	if err := serverStream.Send(bs); err != nil {
 		// logStreamError because this response will break the stream.
-		r.logStreamError(err, "send")
+		_, _ = r.logStreamError(err, "send")
 		return err
 	}
 

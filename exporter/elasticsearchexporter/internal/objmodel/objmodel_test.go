@@ -80,44 +80,9 @@ func TestObjectModel_CreateMap(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			doc := test.build()
-			doc.Sort()
 			assert.Equal(t, test.want, doc)
 		})
 	}
-}
-
-func TestDocument_Sort(t *testing.T) {
-	tests := map[string]struct {
-		build func() Document
-		want  Document
-	}{
-		"keys are sorted": {
-			build: func() (doc Document) {
-				doc.AddInt("z", 26)
-				doc.AddInt("a", 1)
-				return doc
-			},
-			want: Document{[]field{{"a", IntValue(1)}, {"z", IntValue(26)}}},
-		},
-		"sorting is stable": {
-			build: func() (doc Document) {
-				doc.AddInt("a", 1)
-				doc.AddInt("c", 3)
-				doc.AddInt("a", 2)
-				return doc
-			},
-			want: Document{[]field{{"a", IntValue(1)}, {"a", IntValue(2)}, {"c", IntValue(3)}}},
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			doc := test.build()
-			doc.Sort()
-			assert.Equal(t, test.want, doc)
-		})
-	}
-
 }
 
 func TestObjectModel_Dedup(t *testing.T) {
@@ -200,7 +165,6 @@ func TestObjectModel_Dedup(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			doc := test.build()
-			doc.Sort()
 			doc.Dedup()
 			assert.Equal(t, test.want, doc)
 		})
@@ -320,7 +284,7 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup()
-			err := doc.Serialize(&buf, false)
+			err := doc.Serialize(&buf, false, false)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want, buf.String())
@@ -381,9 +345,45 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup()
-			err := doc.Serialize(&buf, true)
+			err := doc.Serialize(&buf, true, false)
 			require.NoError(t, err)
 
+			assert.Equal(t, test.want, buf.String())
+		})
+	}
+}
+
+func TestDocument_Serialize_Otel(t *testing.T) {
+	tests := map[string]struct {
+		attrs map[string]any
+		want  string
+	}{
+		"otel": {
+			attrs: map[string]any{
+				"@timestamp":                        "2024-03-18T21:09:53.645578000Z",
+				"attributes.auditd.log.op":          "PAM:session_open",
+				"attributes.auditd.log.record_type": "USER_START",
+				"attributes.auditd.log.sequence":    6082,
+				"attributes.auditd.log.subj":        "unconfined",
+				"attributes.auditd.log.uid":         "1000",
+				"scope.attributes.bar.one":          "boo",
+				"scope.attributes.foo.two":          "bar",
+				"resource.attributes.blah.num":      234,
+				"resource.attributes.blah.str":      "something",
+			},
+			want: `{"@timestamp":"2024-03-18T21:09:53.645578000Z","attributes":{"auditd.log.op":"PAM:session_open","auditd.log.record_type":"USER_START","auditd.log.sequence":6082,"auditd.log.subj":"unconfined","auditd.log.uid":"1000"},"resource":{"attributes":{"blah.num":234,"blah.str":"something"}},"scope":{"attributes":{"bar.one":"boo","foo.two":"bar"}}}`,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var buf strings.Builder
+			m := pcommon.NewMap()
+			assert.NoError(t, m.FromRaw(test.attrs))
+			doc := DocumentFromAttributes(m)
+			doc.Dedup() // Call Dedup for predictable order
+			err := doc.Serialize(&buf, true, true)
+			require.NoError(t, err)
 			assert.Equal(t, test.want, buf.String())
 		})
 	}
@@ -427,7 +427,7 @@ func TestValue_Serialize(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
-			err := test.value.iterJSON(json.NewVisitor(&buf), false)
+			err := test.value.iterJSON(json.NewVisitor(&buf), false, false)
 			require.NoError(t, err)
 			assert.Equal(t, test.want, buf.String())
 		})

@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
@@ -30,9 +29,8 @@ type TelemetryBuilder struct {
 	GrafanacloudDatapointCount   metric.Int64Counter
 	GrafanacloudFlushCount       metric.Int64Counter
 	GrafanacloudHostCount        metric.Int64ObservableGauge
-	observeGrafanacloudHostCount func() int64
+	observeGrafanacloudHostCount func(context.Context, metric.Observer) error
 	level                        configtelemetry.Level
-	attributeSet                 attribute.Set
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -45,17 +43,13 @@ func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
 	}
 }
 
-// WithAttributeSet applies a set of attributes for asynchronous instruments.
-func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.attributeSet = set
-	}
-}
-
 // WithGrafanacloudHostCountCallback sets callback for observable GrafanacloudHostCount metric.
-func WithGrafanacloudHostCountCallback(cb func() int64) telemetryBuilderOption {
+func WithGrafanacloudHostCountCallback(cb func() int64, opts ...metric.ObserveOption) telemetryBuilderOption {
 	return func(builder *TelemetryBuilder) {
-		builder.observeGrafanacloudHostCount = cb
+		builder.observeGrafanacloudHostCount = func(_ context.Context, o metric.Observer) error {
+			o.ObserveInt64(builder.GrafanacloudHostCount, cb(), opts...)
+			return nil
+		}
 	}
 }
 
@@ -73,27 +67,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.GrafanacloudDatapointCount, err = builder.meter.Int64Counter(
-		"grafanacloud_datapoint_count",
+		"otelcol_grafanacloud_datapoint_count",
 		metric.WithDescription("Number of datapoints sent to Grafana Cloud"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.GrafanacloudFlushCount, err = builder.meter.Int64Counter(
-		"grafanacloud_flush_count",
+		"otelcol_grafanacloud_flush_count",
 		metric.WithDescription("Number of metrics flushes"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.GrafanacloudHostCount, err = builder.meter.Int64ObservableGauge(
-		"grafanacloud_host_count",
+		"otelcol_grafanacloud_host_count",
 		metric.WithDescription("Number of unique hosts"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(builder.GrafanacloudHostCount, builder.observeGrafanacloudHostCount(), metric.WithAttributeSet(builder.attributeSet))
-		return nil
-	}, builder.GrafanacloudHostCount)
+	_, err = builder.meter.RegisterCallback(builder.observeGrafanacloudHostCount, builder.GrafanacloudHostCount)
 	errs = errors.Join(errs, err)
 	return &builder, errs
 }

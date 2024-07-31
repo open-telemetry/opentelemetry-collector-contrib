@@ -35,6 +35,17 @@ type MetricsConfig struct {
 	VcenterClusterMemoryLimit          MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
 	VcenterClusterVMCount              MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
 	VcenterClusterVMTemplateCount      MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
+	VcenterClusterVsanCongestions      MetricConfig `mapstructure:"vcenter.cluster.vsan.congestions"`
+	VcenterClusterVsanLatencyAvg       MetricConfig `mapstructure:"vcenter.cluster.vsan.latency.avg"`
+	VcenterClusterVsanOperations       MetricConfig `mapstructure:"vcenter.cluster.vsan.operations"`
+	VcenterClusterVsanThroughput       MetricConfig `mapstructure:"vcenter.cluster.vsan.throughput"`
+	VcenterDatacenterClusterCount      MetricConfig `mapstructure:"vcenter.datacenter.cluster.count"`
+	VcenterDatacenterCPULimit          MetricConfig `mapstructure:"vcenter.datacenter.cpu.limit"`
+	VcenterDatacenterDatastoreCount    MetricConfig `mapstructure:"vcenter.datacenter.datastore.count"`
+	VcenterDatacenterDiskSpace         MetricConfig `mapstructure:"vcenter.datacenter.disk.space"`
+	VcenterDatacenterHostCount         MetricConfig `mapstructure:"vcenter.datacenter.host.count"`
+	VcenterDatacenterMemoryLimit       MetricConfig `mapstructure:"vcenter.datacenter.memory.limit"`
+	VcenterDatacenterVMCount           MetricConfig `mapstructure:"vcenter.datacenter.vm.count"`
 	VcenterDatastoreDiskUsage          MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
 	VcenterDatastoreDiskUtilization    MetricConfig `mapstructure:"vcenter.datastore.disk.utilization"`
 	VcenterHostCPUCapacity             MetricConfig `mapstructure:"vcenter.host.cpu.capacity"`
@@ -51,6 +62,11 @@ type MetricsConfig struct {
 	VcenterHostNetworkPacketRate       MetricConfig `mapstructure:"vcenter.host.network.packet.rate"`
 	VcenterHostNetworkThroughput       MetricConfig `mapstructure:"vcenter.host.network.throughput"`
 	VcenterHostNetworkUsage            MetricConfig `mapstructure:"vcenter.host.network.usage"`
+	VcenterHostVsanCacheHitRate        MetricConfig `mapstructure:"vcenter.host.vsan.cache.hit_rate"`
+	VcenterHostVsanCongestions         MetricConfig `mapstructure:"vcenter.host.vsan.congestions"`
+	VcenterHostVsanLatencyAvg          MetricConfig `mapstructure:"vcenter.host.vsan.latency.avg"`
+	VcenterHostVsanOperations          MetricConfig `mapstructure:"vcenter.host.vsan.operations"`
+	VcenterHostVsanThroughput          MetricConfig `mapstructure:"vcenter.host.vsan.throughput"`
 	VcenterResourcePoolCPUShares       MetricConfig `mapstructure:"vcenter.resource_pool.cpu.shares"`
 	VcenterResourcePoolCPUUsage        MetricConfig `mapstructure:"vcenter.resource_pool.cpu.usage"`
 	VcenterResourcePoolMemoryBallooned MetricConfig `mapstructure:"vcenter.resource_pool.memory.ballooned"`
@@ -75,6 +91,9 @@ type MetricsConfig struct {
 	VcenterVMNetworkPacketRate         MetricConfig `mapstructure:"vcenter.vm.network.packet.rate"`
 	VcenterVMNetworkThroughput         MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
 	VcenterVMNetworkUsage              MetricConfig `mapstructure:"vcenter.vm.network.usage"`
+	VcenterVMVsanLatencyAvg            MetricConfig `mapstructure:"vcenter.vm.vsan.latency.avg"`
+	VcenterVMVsanOperations            MetricConfig `mapstructure:"vcenter.vm.vsan.operations"`
+	VcenterVMVsanThroughput            MetricConfig `mapstructure:"vcenter.vm.vsan.throughput"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -100,6 +119,39 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterClusterVMTemplateCount: MetricConfig{
 			Enabled: true,
 		},
+		VcenterClusterVsanCongestions: MetricConfig{
+			Enabled: false,
+		},
+		VcenterClusterVsanLatencyAvg: MetricConfig{
+			Enabled: false,
+		},
+		VcenterClusterVsanOperations: MetricConfig{
+			Enabled: false,
+		},
+		VcenterClusterVsanThroughput: MetricConfig{
+			Enabled: false,
+		},
+		VcenterDatacenterClusterCount: MetricConfig{
+			Enabled: true,
+		},
+		VcenterDatacenterCPULimit: MetricConfig{
+			Enabled: true,
+		},
+		VcenterDatacenterDatastoreCount: MetricConfig{
+			Enabled: true,
+		},
+		VcenterDatacenterDiskSpace: MetricConfig{
+			Enabled: true,
+		},
+		VcenterDatacenterHostCount: MetricConfig{
+			Enabled: true,
+		},
+		VcenterDatacenterMemoryLimit: MetricConfig{
+			Enabled: true,
+		},
+		VcenterDatacenterVMCount: MetricConfig{
+			Enabled: true,
+		},
 		VcenterDatastoreDiskUsage: MetricConfig{
 			Enabled: true,
 		},
@@ -107,10 +159,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterHostCPUCapacity: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterHostCPUReserved: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterHostCPUUsage: MetricConfig{
 			Enabled: true,
@@ -134,7 +186,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterHostNetworkPacketDropRate: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterHostNetworkPacketErrorRate: MetricConfig{
 			Enabled: true,
@@ -148,6 +200,21 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterHostNetworkUsage: MetricConfig{
 			Enabled: true,
 		},
+		VcenterHostVsanCacheHitRate: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostVsanCongestions: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostVsanLatencyAvg: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostVsanOperations: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostVsanThroughput: MetricConfig{
+			Enabled: false,
+		},
 		VcenterResourcePoolCPUShares: MetricConfig{
 			Enabled: true,
 		},
@@ -155,22 +222,22 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterResourcePoolMemoryBallooned: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterResourcePoolMemoryGranted: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterResourcePoolMemoryShares: MetricConfig{
 			Enabled: true,
 		},
 		VcenterResourcePoolMemorySwapped: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterResourcePoolMemoryUsage: MetricConfig{
 			Enabled: true,
 		},
 		VcenterVMCPUReadiness: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMCPUUsage: MetricConfig{
 			Enabled: true,
@@ -219,6 +286,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterVMNetworkUsage: MetricConfig{
 			Enabled: true,
+		},
+		VcenterVMVsanLatencyAvg: MetricConfig{
+			Enabled: false,
+		},
+		VcenterVMVsanOperations: MetricConfig{
+			Enabled: false,
+		},
+		VcenterVMVsanThroughput: MetricConfig{
+			Enabled: false,
 		},
 	}
 }
