@@ -85,11 +85,19 @@ func sort[K any](target ottl.Getter[K], order string) ottl.ExprFunc[K] {
 			dup := makeCopy(v)
 			return sortTypedSlice(dup, order), nil
 		case []bool:
-			var arr []string
+			var strings []string
 			for _, b := range v {
-				arr = append(arr, strconv.FormatBool(b))
+				strings = append(strings, strconv.FormatBool(b))
 			}
-			return sortTypedSlice(arr, order), nil
+
+			sortTypedSlice(strings, order)
+
+			bools := make([]bool, len(strings))
+			for i, s := range strings {
+				boolValue, _ := strconv.ParseBool(s)
+				bools[i] = boolValue
+			}
+			return bools, nil
 		default:
 			return nil, fmt.Errorf("sort with unsupported type: '%T'. Target is not a list", v)
 		}

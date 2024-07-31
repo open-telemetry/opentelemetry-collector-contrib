@@ -173,7 +173,7 @@ func Test_Sort(t *testing.T) {
 				},
 			},
 			order:    sortAsc,
-			expected: []string{"false", "true"},
+			expected: []bool{false, true},
 		},
 		{
 			name: "[]int64",
