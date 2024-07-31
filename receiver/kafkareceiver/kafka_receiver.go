@@ -122,6 +122,9 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	saramaConfig.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
+	saramaConfig.Consumer.Group.Session.Timeout = config.SessionTimeout
+	saramaConfig.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
+
 	var err error
 	if saramaConfig.Consumer.Offsets.Initial, err = toSaramaInitialOffset(config.InitialOffset); err != nil {
 		return nil, err

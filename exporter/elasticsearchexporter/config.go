@@ -14,6 +14,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -76,6 +77,31 @@ type Config struct {
 	// TelemetrySettings contains settings useful for testing/debugging purposes
 	// This is experimental and may change at any time.
 	TelemetrySettings `mapstructure:"telemetry"`
+
+	// Batcher holds configuration for batching requests based on timeout
+	// and size-based thresholds.
+	//
+	// Batcher is unused by default, in which case Flush will be used.
+	// If Batcher.Enabled is non-nil (i.e. batcher::enabled is specified),
+	// then the Flush will be ignored even if Batcher.Enabled is false.
+	Batcher BatcherConfig `mapstructure:"batcher"`
+}
+
+// BatcherConfig holds configuration for exporterbatcher.
+//
+// This is a slightly modified version of exporterbatcher.Config,
+// to enable tri-state Enabled: unset, false, true.
+type BatcherConfig struct {
+	// Enabled indicates whether to enqueue batches before sending
+	// to the exporter. If Enabled is specified (non-nil),
+	// then the exporter will not perform any buffering itself.
+	Enabled *bool `mapstructure:"enabled"`
+
+	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
+	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
+
+	exporterbatcher.MinSizeConfig `mapstructure:",squash"`
+	exporterbatcher.MaxSizeConfig `mapstructure:",squash"`
 }
 
 type TelemetrySettings struct {
@@ -160,18 +186,12 @@ type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
 
-	// Additional field mappings.
-	Fields map[string]string `mapstructure:"fields"`
-
-	// File to read additional fields mappings from.
-	File string `mapstructure:"file"`
-
-	// Try to find and remove duplicate fields
+	// Dedup is non-operational, and will be removed in the future.
 	//
-	// Deprecated: [v0.104.0] deduplication will always be applied in future,
-	// with no option to disable. Disabling deduplication is not meaningful,
-	// as Elasticsearch will reject documents with duplicate JSON object keys.
-	Dedup bool `mapstructure:"dedup"`
+	// Deprecated: [v0.104.0] deduplication is always enabled, and cannot be
+	// disabled. Disabling deduplication is not meaningful, as Elasticsearch
+	// will always reject documents with duplicate JSON object keys.
+	Dedup *bool `mapstructure:"dedup,omitempty"`
 
 	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
 	// in future, and never for other modes. Elasticsearch's "dot_expander"
@@ -185,6 +205,7 @@ type MappingMode int
 const (
 	MappingNone MappingMode = iota
 	MappingECS
+	MappingOTel
 	MappingRaw
 )
 
@@ -199,6 +220,8 @@ func (m MappingMode) String() string {
 		return ""
 	case MappingECS:
 		return "ecs"
+	case MappingOTel:
+		return "otel"
 	case MappingRaw:
 		return "raw"
 	default:
@@ -211,6 +234,7 @@ var mappingModes = func() map[string]MappingMode {
 	for _, m := range []MappingMode{
 		MappingNone,
 		MappingECS,
+		MappingOTel,
 		MappingRaw,
 	} {
 		table[strings.ToLower(m.String())] = m
@@ -328,8 +352,8 @@ func (cfg *Config) MappingMode() MappingMode {
 }
 
 func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
-	if !cfg.Mapping.Dedup {
-		logger.Warn("dedup has been deprecated, and will always be enabled in future")
+	if cfg.Mapping.Dedup != nil {
+		logger.Warn("dedup is deprecated, and is always enabled")
 	}
 	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
 		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")

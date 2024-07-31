@@ -73,6 +73,21 @@ attributes:
     enum:
       - virtual
       - physical
+  memory_usage_type:
+    name_override: type
+    description: The type of memory usage.
+    type: string
+    enum:
+      - guest
+      - host
+      - overhead
+  memory_granted_type:
+    name_override: type
+    description: The type of memory granted.
+    type: string
+    enum:
+      - private
+      - shared
   cpu_reservation_type:
     type: string
     enum:
@@ -83,6 +98,15 @@ attributes:
     type: bool
     name_override: effective
     description: Whether the host is effective in the vCenter cluster.
+  host_power_state:
+    name_override: power_state
+    description: The current power state of the host.
+    type: string
+    enum:
+      - "on"
+      - "off"
+      - "standby"
+      - "unknown"
   disk_direction:
     name_override: direction
     description: The direction of disk latency.
@@ -105,12 +129,107 @@ attributes:
       - "on"
       - "off"
       - "suspended"
+      - "unknown"
+  entity_status:
+    name_override: status
+    description: The current status of the managed entity.
+    type: string
+    enum:
+      - "red"
+      - "yellow"
+      - "green"
+      - "gray"
   object_name:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
     type: string
+  vsan_throughput_direction:
+    name_override: direction
+    description: The type of vSAN throughput.
+    type: string
+    enum:
+      - read
+      - write
+  vsan_latency_type:
+    name_override: type
+    description: The type of vSAN latency.
+    type: string
+    enum:
+      - read
+      - write
+  vsan_operation_type:
+    name_override: type
+    description: The type of vSAN operation.
+    type: string
+    enum:
+      - read
+      - write
+      - unmap
 
 metrics:
+  vcenter.datacenter.cluster.count:
+    enabled: true
+    description: The number of clusters in the datacenter.
+    unit: "{clusters}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status]
+  vcenter.datacenter.host.count:
+    enabled: true
+    description: The number of hosts in the datacenter.
+    unit: "{hosts}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status, host_power_state]
+  vcenter.datacenter.vm.count:
+    enabled: true
+    description: The number of VM's in the datacenter.
+    unit: "{virtual_machines}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status, vm_count_power_state]
+  vcenter.datacenter.datastore.count:
+    enabled: true
+    description: The number of datastores in the datacenter.
+    unit: "{datastores}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.datacenter.disk.space:
+    enabled: true
+    description: The amount of available and used disk space in the datacenter.
+    unit: "By"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [disk_state]
+  vcenter.datacenter.cpu.limit:
+    enabled: true
+    description: The total amount of CPU available to the datacenter.
+    unit: "{MHz}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.datacenter.memory.limit:
+    enabled: true
+    description: The total amount of memory available to the datacenter.
+    unit: "By"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
   vcenter.cluster.cpu.limit:
     enabled: true
     description: The amount of CPU available to the cluster.
@@ -175,6 +294,42 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [host_effective]
+  vcenter.cluster.vsan.throughput:
+    enabled: false
+    description: The vSAN throughput of a cluster.
+    unit: "By/s"
+    gauge:
+      value_type: double
+    attributes: [vsan_throughput_direction]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.cluster.vsan.operations:
+    enabled: false
+    description: The vSAN IOPs of a cluster.
+    unit: "{operations/sec}"
+    gauge:
+      value_type: int
+    attributes: [vsan_operation_type]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.cluster.vsan.latency.avg:
+    enabled: false
+    description: The overall cluster latency while accessing vSAN storage.
+    unit: "us"
+    gauge:
+      value_type: int
+    attributes: [vsan_latency_type]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.cluster.vsan.congestions:
+    enabled: false
+    description: The congestions of IOs generated by all vSAN clients in the cluster.
+    unit: "{congestions/sec}"
+    gauge:
+      value_type: double
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
   vcenter.datastore.disk.usage:
     enabled: true
     description: The amount of space in the datastore.
@@ -208,7 +363,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.host.cpu.capacity:
-    enabled: false
+    enabled: true
     description: Total CPU capacity of the host system.
     unit: "MHz"
     sum:
@@ -216,10 +371,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.host.cpu.reserved:
-    enabled: false
+    enabled: true
     description: The CPU of the host reserved for use by virtual machines.
     unit: "MHz"
     sum:
@@ -227,8 +380,6 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [cpu_reservation_type]
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.host.disk.throughput:
     enabled: true
     description: Average number of kilobytes read from or written to the disk each second.
@@ -307,15 +458,63 @@ metrics:
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.packet.drop.rate:
-    enabled: false
+    enabled: true
     description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
     unit: "{packets/sec}"
     gauge:
       value_type: double
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
+  vcenter.host.vsan.throughput:
+    enabled: false
+    description: The vSAN throughput of a host.
+    unit: "By/s"
+    gauge:
+      value_type: double
+    attributes: [vsan_throughput_direction]
+    extended_documentation: As measured over the most recent 5m interval.
     warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.host.vsan.operations:
+    enabled: false
+    description: The vSAN IOPs of a host.
+    unit: "{operations/sec}"
+    gauge:
+      value_type: int
+    attributes: [vsan_operation_type]
+    extended_documentation: As measured over the most recent 5m interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.host.vsan.latency.avg:
+    enabled: false
+    description: The host latency while accessing vSAN storage.
+    unit: "us"
+    gauge:
+      value_type: int
+    attributes: [vsan_latency_type]
+    extended_documentation: As measured over the most recent 5m interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.host.vsan.congestions:
+    enabled: false
+    description: The congestions of IOs generated by all vSAN clients in the host.
+    unit: "{congestions/sec}"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: As measured over the most recent 5m interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.host.vsan.cache.hit_rate:
+    enabled: false
+    description: The host's read IOs which could be satisfied by the local client cache.
+    unit: "%"
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: As measured over the most recent 5m interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
@@ -324,7 +523,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: []
+    attributes: [memory_usage_type]
   vcenter.resource_pool.memory.shares:
     enabled: true
     description: The amount of shares of memory in the resource pool.
@@ -334,6 +533,33 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.resource_pool.memory.swapped:
+    enabled: true
+    description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.resource_pool.memory.ballooned:
+    enabled: true 
+    description: The amount of memory in a resource pool that is ballooned due to virtualization.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.resource_pool.memory.granted:
+    enabled: true
+    description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [memory_granted_type]
   vcenter.resource_pool.cpu.usage:
     enabled: true
     description: The usage of the CPU used by the resource pool.
@@ -480,14 +706,12 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.cpu.readiness:
-    enabled: false
+    enabled: true
     description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
     unit: "%"
     gauge:
       value_type: int
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.vm.memory.utilization:
     enabled: true
     description: The memory utilization of the VM.
@@ -495,3 +719,30 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  vcenter.vm.vsan.throughput:
+    enabled: false
+    description: The vSAN throughput of a virtual machine.
+    unit: "By/s"
+    gauge:
+      value_type: double
+    attributes: [vsan_throughput_direction]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.vm.vsan.operations:
+    enabled: false
+    description: The vSAN IOPs of a virtual machine.
+    unit: "{operations/sec}"
+    gauge:
+      value_type: int
+    attributes: [vsan_operation_type]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.vm.vsan.latency.avg:
+    enabled: false
+    description: The virtual machine latency while accessing vSAN storage.
+    unit: "us"
+    gauge:
+      value_type: int
+    attributes: [vsan_latency_type]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
