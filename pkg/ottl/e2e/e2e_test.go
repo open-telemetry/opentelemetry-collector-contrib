@@ -634,7 +634,7 @@ func Test_e2e_converters(t *testing.T) {
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
 				s.AppendEmpty().SetDouble(-1)
 				s.AppendEmpty().SetDouble(2.2)
-				s.AppendEmpty().SetDouble(11)
+				s.AppendEmpty().SetInt(11)
 			},
 		},
 		{
