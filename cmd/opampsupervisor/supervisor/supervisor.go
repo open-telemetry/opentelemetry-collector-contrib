@@ -1301,12 +1301,13 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 	}
 
 	// Need to recalculate the Agent config so that the new agent identification is included in it.
-	_, err = s.composeMergedConfig(s.remoteConfig)
+	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		s.logger.Error("Error composing merged config with new instance ID", zap.Error(err))
+		return false
 	}
 
-	return true
+	return configChanged
 }
 
 func (s *Supervisor) persistentStateFile() string {

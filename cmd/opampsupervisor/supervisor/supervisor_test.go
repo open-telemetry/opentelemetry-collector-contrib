@@ -260,7 +260,7 @@ func Test_onMessage(t *testing.T) {
 			agentHealthCheckEndpoint:     "localhost:8000",
 			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
 		}
-		s.createTemplates()
+		require.NoError(t, s.createTemplates())
 
 		s.onMessage(context.Background(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
