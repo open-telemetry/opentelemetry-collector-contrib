@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
 go 1.21.0
 
 require (
-	github.com/docker/docker v26.1.4+incompatible
+	github.com/docker/docker v26.1.5+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/goleak v1.3.0
