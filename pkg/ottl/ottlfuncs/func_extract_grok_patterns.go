@@ -36,7 +36,10 @@ func createExtractGrokPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl
 }
 
 func extractGrokPatterns[K any](target ottl.StringGetter[K], pattern string, nco ottl.Optional[bool], patternDefinitions ottl.Optional[[]string]) (ottl.ExprFunc[K], error) {
-	g := grok.NewComplete()
+	g, err := grok.NewComplete()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize grok parser: %w", err)
+	}
 	namedCapturesOnly := !nco.IsEmpty() && nco.Get()
 
 	if !patternDefinitions.IsEmpty() {
@@ -51,10 +54,12 @@ func extractGrokPatterns[K any](target ottl.StringGetter[K], pattern string, nco
 				return nil, fmt.Errorf("pattern ID %q should not contain ':'", parts[0])
 			}
 
-			g.AddPattern(parts[0], parts[1])
+			if err := g.AddPattern(parts[0], parts[1]); err != nil {
+				return nil, fmt.Errorf("failed to add pattern %q=%q: %w", parts[0], parts[1], err)
+			}
 		}
 	}
-	err := g.Compile(pattern, namedCapturesOnly)
+	err = g.Compile(pattern, namedCapturesOnly)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to ExtractGrokPatterns is not a valid pattern: %w", err)
 	}

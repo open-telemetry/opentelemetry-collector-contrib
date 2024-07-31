@@ -1239,8 +1239,8 @@ github.com/elastic/go-elasticsearch/v7 v7.17.10 h1:TCQ8i4PmIJuBunvBS6bwT2ybzVFxx
 github.com/elastic/go-elasticsearch/v7 v7.17.10/go.mod h1:OJ4wdbtDNk5g503kvlHLyErCgQwwzmDtaFC4XyOxXA4=
 github.com/elastic/go-elasticsearch/v8 v8.14.0 h1:1ywU8WFReLLcxE1WJqii3hTtbPUE2hc38ZK/j4mMFow=
 github.com/elastic/go-elasticsearch/v8 v8.14.0/go.mod h1:WRvnlGkSuZyp83M2U8El/LGXpCjYLrvlkSgkAH4O5I4=
-github.com/elastic/go-grok v0.2.1 h1:sh/zNvXcL3wbzjwI+xBHHZ7mUsRJNx7i8f6IeqQRhZA=
-github.com/elastic/go-grok v0.2.1/go.mod h1:1ym8gnN9pxo/1l2eaXp3K0KO0hu414diQbT9xvXjyUk=
+github.com/elastic/go-grok v0.3.0 h1:jP5lQAfYgvJ2ufcNwsX3MCtmGSTFXVtR9rsOi+otCYU=
+github.com/elastic/go-grok v0.3.0/go.mod h1:1ym8gnN9pxo/1l2eaXp3K0KO0hu414diQbT9xvXjyUk=
 github.com/elastic/go-structform v0.0.10 h1:oy08o/Ih2hHTkNcRY/1HhaYvIp5z6t8si8gnCJPDo1w=
 github.com/elastic/go-structform v0.0.10/go.mod h1:CZWf9aIRYY5SuKSmOhtXScE5uQiLZNqAFnwKR4OrIM4=
 github.com/elastic/go-sysinfo v1.7.1 h1:Wx4DSARcKLllpKT2TnFVdSUJOsybqMYCNQZq1/wO+s0=
