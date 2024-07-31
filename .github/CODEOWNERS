@@ -178,7 +178,7 @@ processor/metricsgenerationprocessor/                               @open-teleme
 processor/metricstransformprocessor/                                @open-telemetry/collector-contrib-approvers @dmitryax
 processor/probabilisticsamplerprocessor/                            @open-telemetry/collector-contrib-approvers @jpkrohling @jmacd
 processor/redactionprocessor/                                       @open-telemetry/collector-contrib-approvers @dmitryax @mx-psi @TylerHelmuth
-processor/remotetapprocessor/                                       @open-telemetry/collector-contrib-approvers @atoulme
+processor/remotetapprocessor/                                       @open-telemetry/collector-contrib-approvers @atoulme @jaronoff97
 processor/resourcedetectionprocessor/                               @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 processor/resourcedetectionprocessor/internal/aws/ec2/              @open-telemetry/collector-contrib-approvers
 processor/resourcedetectionprocessor/internal/aws/ecs/              @open-telemetry/collector-contrib-approvers
