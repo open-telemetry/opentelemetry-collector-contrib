@@ -165,7 +165,7 @@ func (s *mockClusterAdmin) DescribeConfig(cr sarama.ConfigResource) ([]sarama.Co
 		return s.brokerConfigs, nil
 	}
 	if s.topics[topicName].ConfigEntries == nil {
-		return nil, fmt.Errorf("no config Entries found for topic")
+		return nil, fmt.Errorf("no config entries found for topic")
 	}
 	configEntry := make([]sarama.ConfigEntry, 1)
 	for name, entry := range s.topics[topicName].ConfigEntries {
