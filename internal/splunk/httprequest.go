@@ -9,6 +9,8 @@ import (
 	"net/http/httputil"
 	"strconv"
 	"time"
+	"io"
+    "encoding/json"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -30,14 +32,16 @@ func HandleHTTPCode(resp *http.Response) error {
 		http.StatusText(resp.StatusCode))
 
 	// Check if there is any error text returned by Splunk that we can append to error message
-	var jsonResponse map[string]any
-	bodyString, _ := io.ReadAll(resp.Body)
-	e := json.Unmarshal(bodyString, &jsonResponse)
-	
-	if e == nil {
-		errorValue, ok := jsonResponse["text"]
-		if ok {
-			err = multierr.Append(err, fmt.Errorf("Reason: %q", errorValue))
+	if resp.Body != nil {
+		var jsonResponse map[string]any
+		bodyString, _ := io.ReadAll(resp.Body)
+		unmarshalError := json.Unmarshal(bodyString, &jsonResponse)
+		
+		if unmarshalError == nil {
+			responseErrorValue, ok := jsonResponse["text"]
+			if ok {
+				err = multierr.Append(err, fmt.Errorf("Reason: %q", responseErrorValue))
+			}
 		}
 	}
 	
