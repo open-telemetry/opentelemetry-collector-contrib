@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.21.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.106.1
@@ -84,8 +84,8 @@ require (
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240723171418-e6d459c13d2a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240723171418-e6d459c13d2a // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
