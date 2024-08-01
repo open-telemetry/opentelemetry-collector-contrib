@@ -32,7 +32,7 @@ func (p pdataLogsMarshaler) Marshal(ld plog.Logs, topic string) ([]*sarama.Produ
 	}, nil
 }
 
-func (p pdataLogsMarshaler) Encoding() string {
+func (p pdataLogsMarshaler) FormatType() string {
 	return p.encoding
 }
 
@@ -51,9 +51,9 @@ type KeyableMetricsMarshaler interface {
 }
 
 type pdataMetricsMarshaler struct {
-	marshaler pmetric.Marshaler
-	encoding  string
-	keyed     bool
+	marshaler  pmetric.Marshaler
+	formatType string
+	keyed      bool
 }
 
 // Key configures the pdataMetricsMarshaler to set the message key on the kafka messages
@@ -97,14 +97,14 @@ func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sar
 	return msgs, nil
 }
 
-func (p pdataMetricsMarshaler) Encoding() string {
-	return p.encoding
+func (p pdataMetricsMarshaler) FormatType() string {
+	return p.formatType
 }
 
 func newPdataMetricsMarshaler(marshaler pmetric.Marshaler, encoding string) MetricsMarshaler {
 	return &pdataMetricsMarshaler{
-		marshaler: marshaler,
-		encoding:  encoding,
+		marshaler:  marshaler,
+		formatType: encoding,
 	}
 }
 
@@ -116,9 +116,9 @@ type KeyableTracesMarshaler interface {
 }
 
 type pdataTracesMarshaler struct {
-	marshaler ptrace.Marshaler
-	encoding  string
-	keyed     bool
+	marshaler  ptrace.Marshaler
+	formatType string
+	keyed      bool
 }
 
 func (p *pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
@@ -150,8 +150,8 @@ func (p *pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*saram
 	return msgs, nil
 }
 
-func (p *pdataTracesMarshaler) Encoding() string {
-	return p.encoding
+func (p *pdataTracesMarshaler) FormatType() string {
+	return p.formatType
 }
 
 // Key configures the pdataTracesMarshaler to set the message key on the kafka messages
@@ -161,7 +161,7 @@ func (p *pdataTracesMarshaler) Key() {
 
 func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string) TracesMarshaler {
 	return &pdataTracesMarshaler{
-		marshaler: marshaler,
-		encoding:  encoding,
+		marshaler:  marshaler,
+		formatType: encoding,
 	}
 }

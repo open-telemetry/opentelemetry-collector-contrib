@@ -27,11 +27,11 @@ type data interface {
 }
 
 type mockMarshaler[Data data] struct {
-	consume  func(d Data, topic string) ([]*sarama.ProducerMessage, error)
-	encoding string
+	consume    func(d Data, topic string) ([]*sarama.ProducerMessage, error)
+	formatType string
 }
 
-func (mm *mockMarshaler[Data]) Encoding() string { return mm.encoding }
+func (mm *mockMarshaler[Data]) FormatType() string { return mm.formatType }
 
 func (mm *mockMarshaler[Data]) Marshal(d Data, topic string) ([]*sarama.ProducerMessage, error) {
 	if mm.consume != nil {
@@ -41,7 +41,7 @@ func (mm *mockMarshaler[Data]) Marshal(d Data, topic string) ([]*sarama.Producer
 }
 
 func newMockMarshaler[Data data](encoding string) *mockMarshaler[Data] {
-	return &mockMarshaler[Data]{encoding: encoding}
+	return &mockMarshaler[Data]{formatType: encoding}
 }
 
 // applyConfigOption is used to modify values of the
@@ -95,7 +95,7 @@ func TestCreateMetricExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				conf.FormatType = defaultFormatType
 			}),
 			marshalers: nil,
 			err:        nil,
@@ -105,7 +105,7 @@ func TestCreateMetricExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "custom"
+				conf.FormatType = "custom"
 			}),
 			marshalers: []MetricsMarshaler{
 				newMockMarshaler[pmetric.Metrics]("custom"),
@@ -172,7 +172,7 @@ func TestCreateLogExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				conf.FormatType = defaultFormatType
 			}),
 			marshalers: nil,
 			err:        nil,
@@ -182,7 +182,7 @@ func TestCreateLogExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "custom"
+				conf.FormatType = "custom"
 			}),
 			marshalers: []LogsMarshaler{
 				newMockMarshaler[plog.Logs]("custom"),
@@ -249,7 +249,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				conf.FormatType = defaultFormatType
 			}),
 			marshalers: nil,
 			err:        nil,
@@ -259,7 +259,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "custom"
+				conf.FormatType = "custom"
 			}),
 			marshalers: []TracesMarshaler{
 				newMockMarshaler[ptrace.Traces]("custom"),

@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
-var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
+var errUnrecognizedFormatType = fmt.Errorf("unrecognized format type")
 
 // kafkaTracesProducer uses sarama to produce trace messages to Kafka.
 type kafkaTracesProducer struct {
@@ -65,7 +65,19 @@ func (e *kafkaTracesProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-func (e *kafkaTracesProducer) start(_ context.Context, _ component.Host) error {
+func (e *kafkaTracesProducer) start(_ context.Context, host component.Host) error {
+	// takes precedence over format type and overwrites the unmarshaler
+	if e.cfg.Encoding != nil {
+		encoding := host.GetExtensions()[*e.cfg.Encoding]
+		if encoding == nil {
+			return fmt.Errorf("unknown encoding %q", e.cfg.Encoding)
+		}
+		marshaler, _ := encoding.(ptrace.Marshaler)
+		e.marshaler = &tracesEncodingMarshaler{
+			marshaler:  marshaler,
+			formatType: e.cfg.Encoding.String(),
+		}
+	}
 	producer, err := newSaramaProducer(e.cfg)
 	if err != nil {
 		return err
@@ -107,7 +119,19 @@ func (e *kafkaMetricsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-func (e *kafkaMetricsProducer) start(_ context.Context, _ component.Host) error {
+func (e *kafkaMetricsProducer) start(_ context.Context, host component.Host) error {
+	// takes precedence over format type and overwrites the unmarshaler
+	if e.cfg.Encoding != nil {
+		encoding := host.GetExtensions()[*e.cfg.Encoding]
+		if encoding == nil {
+			return fmt.Errorf("unknown encoding %q", e.cfg.Encoding)
+		}
+		marshaler, _ := encoding.(pmetric.Marshaler)
+		e.marshaler = &metricsEncodingMarshaler{
+			marshaler:  marshaler,
+			formatType: e.cfg.Encoding.String(),
+		}
+	}
 	producer, err := newSaramaProducer(e.cfg)
 	if err != nil {
 		return err
@@ -149,7 +173,19 @@ func (e *kafkaLogsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-func (e *kafkaLogsProducer) start(_ context.Context, _ component.Host) error {
+func (e *kafkaLogsProducer) start(_ context.Context, host component.Host) error {
+	// takes precedence over format type and overwrites the unmarshaler
+	if e.cfg.Encoding != nil {
+		encoding := host.GetExtensions()[*e.cfg.Encoding]
+		if encoding == nil {
+			return fmt.Errorf("unknown encoding %q", e.cfg.Encoding)
+		}
+		marshaler, _ := encoding.(plog.Marshaler)
+		e.marshaler = &logsEncodingMarshaler{
+			marshaler:  marshaler,
+			formatType: e.cfg.Encoding.String(),
+		}
+	}
 	producer, err := newSaramaProducer(e.cfg)
 	if err != nil {
 		return err
@@ -205,9 +241,9 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 }
 
 func newMetricsExporter(config Config, set exporter.Settings, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
-	marshaler := marshalers[config.Encoding]
+	marshaler := marshalers[config.FormatType]
 	if marshaler == nil {
-		return nil, errUnrecognizedEncoding
+		return nil, errUnrecognizedFormatType
 	}
 	if config.PartitionMetricsByResourceAttributes {
 		if keyableMarshaler, ok := marshaler.(KeyableMetricsMarshaler); ok {
@@ -225,9 +261,9 @@ func newMetricsExporter(config Config, set exporter.Settings, marshalers map[str
 
 // newTracesExporter creates Kafka exporter.
 func newTracesExporter(config Config, set exporter.Settings, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
-	marshaler := marshalers[config.Encoding]
+	marshaler := marshalers[config.FormatType]
 	if marshaler == nil {
-		return nil, errUnrecognizedEncoding
+		return nil, errUnrecognizedFormatType
 	}
 	if config.PartitionTracesByID {
 		if keyableMarshaler, ok := marshaler.(KeyableTracesMarshaler); ok {
@@ -243,9 +279,9 @@ func newTracesExporter(config Config, set exporter.Settings, marshalers map[stri
 }
 
 func newLogsExporter(config Config, set exporter.Settings, marshalers map[string]LogsMarshaler) (*kafkaLogsProducer, error) {
-	marshaler := marshalers[config.Encoding]
+	marshaler := marshalers[config.FormatType]
 	if marshaler == nil {
-		return nil, errUnrecognizedEncoding
+		return nil, errUnrecognizedFormatType
 	}
 
 	return &kafkaLogsProducer{
