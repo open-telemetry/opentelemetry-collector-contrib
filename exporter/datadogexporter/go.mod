@@ -78,8 +78,8 @@ require (
 	go.opentelemetry.io/collector/receiver v0.106.1
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.1
 	go.opentelemetry.io/collector/semconv v0.106.1
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
