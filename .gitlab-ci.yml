@@ -3,23 +3,17 @@ variables:
   BUILD_STABLE_REGISTRY: "486234852809.dkr.ecr.us-east-1.amazonaws.com"
   CI_IMAGE: registry.ddbuild.io/ci/opentelemetry-collector-contrib:ci-image-2
   RESTORE_CACHE_ATTEMPTS: 2
-<<<<<<< HEAD
-  BUILD_STABLE_REGISTRY: '486234852809.dkr.ecr.us-east-1.amazonaws.com'
+  BUILD_DD_REGISTRY: registry.ddbuild.io/ci/opentelemetry-collector-contrib
+  BUILD_DEMO_REGISTRY: 172597598159.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  BUILD_SANDBOX_REGISTRY: 601427279990.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  DOCKERFILE: ci/Dockerfile
   # To use images from test-infra-definitions dev branches, set the SUFFIX variable to -dev
   # and check the job creating the image to make sure you have the right SHA prefix
   TEST_INFRA_DEFINITIONS_BUILDIMAGES_SUFFIX: ""
   # Make sure to update test-infra-definitions version in go.mod as well
   TEST_INFRA_DEFINITIONS_BUILDIMAGES: b02a714d7de7
 stages:
-  - e2e
-=======
-  BUILD_DD_REGISTRY: registry.ddbuild.io/ci/opentelemetry-collector-contrib
-  BUILD_DEMO_REGISTRY: 172597598159.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
-  BUILD_SANDBOX_REGISTRY: 601427279990.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
-  DOCKERFILE: ci/Dockerfile
-stages:
   - manaul-jobs
->>>>>>> ddb80e70c6d88252fcc52a092357212ec6f4f566
   - build
   - push
   - staging-deploy
@@ -42,38 +36,6 @@ build-image-main:
   variables:
     DOCKERFILE: ci/Dockerfile
     IMAGE_TAG_PREFIX: otelcolcontrib
-
-.new_e2e_template:
-  stage: e2e
-  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/test-infra-definitions/runner$TEST_INFRA_DEFINITIONS_BUILDIMAGES_SUFFIX:$TEST_INFRA_DEFINITIONS_BUILDIMAGES
-  tags: ["arch:amd64"]
-  before_script:
-    # Setup AWS Credentials
-    - mkdir -p ~/.aws
-    - aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.agent-qa-profile" --with-decryption --query "Parameter.Value" --output text >> ~/.aws/config
-    - export AWS_PROFILE=agent-qa-ci
-    # Now all `aws` commands target the agent-qa profile
-    - aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.ssh_public_key" --with-decryption --query "Parameter.Value" --output text > $E2E_PUBLIC_KEY_PATH
-    - touch $E2E_PRIVATE_KEY_PATH && chmod 600 $E2E_PRIVATE_KEY_PATH && aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.ssh_private_key" --with-decryption --query "Parameter.Value" --output text > $E2E_PRIVATE_KEY_PATH
-    # Use S3 backend
-    - pulumi login "s3://dd-pulumi-state?region=us-east-1&awssdk=v2&profile=$AWS_PROFILE"
-  variables:
-    KUBERNETES_MEMORY_REQUEST: 12Gi
-    KUBERNETES_MEMORY_LIMIT: 16Gi
-    KUBERNETES_CPU_REQUEST: 6
-    E2E_PUBLIC_KEY_PATH: /tmp/agent-qa-ssh-key.pub
-    E2E_PRIVATE_KEY_PATH: /tmp/agent-qa-ssh-key
-    E2E_KEY_PAIR_NAME: ci.open-elemetry-collector-contrib
-    E2E_OUTPUT_DIR: $CI_PROJECT_DIR/e2e-output
-  script:
-    - cd e2e-tests && go test $TARGETS/... -v timeout 0
-
-# new-e2e-otel-collector:
-#   extends: .new_e2e_template
-#   variables:
-#     TARGETS: ./
-#     TEAM: otel
-
     BUILD_REGISTRY: $BUILD_DD_REGISTRY
 .push-image: &push-image
   stage: push
@@ -162,3 +124,35 @@ prod-deploy-demo-eks:
     # # For debugging
     # - aws sts get-caller-identity
     - bash ./ci/scripts/ci-deploy-demo.sh
+
+
+.new_e2e_template:
+  stage: e2e
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/test-infra-definitions/runner$TEST_INFRA_DEFINITIONS_BUILDIMAGES_SUFFIX:$TEST_INFRA_DEFINITIONS_BUILDIMAGES
+  tags: ["arch:amd64"]
+  before_script:
+    # Setup AWS Credentials
+    - mkdir -p ~/.aws
+    - aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.agent-qa-profile" --with-decryption --query "Parameter.Value" --output text >> ~/.aws/config
+    - export AWS_PROFILE=agent-qa-ci
+    # Now all `aws` commands target the agent-qa profile
+    - aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.ssh_public_key" --with-decryption --query "Parameter.Value" --output text > $E2E_PUBLIC_KEY_PATH
+    - touch $E2E_PRIVATE_KEY_PATH && chmod 600 $E2E_PRIVATE_KEY_PATH && aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.ssh_private_key" --with-decryption --query "Parameter.Value" --output text > $E2E_PRIVATE_KEY_PATH
+    # Use S3 backend
+    - pulumi login "s3://dd-pulumi-state?region=us-east-1&awssdk=v2&profile=$AWS_PROFILE"
+  variables:
+    KUBERNETES_MEMORY_REQUEST: 12Gi
+    KUBERNETES_MEMORY_LIMIT: 16Gi
+    KUBERNETES_CPU_REQUEST: 6
+    E2E_PUBLIC_KEY_PATH: /tmp/agent-qa-ssh-key.pub
+    E2E_PRIVATE_KEY_PATH: /tmp/agent-qa-ssh-key
+    E2E_KEY_PAIR_NAME: ci.open-elemetry-collector-contrib
+    E2E_OUTPUT_DIR: $CI_PROJECT_DIR/e2e-output
+  script:
+    - cd e2e-tests && go test $TARGETS/... -v timeout 0
+
+# new-e2e-otel-collector:
+#   extends: .new_e2e_template
+#   variables:
+#     TARGETS: ./
+#     TEAM: otel
