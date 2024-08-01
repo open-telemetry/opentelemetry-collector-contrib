@@ -104,10 +104,12 @@ func Test_onMessage(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: initialID},
 			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
 		}
+		require.NoError(t, s.createTemplates())
 
 		s.onMessage(context.Background(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
@@ -131,9 +133,11 @@ func Test_onMessage(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: testUUID},
 			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 		}
+		require.NoError(t, s.createTemplates())
 
 		s.onMessage(context.Background(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
@@ -175,6 +179,7 @@ func Test_onMessage(t *testing.T) {
 			hasNewConfig:                 make(chan struct{}, 1),
 			persistentState:              &persistentState{InstanceID: testUUID},
 			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    agentConnAtomic,
 			agentHealthCheckEndpoint:     "localhost:8000",
