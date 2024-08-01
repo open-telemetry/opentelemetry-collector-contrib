@@ -10,9 +10,8 @@ import (
 	"testing"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
-	"github.com/stretchr/testify/require"
-
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -122,19 +121,20 @@ func TestTranslateSeriesV1(t *testing.T) {
 			expect: func(t *testing.T, result pmetric.Metrics) {
 				requireMetricAndDataPointCounts(t, result, 1, 2)
 
-				expectedResourceAttrs, expectedScopeAttrs, expectedDpAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
-				requireResourceMetrics(t, result, expectedResourceAttrs, 1)
+				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
+				require.Equal(t, 1, result.ResourceMetrics().Len())
+				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
-				requireScope(t, result, expectedScopeAttrs, "otelcol/datadogreceiver", component.NewDefaultBuildInfo().Version)
+				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-				requireSum(t, metric, "TestCount", pmetric.AggregationTemporalityDelta, 2)
+				requireSum(t, metric, "TestCount", 2)
 
 				dp := metric.Sum().DataPoints().At(0)
-				requireDp(t, dp, expectedDpAttrs, 1636629071, 0.5)
+				requireDp(t, dp, expectedAttrs.dp, 1636629071, 0.5)
 
 				dp = metric.Sum().DataPoints().At(1)
-				requireDp(t, dp, expectedDpAttrs, 1636629081, 1.0)
+				requireDp(t, dp, expectedAttrs.dp, 1636629081, 1.0)
 			},
 		},
 		{
@@ -162,19 +162,20 @@ func TestTranslateSeriesV1(t *testing.T) {
 			expect: func(t *testing.T, result pmetric.Metrics) {
 				requireMetricAndDataPointCounts(t, result, 1, 2)
 
-				expectedResourceAttrs, expectedScopeAttrs, expectedDpAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
-				requireResourceMetrics(t, result, expectedResourceAttrs, 1)
+				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
+				require.Equal(t, 1, result.ResourceMetrics().Len())
+				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
-				requireScope(t, result, expectedScopeAttrs, "otelcol/datadogreceiver", component.NewDefaultBuildInfo().Version)
+				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 				requireGauge(t, metric, "TestGauge", 2)
 
 				dp := metric.Gauge().DataPoints().At(0)
-				requireDp(t, dp, expectedDpAttrs, 1636629071, 2)
+				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
 
 				dp = metric.Gauge().DataPoints().At(1)
-				requireDp(t, dp, expectedDpAttrs, 1636629081, 3)
+				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
 			},
 		},
 		{
@@ -202,19 +203,20 @@ func TestTranslateSeriesV1(t *testing.T) {
 			expect: func(t *testing.T, result pmetric.Metrics) {
 				requireMetricAndDataPointCounts(t, result, 1, 2)
 
-				expectedResourceAttrs, expectedScopeAttrs, expectedDpAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
-				requireResourceMetrics(t, result, expectedResourceAttrs, 1)
+				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
+				require.Equal(t, 1, result.ResourceMetrics().Len())
+				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
-				requireScope(t, result, expectedScopeAttrs, "otelcol/datadogreceiver", component.NewDefaultBuildInfo().Version)
+				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-				requireSum(t, metric, "TestRate", pmetric.AggregationTemporalityDelta, 2)
+				requireSum(t, metric, "TestRate", 2)
 
 				dp := metric.Sum().DataPoints().At(0)
-				requireDp(t, dp, expectedDpAttrs, 1636629071, 2)
+				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
 
 				dp = metric.Sum().DataPoints().At(1)
-				requireDp(t, dp, expectedDpAttrs, 1636629081, 3)
+				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
 			},
 		},
 	}
@@ -263,20 +265,21 @@ func TestTranslateSeriesV2(t *testing.T) {
 			expect: func(t *testing.T, result pmetric.Metrics) {
 				requireMetricAndDataPointCounts(t, result, 1, 2)
 
-				expectedResourceAttrs, expectedScopeAttrs, expectedDpAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
-				expectedResourceAttrs.PutStr("source", "")
-				requireResourceMetrics(t, result, expectedResourceAttrs, 1)
+				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
+				expectedAttrs.resource.PutStr("source", "")
+				require.Equal(t, 1, result.ResourceMetrics().Len())
+				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
-				requireScope(t, result, expectedScopeAttrs, "otelcol/datadogreceiver", component.NewDefaultBuildInfo().Version)
+				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-				requireSum(t, metric, "TestCount", pmetric.AggregationTemporalityDelta, 2)
+				requireSum(t, metric, "TestCount", 2)
 
 				dp := metric.Sum().DataPoints().At(0)
-				requireDp(t, dp, expectedDpAttrs, 1636629071, 0.5)
+				requireDp(t, dp, expectedAttrs.dp, 1636629071, 0.5)
 
 				dp = metric.Sum().DataPoints().At(1)
-				requireDp(t, dp, expectedDpAttrs, 1636629081, 1.0)
+				requireDp(t, dp, expectedAttrs.dp, 1636629081, 1.0)
 			},
 		},
 		{
@@ -307,20 +310,21 @@ func TestTranslateSeriesV2(t *testing.T) {
 			expect: func(t *testing.T, result pmetric.Metrics) {
 				requireMetricAndDataPointCounts(t, result, 1, 2)
 
-				expectedResourceAttrs, expectedScopeAttrs, expectedDpAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
-				expectedResourceAttrs.PutStr("source", "")
-				requireResourceMetrics(t, result, expectedResourceAttrs, 1)
+				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
+				expectedAttrs.resource.PutStr("source", "")
+				require.Equal(t, 1, result.ResourceMetrics().Len())
+				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
-				requireScope(t, result, expectedScopeAttrs, "otelcol/datadogreceiver", component.NewDefaultBuildInfo().Version)
+				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 				requireGauge(t, metric, "TestGauge", 2)
 
 				dp := metric.Gauge().DataPoints().At(0)
-				requireDp(t, dp, expectedDpAttrs, 1636629071, 2)
+				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
 
 				dp = metric.Gauge().DataPoints().At(1)
-				requireDp(t, dp, expectedDpAttrs, 1636629081, 3)
+				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
 			},
 		},
 		{
@@ -351,20 +355,21 @@ func TestTranslateSeriesV2(t *testing.T) {
 			expect: func(t *testing.T, result pmetric.Metrics) {
 				requireMetricAndDataPointCounts(t, result, 1, 2)
 
-				expectedResourceAttrs, expectedScopeAttrs, expectedDpAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
-				expectedResourceAttrs.PutStr("source", "")
-				requireResourceMetrics(t, result, expectedResourceAttrs, 1)
+				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
+				expectedAttrs.resource.PutStr("source", "")
+				require.Equal(t, 1, result.ResourceMetrics().Len())
+				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
-				requireScope(t, result, expectedScopeAttrs, "otelcol/datadogreceiver", component.NewDefaultBuildInfo().Version)
+				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-				requireSum(t, metric, "TestRate", pmetric.AggregationTemporalityDelta, 2)
+				requireSum(t, metric, "TestRate", 2)
 
 				dp := metric.Sum().DataPoints().At(0)
-				requireDp(t, dp, expectedDpAttrs, 1636629071, 2)
+				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
 
 				dp = metric.Sum().DataPoints().At(1)
-				requireDp(t, dp, expectedDpAttrs, 1636629081, 3)
+				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
 			},
 		},
 		{
