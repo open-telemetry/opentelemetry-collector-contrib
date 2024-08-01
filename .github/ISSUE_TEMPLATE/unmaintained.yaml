@@ -132,6 +132,7 @@ body:
       - internal/metadataproviders
       - internal/otelarrow
       - internal/pdatautil
+      - internal/rabbitmq
       - internal/sharedcomponent
       - internal/splunk
       - internal/sqlquery
