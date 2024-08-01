@@ -4,8 +4,8 @@ go 1.21.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.106.1
 	github.com/prometheus/common v0.55.0
 	github.com/prometheus/prometheus v0.53.1
 	github.com/stretchr/testify v1.9.0
