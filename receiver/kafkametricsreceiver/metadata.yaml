@@ -40,6 +40,34 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [topic]
+  kafka.topic.replication_factor:
+    enabled: true
+    description: replication factor of a topic.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [topic]
+  kafka.topic.log_retention_ms:
+    description: log retention period of a topic (ms), Default value is 7 days (604800000ms).
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [topic]
+    enabled: true
+  kafka.topic.log_retention_bytes:
+    description: log retention size of a topic in Bytes, Default value is infinite (-1).
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [topic]
+    enabled: true
+  kafka.topic.min_insync_replicas:
+    description: minimum insync replicas of a topic. Default is 1 replica.
+    unit: "{replicas}"
+    gauge:
+      value_type: int
+    attributes: [topic]
+    enabled: true
   kafka.partition.current_offset:
     enabled: true
     description: Current offset of partition of topic.

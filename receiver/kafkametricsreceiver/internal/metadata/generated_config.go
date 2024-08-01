@@ -37,7 +37,11 @@ type MetricsConfig struct {
 	KafkaPartitionOldestOffset   MetricConfig `mapstructure:"kafka.partition.oldest_offset"`
 	KafkaPartitionReplicas       MetricConfig `mapstructure:"kafka.partition.replicas"`
 	KafkaPartitionReplicasInSync MetricConfig `mapstructure:"kafka.partition.replicas_in_sync"`
+	KafkaTopicLogRetentionBytes  MetricConfig `mapstructure:"kafka.topic.log_retention_bytes"`
+	KafkaTopicLogRetentionMs     MetricConfig `mapstructure:"kafka.topic.log_retention_ms"`
+	KafkaTopicMinInsyncReplicas  MetricConfig `mapstructure:"kafka.topic.min_insync_replicas"`
 	KafkaTopicPartitions         MetricConfig `mapstructure:"kafka.topic.partitions"`
+	KafkaTopicReplicationFactor  MetricConfig `mapstructure:"kafka.topic.replication_factor"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -72,7 +76,19 @@ func DefaultMetricsConfig() MetricsConfig {
 		KafkaPartitionReplicasInSync: MetricConfig{
 			Enabled: true,
 		},
+		KafkaTopicLogRetentionBytes: MetricConfig{
+			Enabled: true,
+		},
+		KafkaTopicLogRetentionMs: MetricConfig{
+			Enabled: true,
+		},
+		KafkaTopicMinInsyncReplicas: MetricConfig{
+			Enabled: true,
+		},
 		KafkaTopicPartitions: MetricConfig{
+			Enabled: true,
+		},
+		KafkaTopicReplicationFactor: MetricConfig{
 			Enabled: true,
 		},
 	}

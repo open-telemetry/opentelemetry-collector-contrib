@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -65,6 +66,7 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	s.scrapeTopicConfigs(now, scrapeErrors)
 	for _, topic := range topics {
 		if !s.topicFilter.MatchString(topic) {
 			continue
@@ -104,6 +106,51 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 	return s.mb.Emit(), scrapeErrors.Combine()
+}
+
+func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
+	admin, err := sarama.NewClusterAdminFromClient(s.client)
+	if err != nil {
+		s.settings.Logger.Error("Error creating kafka client with admin priviledges", zap.Error(err))
+		return
+	}
+	topics, err := admin.ListTopics()
+	if err != nil {
+		s.settings.Logger.Error("Error fetching cluster topic configurations", zap.Error(err))
+		return
+	}
+
+	for name, topic := range topics {
+		s.mb.RecordKafkaTopicReplicationFactorDataPoint(now, int64(topic.ReplicationFactor), name)
+		configEntries, _ := admin.DescribeConfig(sarama.ConfigResource{
+			Type:        sarama.TopicResource,
+			Name:        name,
+			ConfigNames: []string{"min.insync.replicas", "retention.ms", "retention.bytes"},
+		})
+
+		for _, config := range configEntries {
+			switch config.Name {
+			case "min.insync.replicas":
+				if val, err := strconv.Atoi(config.Value); err == nil {
+					s.mb.RecordKafkaTopicMinInsyncReplicasDataPoint(now, int64(val), name)
+				} else {
+					errors.AddPartial(1, err)
+				}
+			case "retention.ms":
+				if val, err := strconv.Atoi(config.Value); err == nil {
+					s.mb.RecordKafkaTopicLogRetentionMsDataPoint(now, int64(val), name)
+				} else {
+					errors.AddPartial(1, err)
+				}
+			case "retention.bytes":
+				if val, err := strconv.Atoi(config.Value); err == nil {
+					s.mb.RecordKafkaTopicLogRetentionBytesDataPoint(now, int64(val), name)
+				} else {
+					errors.AddPartial(1, err)
+				}
+			}
+		}
+	}
 }
 
 func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.Settings) (scraperhelper.Scraper, error) {

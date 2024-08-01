@@ -21,7 +21,15 @@ all_set:
       enabled: true
     kafka.partition.replicas_in_sync:
       enabled: true
+    kafka.topic.log_retention_bytes:
+      enabled: true
+    kafka.topic.log_retention_ms:
+      enabled: true
+    kafka.topic.min_insync_replicas:
+      enabled: true
     kafka.topic.partitions:
+      enabled: true
+    kafka.topic.replication_factor:
       enabled: true
 none_set:
   metrics:
@@ -45,5 +53,13 @@ none_set:
       enabled: false
     kafka.partition.replicas_in_sync:
       enabled: false
+    kafka.topic.log_retention_bytes:
+      enabled: false
+    kafka.topic.log_retention_ms:
+      enabled: false
+    kafka.topic.min_insync_replicas:
+      enabled: false
     kafka.topic.partitions:
+      enabled: false
+    kafka.topic.replication_factor:
       enabled: false

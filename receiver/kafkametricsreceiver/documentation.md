@@ -156,6 +156,48 @@ Number of synchronized replicas of partition
 | topic | The ID (integer) of a topic | Any Str |
 | partition | The number (integer) of the partition | Any Int |
 
+### kafka.topic.log_retention_bytes
+
+log retention size of a topic in Bytes, Default value is infinite (-1).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
+### kafka.topic.log_retention_ms
+
+log retention period of a topic (ms), Default value is 7 days (604800000ms).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
+### kafka.topic.min_insync_replicas
+
+minimum insync replicas of a topic. Default is 1 replica.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {replicas} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
 ### kafka.topic.partitions
 
 Number of partitions in topic.
@@ -163,6 +205,20 @@ Number of partitions in topic.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {partitions} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
+### kafka.topic.replication_factor
+
+replication factor of a topic.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
 
 #### Attributes
 
