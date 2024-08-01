@@ -10,6 +10,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/mitchellh/hashstructure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -180,7 +181,7 @@ func IgnoreMetricAttributeValue(attributeName string, metricNames ...string) Com
 	})
 }
 
-// IgnoreMetricAttributeValue is a CompareMetricsOption that clears value of the metric attribute.
+// IgnoreDatapointAttributesOrder is a CompareMetricsOption that ignores the order of datapoint attributes.
 func IgnoreDatapointAttributesOrder() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
 		orderDatapointAttributes(expected)
@@ -228,6 +229,66 @@ func orderDatapointAttributes(metrics pmetric.Metrics) {
 		}
 	}
 }
+
+// IgnoreDatapointsOrder is a CompareMetricsOption that ignores the order of datapoints.
+func IgnoreDatapointsOrder() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		orderDatapoints(expected)
+		orderDatapoints(actual)
+	})
+}
+
+func orderDatapoints(metrics pmetric.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			msl := ilms.At(j).Metrics()
+			for g := 0; g < msl.Len(); g++ {
+				msl.At(g)
+				switch msl.At(g).Type() {
+				case pmetric.MetricTypeGauge:
+					msl.At(g).Gauge().DataPoints().Sort(func(a, b pmetric.NumberDataPoint) bool {
+						hashA, _ := hashstructure.Hash(a, &hashstructure.HashOptions{})
+						hashB, _ := hashstructure.Hash(b, &hashstructure.HashOptions{})
+						return hashA < hashB
+					})
+				case pmetric.MetricTypeSum:
+					msl.At(g).Sum().DataPoints().Sort(func(a, b pmetric.NumberDataPoint) bool {
+						hashA, _ := hashstructure.Hash(a, &hashstructure.HashOptions{})
+						hashB, _ := hashstructure.Hash(b, &hashstructure.HashOptions{})
+						return hashA < hashB
+					})
+				case pmetric.MetricTypeHistogram:
+					msl.At(g).Histogram().DataPoints().Sort(func(a, b pmetric.HistogramDataPoint) bool {
+						hashA, _ := hashstructure.Hash(a, &hashstructure.HashOptions{})
+						hashB, _ := hashstructure.Hash(b, &hashstructure.HashOptions{})
+						return hashA < hashB
+					})
+				case pmetric.MetricTypeExponentialHistogram:
+					msl.At(g).ExponentialHistogram().DataPoints().Sort(func(a, b pmetric.ExponentialHistogramDataPoint) bool {
+						hashA, _ := hashstructure.Hash(a, &hashstructure.HashOptions{})
+						hashB, _ := hashstructure.Hash(b, &hashstructure.HashOptions{})
+						return hashA < hashB
+					})
+				case pmetric.MetricTypeSummary:
+					msl.At(g).Summary().DataPoints().Sort(func(a, b pmetric.SummaryDataPoint) bool {
+						hashA, _ := hashstructure.Hash(a, &hashstructure.HashOptions{})
+						hashB, _ := hashstructure.Hash(b, &hashstructure.HashOptions{})
+						return hashA < hashB
+					})
+				case pmetric.MetricTypeEmpty:
+				}
+			}
+		}
+	}
+}
+
+// func hash(s interface{}) []byte {
+// 	var b bytes.Buffer
+// 	gob.NewEncoder(&b).Encode(s)
+// 	return b.Bytes()
+// }
 
 func orderMapByKey(input map[string]any) map[string]any {
 	// Create a slice to hold the keys

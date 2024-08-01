@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_aggregateOnAttributes(t *testing.T) {
@@ -326,7 +327,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			if tt.want != nil {
 				expected := pmetric.NewMetricSlice()
 				tt.want(expected)
-				assert.Equal(t, expected, actualMetrics)
+				require.Nil(t, pmetrictest.CompareMetric(expected.At(0), actualMetrics.At(0)), pmetrictest.IgnoreDatapointsOrder())
 			}
 		})
 	}
