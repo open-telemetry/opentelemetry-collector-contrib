@@ -321,13 +321,22 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.Equal(t, tt.wantErr, err)
 
-			actualMetrics := pmetric.NewMetricSlice()
-			tt.input.CopyTo(actualMetrics.AppendEmpty())
+			actualMetric := pmetric.NewMetricSlice()
+			tt.input.CopyTo(actualMetric.AppendEmpty())
 
 			if tt.want != nil {
 				expected := pmetric.NewMetricSlice()
 				tt.want(expected)
-				require.Nil(t, pmetrictest.CompareMetric(expected.At(0), actualMetrics.At(0)), pmetrictest.IgnoreDatapointsOrder())
+
+				expectedMetrics := pmetric.NewMetrics()
+				sl := expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				expected.CopyTo(sl)
+
+				actualMetrics := pmetric.NewMetrics()
+				sl2 := actualMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				actualMetric.CopyTo(sl2)
+
+				require.Nil(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreDatapointsOrder()))
 			}
 		})
 	}
