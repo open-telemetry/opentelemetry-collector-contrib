@@ -28,11 +28,13 @@ func TestConnectAndClose(t *testing.T) {
 	client := mockClient{}
 	connection := mockConnection{}
 	dialConfig := DialConfig{
-		URL: connectURL,
+		DialConfig: rabbitmq.DialConfig{
+			URL: connectURL,
+		},
 	}
 
 	// Start the connection successfully
-	client.On("DialConfig", connectURL, mock.Anything).Return(&connection, nil)
+	client.On("DialConfig", mock.Anything).Return(&connection, nil)
 	connection.On("NotifyClose", mock.Anything).Return(make(chan *amqp.Error))
 
 	publisher, err := NewConnection(zap.NewNop(), &client, dialConfig)
@@ -53,10 +55,12 @@ func TestConnectAndClose(t *testing.T) {
 func TestConnectionErrorAndClose(t *testing.T) {
 	client := mockClient{}
 	dialConfig := DialConfig{
-		URL: connectURL,
+		DialConfig: rabbitmq.DialConfig{
+			URL: connectURL,
+		},
 	}
 
-	client.On("DialConfig", connectURL, mock.Anything).Return(nil, errors.New("simulated connection error"))
+	client.On("DialConfig", mock.Anything).Return(nil, errors.New("simulated connection error"))
 	publisher, err := NewConnection(zap.NewNop(), &client, dialConfig)
 
 	assert.EqualError(t, err, "simulated connection error")
@@ -84,7 +88,6 @@ func TestPublishAckedWithinTimeout(t *testing.T) {
 
 func TestPublishNackedWithinTimeout(t *testing.T) {
 	client, connection, channel, confirmation := setupMocksForSuccessfulPublish()
-
 	resetCall(confirmation.ExpectedCalls, "Acked", t)
 	confirmation.On("Acked").Return(false)
 
@@ -260,7 +263,8 @@ func setupMocksForSuccessfulPublish() (*mockClient, *mockConnection, *mockChanne
 	channel := mockChannel{}
 	confirmation := mockDeferredConfirmation{}
 
-	client.On("DialConfig", mock.Anything, mock.Anything).Return(&connection, nil)
+	client.On("DialConfig", mock.Anything).Return(&connection, nil)
+	connection.On("ReconnectIfUnhealthy").Return(nil)
 	connection.On("NotifyClose", mock.Anything).Return(make(chan *amqp.Error))
 	connection.On("Channel").Return(&channel, nil)
 	connection.On("IsClosed").Return(false)
@@ -289,6 +293,7 @@ func resetCall(calls []*mock.Call, methodName string, t *testing.T) {
 			return
 		}
 	}
+	t.Errorf("Faild to reset method %s", methodName)
 	t.FailNow()
 }
 
@@ -296,8 +301,8 @@ type mockClient struct {
 	mock.Mock
 }
 
-func (m *mockClient) DialConfig(url string, config amqp.Config) (rabbitmq.Connection, error) {
-	args := m.Called(url, config)
+func (m *mockClient) DialConfig(config rabbitmq.DialConfig) (rabbitmq.Connection, error) {
+	args := m.Called(config)
 
 	if connection := args.Get(0); connection != nil {
 		return connection.(rabbitmq.Connection), args.Error(1)
@@ -307,6 +312,11 @@ func (m *mockClient) DialConfig(url string, config amqp.Config) (rabbitmq.Connec
 
 type mockConnection struct {
 	mock.Mock
+}
+
+func (m *mockConnection) ReconnectIfUnhealthy() error {
+	args := m.Called()
+	return args.Error(0)
 }
 
 func (m *mockConnection) IsClosed() bool {
@@ -383,7 +393,9 @@ func makePublishMessage() Message {
 
 func makeDialConfig() DialConfig {
 	return DialConfig{
-		URL:                        connectURL,
+		DialConfig: rabbitmq.DialConfig{
+			URL: connectURL,
+		},
 		PublishConfirmationTimeout: time.Millisecond * 20,
 		Durable:                    true,
 	}

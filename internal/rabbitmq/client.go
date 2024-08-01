@@ -88,8 +88,11 @@ func (c *client) DialConfig(config DialConfig) (Connection, error) {
 		},
 		logger:           c.logger,
 		connLock:         &sync.Mutex{},
-		connectionErrors: make(chan *amqp.Error),
+		connectionErrors: make(chan *amqp.Error, 1),
 	}
+
+	ch.connLock.Lock()
+	defer ch.connLock.Unlock()
 
 	return ch, ch.connect()
 }

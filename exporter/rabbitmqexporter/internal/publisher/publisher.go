@@ -36,9 +36,10 @@ func NewConnection(logger *zap.Logger, client rabbitmq.AmqpClient, config DialCo
 
 	conn, err := p.client.DialConfig(p.config.DialConfig)
 	if err != nil {
-		return nil, err
+		return &p, err
 	}
 	p.connection = conn
+
 	return &p, nil
 }
 
@@ -117,5 +118,8 @@ func (p *publisher) Publish(ctx context.Context, message Message) error {
 }
 
 func (p *publisher) Close() error {
+	if p.connection == nil {
+		return nil
+	}
 	return p.connection.Close()
 }
