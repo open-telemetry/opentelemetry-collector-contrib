@@ -890,6 +890,13 @@ metrics:
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
+  elasticsearch.index.operations.merge.current:
+    description: The number of currently active segment merges
+    unit: "{merges}"
+    gauge:
+      value_type: int
+    attributes: [ index_aggregation_type ]
+    enabled: false
   elasticsearch.index.segments.count:
     description: Number of segments of an index.
     unit: "{segments}"
