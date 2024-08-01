@@ -100,7 +100,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		recombineParser:         recombineParser,
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
-		crioLogEmitter:          cLogEmitter,
+		criLogEmitter:           cLogEmitter,
 		criConsumers:            &wg,
 	}
 	return p, nil
