@@ -1,6 +1,9 @@
 variables:
-  CI_IMAGE: registry.ddbuild.io/images/docker:20.10.13
+  CI_PROJECT_NAME: "opentelemetry-collector-contrib"
+  BUILD_STABLE_REGISTRY: "486234852809.dkr.ecr.us-east-1.amazonaws.com"
+  CI_IMAGE: registry.ddbuild.io/ci/opentelemetry-collector-contrib:ci-image-2
   RESTORE_CACHE_ATTEMPTS: 2
+<<<<<<< HEAD
   BUILD_STABLE_REGISTRY: '486234852809.dkr.ecr.us-east-1.amazonaws.com'
   # To use images from test-infra-definitions dev branches, set the SUFFIX variable to -dev
   # and check the job creating the image to make sure you have the right SHA prefix
@@ -9,23 +12,33 @@ variables:
   TEST_INFRA_DEFINITIONS_BUILDIMAGES: b02a714d7de7
 stages:
   - e2e
+=======
+  BUILD_DD_REGISTRY: registry.ddbuild.io/ci/opentelemetry-collector-contrib
+  BUILD_DEMO_REGISTRY: 172597598159.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  BUILD_SANDBOX_REGISTRY: 601427279990.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  DOCKERFILE: ci/Dockerfile
+stages:
+  - manaul-jobs
+>>>>>>> ddb80e70c6d88252fcc52a092357212ec6f4f566
   - build
+  - push
+  - staging-deploy
+  - prod-deploy
 
 # =======================================================================
 # Build and deploy the images used for CI
 # =======================================================================
-
 .build-ci-image: &build-ci-image
   stage: build
   tags: ["runner:docker"]
   image: $CI_IMAGE
   script:
+    - IMAGE_TAG_PREFIX=otelcolcontrib
     - TAG="$IMAGE_TAG_PREFIX-v$CI_COMMIT_SHORT_SHA"
-    - docker build --file $DOCKERFILE --tag registry.ddbuild.io/ci/opentelemetry-collector-contrib:$TAG --label target=staging .
-    - docker push registry.ddbuild.io/ci/opentelemetry-collector-contrib:$TAG
-
-build-ci-image-main:
-  <<: *build-ci-image
+    - docker build --file $DOCKERFILE --tag $BUILD_REGISTRY:$TAG --label target=staging .
+    - docker push $BUILD_REGISTRY:$TAG
+build-image-main:
+  !!merge <<: *build-ci-image
   variables:
     DOCKERFILE: ci/Dockerfile
     IMAGE_TAG_PREFIX: otelcolcontrib
@@ -61,3 +74,91 @@ build-ci-image-main:
 #     TARGETS: ./
 #     TEAM: otel
 
+    BUILD_REGISTRY: $BUILD_DD_REGISTRY
+.push-image: &push-image
+  stage: push
+  tags: ["runner:docker"]
+  image: $CI_IMAGE
+  dependencies:
+    - build-image-main
+  script:
+    - IMAGE_TAG_PREFIX=otelcolcontrib
+    - TAG="$IMAGE_TAG_PREFIX-v$CI_COMMIT_SHORT_SHA"
+    - docker pull $BUILD_DD_REGISTRY:$TAG
+    - docker tag $BUILD_DD_REGISTRY:$TAG $BUILD_REGISTRY:$TAG
+    - docker push $BUILD_REGISTRY:$TAG
+push-image-demo:
+  !!merge <<: *push-image
+  variables:
+    BUILD_REGISTRY: $BUILD_DEMO_REGISTRY
+    AWS_ACCT_ID: 172597598159
+push-image-staging:
+  !!merge <<: *push-image
+  variables:
+    BUILD_REGISTRY: $BUILD_SANDBOX_REGISTRY
+    AWS_ACCT_ID: 601427279990
+build-ci-image:
+  stage: manaul-jobs
+  when: manual
+  tags: ["runner:docker"]
+  image: $CI_IMAGE
+  script:
+    - TAG=ci-image-2
+    - docker build --file ci/Dockerfile.gitlab --tag $BUILD_DD_REGISTRY:$TAG .
+    - docker push $BUILD_DD_REGISTRY:$TAG
+.staging-deploy: &staging-deploy
+  stage: staging-deploy
+  tags: ["runner:docker", "size:large"]
+  image: $CI_IMAGE
+  dependencies:
+    - push-image-staging
+  rules:
+    - if: '$CI_COMMIT_REF_NAME =~ /-staging$/'
+  script:
+    # # For debugging
+    #- aws sts get-caller-identity
+    - >-
+      TEMP_AWS_ACCESS_KEY_ID=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.sand-eks-deploy-api-key --with-decryption --query Parameter.Value --out text)
+    - >-
+      TEMP_AWS_SECRET_ACCESS_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.sand-eks-deploy-access-key --with-decryption --query Parameter.Value --out text)
+    - export AWS_ACCESS_KEY_ID=$TEMP_AWS_ACCESS_KEY_ID
+    - export AWS_SECRET_ACCESS_KEY=$TEMP_AWS_SECRET_ACCESS_KEY
+    # # For debugging
+    # - aws sts get-caller-identity
+    - bash $SCRIPT $NAMESPACE $VALUES
+staging-deploy-demo-eks:
+  !!merge <<: *staging-deploy
+  variables:
+    SCRIPT: ./ci/scripts/ci-deploy-staging.sh
+    NAMESPACE: otel-staging
+    VALUES: ./ci/values-staging.yaml
+staging-deploy-gateway-eks:
+  !!merge <<: *staging-deploy
+  variables:
+    SCRIPT: ./ci/scripts/ci-deploy-staging.sh
+    NAMESPACE: otel-gateway
+    VALUES: ./ci/values-gateway.yaml
+staging-deploy-ds-gateway-eks:
+  !!merge <<: *staging-deploy
+  variables:
+    SCRIPT: ./ci/scripts/ci-deploy-ds-gateway.sh
+prod-deploy-demo-eks:
+  stage: prod-deploy
+  tags: ["runner:docker", "size:large"]
+  image: $CI_IMAGE
+  dependencies:
+    - push-image-demo
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "prod"'
+  script:
+    # # For debugging
+    #- aws sts get-caller-identity
+    - >-
+      TEMP_AWS_ACCESS_KEY_ID=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.eks_access_key --with-decryption --query Parameter.Value --out text)
+    - >-
+      TEMP_AWS_SECRET_ACCESS_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.eks_secret_access_key --with-decryption --query Parameter.Value --out text)
+    - export AWS_ACCESS_KEY_ID=$TEMP_AWS_ACCESS_KEY_ID
+    - export AWS_SECRET_ACCESS_KEY=$TEMP_AWS_SECRET_ACCESS_KEY
+    # # For debugging
+    # - aws sts get-caller-identity
+    - bash ./ci/scripts/ci-deploy-demo.sh
