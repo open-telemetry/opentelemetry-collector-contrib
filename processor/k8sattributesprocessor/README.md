@@ -107,7 +107,7 @@ Additional container level attributes can be extracted provided that certain res
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
 
-Please note however that container level attributes can not be used for source rules in the pod_association.
+Please note, however, that container level attributes can't be used for source rules in the pod_association.
 
 Example for extracting container level attributes:
 
@@ -124,8 +124,7 @@ extract:
   - k8s.container.name
 ```
 
-This configuration will attach the attributes listed in the `metadata` section to all resources received by a matching pod
-with the `k8s.container.name` attribute being present. For example, given the following trace
+The previous configuration attaches the attributes listed in the `metadata` section to all resources received by a matching pod with the `k8s.container.name` attribute being present. For example, when the following trace
 
 ```json
 {
@@ -170,7 +169,7 @@ status:
   podIP: 10.244.0.11
 ```
 
-the processor will associate the received trace to the pod, based on the connection ip, and add those attributes to the resulting span:
+the processor associates the received trace to the pod, based on the connection IP, and add those attributes to the resulting span:
 
 ```json
 {
