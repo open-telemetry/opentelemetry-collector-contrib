@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
@@ -23,8 +24,6 @@ type exporter interface {
 }
 
 func newExporter(cfg *Config) (exporter, error) {
-
-	// Exporter with HTTP
 	if cfg.UseHTTP {
 		if cfg.Insecure {
 			return &httpClientExporter{
@@ -60,16 +59,22 @@ func newExporter(cfg *Config) (exporter, error) {
 			return nil, err
 		}
 	}
-	return &gRPCClientExporter{client: plogotlp.NewGRPCClient(clientConn)}, nil
+	return &gRPCClientExporter{client: plogotlp.NewGRPCClient(clientConn), cfg: cfg}, nil
 }
 
 type gRPCClientExporter struct {
 	client plogotlp.GRPCClient
+	cfg    *Config
 }
 
 func (e *gRPCClientExporter) export(logs plog.Logs) error {
+	md := metadata.New(map[string]string{})
+	for k, v := range e.cfg.Headers {
+		md.Set(k, v)
+	}
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	req := plogotlp.NewExportRequestFromLogs(logs)
-	if _, err := e.client.Export(context.Background(), req); err != nil {
+	if _, err := e.client.Export(ctx, req); err != nil {
 		return err
 	}
 	return nil

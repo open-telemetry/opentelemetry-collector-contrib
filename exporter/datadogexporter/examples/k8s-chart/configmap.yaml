@@ -57,6 +57,7 @@ data:
       datadog:
         api:
           key: <YOUR_API_KEY_HERE>
+          site: datadoghq.com # Change this to your site if not using the default
     processors:
       resourcedetection:
         # ensures host.name and other important resource tags

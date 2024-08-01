@@ -27,12 +27,12 @@ type expVar struct {
 
 type expVarScraper struct {
 	cfg    *Config
-	set    *receiver.CreateSettings
+	set    *receiver.Settings
 	client *http.Client
 	mb     *metadata.MetricsBuilder
 }
 
-func newExpVarScraper(cfg *Config, set receiver.CreateSettings) *expVarScraper {
+func newExpVarScraper(cfg *Config, set receiver.Settings) *expVarScraper {
 	return &expVarScraper{
 		cfg: cfg,
 		set: &set,
@@ -41,7 +41,7 @@ func newExpVarScraper(cfg *Config, set receiver.CreateSettings) *expVarScraper {
 }
 
 func (e *expVarScraper) start(ctx context.Context, host component.Host) error {
-	client, err := e.cfg.ClientConfig.ToClientContext(ctx, host, e.set.TelemetrySettings)
+	client, err := e.cfg.ClientConfig.ToClient(ctx, host, e.set.TelemetrySettings)
 	if err != nil {
 		return err
 	}

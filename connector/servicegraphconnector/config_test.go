@@ -22,7 +22,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factories.Connectors[metadata.Type] = NewFactory()
-
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-connector-config.yaml"), factories)
 
 	// Verify

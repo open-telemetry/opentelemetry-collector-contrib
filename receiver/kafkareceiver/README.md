@@ -71,6 +71,7 @@ The following settings can be optionally configured:
     - `password`: The Kerberos password used for authenticate with KDC
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
+    - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. When
     disabled, the client does not make the initial request to broker at the
@@ -89,6 +90,7 @@ The following settings can be optionally configured:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel piepline
   - `headers` (default = []): List of headers they'd like to extract from kafka record. 
   **Note: Matching pattern will be `exact`. Regexes are not supported as of now.** 
+
 Example:
 
 ```yaml
@@ -96,7 +98,19 @@ receivers:
   kafka:
     protocol_version: 2.0.0
 ```
+Example of connecting to kafka using sasl and TLS:
 
+```yaml
+receivers:
+  kafka:
+    auth:
+      sasl:
+        username: "user"
+        password: "secret"
+        mechanism: "SCRAM-SHA-512"
+      tls:
+        insecure: false
+```
 Example of header extraction:
 
 ```yaml

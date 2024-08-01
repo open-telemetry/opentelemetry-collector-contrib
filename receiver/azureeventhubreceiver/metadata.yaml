@@ -7,7 +7,8 @@ status:
     alpha: [metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, djaglowski, cparkins]
+    active: [atoulme, cparkins]
+    emeritus: [djaglowski]
     seeking_new: true
 
 tests:

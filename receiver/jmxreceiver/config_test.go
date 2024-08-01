@@ -212,7 +212,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErr != "" {
 				assert.ErrorContains(t, cfg.(*Config).Validate(), tt.expectedErr)
@@ -238,7 +238,7 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "invalidtargetsystem").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	conf := cfg.(*Config)
 

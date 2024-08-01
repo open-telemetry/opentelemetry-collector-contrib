@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleapp
 
-go 1.21
+go 1.22.4
 
 require (
-	github.com/aws/aws-sdk-go v1.51.17
-	github.com/aws/aws-xray-sdk-go v1.8.3
+	github.com/aws/aws-sdk-go v1.53.11
+	github.com/aws/aws-xray-sdk-go v1.8.4
 )
 
 require (

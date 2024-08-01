@@ -48,14 +48,16 @@ const (
 
 var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
-	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+,\-@]`)
+	// Allowed characters for X-Ray Segment Name:
+	// Unicode letters, numbers, and whitespace, and the following symbols: _, ., :, /, %, &, #, =, +, \, -, @
+	// Doc: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
+	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+\-@]`)
 )
 
 var (
 	remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
 		"exporter.xray.allowDot",
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
 		featuregate.WithRegisterFromVersion("v0.97.0"),
 	)
@@ -119,7 +121,7 @@ func isLocalRootSpanADependencySpan(span ptrace.Span) bool {
 		span.Kind() != ptrace.SpanKindInternal
 }
 
-// IsLocalRoot We will move to using isRemote once the collector supports deserializing it. Until then, we will rely on aws.span.kind.
+// isLocalRoot - we will move to using isRemote once the collector supports deserializing it. Until then, we will rely on aws.span.kind.
 func isLocalRoot(span ptrace.Span) bool {
 	if myAwsSpanKind, ok := span.Attributes().Get(awsSpanKind); ok {
 		return localRoot == myAwsSpanKind.Str()
@@ -416,7 +418,10 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 			// For database queries, the segment name convention is <db name>@<db host>
 			name = dbInstance.Str()
 			if dbURL, ok := attributes.Get(conventions.AttributeDBConnectionString); ok {
-				if parsed, _ := url.Parse(dbURL.Str()); parsed != nil {
+				// Trim JDBC connection string if starts with "jdbc:", otherwise no change
+				// jdbc:mysql://db.dev.example.com:3306
+				dbURLStr := strings.TrimPrefix(dbURL.Str(), "jdbc:")
+				if parsed, _ := url.Parse(dbURLStr); parsed != nil {
 					if parsed.Hostname() != "" {
 						name += "@" + parsed.Hostname()
 					}

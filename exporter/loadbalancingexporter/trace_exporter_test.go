@@ -52,7 +52,7 @@ func TestNewTracesExporter(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			// test
-			_, err := newTracesExporter(exportertest.NewNopCreateSettings(), tt.config)
+			_, err := newTracesExporter(exportertest.NewNopSettings(), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -69,7 +69,7 @@ func TestTracesExporterStart(t *testing.T) {
 		{
 			"ok",
 			func() *traceExporterImp {
-				p, _ := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+				p, _ := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
 				return p
 			}(),
 			nil,
@@ -77,8 +77,8 @@ func TestTracesExporterStart(t *testing.T) {
 		{
 			"error",
 			func() *traceExporterImp {
-				lb, _ := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), nil)
-				p, _ := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+				lb, _ := newLoadBalancer(exportertest.NewNopSettings(), simpleConfig(), nil)
+				p, _ := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
 
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
@@ -108,7 +108,7 @@ func TestTracesExporterStart(t *testing.T) {
 }
 
 func TestTracesExporterShutdown(t *testing.T) {
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -123,11 +123,11 @@ func TestConsumeTraces(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	assert.Equal(t, p.routingKey, traceIDRouting)
@@ -170,11 +170,11 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return te, nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	assert.Equal(t, p.routingKey, traceIDRouting)
@@ -212,11 +212,11 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopSettings(), serviceBasedRoutingConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig())
+	p, err := newTracesExporter(exportertest.NewNopSettings(), serviceBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	assert.Equal(t, p.routingKey, svcRouting)
@@ -278,11 +278,11 @@ func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -312,11 +312,11 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -350,7 +350,8 @@ func TestBuildExporterConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factories.Exporters[metadata.Type] = NewFactory()
-
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -377,11 +378,11 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newMockTracesExporter(sink.ConsumeTraces), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -505,11 +506,11 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), cfg)
+	p, err := newTracesExporter(exportertest.NewNopSettings(), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -602,11 +603,11 @@ func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 		},
 	}
 
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), config, componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopSettings(), config, componentFactory)
 	require.NotNil(b, lb)
 	require.NoError(b, err)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), config)
+	p, err := newTracesExporter(exportertest.NewNopSettings(), config)
 	require.NotNil(b, p)
 	require.NoError(b, err)
 

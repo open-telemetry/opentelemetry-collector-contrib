@@ -12,6 +12,7 @@ import (
 
 	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -42,7 +43,7 @@ const (
 
 // scraper for Process Metrics
 type scraper struct {
-	settings           receiver.CreateSettings
+	settings           receiver.Settings
 	config             *Config
 	mb                 *metadata.MetricsBuilder
 	includeFS          filterset.FilterSet
@@ -59,7 +60,7 @@ type scraper struct {
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
+func newProcessScraper(settings receiver.Settings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{
 		settings:             settings,
 		config:               cfg,
@@ -103,6 +104,19 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errs scrapererror.ScrapeErrors
+
+	// If the boot time cache featuregate is disabled, this will refresh the
+	// cached boot time value for use in the current scrape. This functionally
+	// replicates the previous functionality in all but the most extreme
+	// cases of boot time changing in the middle of a scrape.
+	if !bootTimeCacheFeaturegate.IsEnabled() {
+		host.EnableBootTimeCache(false)
+		_, err := host.BootTimeWithContext(ctx)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(`retrieving boot time failed with error "%w", using cached boot time`, err))
+		}
+		host.EnableBootTimeCache(true)
+	}
 
 	data, err := s.getProcessMetadata()
 	if err != nil {

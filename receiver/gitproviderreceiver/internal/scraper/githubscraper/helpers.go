@@ -5,18 +5,21 @@ package githubscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v61/github"
-	"go.uber.org/zap"
+	"github.com/google/go-github/v62/github"
 )
 
 const (
 	// The default public GitHub GraphQL Endpoint
 	defaultGraphURL = "https://api.github.com/graphql"
+	// The default maximum number of items to be returned in a GraphQL query.
+	defaultReturnItems = 100
 )
 
 func (ghs *githubScraper) getRepos(
@@ -33,7 +36,6 @@ func (ghs *githubScraper) getRepos(
 	for next := true; next; {
 		r, err := getRepoDataBySearch(ctx, client, searchQuery, cursor)
 		if err != nil {
-			ghs.logger.Sugar().Errorf("error getting repo data", zap.Error(err))
 			return nil, 0, err
 		}
 
@@ -56,21 +58,26 @@ func (ghs *githubScraper) getBranches(
 	client graphql.Client,
 	repoName string,
 	defaultBranch string,
-) (int, error) {
+) ([]BranchNode, int, error) {
 	var cursor *string
 	var count int
+	var branches []BranchNode
 
 	for next := true; next; {
-		r, err := getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, 50, defaultBranch, cursor)
+		// Instead of using the defaultReturnItems (100) we chose to set it to
+		// 50 because GitHub has been known to kill the connection server side
+		// when trying to get items over 80 on the getBranchData query.
+		items := 50
+		r, err := getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, items, defaultBranch, cursor)
 		if err != nil {
-			ghs.logger.Sugar().Errorf("error getting branch data", zap.Error(err))
-			return 0, err
+			return nil, 0, err
 		}
 		count = r.Repository.Refs.TotalCount
 		cursor = &r.Repository.Refs.PageInfo.EndCursor
 		next = r.Repository.Refs.PageInfo.HasNextPage
+		branches = append(branches, r.Repository.Refs.Nodes...)
 	}
-	return count, nil
+	return branches, count, nil
 }
 
 // Login via the GraphQL checkLogin query in order to ensure that the user
@@ -154,13 +161,12 @@ func (ghs *githubScraper) getContributorCount(
 	// Options for Pagination support, default from GitHub was 30
 	// https://docs.github.com/en/rest/repos/repos#list-repository-contributors
 	opt := &github.ListContributorsOptions{
-		ListOptions: github.ListOptions{PerPage: 100},
+		ListOptions: github.ListOptions{PerPage: defaultReturnItems},
 	}
 
 	for {
 		contribs, resp, err := client.Repositories.ListContributors(ctx, ghs.cfg.GitHubOrg, repoName, opt)
 		if err != nil {
-			ghs.logger.Sugar().Errorf("error getting contributor count", zap.Error(err))
 			return 0, err
 		}
 
@@ -181,7 +187,7 @@ func (ghs *githubScraper) getPullRequests(
 	client graphql.Client,
 	repoName string,
 ) ([]PullRequestNode, error) {
-	var prCursor *string
+	var cursor *string
 	var pullRequests []PullRequestNode
 
 	for hasNextPage := true; hasNextPage; {
@@ -190,8 +196,8 @@ func (ghs *githubScraper) getPullRequests(
 			client,
 			repoName,
 			ghs.cfg.GitHubOrg,
-			100,
-			prCursor,
+			defaultReturnItems,
+			cursor,
 			[]PullRequestState{"OPEN", "MERGED"},
 		)
 		if err != nil {
@@ -199,11 +205,106 @@ func (ghs *githubScraper) getPullRequests(
 		}
 
 		pullRequests = append(pullRequests, prs.Repository.PullRequests.Nodes...)
-		prCursor = &prs.Repository.PullRequests.PageInfo.EndCursor
+		cursor = &prs.Repository.PullRequests.PageInfo.EndCursor
 		hasNextPage = prs.Repository.PullRequests.PageInfo.HasNextPage
 	}
 
 	return pullRequests, nil
+}
+
+func (ghs *githubScraper) evalCommits(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+	branch BranchNode,
+) (additions int, deletions int, age int64, err error) {
+	var cursor *string
+	items := defaultReturnItems
+
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
+	// for more information as to why `BehindBy` and `AheadBy` are
+	// swapped.
+	pages := getNumPages(float64(defaultReturnItems), float64(branch.Compare.BehindBy))
+
+	for page := 1; page <= pages; page++ {
+		if page == pages {
+			// We need to make sure that the last page is retrieved properly
+			// when it's a completely full page, so if the remainder is 0 we'll
+			// reset to the defaultReturnItems value to ensure the items
+			// request sent to the getCommitData function is accurate.
+			items = branch.Compare.BehindBy % defaultReturnItems
+			if items == 0 {
+				items = defaultReturnItems
+			}
+		}
+		c, err := ghs.getCommitData(ctx, client, repoName, items, cursor, branch.Name)
+		if err != nil {
+			return 0, 0, 0, err
+		}
+
+		// GraphQL could return empty commit nodes so here we confirm that
+		// commits were returned to prevent an index out of range error. This
+		// technically should never be triggered because of other preceding
+		// catches, but to be safe we check.
+		if len(c.Nodes) == 0 {
+			break
+		}
+
+		cursor = &c.PageInfo.EndCursor
+		if page == pages {
+			node := c.GetNodes()
+			oldest := node[len(node)-1].GetCommittedDate()
+			age = int64(time.Since(oldest).Seconds())
+		}
+		for b := 0; b < len(c.Nodes); b++ {
+			additions += c.Nodes[b].Additions
+			deletions += c.Nodes[b].Deletions
+		}
+
+	}
+	return additions, deletions, age, nil
+}
+
+func (ghs *githubScraper) getCommitData(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+	items int,
+	cursor *string,
+	branchName string,
+) (*BranchHistoryTargetCommitHistoryCommitHistoryConnection, error) {
+	data, err := getCommitData(ctx, client, repoName, ghs.cfg.GitHubOrg, 1, items, cursor, branchName)
+	if err != nil {
+		return nil, err
+	}
+
+	// This checks to ensure that the query returned a BranchHistory Node. The
+	// way the GraphQL query functions allows for a successful query to take
+	// place, but have an empty set of branches. The only time this query would
+	// return an empty BranchHistory Node is if the branch was deleted between
+	// the time the list of branches was retrieved, and the query for the
+	// commits on the branch.
+	if len(data.Repository.Refs.Nodes) == 0 {
+		return nil, errors.New("no branch history returned from the commit data request")
+	}
+
+	tar := data.Repository.Refs.Nodes[0].GetTarget()
+
+	// We do a sanity type check just to make sure the GraphQL response was
+	// indead for commits. This is a byproduct of the `... on Commit` syntax
+	// within the GraphQL query and then return the actual history if the
+	// returned Target is inded of type Commit.
+	if ct, ok := tar.(*BranchHistoryTargetCommit); ok {
+		return &ct.History, nil
+	}
+
+	return nil, errors.New("GraphQL query did not return the Commit Target")
+}
+
+func getNumPages(p float64, n float64) int {
+	numPages := math.Ceil(n / p)
+
+	return int(numPages)
 }
 
 // Get the age/duration between two times in seconds.

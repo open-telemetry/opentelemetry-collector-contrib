@@ -21,7 +21,7 @@ func TestDefaultConfiguration(t *testing.T) {
 func TestCreateTestProcessor(t *testing.T) {
 	cfg := &Config{}
 
-	tp, err := createTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.Equal(t, true, tp.Capabilities().MutatesData)

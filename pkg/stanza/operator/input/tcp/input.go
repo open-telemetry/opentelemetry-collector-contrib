@@ -92,14 +92,14 @@ func (i *Input) goListen(ctx context.Context) {
 				case <-ctx.Done():
 					return
 				default:
-					i.Debugw("Listener accept error", zap.Error(err))
+					i.Logger().Debug("Listener accept error", zap.Error(err))
 					time.Sleep(i.backoff.Duration())
 					continue
 				}
 			}
 			i.backoff.Reset()
 
-			i.Debugf("Received connection: %s", conn.RemoteAddr().String())
+			i.Logger().Debug("Received connection", zap.String("address", conn.RemoteAddr().String()))
 			subctx, cancel := context.WithCancel(ctx)
 			i.goHandleClose(subctx, conn)
 			i.goHandleMessages(subctx, conn, cancel)
@@ -114,9 +114,9 @@ func (i *Input) goHandleClose(ctx context.Context, conn net.Conn) {
 	go func() {
 		defer i.wg.Done()
 		<-ctx.Done()
-		i.Debugf("Closing connection: %s", conn.RemoteAddr().String())
+		i.Logger().Debug("Closing connection", zap.String("address", conn.RemoteAddr().String()))
 		if err := conn.Close(); err != nil {
-			i.Errorf("Failed to close connection: %s", err)
+			i.Logger().Error("Failed to close connection", zap.Error(err))
 		}
 	}()
 }
@@ -134,7 +134,7 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 			var buf bytes.Buffer
 			_, err := io.Copy(&buf, conn)
 			if err != nil {
-				i.Errorw("IO copy net connection buffer error", zap.Error(err))
+				i.Logger().Error("IO copy net connection buffer error", zap.Error(err))
 			}
 			log := truncateMaxLog(buf.Bytes(), i.MaxLogSize)
 			i.handleMessage(ctx, conn, dec, log)
@@ -153,7 +153,7 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		}
 
 		if err := scanner.Err(); err != nil {
-			i.Errorw("Scanner error", zap.Error(err))
+			i.Logger().Error("Scanner error", zap.Error(err))
 		}
 	}()
 }
@@ -161,13 +161,13 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *decode.Decoder, log []byte) {
 	decoded, err := dec.Decode(log)
 	if err != nil {
-		i.Errorw("Failed to decode data", zap.Error(err))
+		i.Logger().Error("Failed to decode data", zap.Error(err))
 		return
 	}
 
 	entry, err := i.NewEntry(string(decoded))
 	if err != nil {
-		i.Errorw("Failed to create entry", zap.Error(err))
+		i.Logger().Error("Failed to create entry", zap.Error(err))
 		return
 	}
 
@@ -212,7 +212,7 @@ func (i *Input) Stop() error {
 
 	if i.listener != nil {
 		if err := i.listener.Close(); err != nil {
-			i.Errorf("failed to close TCP connection: %s", err)
+			i.Logger().Error("failed to close TCP connection", zap.Error(err))
 		}
 	}
 

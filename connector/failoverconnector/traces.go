@@ -63,7 +63,7 @@ func (f *tracesFailover) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func newTracesToTraces(set connector.CreateSettings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
+func newTracesToTraces(set connector.Settings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
 	config := cfg.(*Config)
 	tr, ok := traces.(connector.TracesRouterAndConsumer)
 	if !ok {

@@ -21,7 +21,7 @@ import (
 func TestNamespaceMetrics(t *testing.T) {
 	n := testutils.NewNamespace("1")
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	RecordMetrics(mb, n, ts)
 	m := mb.Emit()
 

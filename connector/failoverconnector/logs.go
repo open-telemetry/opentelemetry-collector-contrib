@@ -63,7 +63,7 @@ func (f *logsFailover) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func newLogsToLogs(set connector.CreateSettings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
+func newLogsToLogs(set connector.Settings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
 	config := cfg.(*Config)
 	lr, ok := logs.(connector.LogsRouterAndConsumer)
 	if !ok {

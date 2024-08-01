@@ -5,6 +5,8 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -14,13 +16,19 @@ import (
 // S3DownloaderConfig contains aws s3 downloader related config to controls things
 // like bucket, prefix, batching, connections, retries, etc.
 type S3DownloaderConfig struct {
-	Region           string `mapstructure:"region"`
-	S3Bucket         string `mapstructure:"s3_bucket"`
-	S3Prefix         string `mapstructure:"s3_prefix"`
-	S3Partition      string `mapstructure:"s3_partition"`
-	FilePrefix       string `mapstructure:"file_prefix"`
-	Endpoint         string `mapstructure:"endpoint"`
-	S3ForcePathStyle bool   `mapstructure:"s3_force_path_style"`
+	Region              string `mapstructure:"region"`
+	S3Bucket            string `mapstructure:"s3_bucket"`
+	S3Prefix            string `mapstructure:"s3_prefix"`
+	S3Partition         string `mapstructure:"s3_partition"`
+	FilePrefix          string `mapstructure:"file_prefix"`
+	Endpoint            string `mapstructure:"endpoint"`
+	EndpointPartitionID string `mapstructure:"endpoint_partition_id"`
+	S3ForcePathStyle    bool   `mapstructure:"s3_force_path_style"`
+}
+
+type Encoding struct {
+	Extension component.ID `mapstructure:"extension"`
+	Suffix    string       `mapstructure:"suffix"`
 }
 
 // Config defines the configuration for the file receiver.
@@ -28,13 +36,20 @@ type Config struct {
 	S3Downloader S3DownloaderConfig `mapstructure:"s3downloader"`
 	StartTime    string             `mapstructure:"starttime"`
 	EndTime      string             `mapstructure:"endtime"`
+	Encodings    []Encoding         `mapstructure:"encodings"`
 }
+
+const (
+	S3PartitionMinute = "minute"
+	S3PartitionHour   = "hour"
+)
 
 func createDefaultConfig() component.Config {
 	return &Config{
 		S3Downloader: S3DownloaderConfig{
-			Region:      "us-east-1",
-			S3Partition: "minute",
+			Region:              "us-east-1",
+			S3Partition:         S3PartitionMinute,
+			EndpointPartitionID: "aws",
 		},
 	}
 }
@@ -44,29 +59,33 @@ func (c Config) Validate() error {
 	if c.S3Downloader.S3Bucket == "" {
 		errs = multierr.Append(errs, errors.New("bucket is required"))
 	}
+	if c.S3Downloader.S3Partition != S3PartitionHour && c.S3Downloader.S3Partition != S3PartitionMinute {
+		errs = multierr.Append(errs, errors.New("s3_partition must be either 'hour' or 'minute'"))
+	}
 	if c.StartTime == "" {
-		errs = multierr.Append(errs, errors.New("start time is required"))
+		errs = multierr.Append(errs, errors.New("starttime is required"))
 	} else {
-		if err := validateTime(c.StartTime); err != nil {
-			errs = multierr.Append(errs, errors.New("unable to parse start date"))
+		if _, err := parseTime(c.StartTime, "starttime"); err != nil {
+			errs = multierr.Append(errs, err)
 		}
 	}
 	if c.EndTime == "" {
-		errs = multierr.Append(errs, errors.New("end time is required"))
+		errs = multierr.Append(errs, errors.New("endtime is required"))
 	} else {
-		if err := validateTime(c.EndTime); err != nil {
-			errs = multierr.Append(errs, errors.New("unable to parse end time"))
+		if _, err := parseTime(c.EndTime, "endtime"); err != nil {
+			errs = multierr.Append(errs, err)
 		}
 	}
 	return errs
 }
 
-func validateTime(str string) error {
+func parseTime(timeStr, configName string) (time.Time, error) {
 	layouts := []string{"2006-01-02 15:04", time.DateOnly}
+
 	for _, layout := range layouts {
-		if _, err := time.Parse(layout, str); err == nil {
-			return nil
+		if t, err := time.Parse(layout, timeStr); err == nil {
+			return t, nil
 		}
 	}
-	return errors.New("unable to parse time string")
+	return time.Time{}, fmt.Errorf("unable to parse %s (%s), accepted formats: %s", configName, timeStr, strings.Join(layouts, ", "))
 }

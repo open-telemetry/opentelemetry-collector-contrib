@@ -30,3 +30,4 @@ arrow:
   disabled: false
   max_stream_lifetime: 2h
   payload_compression: "zstd"
+  prioritizer: leastloaded8

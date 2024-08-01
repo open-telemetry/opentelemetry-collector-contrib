@@ -226,7 +226,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	attributes[conventions.AttributeDBName] = "customers"
 	attributes[conventions.AttributeDBStatement] = spanName
 	attributes[conventions.AttributeDBUser] = "userprefsvc"
-	attributes[conventions.AttributeDBConnectionString] = "mysql://db.dev.example.com:3306"
+	attributes[conventions.AttributeDBConnectionString] = "jdbc:mysql://db.dev.example.com:3306"
 	attributes[conventions.AttributeNetPeerName] = "db.dev.example.com"
 	attributes[conventions.AttributeNetPeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
@@ -399,9 +399,9 @@ func TestFixSegmentName(t *testing.T) {
 	validName := "EP @ test_15.testing-d\u00F6main.org#GO"
 	fixedName := fixSegmentName(validName)
 	assert.Equal(t, validName, fixedName)
-	invalidName := "<subDomain>.example.com"
+	invalidName := "<subDomain>.example.com,1413"
 	fixedName = fixSegmentName(invalidName)
-	assert.Equal(t, "subDomain.example.com", fixedName)
+	assert.Equal(t, "subDomain.example.com1413", fixedName)
 	fullyInvalidName := "<>"
 	fixedName = fixSegmentName(fullyInvalidName)
 	assert.Equal(t, defaultSegmentName, fixedName)
@@ -584,6 +584,39 @@ func TestSpanWithAttributesSegmentMetadata(t *testing.T) {
 }
 
 func TestResourceAttributesCanBeIndexed(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	segment, _ := MakeSegment(span, resource, []string{
+		"otel.resource.string.key",
+		"otel.resource.int.key",
+		"otel.resource.double.key",
+		"otel.resource.bool.key",
+		"otel.resource.map.key",
+		"otel.resource.array.key",
+	}, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, 4, len(segment.Annotations))
+	assert.Equal(t, "string", segment.Annotations["otel_resource_string_key"])
+	assert.Equal(t, int64(10), segment.Annotations["otel_resource_int_key"])
+	assert.Equal(t, 5.0, segment.Annotations["otel_resource_double_key"])
+	assert.Equal(t, true, segment.Annotations["otel_resource_bool_key"])
+	expectedMap := make(map[string]any)
+	expectedMap["key1"] = int64(1)
+	expectedMap["key2"] = "value"
+	// Maps and arrays are not supported for annotations so still in metadata.
+	assert.Equal(t, expectedMap, segment.Metadata["default"]["otel.resource.map.key"])
+	expectedArr := []any{"foo", "bar"}
+	assert.Equal(t, expectedArr, segment.Metadata["default"]["otel.resource.array.key"])
+}
+
+func TestResourceAttributesCanBeIndexedWithAllowDot(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
 	assert.Nil(t, err)
 
@@ -607,7 +640,6 @@ func TestResourceAttributesCanBeIndexed(t *testing.T) {
 	assert.Equal(t, int64(10), segment.Annotations["otel.resource.int.key"])
 	assert.Equal(t, 5.0, segment.Annotations["otel.resource.double.key"])
 	assert.Equal(t, true, segment.Annotations["otel.resource.bool.key"])
-
 	expectedMap := make(map[string]any)
 	expectedMap["key1"] = int64(1)
 	expectedMap["key2"] = "value"
@@ -639,7 +671,7 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
 	assert.Nil(t, err)
 
 	spanName := "/api/locations"
@@ -654,8 +686,8 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 2, len(segment.Annotations))
-	assert.Equal(t, "aws_operation_val", segment.Annotations["aws.operation"])
-	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
+	assert.Equal(t, "aws_operation_val", segment.Annotations["aws_operation"])
+	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
 }
 
 func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
@@ -679,7 +711,7 @@ func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
 	assert.Nil(t, err)
 
 	spanName := "/api/locations"
@@ -693,8 +725,8 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, true, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, "aws_operation_val", segment.Annotations["aws.operation"])
-	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
+	assert.Equal(t, "aws_operation_val", segment.Annotations["aws_operation"])
+	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAllWithAllowDot(t *testing.T) {
@@ -1061,7 +1093,7 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
-func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
+func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 	spanName := "DynamoDB.PutItem"
 	parentSpanID := newSegmentID()
 	user := "testingT"
@@ -1083,34 +1115,6 @@ func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
-	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
-}
-
-func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
-	spanName := "DynamoDB.PutItem"
-	parentSpanID := newSegmentID()
-	user := "testingT"
-	attributes := make(map[string]any)
-	attributes[conventions.AttributeRPCSystem] = "aws-api"
-	attributes[conventions.AttributeHTTPMethod] = "POST"
-	attributes[conventions.AttributeHTTPScheme] = "https"
-	attributes[conventions.AttributeRPCService] = "DynamoDb"
-	attributes[awsRemoteService] = "AWS::DynamoDB"
-
-	resource := constructDefaultResource()
-	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
-
-	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
-	assert.Equal(t, "DynamoDB", *segment.Name)
-	assert.Equal(t, "subsegment", *segment.Type)
-
-	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
-
-	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
 	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -1204,7 +1208,7 @@ func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segmen
 	assert.NotNil(t, segment.HTTP)
 	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
 	assert.Equal(t, 2, len(segment.Annotations))
-	assert.Equal(t, "myRemoteService", segment.Annotations[awsRemoteService])
+	assert.Nil(t, segment.Annotations[awsRemoteService])
 	assert.Nil(t, segment.Annotations[remoteTarget])
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 
@@ -1303,6 +1307,9 @@ func addSpanLink(span ptrace.Span) {
 }
 
 func TestLocalRootConsumer(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
 	spanName := "destination operation"
 	resource := getBasicResource()
 	parentSpanID := newSegmentID()
@@ -1401,6 +1408,9 @@ func TestLocalRootConsumerAWSNamespace(t *testing.T) {
 }
 
 func TestLocalRootClient(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
 	spanName := "SQS Get"
 	resource := getBasicResource()
 	parentSpanID := newSegmentID()
@@ -1503,7 +1513,7 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 	assert.Equal(t, expectedTraceID, *segment.TraceID)
 	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
 	assert.Equal(t, 2, len(segment.Annotations))
-	assert.Equal(t, "myRemoteService", segment.Annotations["aws.remote.service"])
+	assert.Equal(t, "myRemoteService", segment.Annotations["aws_remote_service"])
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 
 	var numberOfMetadataKeys = 8
@@ -1538,6 +1548,9 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 }
 
 func TestLocalRootServer(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
 	spanName := "MyService"
 	resource := getBasicResource()
 	parentSpanID := newSegmentID()
@@ -1558,6 +1571,9 @@ func TestLocalRootServer(t *testing.T) {
 }
 
 func TestLocalRootInternal(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
 	spanName := "MyInternalService"
 	resource := getBasicResource()
 	parentSpanID := newSegmentID()

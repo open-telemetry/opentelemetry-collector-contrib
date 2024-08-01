@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -43,7 +45,7 @@ func (i *Input) Start(persister operator.Persister) error {
 	i.bookmark = NewBookmark()
 	offsetXML, err := i.getBookmarkOffset(ctx)
 	if err != nil {
-		i.Errorf("Failed to open bookmark, continuing without previous bookmark: %s", err)
+		i.Logger().Error("Failed to open bookmark, continuing without previous bookmark", zap.Error(err))
 		_ = i.persister.Delete(ctx, i.channel)
 	}
 
@@ -120,7 +122,7 @@ func (i *Input) readToEnd(ctx context.Context) {
 func (i *Input) read(ctx context.Context) int {
 	events, err := i.subscription.Read(i.maxReads)
 	if err != nil {
-		i.Errorf("Failed to read events from subscription: %s", err)
+		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
 		return 0
 	}
 
@@ -141,7 +143,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 		if len(i.excludeProviders) > 0 {
 			simpleEvent, err := event.RenderSimple(i.buffer)
 			if err != nil {
-				i.Errorf("Failed to render simple event: %s", err)
+				i.Logger().Error("Failed to render simple event", zap.Error(err))
 				return
 			}
 
@@ -154,7 +156,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 
 		rawEvent, err := event.RenderRaw(i.buffer)
 		if err != nil {
-			i.Errorf("Failed to render raw event: %s", err)
+			i.Logger().Error("Failed to render raw event", zap.Error(err))
 			return
 		}
 		i.sendEventRaw(ctx, rawEvent)
@@ -162,7 +164,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 	}
 	simpleEvent, err := event.RenderSimple(i.buffer)
 	if err != nil {
-		i.Errorf("Failed to render simple event: %s", err)
+		i.Logger().Error("Failed to render simple event", zap.Error(err))
 		return
 	}
 
@@ -174,7 +176,9 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 
 	publisher, openPublisherErr := i.publisherCache.get(simpleEvent.Provider.Name)
 	if openPublisherErr != nil {
-		i.Warnf("Failed to open the %q event source, respective log entries can't be formatted: %s", simpleEvent.Provider.Name, openPublisherErr)
+		i.Logger().Warn(
+			"Failed to open event source, respective log entries cannot be formatted",
+			zap.String("provider", simpleEvent.Provider.Name), zap.Error(openPublisherErr))
 	}
 
 	if !publisher.Valid() {
@@ -184,7 +188,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 
 	formattedEvent, err := event.RenderFormatted(i.buffer, publisher)
 	if err != nil {
-		i.Errorf("Failed to render formatted event: %s", err)
+		i.Logger().Error("Failed to render formatted event", zap.Error(err))
 		i.sendEvent(ctx, simpleEvent)
 		return
 	}
@@ -197,7 +201,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 	body := eventXML.parseBody()
 	entry, err := i.NewEntry(body)
 	if err != nil {
-		i.Errorf("Failed to create entry: %s", err)
+		i.Logger().Error("Failed to create entry", zap.Error(err))
 		return
 	}
 
@@ -210,7 +214,7 @@ func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
 	body := eventRaw.parseBody()
 	entry, err := i.NewEntry(body)
 	if err != nil {
-		i.Errorf("Failed to create entry: %s", err)
+		i.Logger().Error("Failed to create entry", zap.Error(err))
 		return
 	}
 
@@ -228,18 +232,18 @@ func (i *Input) getBookmarkOffset(ctx context.Context) (string, error) {
 // updateBookmark will update the bookmark xml and save it in the offsets database.
 func (i *Input) updateBookmarkOffset(ctx context.Context, event Event) {
 	if err := i.bookmark.Update(event); err != nil {
-		i.Errorf("Failed to update bookmark from event: %s", err)
+		i.Logger().Error("Failed to update bookmark from event", zap.Error(err))
 		return
 	}
 
 	bookmarkXML, err := i.bookmark.Render(i.buffer)
 	if err != nil {
-		i.Errorf("Failed to render bookmark xml: %s", err)
+		i.Logger().Error("Failed to render bookmark xml", zap.Error(err))
 		return
 	}
 
 	if err := i.persister.Set(ctx, i.channel, []byte(bookmarkXML)); err != nil {
-		i.Errorf("failed to set offsets: %s", err)
+		i.Logger().Error("failed to set offsets", zap.Error(err))
 		return
 	}
 }

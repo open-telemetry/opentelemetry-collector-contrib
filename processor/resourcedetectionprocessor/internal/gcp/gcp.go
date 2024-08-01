@@ -36,7 +36,8 @@ var removeGCPFaasID = featuregate.GlobalRegistry().MustRegister(
 // * Google App Engine (GAE).
 // * Cloud Run.
 // * Cloud Functions.
-func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+// * Bare Metal Solutions (BMS).
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	return &detector{
 		logger:   set.Logger,
@@ -52,6 +53,18 @@ type detector struct {
 }
 
 func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	if d.detector.CloudPlatform() == gcp.BareMetalSolution {
+		d.rb.SetCloudProvider(conventions.AttributeCloudProviderGCP)
+		errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.BareMetalSolutionProjectID)
+
+		d.rb.SetCloudPlatform("gcp_bare_metal_solution")
+		errs = multierr.Combine(errs,
+			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.BareMetalSolutionInstanceID),
+			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.BareMetalSolutionCloudRegion),
+		)
+		return d.rb.Emit(), conventions.SchemaURL, errs
+	}
+
 	if !metadata.OnGCE() {
 		return pcommon.NewResource(), "", nil
 	}

@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
+const dataFormatProtobuf = "protobuf"
+
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
 	ptraceotlp.UnimplementedGRPCServer
@@ -27,9 +29,19 @@ func New(nextConsumer consumer.Traces, obsrecv *receiverhelper.ObsReport) *Recei
 }
 
 // Export implements the service Export traces func.
-func (r *Receiver) Export(_ context.Context, _ ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
-	// TODO: Implementation.
-	return ptraceotlp.NewExportResponse(), nil
+func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
+	td := req.Traces()
+	// We need to ensure that it propagates the receiver name as a tag
+	numSpans := td.SpanCount()
+	if numSpans == 0 {
+		return ptraceotlp.NewExportResponse(), nil
+	}
+
+	ctx = r.obsrecv.StartTracesOp(ctx)
+	err := r.nextConsumer.ConsumeTraces(ctx, td)
+	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
+
+	return ptraceotlp.NewExportResponse(), err
 }
 
 func (r *Receiver) Consumer() consumer.Traces {

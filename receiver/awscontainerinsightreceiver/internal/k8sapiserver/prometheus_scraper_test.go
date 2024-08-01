@@ -149,7 +149,7 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	relabeledPtr := false
 	rpcDurationTotalPtr := false
 
-	consumer := mockConsumer{
+	mConsumer := mockConsumer{
 		t:                t,
 		up:               &upPtr,
 		httpConnected:    &httpPtr,
@@ -249,10 +249,10 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	}
 
 	// replace the prom receiver
-	params := receiver.CreateSettings{
+	params := receiver.Settings{
 		TelemetrySettings: scraper.settings,
 	}
-	scraper.prometheusReceiver, err = promFactory.CreateMetricsReceiver(scraper.ctx, params, &promConfig, consumer)
+	scraper.prometheusReceiver, err = promFactory.CreateMetricsReceiver(scraper.ctx, params, &promConfig, mConsumer)
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 	defer mp.Close()
@@ -268,10 +268,10 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	mp.Wg.Wait()
 	mp.Wg.Wait()
 
-	assert.True(t, *consumer.up)
-	assert.True(t, *consumer.httpConnected)
-	assert.True(t, *consumer.relabeled)
-	assert.False(t, *consumer.rpcDurationTotal) // this will get filtered out by our metric relabel config
+	assert.True(t, *mConsumer.up)
+	assert.True(t, *mConsumer.httpConnected)
+	assert.True(t, *mConsumer.relabeled)
+	assert.False(t, *mConsumer.rpcDurationTotal) // this will get filtered out by our metric relabel config
 }
 
 func TestPrometheusScraperJobName(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -63,7 +64,8 @@ func TestBuild(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := tc.input()
 			require.NoError(t, err, "expected nil error when running test cases input func")
-			op, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
 			if tc.expectErr {
 				require.Error(t, err, "expected error while building time_parser operator")
 				return
@@ -121,7 +123,8 @@ func TestProcess(t *testing.T) {
 				require.NoError(t, err)
 				return
 			}
-			op, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
 			if err != nil {
 				require.NoError(t, err)
 				return
@@ -501,7 +504,8 @@ func runTimeParseTest(t *testing.T, cfg *Config, ent *entry.Entry, buildErr bool
 
 func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
 	return func(t *testing.T) {
-		op, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
 		if buildErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return

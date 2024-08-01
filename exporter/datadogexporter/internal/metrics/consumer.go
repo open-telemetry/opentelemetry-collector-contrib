@@ -6,7 +6,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
@@ -19,14 +18,12 @@ import (
 var _ metrics.Consumer = (*Consumer)(nil)
 var _ metrics.HostConsumer = (*Consumer)(nil)
 var _ metrics.TagsConsumer = (*Consumer)(nil)
-var _ metrics.APMStatsConsumer = (*Consumer)(nil)
 
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
 type Consumer struct {
 	ms        []datadogV2.MetricSeries
 	sl        sketches.SketchSeriesList
-	as        []*pb.ClientStatsPayload
 	seenHosts map[string]struct{}
 	seenTags  map[string]struct{}
 }
@@ -80,11 +77,11 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string, metadata metrics.Metadata) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []*pb.ClientStatsPayload) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string, metadata metrics.Metadata) ([]datadogV2.MetricSeries, sketches.SketchSeriesList) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo, metadata)...)
 	if len(tags) == 0 {
-		return series, c.sl, c.as
+		return series, c.sl
 	}
 	for i := range series {
 		series[i].Tags = append(series[i].Tags, tags...)
@@ -92,15 +89,7 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []s
 	for i := range c.sl {
 		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
 	}
-	for i := range c.as {
-		c.as[i].Tags = append(c.as[i].Tags, tags...)
-	}
-	return series, c.sl, c.as
-}
-
-// ConsumeAPMStats implements metrics.APMStatsConsumer.
-func (c *Consumer) ConsumeAPMStats(s *pb.ClientStatsPayload) {
-	c.as = append(c.as, s)
+	return series, c.sl
 }
 
 // ConsumeTimeSeries implements the metrics.Consumer interface.

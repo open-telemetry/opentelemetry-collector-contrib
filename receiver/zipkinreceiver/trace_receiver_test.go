@@ -62,7 +62,7 @@ func TestNew(t *testing.T) {
 					Endpoint: tt.args.address,
 				},
 			}
-			got, err := newReceiver(cfg, tt.args.nextConsumer, receivertest.NewNopCreateSettings())
+			got, err := newReceiver(cfg, tt.args.nextConsumer, receivertest.NewNopSettings())
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr == nil {
 				require.NotNil(t, got)
@@ -84,7 +84,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
+	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -132,7 +132,7 @@ func TestStartTraceReception(t *testing.T) {
 					Endpoint: "localhost:0",
 				},
 			}
-			zr, err := newReceiver(cfg, sink, receivertest.NewNopCreateSettings())
+			zr, err := newReceiver(cfg, sink, receivertest.NewNopSettings())
 			require.NoError(t, err)
 			require.NotNil(t, zr)
 
@@ -225,7 +225,7 @@ func TestReceiverContentTypes(t *testing.T) {
 					Endpoint: "",
 				},
 			}
-			zr, err := newReceiver(cfg, next, receivertest.NewNopCreateSettings())
+			zr, err := newReceiver(cfg, next, receivertest.NewNopSettings())
 			require.NoError(t, err)
 
 			req := httptest.NewRecorder()
@@ -252,7 +252,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 			Endpoint: "",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -274,7 +274,7 @@ func TestReceiverConsumerError(t *testing.T) {
 			Endpoint: "localhost:9411",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), receivertest.NewNopCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -296,7 +296,7 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 			Endpoint: "localhost:9411",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer error"))), receivertest.NewNopCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer error"))), receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -423,7 +423,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		},
 		ParseStringTags: true,
 	}
-	zr, err := newReceiver(cfg, next, receivertest.NewNopCreateSettings())
+	zr, err := newReceiver(cfg, next, receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -464,7 +464,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 		},
 		ParseStringTags: true,
 	}
-	zi, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
+	zi, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	hdr := make(http.Header)

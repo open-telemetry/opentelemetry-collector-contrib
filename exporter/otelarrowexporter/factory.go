@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/metadata"
 )
 
-// NewFactory creates a factory for OTel-Arrow exporter.
+// NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
@@ -39,9 +39,8 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:   configretry.NewDefaultBackOffConfig(),
+		RetryConfig:     configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-
 		ClientConfig: configgrpc.ClientConfig{
 			Headers: map[string]configopaque.String{},
 			// Default to zstd compression
@@ -54,11 +53,12 @@ func createDefaultConfig() component.Config {
 			// destination.
 			BalancerName: "round_robin",
 		},
-		Arrow: ArrowSettings{
+		Arrow: ArrowConfig{
 			NumStreams:        runtime.NumCPU(),
 			MaxStreamLifetime: time.Hour,
 
-			Zstd: zstd.DefaultEncoderConfig(),
+			Zstd:        zstd.DefaultEncoderConfig(),
+			Prioritizer: arrow.DefaultPrioritizer,
 
 			// PayloadCompression is off by default because gRPC
 			// compression is on by default, above.
@@ -67,14 +67,14 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func (e *baseExporter) helperOptions() []exporterhelper.Option {
+func (exp *baseExporter) helperOptions() []exporterhelper.Option {
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(e.config.TimeoutSettings),
-		exporterhelper.WithRetry(e.config.RetrySettings),
-		exporterhelper.WithQueue(e.config.QueueSettings),
-		exporterhelper.WithStart(e.start),
-		exporterhelper.WithShutdown(e.shutdown),
+		exporterhelper.WithTimeout(exp.config.TimeoutSettings),
+		exporterhelper.WithRetry(exp.config.RetryConfig),
+		exporterhelper.WithQueue(exp.config.QueueSettings),
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown),
 	}
 }
 
@@ -94,7 +94,7 @@ func createArrowTracesStream(conn *grpc.ClientConn) arrow.StreamClientFunc {
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	exp, err := newExporter(cfg, set, createArrowTracesStream)
@@ -113,7 +113,7 @@ func createArrowMetricsStream(conn *grpc.ClientConn) arrow.StreamClientFunc {
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	exp, err := newExporter(cfg, set, createArrowMetricsStream)
@@ -132,7 +132,7 @@ func createArrowLogsStream(conn *grpc.ClientConn) arrow.StreamClientFunc {
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	exp, err := newExporter(cfg, set, createArrowLogsStream)

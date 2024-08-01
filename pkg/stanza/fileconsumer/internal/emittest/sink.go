@@ -57,10 +57,14 @@ func NewSink(opts ...SinkOpt) *Sink {
 	return &Sink{
 		emitChan: emitChan,
 		timeout:  cfg.timeout,
-		Callback: func(_ context.Context, token []byte, attrs map[string]any) error {
+		Callback: func(ctx context.Context, token []byte, attrs map[string]any) error {
 			copied := make([]byte, len(token))
 			copy(copied, token)
-			emitChan <- &Call{copied, attrs}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case emitChan <- &Call{copied, attrs}:
+			}
 			return nil
 		},
 	}
@@ -115,7 +119,7 @@ func (s *Sink) ExpectTokens(t *testing.T, expected ...[]byte) {
 			return
 		}
 	}
-	require.ElementsMatch(t, expected, actual)
+	require.ElementsMatch(t, expected, actual, fmt.Sprintf("expected: %v, actual: %v", expected, actual))
 }
 
 func (s *Sink) ExpectCall(t *testing.T, expected []byte, attrs map[string]any) {

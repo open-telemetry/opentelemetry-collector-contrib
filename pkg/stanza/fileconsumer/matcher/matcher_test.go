@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -208,6 +209,13 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: `the "filelog.mtimeSortType" feature gate must be enabled to use "mtime" sort type`,
+		},
+		{
+			name: "ExcludeOlderThan",
+			criteria: Criteria{
+				Include:          []string{"*.log"},
+				ExcludeOlderThan: 24 * time.Hour,
+			},
 		},
 	}
 	for _, tc := range cases {

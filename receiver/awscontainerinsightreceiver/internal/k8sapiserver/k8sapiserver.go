@@ -514,7 +514,7 @@ func (k *K8sAPIServer) getAcceleratorCountMetrics(clusterName, timestampNs strin
 			attributes[ci.NodeNameKey] = podInfo.NodeName
 			kubernetesBlob["host"] = podInfo.NodeName
 			if nodeInfo, ok := nodeInfos[podInfo.NodeName]; ok {
-				attributes[ci.InstanceID] = k8sutil.ParseInstanceIdFromProviderId(nodeInfo.ProviderId)
+				attributes[ci.InstanceID] = k8sutil.ParseInstanceIDFromProviderID(nodeInfo.ProviderID)
 				attributes[ci.InstanceType] = nodeInfo.InstanceType
 			}
 		} else {

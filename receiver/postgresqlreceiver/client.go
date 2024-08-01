@@ -299,6 +299,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 			schema:      schema,
 			table:       table,
 			live:        live,
+			dead:        dead,
 			inserts:     ins,
 			upd:         upd,
 			del:         del,

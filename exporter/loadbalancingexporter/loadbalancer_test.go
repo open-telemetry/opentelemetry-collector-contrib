@@ -23,7 +23,7 @@ func TestNewLoadBalancerNoResolver(t *testing.T) {
 	cfg := &Config{}
 
 	// test
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 
 	// verify
 	require.Nil(t, p)
@@ -39,7 +39,7 @@ func TestNewLoadBalancerInvalidStaticResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 
 	// verify
 	require.Nil(t, p)
@@ -57,7 +57,7 @@ func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 
 	// verify
 	require.Nil(t, p)
@@ -75,7 +75,7 @@ func TestNewLoadBalancerInvalidK8sResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 
 	// verify
 	assert.Nil(t, p)
@@ -85,7 +85,7 @@ func TestNewLoadBalancerInvalidK8sResolver(t *testing.T) {
 func TestLoadBalancerStart(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	p.res = &mockResolver{}
@@ -107,7 +107,7 @@ func TestWithDNSResolver(t *testing.T) {
 			},
 		},
 	}
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -128,7 +128,7 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 			},
 		},
 	}
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -156,7 +156,7 @@ func TestMultipleResolvers(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 
 	// verify
 	assert.Nil(t, p)
@@ -166,7 +166,7 @@ func TestMultipleResolvers(t *testing.T) {
 func TestStartFailureStaticResolver(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -187,7 +187,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 func TestLoadBalancerShutdown(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), cfg)
+	p, err := newTracesExporter(exportertest.NewNopSettings(), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -204,7 +204,7 @@ func TestOnBackendChanges(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, componentFactory)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -226,7 +226,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, componentFactory)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -248,7 +248,7 @@ func TestAddMissingExporters(t *testing.T) {
 		return &otlpexporter.Config{}
 	}, exporter.WithTraces(func(
 		_ context.Context,
-		_ exporter.CreateSettings,
+		_ exporter.Settings,
 		_ component.Config,
 	) (exporter.Traces, error) {
 		return newNopMockTracesExporter(), nil
@@ -256,10 +256,10 @@ func TestAddMissingExporters(t *testing.T) {
 	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
-		return exporterFactory.CreateTracesExporter(ctx, exportertest.NewNopCreateSettings(), &oCfg)
+		return exporterFactory.CreateTracesExporter(ctx, exportertest.NewNopSettings(), &oCfg)
 	}
 
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, fn)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, fn)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -282,7 +282,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		return &otlpexporter.Config{}
 	}, exporter.WithTraces(func(
 		_ context.Context,
-		_ exporter.CreateSettings,
+		_ exporter.Settings,
 		_ component.Config,
 	) (exporter.Traces, error) {
 		return nil, expectedErr
@@ -290,10 +290,10 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
-		return exporterFactory.CreateTracesExporter(ctx, exportertest.NewNopCreateSettings(), &oCfg)
+		return exporterFactory.CreateTracesExporter(ctx, exportertest.NewNopSettings(), &oCfg)
 	}
 
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, fn)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, fn)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -358,7 +358,7 @@ func TestFailedExporterInRing(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, componentFactory)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -401,7 +401,7 @@ func TestNewLoadBalancerInvalidNamespaceAwsResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 
 	// verify
 	assert.Nil(t, p)
@@ -420,7 +420,7 @@ func TestNewLoadBalancerInvalidServiceAwsResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+	p, err := newLoadBalancer(exportertest.NewNopSettings(), cfg, nil)
 
 	// verify
 	assert.Nil(t, p)

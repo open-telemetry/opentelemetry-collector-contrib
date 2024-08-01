@@ -28,8 +28,10 @@ import (
 )
 
 func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
+	t.Skip("TODO: Skipping due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32533")
+
 	const maxDelay = 200 * time.Millisecond
-	createSettings := exportertest.NewNopCreateSettings()
+	createSettings := exportertest.NewNopSettings()
 
 	const maxBatchCount = 20
 	const logsPerBatch = 10000

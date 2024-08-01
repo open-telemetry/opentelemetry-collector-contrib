@@ -4,14 +4,16 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -56,12 +58,13 @@ type Config struct {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
 	Pipeline string `mapstructure:"pipeline"`
 
-	ClientConfig   `mapstructure:",squash"`
-	Discovery      DiscoverySettings      `mapstructure:"discover"`
-	Retry          RetrySettings          `mapstructure:"retry"`
-	Flush          FlushSettings          `mapstructure:"flush"`
-	Mapping        MappingsSettings       `mapstructure:"mapping"`
-	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
+	confighttp.ClientConfig `mapstructure:",squash"`
+	Authentication          AuthenticationSettings `mapstructure:",squash"`
+	Discovery               DiscoverySettings      `mapstructure:"discover"`
+	Retry                   RetrySettings          `mapstructure:"retry"`
+	Flush                   FlushSettings          `mapstructure:"flush"`
+	Mapping                 MappingsSettings       `mapstructure:"mapping"`
+	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
 }
 
 type LogstashFormatSettings struct {
@@ -72,25 +75,6 @@ type LogstashFormatSettings struct {
 
 type DynamicIndexSetting struct {
 	Enabled bool `mapstructure:"enabled"`
-}
-
-type ClientConfig struct {
-	Authentication AuthenticationSettings `mapstructure:",squash"`
-
-	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
-	ReadBufferSize int `mapstructure:"read_buffer_size"`
-
-	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
-	WriteBufferSize int `mapstructure:"write_buffer_size"`
-
-	// Timeout configures the HTTP request timeout.
-	Timeout time.Duration `mapstructure:"timeout"`
-
-	// Headers allows users to configure optional HTTP headers that
-	// will be send with each HTTP request.
-	Headers map[string]string `mapstructure:"headers,omitempty"`
-
-	configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
 // AuthenticationSettings defines user authentication related settings.
@@ -151,6 +135,9 @@ type RetrySettings struct {
 
 	// MaxInterval configures the max waiting time if consecutive requests failed.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
+
+	// RetryOnStatus configures the status codes that trigger request or document level retries.
+	RetryOnStatus []int `mapstructure:"retry_on_status"`
 }
 
 type MappingsSettings struct {
@@ -179,8 +166,8 @@ const (
 )
 
 var (
-	errConfigNoEndpoint    = errors.New("endpoints or cloudid must be specified")
-	errConfigEmptyEndpoint = errors.New("endpoints must not include empty entries")
+	errConfigEndpointRequired = errors.New("exactly one of [endpoint, endpoints, cloudid] must be specified")
+	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
 )
 
 func (m MappingMode) String() string {
@@ -217,23 +204,97 @@ const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
 
 // Validate validates the elasticsearch server configuration.
 func (cfg *Config) Validate() error {
-	if len(cfg.Endpoints) == 0 && cfg.CloudID == "" {
-		if os.Getenv(defaultElasticsearchEnvName) == "" {
-			return errConfigNoEndpoint
-		}
+	endpoints, err := cfg.endpoints()
+	if err != nil {
+		return err
 	}
-
-	for _, endpoint := range cfg.Endpoints {
-		if endpoint == "" {
-			return errConfigEmptyEndpoint
+	for _, endpoint := range endpoints {
+		if err := validateEndpoint(endpoint); err != nil {
+			return fmt.Errorf("invalid endpoint %q: %w", endpoint, err)
 		}
 	}
 
 	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
-		return fmt.Errorf("unknown mapping mode %v", cfg.Mapping.Mode)
+		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
 	}
 
+	if cfg.Compression != "" {
+		// TODO support confighttp.ClientConfig.Compression
+		return errors.New("compression is not currently configurable")
+	}
 	return nil
+}
+
+func (cfg *Config) endpoints() ([]string, error) {
+	// Exactly one of endpoint, endpoints, or cloudid must be configured.
+	// If none are set, then $ELASTICSEARCH_URL may be specified instead.
+	var endpoints []string
+	var numEndpointConfigs int
+	if cfg.Endpoint != "" {
+		numEndpointConfigs++
+		endpoints = []string{cfg.Endpoint}
+	}
+	if len(cfg.Endpoints) > 0 {
+		numEndpointConfigs++
+		endpoints = cfg.Endpoints
+	}
+	if cfg.CloudID != "" {
+		numEndpointConfigs++
+		u, err := parseCloudID(cfg.CloudID)
+		if err != nil {
+			return nil, err
+		}
+		endpoints = []string{u.String()}
+	}
+	if numEndpointConfigs == 0 {
+		if v := os.Getenv(defaultElasticsearchEnvName); v != "" {
+			numEndpointConfigs++
+			endpoints = strings.Split(v, ",")
+			for i, endpoint := range endpoints {
+				endpoints[i] = strings.TrimSpace(endpoint)
+			}
+		}
+	}
+	if numEndpointConfigs != 1 {
+		return nil, errConfigEndpointRequired
+	}
+	return endpoints, nil
+}
+
+func validateEndpoint(endpoint string) error {
+	if endpoint == "" {
+		return errConfigEmptyEndpoint
+	}
+
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return err
+	}
+	switch u.Scheme {
+	case "http", "https":
+	default:
+		return fmt.Errorf(`invalid scheme %q, expected "http" or "https"`, u.Scheme)
+	}
+	return nil
+}
+
+// Based on "addrFromCloudID" in go-elasticsearch.
+func parseCloudID(input string) (*url.URL, error) {
+	_, after, ok := strings.Cut(input, ":")
+	if !ok {
+		return nil, fmt.Errorf("invalid CloudID %q", input)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(after)
+	if err != nil {
+		return nil, err
+	}
+
+	before, after, ok := strings.Cut(string(decoded), "$")
+	if !ok {
+		return nil, fmt.Errorf("invalid decoded CloudID %q", string(decoded))
+	}
+	return url.Parse(fmt.Sprintf("https://%s.%s", after, before))
 }
 
 // MappingMode returns the mapping.mode defined in the given cfg

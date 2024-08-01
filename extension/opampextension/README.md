@@ -25,11 +25,15 @@ The following settings are optional:
   - `ws`: The OpAMP websocket transport settings.
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
-- `instance_uid`: A ULID formatted as a 26 character string in canonical
+- `instance_uid`: A UUIDv7 formatted as a 36 character string in canonical
   representation. Auto-generated on start if missing. Setting this ensures the
   instance UID remains constant across process restarts.
 - `capabilities`: Keys with boolean true/false values that enable a particular OpAMP capability.
   - `reports_effective_config`: Whether to enable the OpAMP ReportsEffectiveConfig capability. Default is `true`.
+- `agent_description`: Setting that modifies the agent description reported to the OpAMP server.
+  - `non_identifying_attributes`: A map of key value pairs that will be added to the [non-identifying attributes](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescriptionnon_identifying_attributes) reported to the OpAMP server. If an attribute collides with the default non-identifying attributes that are automatically added, the ones specified here take precedence.
+- `ppid`: An optional process ID to monitor. When this process is no longer running, the extension will emit a fatal error, causing the collector to exit. This is meant to be set by the Supervisor or some other parent process, and should not be configured manually.
+- `ppid_poll_interval`: The poll interval between check for whether `ppid` is still alive or not. Defaults to 5 seconds.
 
 ### Example
 
@@ -40,6 +44,12 @@ extensions:
       ws:
         endpoint: wss://127.0.0.1:4320/v1/opamp
 ```
+
+## Custom Messages
+
+Other components may use a configured OpAMP extension to send and receive custom messages to and from an OpAMP server.
+
+See the [opampcustommessages](../opampcustommessages/README.md) module for more information on the custom message API.
 
 ## Status
 

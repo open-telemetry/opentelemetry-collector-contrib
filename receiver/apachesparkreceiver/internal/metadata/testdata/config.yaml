@@ -281,3 +281,55 @@ none_set:
       enabled: false
     spark.stage.id:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    spark.application.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    spark.application.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    spark.executor.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    spark.job.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    spark.stage.attempt.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    spark.stage.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    spark.application.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "spark.application.id-val"
+    spark.application.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "spark.application.name-val"
+    spark.executor.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "spark.executor.id-val"
+    spark.job.id:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    spark.stage.attempt.id:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    spark.stage.id:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"

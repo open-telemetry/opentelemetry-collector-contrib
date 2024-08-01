@@ -50,7 +50,7 @@ func TestNewOTELMetricHelper(t *testing.T) {
 		{
 			desc: "Returns a good otelMetricHelper",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				require.NotNil(t, helper)
 				require.NotNil(t, helper.metrics)
@@ -75,7 +75,7 @@ func TestGetResource(t *testing.T) {
 		{
 			desc: "Returns nil when resource not yet created",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				actual := helper.getResource("r1")
 				require.Nil(t, actual)
@@ -84,7 +84,7 @@ func TestGetResource(t *testing.T) {
 		{
 			desc: "Returns resource when already created",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.Resource().Attributes().PutStr("key1", "val1")
@@ -108,7 +108,7 @@ func TestCreateResource(t *testing.T) {
 		{
 			desc: "Creates resource with given attributes and saves it for easy reference",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				actual := helper.createResource("r1", map[string]string{"key1": "val1"})
 				require.NotNil(t, actual)
@@ -133,7 +133,7 @@ func TestGetMetric(t *testing.T) {
 		{
 			desc: "Returns nil when resource not yet created",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				actual := helper.getMetric("r1", "m1")
 				require.Nil(t, actual)
@@ -142,7 +142,7 @@ func TestGetMetric(t *testing.T) {
 		{
 			desc: "Returns nil when metric not yet created",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.Resource().Attributes().PutStr("key1", "val1")
@@ -155,7 +155,7 @@ func TestGetMetric(t *testing.T) {
 		{
 			desc: "Returns metric when already created",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.Resource().Attributes().PutStr("key1", "val1")
@@ -183,7 +183,7 @@ func TestCreateMetric(t *testing.T) {
 		{
 			desc: "Returns error when resource does not exist",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				metricCfg := MetricConfig{
 					Description: "description",
@@ -200,7 +200,7 @@ func TestCreateMetric(t *testing.T) {
 		{
 			desc: "Creates gauge metric and saves it for easy reference",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.ScopeMetrics().AppendEmpty()
@@ -227,7 +227,7 @@ func TestCreateMetric(t *testing.T) {
 		{
 			desc: "Creates sum metric and saves it for easy reference",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.ScopeMetrics().AppendEmpty()
@@ -269,7 +269,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 		{
 			desc: "Returns error when resource does not exist",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				metricCfg := MetricConfig{
 					Description: "description",
@@ -291,7 +291,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 		{
 			desc: "Returns error when metric does not exist",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.ScopeMetrics().AppendEmpty()
@@ -318,7 +318,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 		{
 			desc: "Creates data points on existing gauge metric using passed in data",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.ScopeMetrics().AppendEmpty()
@@ -354,7 +354,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 		{
 			desc: "Creates data points on existing sum metric using passed in data",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.ScopeMetrics().AppendEmpty()
@@ -394,7 +394,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 		{
 			desc: "Creates data points on existing metric converting float to int",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.ScopeMetrics().AppendEmpty()
@@ -430,7 +430,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 		{
 			desc: "Creates data points on existing metric converting int to float",
 			testFunc: func(t *testing.T) {
-				settings := receiver.CreateSettings{}
+				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
 				resource := helper.resourceMetricsSlice.AppendEmpty()
 				resource.ScopeMetrics().AppendEmpty()

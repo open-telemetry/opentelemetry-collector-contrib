@@ -93,7 +93,7 @@ type githubData struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.NewWithSettings(confmap.ProviderSettings{}).Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewFactory().Create(confmap.ProviderSettings{}).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
@@ -137,8 +137,8 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 					return nil
 				}
 			}
-			if m.Status == nil || m.Status.Codeowners == nil {
-				return fmt.Errorf("component %q has no status or codeowners section", key)
+			if m.Status.Codeowners == nil {
+				return fmt.Errorf("component %q has no codeowners section", key)
 			}
 			for _, id := range m.Status.Codeowners.Active {
 				allCodeowners[id] = struct{}{}

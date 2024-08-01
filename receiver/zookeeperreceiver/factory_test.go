@@ -59,7 +59,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := f.CreateMetricsReceiver(
 				context.Background(),
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				test.config,
 				consumertest.NewNop(),
 			)

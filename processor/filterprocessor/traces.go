@@ -27,7 +27,7 @@ type filterSpanProcessor struct {
 	logger            *zap.Logger
 }
 
-func newFilterSpansProcessor(set processor.CreateSettings, cfg *Config) (*filterSpanProcessor, error) {
+func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanProcessor, error) {
 	var err error
 	fsp := &filterSpanProcessor{
 		logger: set.Logger,

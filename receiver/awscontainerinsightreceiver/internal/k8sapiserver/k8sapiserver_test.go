@@ -344,7 +344,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			},
 			Capacity:     map[v1.ResourceName]resource.Quantity{},
 			Allocatable:  map[v1.ResourceName]resource.Quantity{},
-			ProviderId:   "aws:///us-west-2/i-abcdef123456789",
+			ProviderID:   "aws:///us-west-2/i-abcdef123456789",
 			InstanceType: "g4dn-12xl",
 		},
 	})

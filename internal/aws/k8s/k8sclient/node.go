@@ -246,7 +246,7 @@ func transformFuncNode(obj any) (any, error) {
 	info.Capacity = node.Status.Capacity
 	info.Allocatable = node.Status.Allocatable
 	info.Conditions = []*NodeCondition{}
-	info.ProviderId = node.Spec.ProviderID
+	info.ProviderID = node.Spec.ProviderID
 	if instanceType, ok := node.Labels[instanceTypeLabelKey]; ok {
 		info.InstanceType = instanceType
 	} else {

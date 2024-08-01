@@ -32,7 +32,7 @@ type logExporterImp struct {
 }
 
 // Create new logs exporter
-func newLogsExporter(params exporter.CreateSettings, cfg component.Config) (*logExporterImp, error) {
+func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
 	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -18,14 +19,16 @@ import (
 
 func newTestParser(t *testing.T) *Parser {
 	config := NewConfigWithID("test")
-	op, err := config.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := config.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
 }
 
 func TestConfigBuild(t *testing.T) {
 	config := NewConfigWithID("test")
-	op, err := config.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := config.Build(set)
 	require.NoError(t, err)
 	require.IsType(t, &Parser{}, op)
 }
@@ -33,7 +36,8 @@ func TestConfigBuild(t *testing.T) {
 func TestConfigBuildFailure(t *testing.T) {
 	config := NewConfigWithID("test")
 	config.OnError = "invalid_on_error"
-	_, err := config.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := config.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -143,7 +147,8 @@ func TestParser(t *testing.T) {
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
-			op, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)

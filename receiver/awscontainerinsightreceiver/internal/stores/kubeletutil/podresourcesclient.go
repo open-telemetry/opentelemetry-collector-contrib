@@ -45,13 +45,8 @@ func (p *PodResourcesClient) connectToServer(socket string) (*grpc.ClientConn, e
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), connectionTimeout)
-	defer cancel()
-
-	conn, err := grpc.DialContext(ctx,
-		socket,
+	conn, err := grpc.NewClient("passthrough:"+socket,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			d := net.Dialer{}
 			return d.DialContext(ctx, "unix", addr)

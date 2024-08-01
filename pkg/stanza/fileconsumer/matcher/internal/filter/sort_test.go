@@ -179,6 +179,7 @@ func TestMTimeFilter(t *testing.T) {
 		name        string
 		files       []string
 		fileMTimes  []time.Time
+		ascending   bool
 		expectedErr string
 		expect      []string
 	}{
@@ -198,6 +199,20 @@ func TestMTimeFilter(t *testing.T) {
 			name:       "Multiple files",
 			files:      []string{"a.log", "b.log"},
 			fileMTimes: []time.Time{epoch, epoch.Add(time.Hour)},
+			expect:     []string{"b.log", "a.log"},
+		},
+		{
+			name:       "Multiple files in order, ascending sort",
+			files:      []string{"a.log", "b.log"},
+			fileMTimes: []time.Time{epoch, epoch.Add(time.Hour)},
+			ascending:  true,
+			expect:     []string{"a.log", "b.log"},
+		},
+		{
+			name:       "Multiple files out of order, ascending sort",
+			files:      []string{"a.log", "b.log"},
+			fileMTimes: []time.Time{epoch.Add(time.Hour), epoch},
+			ascending:  true,
 			expect:     []string{"b.log", "a.log"},
 		},
 	}
@@ -221,7 +236,7 @@ func TestMTimeFilter(t *testing.T) {
 				items = append(items, it)
 			}
 
-			f := SortMtime()
+			f := SortMtime(tc.ascending)
 			result, err := f.apply(items)
 			if tc.expectedErr != "" {
 				require.EqualError(t, err, tc.expectedErr)

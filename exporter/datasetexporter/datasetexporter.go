@@ -28,7 +28,7 @@ type DatasetExporter struct {
 	serverHost  string
 }
 
-func newDatasetExporter(entity string, config *Config, set exporter.CreateSettings) (*DatasetExporter, error) {
+func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*DatasetExporter, error) {
 	logger := set.Logger
 	logger.Info("Creating new DataSetExporter",
 		zap.String("config", config.String()),

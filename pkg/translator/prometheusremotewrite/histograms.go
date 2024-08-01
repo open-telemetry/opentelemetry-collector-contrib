@@ -16,41 +16,30 @@ import (
 
 const defaultZeroThreshold = 1e-128
 
-func addSingleExponentialHistogramDataPoint(
-	metric string,
-	pt pmetric.ExponentialHistogramDataPoint,
-	resource pcommon.Resource,
-	settings Settings,
-	series map[string]*prompb.TimeSeries,
-) error {
-	labels := createAttributes(
-		resource,
-		pt.Attributes(),
-		settings.ExternalLabels,
-		model.MetricNameLabel,
-		metric,
-	)
+func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
+	resource pcommon.Resource, settings Settings, baseName string) error {
+	for x := 0; x < dataPoints.Len(); x++ {
+		pt := dataPoints.At(x)
+		lbls := createAttributes(
+			resource,
+			pt.Attributes(),
+			settings.ExternalLabels,
+			nil,
+			true,
+			model.MetricNameLabel,
+			baseName,
+		)
+		ts, _ := c.getOrCreateTimeSeries(lbls)
 
-	sig := timeSeriesSignature(
-		pmetric.MetricTypeExponentialHistogram.String(),
-		labels,
-	)
-	ts, ok := series[sig]
-	if !ok {
-		ts = &prompb.TimeSeries{
-			Labels: labels,
+		histogram, err := exponentialToNativeHistogram(pt)
+		if err != nil {
+			return err
 		}
-		series[sig] = ts
-	}
+		ts.Histograms = append(ts.Histograms, histogram)
 
-	histogram, err := exponentialToNativeHistogram(pt)
-	if err != nil {
-		return err
+		exemplars := getPromExemplars[pmetric.ExponentialHistogramDataPoint](pt)
+		ts.Exemplars = append(ts.Exemplars, exemplars...)
 	}
-	ts.Histograms = append(ts.Histograms, histogram)
-
-	exemplars := getPromExemplars[pmetric.ExponentialHistogramDataPoint](pt)
-	ts.Exemplars = append(ts.Exemplars, exemplars...)
 
 	return nil
 }

@@ -89,7 +89,7 @@ func (f *SyslogWriter) GenConfigYAMLStr() string {
 `, f.network, f.GetEndpoint())
 }
 func (f *SyslogWriter) Send(lr plog.LogRecord) error {
-	ts := time.Unix(int64(lr.Timestamp()/1000000000), int64(lr.Timestamp()%100000000)).Format(time.RFC3339Nano)
+	ts := time.Unix(int64(lr.Timestamp()/1_000_000_000), int64(lr.Timestamp()%1_000_000_000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID()))

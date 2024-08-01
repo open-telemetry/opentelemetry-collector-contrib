@@ -42,7 +42,7 @@ func (detectorUtils *MockDetectorUtils) getClusterNameTagFromReservations(_ []*e
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
+	detector, err := NewDetector(processortest.NewNopSettings(), dcfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 }

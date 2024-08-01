@@ -16,19 +16,20 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 type receiver struct {
+	set    component.TelemetrySettings
 	id     component.ID
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
 	pipe      pipeline.Pipeline
-	emitter   *LogEmitter
+	emitter   *helper.LogEmitter
 	consumer  consumer.Logs
 	converter *Converter
-	logger    *zap.Logger
 	obsrecv   *receiverhelper.ObsReport
 
 	storageID     *component.ID
@@ -42,7 +43,7 @@ var _ rcvr.Logs = (*receiver)(nil)
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	rctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
-	r.logger.Info("Starting stanza receiver")
+	r.set.Logger.Info("Starting stanza receiver")
 
 	if err := r.setStorageClient(ctx, host); err != nil {
 		return fmt.Errorf("storage client: %w", err)
@@ -87,16 +88,16 @@ func (r *receiver) emitterLoop(ctx context.Context) {
 	for {
 		select {
 		case <-doneChan:
-			r.logger.Debug("Receive loop stopped")
+			r.set.Logger.Debug("Receive loop stopped")
 			return
 
-		case e, ok := <-r.emitter.logChan:
+		case e, ok := <-r.emitter.OutChannel():
 			if !ok {
 				continue
 			}
 
 			if err := r.converter.Batch(e); err != nil {
-				r.logger.Error("Could not add entry to batch", zap.Error(err))
+				r.set.Logger.Error("Could not add entry to batch", zap.Error(err))
 			}
 		}
 	}
@@ -112,19 +113,19 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 	for {
 		select {
 		case <-doneChan:
-			r.logger.Debug("Consumer loop stopped")
+			r.set.Logger.Debug("Consumer loop stopped")
 			return
 
 		case pLogs, ok := <-pLogsChan:
 			if !ok {
-				r.logger.Debug("Converter channel got closed")
+				r.set.Logger.Debug("Converter channel got closed")
 				continue
 			}
 			obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
 			logRecordCount := pLogs.LogRecordCount()
 			cErr := r.consumer.ConsumeLogs(ctx, pLogs)
 			if cErr != nil {
-				r.logger.Error("ConsumeLogs() failed", zap.Error(cErr))
+				r.set.Logger.Error("ConsumeLogs() failed", zap.Error(cErr))
 			}
 			r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", logRecordCount, cErr)
 		}
@@ -137,7 +138,7 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	r.logger.Info("Stopping stanza receiver")
+	r.set.Logger.Info("Stopping stanza receiver")
 	pipelineErr := r.pipe.Stop()
 	r.converter.Stop()
 	r.cancel()

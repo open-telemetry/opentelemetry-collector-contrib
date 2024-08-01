@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"go.opentelemetry.io/collector/featuregate"
 
@@ -33,8 +34,12 @@ var mtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 )
 
 type Criteria struct {
-	Include          []string         `mapstructure:"include,omitempty"`
-	Exclude          []string         `mapstructure:"exclude,omitempty"`
+	Include []string `mapstructure:"include,omitempty"`
+	Exclude []string `mapstructure:"exclude,omitempty"`
+
+	// ExcludeOlderThan allows excluding files whose modification time is older
+	// than the specified age.
+	ExcludeOlderThan time.Duration    `mapstructure:"exclude_older_than"`
 	OrderingCriteria OrderingCriteria `mapstructure:"ordering_criteria,omitempty"`
 }
 
@@ -66,11 +71,17 @@ func New(c Criteria) (*Matcher, error) {
 		return nil, fmt.Errorf("exclude: %w", err)
 	}
 
+	m := &Matcher{
+		include: c.Include,
+		exclude: c.Exclude,
+	}
+
+	if c.ExcludeOlderThan != 0 {
+		m.filterOpts = append(m.filterOpts, filter.ExcludeOlderThan(c.ExcludeOlderThan))
+	}
+
 	if len(c.OrderingCriteria.SortBy) == 0 {
-		return &Matcher{
-			include: c.Include,
-			exclude: c.Exclude,
-		}, nil
+		return m, nil
 	}
 
 	if c.OrderingCriteria.TopN < 0 {
@@ -92,9 +103,10 @@ func New(c Criteria) (*Matcher, error) {
 		if err != nil {
 			return nil, fmt.Errorf("compile regex: %w", err)
 		}
+
+		m.regex = regex
 	}
 
-	var filterOpts []filter.Option
 	for _, sc := range c.OrderingCriteria.SortBy {
 		switch sc.SortType {
 		case sortTypeNumeric:
@@ -102,36 +114,32 @@ func New(c Criteria) (*Matcher, error) {
 			if err != nil {
 				return nil, fmt.Errorf("numeric sort: %w", err)
 			}
-			filterOpts = append(filterOpts, f)
+			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeAlphabetical:
 			f, err := filter.SortAlphabetical(sc.RegexKey, sc.Ascending)
 			if err != nil {
 				return nil, fmt.Errorf("alphabetical sort: %w", err)
 			}
-			filterOpts = append(filterOpts, f)
+			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeTimestamp:
 			f, err := filter.SortTemporal(sc.RegexKey, sc.Ascending, sc.Layout, sc.Location)
 			if err != nil {
 				return nil, fmt.Errorf("timestamp sort: %w", err)
 			}
-			filterOpts = append(filterOpts, f)
+			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeMtime:
 			if !mtimeSortTypeFeatureGate.IsEnabled() {
 				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
 			}
-			filterOpts = append(filterOpts, filter.SortMtime())
+			m.filterOpts = append(m.filterOpts, filter.SortMtime(sc.Ascending))
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
 	}
 
-	return &Matcher{
-		include:    c.Include,
-		exclude:    c.Exclude,
-		regex:      regex,
-		topN:       c.OrderingCriteria.TopN,
-		filterOpts: filterOpts,
-	}, nil
+	m.filterOpts = append(m.filterOpts, filter.TopNOption(c.OrderingCriteria.TopN))
+
+	return m, nil
 }
 
 // orderingCriteriaNeedsRegex returns true if any of the sort options require a regex to be set.
@@ -149,7 +157,6 @@ type Matcher struct {
 	include    []string
 	exclude    []string
 	regex      *regexp.Regexp
-	topN       int
 	filterOpts []filter.Option
 }
 
@@ -171,10 +178,5 @@ func (m Matcher) MatchFiles() ([]string, error) {
 	if len(result) == 0 {
 		return result, errors.Join(err, errs)
 	}
-
-	if len(result) <= m.topN {
-		return result, errors.Join(err, errs)
-	}
-
-	return result[:m.topN], errors.Join(err, errs)
+	return result, errs
 }

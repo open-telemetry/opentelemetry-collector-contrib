@@ -530,7 +530,7 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 	}
 	metrics := newTestMetrics(t)
 	receiver := &solaceTracesReceiver{
-		settings: receivertest.NewNopCreateSettings(),
+		settings: receivertest.NewNopSettings(),
 		config: &Config{
 			Flow: FlowControl{
 				DelayedRetry: &FlowControlDelayedRetry{

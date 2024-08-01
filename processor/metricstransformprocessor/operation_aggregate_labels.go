@@ -167,6 +167,8 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg a
 					dp.SetDoubleValue(math.Max(dp.DoubleValue(), doubleVal(dps.At(i))))
 				case min:
 					dp.SetDoubleValue(math.Min(dp.DoubleValue(), doubleVal(dps.At(i))))
+				case count:
+					dp.SetDoubleValue(float64(dps.Len()))
 				}
 				if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
 					dp.SetStartTimestamp(dps.At(i).StartTimestamp())
@@ -188,6 +190,8 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg a
 					if dp.IntValue() > intVal(dps.At(i)) {
 						dp.SetIntValue(intVal(dps.At(i)))
 					}
+				case count:
+					dp.SetIntValue(int64(dps.Len()))
 				}
 				if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
 					dp.SetStartTimestamp(dps.At(i).StartTimestamp())

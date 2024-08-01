@@ -6,7 +6,7 @@ package keyvalue // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -40,8 +40,8 @@ type Config struct {
 }
 
 // Build will build a key value parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	parserOperator, err := c.ParserConfig.Build(logger)
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	parserOperator, err := c.ParserConfig.Build(set)
 	if err != nil {
 		return nil, err
 	}

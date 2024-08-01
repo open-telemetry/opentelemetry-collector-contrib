@@ -12,7 +12,7 @@ type NodeInfo struct {
 	Conditions   []*NodeCondition
 	Capacity     v1.ResourceList
 	Allocatable  v1.ResourceList
-	ProviderId   string
+	ProviderID   string
 	InstanceType string
 }
 

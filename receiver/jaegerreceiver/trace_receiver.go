@@ -66,7 +66,7 @@ type jReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings receiver.CreateSettings
+	settings receiver.Settings
 
 	grpcObsrecv *receiverhelper.ObsReport
 	httpObsrecv *receiverhelper.ObsReport
@@ -95,7 +95,7 @@ func newJaegerReceiver(
 	id component.ID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 ) (*jReceiver, error) {
 	grpcObsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             id,
@@ -374,7 +374,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 	}
 
 	if jr.config.HTTPServerConfig.Endpoint != "" {
-		cln, err := jr.config.HTTPServerConfig.ToListenerContext(ctx)
+		cln, err := jr.config.HTTPServerConfig.ToListener(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %w",
 				jr.config.HTTPServerConfig.Endpoint, err)
@@ -382,7 +382,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/api/traces", jr.HandleThriftHTTPBatch).Methods(http.MethodPost)
-		jr.collectorServer, err = jr.config.HTTPServerConfig.ToServerContext(ctx, host, jr.settings.TelemetrySettings, nr)
+		jr.collectorServer, err = jr.config.HTTPServerConfig.ToServer(ctx, host, jr.settings.TelemetrySettings, nr)
 		if err != nil {
 			return err
 		}

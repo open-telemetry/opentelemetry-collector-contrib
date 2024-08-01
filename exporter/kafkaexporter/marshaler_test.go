@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
@@ -67,6 +68,69 @@ func TestDefaultLogsMarshalers(t *testing.T) {
 			m, ok := marshalers[e]
 			require.True(t, ok)
 			assert.NotNil(t, m)
+		})
+	}
+}
+
+func TestOTLPMetricsJsonMarshaling(t *testing.T) {
+	tests := []struct {
+		name                 string
+		keyEnabled           bool
+		messagePartitionKeys []sarama.Encoder
+	}{
+		{
+			name:                 "partitioning_disabled",
+			keyEnabled:           false,
+			messagePartitionKeys: []sarama.Encoder{nil},
+		},
+		{
+			name:       "partitioning_enabled",
+			keyEnabled: true,
+			messagePartitionKeys: []sarama.Encoder{
+				sarama.ByteEncoder{0x62, 0x7f, 0x20, 0x34, 0x85, 0x49, 0x55, 0x2e, 0xfa, 0x93, 0xae, 0xd7, 0xde, 0x91, 0xd7, 0x16},
+				sarama.ByteEncoder{0x75, 0x6b, 0xb4, 0xd6, 0xff, 0xeb, 0x92, 0x22, 0xa, 0x68, 0x65, 0x48, 0xe0, 0xd3, 0x94, 0x44},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := pmetric.NewMetrics()
+			r := pcommon.NewResource()
+			r.Attributes().PutStr("service.name", "my_service_name")
+			r.Attributes().PutStr("service.instance.id", "kek_x_1")
+			r.CopyTo(metric.ResourceMetrics().AppendEmpty().Resource())
+
+			rm := metric.ResourceMetrics().At(0)
+			rm.SetSchemaUrl(conventions.SchemaURL)
+
+			sm := rm.ScopeMetrics().AppendEmpty()
+			pmetric.NewScopeMetrics()
+			m := sm.Metrics().AppendEmpty()
+			m.SetEmptyGauge()
+			m.Gauge().DataPoints().AppendEmpty().SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1, 0)))
+			m.Gauge().DataPoints().At(0).Attributes().PutStr("gauage_attribute", "attr")
+			m.Gauge().DataPoints().At(0).SetDoubleValue(1.0)
+
+			r1 := pcommon.NewResource()
+			r1.Attributes().PutStr("service.instance.id", "kek_x_2")
+			r1.Attributes().PutStr("service.name", "my_service_name")
+			r1.CopyTo(metric.ResourceMetrics().AppendEmpty().Resource())
+
+			standardMarshaler := metricsMarshalers()["otlp_json"]
+			keyableMarshaler, ok := standardMarshaler.(KeyableMetricsMarshaler)
+			require.True(t, ok, "Must be a KeyableMetricsMarshaler")
+			if tt.keyEnabled {
+				keyableMarshaler.Key()
+			}
+
+			msgs, err := standardMarshaler.Marshal(metric, "KafkaTopicX")
+			require.NoError(t, err, "Must have marshaled the data without error")
+
+			require.Len(t, msgs, len(tt.messagePartitionKeys), "Number of messages must be %d, but was %d", len(tt.messagePartitionKeys), len(msgs))
+
+			for i := 0; i < len(tt.messagePartitionKeys); i++ {
+				require.Equal(t, tt.messagePartitionKeys[i], msgs[i].Key, "message %d has incorrect key", i)
+			}
 		})
 	}
 }

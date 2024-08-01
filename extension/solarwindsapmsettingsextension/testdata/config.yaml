@@ -1,0 +1,13 @@
+solarwindsapmsettings:
+solarwindsapmsettings/1:
+  endpoint: "apm.collector.apj-01.cloud.solarwinds.com:443"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/2:
+  endpoint: "apm.collector.eu-01.cloud.solarwinds.com"
+  key: "something"
+  interval: "4s"
+solarwindsapmsettings/3:
+  endpoint: ""
+  key: "something:name"
+  interval: 61s

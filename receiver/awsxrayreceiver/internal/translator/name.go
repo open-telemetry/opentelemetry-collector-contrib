@@ -14,6 +14,7 @@ import (
 const (
 	validAWSNamespace    = "aws"
 	validRemoteNamespace = "remote"
+	validLocalNamespace  = "local"
 )
 
 func addNameAndNamespace(seg *awsxray.Segment, span ptrace.Span) error {
@@ -29,7 +30,7 @@ func addNameAndNamespace(seg *awsxray.Segment, span ptrace.Span) error {
 		span.SetKind(ptrace.SpanKindServer)
 	}
 
-	if seg.Namespace == nil {
+	if seg.Namespace == nil || *seg.Namespace == validLocalNamespace {
 		if span.Kind() == ptrace.SpanKindUnspecified {
 			span.SetKind(ptrace.SpanKindInternal)
 		}
@@ -49,6 +50,7 @@ func addNameAndNamespace(seg *awsxray.Segment, span ptrace.Span) error {
 
 	case validRemoteNamespace:
 		// no op
+
 	default:
 		return fmt.Errorf("unexpected namespace: %s", *seg.Namespace)
 	}

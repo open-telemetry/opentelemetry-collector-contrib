@@ -12,17 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension/internal/metadata"
 )
 
-const (
-	DefaultInterval = "1m"
-)
-
-func createDefaultConfig() component.Config {
-	return &Config{
-		Interval: DefaultInterval,
-	}
-}
-
-func createExtension(_ context.Context, settings extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, settings extension.Settings, cfg component.Config) (extension.Extension, error) {
 	return newSolarwindsApmSettingsExtension(cfg.(*Config), settings.Logger)
 }
 

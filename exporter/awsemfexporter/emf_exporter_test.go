@@ -61,7 +61,7 @@ func TestConsumeMetrics(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -102,7 +102,7 @@ func TestConsumeMetricsWithNaNValues(t *testing.T) {
 			expCfg.Region = "us-west-2"
 			expCfg.MaxRetries = 0
 			expCfg.OutputDestination = "stdout"
-			exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+			exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, exp)
 			md := tc.generateFunc(tc.testName)
@@ -142,7 +142,7 @@ func TestConsumeMetricsWithInfValues(t *testing.T) {
 			expCfg.Region = "us-west-2"
 			expCfg.MaxRetries = 0
 			expCfg.OutputDestination = "stdout"
-			exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+			exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, exp)
 			md := tc.generateFunc(tc.testName)
@@ -161,7 +161,7 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
 	expCfg.OutputDestination = "stdout"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -182,7 +182,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -209,7 +209,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "/aws/ecs/containerinsights/{ClusterName}/performance"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -240,7 +240,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -271,7 +271,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{WrongKey}"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -302,7 +302,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	expCfg.MaxRetries = 0
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -331,7 +331,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 func TestNewExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	settings := exportertest.NewNopCreateSettings()
+	settings := exportertest.NewNopSettings()
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	exp, err := newEmfExporter(expCfg, settings)
@@ -368,7 +368,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	expCfg.MetricDeclarations = mds
 
 	obs, logs := observer.New(zap.WarnLevel)
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.New(obs)
 
 	exp, err := newEmfExporter(expCfg, params)
@@ -404,7 +404,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 }
 
 func TestNewExporterWithoutSession(t *testing.T) {
-	exp, err := newEmfExporter(nil, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(nil, exportertest.NewNopSettings())
 	assert.Error(t, err)
 	assert.Nil(t, exp)
 }
@@ -423,7 +423,7 @@ func TestWrapErrorIfBadRequest(t *testing.T) {
 func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	settings := exportertest.NewNopCreateSettings()
+	settings := exportertest.NewNopSettings()
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	exp, err := newEmfExporter(expCfg, settings)
@@ -450,7 +450,7 @@ func TestMiddleware(t *testing.T) {
 	middleware := new(awsmiddleware.MockMiddlewareExtension)
 	middleware.On("Handlers").Return([]awsmiddleware.RequestHandler{handler}, []awsmiddleware.ResponseHandler{handler})
 	extensions := map[component.ID]component.Component{id: middleware}
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 	host := new(awsmiddleware.MockExtensionsHost)

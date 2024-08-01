@@ -30,7 +30,24 @@ func TestScrape(t *testing.T) {
 		Password:             mock.MockPassword,
 	}
 
-	testScrape(ctx, t, cfg)
+	testScrape(ctx, t, cfg, "expected.yaml")
+}
+
+func TestScrapeConfigsEnabled(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, false)
+	defer mockServer.Close()
+
+	optConfigs := metadata.DefaultMetricsBuilderConfig()
+
+	cfg := &Config{
+		MetricsBuilderConfig: optConfigs,
+		Endpoint:             mockServer.URL,
+		Username:             mock.MockUsername,
+		Password:             mock.MockPassword,
+	}
+
+	testScrape(ctx, t, cfg, "expected-all-enabled.yaml")
 }
 
 func TestScrape_TLS(t *testing.T) {
@@ -48,17 +65,17 @@ func TestScrape_TLS(t *testing.T) {
 	cfg.Insecure = true
 	cfg.InsecureSkipVerify = true
 
-	testScrape(ctx, t, cfg)
+	testScrape(ctx, t, cfg, "expected.yaml")
 }
 
-func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
-	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
+func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string) {
+	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopSettings())
 
 	metrics, err := scraper.scrape(ctx)
 	require.NoError(t, err)
 	require.NotEqual(t, metrics.MetricCount(), 0)
 
-	goldenPath := filepath.Join("testdata", "metrics", "expected.yaml")
+	goldenPath := filepath.Join("testdata", "metrics", fileName)
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
@@ -78,7 +95,7 @@ func TestScrape_NoClient(t *testing.T) {
 		config: &Config{
 			Endpoint: "http://vcsa.localnet",
 		},
-		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)
@@ -109,7 +126,7 @@ func TestStartFailures_Metrics(t *testing.T) {
 
 	ctx := context.Background()
 	for _, tc := range cases {
-		scraper := newVmwareVcenterScraper(zap.NewNop(), tc.cfg, receivertest.NewNopCreateSettings())
+		scraper := newVmwareVcenterScraper(zap.NewNop(), tc.cfg, receivertest.NewNopSettings())
 		err := scraper.Start(ctx, nil)
 		if tc.err != nil {
 			require.ErrorContains(t, err, tc.err.Error())

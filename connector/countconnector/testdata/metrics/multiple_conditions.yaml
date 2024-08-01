@@ -101,3 +101,23 @@ resourceMetrics:
               isMonotonic: true
         scope:
           name: otelcol/countconnector
+  - resource:
+      attributes:
+        - key: resource.int
+          value:
+            intValue: 1
+        - key: resource.optional_int
+          value:
+            intValue: 2
+    scopeMetrics:
+      - metrics:
+          - description: Metric count if ...
+            name: metric.count.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  timeUnixNano: "1678391923819487000"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector

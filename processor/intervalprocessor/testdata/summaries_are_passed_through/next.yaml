@@ -1,0 +1,62 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: summary.test
+            summary:
+              dataPoints:
+                - timeUnixNano: 50
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 50
+                    - quantile: 0.5
+                      value: 20
+                    - quantile: 0.75
+                      value: 75
+                    - quantile: 0.95
+                      value: 10
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 20
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 40
+                    - quantile: 0.5
+                      value: 10
+                    - quantile: 0.75
+                      value: 60
+                    - quantile: 0.95
+                      value: 5
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 80
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 80
+                    - quantile: 0.5
+                      value: 35
+                    - quantile: 0.75
+                      value: 90
+                    - quantile: 0.95
+                      value: 15
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb

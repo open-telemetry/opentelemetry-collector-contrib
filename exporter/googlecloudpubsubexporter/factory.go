@@ -38,7 +38,7 @@ func NewFactory() exporter.Factory {
 
 var exporters = map[*Config]*pubsubExporter{}
 
-func ensureExporter(params exporter.CreateSettings, pCfg *Config) *pubsubExporter {
+func ensureExporter(params exporter.Settings, pCfg *Config) *pubsubExporter {
 	receiver := exporters[pCfg]
 	if receiver != nil {
 		return receiver
@@ -83,7 +83,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config) (exporter.Traces, error) {
 
 	pCfg := cfg.(*Config)
@@ -105,7 +105,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config) (exporter.Metrics, error) {
 
 	pCfg := cfg.(*Config)
@@ -126,7 +126,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config) (exporter.Logs, error) {
 
 	pCfg := cfg.(*Config)

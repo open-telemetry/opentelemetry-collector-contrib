@@ -19,7 +19,7 @@ var httpFS embed.FS
 
 type remoteObserverExtension struct {
 	config   *Config
-	settings extension.CreateSettings
+	settings extension.Settings
 	server   *http.Server
 }
 
@@ -31,7 +31,7 @@ func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.FS(htmlContent)))
-	s.server, err = s.config.ServerConfig.ToServerContext(ctx, host, s.settings.TelemetrySettings, mux)
+	s.server, err = s.config.ServerConfig.ToServer(ctx, host, s.settings.TelemetrySettings, mux)
 	if err != nil {
 		return err
 	}

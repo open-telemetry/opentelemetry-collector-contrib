@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -318,6 +319,54 @@ func TestStartAtEnd(t *testing.T) {
 	filetest.WriteString(t, temp, "testlog2\n")
 	operator.poll(context.Background())
 	sink.ExpectToken(t, []byte("testlog2"))
+}
+
+// TestSymlinkedFiles tests reading from a single file that's actually a symlink
+// to another file, while the symlink target is changed frequently, reads all
+// the logs from all the files ever targeted by that symlink.
+func TestSymlinkedFiles(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Time sensitive tests disabled for now on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715#issuecomment-2107737828")
+	}
+
+	t.Parallel()
+
+	// Create 30 files with a predictable naming scheme, each containing
+	// 100 log lines.
+	const numFiles = 30
+	const logLinesPerFile = 100
+	const pollInterval = 10 * time.Millisecond
+	tempDir := t.TempDir()
+	expectedTokens := [][]byte{}
+	for i := 1; i <= numFiles; i++ {
+		expectedTokensBatch := symlinkTestCreateLogFile(t, tempDir, i, logLinesPerFile)
+		expectedTokens = append(expectedTokens, expectedTokensBatch...)
+	}
+
+	targetTempDir := t.TempDir()
+	symlinkFilePath := filepath.Join(targetTempDir, "sym.log")
+	cfg := NewConfig().includeDir(targetTempDir)
+	cfg.StartAt = "beginning"
+	cfg.PollInterval = pollInterval
+	sink := emittest.NewSink(emittest.WithCallBuffer(numFiles * logLinesPerFile))
+	operator := testManagerWithSink(t, cfg, sink)
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectNoCalls(t)
+
+	// Create and update symlink to each of the files over time.
+	for i := 1; i <= numFiles; i++ {
+		targetLogFilePath := filepath.Join(tempDir, fmt.Sprintf("%d.log", i))
+		require.NoError(t, os.Symlink(targetLogFilePath, symlinkFilePath))
+		// The sleep time here must be larger than the poll_interval value
+		time.Sleep(pollInterval + 1*time.Millisecond)
+		require.NoError(t, os.Remove(symlinkFilePath))
+	}
+	sink.ExpectTokens(t, expectedTokens...)
 }
 
 // StartAtEndNewFile tests that when `start_at` is configured to `end`,
@@ -1422,4 +1471,126 @@ func TestNoLostPartial(t *testing.T) {
 		}
 		return foundSameFromOtherFile && foundNewFromFileOne
 	}, time.Second, 100*time.Millisecond)
+}
+
+func TestNoTracking(t *testing.T) {
+	testCases := []struct {
+		testName     string
+		noTracking   bool
+		expectReplay bool
+	}{
+		{"tracking_enabled", false, false},
+		{"tracking_disabled", true, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			tempDir := t.TempDir()
+			cfg := NewConfig().includeDir(tempDir)
+			cfg.StartAt = "beginning"
+			cfg.PollInterval = 1000 * time.Hour // We control the polling within the test.
+
+			opts := make([]Option, 0)
+			if tc.noTracking {
+				opts = append(opts, WithNoTracking())
+			}
+			operator, sink := testManager(t, cfg, opts...)
+
+			temp := filetest.OpenTemp(t, tempDir)
+			filetest.WriteString(t, temp, " testlog1 \n")
+
+			require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+			defer func() {
+				require.NoError(t, operator.Stop())
+			}()
+
+			operator.poll(context.Background())
+			sink.ExpectToken(t, []byte("testlog1"))
+
+			// Poll again and see if the file is replayed.
+			operator.poll(context.Background())
+			if tc.expectReplay {
+				sink.ExpectToken(t, []byte("testlog1"))
+			} else {
+				sink.ExpectNoCalls(t)
+			}
+		})
+	}
+}
+
+func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines int) (tokens [][]byte) {
+	logFilePath := fmt.Sprintf("%s/%d.log", tempDir, fileIdx)
+	temp1 := filetest.OpenFile(t, logFilePath)
+	for i := 0; i < numLogLines; i++ {
+		msg := fmt.Sprintf("[fileIdx %2d] This is a simple log line with the number %3d", fileIdx, i)
+		filetest.WriteString(t, temp1, msg+"\n")
+		tokens = append(tokens, []byte(msg))
+	}
+	temp1.Close()
+	return tokens
+}
+
+// TestReadGzipCompressedLogsFromBeginning tests that, when starting from beginning of a gzip compressed file, we
+// read all the lines that are already there
+func TestReadGzipCompressedLogsFromBeginning(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir).withGzip()
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+	writer := gzip.NewWriter(temp)
+
+	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
+	require.NoError(t, err)
+
+	require.NoError(t, writer.Close())
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog2"))
+}
+
+// TestReadGzipCompressedLogsFromEnd tests that, when starting at the end of a gzip compressed file, we
+// read all the lines that are added afterward
+func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir).withGzip()
+	cfg.StartAt = "end"
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+
+	appendToLog := func(t *testing.T, content string) {
+		writer := gzip.NewWriter(temp)
+		_, err := writer.Write([]byte(content))
+		require.NoError(t, err)
+		require.NoError(t, writer.Close())
+	}
+
+	appendToLog(t, "testlog1\ntestlog2\n")
+
+	// poll for the first time - this should not lead to emitted
+	// logs as those were already in the existing file
+	operator.poll(context.TODO())
+
+	// append new content to the log and poll again - this should be picked up
+	appendToLog(t, "testlog3\n")
+	operator.poll(context.TODO())
+	sink.ExpectToken(t, []byte("testlog3"))
+
+	// do another iteration to verify correct setting of compressed reader offset
+	appendToLog(t, "testlog4\n")
+	operator.poll(context.TODO())
+	sink.ExpectToken(t, []byte("testlog4"))
 }

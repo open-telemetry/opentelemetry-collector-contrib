@@ -37,11 +37,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-	// return error if sshcheckreceiver on Windows
-	if !supportedOS() {
-		return nil, errWindowsUnsupported
-	}
+func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 
 	cfg, ok := rConf.(*Config)
 	if !ok {

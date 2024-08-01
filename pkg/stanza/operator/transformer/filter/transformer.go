@@ -29,13 +29,13 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 
 	matches, err := vm.Run(t.expression, env)
 	if err != nil {
-		t.Errorf("Running expressing returned an error", zap.Error(err))
+		t.Logger().Error("Running expressing returned an error", zap.Error(err))
 		return nil
 	}
 
 	filtered, ok := matches.(bool)
 	if !ok {
-		t.Errorf("Expression did not compile as a boolean")
+		t.Logger().Error("Expression did not compile as a boolean")
 		return nil
 	}
 

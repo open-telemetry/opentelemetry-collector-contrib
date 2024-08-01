@@ -9,7 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -571,6 +573,20 @@ func TestSetInvalidLocation(t *testing.T) {
 	err := tp.setLocation()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to load location "+"not_a_location")
+}
+
+func TestUnmarshal(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"location": "America/Shiprock",
+	})
+	tp := TimeParser{
+		Layout: "1/2/2006 15:04:05",
+	}
+
+	require.NoError(t, tp.Unmarshal(conf))
+	assert.Equal(t, "America/Shiprock", tp.Location)
+	assert.Equal(t, "strptime", tp.LayoutType)
+	assert.Equal(t, "1/2/2006 15:04:05", tp.Layout)
 }
 
 func TestUnmarshalTimeConfig(t *testing.T) {

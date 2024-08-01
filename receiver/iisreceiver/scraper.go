@@ -55,7 +55,7 @@ type instanceWatcher struct {
 }
 
 // newIisReceiver returns an iisReceiver
-func newIisReceiver(settings receiver.CreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
+func newIisReceiver(settings receiver.Settings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
 	return &iisReceiver{
 		params:             settings.TelemetrySettings,
 		config:             cfg,

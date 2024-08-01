@@ -76,7 +76,7 @@ type poller struct {
 }
 
 // New creates a new UDP poller
-func New(cfg *Config, set receiver.CreateSettings) (Poller, error) {
+func New(cfg *Config, set receiver.Settings) (Poller, error) {
 	if cfg.Transport != Transport {
 		return nil, fmt.Errorf(
 			"X-Ray receiver only supports ingesting spans through UDP, provided: %s",

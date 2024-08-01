@@ -4,12 +4,21 @@ If you would like to contribute please read OpenTelemetry Collector [contributin
 guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md) before you begin your
 work.
 
-## Pull-request title
+## Pull-requests
+
+### Title guidelines
 
 The title for your pull-request should contain the component type and name in brackets, plus a short statement for your
 change. For instance:
 
     [processor/tailsampling] fix AND policy
+
+### Description guidelines
+
+When linking to an open issue, if your PR is meant to close said issue, please prefix your issue with one of the
+following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this functionality (and more keyword options) can be found
+[here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
+This will automatically close the issue once your PR has been merged.
 
 ## Changelog
 
@@ -90,27 +99,34 @@ With above guidelines, you can write code that is more portable and easier to ma
 ## Adding New Components
 
 **Before** any code is written, [open an
-issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=new+component&template=new_component.md&title=New%20component)
+issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
 providing the following information:
 
-* Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of
-  the code and become a code owner for the component. For vendor-specific components, it's good to have a volunteer
-  sponsor. If you can't find one, we'll assign one in a round-robin fashion. A vendor-specific component directly interfaces
-  with a vendor-specific API and is expected to be maintained by a representative of the same vendor. For non-vendor specific
-  components, having a sponsor means that your use case has been validated.
+* Who's the sponsor for your component. A sponsor is an approver or maintainer who will be the official reviewer of the code and a code owner
+  for the component. Generally, you will need to find a sponsor for the component in order for it to be accepted. For vendor-specific
+  components, a sponsor may be assigned under certain circumstances. See additional details below.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
-* The configuration options your component will accept. This will help us understand what it does and have an idea of
-  how the implementation might look like.
+* The configuration options your component will accept. This will give us a better understanding of what it does, and 
+  how it may be implemented.
+
+### Vendor-specific components
+
+A vendor-specific component directly interfaces with a vendor-specific API and is expected to be maintained by a representative of the same vendor.
+It is always preferred to find a sponsor. However in an effort to ensure vendor neutrality, a sponsor will be assigned to a vendor-specific
+component using a round-robin fashion if the following circumstances are met:
+
+1. A member of the OpenTelemetry project proposes to contribute and support the component on behalf of the vendor.
+2. The vendor does not yet have a component of the same class (i.e. receiver, processor, exporter, connector, or extension) in the repository.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
-* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
+* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md)).
 
-Familiarize yourself with the interface of the component that you want to write, and use existing implementations as reference.
+Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
 
 *NOTICE:* The Collector is in Beta stage and as such the interfaces may undergo breaking changes. Component creators
@@ -119,8 +135,8 @@ excluded from the default builds.
 
 Generally, maintenance of components is the responsibility of contributors who authored them. If the original author or
 some other contributor does not maintain the component it may be excluded from the default build. The component **will**
-be excluded if it causes build problems, has failing tests or otherwise causes problems to the rest of the repository
-and the rest of contributors.
+be excluded if it causes build problems, has failing tests, or otherwise causes problems to the rest of the repository
+and its contributors.
 
 - Create your component under the proper folder and use Go standard package naming recommendations.
 - Use a boiler-plate Makefile that just references the one at top level, ie.: `include ../../Makefile.Common` - this
@@ -137,11 +153,17 @@ and the rest of contributors.
   available configuration settings so users can copy and modify them as needed.
 - Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
-- All components included in the distribution must be included in [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml) 
-  and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
-  the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
-  components number with a comment within the PR explaining as to why it can not be tested.
-- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml).
+- All components included in the distribution must be included in
+  [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml)
+  and in the respective testing harnesses. To align with the test goal of the
+  project, components must be testable within the framework defined within the
+  folder. If a component can not be properly tested within the existing
+  framework, it must increase the non testable components number with a comment
+  within the PR explaining as to why it can not be tested. **(Note: this does
+  not automatically include any components in official release binaries. See
+  [Releasing new components](#releasing-new-components).)**
+
+- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml).
 Here is a minimal representation:
 ```
 type: <name of your component, such as apache, http, haproxy, postgresql>
@@ -170,7 +192,7 @@ status:
 // Package fooreceiver bars.
 package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"
 ```
-- Type `make update-codeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file and the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
+- Type `make update-codeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file and the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
 
 When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
@@ -180,14 +202,35 @@ When submitting a component to the community, consider breaking it down into sep
   * This PR is usually trivial to review, so the size limit does not apply to
     it.
   * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
+  * Before submitting a PR, run the following commands from the root of the repository to ensure your new component is meeting the repo linting expectations:
+    * `make checkdoc`
+    * `make checkmetadata`
+    * `make checkapi`
+    * `make goporto`
+    * `make crosslink`
+    * `make gotidy`
+    * `make genotelcontribcol`
+    * `make genoteltestbedcol`
+    * `make generate`
+    * `make multimod-verify`
+    * `make generate-gh-issue-templates`
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
-* **Last PR** should mark the new component as `Alpha` stability and add it to the `cmd/otelcontribcol`
-  binary by updating the `cmd/otelcontribcol/components.go` file. The component must be enabled
-  only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
-* Once a new component has been added to the executable, please add the component
-  to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
+* **Last PR** should mark the new component as `Alpha` stability.
+  * Update its `metadata.yaml` file.
+    * Mark the stability as `alpha`
+    * Add `contrib` to the list of distributions
+  * Add it to the `cmd/otelcontribcol` binary by updating the `cmd/otelcontribcol/builder-config.yaml` file.
+  * Please also run:
+    - `make generate`
+    - `make genotelcontribcol`
+  * The component's tests must also be added as a part of its respective `component_type_tests.go` file in the `cmd/otelcontribcol` directory.
+  * The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+* Once your component has reached `Alpha` stability, you may also submit a PR to the [OpenTelemetry Collector Releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository to include your component in future releases of the OpenTelemetry Collector `contrib` distribution.
+* Once a new component has been added to the executable:
+  * Please add the component
+    to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Releasing New Components
 After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
@@ -200,7 +243,6 @@ The following GitHub users are the currently available sponsors, either by being
 
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
-* [@Aneurysm9](https://github.com/Aneurysm9)
 * [@mx-psi](https://github.com/mx-psi)
 * [@dmitryax](https://github.com/dmitryax)
 * [@evan-bradley](https://github.com/evan-bradley)
@@ -209,6 +251,12 @@ The following GitHub users are the currently available sponsors, either by being
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
+* [@fatsheep9146](https://github.com/fatsheep9146)
+* [@andrzej-stencel](https://github.com/andrzej-stencel)
+* [@songy23](https://github.com/songy23)
+* [@Bryan Aguilar](https://github.com/bryan-aguilar)
+* [@atoulme](https://github.com/atoulme)
+* [@crobert-1](https://github.com/crobert-1)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -289,24 +337,25 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 
 ### Label Definitions
 
-| Label                | When to apply                                                                                                                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bug`                | Something that is advertised or intended to work isn't working as expected.                                                                                                                             |
-| `enhancement`        | Something that isn't an advertised feature that would be useful to users or maintainers.                                                                                                                |
-| `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                    |
-| `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                               |
-| `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                             |
-| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
-| `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work.                                            |
-| `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                            |
-| `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                         |
-| `priority:p1`        | An urgent issue that should be worked on quickly, before most other issues.                                                                                                                             |
-| `priority:p2`        | A standard bug or enhancement.                                                                                                                                                                          |
-| `priority:p3`        | A technical improvement, lower priority bug, or other minor issue. Generally something that is considered a "nice to have."                                                                               |
-| `release:blocker`    | This issue must be resolved before the next Collector version can be released.                                                                                                                          |
-| `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided. |
-| `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                      |
-| `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor. |
+| Label                | When to apply                                                                                                                                                                                                  |
+| -------------------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `bug`                | Something that is advertised or intended to work isn't working as expected.                                                                                                                                    |
+| `enhancement`        | Something that isn't an advertised feature that would be useful to users or maintainers.                                                                                                                       |
+| `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                           |
+| `documentation`      | This is a collector usability issue that could likely be resolved by providing relevant documentation. Please consider adding new or improving existing documentation before closing issues with this label.   |
+| `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                                      |
+| `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                                    |
+| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                                      |
+| `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work. See also the [triaging process](#triage-process). |
+| `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                                   |
+| `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                                |
+| `priority:p1`        | An urgent issue that should be worked on quickly, before most other issues.                                                                                                                                    |
+| `priority:p2`        | A standard bug or enhancement.                                                                                                                                                                                 |
+| `priority:p3`        | A technical improvement, lower priority bug, or other minor issue. Generally something that is considered a "nice to have."                                                                                    |
+| `release:blocker`    | This issue must be resolved before the next Collector version can be released.                                                                                                                                 |
+| `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided.        |
+| `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                             |
+| `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor.                                                                                          |
 
 ### Adding Labels via Comments
 
@@ -332,13 +381,18 @@ Example label comment:
 
 ## Becoming a Code Owner
 
-A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
+A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
 
 Sometimes a component may be in need of a new or additional Code Owner. A few reasons this situation may arise would be:
-- The component was never assigned a Code Owner.
+
+- The existing Code Owners are actively looking for more help.
 - A previous Code Owner stepped down.
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
-- The existing Code Owners are actively looking for new Code Owners to help.
+- The component was never assigned a Code Owner.
+
+Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
+
+### Requirements
 
 If you would like to help and become a Code Owner you must meet the following requirements:
 
@@ -347,9 +401,18 @@ If you would like to help and become a Code Owner you must meet the following re
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
-To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row. Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+### How to become a Code Owner
 
-### Makefile Guidelines
+To become a Code Owner, open a PR with the following changes:
+
+1. Add your GitHub username to the active codeowners entry in the component's `metadata.yaml` file.
+2. Run the command `make update-codeowners`.
+      * Note: A GitHub [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) must be configured for this command to work.
+      * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make generate` to regenerate the component's README header.
+
+Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+
+## Makefile Guidelines
 
 When adding or modifying the `Makefile`'s in this repository, consider the following design guidelines.
 
@@ -358,7 +421,7 @@ The [Makefile](./Makefile) SHOULD contain "repo-level" targets. (i.e. targets th
 Likewise, `Makefile.Common` SHOULD contain "module-level" targets. (i.e. targets that apply to one module at a time.)
 Each module should have a `Makefile` at its root that includes `Makefile.Common`.
 
-#### Module-level targets
+### Module-level targets
 
 Module-level targets SHOULD NOT act on nested modules. For example, running `make lint` at the root of the repo will
 *only* evaluate code that is part of the `go.opentelemetry.io/collector` module. This excludes nested modules such as
@@ -368,7 +431,7 @@ Each module-level target SHOULD have a corresponding repo-level target. For exam
 in each module. In this way, the entire repository is covered. The root `Makefile` contains some "for each module" targets
 that can wrap a module-level target into a repo-level target.
 
-#### Repo-level targets
+### Repo-level targets
 
 Whenever reasonable, targets SHOULD be implemented as module-level targets (and wrapped with a repo-level target).
 However, there are many valid justifications for implementing a standalone repo-level target.
@@ -378,7 +441,7 @@ However, there are many valid justifications for implementing a standalone repo-
 3. A necessary tool does not provide a mechanism for scoping its application. (e.g. `porto` cannot be limited to a specific module.)
 4. The "for each module" pattern would result in incomplete coverage of the codebase. (e.g. A target that scans all file, not just `.go` files.)
 
-#### Default targets
+### Default targets
 
 The default module-level target (i.e. running `make` in the context of an individual module), should run a substantial set of module-level
 targets for an individual module. Ideally, this would include *all* module-level targets, but exceptions should be made if a particular

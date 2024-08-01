@@ -41,7 +41,7 @@ func TestStorage(t *testing.T) {
 	ext := storagetest.NewFileBackedStorageExtension("test", storageDir)
 	host := storagetest.NewStorageHost().WithExtension(ext.ID, ext)
 	sink := new(consumertest.LogsSink)
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	rcvr, err := f.CreateLogsReceiver(ctx, set, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))

@@ -103,7 +103,7 @@ func TestAllMetrics(t *testing.T) {
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.MetricsBuilderConfig.Metrics = allMetricsEnabled
 
-	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -123,7 +123,7 @@ func TestNoMetrics(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.MetricsBuilderConfig.Metrics = allMetricsDisabled
-	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -138,7 +138,7 @@ func TestNotFoundResponse(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + "/nonexistent/path"
-	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -150,7 +150,7 @@ func TestBadTypeInReturnedData(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -162,7 +162,7 @@ func TestJSONParseError(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -175,7 +175,7 @@ func TestEmptyResponseBodyError(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.MetricsBuilderConfig.Metrics = allMetricsDisabled
-	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
