@@ -43,8 +43,8 @@ import (
 )
 
 var (
-	//go:embed templates/bootstrap_pipeline.yaml
-	bootstrapConfTpl string
+	//go:embed templates/nooppipeline.yaml
+	noopPipelineTpl string
 
 	//go:embed templates/extraconfig.yaml
 	extraConfigTpl string
@@ -89,7 +89,7 @@ type Supervisor struct {
 	// Supervisor's persistent state
 	persistentState *persistentState
 
-	bootstrapTemplate      *template.Template
+	noopPipelineTemplate   *template.Template
 	opampextensionTemplate *template.Template
 	extraConfigTemplate    *template.Template
 	ownTelemetryTemplate   *template.Template
@@ -224,7 +224,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 func (s *Supervisor) createTemplates() error {
 	var err error
 
-	if s.bootstrapTemplate, err = template.New("bootstrap").Parse(bootstrapConfTpl); err != nil {
+	if s.noopPipelineTemplate, err = template.New("nooppipeline").Parse(noopPipelineTpl); err != nil {
 		return err
 	}
 	if s.extraConfigTemplate, err = template.New("extraconfig").Parse(extraConfigTpl); err != nil {
@@ -273,7 +273,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	bootstrapConfig, err := s.composeBootstrapConfig()
+	bootstrapConfig, err := s.composeNoopConfig()
 	if err != nil {
 		return err
 	}
@@ -676,7 +676,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 
 func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	var cfg bytes.Buffer
-	err := s.bootstrapTemplate.Execute(&cfg, map[string]any{
+	err := s.noopPipelineTemplate.Execute(&cfg, map[string]any{
 		"InstanceUid":    s.persistentState.InstanceID.String(),
 		"SupervisorPort": s.opampServerPort,
 	})
@@ -687,7 +687,7 @@ func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	return cfg.Bytes(), nil
 }
 
-func (s *Supervisor) composeBootstrapConfig() ([]byte, error) {
+func (s *Supervisor) composeNoopConfig() ([]byte, error) {
 	var k = koanf.New("::")
 
 	cfg, err := s.composeNoopPipeline()
