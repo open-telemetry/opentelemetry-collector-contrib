@@ -504,9 +504,10 @@ func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
 		}
 		attrs.PutStr(lbl.Name, lbl.Value)
 	})
-	if scopeAttributes, ok := t.scopeAttributes[key]; ok {
-		scopeAttributes[scope] = attrs
+	if _, ok := t.scopeAttributes[key]; !ok {
+		t.scopeAttributes[key] = make(map[scopeID]pcommon.Map)
 	}
+	t.scopeAttributes[key][scope] = attrs
 }
 
 func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {

@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"testing"
 	"time"
 
@@ -26,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
