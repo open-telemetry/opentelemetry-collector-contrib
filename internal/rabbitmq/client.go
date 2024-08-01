@@ -153,7 +153,7 @@ func (c *connectionHolder) Close() error {
 }
 
 func (c *connectionHolder) isConnected() bool {
-	return c.connection != nil && !c.connection.IsClosed()
+	return c.connection != nil && !c.IsClosed()
 }
 
 func (c *connectionHolder) Channel() (Channel, error) {
