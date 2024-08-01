@@ -276,7 +276,7 @@ func orderDatapoints(metrics pmetric.Metrics) {
 
 func hash(s interface{}) []byte {
 	var b bytes.Buffer
-	gob.NewEncoder(&b).Encode(s)
+	_ = gob.NewEncoder(&b).Encode(s)
 	return b.Bytes()
 }
 
