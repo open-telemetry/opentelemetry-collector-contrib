@@ -31,7 +31,7 @@ func HandleHTTPCode(resp *http.Response) error {
 		resp.StatusCode,
 		http.StatusText(resp.StatusCode))
 
-	// Check if there is any error text returned by Splunk that we can append to error message
+	// Check if there is any error text returned by Splunk that we can append to the error message
 	if resp.Body != nil {
 		var jsonResponse map[string]any
 		bodyString, _ := io.ReadAll(resp.Body)
@@ -40,7 +40,9 @@ func HandleHTTPCode(resp *http.Response) error {
 		if unmarshalError == nil {
 			responseErrorValue, ok := jsonResponse["text"]
 			if ok {
-				err = multierr.Append(err, fmt.Errorf("Reason: %q", responseErrorValue))
+				err = multierr.Append(err, fmt.Errorf("reason: %v", responseErrorValue))
+			} else {
+				err = multierr.Append(err, fmt.Errorf("no error message from Splunk found"))
 			}
 		}
 	}
