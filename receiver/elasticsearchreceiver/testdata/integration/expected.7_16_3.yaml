@@ -2791,7 +2791,7 @@ resourceMetrics:
             name: jvm.threads.count
             unit: "1"
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest
   - resource:
       attributes:
@@ -2920,7 +2920,7 @@ resourceMetrics:
             name: jvm.memory.heap.used
             unit: By
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest
   - resource:
       attributes:
@@ -3400,7 +3400,7 @@ resourceMetrics:
                   timeUnixNano: "1661811689943245000"
             unit: By
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest
   - resource:
       attributes:
@@ -3880,5 +3880,5 @@ resourceMetrics:
                   timeUnixNano: "1661811689943245000"
             unit: By
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest

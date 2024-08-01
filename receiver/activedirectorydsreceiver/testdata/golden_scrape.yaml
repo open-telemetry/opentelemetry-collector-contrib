@@ -319,5 +319,5 @@ resourceMetrics:
                   timeUnixNano: "1650474513913172400"
             unit: '{threads}'
         scope:
-          name: otelcol/activedirectorydsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
           version: latest
