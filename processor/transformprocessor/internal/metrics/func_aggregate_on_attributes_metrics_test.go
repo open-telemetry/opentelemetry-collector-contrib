@@ -336,7 +336,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 				sl2 := actualMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 				actualMetric.CopyTo(sl2)
 
-				require.Nil(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreDatapointsOrder()))
+				require.Nil(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricDataPointsOrder()))
 			}
 		})
 	}

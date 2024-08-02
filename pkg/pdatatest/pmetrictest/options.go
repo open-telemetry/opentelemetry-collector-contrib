@@ -5,7 +5,6 @@ package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"bytes"
-	"encoding/gob"
 	"fmt"
 	"regexp"
 	"sort"
@@ -228,56 +227,6 @@ func orderDatapointAttributes(metrics pmetric.Metrics) {
 			}
 		}
 	}
-}
-
-// IgnoreDatapointsOrder is a CompareMetricsOption that ignores the order of datapoints.
-func IgnoreDatapointsOrder() CompareMetricsOption {
-	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
-		orderDatapoints(expected)
-		orderDatapoints(actual)
-	})
-}
-
-func orderDatapoints(metrics pmetric.Metrics) {
-	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			msl := ilms.At(j).Metrics()
-			for g := 0; g < msl.Len(); g++ {
-				msl.At(g)
-				switch msl.At(g).Type() {
-				case pmetric.MetricTypeGauge:
-					msl.At(g).Gauge().DataPoints().Sort(func(a, b pmetric.NumberDataPoint) bool {
-						return bytes.Compare(hash(a), hash(b)) <= 0
-					})
-				case pmetric.MetricTypeSum:
-					msl.At(g).Sum().DataPoints().Sort(func(a, b pmetric.NumberDataPoint) bool {
-						return bytes.Compare(hash(a), hash(b)) <= 0
-					})
-				case pmetric.MetricTypeHistogram:
-					msl.At(g).Histogram().DataPoints().Sort(func(a, b pmetric.HistogramDataPoint) bool {
-						return bytes.Compare(hash(a), hash(b)) <= 0
-					})
-				case pmetric.MetricTypeExponentialHistogram:
-					msl.At(g).ExponentialHistogram().DataPoints().Sort(func(a, b pmetric.ExponentialHistogramDataPoint) bool {
-						return bytes.Compare(hash(a), hash(b)) <= 0
-					})
-				case pmetric.MetricTypeSummary:
-					msl.At(g).Summary().DataPoints().Sort(func(a, b pmetric.SummaryDataPoint) bool {
-						return bytes.Compare(hash(a), hash(b)) <= 0
-					})
-				case pmetric.MetricTypeEmpty:
-				}
-			}
-		}
-	}
-}
-
-func hash(s any) []byte {
-	var b bytes.Buffer
-	_ = gob.NewEncoder(&b).Encode(s)
-	return b.Bytes()
 }
 
 func orderMapByKey(input map[string]any) map[string]any {
