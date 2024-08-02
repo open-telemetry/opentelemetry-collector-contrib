@@ -84,7 +84,7 @@ func newRevision(ver *Version, def ast.VersionDef) Revision {
 			if ch.RenameAttributes == nil {
 				continue
 			}
-			for k, v := range *ch.RenameAttributes {
+			for k, v := range ch.RenameAttributes.AttributeMap {
 				mod.attrs[k] = v
 			}
 		}
@@ -97,7 +97,7 @@ func newRevision(ver *Version, def ast.VersionDef) Revision {
 			if ch.RenameAttributes == nil {
 				continue
 			}
-			for k, v := range *ch.RenameAttributes {
+			for k, v := range ch.RenameAttributes.AttributeMap {
 				mod.attrs[k] = v
 			}
 		}

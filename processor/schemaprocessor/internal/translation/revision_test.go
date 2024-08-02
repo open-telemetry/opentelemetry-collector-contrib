@@ -49,13 +49,16 @@ func TestNewRevision(t *testing.T) {
 				All: ast.Attributes{
 					Changes: []ast.AttributeChange{
 						{
-							RenameAttributes: &ast.AttributeMap{
+							RenameAttributes: &ast.RenameAttributes{
+								AttributeMap: ast.AttributeMap{
 								"docker.io": "moby.io",
-							},
+							}},
 						},
 						{
-							RenameAttributes: &ast.AttributeMap{
-								"kubernetes": "k8s",
+							RenameAttributes: &ast.RenameAttributes{
+								ast.AttributeMap{
+									"kubernetes": "k8s",
+								},
 							},
 						},
 					},
@@ -63,8 +66,10 @@ func TestNewRevision(t *testing.T) {
 				Resources: ast.Attributes{
 					Changes: []ast.AttributeChange{
 						{
-							RenameAttributes: &ast.AttributeMap{
+							RenameAttributes: &ast.RenameAttributes{
+								AttributeMap: ast.AttributeMap{
 								"opentelemetry": "otel",
+								},
 							},
 						},
 					},
