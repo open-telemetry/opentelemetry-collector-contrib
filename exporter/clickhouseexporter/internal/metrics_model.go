@@ -28,10 +28,10 @@ var supportedMetricTypes = map[pmetric.MetricType]string{
 
 var logger *zap.Logger
 
-type MetricTablesConfigMapper map[pmetric.MetricType]MetricTableConfig
+type MetricTablesConfigMapper map[pmetric.MetricType]MetricTypeConfig
 
-type MetricTableConfig struct {
-	Name string
+type MetricTypeConfig struct {
+	Name string `mapstructure:"name"`
 }
 
 // MetricsModel is used to group metric data and insert into clickhouse

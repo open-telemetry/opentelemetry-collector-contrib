@@ -38,30 +38,20 @@ func TestMetricsTableEngineConfig(t *testing.T) {
 func Test_generateMetricMetricTableNames(t *testing.T) {
 	cfg := Config{
 		MetricsTables: MetricTableNames{
-			Gauge:                "otel_metrics_custom_gauge",
-			Sum:                  "otel_metrics_custom_sum",
-			Summary:              "otel_metrics_custom_summary",
-			Histogram:            "otel_metrics_custom_histogram",
-			ExponentialHistogram: "otel_metrics_custom_exp_histogram",
+			Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_custom_gauge"},
+			Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_custom_sum"},
+			Summary:              internal.MetricTypeConfig{Name: "otel_metrics_custom_summary"},
+			Histogram:            internal.MetricTypeConfig{Name: "otel_metrics_custom_histogram"},
+			ExponentialHistogram: internal.MetricTypeConfig{Name: "otel_metrics_custom_exp_histogram"},
 		},
 	}
 
 	require.Equal(t, internal.MetricTablesConfigMapper{
-		pmetric.MetricTypeGauge: {
-			Name: cfg.MetricsTables.Gauge,
-		},
-		pmetric.MetricTypeSum: {
-			Name: cfg.MetricsTables.Sum,
-		},
-		pmetric.MetricTypeSummary: {
-			Name: cfg.MetricsTables.Summary,
-		},
-		pmetric.MetricTypeHistogram: {
-			Name: cfg.MetricsTables.Histogram,
-		},
-		pmetric.MetricTypeExponentialHistogram: {
-			Name: cfg.MetricsTables.ExponentialHistogram,
-		},
+		pmetric.MetricTypeGauge:                cfg.MetricsTables.Gauge,
+		pmetric.MetricTypeSum:                  cfg.MetricsTables.Sum,
+		pmetric.MetricTypeSummary:              cfg.MetricsTables.Summary,
+		pmetric.MetricTypeHistogram:            cfg.MetricsTables.Histogram,
+		pmetric.MetricTypeExponentialHistogram: cfg.MetricsTables.ExponentialHistogram,
 	}, generateMetricTablesConfigMapper(&cfg))
 }
 

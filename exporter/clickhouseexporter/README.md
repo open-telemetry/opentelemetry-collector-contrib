@@ -367,11 +367,16 @@ exporters:
     traces_table_name: otel_traces
     timeout: 5s
     metrics_tables:
-      gauge: "otel_metrics_gauge"
-      sum: "otel_metrics_sum"
-      summary: "otel_metrics_summary"
-      histogram: "otel_metrics_histogram"
-      exponential_histogram: "otel_metrics_exp_histogram"
+    gauge: 
+      name: "otel_metrics_gauge"
+    sum: 
+      name: "otel_metrics_sum"
+    summary: 
+      name: "otel_metrics_summary"
+    histogram: 
+      name: "otel_metrics_histogram"
+    exponential_histogram: 
+      name: "otel_metrics_exp_histogram"
     retry_on_failure:
       enabled: true
       initial_interval: 5s

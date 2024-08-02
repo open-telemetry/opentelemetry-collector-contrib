@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -58,15 +59,15 @@ type Config struct {
 
 type MetricTableNames struct {
 	// Gauge is the table name for gauge metric type. default is `otel_metrics_gauge`.
-	Gauge string `mapstructure:"gauge"`
+	Gauge internal.MetricTypeConfig `mapstructure:"gauge"`
 	// Sum is the table name for sum metric type. default is `otel_metrics_sum`.
-	Sum string `mapstructure:"sum"`
+	Sum internal.MetricTypeConfig `mapstructure:"sum"`
 	// Summary is the table name for summary metric type. default is `otel_metrics_summary`.
-	Summary string `mapstructure:"summary"`
+	Summary internal.MetricTypeConfig `mapstructure:"summary"`
 	// Histogram is the table name for histogram metric type. default is `otel_metrics_histogram`.
-	Histogram string `mapstructure:"histogram"`
+	Histogram internal.MetricTypeConfig `mapstructure:"histogram"`
 	// ExponentialHistogram is the table name for exponential histogram metric type. default is `otel_metrics_exponential_histogram`.
-	ExponentialHistogram string `mapstructure:"exponential_histogram"`
+	ExponentialHistogram internal.MetricTypeConfig `mapstructure:"exponential_histogram"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -183,29 +184,29 @@ func (cfg *Config) buildMetricTableNames() {
 		tableName = cfg.MetricsTableName
 	}
 
-	if len(cfg.MetricsTables.Gauge) == 0 {
-		cfg.MetricsTables.Gauge = tableName + defaultGaugeSuffix
+	if len(cfg.MetricsTables.Gauge.Name) == 0 {
+		cfg.MetricsTables.Gauge.Name = tableName + defaultGaugeSuffix
 	}
-	if len(cfg.MetricsTables.Sum) == 0 {
-		cfg.MetricsTables.Sum = tableName + defaultSumSuffix
+	if len(cfg.MetricsTables.Sum.Name) == 0 {
+		cfg.MetricsTables.Sum.Name = tableName + defaultSumSuffix
 	}
-	if len(cfg.MetricsTables.Summary) == 0 {
-		cfg.MetricsTables.Summary = tableName + defaultSummarySuffix
+	if len(cfg.MetricsTables.Summary.Name) == 0 {
+		cfg.MetricsTables.Summary.Name = tableName + defaultSummarySuffix
 	}
-	if len(cfg.MetricsTables.Histogram) == 0 {
-		cfg.MetricsTables.Histogram = tableName + defaultHistogramSuffix
+	if len(cfg.MetricsTables.Histogram.Name) == 0 {
+		cfg.MetricsTables.Histogram.Name = tableName + defaultHistogramSuffix
 	}
-	if len(cfg.MetricsTables.ExponentialHistogram) == 0 {
-		cfg.MetricsTables.ExponentialHistogram = tableName + defaultExpHistogramSuffix
+	if len(cfg.MetricsTables.ExponentialHistogram.Name) == 0 {
+		cfg.MetricsTables.ExponentialHistogram.Name = tableName + defaultExpHistogramSuffix
 	}
 }
 
 func (cfg *Config) areMetricTableNamesSet() bool {
-	return len(cfg.MetricsTables.Gauge) != 0 ||
-		len(cfg.MetricsTables.Sum) != 0 ||
-		len(cfg.MetricsTables.Summary) != 0 ||
-		len(cfg.MetricsTables.Histogram) != 0 ||
-		len(cfg.MetricsTables.ExponentialHistogram) != 0
+	return len(cfg.MetricsTables.Gauge.Name) != 0 ||
+		len(cfg.MetricsTables.Sum.Name) != 0 ||
+		len(cfg.MetricsTables.Summary.Name) != 0 ||
+		len(cfg.MetricsTables.Histogram.Name) != 0 ||
+		len(cfg.MetricsTables.ExponentialHistogram.Name) != 0
 }
 
 // tableEngineString generates the ENGINE string.
