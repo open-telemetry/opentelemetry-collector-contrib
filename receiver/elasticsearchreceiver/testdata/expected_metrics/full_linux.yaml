@@ -505,6 +505,18 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
+          - description: The number of currently active segment merges
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: elasticsearch.index.operations.merge.current
+            unit: '{merges}'
           - description: The total number of documents in merge operations for an index.
             name: elasticsearch.index.operations.merge.docs_count
             sum:
@@ -1285,6 +1297,18 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
+          - description: The number of currently active segment merges
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: elasticsearch.index.operations.merge.current
+            unit: '{merges}'
           - description: The total number of documents in merge operations for an index.
             name: elasticsearch.index.operations.merge.docs_count
             sum:
@@ -2298,8 +2322,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "15746158592"
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The amount of disk space across all file stores for this node.
             name: elasticsearch.node.fs.disk.total
@@ -2307,8 +2331,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "67371577344"
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The number of HTTP connections to the node.
             name: elasticsearch.node.http.connections
