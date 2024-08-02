@@ -1213,7 +1213,7 @@ Examples:
 
 The `Sort` Converter sorts the `target` array in either ascending or descending order.
 
-`target` is a `pcommon.Slice` type field containing the elements to be sorted. 
+`target` is an array or `pcommon.Slice` typed field containing the elements to be sorted. 
 
 `order` is a string specifying the sort order. Must be either `asc` or `desc`. The default value is `asc`.
 
