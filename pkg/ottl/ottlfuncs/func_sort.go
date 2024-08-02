@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
