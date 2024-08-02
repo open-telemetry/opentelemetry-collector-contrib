@@ -389,3 +389,13 @@ func withAddOnFields(filters ...AddOnMetadata) option {
 		return nil
 	}
 }
+
+func withRedisConfigFields(filters OpsrampRedisConfig) option {
+	fmt.Println("The value of filters received  : ", filters)
+
+	return func(p *kubernetesprocessor) error {
+		p.redisConfig = kube.OpsrampRedisConfig(filters)
+		return nil
+	}
+
+}

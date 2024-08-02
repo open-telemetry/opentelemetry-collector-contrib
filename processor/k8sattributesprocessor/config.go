@@ -41,6 +41,8 @@ type Config struct {
 
 	//Opsramp Metadata Addons Section
 	MetadataAddOn []AddOnMetadata `mapstructure:"metadata_addon"`
+
+	RedisConfig OpsrampRedisConfig `mapstructure:"redis_config"`
 }
 
 func (cfg *Config) Validate() error {
@@ -117,6 +119,18 @@ func (cfg *Config) Validate() error {
 		default:
 			return fmt.Errorf("'%s' is not a valid label filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
 		}
+	}
+
+	if cfg.RedisConfig.RedisHost == "" || cfg.RedisConfig.RedisPort == "" || cfg.RedisConfig.RedisPass == "" {
+		return fmt.Errorf("redis host, redis port and redis pass is mandatory")
+	}
+
+	if cfg.RedisConfig.ClusterName == "" || cfg.RedisConfig.ClusterUid == "" {
+		return fmt.Errorf("cluster name and cluster uid is mandatory")
+	}
+
+	if cfg.RedisConfig.NodeName == "" {
+		return fmt.Errorf("node name is mandatory")
 	}
 
 	return nil
@@ -322,4 +336,13 @@ type AddOnMetadata struct {
 	Key string `mapstructure:"key"`
 
 	Value string `mapstructure:"value"`
+}
+
+type OpsrampRedisConfig struct {
+	RedisHost   string `mapstructure:"redisHost"`
+	RedisPort   string `mapstructure:"redisPort"`
+	RedisPass   string `mapstructure:"redisPass"`
+	ClusterName string `mapstructure:"clusterName"`
+	ClusterUid  string `mapstructure:"clusterUid"`
+	NodeName    string `mapstructure:"nodeName"`
 }

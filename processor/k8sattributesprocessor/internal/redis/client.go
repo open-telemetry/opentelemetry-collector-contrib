@@ -3,7 +3,7 @@ package redis
 import (
 	"context"
 
-	lru "github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sattributesprocessor/internal/lru"
+	lru "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
 	goredis "github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )

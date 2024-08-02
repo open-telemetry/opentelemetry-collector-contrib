@@ -166,6 +166,8 @@ func createProcessorOpts(cfg component.Config) []option {
 	//Opsramp Metadata Addons
 	opts = append(opts, withAddOnFields(oCfg.MetadataAddOn...))
 
+	opts = append(opts, withRedisConfigFields(oCfg.RedisConfig))
+
 	opts = append(opts, withExcludes(oCfg.Exclude))
 
 	return opts
