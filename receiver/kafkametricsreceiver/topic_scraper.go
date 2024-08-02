@@ -32,6 +32,12 @@ type topicScraper struct {
 	mb           *metadata.MetricsBuilder
 }
 
+const (
+	TOPIC_MIN_INSYNC_REPLICA_KEY = "min.insync.replicas"
+	TOPIC_RETENTION_PERIOD_KEY   = "retention.ms"
+	TOPIC_RETENTION_SIZE_KEY     = "retention.bytes"
+)
+
 func (s *topicScraper) Name() string {
 	return topicsScraperName
 }
@@ -133,24 +139,24 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 		configEntries, _ := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
 			Type:        sarama.TopicResource,
 			Name:        name,
-			ConfigNames: []string{"min.insync.replicas", "retention.ms", "retention.bytes"},
+			ConfigNames: []string{TOPIC_MIN_INSYNC_REPLICA_KEY, TOPIC_RETENTION_PERIOD_KEY, TOPIC_RETENTION_SIZE_KEY},
 		})
 
 		for _, config := range configEntries {
 			switch config.Name {
-			case "min.insync.replicas":
+			case TOPIC_MIN_INSYNC_REPLICA_KEY:
 				if val, err := strconv.Atoi(config.Value); err == nil {
 					s.mb.RecordKafkaTopicMinInsyncReplicasDataPoint(now, int64(val), name)
 				} else {
 					errors.AddPartial(1, err)
 				}
-			case "retention.ms":
+			case TOPIC_RETENTION_PERIOD_KEY:
 				if val, err := strconv.Atoi(config.Value); err == nil {
 					s.mb.RecordKafkaTopicLogRetentionPeriodDataPoint(now, int64(val/1000), name)
 				} else {
 					errors.AddPartial(1, err)
 				}
-			case "retention.bytes":
+			case TOPIC_RETENTION_SIZE_KEY:
 				if val, err := strconv.Atoi(config.Value); err == nil {
 					s.mb.RecordKafkaTopicLogRetentionSizeDataPoint(now, int64(val), name)
 				} else {
