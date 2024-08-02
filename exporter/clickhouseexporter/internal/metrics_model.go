@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var supportedMetricTypes = MetricTableNames{
+var supportedMetricTypes = map[pmetric.MetricType]string{
 	pmetric.MetricTypeGauge:                createGaugeTableSQL,
 	pmetric.MetricTypeSum:                  createSumTableSQL,
 	pmetric.MetricTypeHistogram:            createHistogramTableSQL,
@@ -28,7 +28,11 @@ var supportedMetricTypes = MetricTableNames{
 
 var logger *zap.Logger
 
-type MetricTableNames map[pmetric.MetricType]string
+type MetricTablesConfigMapper map[pmetric.MetricType]MetricTableConfig
+
+type MetricTableConfig struct {
+	Name string
+}
 
 // MetricsModel is used to group metric data and insert into clickhouse
 // any type of metrics need implement it.
@@ -53,9 +57,9 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tableNames MetricTableNames, cluster, engine, ttlExpr string, db *sql.DB) error {
-	for key, table := range supportedMetricTypes {
-		query := fmt.Sprintf(table, tableNames[key], cluster, engine, ttlExpr)
+func NewMetricsTable(ctx context.Context, tableNames MetricTablesConfigMapper, cluster, engine, ttlExpr string, db *sql.DB) error {
+	for key, query := range supportedMetricTypes {
+		query := fmt.Sprintf(query, tableNames[key].Name, cluster, engine, ttlExpr)
 		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
@@ -64,7 +68,7 @@ func NewMetricsTable(ctx context.Context, tableNames MetricTableNames, cluster, 
 }
 
 // NewMetricsModel create a model for contain different metric data
-func NewMetricsModel(tableNames MetricTableNames) map[pmetric.MetricType]MetricsModel {
+func NewMetricsModel(tableNames MetricTablesConfigMapper) map[pmetric.MetricType]MetricsModel {
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
 			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tableNames[pmetric.MetricTypeGauge]),

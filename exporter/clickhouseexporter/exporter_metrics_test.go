@@ -35,9 +35,9 @@ func TestMetricsTableEngineConfig(t *testing.T) {
 	})
 }
 
-func Test_generateMetricTableNames(t *testing.T) {
+func Test_generateMetricMetricTableNames(t *testing.T) {
 	cfg := Config{
-		MetricsTables: TableNames{
+		MetricsTables: MetricTableNames{
 			Gauge:                "otel_metrics_custom_gauge",
 			Sum:                  "otel_metrics_custom_sum",
 			Summary:              "otel_metrics_custom_summary",
@@ -45,17 +45,24 @@ func Test_generateMetricTableNames(t *testing.T) {
 			ExponentialHistogram: "otel_metrics_custom_exp_histogram",
 		},
 	}
-	exporter := metricsExporter{
-		cfg: &cfg,
-	}
 
-	require.Equal(t, internal.MetricTableNames{
-		pmetric.MetricTypeGauge:                cfg.MetricsTables.Gauge,
-		pmetric.MetricTypeSum:                  cfg.MetricsTables.Sum,
-		pmetric.MetricTypeSummary:              cfg.MetricsTables.Summary,
-		pmetric.MetricTypeHistogram:            cfg.MetricsTables.Histogram,
-		pmetric.MetricTypeExponentialHistogram: cfg.MetricsTables.ExponentialHistogram,
-	}, exporter.generateTableNames())
+	require.Equal(t, internal.MetricTablesConfigMapper{
+		pmetric.MetricTypeGauge: {
+			Name: cfg.MetricsTables.Gauge,
+		},
+		pmetric.MetricTypeSum: {
+			Name: cfg.MetricsTables.Sum,
+		},
+		pmetric.MetricTypeSummary: {
+			Name: cfg.MetricsTables.Summary,
+		},
+		pmetric.MetricTypeHistogram: {
+			Name: cfg.MetricsTables.Histogram,
+		},
+		pmetric.MetricTypeExponentialHistogram: {
+			Name: cfg.MetricsTables.ExponentialHistogram,
+		},
+	}, generateMetricTablesConfigMapper(&cfg))
 }
 
 func TestExporter_pushMetricsData(t *testing.T) {
