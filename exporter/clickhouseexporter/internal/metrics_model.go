@@ -57,9 +57,9 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tableNames MetricTablesConfigMapper, cluster, engine, ttlExpr string, db *sql.DB) error {
+func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper, cluster, engine, ttlExpr string, db *sql.DB) error {
 	for key, queryTemplate := range supportedMetricTypes {
-		query := fmt.Sprintf(queryTemplate, tableNames[key].Name, cluster, engine, ttlExpr)
+		query := fmt.Sprintf(queryTemplate, tablesConfig[key].Name, cluster, engine, ttlExpr)
 		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
@@ -68,22 +68,22 @@ func NewMetricsTable(ctx context.Context, tableNames MetricTablesConfigMapper, c
 }
 
 // NewMetricsModel create a model for contain different metric data
-func NewMetricsModel(tableNames MetricTablesConfigMapper) map[pmetric.MetricType]MetricsModel {
+func NewMetricsModel(tablesConfig MetricTablesConfigMapper) map[pmetric.MetricType]MetricsModel {
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
-			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tableNames[pmetric.MetricTypeGauge]),
+			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tablesConfig[pmetric.MetricTypeGauge].Name),
 		},
 		pmetric.MetricTypeSum: &sumMetrics{
-			insertSQL: fmt.Sprintf(insertSumTableSQL, tableNames[pmetric.MetricTypeSum]),
+			insertSQL: fmt.Sprintf(insertSumTableSQL, tablesConfig[pmetric.MetricTypeSum].Name),
 		},
 		pmetric.MetricTypeHistogram: &histogramMetrics{
-			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tableNames[pmetric.MetricTypeHistogram]),
+			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tablesConfig[pmetric.MetricTypeHistogram].Name),
 		},
 		pmetric.MetricTypeExponentialHistogram: &expHistogramMetrics{
-			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tableNames[pmetric.MetricTypeExponentialHistogram]),
+			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
 		},
 		pmetric.MetricTypeSummary: &summaryMetrics{
-			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tableNames[pmetric.MetricTypeSummary]),
+			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tablesConfig[pmetric.MetricTypeSummary].Name),
 		},
 	}
 }
