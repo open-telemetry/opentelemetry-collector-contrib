@@ -58,13 +58,6 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
-
-	kp.logger.Info("ops k8s attr processor start", zap.Any("redisHost", kp.redisConfig.RedisHost),
-		zap.Any("redisPort", kp.redisConfig.RedisPort),
-		zap.Any("redisPass", kp.redisConfig.RedisPass))
-
-	kp.redisClient = redis.NewClient(kp.logger, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
-
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
 
 	for _, opt := range allOptions {
@@ -73,6 +66,13 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 			return nil
 		}
 	}
+
+	kp.logger.Info("ops k8s attr processor start", zap.Any("redisHost", kp.redisConfig.RedisHost),
+		zap.Any("redisPort", kp.redisConfig.RedisPort),
+		zap.Any("redisPass", kp.redisConfig.RedisPass))
+
+	kp.redisClient = redis.NewClient(kp.logger, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
+
 	// This might have been set by an option already
 	if kp.kc == nil {
 		err := kp.initKubeClient(kp.telemetrySettings, kubeClientProvider)
@@ -132,11 +132,6 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
 
-	for _, addon := range kp.addons {
-		//fmt.Println(">>>>>> Addons Added key : ", addon.Key, " Value ", addon.Value)
-		resource.Attributes().PutStr(addon.Key, addon.Value)
-	}
-
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
 			if _, found := resource.Attributes().Get(kube.K8sIPLabelName); !found {
@@ -193,30 +188,40 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 }
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
-func (op *kubernetesprocessor) processopsrampResources(ctx context.Context, resource pcommon.Resource) {
+func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, resource pcommon.Resource) {
 	var found bool
 	var resourceUuid string
 
-	resource.Attributes().PutStr("opsramp.k8s.cluster.name", op.redisConfig.ClusterName)
-	resource.Attributes().PutStr("opsramp.k8s.cluster.uid", op.redisConfig.ClusterUid)
+	for _, addon := range kp.addons {
+		//fmt.Println(">>>>>> Addons Added key : ", addon.Key, " Value ", addon.Value)
+		resource.Attributes().PutStr(addon.Key, addon.Value)
+	}
+
 	if _, found = resource.Attributes().Get("k8s.pod.uid"); found {
-		if resourceUuid = op.GetResourceUuidUsingPodMoid(ctx, resource); resourceUuid == "" {
-			if resourceUuid = op.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid == "" {
-				if resourceUuid = op.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
-					resourceUuid = op.GetResourceUuidUsingClusterMoid(ctx, resource)
+		if resourceUuid = kp.GetResourceUuidUsingPodMoid(ctx, resource); resourceUuid == "" {
+			resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+			/*
+				if resourceUuid = kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid == "" {
+					if resourceUuid = kp.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
+						resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+					}
 				}
-			}
+			*/
 		}
 	} else if _, found = resource.Attributes().Get("k8s.node.name"); found {
-		if resourceUuid = op.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid == "" {
-			if resourceUuid = op.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
-				resourceUuid = op.GetResourceUuidUsingClusterMoid(ctx, resource)
+		if resourceUuid = kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid == "" {
+			if resourceUuid = kp.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
+				resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
 			}
 		}
 	} else {
-		if resourceUuid = op.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
-			resourceUuid = op.GetResourceUuidUsingClusterMoid(ctx, resource)
-		}
+		resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+
+		/*
+			if resourceUuid = kp.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
+				resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+			}
+		*/
 	}
 
 	if resourceUuid != "" {
