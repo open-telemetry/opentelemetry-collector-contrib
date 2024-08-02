@@ -37,7 +37,7 @@ func TestMetricsTableEngineConfig(t *testing.T) {
 
 func Test_generateMetricMetricTableNames(t *testing.T) {
 	cfg := Config{
-		MetricsTables: MetricTableNames{
+		MetricsTables: MetricTablesConfig{
 			Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_custom_gauge"},
 			Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_custom_sum"},
 			Summary:              internal.MetricTypeConfig{Name: "otel_metrics_custom_summary"},

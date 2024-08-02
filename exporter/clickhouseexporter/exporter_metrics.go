@@ -19,9 +19,9 @@ import (
 type metricsExporter struct {
 	client *sql.DB
 
-	logger     *zap.Logger
-	cfg        *Config
-	tableNames internal.MetricTablesConfigMapper
+	logger       *zap.Logger
+	cfg          *Config
+	tablesConfig internal.MetricTablesConfigMapper
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
@@ -30,13 +30,13 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 		return nil, err
 	}
 
-	tableNames := generateMetricTablesConfigMapper(cfg)
+	tablesConfig := generateMetricTablesConfigMapper(cfg)
 
 	return &metricsExporter{
-		client:     client,
-		logger:     logger,
-		cfg:        cfg,
-		tableNames: tableNames,
+		client:       client,
+		logger:       logger,
+		cfg:          cfg,
+		tablesConfig: tablesConfig,
 	}, nil
 }
 
@@ -52,7 +52,7 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	ttlExpr := generateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
-	return internal.NewMetricsTable(ctx, e.tableNames, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.client)
+	return internal.NewMetricsTable(ctx, e.tablesConfig, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.client)
 }
 
 func generateMetricTablesConfigMapper(cfg *Config) internal.MetricTablesConfigMapper {
@@ -74,7 +74,7 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	metricsMap := internal.NewMetricsModel(e.tableNames)
+	metricsMap := internal.NewMetricsModel(e.tablesConfig)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := attributesToMap(metrics.Resource().Attributes())

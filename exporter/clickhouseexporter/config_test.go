@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				MetricsTables: MetricTableNames{
+				MetricsTables: MetricTablesConfig{
 					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_custom_gauge"},
 					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_custom_sum"},
 					Summary:              internal.MetricTypeConfig{Name: "otel_metrics_custom_summary"},
@@ -120,7 +120,7 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 			name: "nothing set",
 			cfg:  Config{},
 			want: Config{
-				MetricsTables: MetricTableNames{
+				MetricsTables: MetricTablesConfig{
 					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_gauge"},
 					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_sum"},
 					Summary:              internal.MetricTypeConfig{Name: "otel_metrics_summary"},
@@ -136,7 +136,7 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 			},
 			want: Config{
 				MetricsTableName: "table_name",
-				MetricsTables: MetricTableNames{
+				MetricsTables: MetricTablesConfig{
 					Gauge:                internal.MetricTypeConfig{Name: "table_name_gauge"},
 					Sum:                  internal.MetricTypeConfig{Name: "table_name_sum"},
 					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
@@ -148,7 +148,7 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 		{
 			name: "only metric_tables set fully",
 			cfg: Config{
-				MetricsTables: MetricTableNames{
+				MetricsTables: MetricTablesConfig{
 					Gauge:                internal.MetricTypeConfig{Name: "table_name_gauge"},
 					Sum:                  internal.MetricTypeConfig{Name: "table_name_sum"},
 					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
@@ -157,7 +157,7 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 				},
 			},
 			want: Config{
-				MetricsTables: MetricTableNames{
+				MetricsTables: MetricTablesConfig{
 					Gauge:                internal.MetricTypeConfig{Name: "table_name_gauge"},
 					Sum:                  internal.MetricTypeConfig{Name: "table_name_sum"},
 					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
@@ -169,14 +169,14 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 		{
 			name: "only metric_tables set partially",
 			cfg: Config{
-				MetricsTables: MetricTableNames{
+				MetricsTables: MetricTablesConfig{
 					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
 					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
 					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
 				},
 			},
 			want: Config{
-				MetricsTables: MetricTableNames{
+				MetricsTables: MetricTablesConfig{
 					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_gauge"},
 					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_sum"},
 					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
@@ -189,7 +189,7 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 			name: "only metric_tables set partially with metric_table_name",
 			cfg: Config{
 				MetricsTableName: "custom_name",
-				MetricsTables: MetricTableNames{
+				MetricsTables: MetricTablesConfig{
 					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
 					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
 					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
@@ -197,7 +197,7 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 			},
 			want: Config{
 				MetricsTableName: "custom_name",
-				MetricsTables: MetricTableNames{
+				MetricsTables: MetricTablesConfig{
 					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_gauge"},
 					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_sum"},
 					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
@@ -220,7 +220,7 @@ func TestAreMetricTableNamesSet(t *testing.T) {
 	require.False(t, cfg.areMetricTableNamesSet())
 
 	cfg = Config{
-		MetricsTables: MetricTableNames{
+		MetricsTables: MetricTablesConfig{
 			Gauge: internal.MetricTypeConfig{Name: "gauge"},
 		},
 	}

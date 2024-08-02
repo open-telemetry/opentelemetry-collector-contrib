@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 		TTL:              0,
 		CreateSchema:     true,
 		AsyncInsert:      true,
-		MetricsTables: MetricTableNames{
+		MetricsTables: MetricTablesConfig{
 			Gauge:                internal.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
 			Sum:                  internal.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
 			Summary:              internal.MetricTypeConfig{Name: defaultMetricTableName + defaultSummarySuffix},

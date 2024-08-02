@@ -54,10 +54,10 @@ type Config struct {
 	// Async inserts may still be overridden server-side.
 	AsyncInsert bool `mapstructure:"async_insert"`
 	// MetricsTables defines the table names for metric types.
-	MetricsTables MetricTableNames `mapstructure:"metrics_tables"`
+	MetricsTables MetricTablesConfig `mapstructure:"metrics_tables"`
 }
 
-type MetricTableNames struct {
+type MetricTablesConfig struct {
 	// Gauge is the table name for gauge metric type. default is `otel_metrics_gauge`.
 	Gauge internal.MetricTypeConfig `mapstructure:"gauge"`
 	// Sum is the table name for sum metric type. default is `otel_metrics_sum`.
