@@ -1207,8 +1207,6 @@ Examples:
 
 - `SHA256("name")`
 
-**Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
-
 ### Sort
 
 `Sort(target, Optional[order])`
