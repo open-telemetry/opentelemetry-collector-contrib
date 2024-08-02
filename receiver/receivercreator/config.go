@@ -78,6 +78,19 @@ type Config struct {
 	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
+	Hints              HintsConfig        `mapstructure:"hints"`
+}
+
+type HintsConfig struct {
+	K8s K8sHintsConfig `mapstructure:"k8s"`
+}
+
+type K8sHintsConfig struct {
+	Metrics MetricsHints `mapstructure:"metrics"`
+}
+
+type MetricsHints struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
