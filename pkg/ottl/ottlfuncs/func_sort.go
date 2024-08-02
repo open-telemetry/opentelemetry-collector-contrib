@@ -70,8 +70,7 @@ func sort[K any](target ottl.Getter[K], order string) ottl.ExprFunc[K] {
 			// handle Sort([1,2,3])
 			slice := pcommon.NewValueSlice().SetEmptySlice()
 			if err := slice.FromRaw(v); err != nil {
-				errs := multierr.Append(err, fmt.Errorf("sort with unsupported type: '%T'. Target is not a list of primitive types", v))
-				return nil, errs
+				return nil, fmt.Errorf("sort with unsupported type: '%T'. Target is not a list of primitive types; %w", v, err)
 			}
 			return sortSlice(slice, order)
 		case []string:
