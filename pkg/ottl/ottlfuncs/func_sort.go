@@ -75,7 +75,6 @@ func sort[K any](target ottl.Getter[K], order string) ottl.ExprFunc[K] {
 			}
 			return sortSlice(slice, order)
 		case []string:
-			// handle value from Split()
 			dup := makeCopy(v)
 			return sortTypedSlice(dup, order), nil
 		case []int64:
