@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelo
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.106.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.1
 	go.opentelemetry.io/collector/confmap v0.106.1
@@ -13,8 +13,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/collector/receiver v0.106.1
 	go.opentelemetry.io/collector/semconv v0.106.1 // indirect
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/goleak v1.3.0
 )
 

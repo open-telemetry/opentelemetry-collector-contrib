@@ -4,8 +4,8 @@ go 1.21.0
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.106.1
 	github.com/pkg/sftp v1.13.6
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.1
@@ -26,7 +26,7 @@ require (
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.106.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.106.1 // indirect
 	go.opentelemetry.io/collector v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
@@ -66,8 +66,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	// indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
