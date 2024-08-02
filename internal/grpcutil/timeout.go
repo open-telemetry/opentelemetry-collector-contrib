@@ -1,6 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// The EncodeTimeout function is forked and modified from the original
+// https://github.com/grpc/grpc-go/blob/master/internal/grpcutil/encode_duration.go
+
+// This DecodeTimeout function is forked and modified from the original
+// https://github.com/grpc/grpc-go/blob/master/internal/transport/http_util.go
+
 package grpcutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
 
 import (
