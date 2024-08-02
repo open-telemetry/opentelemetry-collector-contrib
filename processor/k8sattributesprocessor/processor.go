@@ -37,7 +37,7 @@ type kubernetesprocessor struct {
 	rules             kube.ExtractionRules
 	filters           kube.Filters
 	addons            []kube.AddOnMetadata
-	redisConfig       kube.OpsrampRedisConfig
+	redisConfig       redis.OpsrampRedisConfig
 	podAssociations   []kube.Association
 	podIgnore         kube.Excludes
 	redisClient       *redis.Client

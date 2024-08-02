@@ -364,12 +364,3 @@ type AddOnMetadata struct {
 
 	Value string `mapstructure:"value"`
 }
-
-type OpsrampRedisConfig struct {
-	RedisHost   string `mapstructure:"redisHost"`
-	RedisPort   string `mapstructure:"redisPort"`
-	RedisPass   string `mapstructure:"redisPass"`
-	ClusterName string `mapstructure:"clusterName"`
-	ClusterUid  string `mapstructure:"clusterUid"`
-	NodeName    string `mapstructure:"nodeName"`
-}

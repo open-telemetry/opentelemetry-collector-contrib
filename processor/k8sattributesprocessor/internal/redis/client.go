@@ -18,6 +18,15 @@ type Client struct {
 	logger   *zap.Logger
 }
 
+type OpsrampRedisConfig struct {
+	RedisHost   string `mapstructure:"redisHost"`
+	RedisPort   string `mapstructure:"redisPort"`
+	RedisPass   string `mapstructure:"redisPass"`
+	ClusterName string `mapstructure:"clusterName"`
+	ClusterUid  string `mapstructure:"clusterUid"`
+	NodeName    string `mapstructure:"nodeName"`
+}
+
 func NewClient(logger *zap.Logger, rHost, rPort, rPass string) *Client {
 	client := Client{
 		Host:     rHost,
