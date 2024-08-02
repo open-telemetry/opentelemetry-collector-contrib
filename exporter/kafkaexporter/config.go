@@ -43,8 +43,11 @@ type Config struct {
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
 
-	// Encoding of messages (default "otlp_proto")
-	Encoding string `mapstructure:"encoding"`
+	// Encoding of the messages (default "none")
+	Encoding *component.ID `mapstructure:"encoding"`
+
+	// FormatType of messages (default "otlp_proto")
+	FormatType string `mapstructure:"format"`
 
 	// PartitionTracesByID sets the message key of outgoing trace messages to the trace ID.
 	// Please note: does not have any effect on Jaeger encoding exporters since Jaeger exporters include

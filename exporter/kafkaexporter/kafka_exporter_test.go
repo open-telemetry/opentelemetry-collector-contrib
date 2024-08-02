@@ -25,7 +25,7 @@ import (
 )
 
 func TestNewExporter_err_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
+	c := Config{ProtocolVersion: "0.0.0", FormatType: defaultFormatType}
 	texp, err := newTracesExporter(c, exportertest.NewNopSettings(), tracesMarshalers())
 	require.NoError(t, err)
 	err = texp.start(context.Background(), componenttest.NewNopHost())
@@ -33,14 +33,14 @@ func TestNewExporter_err_version(t *testing.T) {
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
-	c := Config{Encoding: "foo"}
+	c := Config{FormatType: "foo"}
 	texp, err := newTracesExporter(c, exportertest.NewNopSettings(), tracesMarshalers())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.EqualError(t, err, errUnrecognizedFormatType.Error())
 	assert.Nil(t, texp)
 }
 
 func TestNewMetricsExporter_err_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
+	c := Config{ProtocolVersion: "0.0.0", FormatType: defaultFormatType}
 	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
 	require.NoError(t, err)
 	err = mexp.start(context.Background(), componenttest.NewNopHost())
@@ -48,21 +48,21 @@ func TestNewMetricsExporter_err_version(t *testing.T) {
 }
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
-	c := Config{Encoding: "bar"}
+	c := Config{FormatType: "bar"}
 	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.EqualError(t, err, errUnrecognizedFormatType.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
-	c := Config{Encoding: "jaeger_proto"}
+	c := Config{FormatType: "jaeger_proto"}
 	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.EqualError(t, err, errUnrecognizedFormatType.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
+	c := Config{ProtocolVersion: "0.0.0", FormatType: defaultFormatType}
 	lexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
 	require.NoError(t, err)
 	err = lexp.start(context.Background(), componenttest.NewNopHost())
@@ -70,16 +70,16 @@ func TestNewLogsExporter_err_version(t *testing.T) {
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
-	c := Config{Encoding: "bar"}
+	c := Config{FormatType: "bar"}
 	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.EqualError(t, err, errUnrecognizedFormatType.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
-	c := Config{Encoding: "jaeger_proto"}
+	c := Config{FormatType: "jaeger_proto"}
 	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.EqualError(t, err, errUnrecognizedFormatType.Error())
 	assert.Nil(t, mexp)
 }
 
@@ -93,7 +93,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 				},
 			},
 		},
-		Encoding: defaultEncoding,
+		FormatType: defaultFormatType,
 		Metadata: Metadata{
 			Full: false,
 		},
@@ -121,7 +121,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 
 func TestNewExporter_err_compression(t *testing.T) {
 	c := Config{
-		Encoding: defaultEncoding,
+		FormatType: defaultFormatType,
 		Producer: Producer{
 			Compression: "idk",
 		},
@@ -140,7 +140,7 @@ func TestTracesPusher(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultFormatType),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -159,7 +159,7 @@ func TestTracesPusher_attr(t *testing.T) {
 			TopicFromAttribute: "kafka_topic",
 		},
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultFormatType),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -176,7 +176,7 @@ func TestTracesPusher_err(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultFormatType),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -206,7 +206,7 @@ func TestMetricsDataPusher(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultFormatType),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -225,7 +225,7 @@ func TestMetricsDataPusher_attr(t *testing.T) {
 			TopicFromAttribute: "kafka_topic",
 		},
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultFormatType),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -242,7 +242,7 @@ func TestMetricsDataPusher_err(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultFormatType),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -272,7 +272,7 @@ func TestLogsDataPusher(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultFormatType),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -291,7 +291,7 @@ func TestLogsDataPusher_attr(t *testing.T) {
 			TopicFromAttribute: "kafka_topic",
 		},
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultFormatType),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -308,7 +308,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultFormatType),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -347,7 +347,7 @@ func (e metricsErrorMarshaler) Marshal(_ pmetric.Metrics, _ string) ([]*sarama.P
 	return nil, e.err
 }
 
-func (e metricsErrorMarshaler) Encoding() string {
+func (e metricsErrorMarshaler) FormatType() string {
 	panic("implement me")
 }
 
@@ -357,7 +357,7 @@ func (e tracesErrorMarshaler) Marshal(_ ptrace.Traces, _ string) ([]*sarama.Prod
 	return nil, e.err
 }
 
-func (e tracesErrorMarshaler) Encoding() string {
+func (e tracesErrorMarshaler) FormatType() string {
 	panic("implement me")
 }
 
@@ -365,7 +365,7 @@ func (e logsErrorMarshaler) Marshal(_ plog.Logs, _ string) ([]*sarama.ProducerMe
 	return nil, e.err
 }
 
-func (e logsErrorMarshaler) Encoding() string {
+func (e logsErrorMarshaler) FormatType() string {
 	panic("implement me")
 }
 

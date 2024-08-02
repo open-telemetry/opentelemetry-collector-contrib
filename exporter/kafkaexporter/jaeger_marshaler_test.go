@@ -65,7 +65,7 @@ func TestJaegerMarshaler(t *testing.T) {
 			messages, err := test.unmarshaler.Marshal(td, "topic")
 			require.NoError(t, err)
 			assert.Equal(t, test.messages, messages)
-			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
+			assert.Equal(t, test.encoding, test.unmarshaler.FormatType())
 		})
 	}
 }

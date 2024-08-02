@@ -79,6 +79,6 @@ func (r rawMarshaler) interfaceAsBytes(value any) ([]byte, error) {
 	return res, err
 }
 
-func (r rawMarshaler) Encoding() string {
+func (r rawMarshaler) FormatType() string {
 	return "raw"
 }

@@ -49,13 +49,13 @@ func (j jaegerMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*sarama.
 	return messages, errs
 }
 
-func (j jaegerMarshaler) Encoding() string {
-	return j.marshaler.encoding()
+func (j jaegerMarshaler) FormatType() string {
+	return j.marshaler.formatType()
 }
 
 type jaegerSpanMarshaler interface {
 	marshal(span *jaegerproto.Span) ([]byte, error)
-	encoding() string
+	formatType() string
 }
 
 type jaegerProtoSpanMarshaler struct {
@@ -67,7 +67,7 @@ func (p jaegerProtoSpanMarshaler) marshal(span *jaegerproto.Span) ([]byte, error
 	return span.Marshal()
 }
 
-func (p jaegerProtoSpanMarshaler) encoding() string {
+func (p jaegerProtoSpanMarshaler) formatType() string {
 	return "jaeger_proto"
 }
 
@@ -89,6 +89,6 @@ func (p jaegerJSONSpanMarshaler) marshal(span *jaegerproto.Span) ([]byte, error)
 	return out.Bytes(), err
 }
 
-func (p jaegerJSONSpanMarshaler) encoding() string {
+func (p jaegerJSONSpanMarshaler) formatType() string {
 	return "jaeger_json"
 }

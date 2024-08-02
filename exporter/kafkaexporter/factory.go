@@ -21,7 +21,7 @@ const (
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
-	defaultEncoding     = "otlp_proto"
+	defaultFormatType   = "otlp_proto"
 	defaultBroker       = "localhost:9092"
 	defaultClientID     = "sarama"
 	// default from sarama.NewConfig()
@@ -49,7 +49,7 @@ type FactoryOption func(factory *kafkaExporterFactory)
 func withTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range tracesMarshalers {
-			factory.tracesMarshalers[marshaler.Encoding()] = marshaler
+			factory.tracesMarshalers[marshaler.FormatType()] = marshaler
 		}
 	}
 }
@@ -58,7 +58,7 @@ func withTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 func withMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range metricMarshalers {
-			factory.metricsMarshalers[marshaler.Encoding()] = marshaler
+			factory.metricsMarshalers[marshaler.FormatType()] = marshaler
 		}
 	}
 }
@@ -67,7 +67,7 @@ func withMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
 func withLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range logsMarshalers {
-			factory.logsMarshalers[marshaler.Encoding()] = marshaler
+			factory.logsMarshalers[marshaler.FormatType()] = marshaler
 		}
 	}
 }
@@ -100,7 +100,8 @@ func createDefaultConfig() component.Config {
 		ClientID:        defaultClientID,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:                                "",
-		Encoding:                             defaultEncoding,
+		Encoding:                             nil,
+		FormatType:                           defaultFormatType,
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
@@ -133,7 +134,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
+	if oCfg.FormatType == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp, err := newTracesExporter(oCfg, set, f.tracesMarshalers)
@@ -164,7 +165,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
+	if oCfg.FormatType == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp, err := newMetricsExporter(oCfg, set, f.metricsMarshalers)
@@ -195,7 +196,7 @@ func (f *kafkaExporterFactory) createLogsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
+	if oCfg.FormatType == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp, err := newLogsExporter(oCfg, set, f.logsMarshalers)

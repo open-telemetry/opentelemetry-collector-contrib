@@ -20,7 +20,7 @@ import (
 )
 
 func TestDefaultTracesMarshalers(t *testing.T) {
-	expectedEncodings := []string{
+	expectedFormatTypes := []string{
 		"otlp_proto",
 		"otlp_json",
 		"zipkin_proto",
@@ -29,8 +29,8 @@ func TestDefaultTracesMarshalers(t *testing.T) {
 		"jaeger_json",
 	}
 	marshalers := tracesMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
-	for _, e := range expectedEncodings {
+	assert.Equal(t, len(expectedFormatTypes), len(marshalers))
+	for _, e := range expectedFormatTypes {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
 			require.True(t, ok)
@@ -40,13 +40,13 @@ func TestDefaultTracesMarshalers(t *testing.T) {
 }
 
 func TestDefaultMetricsMarshalers(t *testing.T) {
-	expectedEncodings := []string{
+	expectedFormatTypes := []string{
 		"otlp_proto",
 		"otlp_json",
 	}
 	marshalers := metricsMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
-	for _, e := range expectedEncodings {
+	assert.Equal(t, len(expectedFormatTypes), len(marshalers))
+	for _, e := range expectedFormatTypes {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
 			require.True(t, ok)
@@ -56,14 +56,14 @@ func TestDefaultMetricsMarshalers(t *testing.T) {
 }
 
 func TestDefaultLogsMarshalers(t *testing.T) {
-	expectedEncodings := []string{
+	expectedFormatTypes := []string{
 		"otlp_proto",
 		"otlp_json",
 		"raw",
 	}
 	marshalers := logsMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
-	for _, e := range expectedEncodings {
+	assert.Equal(t, len(expectedFormatTypes), len(marshalers))
+	for _, e := range expectedFormatTypes {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
 			require.True(t, ok)
