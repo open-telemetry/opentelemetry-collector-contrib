@@ -8,10 +8,12 @@ import (
 	"log"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -560,4 +562,50 @@ func populateSpansMap(spansMap map[string]ptrace.Span, tds []ptrace.Traces) {
 
 func traceIDAndSpanIDToString(traceID pcommon.TraceID, spanID pcommon.SpanID) string {
 	return fmt.Sprintf("%s-%s", traceID, spanID)
+}
+
+type CorrectnessLogTestValidator struct {
+	dataProvider DataProvider
+}
+
+func NewCorrectnessLogTestValidator(provider DataProvider) *CorrectnessLogTestValidator {
+	return &CorrectnessLogTestValidator{
+		dataProvider: provider,
+	}
+}
+
+func (c *CorrectnessLogTestValidator) Validate(tc *TestCase) {
+	if dataProvider, ok := c.dataProvider.(*perfTestDataProvider); ok {
+		logsReceived := tc.MockBackend.ReceivedLogs
+
+		idsSent := make([][2]string, 0)
+		idsReceived := make([][2]string, 0)
+
+		for batch := 0; batch < int(dataProvider.traceIDSequence.Load()); batch++ {
+			for idx := 0; idx < dataProvider.options.ItemsPerBatch; idx++ {
+				idsSent = append(idsSent, [2]string{"batch_" + strconv.Itoa(int(batch)), "item_" + strconv.Itoa(int(idx))})
+			}
+		}
+		for _, log := range logsReceived {
+			for i := 0; i < log.ResourceLogs().Len(); i++ {
+				for j := 0; j < log.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+					s := log.ResourceLogs().At(i).ScopeLogs().At(j)
+					for k := 0; k < s.LogRecords().Len(); k++ {
+						logRecord := s.LogRecords().At(k)
+						batch_index, ok := logRecord.Attributes().Get("batch_index")
+						require.True(tc.t, ok, "batch_index missing from attributes; use perfDataProvider")
+						item_index, ok := logRecord.Attributes().Get("item_index")
+						require.True(tc.t, ok, "item_index missing from attributes; use perfDataProvider")
+
+						idsReceived = append(idsReceived, [2]string{batch_index.Str(), item_index.Str()})
+					}
+				}
+			}
+		}
+
+		assert.ElementsMatch(tc.t, idsSent, idsReceived)
+	}
+}
+
+func (v *CorrectnessLogTestValidator) RecordResults(tc *TestCase) {
 }

@@ -233,3 +233,40 @@ func TestLogOtlpSendingQueue(t *testing.T) {
 	})
 
 }
+
+func TestLogLargeFiles(t *testing.T) {
+	tests := []struct {
+		name         string
+		sender       testbed.DataSender
+		receiver     testbed.DataReceiver
+		resourceSpec testbed.ResourceSpec
+		extensions   map[string]string
+	}{
+		{
+			name:     "filelog-largefiles",
+			sender:   datasenders.NewFileLogWriter(),
+			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
+		},
+	}
+	processors := map[string]string{
+		"batch": `
+  batch:
+`}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ScenarioLong(
+				t,
+				test.sender,
+				test.receiver,
+				testbed.LoadOptions{
+					DataItemsPerSecond: 100,
+					ItemsPerBatch:      10,
+					Parallel:           1,
+				},
+				performanceResultsSummary,
+				2,
+				processors,
+			)
+		})
+	}
+}
