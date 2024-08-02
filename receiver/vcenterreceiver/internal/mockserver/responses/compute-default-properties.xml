@@ -78,6 +78,19 @@
                             </vcsSlots>
                         </val>
                     </propSet>
+                    <propSet>
+                        <name>configurationEx</name>
+                        <val xsi:type="ClusterConfigInfoEx">
+                            <dasConfig xsi:type="ClusterDasConfigInfo"></dasConfig>
+                            <drsConfig xsi:type="ClusterDrsConfigInfo"></drsConfig>
+                            <vsanConfigInfo xsi:type="VsanClusterConfigInfo">
+                                <enabled>true</enabled>
+                                <defaultConfig xsi:type="VsanClusterConfigInfoHostDefaultInfo">
+                                    <uuid>a8c9996d-be82-4487-94fe-821dff259a6a</uuid>
+                                </defaultConfig>
+                            </vsanConfigInfo>
+                        </val>
+                    </propSet>
                 </objects>
             </returnval>
             <returnval>
@@ -111,6 +124,12 @@
                             <totalCpu>280044</totalCpu>
                             <totalMemory>2468289376256</totalMemory>
                             <overallStatus>green</overallStatus>
+                        </val>
+                    </propSet>
+                    <propSet>
+                        <name>configurationEx</name>
+                        <val xsi:type="ComputeResourceConfigInfo">
+                            <vmSwapPlacement>vmDirectory</vmSwapPlacement>
                         </val>
                     </propSet>
                 </objects>

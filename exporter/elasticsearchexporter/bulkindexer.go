@@ -5,7 +5,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"runtime"
 	"sync"
@@ -51,8 +51,101 @@ type bulkIndexerSession interface {
 }
 
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (bulkIndexer, error) {
-	// TODO: add support for synchronous bulk indexing, to integrate with the exporterhelper batch sender.
+	if config.Batcher.Enabled != nil {
+		return newSyncBulkIndexer(logger, client, config), nil
+	}
 	return newAsyncBulkIndexer(logger, client, config)
+}
+
+func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) *syncBulkIndexer {
+	var maxDocRetry int
+	if config.Retry.Enabled {
+		// max_requests includes initial attempt
+		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
+		maxDocRetry = config.Retry.MaxRequests - 1
+	}
+	return &syncBulkIndexer{
+		config: docappender.BulkIndexerConfig{
+			Client:                client,
+			MaxDocumentRetries:    maxDocRetry,
+			Pipeline:              config.Pipeline,
+			RetryOnDocumentStatus: config.Retry.RetryOnStatus,
+		},
+		flushTimeout: config.Timeout,
+		retryConfig:  config.Retry,
+		logger:       logger,
+	}
+}
+
+type syncBulkIndexer struct {
+	config       docappender.BulkIndexerConfig
+	flushTimeout time.Duration
+	retryConfig  RetrySettings
+	logger       *zap.Logger
+}
+
+// StartSession creates a new docappender.BulkIndexer, and wraps
+// it with a syncBulkIndexerSession.
+func (s *syncBulkIndexer) StartSession(context.Context) (bulkIndexerSession, error) {
+	bi, err := docappender.NewBulkIndexer(s.config)
+	if err != nil {
+		return nil, err
+	}
+	return &syncBulkIndexerSession{
+		s:  s,
+		bi: bi,
+	}, nil
+}
+
+// Close is a no-op.
+func (s *syncBulkIndexer) Close(context.Context) error {
+	return nil
+}
+
+type syncBulkIndexerSession struct {
+	s  *syncBulkIndexer
+	bi *docappender.BulkIndexer
+}
+
+// Add adds an item to the sync bulk indexer session.
+func (s *syncBulkIndexerSession) Add(_ context.Context, index string, document io.WriterTo) error {
+	return s.bi.Add(docappender.BulkIndexerItem{Index: index, Body: document})
+}
+
+// End is a no-op.
+func (s *syncBulkIndexerSession) End() {
+	// TODO acquire docappender.BulkIndexer from pool in StartSession, release here
+}
+
+// Flush flushes documents added to the bulk indexer session.
+func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
+	var retryBackoff func(int) time.Duration
+	for attempts := 0; ; attempts++ {
+		if _, err := flushBulkIndexer(ctx, s.bi, s.s.flushTimeout, s.s.logger); err != nil {
+			return err
+		}
+		if s.bi.Items() == 0 {
+			// No documents in buffer waiting for per-document retry, exit retry loop.
+			return nil
+		}
+		if retryBackoff == nil {
+			retryBackoff = createElasticsearchBackoffFunc(&s.s.retryConfig)
+			if retryBackoff == nil {
+				// BUG: This should never happen in practice.
+				// When retry is disabled / document level retry limit is reached,
+				// documents should go into FailedDocs instead of indexer buffer.
+				return errors.New("bulk indexer contains documents pending retry but retry is disabled")
+			}
+		}
+		backoff := retryBackoff(attempts + 1) // TODO: use exporterhelper retry_sender
+		timer := time.NewTimer(backoff)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
 }
 
 func newAsyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (*asyncBulkIndexer, error) {
@@ -215,18 +308,32 @@ func (w *asyncBulkIndexerWorker) run() {
 
 func (w *asyncBulkIndexerWorker) flush() {
 	ctx := context.Background()
-	if w.flushTimeout > 0 {
+	stat, _ := flushBulkIndexer(ctx, w.indexer, w.flushTimeout, w.logger)
+	w.stats.docsIndexed.Add(stat.Indexed)
+}
+
+func flushBulkIndexer(
+	ctx context.Context,
+	bi *docappender.BulkIndexer,
+	timeout time.Duration,
+	logger *zap.Logger,
+) (docappender.BulkIndexerResponseStat, error) {
+	if timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), w.flushTimeout)
+		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
-	stat, err := w.indexer.Flush(ctx)
-	w.stats.docsIndexed.Add(stat.Indexed)
+	stat, err := bi.Flush(ctx)
 	if err != nil {
-		w.logger.Error("bulk indexer flush error", zap.Error(err))
+		logger.Error("bulk indexer flush error", zap.Error(err))
 	}
 	for _, resp := range stat.FailedDocs {
-		w.logger.Error(fmt.Sprintf("Drop docs: failed to index: %#v", resp.Error),
-			zap.Int("status", resp.Status))
+		logger.Error(
+			"failed to index document",
+			zap.String("index", resp.Index),
+			zap.String("error.type", resp.Error.Type),
+			zap.String("error.reason", resp.Error.Reason),
+		)
 	}
+	return stat, err
 }

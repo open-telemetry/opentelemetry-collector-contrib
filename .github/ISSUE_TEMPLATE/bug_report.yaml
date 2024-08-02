@@ -30,6 +30,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/otlpjson
       - connector/roundrobin
       - connector/routing
       - connector/servicegraph
