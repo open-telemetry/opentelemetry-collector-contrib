@@ -11,8 +11,8 @@ require (
 	go.opentelemetry.io/collector/consumer v0.106.1
 	go.opentelemetry.io/collector/receiver v0.106.1
 	go.opentelemetry.io/collector/semconv v0.106.1 // indirect
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.22.0
 )
