@@ -14,26 +14,30 @@ type Client struct {
 	Port     string
 	Password string
 	GoClient *goredis.Client
+	lruCache *lru.Cache
 	Enabled  bool
 	logger   *zap.Logger
 }
 
 type OpsrampRedisConfig struct {
-	RedisHost   string `mapstructure:"redisHost"`
-	RedisPort   string `mapstructure:"redisPort"`
-	RedisPass   string `mapstructure:"redisPass"`
-	ClusterName string `mapstructure:"clusterName"`
-	ClusterUid  string `mapstructure:"clusterUid"`
-	NodeName    string `mapstructure:"nodeName"`
+	RedisHost         string        `mapstructure:"redisHost"`
+	RedisPort         string        `mapstructure:"redisPort"`
+	RedisPass         string        `mapstructure:"redisPass"`
+	ClusterName       string        `mapstructure:"clusterName"`
+	ClusterUid        string        `mapstructure:"clusterUid"`
+	NodeName          string        `mapstructure:"nodeName"`
+	LruCacheSize      int           `mapstructure:"lruCacheSize"`
+	LruExpirationTime time.Duration `mapstructure:"lruExpirationTime"`
 }
 
-func NewClient(logger *zap.Logger, rHost, rPort, rPass string) *Client {
+func NewClient(logger *zap.Logger, lruCache *lru.Cache, rHost, rPort, rPass string) *Client {
 	client := Client{
 		Host:     rHost,
 		Port:     rPort,
 		Password: rPass,
 		Enabled:  true,
 		logger:   logger,
+		lruCache: lruCache,
 	}
 
 	if client.Host == "" {
@@ -95,16 +99,12 @@ func (c *Client) GetValueInString(ctx context.Context, key string) string {
 	logger := c.logger
 
 	// Try to init the cache if it is firt time
-	cache := lru.GetInstance()
 
-	if cache == nil {
-		logger.Error("Failed to initilize the cache with GetInstance()")
-		return ""
-	}
+	cache := c.lruCache
 
 	value, ok := cache.Get(key)
 	if !ok {
-		logger.Debug("Failed to fetch the key from the cache ", zap.Any("value : ", key))
+		logger.Debug("Failed to fetch the key from lru cache ", zap.Any("key", key))
 		if c.Enabled {
 			val, err := c.GoClient.Get(ctx, key).Result()
 			if err == goredis.Nil {
@@ -112,6 +112,7 @@ func (c *Client) GetValueInString(ctx context.Context, key string) string {
 			} else if err != nil {
 				logger.Error("Failed to fetch the key from redis ", zap.Error(err))
 			} else {
+				logger.Debug("Got value from redis ", zap.Any("key", key), zap.Any("value", value))
 				value = val
 			}
 		}
@@ -119,6 +120,8 @@ func (c *Client) GetValueInString(ctx context.Context, key string) string {
 		if value != "" {
 			cache.Add(key, value)
 		}
+	} else {
+		logger.Debug("Got value from lru cache ", zap.Any("key", key), zap.Any("value", value))
 	}
 	return value
 }

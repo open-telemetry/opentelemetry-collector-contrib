@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 )
 
@@ -132,6 +133,14 @@ func (cfg *Config) Validate() error {
 
 	if cfg.RedisConfig.NodeName == "" {
 		return fmt.Errorf("node name is mandatory")
+	}
+
+	if cfg.RedisConfig.LruExpirationTime == 0 {
+		cfg.RedisConfig.LruExpirationTime = lru.DEFAULT_CACHE_EXPIRATION_INTERVAL
+	}
+
+	if cfg.RedisConfig.LruCacheSize == 0 {
+		cfg.RedisConfig.LruCacheSize = lru.DEFAULT_CACHE_SIZE
 	}
 
 	return nil

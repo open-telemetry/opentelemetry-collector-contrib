@@ -13,8 +13,8 @@ type Cache struct {
 }
 
 const (
-	DEFAULT_CACHE_SIZE                = 16
-	DEFAULT_CACHE_EXPIRATION_INTERVAL = time.Minute
+	DEFAULT_CACHE_SIZE                = 256
+	DEFAULT_CACHE_EXPIRATION_INTERVAL = 10 * time.Minute
 )
 
 var (
@@ -22,13 +22,13 @@ var (
 	instance *Cache
 )
 
-func New(size int, expirateInterval time.Duration) *Cache {
-	return &Cache{lrucache: cache.NewLRU[string, string](size, nil, expirateInterval)}
+func New(size int, expirationInterval time.Duration) *Cache {
+	return &Cache{lrucache: cache.NewLRU[string, string](size, nil, expirationInterval)}
 }
 
-func GetInstance() *Cache {
+func GetInstance(size int, expirationInterval time.Duration) *Cache {
 	once.Do(func() {
-		instance = New(DEFAULT_CACHE_SIZE, DEFAULT_CACHE_EXPIRATION_INTERVAL)
+		instance = New(size, expirationInterval)
 	})
 	return instance
 }

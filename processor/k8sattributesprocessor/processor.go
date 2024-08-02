@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/moid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 )
@@ -71,7 +72,14 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 		zap.Any("redisPort", kp.redisConfig.RedisPort),
 		zap.Any("redisPass", kp.redisConfig.RedisPass))
 
-	kp.redisClient = redis.NewClient(kp.logger, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
+	cache := lru.GetInstance(kp.redisConfig.LruCacheSize, kp.redisConfig.LruExpirationTime)
+
+	if cache == nil {
+		kp.logger.Error("Failed to initilize the cache with GetInstance()")
+		return nil
+	}
+
+	kp.redisClient = redis.NewClient(kp.logger, cache, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
 
 	// This might have been set by an option already
 	if kp.kc == nil {
