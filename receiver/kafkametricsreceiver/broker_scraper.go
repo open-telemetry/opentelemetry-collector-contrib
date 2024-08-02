@@ -82,7 +82,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			ConfigNames: []string{"log.retention.hours"},
 		})
 		if err != nil {
-			scrapeErrors.AddPartial(1, fmt.Errorf("failed to fetch log.retention.hours config for %s: %w", broker.Addr(), err))
+			scrapeErrors.AddPartial(1, fmt.Errorf("failed to fetch the `log.retention.hours` metric from %s: %w", broker.Addr(), err))
 			continue
 		}
 		for _, config := range configEntries {
