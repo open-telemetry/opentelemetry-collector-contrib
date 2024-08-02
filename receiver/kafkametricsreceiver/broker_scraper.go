@@ -91,7 +91,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			}
 			val, err := strconv.Atoi(config.Value)
 			if err != nil {
-				scrapeErrors.AddPartial(1, fmt.Errorf("error processing log.retention.hours for %s", broker.Addr()))
+				scrapeErrors.AddPartial(1, fmt.Errorf("error converting `log.retention.hours` for %s: value was %s", broker.Addr(), config.Value))
 			}
 			s.mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(now, int64(val*3600), ID)
 		}
