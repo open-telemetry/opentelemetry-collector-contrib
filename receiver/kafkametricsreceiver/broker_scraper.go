@@ -31,7 +31,7 @@ type brokerScraper struct {
 }
 
 const (
-	BROKER_LOG_RETENTION_PERIOD_KEY = "log.retention.hours"
+	logRetentionHours = "log.retention.hours"
 )
 
 func (s *brokerScraper) Name() string {
@@ -83,19 +83,19 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		configEntries, err := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
 			Type:        sarama.BrokerResource,
 			Name:        ID,
-			ConfigNames: []string{BROKER_LOG_RETENTION_PERIOD_KEY},
+			ConfigNames: []string{logRetentionHours},
 		})
 		if err != nil {
-			scrapeErrors.AddPartial(1, fmt.Errorf("failed to fetch the `%s` metric from %s: %w", BROKER_LOG_RETENTION_PERIOD_KEY, broker.Addr(), err))
+			scrapeErrors.AddPartial(1, fmt.Errorf("failed to fetch the `%s` metric from %s: %w", logRetentionHours, broker.Addr(), err))
 			continue
 		}
 		for _, config := range configEntries {
-			if config.Name != BROKER_LOG_RETENTION_PERIOD_KEY {
+			if config.Name != logRetentionHours {
 				continue
 			}
 			val, err := strconv.Atoi(config.Value)
 			if err != nil {
-				scrapeErrors.AddPartial(1, fmt.Errorf("error converting `%s` for %s: value was %s", BROKER_LOG_RETENTION_PERIOD_KEY, broker.Addr(), config.Value))
+				scrapeErrors.AddPartial(1, fmt.Errorf("error converting `%s` for %s: value was %s", logRetentionHours, broker.Addr(), config.Value))
 			}
 			s.mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(now, int64(val*3600), ID)
 		}

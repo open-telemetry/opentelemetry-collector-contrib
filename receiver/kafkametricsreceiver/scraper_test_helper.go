@@ -188,7 +188,7 @@ func newMockClusterAdmin() *mockClusterAdmin {
 	strLogRetentionBytes := strconv.Itoa(testLogRetentionBytes)
 
 	brokerConfigEntry := sarama.ConfigEntry{
-		Name:  BROKER_LOG_RETENTION_PERIOD_KEY,
+		Name:  logRetentionHours,
 		Value: strconv.Itoa(testLogRetentionHours),
 	}
 	configEntries := make([]sarama.ConfigEntry, 1)
@@ -198,9 +198,9 @@ func newMockClusterAdmin() *mockClusterAdmin {
 	td[testTopic] = sarama.TopicDetail{
 		ReplicationFactor: testReplicationFactor,
 		ConfigEntries: map[string]*string{
-			TOPIC_MIN_INSYNC_REPLICA_KEY: &strMinInsyncReplicas,
-			TOPIC_RETENTION_PERIOD_KEY:   &strLogRetentionMs,
-			TOPIC_RETENTION_SIZE_KEY:     &strLogRetentionBytes,
+			minInsyncRelicas: &strMinInsyncReplicas,
+			retentionMs:      &strLogRetentionMs,
+			retentionBytes:   &strLogRetentionBytes,
 		},
 	}
 	clusterAdmin.topics = td
