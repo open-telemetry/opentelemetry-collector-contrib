@@ -45,6 +45,10 @@ type eventBroadcaster interface {
 	// NewRecorder returns an EventRecorder that can be used to send events to this EventBroadcaster
 	// with the event source set to the given event source.
 	NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorderLogger
+	// Shutdown shuts down the broadcaster. Once the broadcaster is shut
+	// down, it will only try to record an event in a sink once before
+	// giving up on it with an error message.
+	Shutdown()
 }
 
 type K8sClient interface {
@@ -89,19 +93,25 @@ func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ..
 		logger:              logger,
 		clusterNameProvider: clusterNameProvider,
 		k8sClient:           k8sclient.Get(logger),
-		broadcaster:         record.NewBroadcaster(),
 	}
 
 	for _, opt := range options {
 		opt(k)
 	}
 
+	if k.broadcaster == nil {
+		// NewBroadcaster starts a goroutine in the background, so we only want to
+		// call if it a user hasn't defined their own broadcaster. This will help
+		// avoid leaking a goroutine.
+		k.broadcaster = record.NewBroadcaster()
+	}
+
 	if k.k8sClient == nil {
-		return nil, errors.New("failed to start k8sapiserver because k8sclient is nil")
+		return nil, errors.Join(k.Shutdown(), errors.New("failed to start k8sapiserver because k8sclient is nil"))
 	}
 
 	if err := k.init(); err != nil {
-		return nil, fmt.Errorf("fail to initialize k8sapiserver, err: %w", err)
+		return nil, errors.Join(k.Shutdown(), fmt.Errorf("fail to initialize k8sapiserver, err: %w", err))
 	}
 
 	return k, nil
@@ -242,6 +252,10 @@ func (k *K8sAPIServer) Shutdown() error {
 	if k.cancel != nil {
 		k.cancel()
 	}
+	if k.broadcaster != nil {
+		k.broadcaster.Shutdown()
+	}
+
 	return nil
 }
 
