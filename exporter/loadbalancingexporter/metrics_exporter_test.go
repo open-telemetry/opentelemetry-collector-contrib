@@ -279,6 +279,14 @@ func TestSplitMetrics(t *testing.T) {
 			name:      "duplicate_metric_name",
 			splitFunc: splitMetricsByMetricName,
 		},
+		{
+			name:      "basic_stream_id",
+			splitFunc: splitMetricsByStreamID,
+		},
+		{
+			name:      "duplicate_stream_id",
+			splitFunc: splitMetricsByStreamID,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -321,6 +329,10 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 		{
 			name:       "metric_name",
 			routingKey: metricNameRoutingStr,
+		},
+		{
+			name:       "stream_id",
+			routingKey: streamIDRoutingStr,
 		},
 	}
 
@@ -426,6 +438,10 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 		{
 			name:       "metric_name",
 			routingKey: metricNameRoutingStr,
+		},
+		{
+			name:       "stream_id",
+			routingKey: streamIDRoutingStr,
 		},
 	}
 
@@ -968,6 +984,9 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 		},
 		{
 			routingKey: metricNameRoutingStr,
+		},
+		{
+			routingKey: streamIDRoutingStr,
 		},
 	}
 

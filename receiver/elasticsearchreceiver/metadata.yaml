@@ -640,21 +640,21 @@ metrics:
     enabled: true
   elasticsearch.os.cpu.load_avg.1m:
     description: One-minute load average on the system (field is not present if one-minute load average is not available).
-    unit: 1.0
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
     enabled: true
   elasticsearch.os.cpu.load_avg.5m:
     description: Five-minute load average on the system (field is not present if five-minute load average is not available).
-    unit: 1.0
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
     enabled: true
   elasticsearch.os.cpu.load_avg.15m:
     description: Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).
-    unit: 1.0
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
@@ -890,6 +890,13 @@ metrics:
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
+  elasticsearch.index.operations.merge.current:
+    description: The number of currently active segment merges
+    unit: "{merges}"
+    gauge:
+      value_type: int
+    attributes: [ index_aggregation_type ]
+    enabled: false
   elasticsearch.index.segments.count:
     description: Number of segments of an index.
     unit: "{segments}"
@@ -973,7 +980,7 @@ metrics:
     enabled: false
   elasticsearch.process.cpu.usage:
     description: CPU usage in percent.
-    unit: 1.0
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
