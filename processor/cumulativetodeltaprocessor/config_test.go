@@ -4,6 +4,7 @@
 package cumulativetodeltaprocessor
 
 import (
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"path/filepath"
 	"testing"
 	"time"
@@ -81,6 +82,45 @@ func TestLoadConfig(t *testing.T) {
 				MaxStaleness: 10 * time.Second,
 				InitialValue: tracking.InitialValueAuto,
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "metric_type_filter"),
+			expected: &Config{
+				Include: MatchMetrics{
+					Metrics: []string{
+						"a*",
+					},
+					Config: filterset.Config{
+						MatchType:    "regexp",
+						RegexpConfig: nil,
+					},
+					MetricTypes: []string{
+						pmetric.MetricTypeSum.String(),
+					},
+				},
+				Exclude: MatchMetrics{
+					Metrics: []string{
+						"b*",
+					},
+					Config: filterset.Config{
+						MatchType:    "regexp",
+						RegexpConfig: nil,
+					},
+					MetricTypes: []string{
+						pmetric.MetricTypeHistogram.String(),
+					},
+				},
+				MaxStaleness: 10 * time.Second,
+				InitialValue: tracking.InitialValueAuto,
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_include_metric_type_filter"),
+			errorMessage: "found invalid metric type in include.metric_types: Gauge. Valid values are [Sum,Histogram]",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_exclude_metric_type_filter"),
+			errorMessage: "found invalid metric type in exclude.metric_types: Invalid. Valid values are [Sum,ExponentialHistogram,Histogram,Empty,Summary,Gauge]",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "missing_match_type"),

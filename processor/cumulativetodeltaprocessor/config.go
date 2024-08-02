@@ -5,6 +5,9 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"slices"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -12,6 +15,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
+
+var validExcludeMetricTypes = []string{
+	pmetric.MetricTypeSum.String(),
+	pmetric.MetricTypeExponentialHistogram.String(),
+	pmetric.MetricTypeHistogram.String(),
+	pmetric.MetricTypeEmpty.String(),
+	pmetric.MetricTypeSummary.String(),
+	pmetric.MetricTypeGauge.String(),
+}
+
+var validIncludeMetricTypes = []string{
+	pmetric.MetricTypeSum.String(),
+	pmetric.MetricTypeHistogram.String(),
+}
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -37,6 +54,8 @@ type MatchMetrics struct {
 	filterset.Config `mapstructure:",squash"`
 
 	Metrics []string `mapstructure:"metrics"`
+
+	MetricTypes []string `mapstructure:"metric_types"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -51,6 +70,25 @@ func (config *Config) Validate() error {
 	if (len(config.Include.MatchType) > 0 && len(config.Include.Metrics) == 0) ||
 		(len(config.Exclude.MatchType) > 0 && len(config.Exclude.Metrics) == 0) {
 		return fmt.Errorf("metrics must be supplied if match_type is set")
+	}
+
+	for _, metricType := range config.Exclude.MetricTypes {
+		if !slices.Contains(validExcludeMetricTypes, metricType) {
+			return fmt.Errorf(
+				"found invalid metric type in exclude.metric_types: %s. Valid values are [%s]",
+				metricType,
+				strings.Join(validExcludeMetricTypes, ","),
+			)
+		}
+	}
+	for _, metricType := range config.Include.MetricTypes {
+		if !slices.Contains(validIncludeMetricTypes, metricType) {
+			return fmt.Errorf(
+				"found invalid metric type in include.metric_types: %s. Valid values are [%s]",
+				metricType,
+				strings.Join(validIncludeMetricTypes, ","),
+			)
+		}
 	}
 	return nil
 }
