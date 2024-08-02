@@ -58,8 +58,8 @@ func SetLogger(l *zap.Logger) {
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
 func NewMetricsTable(ctx context.Context, tableNames MetricTablesConfigMapper, cluster, engine, ttlExpr string, db *sql.DB) error {
-	for key, query := range supportedMetricTypes {
-		query := fmt.Sprintf(query, tableNames[key].Name, cluster, engine, ttlExpr)
+	for key, queryTemplate := range supportedMetricTypes {
+		query := fmt.Sprintf(queryTemplate, tableNames[key].Name, cluster, engine, ttlExpr)
 		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
