@@ -19,8 +19,9 @@ import (
 type metricsExporter struct {
 	client *sql.DB
 
-	logger *zap.Logger
-	cfg    *Config
+	logger     *zap.Logger
+	cfg        *Config
+	tableNames internal.MetricTablesConfigMapper
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
@@ -29,10 +30,13 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 		return nil, err
 	}
 
+	tableNames := generateMetricTablesConfigMapper(cfg)
+
 	return &metricsExporter{
-		client: client,
-		logger: logger,
-		cfg:    cfg,
+		client:     client,
+		logger:     logger,
+		cfg:        cfg,
+		tableNames: tableNames,
 	}, nil
 }
 
@@ -48,17 +52,26 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	ttlExpr := generateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
-	tableNames := e.generateTableNames()
-	return internal.NewMetricsTable(ctx, tableNames, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.client)
+	return internal.NewMetricsTable(ctx, e.tableNames, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.client)
 }
 
-func (e *metricsExporter) generateTableNames() internal.MetricTableNames {
-	return internal.MetricTableNames{
-		pmetric.MetricTypeGauge:                e.cfg.MetricsTables.Gauge,
-		pmetric.MetricTypeSum:                  e.cfg.MetricsTables.Sum,
-		pmetric.MetricTypeSummary:              e.cfg.MetricsTables.Summary,
-		pmetric.MetricTypeHistogram:            e.cfg.MetricsTables.Histogram,
-		pmetric.MetricTypeExponentialHistogram: e.cfg.MetricsTables.ExponentialHistogram,
+func generateMetricTablesConfigMapper(cfg *Config) internal.MetricTablesConfigMapper {
+	return internal.MetricTablesConfigMapper{
+		pmetric.MetricTypeGauge: {
+			Name: cfg.MetricsTables.Gauge,
+		},
+		pmetric.MetricTypeSum: {
+			Name: cfg.MetricsTables.Sum,
+		},
+		pmetric.MetricTypeSummary: {
+			Name: cfg.MetricsTables.Summary,
+		},
+		pmetric.MetricTypeHistogram: {
+			Name: cfg.MetricsTables.Histogram,
+		},
+		pmetric.MetricTypeExponentialHistogram: {
+			Name: cfg.MetricsTables.ExponentialHistogram,
+		},
 	}
 }
 
@@ -71,8 +84,7 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	tableNames := e.generateTableNames()
-	metricsMap := internal.NewMetricsModel(tableNames)
+	metricsMap := internal.NewMetricsModel(e.tableNames)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := attributesToMap(metrics.Resource().Attributes())

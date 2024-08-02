@@ -365,8 +365,13 @@ exporters:
     create_schema: true
     logs_table_name: otel_logs
     traces_table_name: otel_traces
-    metrics_table_name: otel_metrics
     timeout: 5s
+    metrics_tables:
+      gauge: "otel_metrics_gauge"
+      sum: "otel_metrics_sum"
+      summary: "otel_metrics_summary"
+      histogram: "otel_metrics_histogram"
+      exponential_histogram: "otel_metrics_exp_histogram"
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -383,6 +388,9 @@ service:
       processors: [ batch ]
       exporters: [ clickhouse ]
 ```
+
+**Note:**
+Parameter `metrics_table_name` will be deprecated and replaced by `metric_tables` which support setting the full table name (including suffix) for tables of each metric type. Using `metrics_table_name` and `metric_tables` together will result in ignoring the `metrics_table_name` parameter value.
 
 ## Contributing
 

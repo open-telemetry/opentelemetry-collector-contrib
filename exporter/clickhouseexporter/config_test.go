@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				MetricsTables: TableNames{
+				MetricsTables: MetricTableNames{
 					Gauge:                "otel_metrics_custom_gauge",
 					Sum:                  "otel_metrics_custom_sum",
 					Summary:              "otel_metrics_custom_summary",
@@ -109,43 +109,7 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	return cfg
 }
 
-func TestValidateMetricTableNames(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     Config
-		wantErr error
-	}{
-		{
-			name:    "metric_table_name not set",
-			cfg:     Config{},
-			wantErr: nil,
-		},
-		{
-			name: "metric_table_name set",
-			cfg: Config{
-				MetricsTableName: "table",
-			},
-			wantErr: nil,
-		},
-		{
-			name: "metric_table_name set with metric_tables",
-			cfg: Config{
-				MetricsTableName: "table",
-				MetricsTables: TableNames{
-					Gauge: "gauge",
-				},
-			},
-			wantErr: fmt.Errorf("Warning: 'metrics_table_name' is deprecated, use 'metrics_tables' instead"),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.wantErr, tt.cfg.ValidateMetricTableNames())
-		})
-	}
-}
-
-func TestBuildMetricTableNames(t *testing.T) {
+func TestBuildMetricMetricTableNames(t *testing.T) {
 	tests := []struct {
 		name string
 		cfg  Config
@@ -155,7 +119,7 @@ func TestBuildMetricTableNames(t *testing.T) {
 			name: "nothing set",
 			cfg:  Config{},
 			want: Config{
-				MetricsTables: TableNames{
+				MetricsTables: MetricTableNames{
 					Gauge:                "otel_metrics_gauge",
 					Sum:                  "otel_metrics_sum",
 					Summary:              "otel_metrics_summary",
@@ -171,7 +135,7 @@ func TestBuildMetricTableNames(t *testing.T) {
 			},
 			want: Config{
 				MetricsTableName: "table_name",
-				MetricsTables: TableNames{
+				MetricsTables: MetricTableNames{
 					Gauge:                "table_name_gauge",
 					Sum:                  "table_name_sum",
 					Summary:              "table_name_summary",
@@ -183,7 +147,7 @@ func TestBuildMetricTableNames(t *testing.T) {
 		{
 			name: "only metric_tables set fully",
 			cfg: Config{
-				MetricsTables: TableNames{
+				MetricsTables: MetricTableNames{
 					Gauge:                "table_name_gauge",
 					Sum:                  "table_name_sum",
 					Summary:              "table_name_summary",
@@ -192,7 +156,7 @@ func TestBuildMetricTableNames(t *testing.T) {
 				},
 			},
 			want: Config{
-				MetricsTables: TableNames{
+				MetricsTables: MetricTableNames{
 					Gauge:                "table_name_gauge",
 					Sum:                  "table_name_sum",
 					Summary:              "table_name_summary",
@@ -204,14 +168,14 @@ func TestBuildMetricTableNames(t *testing.T) {
 		{
 			name: "only metric_tables set partially",
 			cfg: Config{
-				MetricsTables: TableNames{
+				MetricsTables: MetricTableNames{
 					Summary:              "table_name_summary",
 					Histogram:            "table_name_histogram",
 					ExponentialHistogram: "table_name_exp_histogram",
 				},
 			},
 			want: Config{
-				MetricsTables: TableNames{
+				MetricsTables: MetricTableNames{
 					Gauge:                "otel_metrics_gauge",
 					Sum:                  "otel_metrics_sum",
 					Summary:              "table_name_summary",
@@ -224,7 +188,7 @@ func TestBuildMetricTableNames(t *testing.T) {
 			name: "only metric_tables set partially with metric_table_name",
 			cfg: Config{
 				MetricsTableName: "custom_name",
-				MetricsTables: TableNames{
+				MetricsTables: MetricTableNames{
 					Summary:              "table_name_summary",
 					Histogram:            "table_name_histogram",
 					ExponentialHistogram: "table_name_exp_histogram",
@@ -232,7 +196,7 @@ func TestBuildMetricTableNames(t *testing.T) {
 			},
 			want: Config{
 				MetricsTableName: "custom_name",
-				MetricsTables: TableNames{
+				MetricsTables: MetricTableNames{
 					Gauge:                "otel_metrics_gauge",
 					Sum:                  "otel_metrics_sum",
 					Summary:              "table_name_summary",
@@ -244,22 +208,22 @@ func TestBuildMetricTableNames(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.cfg.buildTableNames()
+			tt.cfg.buildMetricTableNames()
 			require.Equal(t, tt.want, tt.cfg)
 		})
 	}
 }
 
-func TestAreTableNamesSet(t *testing.T) {
+func TestAreMetricTableNamesSet(t *testing.T) {
 	cfg := Config{}
-	require.False(t, cfg.areTableNamesSet())
+	require.False(t, cfg.areMetricTableNamesSet())
 
 	cfg = Config{
-		MetricsTables: TableNames{
+		MetricsTables: MetricTableNames{
 			Gauge: "gauge",
 		},
 	}
-	require.True(t, cfg.areTableNamesSet())
+	require.True(t, cfg.areMetricTableNamesSet())
 }
 
 func TestConfig_buildDSN(t *testing.T) {

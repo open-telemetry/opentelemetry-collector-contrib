@@ -53,10 +53,10 @@ type Config struct {
 	// Async inserts may still be overridden server-side.
 	AsyncInsert bool `mapstructure:"async_insert"`
 	// MetricsTables defines the table names for metric types.
-	MetricsTables TableNames `mapstructure:"metrics_tables"`
+	MetricsTables MetricTableNames `mapstructure:"metrics_tables"`
 }
 
-type TableNames struct {
+type MetricTableNames struct {
 	// Gauge is the table name for gauge metric type. default is `otel_metrics_gauge`.
 	Gauge string `mapstructure:"gauge"`
 	// Sum is the table name for sum metric type. default is `otel_metrics_sum`.
@@ -99,11 +99,7 @@ func (cfg *Config) Validate() (err error) {
 		err = errors.Join(err, e)
 	}
 
-	if e := cfg.ValidateMetricTableNames(); err != nil {
-		err = errors.Join(err, e)
-	} else {
-		cfg.buildTableNames()
-	}
+	cfg.buildMetricTableNames()
 
 	// Validate DSN with clickhouse driver.
 	// Last chance to catch invalid config.
@@ -180,20 +176,10 @@ func (cfg *Config) shouldCreateSchema() bool {
 	return cfg.CreateSchema
 }
 
-func (cfg *Config) ValidateMetricTableNames() error {
-	if len(cfg.MetricsTableName) == 0 {
-		return nil
-	}
-	if cfg.areTableNamesSet() {
-		return fmt.Errorf("Warning: 'metrics_table_name' is deprecated, use 'metrics_tables' instead")
-	}
-	return nil
-}
-
-func (cfg *Config) buildTableNames() {
+func (cfg *Config) buildMetricTableNames() {
 	tableName := defaultMetricTableName
 
-	if len(cfg.MetricsTableName) != 0 && !cfg.areTableNamesSet() {
+	if len(cfg.MetricsTableName) != 0 && !cfg.areMetricTableNamesSet() {
 		tableName = cfg.MetricsTableName
 	}
 
@@ -214,7 +200,7 @@ func (cfg *Config) buildTableNames() {
 	}
 }
 
-func (cfg *Config) areTableNamesSet() bool {
+func (cfg *Config) areMetricTableNamesSet() bool {
 	return len(cfg.MetricsTables.Gauge) != 0 ||
 		len(cfg.MetricsTables.Sum) != 0 ||
 		len(cfg.MetricsTables.Summary) != 0 ||
