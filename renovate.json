@@ -79,6 +79,11 @@
       },
       {
         "matchManagers": ["gomod"],
+        "matchPackagePrefixes": ["cloud.google.com/go"],
+        "groupName": "All cloud.google.com/go packages"
+      },
+      {
+        "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
         "groupName": "All github.com/googlecloudplatform packages"
       },
