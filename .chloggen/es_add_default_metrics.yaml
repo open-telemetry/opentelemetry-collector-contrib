@@ -18,7 +18,7 @@ issues: [34396]
 subtext: |
   This enables the following metrics by default: 
   `elasticsearch.index.documents`
-  `elasticsearch.index.operations.merge.count`
+  `elasticsearch.index.operations.merge.current`
   `elasticsearch.index.segments.count`
   To preserve previous behavior, update your Elasticsearch receiver configuration to disable these metrics.
 
