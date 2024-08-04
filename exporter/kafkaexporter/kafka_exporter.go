@@ -248,6 +248,14 @@ func newLogsExporter(config Config, set exporter.Settings, marshalers map[string
 		return nil, errUnrecognizedEncoding
 	}
 
+	if config.PartitionLogsByResourceAttributes {
+		if keyableMarshaler, ok := marshaler.(keyableLogsMarshaler); ok {
+			keyableMarshaler.Key()
+		} else {
+			set.Logger.Warn("Marshaler does not support partitioning logs by topic!")
+		}
+	}
+
 	return &kafkaLogsProducer{
 		cfg:       config,
 		marshaler: marshaler,
