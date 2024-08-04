@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
@@ -452,7 +452,7 @@ func disabledHistogramsConfig() HistogramConfig {
 	}
 }
 
-func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig func() EventsConfig, temporality string, expiration time.Duration, resourceMetricsKeyAttributes []string, deltaTimestampCacheSize int, clock clock.Clock, excludedDimensions ...string) (*connectorImp, error) {
+func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig func() EventsConfig, temporality string, expiration time.Duration, resourceMetricsKeyAttributes []string, deltaTimestampCacheSize int, clock clockwork.Clock, excludedDimensions ...string) (*connectorImp, error) {
 	cfg := &Config{
 		AggregationTemporality:       temporality,
 		Histogram:                    histogramConfig(),
@@ -498,7 +498,7 @@ func stringp(str string) *string {
 func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clock.NewMock(time.Now()))
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
@@ -518,7 +518,7 @@ func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ExcludeDimensions = []string{"span.kind", "service.name", "span.name", "status.code"}
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clock.NewMock(time.Now()))
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
@@ -531,7 +531,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ExcludeDimensions = []string{"span.kind", "service.name.wrong.name", "span.name", "status.code"}
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clock.NewMock(time.Now()))
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
@@ -543,7 +543,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 func TestBuildKeyWithDimensions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clock.NewMock(time.Now()))
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 	require.NoError(t, err)
 
 	defaultFoo := pcommon.NewValueStr("bar")
@@ -639,7 +639,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 
 	// Test
-	p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clock.NewMock(time.Now()))
+	p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
 	require.NoError(t, err)
 	// Override the default no-op consumer and logger for testing.
 	p.metricsConsumer = new(consumertest.MetricsSink)
@@ -684,7 +684,7 @@ func TestConnectorCapabilities(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Test
-	c, err := newConnector(zaptest.NewLogger(t), cfg, clock.NewMock(time.Now()))
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 	// Override the default no-op consumer for testing.
 	c.metricsConsumer = new(consumertest.MetricsSink)
 	assert.NoError(t, err)
@@ -717,7 +717,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 	logger := zap.New(core)
 
 	var wg sync.WaitGroup
-	mockClock := clock.NewMock(time.Now())
+	mockClock := clockwork.NewFakeClock()
 	p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock)
 	require.NoError(t, err)
 	// Override the default no-op consumer and logger for testing.
@@ -740,7 +740,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 
 	// Trigger flush.
 	wg.Add(1)
-	mockClock.Add(time.Nanosecond)
+	mockClock.Advance(time.Nanosecond)
 	wg.Wait()
 
 	// Allow time for log observer to sync all logs emitted.
@@ -883,7 +883,7 @@ func TestConsumeTraces(t *testing.T) {
 			// Prepare
 
 			mcon := &consumertest.MetricsSink{}
-			mockClock := clock.NewMock(time.Now())
+			mockClock := clockwork.NewFakeClock()
 			p, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{}, 1000, mockClock)
 			require.NoError(t, err)
 			// Override the default no-op consumer with metrics sink for testing.
@@ -900,7 +900,7 @@ func TestConsumeTraces(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Trigger flush.
-				mockClock.Add(time.Nanosecond)
+				mockClock.Advance(time.Nanosecond)
 				require.Eventually(t, func() bool {
 					return len(mcon.AllMetrics()) > 0
 				}, 1*time.Second, 10*time.Millisecond)
@@ -911,7 +911,7 @@ func TestConsumeTraces(t *testing.T) {
 }
 
 func TestMetricKeyCache(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clock.NewMock(time.Now()))
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
 	require.NoError(t, err)
 	traces := buildSampleTrace()
 
@@ -940,7 +940,7 @@ func TestMetricKeyCache(t *testing.T) {
 }
 
 func TestResourceMetricsCache(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clock.NewMock(time.Now()))
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
 	require.NoError(t, err)
 
 	// Test
@@ -977,7 +977,7 @@ func TestResourceMetricsCache(t *testing.T) {
 }
 
 func TestResourceMetricsExpiration(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{}, 1000, clock.NewMock(time.Now()))
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{}, 1000, clockwork.NewFakeClock())
 	require.NoError(t, err)
 
 	// Test
@@ -1002,7 +1002,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 		"service.name",
 	}
 
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes, 1000, clock.NewMock(time.Now()))
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes, 1000, clockwork.NewFakeClock())
 	require.NoError(t, err)
 
 	// Test
@@ -1040,7 +1040,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	// Prepare
-	conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clock.NewMock(time.Now()))
+	conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
 	require.NoError(b, err)
 
 	traces := buildSampleTrace()
@@ -1054,7 +1054,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 
 func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clock.NewMock(time.Now()), excludeDimensions...)
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), excludeDimensions...)
 	require.NoError(t, err)
 	traces := buildSampleTrace()
 
@@ -1184,7 +1184,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	wg.Add(len(wantDataPointCounts))
 
 	// Note: default dimension key cache size is 2.
-	mockClock := clock.NewMock(time.Now())
+	mockClock := clockwork.NewFakeClock()
 	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
@@ -1204,7 +1204,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 		time.Sleep(time.Millisecond)
 
 		// Trigger flush.
-		mockClock.Add(time.Nanosecond)
+		mockClock.Advance(time.Nanosecond)
 
 		// Allow time for metrics flush to complete.
 		time.Sleep(time.Millisecond)
@@ -1270,7 +1270,7 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 	mcon := &consumertest.MetricsSink{}
 
 	// Creating a connector with a very short metricsTTL to ensure that the metrics are expired.
-	mockClock := clock.NewMock(time.Now())
+	mockClock := clockwork.NewFakeClock()
 	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{}, 1000, mockClock)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
@@ -1295,7 +1295,7 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 		time.Sleep(time.Millisecond)
 
 		// Trigger flush.
-		mockClock.Add(time.Nanosecond)
+		mockClock.Advance(time.Nanosecond)
 
 		// Allow time for metrics flush to complete.
 		time.Sleep(time.Millisecond)
@@ -1491,7 +1491,7 @@ func TestSpanMetrics_Events(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Events = tt.eventsConfig
-			c, err := newConnector(zaptest.NewLogger(t), cfg, clock.NewMock(time.Now()))
+			c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
 			require.NoError(t, err)
 			err = c.ConsumeTraces(context.Background(), buildSampleTrace())
 			require.NoError(t, err)
@@ -1546,7 +1546,7 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, clock.NewMock(time.Now()))
+			p, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, clockwork.NewFakeClock())
 			p.metricsConsumer = &consumertest.MetricsSink{}
 			require.NoError(t, err)
 
@@ -1843,16 +1843,16 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 
 // Clock where Now() always returns a greater value than the previous return value
 type alwaysIncreasingClock struct {
-	clock.Clock
+	clockwork.Clock
 }
 
 func newAlwaysIncreasingClock() alwaysIncreasingClock {
 	return alwaysIncreasingClock{
-		Clock: clock.NewMock(time.Now()),
+		Clock: clockwork.NewFakeClock(),
 	}
 }
 
 func (c alwaysIncreasingClock) Now() time.Time {
-	c.Clock.(*clock.Mock).Add(time.Second)
+	c.Clock.(clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
 }

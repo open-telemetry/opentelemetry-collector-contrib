@@ -48,13 +48,16 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 
 		// we compile the expression with "AsBool", so this should be safe
 		if matches.(bool) {
-			if err := route.Attribute(entry); err != nil {
+			if err = route.Attribute(entry); err != nil {
 				t.Logger().Error("Failed to label entry", zap.Error(err))
 				return err
 			}
 
 			for _, output := range route.OutputOperators {
-				_ = output.Process(ctx, entry)
+				err = output.Process(ctx, entry)
+				if err != nil {
+					t.Logger().Error("Failed to process entry", zap.Error(err))
+				}
 			}
 			break
 		}

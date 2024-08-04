@@ -10,6 +10,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 )
 
 // extractAndRemoveMatchedMetrics extracts matched metrics from ms metric slice and returns a new slice.
@@ -440,6 +442,17 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 	return combinedMetric
 }
 
+// groupMetrics groups all the provided timeseries that will be aggregated together based on all the label values.
+// Returns a map of grouped timeseries and the corresponding selected labels
+// canBeCombined must be callled before.
+func groupMetrics(metrics pmetric.MetricSlice, aggType aggregateutil.AggregationType, to pmetric.Metric) {
+	ag := aggregateutil.AggGroups{}
+	for i := 0; i < metrics.Len(); i++ {
+		aggregateutil.GroupDataPoints(metrics.At(i), &ag)
+	}
+	aggregateutil.MergeDataPoints(to, aggType, ag)
+}
+
 func copyMetricDetails(from, to pmetric.Metric) {
 	to.SetName(from.Name())
 	to.SetUnit(from.Unit())
@@ -541,7 +554,13 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)
 		case aggregateLabels:
 			if canChangeMetric {
-				aggregateLabelsOp(metric, op)
+				attrs := []string{}
+				for k, v := range op.labelSetMap {
+					if v {
+						attrs = append(attrs, k)
+					}
+				}
+				aggregateLabelsOp(metric, attrs, op.configOperation.AggregationType)
 			}
 		case aggregateLabelValues:
 			if canChangeMetric {

@@ -26,6 +26,7 @@ dist/
 # Miscellaneous files
 *.sw[op]
 *.DS_Store
+__debug_bin*
 
 # Coverage
 coverage/*

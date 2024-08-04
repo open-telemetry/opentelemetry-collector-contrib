@@ -160,6 +160,13 @@ agent:
       
 ```
 
+### Operation When OpAMP Server is Unavailable
+
+When the supervisor cannot connect to the OpAMP server, the collector will
+be run with the last known configuration, or with a "noop" configuration 
+if no previous configuration is persisted. The supervisor will continually 
+attempt to reconnect to the OpAMP server with exponential backoff.
+
 ### Executing Collector
 
 The Supervisor starts and stops the Collector process as necessary. When

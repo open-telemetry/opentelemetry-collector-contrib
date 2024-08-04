@@ -15,6 +15,12 @@
 Kafka metrics receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from kafka server,
 converting into otlp.
 
+## Prerequisites
+
+This receiver supports Kafka versions:
+  -  2.X
+  -  3.X
+
 ## Getting Started
 
 Required settings (no defaults):

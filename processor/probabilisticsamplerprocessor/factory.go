@@ -7,18 +7,13 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
-	"sync"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
-
-var onceMetrics sync.Once
 
 // The default precision is 4 hex digits, slightly more the original
 // component logic's 14-bits of precision.
@@ -26,11 +21,6 @@ const defaultPrecision = 4
 
 // NewFactory returns a new factory for the Probabilistic sampler processor.
 func NewFactory() processor.Factory {
-	onceMetrics.Do(func() {
-		// TODO: Handle this err
-		_ = view.Register(samplingProcessorMetricViews(configtelemetry.LevelNormal)...)
-	})
-
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,

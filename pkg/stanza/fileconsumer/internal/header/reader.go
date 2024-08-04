@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
@@ -54,7 +55,8 @@ func (r *Reader) Process(ctx context.Context, token []byte, fileAttributes map[s
 	newEntry.Body = string(token)
 
 	if err := firstOperator.Process(ctx, newEntry); err != nil {
-		return fmt.Errorf("process header entry: %w", err)
+		r.set.Logger.Error("process header entry", zap.Error(err))
+		// Do not return yet. An entry was added to the logsChan which must be consumed generically.
 	}
 
 	ent, err := r.output.WaitForEntry(ctx)

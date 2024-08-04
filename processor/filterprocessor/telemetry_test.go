@@ -60,7 +60,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	require.NoError(t, tt.reader.Collect(context.Background(), &md))
 
 	if expected.metricDataPointsFiltered > 0 {
-		name := "processor_filter_datapoints.filtered"
+		name := "otelcol_processor_filter_datapoints.filtered"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -80,7 +80,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
 	if expected.logsFiltered > 0 {
-		name := "processor_filter_logs.filtered"
+		name := "otelcol_processor_filter_logs.filtered"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -100,7 +100,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
 	if expected.spansFiltered > 0 {
-		name := "processor_filter_spans.filtered"
+		name := "otelcol_processor_filter_spans.filtered"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,

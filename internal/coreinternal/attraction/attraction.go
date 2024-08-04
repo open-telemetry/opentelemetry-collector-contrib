@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/clientutil"
 )
 
 // Settings specifies the processor settings.
@@ -341,14 +343,17 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 
 func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Value, bool) {
 	const (
-		metadataPrefix = "metadata."
-		authPrefix     = "auth."
+		metadataPrefix   = "metadata."
+		authPrefix       = "auth."
+		clientAddressKey = "client.address"
 	)
 
 	ci := client.FromContext(ctx)
 	var vals []string
 
 	switch {
+	case key == clientAddressKey:
+		vals = []string{clientutil.Address(ci)}
 	case strings.HasPrefix(key, metadataPrefix):
 		mdKey := strings.TrimPrefix(key, metadataPrefix)
 		vals = ci.Metadata.Get(mdKey)

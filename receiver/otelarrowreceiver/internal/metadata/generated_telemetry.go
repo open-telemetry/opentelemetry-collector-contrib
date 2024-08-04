@@ -55,19 +55,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.OtelArrowReceiverInFlightBytes, err = builder.meter.Int64UpDownCounter(
-		"otel_arrow_receiver_in_flight_bytes",
+		"otelcol_otel_arrow_receiver_in_flight_bytes",
 		metric.WithDescription("Number of bytes in flight"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.OtelArrowReceiverInFlightItems, err = builder.meter.Int64UpDownCounter(
-		"otel_arrow_receiver_in_flight_items",
+		"otelcol_otel_arrow_receiver_in_flight_items",
 		metric.WithDescription("Number of items in flight"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.OtelArrowReceiverInFlightRequests, err = builder.meter.Int64UpDownCounter(
-		"otel_arrow_receiver_in_flight_requests",
+		"otelcol_otel_arrow_receiver_in_flight_requests",
 		metric.WithDescription("Number of requests in flight"),
 		metric.WithUnit("1"),
 	)

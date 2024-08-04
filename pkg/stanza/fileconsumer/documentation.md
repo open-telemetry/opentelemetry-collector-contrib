@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### fileconsumer_open_files
+### otelcol_fileconsumer_open_files
 
 Number of open files
 
@@ -14,7 +14,7 @@ Number of open files
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | false |
 
-### fileconsumer_reading_files
+### otelcol_fileconsumer_reading_files
 
 Number of open files that are being read
 

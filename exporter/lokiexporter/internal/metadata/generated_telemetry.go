@@ -53,7 +53,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.LokiexporterSendFailedDueToMissingLabels, err = builder.meter.Int64Counter(
-		"lokiexporter_send_failed_due_to_missing_labels",
+		"otelcol_lokiexporter_send_failed_due_to_missing_labels",
 		metric.WithDescription("Number of log records failed to send because labels were missing"),
 		metric.WithUnit("1"),
 	)

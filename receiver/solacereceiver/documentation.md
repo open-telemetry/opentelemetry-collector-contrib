@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### solacereceiver_dropped_egress_spans
+### otelcol_solacereceiver_dropped_egress_spans
 
 Number of dropped egress spans
 
@@ -14,7 +14,7 @@ Number of dropped egress spans
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### solacereceiver_dropped_span_messages
+### otelcol_solacereceiver_dropped_span_messages
 
 Number of dropped span messages
 
@@ -22,7 +22,7 @@ Number of dropped span messages
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### solacereceiver_failed_reconnections
+### otelcol_solacereceiver_failed_reconnections
 
 Number of failed broker reconnections
 
@@ -30,7 +30,7 @@ Number of failed broker reconnections
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### solacereceiver_fatal_unmarshalling_errors
+### otelcol_solacereceiver_fatal_unmarshalling_errors
 
 Number of fatal message unmarshalling errors
 
@@ -38,7 +38,7 @@ Number of fatal message unmarshalling errors
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### solacereceiver_need_upgrade
+### otelcol_solacereceiver_need_upgrade
 
 Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker
 
@@ -46,7 +46,7 @@ Indicates with value 1 that receiver requires an upgrade and is not compatible w
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### solacereceiver_received_span_messages
+### otelcol_solacereceiver_received_span_messages
 
 Number of received span messages
 
@@ -54,7 +54,7 @@ Number of received span messages
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### solacereceiver_receiver_flow_control_recent_retries
+### otelcol_solacereceiver_receiver_flow_control_recent_retries
 
 Most recent/current retry count when flow controlled
 
@@ -62,7 +62,7 @@ Most recent/current retry count when flow controlled
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### solacereceiver_receiver_flow_control_status
+### otelcol_solacereceiver_receiver_flow_control_status
 
 Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled
 
@@ -70,7 +70,7 @@ Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = 
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### solacereceiver_receiver_flow_control_total
+### otelcol_solacereceiver_receiver_flow_control_total
 
 Number of times the receiver instance became flow controlled
 
@@ -78,7 +78,7 @@ Number of times the receiver instance became flow controlled
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### solacereceiver_receiver_flow_control_with_single_successful_retry
+### otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry
 
 Number of times the receiver instance became flow controlled and resolved situations after the first retry
 
@@ -86,7 +86,7 @@ Number of times the receiver instance became flow controlled and resolved situat
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### solacereceiver_receiver_status
+### otelcol_solacereceiver_receiver_status
 
 Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated
 
@@ -94,7 +94,7 @@ Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### solacereceiver_recoverable_unmarshalling_errors
+### otelcol_solacereceiver_recoverable_unmarshalling_errors
 
 Number of recoverable message unmarshalling errors
 
@@ -102,7 +102,7 @@ Number of recoverable message unmarshalling errors
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### solacereceiver_reported_spans
+### otelcol_solacereceiver_reported_spans
 
 Number of reported spans
 

@@ -852,6 +852,20 @@ The number of documents for an index.
 | state | The state of the document. | Str: ``active``, ``deleted`` |
 | aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
+### elasticsearch.index.operations.merge.current
+
+The number of currently active segment merges
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {merges} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
+
 ### elasticsearch.index.operations.merge.docs_count
 
 The total number of documents in merge operations for an index.

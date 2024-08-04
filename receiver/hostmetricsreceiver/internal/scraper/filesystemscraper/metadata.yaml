@@ -51,7 +51,7 @@ metrics:
   system.filesystem.utilization:
     enabled: false
     description: Fraction of filesystem bytes used.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [device, mode, mountpoint, type]

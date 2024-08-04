@@ -24,5 +24,4 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
-exporter/skywalkingexporter/
 receiver/googlecloudspannerreceiver/

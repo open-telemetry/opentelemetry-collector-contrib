@@ -22,12 +22,13 @@ The following settings are required:
 
 The following settings are optional:
 
-- `auth` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`.
+- `auth` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
 - `cache_resources_definitions` (default = 86400): List of metrics definitions will be cached for the provided amount of time in seconds.
 - `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
+- `maximum_number_of_records_per_resource` (default = 10): Maximum number of records to fetch per resource.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `cloud` (default = `AzureCloud`): defines which Azure cloud to use. Either `AzureCloud` or `AzureUSGovernment`
 
@@ -43,9 +44,13 @@ Authenticating using workload identities requires following additional settings:
 - `client_id`
 - `federate_token_file`
 
+Authenticating using managed identities has the following optional settings:
+
+- `client_id`
+
 ### Example Configurations
 
-Using Service Principal for authentication:
+Using [Service Principal](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#service-principal-with-a-secret) for authentication:
 
 ```yaml
 receivers:
@@ -65,7 +70,7 @@ receivers:
     initial_delay: 1s
 ```
 
-Using Azure Workload Identity for authentication:
+Using [Azure Workload Identity](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#option-2-use-workload-identity) for authentication:
 
 ```yaml
 receivers:
@@ -76,6 +81,26 @@ receivers:
     client_id: "${env:AZURE_CLIENT_ID}"
     federated_token_file: "${env:AZURE_FEDERATED_TOKEN_FILE}"
 ```
+
+Using [Managed Identity](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#option-3-use-a-managed-identity) for authentication:
+
+```yaml
+receivers:
+  azuremonitor:
+    subscription_id: "${subscription_id}"
+    auth: "managed_identity"
+    client_id: "${env:AZURE_CLIENT_ID}"
+```
+
+Using [Environment Variables](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#option-1-define-environment-variables) for authentication:
+
+```yaml
+receivers:
+  azuremonitor:
+    subscription_id: "${subscription_id}"
+    auth: "default_credentials"
+```
+
 
 ## Metrics
 

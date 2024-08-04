@@ -1,0 +1,119 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 80
+                  asDouble: 444
+                  attributes:
+                    - key: bbb
+                      value:
+                        stringValue: ccc
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 60
+                  asDouble: 444
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 90
+                  asDouble: 555
+                  attributes:
+                    - key: bbb
+                      value:
+                        stringValue: ccc
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 70
+                  asDouble: 555
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 100
+                  asDouble: 666
+                  attributes:
+                    - key: bbb
+                      value:
+                        stringValue: ccc
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 80
+                  asDouble: 666
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 110
+                  asDouble: 777
+                  attributes:
+                    - key: bbb
+                      value:
+                        stringValue: ccc

@@ -106,6 +106,17 @@ k8sattributes/too_many_sources:
         - from: connection
           name: ip
 
+k8sattributes/deprecated-regex:
+  passthrough: false
+  auth_type: "kubeConfig"
+  extract:
+    labels:
+      - regex: field=(?P<value>.+)
+        from: pod
+    annotations:
+      - regex: field=(?P<value>.+)
+        from: pod
+
 k8sattributes/bad_keys_labels:
   extract:
     labels:

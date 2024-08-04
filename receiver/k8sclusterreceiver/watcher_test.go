@@ -229,7 +229,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	origPod := pods[0]
 	updatedPod := getUpdatedPod(origPod)
 
-	rw := newResourceWatcher(receivertest.NewNopSettings(), &Config{}, metadata.NewStore())
+	rw := newResourceWatcher(receivertest.NewNopSettings(), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
 	rw.entityLogConsumer = logsConsumer
 
 	step1 := time.Now()
@@ -266,6 +266,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected := map[string]any{
 		"otel.entity.event.type": "entity_state",
+		"otel.entity.interval":   int64(7200000), // 2h in milliseconds
 		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z"},

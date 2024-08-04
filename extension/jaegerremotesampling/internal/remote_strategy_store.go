@@ -10,7 +10,7 @@ import (
 	"time"
 
 	grpcstore "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
-	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
+	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -32,7 +32,7 @@ func NewRemoteStrategyStore(
 	conn *grpc.ClientConn,
 	grpcClientSettings *configgrpc.ClientConfig,
 	reloadInterval time.Duration,
-) (strategystore.StrategyStore, io.Closer) {
+) (samplingstrategy.Provider, io.Closer) {
 	cache := newNoopStrategyCache()
 	if reloadInterval > 0 {
 		cache = newServiceStrategyCache(reloadInterval)

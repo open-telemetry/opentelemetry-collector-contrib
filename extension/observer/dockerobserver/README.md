@@ -32,7 +32,7 @@ extensions:
     # list of container image names to exclude
     excluded_images: ['redis', 'another_image_name']
     # client API version, default to 1.24
-    api_version: 1.25
+    api_version: "1.25"
     # max amount of time to wait for a response from Docker API , default to 5s
     timeout: 15s
 
@@ -63,9 +63,9 @@ default: `5s`
 
 ### `api_version`
 
-The client API version. If using one with a terminating zero, input as a string to prevent undesired truncation (e.g. `"1.40"` instead of `1.40`, which is parsed as `1.4`).
+The client API version. Make sure you input it as a string instead of a float (e.g. `"1.4"` instead of `1.4`).
 
-default: `1.24`
+default: `"1.24"`
 
 ### `excluded_images`
 

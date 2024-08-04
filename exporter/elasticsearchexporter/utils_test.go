@@ -266,7 +266,9 @@ func newMetricsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[s
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 
 	fillResourceAttributeMap(resourceMetrics.Resource().Attributes(), resMp)
-	fillResourceAttributeMap(resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty().Attributes(), attrMp)
+	dp := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+	dp.SetIntValue(0)
+	fillResourceAttributeMap(dp.Attributes(), attrMp)
 
 	return metrics
 }

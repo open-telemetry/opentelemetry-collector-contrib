@@ -4,7 +4,7 @@ scope_name: otelcol/metricsgeneration
 status:
   class: processor
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
     active: [Aneurysm9]

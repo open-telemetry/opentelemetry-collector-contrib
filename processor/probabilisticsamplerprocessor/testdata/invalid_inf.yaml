@@ -4,7 +4,7 @@ receivers:
 processors:
 
   probabilistic_sampler/traces:
-    sampling_percentage: +Inf
+    sampling_percentage: +.Inf
 
 exporters:
   nop:

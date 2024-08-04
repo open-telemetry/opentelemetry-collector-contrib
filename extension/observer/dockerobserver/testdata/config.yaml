@@ -16,6 +16,3 @@ docker_observer/ignore_non_host_bindings:
   ignore_non_host_bindings: true
 docker_observer/exclude_nginx:
   excluded_images: ["nginx"]
-docker_observer/unsupported_api_version:
-  # intentionally a float since it will be parsed as 1.4
-  api_version: 1.40

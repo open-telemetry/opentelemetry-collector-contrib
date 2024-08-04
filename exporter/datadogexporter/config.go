@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -18,8 +20,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/valid"
 )
 
 var (
@@ -412,6 +412,11 @@ type HostMetadataConfig struct {
 	// These tags will be attached to telemetry signals that have the host metadata hostname.
 	// To attach tags to telemetry signals regardless of the host, use a processor instead.
 	Tags []string `mapstructure:"tags"`
+
+	// sourceTimeout is the timeout to fetch from each provider - for example AWS IMDS.
+	// If unset, or set to zero duration, there will be no timeout applied.
+	// Default is no timeout.
+	sourceTimeout time.Duration
 }
 
 // Config defines configuration for the Datadog exporter.
@@ -469,7 +474,7 @@ func (c *Config) Validate() error {
 		return errNoMetadata
 	}
 
-	if err := valid.Hostname(c.Hostname); c.Hostname != "" && err != nil {
+	if err := validate.ValidHostname(c.Hostname); c.Hostname != "" && err != nil {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 

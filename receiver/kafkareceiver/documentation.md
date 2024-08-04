@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### kafka_receiver_current_offset
+### otelcol_kafka_receiver_current_offset
 
 Current message offset
 
@@ -14,7 +14,7 @@ Current message offset
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### kafka_receiver_messages
+### otelcol_kafka_receiver_messages
 
 Number of received messages
 
@@ -22,7 +22,7 @@ Number of received messages
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### kafka_receiver_offset_lag
+### otelcol_kafka_receiver_offset_lag
 
 Current offset lag
 
@@ -30,7 +30,7 @@ Current offset lag
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### kafka_receiver_partition_close
+### otelcol_kafka_receiver_partition_close
 
 Number of finished partitions
 
@@ -38,7 +38,7 @@ Number of finished partitions
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### kafka_receiver_partition_start
+### otelcol_kafka_receiver_partition_start
 
 Number of started partitions
 
@@ -46,7 +46,7 @@ Number of started partitions
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### kafka_receiver_unmarshal_failed_log_records
+### otelcol_kafka_receiver_unmarshal_failed_log_records
 
 Number of log records failed to be unmarshaled
 
@@ -54,7 +54,7 @@ Number of log records failed to be unmarshaled
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### kafka_receiver_unmarshal_failed_metric_points
+### otelcol_kafka_receiver_unmarshal_failed_metric_points
 
 Number of metric points failed to be unmarshaled
 
@@ -62,7 +62,7 @@ Number of metric points failed to be unmarshaled
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### kafka_receiver_unmarshal_failed_spans
+### otelcol_kafka_receiver_unmarshal_failed_spans
 
 Number of spans failed to be unmarshaled
 

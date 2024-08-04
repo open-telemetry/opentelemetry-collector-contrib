@@ -261,7 +261,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	wg.Wait()
 	tel.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "kafka_receiver_offset_lag",
+			Name:        "otelcol_kafka_receiver_offset_lag",
 			Unit:        "1",
 			Description: "Current offset lag",
 			Data: metricdata.Gauge[int64]{
@@ -277,7 +277,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 		{
-			Name:        "kafka_receiver_current_offset",
+			Name:        "otelcol_kafka_receiver_current_offset",
 			Unit:        "1",
 			Description: "Current message offset",
 			Data: metricdata.Gauge[int64]{
@@ -293,7 +293,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 		{
-			Name:        "kafka_receiver_messages",
+			Name:        "otelcol_kafka_receiver_messages",
 			Unit:        "1",
 			Description: "Number of received messages",
 			Data: metricdata.Sum[int64]{
@@ -311,7 +311,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 		{
-			Name:        "kafka_receiver_unmarshal_failed_spans",
+			Name:        "otelcol_kafka_receiver_unmarshal_failed_spans",
 			Unit:        "1",
 			Description: "Number of spans failed to be unmarshaled",
 			Data: metricdata.Sum[int64]{
@@ -577,7 +577,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	wg.Wait()
 	tel.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "kafka_receiver_offset_lag",
+			Name:        "otelcol_kafka_receiver_offset_lag",
 			Unit:        "1",
 			Description: "Current offset lag",
 			Data: metricdata.Gauge[int64]{
@@ -593,7 +593,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 		{
-			Name:        "kafka_receiver_current_offset",
+			Name:        "otelcol_kafka_receiver_current_offset",
 			Unit:        "1",
 			Description: "Current message offset",
 			Data: metricdata.Gauge[int64]{
@@ -609,7 +609,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 		{
-			Name:        "kafka_receiver_messages",
+			Name:        "otelcol_kafka_receiver_messages",
 			Unit:        "1",
 			Description: "Number of received messages",
 			Data: metricdata.Sum[int64]{
@@ -627,7 +627,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 		{
-			Name:        "kafka_receiver_unmarshal_failed_metric_points",
+			Name:        "otelcol_kafka_receiver_unmarshal_failed_metric_points",
 			Unit:        "1",
 			Description: "Number of metric points failed to be unmarshaled",
 			Data: metricdata.Sum[int64]{
@@ -906,7 +906,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	wg.Wait()
 	tel.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "kafka_receiver_offset_lag",
+			Name:        "otelcol_kafka_receiver_offset_lag",
 			Unit:        "1",
 			Description: "Current offset lag",
 			Data: metricdata.Gauge[int64]{
@@ -922,7 +922,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 		{
-			Name:        "kafka_receiver_current_offset",
+			Name:        "otelcol_kafka_receiver_current_offset",
 			Unit:        "1",
 			Description: "Current message offset",
 			Data: metricdata.Gauge[int64]{
@@ -938,7 +938,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 		{
-			Name:        "kafka_receiver_messages",
+			Name:        "otelcol_kafka_receiver_messages",
 			Unit:        "1",
 			Description: "Number of received messages",
 			Data: metricdata.Sum[int64]{
@@ -956,7 +956,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 		{
-			Name:        "kafka_receiver_unmarshal_failed_log_records",
+			Name:        "otelcol_kafka_receiver_unmarshal_failed_log_records",
 			Unit:        "1",
 			Description: "Number of log records failed to be unmarshaled",
 			Data: metricdata.Sum[int64]{
@@ -1264,7 +1264,7 @@ func (t *testConsumerGroup) ResumeAll() {
 func assertInternalTelemetry(t *testing.T, tel componentTestTelemetry, partitionClose int64) {
 	wantMetrics := []metricdata.Metrics{
 		{
-			Name:        "kafka_receiver_partition_start",
+			Name:        "otelcol_kafka_receiver_partition_start",
 			Unit:        "1",
 			Description: "Number of started partitions",
 			Data: metricdata.Sum[int64]{
@@ -1281,7 +1281,7 @@ func assertInternalTelemetry(t *testing.T, tel componentTestTelemetry, partition
 	}
 	if partitionClose > 0 {
 		wantMetrics = append(wantMetrics, metricdata.Metrics{
-			Name:        "kafka_receiver_partition_close",
+			Name:        "otelcol_kafka_receiver_partition_close",
 			Unit:        "1",
 			Description: "Number of finished partitions",
 			Data: metricdata.Sum[int64]{

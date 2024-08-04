@@ -95,7 +95,7 @@ snmp/no_version:
 snmp/bad_version:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
-  version: 9999
+  version: '9999'
   community: public
   metrics:
     m3:
@@ -603,7 +603,7 @@ snmp/complex_good:
       oid: "1"
   metrics:
     m1:
-      unit: 1
+      unit: "1"
       sum:
         aggregation: cumulative
         monotonic: true
@@ -656,7 +656,7 @@ snmp/complex_good:
             - name: a1
               value: val1
     m6:
-      unit: 1
+      unit: "1"
       sum:
         aggregation: delta
         monotonic: true

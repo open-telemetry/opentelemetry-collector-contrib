@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"sort"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -177,6 +178,74 @@ func IgnoreMetricAttributeValue(attributeName string, metricNames ...string) Com
 		maskMetricAttributeValue(expected, attributeName, metricNames)
 		maskMetricAttributeValue(actual, attributeName, metricNames)
 	})
+}
+
+// IgnoreMetricAttributeValue is a CompareMetricsOption that clears value of the metric attribute.
+func IgnoreDatapointAttributesOrder() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		orderDatapointAttributes(expected)
+		orderDatapointAttributes(actual)
+	})
+}
+
+func orderDatapointAttributes(metrics pmetric.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			msl := ilms.At(j).Metrics()
+			for g := 0; g < msl.Len(); g++ {
+				msl.At(g)
+				switch msl.At(g).Type() {
+				case pmetric.MetricTypeGauge:
+					for k := 0; k < msl.At(g).Gauge().DataPoints().Len(); k++ {
+						rawOrdered := orderMapByKey(msl.At(g).Gauge().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).Gauge().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeSum:
+					for k := 0; k < msl.At(g).Sum().DataPoints().Len(); k++ {
+						rawOrdered := orderMapByKey(msl.At(g).Sum().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).Sum().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeHistogram:
+					for k := 0; k < msl.At(g).Histogram().DataPoints().Len(); k++ {
+						rawOrdered := orderMapByKey(msl.At(g).Histogram().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).Histogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					for k := 0; k < msl.At(g).ExponentialHistogram().DataPoints().Len(); k++ {
+						rawOrdered := orderMapByKey(msl.At(g).ExponentialHistogram().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).ExponentialHistogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeSummary:
+					for k := 0; k < msl.At(g).Summary().DataPoints().Len(); k++ {
+						rawOrdered := orderMapByKey(msl.At(g).Summary().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).Summary().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeEmpty:
+				}
+			}
+		}
+	}
+}
+
+func orderMapByKey(input map[string]any) map[string]any {
+	// Create a slice to hold the keys
+	keys := make([]string, 0, len(input))
+	for k := range input {
+		keys = append(keys, k)
+	}
+
+	// Sort the keys
+	sort.Strings(keys)
+
+	// Create a new map to hold the sorted key-value pairs
+	orderedMap := make(map[string]any, len(input))
+	for _, k := range keys {
+		orderedMap[k] = input[k]
+	}
+
+	return orderedMap
 }
 
 func maskMetricAttributeValue(metrics pmetric.Metrics, attributeName string, metricNames []string) {

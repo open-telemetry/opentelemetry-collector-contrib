@@ -34,9 +34,11 @@ func Test_MetricFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
 	expected["convert_sum_to_gauge"] = newConvertSumToGaugeFactory()
 	expected["convert_gauge_to_sum"] = newConvertGaugeToSumFactory()
+	expected["aggregate_on_attributes"] = newAggregateOnAttributesFactory()
 	expected["extract_sum_metric"] = newExtractSumMetricFactory()
 	expected["extract_count_metric"] = newExtractCountMetricFactory()
 	expected["copy_metric"] = newCopyMetricFactory()
+	expected["scale_metric"] = newScaleMetricFactory()
 
 	defer testutil.SetFeatureGateForTest(t, useConvertBetweenSumAndGaugeMetricContext, true)()
 	actual := MetricFunctions()

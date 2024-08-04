@@ -51,6 +51,5 @@ func (i *Input) emit(ctx context.Context, token []byte, attrs map[string]any) er
 			i.Logger().Error("set attribute", zap.Error(err))
 		}
 	}
-	i.Write(ctx, ent)
-	return nil
+	return i.Write(ctx, ent)
 }

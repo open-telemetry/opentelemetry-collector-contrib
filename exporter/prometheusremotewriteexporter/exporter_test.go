@@ -753,7 +753,7 @@ func Test_PushMetrics(t *testing.T) {
 					expectedMetrics := []metricdata.Metrics{}
 					if tt.expectedFailedTranslations > 0 {
 						expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-							Name:        "exporter_prometheusremotewrite_failed_translations",
+							Name:        "otelcol_exporter_prometheusremotewrite_failed_translations",
 							Description: "Number of translation operations that failed to translate metrics from Otel to Prometheus",
 							Unit:        "1",
 							Data: metricdata.Sum[int64]{
@@ -770,7 +770,7 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-						Name:        "exporter_prometheusremotewrite_translated_time_series",
+						Name:        "otelcol_exporter_prometheusremotewrite_translated_time_series",
 						Description: "Number of Prometheus time series that were translated from OTel metrics",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{

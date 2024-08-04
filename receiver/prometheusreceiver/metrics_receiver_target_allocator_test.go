@@ -20,6 +20,8 @@ import (
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
+	"github.com/prometheus/prometheus/model/relabel"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -50,9 +52,15 @@ type hTTPSDResponse struct {
 	Labels  map[model.LabelName]model.LabelValue `json:"labels"`
 }
 
+type expectedMetricRelabelConfigTestResult struct {
+	JobName            string
+	MetricRelabelRegex relabel.Regexp
+}
+
 type expectedTestResultJobMap struct {
-	Targets []string
-	Labels  model.LabelSet
+	Targets             []string
+	Labels              model.LabelSet
+	MetricRelabelConfig *expectedMetricRelabelConfigTestResult
 }
 
 type expectedTestResult struct {
@@ -150,6 +158,109 @@ type Responses struct {
 	responses   map[string][]mockTargetAllocatorResponseRaw
 }
 
+func TestGetScrapeConfigHash(t *testing.T) {
+	jobToScrapeConfig1 := map[string]*promconfig.ScrapeConfig{}
+	jobToScrapeConfig1["job1"] = &promconfig.ScrapeConfig{
+		JobName:         "job1",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig1["job2"] = &promconfig.ScrapeConfig{
+		JobName:         "job2",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig1["job3"] = &promconfig.ScrapeConfig{
+		JobName:         "job3",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig2 := map[string]*promconfig.ScrapeConfig{}
+	jobToScrapeConfig2["job2"] = &promconfig.ScrapeConfig{
+		JobName:         "job2",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig2["job1"] = &promconfig.ScrapeConfig{
+		JobName:         "job1",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig2["job3"] = &promconfig.ScrapeConfig{
+		JobName:         "job3",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+
+	hash1, err := getScrapeConfigHash(jobToScrapeConfig1)
+	require.NoError(t, err)
+
+	hash2, err := getScrapeConfigHash(jobToScrapeConfig2)
+	require.NoError(t, err)
+
+	assert.Equal(t, hash1, hash2)
+}
+
 func TestTargetAllocatorJobRetrieval(t *testing.T) {
 	for _, tc := range []struct {
 		desc      string
@@ -167,6 +278,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -176,6 +288,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job2",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -261,6 +374,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -270,6 +384,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job2",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -353,6 +468,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -362,6 +478,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job2",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -373,6 +490,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -382,6 +500,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job3",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -481,6 +600,114 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				jobMap: map[string]expectedTestResultJobMap{},
 			},
 		},
+		{
+			desc: "update metric relabel config regex",
+			responses: Responses{
+				releaserMap: map[string]int{
+					"/scrape_configs": 1,
+				},
+				responses: map[string][]mockTargetAllocatorResponseRaw{
+					"/scrape_configs": {
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
+							"job1": {
+								"job_name":         "job1",
+								"scrape_interval":  "30s",
+								"scrape_timeout":   "30s",
+								"scrape_protocols": []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":     "/metrics",
+								"scheme":           "http",
+								"metric_relabel_configs": []map[string]string{
+									{
+										"separator": ";",
+										"regex":     "regex1",
+										"action":    "keep",
+									},
+								},
+							},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
+							"job1": {
+								"job_name":         "job1",
+								"scrape_interval":  "30s",
+								"scrape_timeout":   "30s",
+								"scrape_protocols": []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":     "/metrics",
+								"scheme":           "http",
+								"metric_relabel_configs": []map[string]string{
+									{
+										"separator": ";",
+										"regex":     "regex2",
+										"action":    "keep",
+									},
+								},
+							},
+						}},
+					},
+					"/jobs/job1/targets": {
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{Targets: []string{"localhost:9090"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								}},
+						}},
+						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+							{Targets: []string{"localhost:9090"},
+								Labels: map[model.LabelName]model.LabelValue{
+									"__meta_datacenter":     "london",
+									"__meta_prometheus_job": "node",
+								}},
+						}},
+					},
+				},
+			},
+			cfg: &Config{
+				PrometheusConfig: &PromConfig{
+					ScrapeConfigs: []*promconfig.ScrapeConfig{
+						{
+							JobName:         "job1",
+							HonorTimestamps: true,
+							ScrapeInterval:  model.Duration(30 * time.Second),
+							ScrapeTimeout:   model.Duration(30 * time.Second),
+							ScrapeProtocols: promconfig.DefaultScrapeProtocols,
+							MetricsPath:     "/metrics",
+							Scheme:          "http",
+							MetricRelabelConfigs: []*relabel.Config{
+								{
+									Separator: ";",
+									Regex:     relabel.MustNewRegexp("(.*)"),
+									Action:    relabel.Keep,
+								},
+							},
+						},
+					},
+				},
+				TargetAllocator: &TargetAllocator{
+					Interval:    10 * time.Second,
+					CollectorID: "collector-1",
+					HTTPSDConfig: &PromHTTPSDConfig{
+						HTTPClientConfig: commonconfig.HTTPClientConfig{},
+						RefreshInterval:  model.Duration(60 * time.Second),
+					},
+				},
+			},
+			want: expectedTestResult{
+				empty: false,
+				jobMap: map[string]expectedTestResultJobMap{
+					"job1": {
+						Targets: []string{"localhost:9090"},
+						Labels: map[model.LabelName]model.LabelValue{
+							"__meta_datacenter":     "london",
+							"__meta_prometheus_job": "node",
+						},
+						MetricRelabelConfig: &expectedMetricRelabelConfigTestResult{
+							JobName:            "job1",
+							MetricRelabelRegex: relabel.MustNewRegexp("regex2"),
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			ctx := context.Background()
@@ -532,6 +759,15 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						// which is identical to the source url
 						s.Labels["__meta_url"] = model.LabelValue(sdConfig.URL)
 						require.Equal(t, s.Labels, group.Labels)
+						if s.MetricRelabelConfig != nil {
+							for _, sc := range receiver.cfg.PrometheusConfig.ScrapeConfigs {
+								if sc.JobName == s.MetricRelabelConfig.JobName {
+									for _, mc := range sc.MetricRelabelConfigs {
+										require.Equal(t, s.MetricRelabelConfig.MetricRelabelRegex, mc.Regex)
+									}
+								}
+							}
+						}
 						found = true
 					}
 					require.True(t, found, "Returned job is not defined in expected values", group)

@@ -51,8 +51,9 @@ func createTracesToMetrics(
 	spanMetricDefs := make(map[string]metricDef[ottlspan.TransformContext], len(c.Spans))
 	for name, info := range c.Spans {
 		md := metricDef[ottlspan.TransformContext]{
-			desc:  info.Description,
-			attrs: info.Attributes,
+			desc:       info.Description,
+			attrs:      info.Attributes,
+			sourceAttr: info.SourceAttribute,
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
@@ -65,8 +66,9 @@ func createTracesToMetrics(
 	spanEventMetricDefs := make(map[string]metricDef[ottlspanevent.TransformContext], len(c.SpanEvents))
 	for name, info := range c.SpanEvents {
 		md := metricDef[ottlspanevent.TransformContext]{
-			desc:  info.Description,
-			attrs: info.Attributes,
+			desc:       info.Description,
+			attrs:      info.Attributes,
+			sourceAttr: info.SourceAttribute,
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
@@ -95,7 +97,8 @@ func createMetricsToMetrics(
 	metricMetricDefs := make(map[string]metricDef[ottlmetric.TransformContext], len(c.Metrics))
 	for name, info := range c.Metrics {
 		md := metricDef[ottlmetric.TransformContext]{
-			desc: info.Description,
+			desc:       info.Description,
+			sourceAttr: info.SourceAttribute,
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
@@ -108,8 +111,9 @@ func createMetricsToMetrics(
 	dataPointMetricDefs := make(map[string]metricDef[ottldatapoint.TransformContext], len(c.DataPoints))
 	for name, info := range c.DataPoints {
 		md := metricDef[ottldatapoint.TransformContext]{
-			desc:  info.Description,
-			attrs: info.Attributes,
+			desc:       info.Description,
+			attrs:      info.Attributes,
+			sourceAttr: info.SourceAttribute,
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
@@ -138,8 +142,9 @@ func createLogsToMetrics(
 	metricDefs := make(map[string]metricDef[ottllog.TransformContext], len(c.Logs))
 	for name, info := range c.Logs {
 		md := metricDef[ottllog.TransformContext]{
-			desc:  info.Description,
-			attrs: info.Attributes,
+			desc:       info.Description,
+			attrs:      info.Attributes,
+			sourceAttr: info.SourceAttribute,
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
@@ -156,7 +161,8 @@ func createLogsToMetrics(
 }
 
 type metricDef[K any] struct {
-	condition expr.BoolExpr[K]
-	desc      string
-	attrs     []AttributeConfig
+	condition  expr.BoolExpr[K]
+	desc       string
+	attrs      []AttributeConfig
+	sourceAttr string
 }

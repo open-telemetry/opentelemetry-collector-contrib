@@ -91,11 +91,12 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 			ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: metrics}},
 		}
 
-		if err := exporter.Export(context.Background(), &rm); err != nil {
-			w.logger.Fatal("exporter failed", zap.Error(err))
-		}
 		if err := limiter.Wait(context.Background()); err != nil {
 			w.logger.Fatal("limiter wait failed, retry", zap.Error(err))
+		}
+
+		if err := exporter.Export(context.Background(), &rm); err != nil {
+			w.logger.Fatal("exporter failed", zap.Error(err))
 		}
 
 		i++

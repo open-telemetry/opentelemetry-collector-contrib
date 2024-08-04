@@ -36,15 +36,5 @@ There is no further configuration required. All delta samples are converted to c
 
 ## Troubleshooting
 
-The following metrics are recorded when [telemetry is
-enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry):
-
-| Name                                     | Description                                                                           | Unit          |
-|------------------------------------------|---------------------------------------------------------------------------------------|---------------|
-| `deltatocumulative.streams.tracked`      | Number of streams currently tracked by the aggregation state                          | `{stream}`    |
-| `deltatocumulative.streams.limit`        | Upper limit of tracked streams                                                        | `{stream}`    |
-| `deltatocumulative.streams.evicted`      | Number of streams removed from tracking to ingest newer streams                       | `{stream}`    |
-| `deltatocumulative.streams.max_stale`    | Duration without new samples after which streams are dropped                          | `second`      |
-| `deltatocumulative.datapoints.processed` | Total number of datapoints processed, whether successful or not                       | `{datapoint}` |
-| `deltatocumulative.datapoints.dropped`   | Faulty datapoints that were dropped due to the reason given in the `reason` attribute | `{datapoint}` |
-| `deltatocumulative.gaps.length`          | Total length of all gaps in the streams, which occur e.g. due to lost in transit      | `second`      |
+When [Telemetry is
+enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry), this component exports [several metrics](./documentation.md). 

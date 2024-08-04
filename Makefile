@@ -278,7 +278,7 @@ docker-otelcontribcol:
 docker-telemetrygen:
 	GOOS=linux GOARCH=$(GOARCH) $(MAKE) telemetrygen
 	cp bin/telemetrygen_* cmd/telemetrygen/
-	cd cmd/telemetrygen && docker build --platform linux/$(GOARCH) -t telemetrygen:latest .
+	cd cmd/telemetrygen && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t telemetrygen:latest .
 	rm cmd/telemetrygen/telemetrygen_*
 
 .PHONY: generate

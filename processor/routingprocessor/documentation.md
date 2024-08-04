@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### routing_processor_non_routed_log_records
+### otelcol_routing_processor_non_routed_log_records
 
 Number of log records that were not routed to some or all exporters.
 
@@ -14,7 +14,7 @@ Number of log records that were not routed to some or all exporters.
 | ---- | ----------- | ---------- | --------- |
 | {records} | Sum | Int | true |
 
-### routing_processor_non_routed_metric_points
+### otelcol_routing_processor_non_routed_metric_points
 
 Number of metric points that were not routed to some or all exporters.
 
@@ -22,7 +22,7 @@ Number of metric points that were not routed to some or all exporters.
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
 
-### routing_processor_non_routed_spans
+### otelcol_routing_processor_non_routed_spans
 
 Number of spans that were not routed to some or all exporters.
 

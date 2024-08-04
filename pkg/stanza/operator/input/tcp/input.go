@@ -188,7 +188,10 @@ func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *decode.De
 		}
 	}
 
-	i.Write(ctx, entry)
+	err = i.Write(ctx, entry)
+	if err != nil {
+		i.Logger().Error("Failed to write entry", zap.Error(err))
+	}
 }
 
 func truncateMaxLog(data []byte, maxLogSize int) (token []byte) {

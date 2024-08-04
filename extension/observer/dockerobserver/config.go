@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/confmap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
@@ -61,6 +63,21 @@ func (config Config) Validate() error {
 	}
 	if config.CacheSyncInterval == 0 {
 		return fmt.Errorf("cache_sync_interval must be specified")
+	}
+	return nil
+}
+
+func (config *Config) Unmarshal(conf *confmap.Conf) error {
+	err := conf.Unmarshal(config)
+	if err != nil {
+		if floatAPIVersion, ok := conf.Get("api_version").(float64); ok {
+			return fmt.Errorf(
+				"%w.\n\nHint: You may want to wrap the 'api_version' value in quotes (api_version: \"%1.2f\")",
+				err,
+				floatAPIVersion,
+			)
+		}
+		return err
 	}
 	return nil
 }

@@ -24,10 +24,7 @@ func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 	})
 	err := configMap.Unmarshal(config)
 
-	unmarshalErr := fmt.Errorf("1 error(s) decoding:\n\n* '' has invalid keys: unknown_attribute")
-	expectedError := fmt.Errorf("cannot unmarshal config: %w", unmarshalErr)
-
-	assert.Equal(t, expectedError.Error(), err.Error())
+	assert.ErrorContains(t, err, "has invalid keys: unknown_attribute")
 }
 
 func TestConfigUseDefaults(t *testing.T) {

@@ -11,8 +11,6 @@ import (
 	"time"
 
 	arrowPkg "github.com/apache/arrow/go/v16/arrow"
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -35,6 +33,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
 type baseExporter struct {
@@ -126,7 +126,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		var perRPCCreds credentials.PerRPCCredentials
 		if e.config.ClientConfig.Auth != nil {
 			// Get the auth extension, we'll use it to enrich the request context.
-			authClient, err := e.config.ClientConfig.Auth.GetClientAuthenticatorContext(ctx, host.GetExtensions())
+			authClient, err := e.config.ClientConfig.Auth.GetClientAuthenticator(ctx, host.GetExtensions())
 			if err != nil {
 				return err
 			}

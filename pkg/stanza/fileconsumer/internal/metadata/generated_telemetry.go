@@ -54,13 +54,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.FileconsumerOpenFiles, err = builder.meter.Int64UpDownCounter(
-		"fileconsumer_open_files",
+		"otelcol_fileconsumer_open_files",
 		metric.WithDescription("Number of open files"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.FileconsumerReadingFiles, err = builder.meter.Int64UpDownCounter(
-		"fileconsumer_reading_files",
+		"otelcol_fileconsumer_reading_files",
 		metric.WithDescription("Number of open files that are being read"),
 		metric.WithUnit("1"),
 	)

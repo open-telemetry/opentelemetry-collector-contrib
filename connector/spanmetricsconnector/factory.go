@@ -9,7 +9,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/tilinna/clock"
+	"github.com/jonboulle/clockwork"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesToMetricsConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	c, err := newConnector(params.Logger, cfg, clock.FromContext(ctx))
+	c, err := newConnector(params.Logger, cfg, clockwork.FromContext(ctx))
 	if err != nil {
 		return nil, err
 	}

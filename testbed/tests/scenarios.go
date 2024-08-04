@@ -355,6 +355,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 
 	t.Cleanup(tc.Stop)
 
+	tc.StartBackend()
 	tc.StartAgent()
 	tc.StartLoad(options)
 
@@ -394,7 +395,7 @@ func ScenarioSendingQueuesFull(
 		receiver,
 		agentProc,
 		&testbed.LogPresentValidator{
-			LogBody: "sending_queue is full",
+			LogBody: "sending queue is full",
 			Present: true,
 		},
 		resultsSummary,
@@ -402,20 +403,20 @@ func ScenarioSendingQueuesFull(
 		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
 	)
 
+	t.Cleanup(tc.Stop)
+
 	tc.MockBackend.EnableRecording()
-	defer tc.Stop()
 
 	tc.StartBackend()
 	tc.StartAgent()
-
 	tc.StartLoad(loadOptions)
 
 	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, time.Second*time.Duration(sleepTime), "load generator started")
 
-	// searchFunc checks for "sending_queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
+	// searchFunc checks for "sending queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
 	// to generate only successes from that time on
 	tc.WaitForN(func() bool {
-		logFound := tc.AgentLogsContains("sending_queue is full")
+		logFound := tc.AgentLogsContains("sending queue is full")
 		if !logFound {
 			dataChannel <- true
 			return false
@@ -423,7 +424,7 @@ func ScenarioSendingQueuesFull(
 		tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == 0 }, "no data successfully received before an error")
 		close(dataChannel)
 		return logFound
-	}, time.Second*time.Duration(sleepTime), "sending_queue errors present")
+	}, time.Second*time.Duration(sleepTime), "sending queue errors present")
 
 	// check if data started to be received successfully
 	tc.WaitForN(func() bool {
@@ -475,7 +476,7 @@ func ScenarioSendingQueuesNotFull(
 		receiver,
 		agentProc,
 		&testbed.LogPresentValidator{
-			LogBody: "sending_queue is full",
+			LogBody: "sending queue is full",
 			Present: false,
 		},
 		resultsSummary,

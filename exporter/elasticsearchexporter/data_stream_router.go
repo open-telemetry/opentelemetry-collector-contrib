@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -17,12 +16,14 @@ func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace strin
 	pcommon.Map,
 	pcommon.Map,
 	string,
+	bool,
 ) string {
 	return func(
 		recordAttr pcommon.Map,
 		scopeAttr pcommon.Map,
 		resourceAttr pcommon.Map,
 		fIndex string,
+		otel bool,
 	) string {
 		// Order:
 		// 1. read data_stream.* from attributes
@@ -38,6 +39,13 @@ func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace strin
 				return fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
 			}
 		}
+
+		// The naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
+		// This is in order to match the soon to be built-in logs-*.otel-* index template.
+		if otel {
+			dataset += ".otel"
+		}
+
 		recordAttr.PutStr(dataStreamDataset, dataset)
 		recordAttr.PutStr(dataStreamNamespace, namespace)
 		recordAttr.PutStr(dataStreamType, defaultDSType)
@@ -52,21 +60,23 @@ func routeLogRecord(
 	scope pcommon.InstrumentationScope,
 	resource pcommon.Resource,
 	fIndex string,
+	otel bool,
 ) string {
 	route := routeWithDefaults(defaultDataStreamTypeLogs, defaultDataStreamDataset, defaultDataStreamNamespace)
-	return route(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex)
+	return route(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel)
 }
 
 // routeDataPoint returns the name of the index to send the data point to according to data stream routing attributes.
 // This function may mutate record attributes.
 func routeDataPoint(
-	dataPoint pmetric.NumberDataPoint,
+	dataPoint dataPoint,
 	scope pcommon.InstrumentationScope,
 	resource pcommon.Resource,
 	fIndex string,
+	otel bool,
 ) string {
 	route := routeWithDefaults(defaultDataStreamTypeMetrics, defaultDataStreamDataset, defaultDataStreamNamespace)
-	return route(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex)
+	return route(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel)
 }
 
 // routeSpan returns the name of the index to send the span to according to data stream routing attributes.
@@ -76,7 +86,8 @@ func routeSpan(
 	scope pcommon.InstrumentationScope,
 	resource pcommon.Resource,
 	fIndex string,
+	otel bool,
 ) string {
 	route := routeWithDefaults(defaultDataStreamTypeTraces, defaultDataStreamDataset, defaultDataStreamNamespace)
-	return route(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex)
+	return route(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel)
 }

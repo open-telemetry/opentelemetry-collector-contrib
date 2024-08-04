@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### connector_servicegraph_dropped_spans
+### otelcol_connector_servicegraph_dropped_spans
 
 Number of spans dropped when trying to add edges
 
@@ -14,7 +14,7 @@ Number of spans dropped when trying to add edges
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### connector_servicegraph_expired_edges
+### otelcol_connector_servicegraph_expired_edges
 
 Number of edges that expired before finding its matching span
 
@@ -22,7 +22,7 @@ Number of edges that expired before finding its matching span
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### connector_servicegraph_total_edges
+### otelcol_connector_servicegraph_total_edges
 
 Total number of unique edges
 

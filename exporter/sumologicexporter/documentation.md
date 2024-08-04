@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### exporter_requests_bytes
+### otelcol_exporter_requests_bytes
 
 Total size of requests (in bytes)
 
@@ -14,7 +14,7 @@ Total size of requests (in bytes)
 | ---- | ----------- | ---------- | --------- |
 | By | Sum | Int | true |
 
-### exporter_requests_duration
+### otelcol_exporter_requests_duration
 
 Duration of HTTP requests (in milliseconds)
 
@@ -22,7 +22,7 @@ Duration of HTTP requests (in milliseconds)
 | ---- | ----------- | ---------- | --------- |
 | ms | Sum | Int | true |
 
-### exporter_requests_records
+### otelcol_exporter_requests_records
 
 Total size of requests (in number of records)
 
@@ -30,7 +30,7 @@ Total size of requests (in number of records)
 | ---- | ----------- | ---------- | --------- |
 | {records} | Sum | Int | true |
 
-### exporter_requests_sent
+### otelcol_exporter_requests_sent
 
 Number of requests
 

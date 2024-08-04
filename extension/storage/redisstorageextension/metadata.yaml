@@ -1,0 +1,10 @@
+type: redis_storage
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [atoulme]
+    seeking_new: true

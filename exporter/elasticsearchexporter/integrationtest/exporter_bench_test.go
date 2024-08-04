@@ -125,7 +125,7 @@ func prepareBenchmark(
 
 	cfg := &benchRunnerCfg{}
 	// Benchmarks don't decode the bulk requests to avoid allocations to pollute the results.
-	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */)
+	receiver := newElasticsearchDataReceiver(b, withDecodeBulkRequest(false))
 	cfg.provider = testbed.NewPerfTestDataProvider(testbed.LoadOptions{ItemsPerBatch: batchSize})
 	cfg.provider.SetLoadGeneratorCounters(&cfg.generatedCount)
 

@@ -50,7 +50,7 @@ func (v *KeyValue) Type() string {
 
 type Config struct {
 	WorkerCount           int
-	Rate                  int64
+	Rate                  float64
 	TotalDuration         time.Duration
 	ReportingInterval     time.Duration
 	SkipSettingGRPCLogger bool
@@ -115,7 +115,7 @@ func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
 // CommonFlags registers common config flags.
 func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&c.WorkerCount, "workers", 1, "Number of workers (goroutines) to run")
-	fs.Int64Var(&c.Rate, "rate", 0, "Approximately how many metrics per second each worker should generate. Zero means no throttling.")
+	fs.Float64Var(&c.Rate, "rate", 0, "Approximately how many metrics/spans/logs per second each worker should generate. Zero means no throttling.")
 	fs.DurationVar(&c.TotalDuration, "duration", 0, "For how long to run the test")
 	fs.DurationVar(&c.ReportingInterval, "interval", 1*time.Second, "Reporting interval")
 

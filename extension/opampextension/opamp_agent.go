@@ -30,13 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
-const redactedVal = "[REDACTED]"
-
-// Paths that will not have values redacted when reporting the effective config.
-var unredactedPaths = []string{
-	"service::pipelines",
-}
-
 type opampAgent struct {
 	cfg    *Config
 	logger *zap.Logger
@@ -285,46 +278,6 @@ func (o *opampAgent) updateAgentIdentity(instanceID uuid.UUID) {
 	o.instanceID = instanceID
 }
 
-func redactConfig(cfg any, parentPath string) {
-	switch val := cfg.(type) {
-	case map[string]any:
-		for k, v := range val {
-			path := parentPath
-			if path == "" {
-				path = k
-			} else {
-				path += "::" + k
-			}
-			// We don't want to redact certain parts of the config
-			// that are known not to contain secrets, e.g. pipelines.
-			for _, p := range unredactedPaths {
-				if p == path {
-					return
-				}
-			}
-			switch x := v.(type) {
-			case map[string]any:
-				redactConfig(x, path)
-			case []any:
-				redactConfig(x, path)
-			default:
-				val[k] = redactedVal
-			}
-		}
-	case []any:
-		for i, v := range val {
-			switch x := v.(type) {
-			case map[string]any:
-				redactConfig(x, parentPath)
-			case []any:
-				redactConfig(x, parentPath)
-			default:
-				val[i] = redactedVal
-			}
-		}
-	}
-}
-
 func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	o.eclk.RLock()
 	defer o.eclk.RUnlock()
@@ -334,7 +287,6 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	}
 
 	m := o.effectiveConfig.ToStringMap()
-	redactConfig(m, "")
 	conf, err := yaml.Marshal(m)
 	if err != nil {
 		o.logger.Error("cannot unmarshal effectiveConfig", zap.Any("conf", o.effectiveConfig), zap.Error(err))

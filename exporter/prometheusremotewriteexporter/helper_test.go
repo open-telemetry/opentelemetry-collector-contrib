@@ -4,6 +4,7 @@
 package prometheusremotewriteexporter
 
 import (
+	"math"
 	"testing"
 
 	"github.com/prometheus/prometheus/prompb"
@@ -57,14 +58,83 @@ func Test_batchTimeSeries(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil)
+			state := newBatchTimeSericesState()
+			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil, &state)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return
 			}
+
 			assert.NoError(t, err)
 			assert.Equal(t, tt.numExpectedRequests, len(requests))
+			if tt.numExpectedRequests <= 1 {
+				assert.Equal(t, math.MaxInt, state.nextTimeSeriesBufferSize)
+				assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
+				assert.Equal(t, 2*len(requests), state.nextRequestBufferSize)
+			} else {
+				assert.Equal(t, max(10, len(requests[len(requests)-2].Timeseries)*2), state.nextTimeSeriesBufferSize)
+				assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
+				assert.Equal(t, 2*len(requests), state.nextRequestBufferSize)
+			}
 		})
+	}
+}
+
+func Test_batchTimeSeriesUpdatesStateForLargeBatches(t *testing.T) {
+	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
+	sample1 := getSample(floatVal1, msTime1)
+	sample2 := getSample(floatVal2, msTime2)
+	sample3 := getSample(floatVal3, msTime3)
+
+	// Benchmark for large data sizes
+	// First allocate 100k time series
+	tsArray := make([]*prompb.TimeSeries, 0, 100000)
+	for i := 0; i < 100000; i++ {
+		ts := getTimeSeries(labels, sample1, sample2, sample3)
+		tsArray = append(tsArray, ts)
+	}
+
+	tsMap1 := getTimeseriesMap(tsArray)
+
+	state := newBatchTimeSericesState()
+	requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 18, len(requests))
+	assert.Equal(t, len(requests[len(requests)-2].Timeseries)*2, state.nextTimeSeriesBufferSize)
+	assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
+	assert.Equal(t, 36, state.nextRequestBufferSize)
+}
+
+// Benchmark_batchTimeSeries checks batchTimeSeries
+// To run and gather alloc data:
+// go test -bench ^Benchmark_batchTimeSeries$ -benchmem -benchtime=100x -run=^$ -count=10 -memprofile memprofile.out
+// go tool pprof -svg memprofile.out
+func Benchmark_batchTimeSeries(b *testing.B) {
+	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
+	sample1 := getSample(floatVal1, msTime1)
+	sample2 := getSample(floatVal2, msTime2)
+	sample3 := getSample(floatVal3, msTime3)
+
+	// Benchmark for large data sizes
+	// First allocate 100k time series
+	tsArray := make([]*prompb.TimeSeries, 0, 100000)
+	for i := 0; i < 100000; i++ {
+		ts := getTimeSeries(labels, sample1, sample2, sample3)
+		tsArray = append(tsArray, ts)
+	}
+
+	tsMap1 := getTimeseriesMap(tsArray)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	state := newBatchTimeSericesState()
+	// Run batchTimeSeries 100 times with a 1mb max request size
+	for i := 0; i < b.N; i++ {
+		requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+		assert.NoError(b, err)
+		assert.Equal(b, 18, len(requests))
 	}
 }
 

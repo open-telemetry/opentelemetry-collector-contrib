@@ -44,6 +44,7 @@ type MetricsConfig struct {
 	K8sContainerCPUNodeUtilization       MetricConfig `mapstructure:"k8s.container.cpu.node.utilization"`
 	K8sContainerCPULimitUtilization      MetricConfig `mapstructure:"k8s.container.cpu_limit_utilization"`
 	K8sContainerCPURequestUtilization    MetricConfig `mapstructure:"k8s.container.cpu_request_utilization"`
+	K8sContainerMemoryNodeUtilization    MetricConfig `mapstructure:"k8s.container.memory.node.utilization"`
 	K8sContainerMemoryLimitUtilization   MetricConfig `mapstructure:"k8s.container.memory_limit_utilization"`
 	K8sContainerMemoryRequestUtilization MetricConfig `mapstructure:"k8s.container.memory_request_utilization"`
 	K8sNodeCPUTime                       MetricConfig `mapstructure:"k8s.node.cpu.time"`
@@ -72,6 +73,7 @@ type MetricsConfig struct {
 	K8sPodFilesystemUsage                MetricConfig `mapstructure:"k8s.pod.filesystem.usage"`
 	K8sPodMemoryAvailable                MetricConfig `mapstructure:"k8s.pod.memory.available"`
 	K8sPodMemoryMajorPageFaults          MetricConfig `mapstructure:"k8s.pod.memory.major_page_faults"`
+	K8sPodMemoryNodeUtilization          MetricConfig `mapstructure:"k8s.pod.memory.node.utilization"`
 	K8sPodMemoryPageFaults               MetricConfig `mapstructure:"k8s.pod.memory.page_faults"`
 	K8sPodMemoryRss                      MetricConfig `mapstructure:"k8s.pod.memory.rss"`
 	K8sPodMemoryUsage                    MetricConfig `mapstructure:"k8s.pod.memory.usage"`
@@ -136,6 +138,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		K8sContainerCPURequestUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerMemoryNodeUtilization: MetricConfig{
 			Enabled: false,
 		},
 		K8sContainerMemoryLimitUtilization: MetricConfig{
@@ -221,6 +226,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sPodMemoryMajorPageFaults: MetricConfig{
 			Enabled: true,
+		},
+		K8sPodMemoryNodeUtilization: MetricConfig{
+			Enabled: false,
 		},
 		K8sPodMemoryPageFaults: MetricConfig{
 			Enabled: true,

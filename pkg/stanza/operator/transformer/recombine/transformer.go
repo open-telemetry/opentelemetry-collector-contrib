@@ -223,9 +223,9 @@ func (t *Transformer) flushSource(ctx context.Context, source string) error {
 		return err
 	}
 
-	t.Write(ctx, batch.baseEntry)
+	err = t.Write(ctx, batch.baseEntry)
 	t.removeBatch(source)
-	return nil
+	return err
 }
 
 // addNewBatch creates a new batch for the given source and adds the entry to it.

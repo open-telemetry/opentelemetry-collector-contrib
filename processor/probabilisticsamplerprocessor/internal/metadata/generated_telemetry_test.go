@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 	embeddedtrace "go.opentelemetry.io/otel/trace/embedded"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 type mockMeter struct {
@@ -59,4 +60,17 @@ func TestProviders(t *testing.T) {
 	} else {
 		require.Fail(t, "returned Meter not mockTracer")
 	}
+}
+
+func TestNewTelemetryBuilder(t *testing.T) {
+	set := component.TelemetrySettings{
+		MeterProvider:  mockMeterProvider{},
+		TracerProvider: mockTracerProvider{},
+	}
+	applied := false
+	_, err := NewTelemetryBuilder(set, func(b *TelemetryBuilder) {
+		applied = true
+	})
+	require.NoError(t, err)
+	require.True(t, applied)
 }

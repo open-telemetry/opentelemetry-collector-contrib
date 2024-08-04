@@ -8,6 +8,7 @@ components:
         - exceptions
         - failover
         - grafanacloud
+        - otlpjson
         - roundrobin
         - routing
         - servicegraph
@@ -50,7 +51,6 @@ components:
         - sapm
         - sentry
         - signalfx
-        - skywalking
         - splunk_hec
         - sumologic
         - syslog

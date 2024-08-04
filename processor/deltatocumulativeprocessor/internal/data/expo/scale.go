@@ -72,7 +72,7 @@ func Downscale(bs Buckets, from, to Scale) {
 func Collapse(bs Buckets) {
 	counts := bs.BucketCounts()
 	size := counts.Len() / 2
-	if counts.Len()%2 != 0 {
+	if counts.Len()%2 != 0 || bs.Offset()%2 != 0 {
 		size++
 	}
 

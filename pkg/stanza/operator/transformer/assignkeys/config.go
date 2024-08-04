@@ -17,7 +17,7 @@ const operatorType = "assign_keys"
 
 var assignKeysTransformerFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"logs.assignKeys",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, allows usage of `assign_keys` transformer."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30321"),
 )

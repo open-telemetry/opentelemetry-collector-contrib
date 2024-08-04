@@ -594,7 +594,7 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 			if tm.metricMins != nil {
 				mins := tm.metricMins[i]
 				if len(mins) > 0 {
-					dp.SetMin(sums[index])
+					dp.SetMin(mins[index])
 				}
 			}
 			if tm.metricMaxes != nil {

@@ -1,0 +1,1 @@
+{"exporters":{"nop":null,"nop/myexporter":null},"extensions":{"nop":null,"nop/myextension":null},"processors":{"nop":null,"nop/myprocessor":null},"receivers":{"nop":null,"nop/myreceiver":null},"service":{"extensions":["nop"],"pipelines":{"traces":{"exporters":["nop"],"processors":["nop"],"receivers":["nop"]}}}}

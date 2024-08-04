@@ -55,3 +55,12 @@ The full list of settings exposed for this receiver are documented [here](./conf
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
 ### Feature gates
+
+**ALPHA**: `receiver.vcenter.resourcePoolMemoryUsageAttribute`
+
+The feature gate `receiver.vcenter.resourcePoolMemoryUsageAttribute` once enabled will enable the memory usage type attribute for 
+the `vcenter.resource_pool.memory.usage` metric.
+
+This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
+is v0.107.0.

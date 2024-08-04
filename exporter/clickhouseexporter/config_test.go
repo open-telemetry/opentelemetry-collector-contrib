@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 				ConnectionParams: map[string]string{},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
-					NumConsumers: 1,
+					NumConsumers: 10,
 					QueueSize:    100,
 					StorageID:    &storageID,
 				},
