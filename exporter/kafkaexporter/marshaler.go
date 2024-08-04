@@ -39,42 +39,61 @@ type LogsMarshaler interface {
 	Encoding() string
 }
 
-// tracesMarshalers returns map of supported encodings with TracesMarshaler.
-func tracesMarshalers() map[string]TracesMarshaler {
-	otlpPb := newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding)
-	otlpJSON := newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json")
-	zipkinProto := newPdataTracesMarshaler(zipkinv2.NewProtobufTracesMarshaler(), "zipkin_proto")
-	zipkinJSON := newPdataTracesMarshaler(zipkinv2.NewJSONTracesMarshaler(), "zipkin_json")
+// creates TracesMarshaler based on the provided config
+func createTracesMarshaler(config Config) (TracesMarshaler, error) {
+	encoding := config.Encoding
+	partitionTracesByID := config.PartitionTracesByID
+
 	jaegerProto := jaegerMarshaler{marshaler: jaegerProtoSpanMarshaler{}}
 	jaegerJSON := jaegerMarshaler{marshaler: newJaegerJSONMarshaler()}
-	return map[string]TracesMarshaler{
-		otlpPb.Encoding():      otlpPb,
-		otlpJSON.Encoding():    otlpJSON,
-		zipkinProto.Encoding(): zipkinProto,
-		zipkinJSON.Encoding():  zipkinJSON,
-		jaegerProto.Encoding(): jaegerProto,
-		jaegerJSON.Encoding():  jaegerJSON,
+
+	switch encoding {
+	case defaultEncoding:
+		return newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, partitionTracesByID), nil
+	case "otlp_json":
+		return newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json", partitionTracesByID), nil
+	case "zipkin_proto":
+		return newPdataTracesMarshaler(zipkinv2.NewProtobufTracesMarshaler(), "zipkin_proto", partitionTracesByID), nil
+	case "zipkin_json":
+		return newPdataTracesMarshaler(zipkinv2.NewJSONTracesMarshaler(), "zipkin_json", partitionTracesByID), nil
+	case jaegerProtoSpanMarshaler{}.encoding():
+		return jaegerProto, nil
+	case jaegerJSON.Encoding():
+		return jaegerJSON, nil
+	default:
+		return nil, errUnrecognizedEncoding
+	}
+
+}
+
+// creates MetricsMarshaler based on the provided config
+func createMetricMarshaler(config Config) (MetricsMarshaler, error) {
+	encoding := config.Encoding
+	partitionMetricsByResources := config.PartitionMetricsByResourceAttributes
+	switch encoding {
+	case defaultEncoding:
+		return newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, partitionMetricsByResources), nil
+	case "otlp_json":
+		return newPdataMetricsMarshaler(&pmetric.JSONMarshaler{}, "otlp_json", partitionMetricsByResources), nil
+	default:
+		return nil, errUnrecognizedEncoding
 	}
 }
 
-// metricsMarshalers returns map of supported encodings and MetricsMarshaler
-func metricsMarshalers() map[string]MetricsMarshaler {
-	otlpPb := newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding)
-	otlpJSON := newPdataMetricsMarshaler(&pmetric.JSONMarshaler{}, "otlp_json")
-	return map[string]MetricsMarshaler{
-		otlpPb.Encoding():   otlpPb,
-		otlpJSON.Encoding(): otlpJSON,
-	}
-}
+// creates LogsMarshalers based on the provided config
+func createLogMarshaler(config Config) (LogsMarshaler, error) {
+	encoding := config.Encoding
+	partitionLogsByAttributes := config.PartitionLogsByResourceAttributes
 
-// logsMarshalers returns map of supported encodings and LogsMarshaler
-func logsMarshalers() map[string]LogsMarshaler {
-	otlpPb := newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding)
-	otlpJSON := newPdataLogsMarshaler(&plog.JSONMarshaler{}, "otlp_json")
 	raw := newRawMarshaler()
-	return map[string]LogsMarshaler{
-		otlpPb.Encoding():   otlpPb,
-		otlpJSON.Encoding(): otlpJSON,
-		raw.Encoding():      raw,
+	switch encoding {
+	case defaultEncoding:
+		return newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, partitionLogsByAttributes), nil
+	case "otlp_json":
+		return newPdataLogsMarshaler(&plog.JSONMarshaler{}, "otlp_json", partitionLogsByAttributes), nil
+	case raw.Encoding():
+		return raw, nil
+	default:
+		return nil, errUnrecognizedEncoding
 	}
 }
