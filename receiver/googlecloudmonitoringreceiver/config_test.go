@@ -4,7 +4,6 @@
 package googlecloudmonitoringreceiver
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -76,7 +75,6 @@ func TestValidateService(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			err := testCase.metric.Validate()
 			if testCase.requireError {
-				fmt.Println("\n err", err)
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
