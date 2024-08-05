@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 )
 
 // Common structure for all the Tests
@@ -950,14 +951,18 @@ func (a mockInfoAuth) GetAttributeNames() []string {
 }
 
 func TestFromContext(t *testing.T) {
-
+	strPointer := "auth_ptr"
 	mdCtx := client.NewContext(context.TODO(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{
 			"source_single_val":   {"single_val"},
 			"source_multiple_val": {"first_val", "second_val"},
 		}),
 		Auth: mockInfoAuth{
-			"source_auth_val": "auth_val",
+			"source_auth_val":         "auth_val",
+			"source_auth_vals":        []string{"auth_val1", "auth_val2"},
+			"source_auth_ptr":         &strPointer,
+			"source_auth_ptrs":        []*string{&strPointer, &strPointer},
+			"source_auth_unsupported": uint64(42),
 		},
 		Addr: &net.IPAddr{
 			IP: net.IPv4(192, 168, 1, 1),
@@ -1007,10 +1012,34 @@ func TestFromContext(t *testing.T) {
 			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.source_auth_val", Action: INSERT},
 		},
 		{
+			name:               "with_auth_prefix_multiple_values",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]any{"dest": "auth_val1;auth_val2"},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.source_auth_vals", Action: INSERT},
+		},
+		{
+			name:               "with_auth_prefix_single_pointer",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]any{"dest": "auth_ptr"},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.source_auth_ptr", Action: INSERT},
+		},
+		{
+			name:               "with_auth_prefix_multiple_pointers",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]any{"dest": "auth_ptr;auth_ptr"},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.source_auth_ptrs", Action: INSERT},
+		},
+		{
 			name:               "with_auth_prefix_no_value",
 			ctx:                mdCtx,
 			expectedAttributes: map[string]any{},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.unknown_val", Action: INSERT},
+		},
+		{
+			name:               "with_auth_prefix_unsupported_type",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]any{},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.source_auth_unsupported", Action: INSERT},
 		},
 		{
 			name:               "with_address",
@@ -1027,8 +1056,9 @@ func TestFromContext(t *testing.T) {
 			})
 			require.NoError(t, err)
 			require.NotNil(t, ap)
+			logger, _ := zap.NewDevelopment()
 			attrMap := pcommon.NewMap()
-			ap.Process(tc.ctx, nil, attrMap)
+			ap.Process(tc.ctx, logger, attrMap)
 			require.Equal(t, tc.expectedAttributes, attrMap.AsRaw())
 		})
 	}

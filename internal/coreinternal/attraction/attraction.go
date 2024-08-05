@@ -298,7 +298,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 				attrs.Remove(k)
 			}
 		case INSERT:
-			av, found := getSourceAttributeValue(ctx, action, attrs)
+			av, found := getSourceAttributeValue(ctx, action, attrs, logger)
 			if !found {
 				continue
 			}
@@ -307,7 +307,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			}
 			av.CopyTo(attrs.PutEmpty(action.Key))
 		case UPDATE:
-			av, found := getSourceAttributeValue(ctx, action, attrs)
+			av, found := getSourceAttributeValue(ctx, action, attrs, logger)
 			if !found {
 				continue
 			}
@@ -317,7 +317,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			}
 			av.CopyTo(val)
 		case UPSERT:
-			av, found := getSourceAttributeValue(ctx, action, attrs)
+			av, found := getSourceAttributeValue(ctx, action, attrs, logger)
 			if !found {
 				continue
 			}
@@ -341,7 +341,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 	}
 }
 
-func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Value, bool) {
+func getAttributeValueFromContext(ctx context.Context, key string, logger *zap.Logger) (pcommon.Value, bool) {
 	const (
 		metadataPrefix   = "metadata."
 		authPrefix       = "auth."
@@ -368,10 +368,22 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Valu
 		switch a := attr.(type) {
 		case string:
 			return pcommon.NewValueStr(a), true
+		case *string:
+			if a != nil {
+				return pcommon.NewValueStr(*a), true
+			}
 		case []string:
 			vals = a
+		case []*string:
+			for _, element := range a {
+				if element != nil {
+					vals = append(vals, *element)
+				}
+			}
 		default:
-			// TODO: Warn about unexpected attribute types.
+			if attr != nil {
+				logger.Warn("Unexpected attribute type in auth key", zap.String("key", key))
+			}
 			return pcommon.Value{}, false
 		}
 	default:
@@ -386,14 +398,14 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Valu
 	return pcommon.NewValueStr(strings.Join(vals, ";")), true
 }
 
-func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pcommon.Map) (pcommon.Value, bool) {
+func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pcommon.Map, logger *zap.Logger) (pcommon.Value, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
 		return *action.AttributeValue, true
 	}
 
 	if action.FromContext != "" {
-		return getAttributeValueFromContext(ctx, action.FromContext)
+		return getAttributeValueFromContext(ctx, action.FromContext, logger)
 	}
 
 	return attrs.Get(action.FromAttribute)
