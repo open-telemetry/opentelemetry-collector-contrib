@@ -12,7 +12,7 @@ status:
 resource_attributes:
   cluster_alias:
     description: The alias name (string) of the cluster
-    enabled: true
+    enabled: false
     type: string
 
 attributes:

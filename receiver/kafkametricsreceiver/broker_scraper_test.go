@@ -93,6 +93,26 @@ func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
+	client := newMockClient()
+	client.Mock.On("Brokers").Return(testBrokers)
+	bs := brokerScraper{
+		client:   client,
+		settings: receivertest.NewNopSettings(),
+		config: Config{
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		},
+		clusterAdmin: newMockClusterAdmin(),
+	}
+	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
+	md, err := bs.scrape(context.Background())
+	assert.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
+	_, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("cluster_alias")
+	require.Equal(t, false, ok)
+}
+
 func TestBrokerScraper_scrape(t *testing.T) {
 	client := newMockClient()
 	client.Mock.On("Brokers").Return(testBrokers)
@@ -101,7 +121,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 		settings: receivertest.NewNopSettings(),
 		config: Config{
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-			ClusterAlias:         defaultClusterAlias,
+			ClusterAlias:         testClusterAlias,
 		},
 		clusterAdmin: newMockClusterAdmin(),
 	}
@@ -111,7 +131,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("cluster_alias"); ok {
-		require.Equal(t, defaultClusterAlias, val.Str())
+		require.Equal(t, testClusterAlias, val.Str())
 	}
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {

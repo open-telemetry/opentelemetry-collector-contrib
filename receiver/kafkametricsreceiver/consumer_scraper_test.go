@@ -139,7 +139,6 @@ func TestConsumerScraper_scrape(t *testing.T) {
 		clusterAdmin: newMockClusterAdmin(),
 		topicFilter:  filter,
 		groupFilter:  filter,
-		config:       Config{ClusterAlias: defaultClusterAlias},
 	}
 	require.NoError(t, cs.start(context.Background(), componenttest.NewNopHost()))
 	md, err := cs.scrape(context.Background())

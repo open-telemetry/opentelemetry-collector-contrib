@@ -13,6 +13,7 @@ import (
 
 const (
 	testBroker            = "test_broker"
+	testClusterAlias      = "test_cluster"
 	testGroup             = "test_group"
 	testTopic             = "test_topic"
 	testConsumerClient    = "test_consumer_client"

@@ -15,11 +15,10 @@ import (
 )
 
 const (
-	defaultBroker       = "localhost:9092"
-	defaultGroupMatch   = ".*"
-	defaultTopicMatch   = "^[^_].*$"
-	defaultClientID     = "otel-metrics-receiver"
-	defaultClusterAlias = "kafka-cluster"
+	defaultBroker     = "localhost:9092"
+	defaultGroupMatch = ".*"
+	defaultTopicMatch = "^[^_].*$"
+	defaultClientID   = "otel-metrics-receiver"
 )
 
 // NewFactory creates kafkametrics receiver factory.
@@ -31,15 +30,18 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
+	config := &Config{
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		Brokers:              []string{defaultBroker},
 		GroupMatch:           defaultGroupMatch,
 		TopicMatch:           defaultTopicMatch,
 		ClientID:             defaultClientID,
-		ClusterAlias:         defaultClusterAlias,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
+	if config.ClusterAlias != "" {
+		config.MetricsBuilderConfig.ResourceAttributes.ClusterAlias.Enabled = true
+	}
+	return config
 }
 
 func createMetricsReceiver(

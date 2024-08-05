@@ -254,4 +254,4 @@ replication factor of a topic.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| cluster_alias | The alias name (string) of the cluster | Any Str | true |
+| cluster_alias | The alias name (string) of the cluster | Any Str | false |
