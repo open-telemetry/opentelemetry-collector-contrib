@@ -294,7 +294,17 @@ ClickHouse tables:
 
 - `logs_table_name` (default = otel_logs): The table name for logs.
 - `traces_table_name` (default = otel_traces): The table name for traces.
-- `metrics_table_name` (default = otel_metrics): The table name for metrics.
+- `metrics_tables`
+    - `gauge`
+        - `name` (default = "otel_metrics_gauge")
+    - `sum`
+        - `name` (default = "otel_metrics_sum")
+    - `summary`
+        - `name` (default = "otel_metrics_summary")
+    - `histogram`
+        - `name` (default = "otel_metrics_histogram")
+    - `exponential_histogram`
+        - `name` (default = "otel_metrics_exp_histogram")
 
 Cluster definition:
 
@@ -367,16 +377,16 @@ exporters:
     traces_table_name: otel_traces
     timeout: 5s
     metrics_tables:
-    gauge: 
-      name: "otel_metrics_gauge"
-    sum: 
-      name: "otel_metrics_sum"
-    summary: 
-      name: "otel_metrics_summary"
-    histogram: 
-      name: "otel_metrics_histogram"
-    exponential_histogram: 
-      name: "otel_metrics_exp_histogram"
+      gauge: 
+        name: "otel_metrics_gauge"
+      sum: 
+        name: "otel_metrics_sum"
+      summary: 
+        name: "otel_metrics_summary"
+      histogram: 
+        name: "otel_metrics_histogram"
+      exponential_histogram: 
+        name: "otel_metrics_exp_histogram"
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -393,9 +403,6 @@ service:
       processors: [ batch ]
       exporters: [ clickhouse ]
 ```
-
-**Note:**
-Parameter `metrics_table_name` will be deprecated and replaced by `metric_tables` which support setting the full table name (including suffix) for tables of each metric type. Using `metrics_table_name` and `metric_tables` together will result in ignoring the `metrics_table_name` parameter value.
 
 ## Contributing
 
