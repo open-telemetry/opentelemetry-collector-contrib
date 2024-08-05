@@ -203,32 +203,32 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 			metric := in.Metrics().At(i)
 			switch status {
 			case Update:
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeExponentialHistogram:
+				switch metric.Type() {
+				case pmetric.MetricTypeExponentialHistogram:
 					for dp := 0; dp < metric.ExponentialHistogram().DataPoints().Len(); dp++ {
 						datam := metric.ExponentialHistogram().DataPoints().At(dp)
 						rev.All().UpdateAttrs(datam.Attributes())
 						rev.Metrics().UpdateAttrsIf(metric.Name(), datam.Attributes())
 					}
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					for dp := 0; dp < metric.Histogram().DataPoints().Len(); dp++ {
 						datam := metric.Histogram().DataPoints().At(dp)
 						rev.All().UpdateAttrs(datam.Attributes())
 						rev.Metrics().UpdateAttrsIf(metric.Name(), datam.Attributes())
 					}
-				case pmetric.MetricDataTypeGauge:
+				case pmetric.MetricTypeGauge:
 					for dp := 0; dp < metric.Gauge().DataPoints().Len(); dp++ {
 						datam := metric.Gauge().DataPoints().At(dp)
 						rev.All().UpdateAttrs(datam.Attributes())
 						rev.Metrics().UpdateAttrsIf(metric.Name(), datam.Attributes())
 					}
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					for dp := 0; dp < metric.Sum().DataPoints().Len(); dp++ {
 						datam := metric.Sum().DataPoints().At(dp)
 						rev.All().UpdateAttrs(datam.Attributes())
 						rev.Metrics().UpdateAttrsIf(metric.Name(), datam.Attributes())
 					}
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					for dp := 0; dp < metric.Summary().DataPoints().Len(); dp++ {
 						datam := metric.Summary().DataPoints().At(dp)
 						rev.All().UpdateAttrs(datam.Attributes())
@@ -238,32 +238,32 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				rev.Metrics().UpdateSignal(metric)
 			case Revert:
 				rev.Metrics().RevertSignal(metric)
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeExponentialHistogram:
+				switch metric.Type() {
+				case pmetric.MetricTypeExponentialHistogram:
 					for dp := 0; dp < metric.ExponentialHistogram().DataPoints().Len(); dp++ {
 						datam := metric.ExponentialHistogram().DataPoints().At(dp)
 						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
 						rev.All().RevertAttrs(datam.Attributes())
 					}
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					for dp := 0; dp < metric.Histogram().DataPoints().Len(); dp++ {
 						datam := metric.Histogram().DataPoints().At(dp)
 						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
 						rev.All().RevertAttrs(datam.Attributes())
 					}
-				case pmetric.MetricDataTypeGauge:
+				case pmetric.MetricTypeGauge:
 					for dp := 0; dp < metric.Gauge().DataPoints().Len(); dp++ {
 						datam := metric.Gauge().DataPoints().At(dp)
 						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
 						rev.All().RevertAttrs(datam.Attributes())
 					}
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					for dp := 0; dp < metric.Sum().DataPoints().Len(); dp++ {
 						datam := metric.Sum().DataPoints().At(dp)
 						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
 						rev.All().RevertAttrs(datam.Attributes())
 					}
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					for dp := 0; dp < metric.Summary().DataPoints().Len(); dp++ {
 						datam := metric.Summary().DataPoints().At(dp)
 						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
