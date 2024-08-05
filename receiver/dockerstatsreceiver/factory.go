@@ -5,6 +5,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -22,13 +23,21 @@ func NewFactory() receiver.Factory {
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
+func defaultDockerEndpoint() string {
+	endpoint := os.Getenv("DOCKER_HOST")
+	if endpoint != "" {
+		return endpoint
+	}
+	return "unix:///var/run/docker.sock"
+}
+
 func createDefaultConfig() component.Config {
 	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 10 * time.Second
 	scs.Timeout = 5 * time.Second
 	return &Config{
 		ControllerConfig:     scs,
-		Endpoint:             "unix:///var/run/docker.sock",
+		Endpoint:             defaultDockerEndpoint(),
 		DockerAPIVersion:     defaultDockerAPIVersion,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
