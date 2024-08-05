@@ -1093,7 +1093,7 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
-func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
+func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
 	spanName := "DynamoDB.PutItem"
 	parentSpanID := newSegmentID()
 	user := "testingT"
@@ -1115,6 +1115,34 @@ func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
+	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
+	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
+func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
+	spanName := "DynamoDB.PutItem"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeRPCSystem] = "aws-api"
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeRPCService] = "DynamoDb"
+	attributes[awsRemoteService] = "AWS::DynamoDB"
+
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+	assert.Equal(t, "DynamoDB", *segment.Name)
+	assert.Equal(t, "subsegment", *segment.Type)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
 	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
 	assert.False(t, strings.Contains(jsonStr, user))

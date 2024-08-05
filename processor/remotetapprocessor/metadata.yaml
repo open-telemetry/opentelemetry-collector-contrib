@@ -7,7 +7,7 @@ status:
     alpha: [logs, metrics, traces]
   distributions: [contrib]
   codeowners:
-    active: [atoulme]
+    active: [atoulme, jaronoff97]
     emeritus: [pmcollins]
 
 tests:
