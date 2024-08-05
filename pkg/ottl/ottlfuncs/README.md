@@ -593,35 +593,56 @@ Examples:
 
 `ExtractGrokPatterns(target, pattern, Optional[namedCapturesOnly], Optional[patternDefinitions])`
 
-The `ExtractGrokPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If no matches are found then an empty `pcommon.Map` is returned.
+The `ExtractGrokPatterns` Converter parses unstructured data into a format that is structured and queryable. 
+It returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If no matches are found then an empty `pcommon.Map` is returned.
 
-`target` is a Getter that returns a string. `pattern` is a grok pattern string. `namedCapturesOnly` specifies if non-named captures should be returned. `patternDefinitions` is a list of custom pattern definition strings used inside `pattern` in a form of `PATTERN_NAME=PATTERN`. 
+- `target` is a Getter that returns a string. 
+- `pattern` is a grok pattern string. 
+- `namedCapturesOnly` (optional) specifies if non-named captures should be returned. 
+- `patternDefinitions` (optional) is a list of custom pattern definition strings used inside `pattern` in the form of `PATTERN_NAME=PATTERN`. 
+This parameter lets you define your own custom patterns to improve readability when the extracted `pattern` is not part of the default set or when you need custom naming. 
 
-Use `patternDefinition` to improve readability when extracted `pattern` is not part of the default set or you need custom naming. 
-For example to parse password from `/etc/passwd` and keep `pattern` readable:
-- `pattern`: `%{USERNAME:user.name}:%{PASSWORD:user.password}:%{USERINFO}`
-- `patternDefinitions` as `USERNAME` is in default set:
-  - `PASSWORD=%{WORD}`
-  - `USERINFO=%{GREEDYDATA}`
-- `smith:pass123:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh` resulting in:
- - `user.name`: smith
- - `user.password`: pass123
-
-If `target` is not a string or nil `ExtractGrokPatterns` will return an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` will error on startup.
+If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` errors on startup.
 
 Parsing is done using [Elastic Go-Grok](https://github.com/elastic/go-grok?tab=readme-ov-file#default-set-of-patterns) library.
 
 Examples:
 
-- `ExtractGrokPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+- _Uses regex pattern with named captures to extract_:
 
-- `ExtractGrokPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+  `ExtractGrokPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
 
-- `ExtractGrokPatterns(body, "%{URI}", true)`
+- _Uses regex pattern with named captures to extract_:
 
-- `ExtractGrokPatterns(body, "%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}", true)`
+  `ExtractGrokPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
-- `ExtractGrokPatterns(body, "%{LOGLINE}", true, ["LOGLINE=%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}"])`
+- _Uses `URI` from default set to extract URI and includes only named captures_:
+
+  `ExtractGrokPatterns(body, "%{URI}", true)`
+
+- _Uses more complex pattern consisting of elements from default set and includes only named captures_:
+  
+  `ExtractGrokPatterns(body, "%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}", true)`
+
+- _Uses `LOGLINE` pattern defined in `patternDefinitions` passed as last argument_:
+  
+  `ExtractGrokPatterns(body, "%{LOGLINE}", true, ["LOGLINE=%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}"])`
+
+- Add custom patterns to parse the password from `/etc/passwd` and making `pattern` readable:
+
+  - `pattern`: `%{USERNAME:user.name}:%{PASSWORD:user.password}:%{USERINFO}`
+  - `patternDefinitions`:
+    - `PASSWORD=%{WORD}`
+    - `USERINFO=%{GREEDYDATA}`
+
+    Note that `USERNAME` is in the default pattern set and does not need to be redefined.
+
+  - Target: `smith:pass123:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh` 
+
+  - Return values: 
+     - `user.name`: smith
+     - `user.password`: pass123
+
 
 ### FNV
 
