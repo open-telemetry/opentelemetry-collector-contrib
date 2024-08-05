@@ -9,9 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/pmetric"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
