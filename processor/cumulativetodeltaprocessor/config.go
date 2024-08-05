@@ -5,10 +5,11 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"slices"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"go.opentelemetry.io/collector/component"
 
