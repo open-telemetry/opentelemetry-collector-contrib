@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-func TestNewRevision(t *testing.T) {
+func TestNewRevisionV1(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
