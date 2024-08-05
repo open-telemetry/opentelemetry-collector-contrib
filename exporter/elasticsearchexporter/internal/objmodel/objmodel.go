@@ -34,6 +34,7 @@ package objmodel // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"encoding/hex"
 	"io"
+	"maps"
 	"math"
 	"sort"
 	"strings"
@@ -48,7 +49,8 @@ import (
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
 // into a JSON document that can be processed by Elasticsearch.
 type Document struct {
-	fields []field
+	fields           []field
+	dynamicTemplates map[string]string
 }
 
 type field struct {
@@ -81,6 +83,7 @@ const (
 	KindObject
 	KindTimestamp
 	KindIgnore
+	KindComplexObject // Complex object is an object that cannot be flattened FIXME: better name
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
@@ -105,13 +108,24 @@ func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 
 	fields := make([]field, 0, am.Len())
 	fields = appendAttributeFields(fields, path, am)
-	return Document{fields}
+	return Document{fields: fields}
 }
 
 func (doc *Document) Clone() *Document {
 	fields := make([]field, len(doc.fields))
 	copy(fields, doc.fields)
-	return &Document{fields}
+	return &Document{fields: fields, dynamicTemplates: maps.Clone(doc.dynamicTemplates)}
+}
+
+func (doc *Document) AddDynamicTemplate(path, template string) {
+	if doc.dynamicTemplates == nil {
+		doc.dynamicTemplates = make(map[string]string)
+	}
+	doc.dynamicTemplates[path] = template
+}
+
+func (doc *Document) DynamicTemplates() map[string]string {
+	return doc.dynamicTemplates
 }
 
 // AddTimestamp adds a raw timestamp value to the Document.
@@ -283,11 +297,13 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 	return nil
 }
 
+// FIXME: metrics.* as well
 // Set of prefixes for the OTel attributes that needs to stay flattened
 var otelPrefixSet = map[string]struct{}{
 	"attributes.":          {},
 	"resource.attributes.": {},
 	"scope.attributes.":    {},
+	"metrics.":             {},
 }
 
 func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
@@ -417,6 +433,12 @@ func TimestampValue(ts time.Time) Value {
 	return Value{kind: KindTimestamp, ts: ts}
 }
 
+// ComplexObjectValue creates a complex object from a map
+func ComplexObjectValue(m pcommon.Map) Value {
+	sub := DocumentFromAttributes(m)
+	return Value{kind: KindComplexObject, doc: sub}
+}
+
 // ValueFromAttribute converts a AttributeValue into a value.
 func ValueFromAttribute(attr pcommon.Value) Value {
 	switch attr.Type() {
@@ -501,6 +523,11 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 			return w.OnNil()
 		}
 		return v.doc.iterJSON(w, dedot, otel)
+	case KindComplexObject:
+		if len(v.doc.fields) == 0 {
+			return w.OnNil()
+		}
+		return v.doc.iterJSON(w, true, otel)
 	case KindArr:
 		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
 			return err
