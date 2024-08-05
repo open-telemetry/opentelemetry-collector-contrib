@@ -12,7 +12,7 @@ Maximum number of traces to hold in the internal storage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {traces} | Gauge | Int |
 
 ### otelcol_processor_groupbytrace_event_latency
 
@@ -20,7 +20,7 @@ How long the queue events are taking to be processed
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| {ms} | Histogram | Int |
 
 ### otelcol_processor_groupbytrace_incomplete_releases
 
@@ -36,7 +36,7 @@ Number of events currently in the queue
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {events} | Gauge | Int |
 
 ### otelcol_processor_groupbytrace_num_traces_in_memory
 
@@ -44,7 +44,7 @@ Number of traces currently in the in-memory storage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {traces} | Gauge | Int |
 
 ### otelcol_processor_groupbytrace_spans_released
 
@@ -52,7 +52,7 @@ Spans released to the next consumer
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {spans} | Sum | Int | true |
 
 ### otelcol_processor_groupbytrace_traces_evicted
 
@@ -60,7 +60,7 @@ Traces evicted from the internal buffer
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {traces} | Sum | Int | true |
 
 ### otelcol_processor_groupbytrace_traces_released
 
@@ -68,4 +68,4 @@ Traces released to the next consumer
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {traces} | Sum | Int | true |
