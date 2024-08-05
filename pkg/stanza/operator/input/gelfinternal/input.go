@@ -87,7 +87,6 @@ type MapGelfMessage struct {
 func (gelfRcvInput *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	gelfRcvInput.cancel = cancel
-	// err := gelfRcvInput.GelfNewReader(gelfRcvInput.address)
 
 	udpAddr, err := net.ResolveUDPAddr(gelfRcvInput.protocol, gelfRcvInput.address)
 	if err != nil {
@@ -144,21 +143,16 @@ func (gelfRcvInput *Input) GelfNewReader(addr string) error {
 }
 
 func (gelfRcvInput *Input) startReading(ctx context.Context) {
-
-	// Remove the n < 3 and replace with n < asyncReaders where take asyncReaders from config
 	for n := 0; n < gelfRcvInput.asyncProcessors; n++ {
 		gelfRcvInput.wgReader.Add(1)
 		go gelfRcvInput.ReadUDPBufferAsync(ctx)
 		gelfRcvInput.Logger().Debug("Started read workers...")
 	}
-
-	// Remove the n < 3 and replace with n < asyncProcessors where take asyncProcessors from config
 	for n := 0; n < gelfRcvInput.asyncProcessors; n++ {
 		gelfRcvInput.wgProcessor.Add(1)
 		go gelfRcvInput.processMessagesAsync(ctx)
 		gelfRcvInput.Logger().Debug("Started processor workers...")
 	}
-
 }
 
 func (gelfRcvInput *Input) ReadUDPBufferAsync(ctx context.Context) {

@@ -16,10 +16,6 @@ import (
 
 const (
 	operatorType = "gelf_input"
-
-	// Maximum UDP packet size
-	// MaxUDPSize = 64 * 1024
-
 	defaultReaders           = 1
 	defaultProcessors        = 1
 	defaultUDPMaxQueueLength = 100
