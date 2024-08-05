@@ -16,16 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
-var validExcludeMetricTypes = []string{
-	pmetric.MetricTypeSum.String(),
-	pmetric.MetricTypeExponentialHistogram.String(),
-	pmetric.MetricTypeHistogram.String(),
-	pmetric.MetricTypeEmpty.String(),
-	pmetric.MetricTypeSummary.String(),
-	pmetric.MetricTypeGauge.String(),
-}
-
-var validIncludeMetricTypes = []string{
+var validMetricTypes = []string{
 	pmetric.MetricTypeSum.String(),
 	pmetric.MetricTypeHistogram.String(),
 }
@@ -73,20 +64,20 @@ func (config *Config) Validate() error {
 	}
 
 	for _, metricType := range config.Exclude.MetricTypes {
-		if !slices.Contains(validExcludeMetricTypes, metricType) {
+		if !slices.Contains(validMetricTypes, metricType) {
 			return fmt.Errorf(
 				"found invalid metric type in exclude.metric_types: %s. Valid values are [%s]",
 				metricType,
-				strings.Join(validExcludeMetricTypes, ","),
+				strings.Join(validMetricTypes, ","),
 			)
 		}
 	}
 	for _, metricType := range config.Include.MetricTypes {
-		if !slices.Contains(validIncludeMetricTypes, metricType) {
+		if !slices.Contains(validMetricTypes, metricType) {
 			return fmt.Errorf(
 				"found invalid metric type in include.metric_types: %s. Valid values are [%s]",
 				metricType,
-				strings.Join(validIncludeMetricTypes, ","),
+				strings.Join(validMetricTypes, ","),
 			)
 		}
 	}
