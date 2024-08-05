@@ -37,6 +37,7 @@ import (
 	"google.golang.org/grpc"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
 
 // configuration defines the behavior and the ports that
@@ -70,6 +71,8 @@ type jReceiver struct {
 
 	grpcObsrecv *receiverhelper.ObsReport
 	httpObsrecv *receiverhelper.ObsReport
+
+	tBuilder *metadata.TelemetryBuilder
 }
 
 const (
@@ -114,6 +117,11 @@ func newJaegerReceiver(
 		return nil, err
 	}
 
+	tBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
@@ -121,11 +129,12 @@ func newJaegerReceiver(
 		settings:     set,
 		grpcObsrecv:  grpcObsrecv,
 		httpObsrecv:  httpObsrecv,
+		tBuilder:     tBuilder,
 	}, nil
 }
 
 func (jr *jReceiver) Start(ctx context.Context, host component.Host) error {
-	if err := jr.startAgent(); err != nil {
+	if err := jr.startAgent(ctx); err != nil {
 		return err
 	}
 
@@ -222,7 +231,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	return &api_v2.PostSpansResponse{}, nil
 }
 
-func (jr *jReceiver) startAgent() error {
+func (jr *jReceiver) startAgent(ctx context.Context) error {
 	if jr.config == nil {
 		return nil
 	}
@@ -241,7 +250,13 @@ func (jr *jReceiver) startAgent() error {
 			nextConsumer: jr.nextConsumer,
 			obsrecv:      obsrecv,
 		}
-		processor, err := jr.buildProcessor(jr.config.AgentBinaryThrift.Endpoint, jr.config.AgentBinaryThrift.ServerConfigUDP, apacheThrift.NewTBinaryProtocolFactoryConf(nil), h)
+		processor, err := jr.buildProcessor(
+			ctx,
+			jr.config.AgentBinaryThrift.Endpoint,
+			jr.config.AgentBinaryThrift.ServerConfigUDP,
+			apacheThrift.NewTBinaryProtocolFactoryConf(nil),
+			h,
+		)
 		if err != nil {
 			return err
 		}
@@ -261,7 +276,13 @@ func (jr *jReceiver) startAgent() error {
 			nextConsumer: jr.nextConsumer,
 			obsrecv:      obsrecv,
 		}
-		processor, err := jr.buildProcessor(jr.config.AgentCompactThrift.Endpoint, jr.config.AgentCompactThrift.ServerConfigUDP, apacheThrift.NewTCompactProtocolFactoryConf(nil), h)
+		processor, err := jr.buildProcessor(
+			ctx,
+			jr.config.AgentCompactThrift.Endpoint,
+			jr.config.AgentCompactThrift.ServerConfigUDP,
+			apacheThrift.NewTCompactProtocolFactoryConf(nil),
+			h,
+		)
 		if err != nil {
 			return err
 		}
@@ -291,7 +312,7 @@ func (jr *jReceiver) startAgent() error {
 	return nil
 }
 
-func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory apacheThrift.TProtocolFactory, a agent.Agent) (processors.Processor, error) {
+func (jr *jReceiver) buildProcessor(ctx context.Context, address string, cfg ServerConfigUDP, factory apacheThrift.TProtocolFactory, a agent.Agent) (processors.Processor, error) {
 	handler := agent.NewAgentProcessor(a)
 	transport, err := thriftudp.NewTUDPServerTransport(address)
 	if err != nil {
@@ -302,7 +323,7 @@ func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory
 			return nil, err
 		}
 	}
-	server, err := servers.NewTBufferedServer(transport, cfg.QueueSize, cfg.MaxPacketSize, metrics.NullFactory)
+	server, err := servers.NewTBufferedServer(transport, cfg.QueueSize, cfg.MaxPacketSize, jr.MakeMetricsFactory(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -420,4 +441,18 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 	}
 
 	return nil
+}
+
+func (jr *jReceiver) MakeMetricsFactory(ctx context.Context) metrics.Factory {
+	metricsFactory := &OTelMetrics{
+		counters: map[string]counterHandler{
+			DroppedPacketsStat: func(i int64) {
+				jr.tBuilder.JaegerReceiverThriftPktDropped.Add(ctx, i)
+			},
+			ProcessedPacketsStat: func(i int64) {
+				jr.tBuilder.JaegerReceiverThriftPktProcessed.Add(ctx, i)
+			},
+		},
+	}
+	return metricsFactory
 }

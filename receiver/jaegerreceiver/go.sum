@@ -79,6 +79,10 @@ github.com/mostynb/go-grpc-compression v1.2.3 h1:42/BKWMy0KEJGSdWvzqIyOZ95YcR9mL
 github.com/mostynb/go-grpc-compression v1.2.3/go.mod h1:AghIxF3P57umzqM9yz795+y1Vjs47Km/Y2FE6ouQ7Lg=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.1 h1:5w2vfMlgpt0nf0Z/F18dSv3achW5cTSdNaaNfsS0gVI=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.1/go.mod h1:gS1bYFpF6fHb12/5JNjY0liAjStZ91ts8wHZNw1hkz0=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.106.1 h1:vVjPqLK3Hhbgxv+waOnEW1WuMFF8uQfqSWTcy+PtPew=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.106.1/go.mod h1:/UDVZCZzFlwqLlMWY2asvgX7+x9O7GQ3m9otJ0JA+/E=
 github.com/pelletier/go-toml/v2 v2.2.2 h1:aYUidT7k73Pcl9nb2gScu7NSrKCSHIDE89b3+6Wq+LM=
 github.com/pelletier/go-toml/v2 v2.2.2/go.mod h1:1t835xjRzz80PqgE6HHgN2JOsmgYu/h4qDAS4n929Rs=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

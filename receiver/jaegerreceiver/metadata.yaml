@@ -11,6 +11,20 @@ status:
   codeowners:
     active: [yurishkuro]
 
+telemetry:
+  metrics:
+    jaeger_receiver_thrift_pkt_dropped:
+      enabled: true
+      description: Number of thrift packets discarded due to a full receive queue
+      unit: "1"
+      sum:
+        value_type: int
+    jaeger_receiver_thrift_pkt_processed:
+      enabled: true
+      description: Number of successfully processed thrift packets
+      unit: "1"
+      sum:
+        value_type: int
 tests:
   config:
     protocols:
