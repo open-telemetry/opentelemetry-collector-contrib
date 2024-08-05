@@ -22,7 +22,7 @@ The default directory is `%ProgramData%\Otelcol\FileStorage` on Windows and `/va
 `timeout` is the maximum time to wait for a file lock. This value does not need to be modified in most circumstances.
 The default timeout is `1s`.
 
-`fsync` when set, will force the database to perform an fsync after each write.  This helps to ensure database integretity if there is an interruption to the database process, but at the cost of performance.  See [DB.NoSync](https://pkg.go.dev/go.etcd.io/bbolt#DB) for more information.
+`fsync` when set, will force the database to perform an fsync after each write.  This helps to ensure database integrity if there is an interruption to the database process, but at the cost of performance.  See [DB.NoSync](https://pkg.go.dev/go.etcd.io/bbolt#DB) for more information.
 
 ## Compaction
 `compaction` defines how and when files should be compacted. There are two modes of compaction available (both of which can be set concurrently):

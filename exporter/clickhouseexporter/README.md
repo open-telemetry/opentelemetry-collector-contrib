@@ -246,13 +246,13 @@ between Prometheus(OpenMetrics) and OTLP Metrics.
 - Find a sum metrics with name
 ```sql
 select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
-where MetricName='calls_total' limit 100
+where MetricName='calls' limit 100
 ```
 
 - Find a sum metrics with name, attribute.
 ```sql
 select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
-where MetricName='calls_total' and Attributes['service_name']='featureflagservice'
+where MetricName='calls' and Attributes['service_name']='featureflagservice'
 limit 100
 ```
 
@@ -312,6 +312,8 @@ Processing:
 
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
+    - `enabled` (default = true)
+    - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
     - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping data.
 - `retry_on_failure`
     - `enabled` (default = true)

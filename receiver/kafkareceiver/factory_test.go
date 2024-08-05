@@ -26,6 +26,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, defaultGroupID, cfg.GroupID)
 	assert.Equal(t, defaultClientID, cfg.ClientID)
 	assert.Equal(t, defaultInitialOffset, cfg.InitialOffset)
+	assert.Equal(t, defaultSessionTimeout, cfg.SessionTimeout)
+	assert.Equal(t, defaultHeartbeatInterval, cfg.HeartbeatInterval)
 }
 
 func TestCreateTracesReceiver(t *testing.T) {

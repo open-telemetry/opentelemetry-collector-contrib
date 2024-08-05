@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### processor_groupbytrace_conf_num_traces
+### otelcol_processor_groupbytrace_conf_num_traces
 
 Maximum number of traces to hold in the internal storage
 
@@ -14,7 +14,7 @@ Maximum number of traces to hold in the internal storage
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### processor_groupbytrace_event_latency
+### otelcol_processor_groupbytrace_event_latency
 
 How long the queue events are taking to be processed
 
@@ -22,7 +22,7 @@ How long the queue events are taking to be processed
 | ---- | ----------- | ---------- |
 | ms | Histogram | Int |
 
-### processor_groupbytrace_incomplete_releases
+### otelcol_processor_groupbytrace_incomplete_releases
 
 Releases that are suspected to have been incomplete
 
@@ -30,7 +30,7 @@ Releases that are suspected to have been incomplete
 | ---- | ----------- | ---------- | --------- |
 | <nil> | Sum | Int | true |
 
-### processor_groupbytrace_num_events_in_queue
+### otelcol_processor_groupbytrace_num_events_in_queue
 
 Number of events currently in the queue
 
@@ -38,7 +38,7 @@ Number of events currently in the queue
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### processor_groupbytrace_num_traces_in_memory
+### otelcol_processor_groupbytrace_num_traces_in_memory
 
 Number of traces currently in the in-memory storage
 
@@ -46,7 +46,7 @@ Number of traces currently in the in-memory storage
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### processor_groupbytrace_spans_released
+### otelcol_processor_groupbytrace_spans_released
 
 Spans released to the next consumer
 
@@ -54,7 +54,7 @@ Spans released to the next consumer
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_groupbytrace_traces_evicted
+### otelcol_processor_groupbytrace_traces_evicted
 
 Traces evicted from the internal buffer
 
@@ -62,7 +62,7 @@ Traces evicted from the internal buffer
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_groupbytrace_traces_released
+### otelcol_processor_groupbytrace_traces_released
 
 Traces released to the next consumer
 

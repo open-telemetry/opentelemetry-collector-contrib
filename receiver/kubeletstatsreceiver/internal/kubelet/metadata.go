@@ -52,7 +52,7 @@ type Metadata struct {
 	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
 	podResources              map[string]resources
 	containerResources        map[string]resources
-	cpuNodeLimit              float64
+	nodeCapacity              NodeCapacity
 }
 
 type resources struct {
@@ -62,9 +62,12 @@ type resources struct {
 	memoryLimit   int64
 }
 
-type NodeLimits struct {
-	Name              string
-	CPUNanoCoresLimit float64
+type NodeCapacity struct {
+	Name string
+	// node's CPU capacity in cores
+	CPUCapacity float64
+	// node's Memory capacity in bytes
+	MemoryCapacity float64
 }
 
 func getContainerResources(r *v1.ResourceRequirements) resources {
@@ -80,7 +83,7 @@ func getContainerResources(r *v1.ResourceRequirements) resources {
 	}
 }
 
-func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeResourceLimits NodeLimits,
+func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeCap NodeCapacity,
 	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error) Metadata {
 	m := Metadata{
 		Labels:                    getLabelsMap(labels),
@@ -88,7 +91,7 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeResourceL
 		DetailedPVCResourceSetter: detailedPVCResourceSetter,
 		podResources:              make(map[string]resources),
 		containerResources:        make(map[string]resources),
-		cpuNodeLimit:              nodeResourceLimits.CPUNanoCoresLimit,
+		nodeCapacity:              nodeCap,
 	}
 
 	if podsMetadata != nil {
