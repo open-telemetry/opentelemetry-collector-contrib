@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-//go:embed testdata/schema.yml
+//go:embed testdata/schema.yaml
 var exampleTranslation []byte
 
 func TranslationHandler(t *testing.T) http.Handler {
