@@ -247,13 +247,13 @@ func TestModifyingSignals(t *testing.T) {
 	tests := []struct {
 		scenario string
 		mod      Modifier
-		sig      alias.Signal
+		sig      alias.NamedSignal
 		name     string
 	}{
 		{
 			scenario: "no changes",
 			mod:      noModify{},
-			sig: func() alias.Signal {
+			sig: func() alias.NamedSignal {
 				sig := ptrace.NewScopeSpans().Scope()
 				sig.SetName("GET /ingress")
 				return sig
@@ -263,7 +263,7 @@ func TestModifyingSignals(t *testing.T) {
 		{
 			scenario: "no changes",
 			mod:      noModify{},
-			sig: func() alias.Signal {
+			sig: func() alias.NamedSignal {
 				sig := ptrace.NewScopeSpans().Scope()
 				sig.SetName("GET /ingress")
 				return sig
@@ -277,7 +277,7 @@ func TestModifyingSignals(t *testing.T) {
 					"GET /ingress": "GET /v1/api/ingress",
 				},
 			},
-			sig: func() alias.Signal {
+			sig: func() alias.NamedSignal {
 				sig := ptrace.NewScopeSpans().Scope()
 				sig.SetName("GET /ingress")
 				return sig
@@ -293,7 +293,7 @@ func TestModifyingSignals(t *testing.T) {
 					},
 				},
 			},
-			sig: func() alias.Signal {
+			sig: func() alias.NamedSignal {
 				sig := ptrace.NewScopeSpans().Scope()
 				sig.SetName("GET /ingress")
 				return sig

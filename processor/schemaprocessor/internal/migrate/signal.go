@@ -12,7 +12,7 @@ type SignalType interface {
 }
 
 // SignalNameChange allows for migrating types that
-// implement the `alias.Signal` interface.
+// implement the `alias.NamedSignal` interface.
 type SignalNameChange struct {
 	updates  map[string]string
 	rollback map[string]string
@@ -20,7 +20,7 @@ type SignalNameChange struct {
 
 type SignalNameChangeSlice []*SignalNameChange
 
-// NewSignalNameChange will create a `Signal` that will check the provided mappings if it can update a `alias.Signal`
+// NewSignalNameChange will create a `Signal` that will check the provided mappings if it can update a `alias.NamedSignal`
 // and if no values are provided for `matches`, then all values will be updated.
 func NewSignalNameChange[Key SignalType, Value SignalType](mappings map[Key]Value) *SignalNameChange {
 	sig := &SignalNameChange{

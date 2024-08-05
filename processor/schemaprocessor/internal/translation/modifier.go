@@ -39,10 +39,10 @@ type Modifier interface {
 	RevertAttrsIf(match string, attrs pcommon.Map)
 	// UpdateSignal will update the name of the signal
 	// if there is a known transition
-	UpdateSignal(signal alias.Signal)
+	UpdateSignal(signal alias.NamedSignal)
 	// RevertSignal will update the name of the signal
 	// if there is a known transition
-	RevertSignal(signal alias.Signal)
+	RevertSignal(signal alias.NamedSignal)
 }
 
 // modify is one change that can be made to a signal
@@ -106,7 +106,7 @@ func (mod *modify) RevertAttrsIf(match string, attrs pcommon.Map) {
 	mod.RevertAttrs(attrs)
 }
 
-func (mod *modify) UpdateSignal(sig alias.Signal) {
+func (mod *modify) UpdateSignal(sig alias.NamedSignal) {
 	for from, to := range mod.names {
 		if from == sig.Name() {
 			sig.SetName(to)
@@ -115,7 +115,7 @@ func (mod *modify) UpdateSignal(sig alias.Signal) {
 	}
 }
 
-func (mod *modify) RevertSignal(sig alias.Signal) {
+func (mod *modify) RevertSignal(sig alias.NamedSignal) {
 	for to, from := range mod.names {
 		if from == sig.Name() {
 			sig.SetName(to)
@@ -136,7 +136,7 @@ func (mods modifications) UpdateAttrsIf(match string, attrs pcommon.Map) {
 	}
 }
 
-func (mods modifications) UpdateSignal(sig alias.Signal) {
+func (mods modifications) UpdateSignal(sig alias.NamedSignal) {
 	for _, mod := range mods {
 		mod.UpdateSignal(sig)
 	}
@@ -154,7 +154,7 @@ func (mods modifications) RevertAttrsIf(match string, attrs pcommon.Map) {
 	}
 }
 
-func (mods modifications) RevertSignal(sig alias.Signal) {
+func (mods modifications) RevertSignal(sig alias.NamedSignal) {
 	for _, mod := range mods {
 		mod.RevertSignal(sig)
 	}

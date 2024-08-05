@@ -29,5 +29,5 @@ func (noModify) UpdateAttrs(attrs pcommon.Map)                 {}
 func (noModify) RevertAttrs(attrs pcommon.Map)                 {}
 func (noModify) UpdateAttrsIf(match string, attrs pcommon.Map) {}
 func (noModify) RevertAttrsIf(match string, attrs pcommon.Map) {}
-func (noModify) UpdateSignal(signal alias.Signal)              {}
-func (noModify) RevertSignal(signal alias.Signal)              {}
+func (noModify) UpdateSignal(signal alias.NamedSignal)              {}
+func (noModify) RevertSignal(signal alias.NamedSignal)              {}
