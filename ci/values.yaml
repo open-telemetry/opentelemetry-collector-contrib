@@ -89,7 +89,7 @@ config:
         peer_service_aggregation: true
         trace_buffer: 1000
       api:
-        key: "$DD_API_KEY"
+        key: "${env:DD_API_KEY}"
   processors:
     attributes:
       actions:
@@ -240,7 +240,7 @@ config:
       traces/sampled:
         receivers: [datadog/connector]
         processors: [probabilistic_sampler, batch]
-        exporters: [datadog]
+        exporters: [datadog, debug]
       logs:
         processors: [memory_limiter, resourcedetection, k8sattributes, attributes, attributes/kafkasrc, transform, batch]
         exporters: [datadog]
