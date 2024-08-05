@@ -536,14 +536,14 @@ func ScenarioLong(
 
 	tc.StartLoad(loadOptions)
 
-	tc.Sleep(time.Second * time.Duration(sleepTime))
-
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 
-	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, time.Second*time.Duration(sleepTime),
-		"all spans received")
+	tc.Sleep(time.Second * time.Duration(sleepTime))
 
 	tc.StopLoad()
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, "all spans received")
+
 	tc.StopAgent()
 	tc.ValidateData()
 }

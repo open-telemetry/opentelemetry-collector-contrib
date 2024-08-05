@@ -239,13 +239,41 @@ func TestLogLargeFiles(t *testing.T) {
 		name         string
 		sender       testbed.DataSender
 		receiver     testbed.DataReceiver
-		resourceSpec testbed.ResourceSpec
-		extensions   map[string]string
+		loadOptions  testbed.LoadOptions
+		sleepSeconds int
 	}{
 		{
-			name:     "filelog-largefiles",
+			name:     "filelog-largefiles-2Gb-lifetime",
 			sender:   datasenders.NewFileLogWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
+			loadOptions: testbed.LoadOptions{
+				DataItemsPerSecond: 200000,
+				ItemsPerBatch:      1,
+				Parallel:           100,
+			},
+			sleepSeconds: 100,
+		},
+		{
+			name:     "filelog-largefiles-6GB-lifetime",
+			sender:   datasenders.NewFileLogWriter(),
+			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
+			loadOptions: testbed.LoadOptions{
+				DataItemsPerSecond: 330000,
+				ItemsPerBatch:      10,
+				Parallel:           10,
+			},
+			sleepSeconds: 200,
+		},
+		{
+			name:     "filelog-largefiles-50MB/sec",
+			sender:   datasenders.NewFileLogWriter(),
+			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
+			loadOptions: testbed.LoadOptions{
+				DataItemsPerSecond: 400000,
+				ItemsPerBatch:      100,
+				Parallel:           1,
+			},
+			sleepSeconds: 100,
 		},
 	}
 	processors := map[string]string{
@@ -258,13 +286,9 @@ func TestLogLargeFiles(t *testing.T) {
 				t,
 				test.sender,
 				test.receiver,
-				testbed.LoadOptions{
-					DataItemsPerSecond: 100,
-					ItemsPerBatch:      10,
-					Parallel:           1,
-				},
+				test.loadOptions,
 				performanceResultsSummary,
-				2,
+				test.sleepSeconds,
 				processors,
 			)
 		})
