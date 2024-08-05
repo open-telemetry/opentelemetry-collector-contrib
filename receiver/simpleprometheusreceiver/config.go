@@ -25,6 +25,8 @@ type Config struct {
 	Labels map[string]string `mapstructure:"labels,omitempty"`
 	// Whether or not to use pod service account to authenticate.
 	UseServiceAccount bool `mapstructure:"use_service_account"`
+	// JobName allows users to customize the job name optionally.
+	JobName string `mapstructure:"job_name"`
 }
 
 // TODO: Move to a common package for use by other receivers and also pull

@@ -109,10 +109,14 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 	}
 	labels[model.AddressLabel] = model.LabelValue(cfg.Endpoint)
 
+	jobName := cfg.JobName
+	if jobName == "" {
+		jobName = fmt.Sprintf("%s/%s", metadata.Type, cfg.Endpoint)
+	}
 	scrapeConfig := &config.ScrapeConfig{
 		ScrapeInterval:  model.Duration(cfg.CollectionInterval),
 		ScrapeTimeout:   model.Duration(cfg.CollectionInterval),
-		JobName:         fmt.Sprintf("%s/%s", metadata.Type, cfg.Endpoint),
+		JobName:         jobName,
 		HonorTimestamps: true,
 		Scheme:          scheme,
 		MetricsPath:     cfg.MetricsPath,
