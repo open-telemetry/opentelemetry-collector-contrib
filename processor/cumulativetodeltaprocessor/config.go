@@ -17,8 +17,8 @@ import (
 )
 
 var validMetricTypes = []string{
-	pmetric.MetricTypeSum.String(),
-	pmetric.MetricTypeHistogram.String(),
+	strings.ToLower(pmetric.MetricTypeSum.String()),
+	strings.ToLower(pmetric.MetricTypeHistogram.String()),
 }
 
 // Config defines the configuration for the processor.
@@ -63,8 +63,9 @@ func (config *Config) Validate() error {
 		return fmt.Errorf("metrics must be supplied if match_type is set")
 	}
 
-	for _, metricType := range config.Exclude.MetricTypes {
-		if !slices.Contains(validMetricTypes, metricType) {
+	for i, metricType := range config.Exclude.MetricTypes {
+		config.Exclude.MetricTypes[i] = strings.ToLower(metricType)
+		if !slices.Contains(validMetricTypes, config.Exclude.MetricTypes[i]) {
 			return fmt.Errorf(
 				"found invalid metric type in exclude.metric_types: %s. Valid values are [%s]",
 				metricType,
@@ -72,8 +73,9 @@ func (config *Config) Validate() error {
 			)
 		}
 	}
-	for _, metricType := range config.Include.MetricTypes {
-		if !slices.Contains(validMetricTypes, metricType) {
+	for i, metricType := range config.Include.MetricTypes {
+		config.Include.MetricTypes[i] = strings.ToLower(metricType)
+		if !slices.Contains(validMetricTypes, config.Include.MetricTypes[i]) {
 			return fmt.Errorf(
 				"found invalid metric type in include.metric_types: %s. Valid values are [%s]",
 				metricType,

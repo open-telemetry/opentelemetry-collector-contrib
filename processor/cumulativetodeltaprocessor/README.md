@@ -22,8 +22,8 @@ Configuration is specified through a list of metrics. The processor uses metric 
 
 The following settings can be optionally configured:
 
-- `include`: List of metrics names or patterns to convert to delta.
-- `exclude`: List of metrics names or patterns to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.**
+- `include`: List of metrics names, patterns or metric types to convert to delta.
+- `exclude`: List of metrics names, patterns or metric types to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.**
 - `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
 - `initial_value`: Handling of the first observed point for a given metric identity.
   When the collector (re)starts, there's no record of how much of a given cumulative counter has already been converted to delta values.
@@ -60,6 +60,17 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
 
+        # Convert all sum metrics
+        include:
+            metric_types:
+              - sum
+```
+
+```yaml
+processors:
+    # processor name: cumulativetodelta
+    cumulativetodelta:
+
         # Convert cumulative sum or histogram metrics to delta
         # if and only if 'metric' is in the name
         include:
@@ -73,12 +84,43 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
 
+        # Convert cumulative sum metrics to delta
+        # if and only if 'metric' is in the name
+        include:
+            metrics:
+                - ".*metric.*"
+            match_type: regexp
+            metric_types:
+              - sum
+```
+
+```yaml
+processors:
+    # processor name: cumulativetodelta
+    cumulativetodelta:
+
         # Convert cumulative sum or histogram metrics to delta
         # if and only if 'metric' is not in the name
         exclude:
             metrics:
                 - ".*metric.*"
             match_type: regexp
+```
+
+```yaml
+processors:
+    # processor name: cumulativetodelta
+    cumulativetodelta:
+
+        # Convert cumulative sum metrics with 'metric' in their name,
+        # but exclude histogram metrics
+        include:
+            metrics:
+                - ".*metric.*"
+            match_type: regexp
+        exclude:
+          metric_types:
+            - histogram
 ```
 
 ```yaml

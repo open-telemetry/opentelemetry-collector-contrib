@@ -7,6 +7,7 @@ import (
 	"context"
 	"math"
 	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -118,9 +119,9 @@ func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 
 func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metric pmetric.Metric) bool {
 	return (ctdp.includeFS == nil || ctdp.includeFS.Matches(metric.Name())) &&
+		(len(ctdp.includeMetricTypes) == 0 || slices.Contains(ctdp.includeMetricTypes, strings.ToLower(metric.Type().String()))) &&
 		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metric.Name())) &&
-		(ctdp.includeMetricTypes == nil || slices.Contains(ctdp.includeMetricTypes, metric.Type().String())) &&
-		(ctdp.excludeMetricTypes == nil || !slices.Contains(ctdp.excludeMetricTypes, metric.Type().String()))
+		(len(ctdp.excludeMetricTypes) == 0 || !slices.Contains(ctdp.excludeMetricTypes, strings.ToLower(metric.Type().String())))
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in any, baseIdentity tracking.MetricIdentity) {

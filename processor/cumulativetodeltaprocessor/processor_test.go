@@ -505,7 +505,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			name:    "cumulative_to_delta_exclude_sum_metrics",
 			include: MatchMetrics{},
 			exclude: MatchMetrics{
-				MetricTypes: []string{"Sum"},
+				MetricTypes: []string{"sum"},
 			},
 			inMetrics: generateMixedTestMetrics(
 				testSumMetric{
@@ -556,7 +556,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 		{
 			name: "cumulative_to_delta_include_histogram_metrics",
 			include: MatchMetrics{
-				MetricTypes: []string{"Histogram"},
+				MetricTypes: []string{"histogram"},
 			},
 			inMetrics: generateMixedTestMetrics(
 				testSumMetric{

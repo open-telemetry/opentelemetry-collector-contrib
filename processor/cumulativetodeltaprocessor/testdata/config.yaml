@@ -48,13 +48,13 @@ cumulativetodelta/metric_type_filter:
     metrics:
       - a*
     metric_types:
-      - Sum
+      - sum
   exclude:
     match_type: regexp
     metrics:
       - b*
     metric_types:
-      - Histogram
+      - histogram
   max_staleness: 10s
 
 cumulativetodelta/invalid_include_metric_type_filter:
@@ -63,13 +63,13 @@ cumulativetodelta/invalid_include_metric_type_filter:
     metrics:
       - a*
     metric_types:
-      - Gauge
+      - gauge
   exclude:
     match_type: regexp
     metrics:
       - b*
     metric_types:
-      - Histogram
+      - histogram
   max_staleness: 10s
 
 cumulativetodelta/invalid_exclude_metric_type_filter:
