@@ -487,7 +487,8 @@ func BenchmarkUpgradingMetrics(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		m := metrics.Clone()
+		m := pmetric.NewMetrics()
+		metrics.CopyTo(m)
 		b.StartTimer()
 		for i := 0; i < m.ResourceMetrics().Len(); i++ {
 			rMetrics := m.ResourceMetrics().At(i)
@@ -517,7 +518,8 @@ func BenchmarkUpgradingTraces(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		t := traces.Clone()
+		t := ptrace.NewTraces()
+		traces.CopyTo(t)
 		b.StartTimer()
 		for i := 0; i < t.ResourceSpans().Len(); i++ {
 			rSpans := t.ResourceSpans().At(i)
@@ -547,7 +549,8 @@ func BenchmarkUpgradingLogs(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		l := logs.Clone()
+		l := plog.NewLogs()
+		logs.CopyTo(l)
 		b.StartTimer()
 		for i := 0; i < l.ResourceLogs().Len(); i++ {
 			rLogs := l.ResourceLogs().At(i)
