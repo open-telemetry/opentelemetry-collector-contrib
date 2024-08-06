@@ -179,13 +179,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ElasticsearchIndexDocuments: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ElasticsearchIndexOperationsCompleted: MetricConfig{
 			Enabled: true,
 		},
 		ElasticsearchIndexOperationsMergeCurrent: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ElasticsearchIndexOperationsMergeDocsCount: MetricConfig{
 			Enabled: false,
@@ -197,7 +197,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ElasticsearchIndexSegmentsCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ElasticsearchIndexSegmentsMemory: MetricConfig{
 			Enabled: false,

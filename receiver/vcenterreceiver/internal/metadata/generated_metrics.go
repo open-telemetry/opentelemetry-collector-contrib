@@ -3863,42 +3863,6 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
-	if !mbc.Metrics.VcenterClusterVsanCongestions.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.congestions`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterClusterVsanLatencyAvg.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterClusterVsanOperations.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.operations`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterClusterVsanThroughput.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterHostVsanCacheHitRate.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.cache.hit_rate`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterHostVsanCongestions.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.congestions`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterHostVsanLatencyAvg.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterHostVsanOperations.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.operations`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterHostVsanThroughput.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterVMVsanLatencyAvg.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterVMVsanOperations.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.operations`: this metric will be enabled by default starting in release v0.107.0")
-	}
-	if !mbc.Metrics.VcenterVMVsanThroughput.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0")
-	}
 	mb := &MetricsBuilder{
 		config:                                   mbc,
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
