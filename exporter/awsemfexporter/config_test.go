@@ -271,7 +271,7 @@ func TestNoDimensionRollupFeatureGate(t *testing.T) {
 	_ = featuregate.GlobalRegistry().Set("awsemf.nodimrollupdefault", false)
 }
 
-func TestIsAppSignalsEnabled(t *testing.T) {
+func TestIsApplicationSignalsEnabled(t *testing.T) {
 	tests := []struct {
 		name            string
 		metricNameSpace string
@@ -279,27 +279,27 @@ func TestIsAppSignalsEnabled(t *testing.T) {
 		expectedResult  bool
 	}{
 		{
-			"validAppSignalsEMF",
-			"AppSignals",
-			"/aws/appsignals/eks",
+			"validApplicationSignalsEMF",
+			"ApplicationSignals",
+			"/aws/application-signals/data",
 			true,
 		},
 		{
-			"invalidAppSignalsLogsGroup",
-			"AppSignals",
-			"/nonaws/appsignals/eks",
+			"invalidApplicationSignalsLogsGroup",
+			"ApplicationSignals",
+			"/nonaws/application-signals/eks",
 			false,
 		},
 		{
-			"invalidAppSignalsMetricNamespace",
-			"NonAppSignals",
-			"/aws/appsignals/eks",
+			"invalidApplicationSignalsMetricNamespace",
+			"NonApplicationSignals",
+			"/aws/application-signals/data",
 			false,
 		},
 		{
-			"invalidAppSignalsEMF",
-			"NonAppSignals",
-			"/nonaws/appsignals/eks",
+			"invalidApplicationSignalsEMF",
+			"NonApplicationSignals",
+			"/nonaws/application-signals/eks",
 			false,
 		},
 		{
