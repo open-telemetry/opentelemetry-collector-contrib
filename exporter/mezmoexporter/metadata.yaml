@@ -1,5 +1,4 @@
 type: mezmo
-scope_name: otelcol/mezmo
 
 status:
   class: exporter

@@ -1,5 +1,4 @@
 type: file
-scope_name: otelcol/file
 
 status:
   class: exporter
