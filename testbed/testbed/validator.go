@@ -608,4 +608,28 @@ func (c *CorrectnessLogTestValidator) Validate(tc *TestCase) {
 }
 
 func (v *CorrectnessLogTestValidator) RecordResults(tc *TestCase) {
+	rc := tc.agentProc.GetTotalConsumption()
+
+	var result string
+	if tc.t.Failed() {
+		result = "FAIL"
+	} else {
+		result = "PASS"
+	}
+
+	// Remove "Test" prefix from test name.
+	testName := tc.t.Name()[4:]
+
+	tc.resultsSummary.Add(tc.t.Name(), &PerformanceTestResult{
+		testName:          testName,
+		result:            result,
+		receivedSpanCount: tc.MockBackend.DataItemsReceived(),
+		sentSpanCount:     tc.LoadGenerator.DataItemsSent(),
+		duration:          time.Since(tc.startTime),
+		cpuPercentageAvg:  rc.CPUPercentAvg,
+		cpuPercentageMax:  rc.CPUPercentMax,
+		ramMibAvg:         rc.RAMMiBAvg,
+		ramMibMax:         rc.RAMMiBMax,
+		errorCause:        tc.errorCause,
+	})
 }
