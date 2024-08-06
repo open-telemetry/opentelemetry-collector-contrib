@@ -9,15 +9,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-type nop_archive struct{}
+type nopArchive struct{}
 
 func NewNopArchive() Archive {
-	return &nop_archive{}
+	return &nopArchive{}
 }
 
-func (a *nop_archive) SetStorageClient(_ operator.Persister) {
+func (a *nopArchive) SetStorageClient(_ operator.Persister) {
 }
 
-func (a *nop_archive) Match(_ *fingerprint.Fingerprint) *reader.Metadata {
+func (a *nopArchive) Match(_ *fingerprint.Fingerprint) *reader.Metadata {
 	return nil
 }

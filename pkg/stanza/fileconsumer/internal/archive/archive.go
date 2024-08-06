@@ -10,7 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-const knownFilesKeyPrefix = "knownFiles"
+const _ = "knownFiles"
 
 type Archive interface {
 	SetStorageClient(persister operator.Persister)
@@ -20,7 +20,7 @@ type Archive interface {
 type archive struct {
 	persister      operator.Persister
 	pollsToArchive int
-	fileset        *fileset.Fileset[*reader.Metadata]
+	_              *fileset.Fileset[*reader.Metadata]
 }
 
 func NewArchive(pollsToArchive int) Archive {
@@ -31,7 +31,7 @@ func (a *archive) SetStorageClient(persister operator.Persister) {
 	a.persister = persister
 }
 
-func (a *archive) Match(fp *fingerprint.Fingerprint) *reader.Metadata {
+func (a *archive) Match(_ *fingerprint.Fingerprint) *reader.Metadata {
 	// TODO:
 	// 		Add logic to go through the storage and return a match.
 	//		Also update the storage if match found.
