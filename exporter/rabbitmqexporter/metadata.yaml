@@ -1,5 +1,4 @@
 type: rabbitmq
-scope_name: otelcol/rabbitmq
 
 status:
   class: exporter
