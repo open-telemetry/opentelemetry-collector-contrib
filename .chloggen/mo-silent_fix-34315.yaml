@@ -7,7 +7,7 @@ change_type: 'bug_fix'
 component: azuremonitorreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add azure china to complete AzureMonitor Receiver
+note: Add Azure China as a `cloud` option.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34315]
