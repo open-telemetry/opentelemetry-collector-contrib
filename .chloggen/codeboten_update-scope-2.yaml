@@ -7,7 +7,7 @@ change_type: breaking
 component: loadbalancingexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Update the scope name for telemetry produced by the loadbalancingexporter from otelcol/loki to github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter
+note: Update the scope name for telemetry produced by the loadbalancingexporter from otelcol/loadbalancing to github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34429]
