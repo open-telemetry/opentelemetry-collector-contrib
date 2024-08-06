@@ -120,6 +120,12 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
+	if !s.config.Metrics.KafkaTopicLogRetentionPeriod.Enabled &&
+		!s.config.Metrics.KafkaTopicLogRetentionSize.Enabled &&
+		!s.config.Metrics.KafkaTopicMinInsyncReplicas.Enabled &&
+		!s.config.Metrics.KafkaTopicReplicationFactor.Enabled {
+		return
+	}
 	if s.clusterAdmin == nil {
 		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
 		if err != nil {

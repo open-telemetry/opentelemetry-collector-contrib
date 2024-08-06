@@ -68,6 +68,9 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	brokers := s.client.Brokers()
 	s.mb.RecordKafkaBrokersDataPoint(now, int64(len(brokers)))
+	if !s.config.Metrics.KafkaBrokerLogRetentionPeriod.Enabled {
+		return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
+	}
 
 	if s.clusterAdmin == nil {
 		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
@@ -79,10 +82,10 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	for _, broker := range brokers {
-		ID := strconv.Itoa(int(broker.ID()))
+		id := strconv.Itoa(int(broker.ID()))
 		configEntries, err := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
 			Type:        sarama.BrokerResource,
-			Name:        ID,
+			Name:        id,
 			ConfigNames: []string{logRetentionHours},
 		})
 		if err != nil {
@@ -97,7 +100,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			if err != nil {
 				scrapeErrors.AddPartial(1, fmt.Errorf("error converting `%s` for %s: value was %s", logRetentionHours, broker.Addr(), config.Value))
 			}
-			s.mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(now, int64(val*3600), ID)
+			s.mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(now, int64(val*3600), id)
 		}
 	}
 
