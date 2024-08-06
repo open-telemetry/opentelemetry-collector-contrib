@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/routi
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.106.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/client v0.106.1
 	go.opentelemetry.io/collector/component v0.106.1
@@ -53,7 +53,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect

@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/apache/arrow/go/v16 v16.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.106.1
 	github.com/open-telemetry/otel-arrow v0.24.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/client v0.106.1
@@ -22,7 +22,6 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.106.1
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/otel v1.28.0
-	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.4.0
@@ -85,6 +84,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.106.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect

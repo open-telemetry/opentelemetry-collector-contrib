@@ -7,7 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.13.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.106.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.1
 	go.opentelemetry.io/collector/config/configopaque v1.12.0
@@ -17,8 +17,6 @@ require (
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.106.1
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/collector/receiver v0.106.1
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -118,9 +116,11 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.28.0 // indirect
 	go.opentelemetry.io/otel/log v0.4.0 // indirect
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.4.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect

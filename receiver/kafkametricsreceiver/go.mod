@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/IBM/sarama v1.43.2
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.106.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.1
 	go.opentelemetry.io/collector/config/configtls v1.12.0
@@ -14,8 +14,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.1
 	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/collector/receiver v0.106.1
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -76,8 +74,10 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.106.1 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect

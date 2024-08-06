@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.21.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.127
+	github.com/DataDog/agent-payload/v5 v5.0.128
 	github.com/DataDog/datadog-agent/comp/core/config v0.56.0-rc.7
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.56.0-rc.7
 	github.com/DataDog/datadog-agent/comp/core/log v0.56.0-rc.7
@@ -41,20 +41,20 @@ require (
 	github.com/aws/aws-sdk-go v1.53.16
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.106.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.106.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.1
 	go.opentelemetry.io/collector/config/configauth v0.106.1
@@ -78,8 +78,8 @@ require (
 	go.opentelemetry.io/collector/receiver v0.106.1
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.1
 	go.opentelemetry.io/collector/semconv v0.106.1
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -254,16 +254,16 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.106.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.106.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.106.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.106.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.106.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.106.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.106.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.106.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.106.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.106.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.106.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.106.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.106.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.106.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.106.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.106.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.106.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.106.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0-rc.3 // indirect

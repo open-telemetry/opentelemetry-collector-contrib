@@ -4,8 +4,8 @@ go 1.21.0
 
 require (
 	github.com/google/uuid v1.6.0
-	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.106.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.0
+	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.106.1
 	github.com/scalyr/dataset-go v0.20.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.1
@@ -20,8 +20,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	go.opentelemetry.io/collector/config/configopaque v1.12.0
 	go.opentelemetry.io/collector/config/configretry v1.12.0
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
 )
 
 require (
@@ -59,8 +57,10 @@ require (
 	go.opentelemetry.io/collector/receiver v0.106.1 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
 	golang.org/x/net v0.26.0 // indirect

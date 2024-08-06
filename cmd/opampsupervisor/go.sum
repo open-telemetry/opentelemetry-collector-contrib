@@ -16,8 +16,8 @@ github.com/knadh/koanf/maps v0.1.1 h1:G5TjmUh2D7G2YWf5SQQqSiHRJEjaicvU0KpypqB3NI
 github.com/knadh/koanf/maps v0.1.1/go.mod h1:npD/QZY3V6ghQDdcQzl1W4ICNVTkohC8E73eI2xW4yI=
 github.com/knadh/koanf/parsers/yaml v0.1.0 h1:ZZ8/iGfRLvKSaMEECEBPM1HQslrZADk8fP1XFUxVI5w=
 github.com/knadh/koanf/parsers/yaml v0.1.0/go.mod h1:cvbUDC7AL23pImuQP0oRw/hPuccrNBS2bps8asS0CwY=
-github.com/knadh/koanf/providers/file v1.0.0 h1:DtPvSQBeF+N0QLPMz0yf2bx0nFSxUcncpqQvzCxfCyk=
-github.com/knadh/koanf/providers/file v1.0.0/go.mod h1:/faSBcv2mxPVjFrXck95qeoyoZ5myJ6uxN8OOVNJJCI=
+github.com/knadh/koanf/providers/file v1.1.0 h1:MTjA+gRrVl1zqgetEAIaXHqYje0XSosxSiMD4/7kz0o=
+github.com/knadh/koanf/providers/file v1.1.0/go.mod h1:/faSBcv2mxPVjFrXck95qeoyoZ5myJ6uxN8OOVNJJCI=
 github.com/knadh/koanf/providers/rawbytes v0.1.0 h1:dpzgu2KO6uf6oCb4aP05KDmKmAmI51k5pe8RYKQ0qME=
 github.com/knadh/koanf/providers/rawbytes v0.1.0/go.mod h1:mMTB1/IcJ/yE++A2iEZbY1MLygX7vttU+C+S/YmPu9c=
 github.com/knadh/koanf/v2 v2.1.1 h1:/R8eXqasSTsmDCsAyYj+81Wteg8AqrV9CP6gvsTsOmM=
