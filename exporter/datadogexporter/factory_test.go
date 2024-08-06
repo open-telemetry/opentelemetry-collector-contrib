@@ -439,8 +439,8 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 }
 
 func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
-	assert.NoError(t, err)
+	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
+	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -518,13 +518,13 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
-	err = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, err)
+	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
+	assert.NoError(t, featuregateErr)
 }
 
 func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
-	assert.NoError(t, err)
+	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
+	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -602,8 +602,8 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
-	err = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, err)
+	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
+	assert.NoError(t, featuregateErr)
 }
 
 func TestCreateAPILogsExporter(t *testing.T) {
