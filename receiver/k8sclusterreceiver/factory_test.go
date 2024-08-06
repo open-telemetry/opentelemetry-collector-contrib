@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/client-go/kubernetes"
@@ -72,14 +71,14 @@ func TestFactoryDistributions(t *testing.T) {
 
 	// default
 	r := newTestReceiver(t, rCfg)
-	err := r.Start(context.Background(), componenttest.NewNopHost())
+	err := r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.Nil(t, r.resourceWatcher.osQuotaClient)
 
 	// openshift
 	rCfg.Distribution = "openshift"
 	r = newTestReceiver(t, rCfg)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.NotNil(t, r.resourceWatcher.osQuotaClient)
 }
@@ -105,7 +104,7 @@ type nopHostWithExporters struct {
 }
 
 func newNopHostWithExporters() component.Host {
-	return &nopHostWithExporters{Host: componenttest.NewNopHost()}
+	return &nopHostWithExporters{Host: newNopHost()}
 }
 
 func (n *nopHostWithExporters) GetExporters() map[component.DataType]map[component.ID]component.Component {

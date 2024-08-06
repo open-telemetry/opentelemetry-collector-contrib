@@ -912,6 +912,43 @@ func TestExporterAuth(t *testing.T) {
 	<-done
 }
 
+func TestExporterBatcher(t *testing.T) {
+	var requests []*http.Request
+	testauthID := component.NewID(component.MustNewType("authtest"))
+	batcherEnabled := false // sync bulk indexer is used without batching
+	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		cfg.Batcher = BatcherConfig{Enabled: &batcherEnabled}
+		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+	})
+	err := exporter.Start(context.Background(), &mockHost{
+		extensions: map[component.ID]component.Component{
+			testauthID: &authtest.MockClient{
+				ResultRoundTripper: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+					requests = append(requests, req)
+					return nil, errors.New("nope")
+				}),
+			},
+		},
+	})
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, exporter.Shutdown(context.Background()))
+	}()
+
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty().Body().SetStr("log record body")
+
+	type key struct{}
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value1"), logs)
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value2"), logs)
+	require.Len(t, requests, 2) // flushed immediately by Consume
+
+	assert.Equal(t, "value1", requests[0].Context().Value(key{}))
+	assert.Equal(t, "value2", requests[1].Context().Value(key{}))
+}
+
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Traces {
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {

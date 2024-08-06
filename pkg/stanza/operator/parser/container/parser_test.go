@@ -311,7 +311,7 @@ func TestRecombineProcess(t *testing.T) {
 			},
 		},
 		{
-			"containerd_standalone_with_auto_detection_and_metadata_from_file_path",
+			"containerd_multiple_with_auto_detection_and_metadata_from_file_path",
 			func() (operator.Operator, error) {
 				cfg := NewConfigWithID("test_id")
 				cfg.AddMetadataFromFilePath = true
@@ -363,6 +363,171 @@ func TestRecombineProcess(t *testing.T) {
 			r := op.(*Parser)
 
 			fake := testutil.NewFakeOutput(t)
+			r.OutputOperators = ([]operator.Operator{fake})
+
+			for _, e := range tc.input {
+				require.NoError(t, r.Process(ctx, e))
+			}
+
+			fake.ExpectEntries(t, tc.expectedOutput)
+
+			select {
+			case e := <-fake.Received:
+				require.FailNow(t, "Received unexpected entry: ", e)
+			default:
+			}
+		})
+	}
+}
+
+func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
+	cases := []struct {
+		name           string
+		op             func() (operator.Operator, error)
+		input          []*entry.Entry
+		expectedOutput []*entry.Entry
+	}{
+		{
+			"crio_multiple",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			[]*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169-10:00 stdout P standalone crio line which i`,
+					Attributes: map[string]any{
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:37.505201169-10:00 stdout F s awesome!`,
+					Attributes: map[string]any{
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:37.505201169-10:00 stdout F standalone crio2 line which is awesome!`,
+					Attributes: map[string]any{
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+			},
+			[]*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"time":          "2024-04-13T07:59:37.505201169-10:00",
+						"log.iostream":  "stdout",
+						"logtag":        "P",
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Body:      "standalone crio line which is awesome!",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.FixedZone("", -10*60*60)),
+				},
+				{
+					Attributes: map[string]any{
+						"time":          "2024-04-13T07:59:37.505201169-10:00",
+						"log.iostream":  "stdout",
+						"logtag":        "F",
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Body:      "standalone crio2 line which is awesome!",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.FixedZone("", -10*60*60)),
+				},
+			},
+		},
+		{
+			"containerd_multiple",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			[]*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout P standalone containerd line which i`,
+					Attributes: map[string]any{
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout F s awesome!`,
+					Attributes: map[string]any{
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout F standalone containerd2 line which is awesome!`,
+					Attributes: map[string]any{
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+			},
+			[]*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"time":          "2024-04-13T07:59:37.505201169Z",
+						"log.iostream":  "stdout",
+						"logtag":        "P",
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Body: "standalone containerd line which is awesome!",
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"time":          "2024-04-13T07:59:37.505201169Z",
+						"log.iostream":  "stdout",
+						"logtag":        "F",
+						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Body: "standalone containerd2 line which is awesome!",
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			op, err := tc.op()
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+			r := op.(*Parser)
+
+			fake := testutil.NewFakeOutputWithProcessError(t)
 			r.OutputOperators = ([]operator.Operator{fake})
 
 			for _, e := range tc.input {

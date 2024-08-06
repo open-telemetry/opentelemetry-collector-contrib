@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,7 +31,9 @@ type elasticsearchExporter struct {
 	logstashFormat LogstashFormatSettings
 	dynamicIndex   bool
 	model          mappingModel
+	otel           bool
 
+	wg          sync.WaitGroup // active sessions
 	bulkIndexer bulkIndexer
 }
 
@@ -49,6 +52,8 @@ func newExporter(
 		mode:  cfg.MappingMode(),
 	}
 
+	otel := model.mode == MappingOTel
+
 	userAgent := fmt.Sprintf(
 		"%s/%s (%s/%s)",
 		set.BuildInfo.Description,
@@ -66,6 +71,7 @@ func newExporter(
 		dynamicIndex:   dynamicIndex,
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
+		otel:           otel,
 	}, nil
 }
 
@@ -84,12 +90,28 @@ func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) 
 
 func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	if e.bulkIndexer != nil {
-		return e.bulkIndexer.Close(ctx)
+		if err := e.bulkIndexer.Close(ctx); err != nil {
+			return err
+		}
 	}
-	return nil
+
+	doneCh := make(chan struct{})
+	go func() {
+		e.wg.Wait()
+		close(doneCh)
+	}()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-doneCh:
+		return nil
+	}
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
+
 	session, err := e.bulkIndexer.StartSession(ctx)
 	if err != nil {
 		return err
@@ -107,7 +129,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 			scope := ill.Scope()
 			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope, session); err != nil {
+				if err := e.pushLogRecord(ctx, resource, rl.SchemaUrl(), logs.At(k), scope, ill.SchemaUrl(), session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -130,13 +152,15 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 func (e *elasticsearchExporter) pushLogRecord(
 	ctx context.Context,
 	resource pcommon.Resource,
+	resourceSchemaURL string,
 	record plog.LogRecord,
 	scope pcommon.InstrumentationScope,
+	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeLogRecord(record, scope, resource, fIndex)
+		fIndex = routeLogRecord(record, scope, resource, fIndex, e.otel)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -147,7 +171,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeLog(resource, record, scope)
+	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
@@ -158,6 +182,9 @@ func (e *elasticsearchExporter) pushMetricsData(
 	ctx context.Context,
 	metrics pmetric.Metrics,
 ) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
+
 	session, err := e.bulkIndexer.StartSession(ctx)
 	if err != nil {
 		return err
@@ -279,7 +306,7 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 ) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeDataPoint(dataPoint, scope, resource, fIndex)
+		fIndex = routeDataPoint(dataPoint, scope, resource, fIndex, e.otel)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -296,6 +323,9 @@ func (e *elasticsearchExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
+
 	session, err := e.bulkIndexer.StartSession(ctx)
 	if err != nil {
 		return err
@@ -342,7 +372,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpan(span, scope, resource, fIndex)
+		fIndex = routeSpan(span, scope, resource, fIndex, e.otel)
 	}
 
 	if e.logstashFormat.Enabled {
