@@ -39,19 +39,19 @@ func TestRaceModify(t *testing.T) {
 
 	traces := ptrace.NewTraces()
 	rSpan := traces.ResourceSpans().AppendEmpty()
-	rSpan.Resource().Attributes().InsertNull("old")
-	rSpan.Resource().Attributes().InsertNull("compute")
-	rSpan.Resource().Attributes().Sort()
+	rSpan.Resource().Attributes().PutEmpty("old")
+	rSpan.Resource().Attributes().PutEmpty("compute")
+	//rSpan.Resource().Attributes().Sort()
 	span := rSpan.ScopeSpans().AppendEmpty()
 	s := span.Spans().AppendEmpty()
-	s.Attributes().InsertNull("old")
-	s.Attributes().InsertNull("compute")
-	s.Attributes().Sort()
+	s.Attributes().PutEmpty("old")
+	s.Attributes().PutEmpty("compute")
+	//s.Attributes().Sort()
 	s.SetName("foo")
 
 	fixture.ParallelRaceCompute(t, 100, func() error {
-		trace := traces.Clone()
-
+		trace := ptrace.NewTraces()
+		traces.CopyTo(trace)
 		for i := 0; i < trace.ResourceSpans().Len(); i++ {
 			spans := trace.ResourceSpans().At(i)
 			mod.UpdateAttrs(spans.Resource().Attributes())
@@ -65,11 +65,11 @@ func TestRaceModify(t *testing.T) {
 					mod.RevertSignal(span)
 					mod.RevertAttrsIf(span.Name(), span.Attributes())
 					mod.RevertAttrs(span.Attributes())
-					span.Attributes().Sort()
+					//span.Attributes().Sort()
 				}
 			}
 			mod.RevertAttrs(spans.Resource().Attributes())
-			spans.Resource().Attributes().Sort()
+			//spans.Resource().Attributes().Sort()
 		}
 
 		assert.Equal(t, traces, trace)

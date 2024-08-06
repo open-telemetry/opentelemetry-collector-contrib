@@ -25,6 +25,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 )
 
+func NewMapFromRaw(in map[string]interface{}) pcommon.Map {
+	nm := pcommon.NewMap()
+	err := nm.FromRaw(in)
+	if err != nil {
+		return pcommon.Map{}
+	}
+	return nm
+}
+
 func TestModifyingAttributes(t *testing.T) {
 	t.Parallel()
 
@@ -37,11 +46,11 @@ func TestModifyingAttributes(t *testing.T) {
 		{
 			scenario: "No update",
 			mod:      noModify{},
-			in: pcommon.NewMapFromRaw(map[string]interface{}{
+			in: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
-			expect: pcommon.NewMapFromRaw(map[string]interface{}{
+			expect: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
@@ -49,11 +58,11 @@ func TestModifyingAttributes(t *testing.T) {
 		{
 			scenario: "No update",
 			mod:      newModify(),
-			in: pcommon.NewMapFromRaw(map[string]interface{}{
+			in: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
-			expect: pcommon.NewMapFromRaw(map[string]interface{}{
+			expect: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
@@ -68,12 +77,12 @@ func TestModifyingAttributes(t *testing.T) {
 				appliesTo: make(map[string]struct{}),
 				names:     make(map[string]string),
 			},
-			in: pcommon.NewMapFromRaw(map[string]interface{}{
+			in: NewMapFromRaw(map[string]interface{}{
 				"define":    "monkey",
 				"update":    "none",
 				"container": 1337,
 			}),
-			expect: pcommon.NewMapFromRaw(map[string]interface{}{
+			expect: NewMapFromRaw(map[string]interface{}{
 				"label":   "monkey",
 				"update":  "none",
 				"compute": 1337,
@@ -87,13 +96,13 @@ func TestModifyingAttributes(t *testing.T) {
 				{attrs: map[string]string{"detected": "discovered"}, appliesTo: make(map[string]struct{}), names: make(map[string]string)},
 				newModify(),
 			},
-			in: pcommon.NewMapFromRaw(map[string]interface{}{
+			in: NewMapFromRaw(map[string]interface{}{
 				"auto.value": "opentelemetry",
-				"detected":   time.Unix(100, 0),
+				"detected":   time.Unix(100, 0).Unix(),
 			}),
-			expect: pcommon.NewMapFromRaw(map[string]interface{}{
+			expect: NewMapFromRaw(map[string]interface{}{
 				"auto.instrument": "opentelemetry",
-				"discovered":      time.Unix(100, 0),
+				"discovered":      time.Unix(100, 0).Unix(),
 			}),
 		},
 	}
@@ -126,11 +135,11 @@ func TestModiyingAttributesIf(t *testing.T) {
 			scenario: "no update",
 			name:     "operation.name",
 			mod:      noModify{},
-			in: pcommon.NewMapFromRaw(map[string]interface{}{
+			in: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
-			expect: pcommon.NewMapFromRaw(map[string]interface{}{
+			expect: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
@@ -139,11 +148,11 @@ func TestModiyingAttributesIf(t *testing.T) {
 			scenario: "no update",
 			name:     "operation.name",
 			mod:      newModify(),
-			in: pcommon.NewMapFromRaw(map[string]interface{}{
+			in: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
-			expect: pcommon.NewMapFromRaw(map[string]interface{}{
+			expect: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
@@ -161,11 +170,11 @@ func TestModiyingAttributesIf(t *testing.T) {
 					"update": "shark",
 				},
 			},
-			in: pcommon.NewMapFromRaw(map[string]interface{}{
+			in: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
-			expect: pcommon.NewMapFromRaw(map[string]interface{}{
+			expect: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
@@ -183,11 +192,11 @@ func TestModiyingAttributesIf(t *testing.T) {
 					"update": "updated.at",
 				},
 			},
-			in: pcommon.NewMapFromRaw(map[string]interface{}{
+			in: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 			}),
-			expect: pcommon.NewMapFromRaw(map[string]interface{}{
+			expect: NewMapFromRaw(map[string]interface{}{
 				"label":      "robot",
 				"updated.at": "none",
 			}),
@@ -216,12 +225,12 @@ func TestModiyingAttributesIf(t *testing.T) {
 					},
 				},
 			},
-			in: pcommon.NewMapFromRaw(map[string]interface{}{
+			in: NewMapFromRaw(map[string]interface{}{
 				"define": "robot",
 				"update": "none",
 				"static": "yes",
 			}),
-			expect: pcommon.NewMapFromRaw(map[string]interface{}{
+			expect: NewMapFromRaw(map[string]interface{}{
 				"label":      "robot",
 				"updated.at": "none",
 				"static":     "yes",
