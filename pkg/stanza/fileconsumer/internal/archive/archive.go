@@ -23,7 +23,7 @@ type archive struct {
 	fileset        *fileset.Fileset[*reader.Metadata]
 }
 
-func NewArchive(pollsToArchive int) *archive {
+func NewArchive(pollsToArchive int) Archive {
 	return &archive{pollsToArchive: pollsToArchive}
 }
 

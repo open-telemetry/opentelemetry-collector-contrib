@@ -11,7 +11,7 @@ import (
 
 type nop_archive struct{}
 
-func NewNopArchive() *nop_archive {
+func NewNopArchive() Archive {
 	return &nop_archive{}
 }
 
