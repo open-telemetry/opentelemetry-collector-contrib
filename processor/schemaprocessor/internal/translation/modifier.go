@@ -78,7 +78,7 @@ func (mod *modify) UpdateAttrs(attrs pcommon.Map) {
 			// ordering of these methods is important
 			// otherwise you will get repeated values
 			// todo is this right
-			attrs.PutStr(to, v.Str())
+			v.CopyTo(attrs.PutEmpty(to))
 			attrs.Remove(from)
 		}
 	}
@@ -87,7 +87,7 @@ func (mod *modify) UpdateAttrs(attrs pcommon.Map) {
 func (mod *modify) RevertAttrs(attrs pcommon.Map) {
 	for to, from := range mod.attrs {
 		if v, match := attrs.Get(from); match {
-			attrs.PutStr(to, v.Str())
+			v.CopyTo(attrs.PutEmpty(to))
 			attrs.Remove(from)
 		}
 	}
