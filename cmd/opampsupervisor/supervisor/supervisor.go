@@ -803,7 +803,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 
 	// write the initial merged config to disk
 	cfg := s.mergedConfig.Load().(string)
-	if err := os.WriteFile(agentConfigFilePath, []byte(cfg), 0600); err != nil {
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
