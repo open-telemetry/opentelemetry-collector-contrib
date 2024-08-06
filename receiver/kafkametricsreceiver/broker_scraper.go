@@ -67,7 +67,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	rb.SetClusterAlias(s.config.ClusterAlias)
 
 	brokers := s.client.Brokers()
-	s.mb.RecordKafkaBrokersDataPoint((now), int64(len(brokers)))
+	s.mb.RecordKafkaBrokersDataPoint(now, int64(len(brokers)))
 
 	if s.clusterAdmin == nil {
 		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
