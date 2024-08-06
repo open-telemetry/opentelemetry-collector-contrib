@@ -136,6 +136,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentStateActive, AttributeIndexAggregationTypePrimaryShards)
 
@@ -143,6 +144,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsMergeCurrentDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
@@ -156,6 +158,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
