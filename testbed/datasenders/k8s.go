@@ -223,6 +223,21 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
   `)
 }
 
+// NewKubernetesContainerParserWriter returns FileLogK8sWriter with configuration
+// to recognize and parse kubernetes container logs using the container parser
+func NewKubernetesContainerParserWriter() *FileLogK8sWriter {
+	return NewFileLogK8sWriter(`
+  filelog:
+    include: [ %s ]
+    start_at: beginning
+    include_file_path: true
+    include_file_name: false
+    operators:
+      - type: container
+        id: container-parser
+  `)
+}
+
 // NewKubernetesCRIContainerdWriter returns FileLogK8sWriter with configuration
 // to parse only CRI-Containerd kubernetes logs
 func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {

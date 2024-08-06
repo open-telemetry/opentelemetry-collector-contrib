@@ -415,6 +415,7 @@ Available Converters:
 - [Day](#day)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Format](#format)
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
@@ -605,6 +606,25 @@ Examples:
 
 
 - `FNV("name")`
+
+### Format
+
+```Format(formatString, []formatArguments)```
+
+The `Format` Converter takes the given format string and formats it using `fmt.Sprintf` and the given arguments.
+
+`formatString` is a string. `formatArguments` is an array of values.
+
+If the `formatString` is not a string or does not exist, the `Format` Converter will return an error.
+If any of the `formatArgs` are incorrect (e.g. missing, or an incorrect type for the corresponding format specifier), then a string will still be returned, but with Go's default error handling for `fmt.Sprintf`.
+
+Format specifiers that can be used in `formatString` are documented in Go's [fmt package documentation](https://pkg.go.dev/fmt#hdr-Printing)
+
+Examples:
+
+- `Format("%02d", [attributes["priority"]])`
+- `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
+- `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
 
 ### Hex
 
@@ -1165,7 +1185,7 @@ Examples:
 
 - `SHA1("name")`
 
-**Note:** According to the National Institute of Standards and Technology (NIST), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+**Note:** [According to the National Institute of Standards and Technology (NIST)](https://csrc.nist.gov/projects/hash-functions), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer a SHA-2 family function (such as SHA-256 or SHA-512) whenever possible.
 
 ### SHA256
 
@@ -1185,8 +1205,6 @@ Examples:
 
 
 - `SHA256("name")`
-
-**Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
 
 ### SpanID
 
