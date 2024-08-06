@@ -1,5 +1,4 @@
 type: basicauth
-scope_name: otelcol/basicauth
 
 status:
   class: extension
