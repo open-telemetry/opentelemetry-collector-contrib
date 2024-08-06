@@ -1,5 +1,4 @@
 type: semconvchecker
-scope_name: otelcol/semconvchecker
 
 status:
   class: connector
