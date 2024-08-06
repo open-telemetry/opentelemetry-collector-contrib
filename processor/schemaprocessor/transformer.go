@@ -26,7 +26,7 @@ type transformer struct {
 	manager translation.Manager
 }
 
-func newTransformer(_ context.Context, conf config.Processor, set component.ProcessorCreateSettings) (*transformer, error) {
+func newTransformer(_ context.Context, conf component.Config, set processor.Settings) (*transformer, error) {
 	cfg, ok := conf.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration provided")
@@ -104,7 +104,7 @@ func (t *transformer) start(ctx context.Context, host component.Host) error {
 	// perfomring the http request
 	// TODO(MovieStoreGuy): Check for storage extensions
 
-	client, err := t.config.ToClient(host.GetExtensions(), t.telemetry)
+	client, err := t.config.ToClient(ctx, host, t.telemetry)
 	if err != nil {
 		return err
 	}
