@@ -24,6 +24,7 @@ type Config struct {
 	ApplicationKey                 configopaque.String `mapstructure:"application_key"`
 	TenantID                       string              `mapstructure:"tenant_id"`
 	ManagedIdentityID              string              `mapstructure:"managed_identity_id"`
+	FederatedTokenFile             string              `mapstructure:"federated_token_file"`
 	Database                       string              `mapstructure:"db_name"`
 	MetricTable                    string              `mapstructure:"metrics_table_name"`
 	LogTable                       string              `mapstructure:"logs_table_name"`
@@ -62,6 +63,12 @@ func (adxCfg *Config) Validate() error {
 			return errors.New("managed_identity_id should be a UUID string (for User Managed Identity) or system (for System Managed Identity)")
 		}
 	}
+
+	// FederatedTokenFile should only be used with Workload identity
+	if adxCfg.FederatedTokenFile != "" && (adxCfg.ManagedIdentityID != "WORKLOADIDENTITY") {
+		return errors.New("federated_token_file should be empty unless managed_identity_id is set to workloadidentity")
+	}
+
 	return nil
 }
 

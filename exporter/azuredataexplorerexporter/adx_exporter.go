@@ -211,17 +211,29 @@ func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
 }
 
 func createKcsb(config *Config, version string) *kusto.ConnectionStringBuilder {
-	var kcsb *kusto.ConnectionStringBuilder
 	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
-	// If the user has managed identity done, use it. For System managed identity use the MI as system
+	isWorkloadIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "WORKLOADIDENTITY")
+
+	kcsb := kusto.NewConnectionStringBuilder(config.ClusterURI)
+	// If the configuration specifies a managed identity, use it.
 	switch {
 	case !isManagedIdentity:
-		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
+		kcsb = kcsb.WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
 	case isManagedIdentity && isSystemManagedIdentity:
-		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
-	case isManagedIdentity && !isSystemManagedIdentity:
-		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityID)
+		kcsb = kcsb.WithSystemManagedIdentity()
+	case isManagedIdentity && !isSystemManagedIdentity && !isWorkloadIdentity:
+		kcsb = kcsb.WithUserManagedIdentity(config.ManagedIdentityID)
+	case isManagedIdentity && !isSystemManagedIdentity && isWorkloadIdentity:
+		// https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview
+		// https://azure.github.io/azure-workload-identity/docs/quick-start.html
+		//
+		// The azidentity module reads environment variables AZURE_CLIENT_ID, AZURE_TENANT_ID
+		// and AZURE_FEDERATED_TOKEN_FILE when the corresponding WorkloadIdentityCredentialOptions
+		// are empty strings. As such, configurations can leave those parameters empty,
+		// as these environment varables are typically defined in pods that use WorkloadIdentity.
+		//
+		kcsb = kcsb.WithKubernetesWorkloadIdentity(config.ApplicationID, config.FederatedTokenFile, config.TenantID)
 	}
 	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{Key: "isManagedIdentity", Value: strconv.FormatBool(isManagedIdentity)})
 	return kcsb
