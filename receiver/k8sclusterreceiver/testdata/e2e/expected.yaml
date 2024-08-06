@@ -18,7 +18,7 @@ resourceMetrics:
             name: k8s.namespace.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -39,7 +39,7 @@ resourceMetrics:
             name: k8s.namespace.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -60,7 +60,7 @@ resourceMetrics:
             name: k8s.namespace.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -81,7 +81,7 @@ resourceMetrics:
             name: k8s.namespace.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -102,7 +102,7 @@ resourceMetrics:
             name: k8s.namespace.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -123,7 +123,7 @@ resourceMetrics:
             name: k8s.node.condition_ready
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -168,7 +168,7 @@ resourceMetrics:
             name: k8s.daemonset.ready_nodes
             unit: "{node}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -213,7 +213,7 @@ resourceMetrics:
             name: k8s.daemonset.ready_nodes
             unit: "{node}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -244,7 +244,7 @@ resourceMetrics:
             name: k8s.deployment.available
             unit: "{pod}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -275,7 +275,7 @@ resourceMetrics:
             name: k8s.deployment.available
             unit: "{pod}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -306,7 +306,7 @@ resourceMetrics:
             name: k8s.deployment.available
             unit: "{pod}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -337,7 +337,7 @@ resourceMetrics:
             name: k8s.replicaset.available
             unit: "{pod}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -368,7 +368,7 @@ resourceMetrics:
             name: k8s.replicaset.available
             unit: "{pod}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -399,7 +399,7 @@ resourceMetrics:
             name: k8s.replicaset.available
             unit: "{pod}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -426,7 +426,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -453,7 +453,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -480,7 +480,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -507,7 +507,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -534,7 +534,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -561,7 +561,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -588,7 +588,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -615,7 +615,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -642,7 +642,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -669,7 +669,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -729,7 +729,7 @@ resourceMetrics:
             name: k8s.container.memory_request
             unit: "By"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -803,7 +803,7 @@ resourceMetrics:
             name: k8s.container.memory_limit
             unit: "By"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -856,7 +856,7 @@ resourceMetrics:
             name: k8s.container.cpu_request
             unit: "{cpu}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -909,7 +909,7 @@ resourceMetrics:
             name: k8s.container.cpu_request
             unit: "{cpu}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -962,7 +962,7 @@ resourceMetrics:
             name: k8s.container.cpu_request
             unit: "{cpu}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -1008,7 +1008,7 @@ resourceMetrics:
             name: k8s.container.ready
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -1075,7 +1075,7 @@ resourceMetrics:
             name: k8s.container.memory_limit
             unit: "By"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -1149,7 +1149,7 @@ resourceMetrics:
             name: k8s.container.memory_limit
             unit: "By"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -1195,7 +1195,7 @@ resourceMetrics:
             name: k8s.container.ready
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -1262,5 +1262,5 @@ resourceMetrics:
             name: k8s.container.memory_limit
             unit: "By"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
