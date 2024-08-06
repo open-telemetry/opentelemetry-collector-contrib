@@ -379,10 +379,13 @@ The following general labels are supported:
 
 | Label                | Label in Comment     |
 |----------------------|----------------------|
+| `arm64`              | `arm64`              |
 | `good first issue`   | `good-first-issue`   |
 | `help wanted`        | `help-wanted`        |
 | `discussion needed`  | `discussion-needed`  |
 | `needs triage`       | `needs-triage`       |
+| `os:mac`             | `os:mac`             |
+| `os:windows`         | `os:windows`         |
 | `waiting for author` | `waiting-for-author` |
 
 To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
