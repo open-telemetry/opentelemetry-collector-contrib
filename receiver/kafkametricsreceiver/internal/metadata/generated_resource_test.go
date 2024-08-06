@@ -13,7 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(test, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
-			rb.SetClusterAlias("cluster_alias-val")
+			rb.SetKafkaClusterAlias("kafka.cluster.alias-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -30,10 +30,10 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", test)
 			}
 
-			val, ok := res.Attributes().Get("cluster_alias")
+			val, ok := res.Attributes().Get("kafka.cluster.alias")
 			assert.Equal(t, test == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "cluster_alias-val", val.Str())
+				assert.EqualValues(t, "kafka.cluster.alias-val", val.Str())
 			}
 		})
 	}

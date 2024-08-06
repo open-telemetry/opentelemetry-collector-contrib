@@ -128,7 +128,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordKafkaTopicReplicationFactorDataPoint(ts, 1, "topic-val")
 
 			rb := mb.NewResourceBuilder()
-			rb.SetClusterAlias("cluster_alias-val")
+			rb.SetKafkaClusterAlias("kafka.cluster.alias-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

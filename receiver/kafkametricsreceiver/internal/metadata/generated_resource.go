@@ -21,10 +21,10 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetClusterAlias sets provided value as "cluster_alias" attribute.
-func (rb *ResourceBuilder) SetClusterAlias(val string) {
-	if rb.config.ClusterAlias.Enabled {
-		rb.res.Attributes().PutStr("cluster_alias", val)
+// SetKafkaClusterAlias sets provided value as "kafka.cluster.alias" attribute.
+func (rb *ResourceBuilder) SetKafkaClusterAlias(val string) {
+	if rb.config.KafkaClusterAlias.Enabled {
+		rb.res.Attributes().PutStr("kafka.cluster.alias", val)
 	}
 }
 

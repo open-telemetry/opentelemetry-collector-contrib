@@ -109,7 +109,7 @@ func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 	assert.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
-	_, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("cluster_alias")
+	_, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias")
 	require.Equal(t, false, ok)
 }
 
@@ -130,7 +130,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	assert.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
-	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("cluster_alias"); ok {
+	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias"); ok {
 		require.Equal(t, testClusterAlias, val.Str())
 	}
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()

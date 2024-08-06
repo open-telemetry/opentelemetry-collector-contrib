@@ -127,12 +127,12 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for kafkametrics resource attributes.
 type ResourceAttributesConfig struct {
-	ClusterAlias ResourceAttributeConfig `mapstructure:"cluster_alias"`
+	KafkaClusterAlias ResourceAttributeConfig `mapstructure:"kafka.cluster.alias"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		ClusterAlias: ResourceAttributeConfig{
+		KafkaClusterAlias: ResourceAttributeConfig{
 			Enabled: false,
 		},
 	}

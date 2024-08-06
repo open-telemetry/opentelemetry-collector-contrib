@@ -10,7 +10,7 @@ status:
     active: [dmitryax]
 
 resource_attributes:
-  cluster_alias:
+  kafka.cluster.alias:
     description: The alias name (string) of the cluster
     enabled: false
     type: string

@@ -43,7 +43,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					KafkaTopicReplicationFactor:   MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ClusterAlias: ResourceAttributeConfig{Enabled: true},
+					KafkaClusterAlias: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -69,7 +69,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					KafkaTopicReplicationFactor:   MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ClusterAlias: ResourceAttributeConfig{Enabled: false},
+					KafkaClusterAlias: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -106,13 +106,13 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				ClusterAlias: ResourceAttributeConfig{Enabled: true},
+				KafkaClusterAlias: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				ClusterAlias: ResourceAttributeConfig{Enabled: false},
+				KafkaClusterAlias: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

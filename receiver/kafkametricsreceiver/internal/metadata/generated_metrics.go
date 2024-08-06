@@ -909,11 +909,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.ClusterAlias.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["cluster_alias"] = filter.CreateFilter(mbc.ResourceAttributes.ClusterAlias.MetricsInclude)
+	if mbc.ResourceAttributes.KafkaClusterAlias.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["kafka.cluster.alias"] = filter.CreateFilter(mbc.ResourceAttributes.KafkaClusterAlias.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ClusterAlias.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["cluster_alias"] = filter.CreateFilter(mbc.ResourceAttributes.ClusterAlias.MetricsExclude)
+	if mbc.ResourceAttributes.KafkaClusterAlias.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["kafka.cluster.alias"] = filter.CreateFilter(mbc.ResourceAttributes.KafkaClusterAlias.MetricsExclude)
 	}
 
 	for _, op := range options {

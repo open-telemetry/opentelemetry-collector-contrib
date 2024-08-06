@@ -162,7 +162,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	rb := s.mb.NewResourceBuilder()
-	rb.SetClusterAlias(s.config.ClusterAlias)
+	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
 
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeError
 }

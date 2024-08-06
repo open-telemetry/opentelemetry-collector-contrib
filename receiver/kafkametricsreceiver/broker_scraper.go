@@ -64,7 +64,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	rb := s.mb.NewResourceBuilder()
-	rb.SetClusterAlias(s.config.ClusterAlias)
+	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
 
 	brokers := s.client.Brokers()
 	s.mb.RecordKafkaBrokersDataPoint(now, int64(len(brokers)))
