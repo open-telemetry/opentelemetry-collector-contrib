@@ -4,13 +4,13 @@
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"strconv"
 	"time"
-	"io"
-	"encoding/json"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,7 +36,7 @@ func HandleHTTPCode(resp *http.Response) error {
 		var jsonResponse map[string]any
 		bodyString, _ := io.ReadAll(resp.Body)
 		unmarshalError := json.Unmarshal(bodyString, &jsonResponse)
-		
+
 		if unmarshalError == nil {
 			responseErrorValue, ok := jsonResponse["text"]
 			if ok {
@@ -46,7 +46,7 @@ func HandleHTTPCode(resp *http.Response) error {
 			}
 		}
 	}
-	
+
 	switch resp.StatusCode {
 	// Check for responses that may include "Retry-After" header.
 	case http.StatusTooManyRequests, http.StatusServiceUnavailable:

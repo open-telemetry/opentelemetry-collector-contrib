@@ -5,12 +5,12 @@ package splunk
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
-	"io"
-	"strings"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumererror"
