@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest
 
-go 1.21.0
+go 1.22
+
+toolchain go1.22.6
 
 require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.57.0-devel.0.20240718200853-81bf3b2e412d

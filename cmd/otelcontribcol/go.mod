@@ -2,9 +2,9 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
 
-go 1.21.0
+go 1.22
 
-toolchain go1.21.12
+toolchain go1.22.6
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.106.1
@@ -685,7 +685,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
-	github.com/prometheus-community/windows_exporter v0.25.1 // indirect
+	github.com/prometheus-community/windows_exporter v0.26.2 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect

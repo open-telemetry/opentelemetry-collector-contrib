@@ -727,8 +727,8 @@ github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH
 github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
 github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c h1:NRoLoZvkBTKvR5gQLgA3e0hqjkY9u1wm+iOL45VN/qI=
 github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
-github.com/prometheus-community/windows_exporter v0.25.1 h1:sagNoaBC1TirUNt8YE4eIpeDNQbswrRHsMxvluYHbyU=
-github.com/prometheus-community/windows_exporter v0.25.1/go.mod h1:fmM+2zsneBex4oamnr5YHzikZ+34Zhkxg7h3fZVtDWY=
+github.com/prometheus-community/windows_exporter v0.26.2 h1:hlXi8fro34I2W5sucoviEt9kzixlztpNUsBOw5kIQjw=
+github.com/prometheus-community/windows_exporter v0.26.2/go.mod h1:5r9EMDZEMh+6a7fuTOoO/aik6R33NdSj5y19TFcfvDU=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v0.9.3/go.mod h1:/TN21ttK/J9q6uSwhBd54HahCDft0ttaMvbicHlPoso=
 github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5FsnadC4Ky3P0J6CfImo=
