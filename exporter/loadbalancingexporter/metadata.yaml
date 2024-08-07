@@ -1,5 +1,4 @@
 type: loadbalancing
-scope_name: otelcol/loadbalancing
 
 status:
   class: exporter
