@@ -393,7 +393,13 @@ Example label comment:
 /label receiver/prometheus help-wanted -exporter/prometheus
 ```
 
-## Becoming a Code Owner
+## Membership, Roles, and Responsibilities
+
+### Membership levels
+
+See the [OpenTelemetry membership guide](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md) for information on how to become a member of the OpenTelemetry organization and the different roles available. In addition to the roles listed there we also have a Collector-specific role: code owners.
+
+### Becoming a Code Owner
 
 A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
 
@@ -406,7 +412,7 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 
 Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
-### Requirements
+#### Requirements
 
 If you would like to help and become a Code Owner you must meet the following requirements:
 
@@ -415,7 +421,7 @@ If you would like to help and become a Code Owner you must meet the following re
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
-### How to become a Code Owner
+#### How to become a Code Owner
 
 To become a Code Owner, open a PR with the following changes:
 
@@ -425,6 +431,14 @@ To become a Code Owner, open a PR with the following changes:
       * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make generate` to regenerate the component's README header.
 
 Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+
+### Emeritus roles
+
+Contributors that are stepping down or reducing their role in the project are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). 
+
+In the event that a contributor steps down without prior notice, the maintainers will attempt to contact the contributor via both Github and the CNCF Slack to confirm their status. After two weeks, if the contributor is an approver or maintainer, they may be removed from the Github review auto-assignment. If the contributor does not respond within a period of one month, they may be moved to emeritus status at the discretion of the maintainers.
+
+In case of disagreement, this will be submitted to a majority vote among the maintainers (possibly excluding the contributor in question).
 
 ## Makefile Guidelines
 
