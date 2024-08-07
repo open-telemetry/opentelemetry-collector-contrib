@@ -169,6 +169,7 @@ body:
       - processor/groupbytrace
       - processor/interval
       - processor/k8sattributes
+      - processor/logdeduplication
       - processor/logstransform
       - processor/metricsgeneration
       - processor/metricstransform
