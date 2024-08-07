@@ -283,7 +283,8 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 	return nil
 }
 
-// Under OTel mode, set of map key prefixes where keys should be flattened from that level.
+// Under OTel mode, set of key prefixes where keys should be flattened from that level.
+// It is not aware of whether it is a root document or sub-document.
 // NOTE: This works very delicately with the implementation of OTel mode that
 // e.g. resource.attributes is a "resource" objmodel.Document under the root document that contains attributes
 // added using AddAttributes func as flattened keys.
