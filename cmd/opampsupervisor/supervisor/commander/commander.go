@@ -160,7 +160,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 	c.logger.Debug("Stopping agent process", zap.Int("pid", pid))
 
 	// Gracefully signal process to stop.
-	if err := c.cmd.Process.Signal(syscall.SIGTERM); err != nil {
+	if err := sendShutdownSignal(c.cmd.Process); err != nil {
 		return err
 	}
 
