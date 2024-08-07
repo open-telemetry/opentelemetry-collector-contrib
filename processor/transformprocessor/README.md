@@ -422,8 +422,6 @@ To aggregate only using a specified set of attributes, you can use `keep_matchin
 
 The `aggregate_on_attribute_value` function aggreates all datapoints in the metric containing the attribute `attribute` with one of the values present in the `values` parameter using the aggregation function specified in `function` parameter. Additionally it substitutes the values of the specified `attribute` with a new value in `newValue` parameter.
 
-The `aggregate_on_attribute_value` function fetches all datapoints in the metric, which have the attribute `attribute` present with one of the values speficied in `values` and substitutes these values with `newValue`. Afterwards all datapoints are aggregated depending on the attributes.
-
 The following metric types can be aggregated:
 
 - sum
