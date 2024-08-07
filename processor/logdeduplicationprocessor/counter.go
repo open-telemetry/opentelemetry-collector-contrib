@@ -116,7 +116,8 @@ func (r *resourceAggregator) Add(logRecord plog.LogRecord) {
 	key := getLogKey(logRecord)
 	lc, ok := r.logCounters[key]
 	if !ok {
-		r.logCounters[key] = newLogCounter(logRecord)
+		lc = newLogCounter(logRecord)
+		r.logCounters[key] = lc
 	}
 	lc.Increment()
 }
@@ -132,8 +133,9 @@ type logCounter struct {
 // newLogCounter creates a new AttributeCounter.
 func newLogCounter(logRecord plog.LogRecord) *logCounter {
 	return &logCounter{
-		logRecord: logRecord,
-		count:     0,
+		logRecord:              logRecord,
+		count:                  0,
+		firstObservedTimestamp: timeNow().UTC(),
 	}
 }
 
