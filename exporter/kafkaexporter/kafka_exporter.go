@@ -40,8 +40,8 @@ func (ke kafkaErrors) Error() string {
 	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
 }
 
-func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
-	messages, err := e.marshaler.Marshal(td, getTopic(&e.cfg, td.ResourceSpans()))
+func (e *kafkaTracesProducer) tracesPusher(ctx context.Context, td ptrace.Traces) error {
+	messages, err := e.marshaler.Marshal(td, getTopic(ctx, &e.cfg, td.ResourceSpans()))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -82,8 +82,8 @@ type kafkaMetricsProducer struct {
 	logger    *zap.Logger
 }
 
-func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.Metrics) error {
-	messages, err := e.marshaler.Marshal(md, getTopic(&e.cfg, md.ResourceMetrics()))
+func (e *kafkaMetricsProducer) metricsDataPusher(ctx context.Context, md pmetric.Metrics) error {
+	messages, err := e.marshaler.Marshal(md, getTopic(ctx, &e.cfg, md.ResourceMetrics()))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -124,8 +124,8 @@ type kafkaLogsProducer struct {
 	logger    *zap.Logger
 }
 
-func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) error {
-	messages, err := e.marshaler.Marshal(ld, getTopic(&e.cfg, ld.ResourceLogs()))
+func (e *kafkaLogsProducer) logsDataPusher(ctx context.Context, ld plog.Logs) error {
+	messages, err := e.marshaler.Marshal(ld, getTopic(ctx, &e.cfg, ld.ResourceLogs()))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -259,14 +259,19 @@ type resource interface {
 	Resource() pcommon.Resource
 }
 
-func getTopic[T resource](cfg *Config, resources resourceSlice[T]) string {
-	if cfg.TopicFromAttribute == "" {
-		return cfg.Topic
+func getTopic[T resource](ctx context.Context, cfg *Config, resources resourceSlice[T]) string {
+	if cfg.TopicFromAttribute != "" {
+		for i := 0; i < resources.Len(); i++ {
+			rv, ok := resources.At(i).Resource().Attributes().Get(cfg.TopicFromAttribute)
+			if ok && rv.Str() != "" {
+				return rv.Str()
+			}
+		}
 	}
-	for i := 0; i < resources.Len(); i++ {
-		rv, ok := resources.At(i).Resource().Attributes().Get(cfg.TopicFromAttribute)
-		if ok && rv.Str() != "" {
-			return rv.Str()
+	if cfg.TopicFromContext != "" {
+		topic, ok := ctx.Value(cfg.TopicFromContext).(string)
+		if ok {
+			return topic
 		}
 	}
 	return cfg.Topic
