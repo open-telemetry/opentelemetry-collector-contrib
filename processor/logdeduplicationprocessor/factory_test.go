@@ -10,12 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdeduplicationprocessor/internal/metadata"
 )
 
 func TestNewProcessorFactory(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, componentType, f.Type())
-	require.Equal(t, stability, f.LogsProcessorStability())
+	require.Equal(t, metadata.Type, f.Type())
+	require.Equal(t, metadata.LogsStability, f.LogsProcessorStability())
 	require.NotNil(t, f.CreateDefaultConfig())
 	require.NotNil(t, f.CreateLogsProcessor)
 }
