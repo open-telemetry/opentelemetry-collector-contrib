@@ -16,6 +16,7 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -160,7 +161,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 	}
 
 	statsJSON, err := cli.toStatsJSON(
-		dtypes.ContainerStats{
+		container.StatsResponseReader{
 			Body: io.NopCloser(strings.NewReader("")),
 		}, dc,
 	)
@@ -168,7 +169,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 	assert.Equal(t, io.EOF, err)
 
 	statsJSON, err = cli.toStatsJSON(
-		dtypes.ContainerStats{
+		container.StatsResponseReader{
 			Body: io.NopCloser(strings.NewReader("{\"Networks\": 123}")),
 		}, dc,
 	)
