@@ -446,6 +446,7 @@ Available Converters:
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
+- [SHA512](#sha512)
 - [SpanID](#spanid)
 - [Split](#split)
 - [String](#string)
@@ -1205,6 +1206,23 @@ Examples:
 
 
 - `SHA256("name")`
+
+### SHA512
+
+`SHA512(input)`
+
+The `SHA512` converter calculates sha512 hash value/digest of the `input`.
+
+The returned type is string.
+
+`input` is either a path expression to a string telemetry field or a literal string. If `input` is another type, converter raises an error.
+If an error occurs during hashing, the error will be returned.
+
+Examples:
+
+- `SHA512(attributes["device.name"])`
+
+- `SHA512("name")`
 
 ### SpanID
 
