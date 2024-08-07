@@ -14,20 +14,20 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/jaegerreceiver")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/jaegerreceiver")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                            metric.Meter
-	JaegerReceiverThriftPktDropped   metric.Int64UpDownCounter
-	JaegerReceiverThriftPktProcessed metric.Int64UpDownCounter
-	level                            configtelemetry.Level
+	meter                                         metric.Meter
+	JaegerReceiverThriftUDPServerPacketsDropped   metric.Int64UpDownCounter
+	JaegerReceiverThriftUDPServerPacketsProcessed metric.Int64UpDownCounter
+	level                                         configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -53,14 +53,14 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	} else {
 		builder.meter = noop.Meter{}
 	}
-	builder.JaegerReceiverThriftPktDropped, err = builder.meter.Int64UpDownCounter(
-		"otelcol_jaeger_receiver_thrift_pkt_dropped",
+	builder.JaegerReceiverThriftUDPServerPacketsDropped, err = builder.meter.Int64UpDownCounter(
+		"otelcol_jaeger.receiver.thrift.udp.server.packets.dropped",
 		metric.WithDescription("Number of thrift packets discarded due to a full receive queue"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.JaegerReceiverThriftPktProcessed, err = builder.meter.Int64UpDownCounter(
-		"otelcol_jaeger_receiver_thrift_pkt_processed",
+	builder.JaegerReceiverThriftUDPServerPacketsProcessed, err = builder.meter.Int64UpDownCounter(
+		"otelcol_jaeger.receiver.thrift.udp.server.packets.processed",
 		metric.WithDescription("Number of successfully processed thrift packets"),
 		metric.WithUnit("1"),
 	)

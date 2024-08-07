@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_jaeger_receiver_thrift_pkt_dropped
+### otelcol_jaeger.receiver.thrift.udp.server.packets.dropped
 
 Number of thrift packets discarded due to a full receive queue
 
@@ -14,7 +14,7 @@ Number of thrift packets discarded due to a full receive queue
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | false |
 
-### otelcol_jaeger_receiver_thrift_pkt_processed
+### otelcol_jaeger.receiver.thrift.udp.server.packets.processed
 
 Number of successfully processed thrift packets
 

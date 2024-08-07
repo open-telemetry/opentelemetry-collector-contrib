@@ -447,10 +447,10 @@ func (jr *jReceiver) MakeMetricsFactory(ctx context.Context) metrics.Factory {
 	metricsFactory := &OTelMetrics{
 		counters: map[string]counterHandler{
 			DroppedPacketsStat: func(i int64) {
-				jr.tBuilder.JaegerReceiverThriftPktDropped.Add(ctx, i)
+				jr.tBuilder.JaegerReceiverThriftUDPServerPacketsDropped.Add(ctx, i)
 			},
 			ProcessedPacketsStat: func(i int64) {
-				jr.tBuilder.JaegerReceiverThriftPktProcessed.Add(ctx, i)
+				jr.tBuilder.JaegerReceiverThriftUDPServerPacketsDropped.Add(ctx, i)
 			},
 		},
 	}
