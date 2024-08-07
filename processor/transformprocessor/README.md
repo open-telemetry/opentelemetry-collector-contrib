@@ -446,7 +446,7 @@ Examples:
 
 - `aggregate_on_attribute_value(sum, attr1, [val1, val2], new_val) where name == "system.memory.usage`
 
-The `aggregate_on_attributes` function can also be used in conjunction with 
+The `aggregate_on_attribute_value` function can also be used in conjunction with 
 [keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
 [delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
 
