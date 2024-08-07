@@ -1,0 +1,20 @@
+extensions:
+  zpages: {}
+  #basicauth/otlp:
+    #client_auth:
+     # username: "${OTLP_USER}"
+     # password: "${GRAFANA_ACCESS_TOKEN}"
+
+receivers:
+  nop:
+
+exporters:
+  otlp:
+    endpoint: "aaa${OTLP_USER}"
+
+service:
+  extensions: #[basicauth/otlp, zpages]
+  pipelines:
+    traces:
+      receivers: [nop]
+      exporters: [nop]
