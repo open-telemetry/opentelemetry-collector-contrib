@@ -434,7 +434,7 @@ Be sure to tag the existing Code Owners, if any, within the PR to ensure they re
 
 ### Emeritus roles
 
-Contributors that are stepping down or reducing their role in the project are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack #otel-collector-dev channel and to mark themselves as 'Busy' on Github.
+Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github.
 
 In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via both Github and the CNCF Slack to confirm their status. After two weeks, if the contributor is an approver or maintainer, they may be removed from the Github review auto-assignment.
 
