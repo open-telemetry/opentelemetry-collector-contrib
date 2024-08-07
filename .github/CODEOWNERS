@@ -129,6 +129,7 @@ internal/coreinternal/                                              @open-teleme
 internal/docker/                                                    @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
 internal/exp/metrics/                                               @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams
 internal/filter/                                                    @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+internal/grpcutil/                                                  @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3 @lquerel
 internal/k8sconfig/                                                 @open-telemetry/collector-contrib-approvers @dmitryax
 internal/k8stest/                                                   @open-telemetry/collector-contrib-approvers @crobert-1
 internal/kafka/                                                     @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
