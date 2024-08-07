@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package logdeduplicationprocessor provides a processor that counts logs as metrics.
-package logdeduplicationprocessor
+package logdeduplicationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdeduplicationprocessor"
 
 import (
 	"errors"
