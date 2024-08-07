@@ -116,9 +116,7 @@ func (r *resourceAggregator) Add(logRecord plog.LogRecord) {
 	key := getLogKey(logRecord)
 	lc, ok := r.logCounters[key]
 	if !ok {
-		lc = newLogCounter(logRecord)
-		lc.firstObservedTimestamp = timeNow().UTC()
-		r.logCounters[key] = lc
+		r.logCounters[key] = newLogCounter(logRecord)
 	}
 	lc.Increment()
 }
@@ -145,7 +143,7 @@ func (a *logCounter) Increment() {
 	a.count++
 }
 
-// getLogKey creates a unique md5 hash for the log record to use as a map key
+// getLogKey creates a unique hash for the log record to use as a map key
 /* #nosec G104 -- According to Hash interface write can never return an error */
 func getLogKey(logRecord plog.LogRecord) [8]byte {
 	hasher := fnv.New64()
