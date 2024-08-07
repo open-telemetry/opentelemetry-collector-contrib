@@ -128,7 +128,8 @@ func TestShutdownBeforeStart(t *testing.T) {
 	p, err := newProcessor(cfg, logsSink, logger)
 	require.NoError(t, err)
 	require.NotPanics(t, func() {
-		p.Shutdown(context.Background())
+		err := p.Shutdown(context.Background())
+		require.NoError(t, err)
 	})
 }
 
@@ -155,7 +156,7 @@ func TestProcessorConsume(t *testing.T) {
 	logRecord1 := generateTestLogRecord(t, "Body of the log")
 	logRecord2 := generateTestLogRecord(t, "Body of the log")
 
-	//Differ by timestamp and attribute to be removed
+	// Differ by timestamp and attribute to be removed
 	logRecord1.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Minute)))
 	logRecord2.Attributes().PutBool("remove_me", false)
 

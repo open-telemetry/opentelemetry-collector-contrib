@@ -185,7 +185,7 @@ func Test_getLogKey(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				logRecord1 := generateTestLogRecord(t, "Body of the log")
 
-				//Differ by timestamp
+				// Differ by timestamp
 				logRecord1.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Minute)))
 
 				logRecord2 := generateTestLogRecord(t, "Body of the log")
