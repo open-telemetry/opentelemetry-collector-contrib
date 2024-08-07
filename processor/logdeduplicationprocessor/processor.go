@@ -44,8 +44,8 @@ func newProcessor(cfg *Config, consumer consumer.Logs, logger *zap.Logger) (*log
 }
 
 // Start starts the processor.
-func (p *logDedupProcessor) Start(_ context.Context, _ component.Host) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (p *logDedupProcessor) Start(ctx context.Context, _ component.Host) error {
+	ctx, cancel := context.WithCancel(ctx)
 	p.cancel = cancel
 
 	p.wg.Add(1)
