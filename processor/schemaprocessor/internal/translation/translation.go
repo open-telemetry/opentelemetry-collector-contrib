@@ -61,12 +61,12 @@ type translator struct {
 	schemaURL string
 	target    *Version
 	indexes   map[Version]int
-	revisions []Revision
+	revisions []RevisionV1
 
 	log *zap.Logger
 }
 
-type iterator func() (r Revision, more bool)
+type iterator func() (r RevisionV1, more bool)
 
 var (
 	_ sort.Interface = (*translator)(nil)
@@ -317,7 +317,7 @@ func (t *translator) parseContent(r io.Reader) (errs error) {
 func (t *translator) iterator(ctx context.Context, from *Version) (iterator, int) {
 	status := from.Compare(t.target)
 	if status == NoChange || !t.SupportedVersion(from) {
-		return func() (r Revision, more bool) { return nil, false }, NoChange
+		return func() (r RevisionV1, more bool) { return RevisionV1{}, false }, NoChange
 	}
 	it, stop := t.indexes[*from], t.indexes[*t.target]
 	if status == Update {
@@ -325,17 +325,17 @@ func (t *translator) iterator(ctx context.Context, from *Version) (iterator, int
 		// for the signal to be the correct version.
 		stop++
 	}
-	return func() (Revision, bool) {
+	return func() (RevisionV1, bool) {
 		select {
 		case <-ctx.Done():
-			return nil, false
+			return RevisionV1{}, false
 		default:
 			// No action required heree
 		}
 
 		// Performs a bounds check and if it has reached stop
 		if it < 0 || it == len(t.revisions) || it == stop {
-			return nil, false
+			return RevisionV1{}, false
 		}
 
 		r := t.revisions[it]

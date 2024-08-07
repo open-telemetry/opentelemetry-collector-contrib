@@ -11,6 +11,7 @@ import (
 
 // RevisionV1 represents all changes that are to be
 // applied to a signal at a given version.
+// todo(ankit) are log changes handled?  i dont think soooo
 type RevisionV1 struct {
 	ver              *Version
 	all              *migrate.AttributeChangeSetSlice
@@ -28,6 +29,7 @@ type RevisionV1 struct {
 // Since VersionDef uses custom types for various definitions, it isn't possible
 // to cast those values into the primitives so each has to be processed together.
 // Generics would be handy here.
+// todo(ankit) investigate this
 func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 	return &RevisionV1{
 		ver:              ver,
@@ -40,6 +42,10 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		metricsAttrs:     newMetricConditionalSlice(def.Metrics),
 		metricNames:      newMetricNameSignalSlice(def.Metrics),
 	}
+}
+
+func (r RevisionV1) Version() *Version {
+	return r.ver
 }
 
 func newAttributeChangeSetSliceFromChanges(attrs ast.Attributes) *migrate.AttributeChangeSetSlice {
