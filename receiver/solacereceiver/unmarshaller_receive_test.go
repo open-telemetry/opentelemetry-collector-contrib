@@ -922,6 +922,6 @@ func newTestReceiveV1Unmarshaller(t *testing.T) (*brokerTraceReceiveUnmarshaller
 	tt := setupTestTelemetry()
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
 	require.NoError(t, err)
-	metricAttr := attribute.NewSet(attribute.String("broker_component_name", tt.NewSettings().ID.Name()))
+	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
 	return &brokerTraceReceiveUnmarshallerV1{zap.NewNop(), telemetryBuilder, metricAttr}, tt
 }

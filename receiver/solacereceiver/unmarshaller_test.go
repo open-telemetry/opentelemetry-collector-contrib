@@ -323,7 +323,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			tel := setupTestTelemetry()
 			telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
 			require.NoError(t, err)
-			metricAttr := attribute.NewSet(attribute.String("broker_component_name", tel.NewSettings().ID.Name()))
+			metricAttr := attribute.NewSet(attribute.String("receiver_name", tel.NewSettings().ID.Name()))
 			u := newTracesUnmarshaller(zap.NewNop(), telemetryBuilder, metricAttr)
 			traces, err := u.unmarshal(tt.message)
 			if tt.err != nil {

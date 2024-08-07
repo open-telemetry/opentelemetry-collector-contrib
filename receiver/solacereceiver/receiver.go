@@ -41,7 +41,7 @@ const (
 )
 
 const (
-	brokerComponenteNameAttr = "broker_component_name"
+	brokerComponenteNameAttr = "receiver_name"
 )
 
 // solaceTracesReceiver uses azure AMQP to consume and handle telemetry data from SOlace. Implements receiver.Traces
