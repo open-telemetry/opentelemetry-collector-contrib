@@ -76,7 +76,7 @@ func newConnector(params connector.Settings, config component.Config) (*connecto
 
 	res := pcommon.NewResource()
 	params.Resource.CopyTo(res)
-	res.Attributes().PutStr("service.name", "semconvcheckerconnector")
+	res.Attributes().PutStr("connector.name", "semconvchecker")
 
 	return &connectorImp{
 		logger:   params.Logger,
