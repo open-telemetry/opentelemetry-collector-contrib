@@ -1191,6 +1191,34 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 	require.Equal(t, newID, uuid.UUID(newRecievedAgentID))
 }
 
+func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
+	// Tests that the agent logs and effective.yaml are written under the storage directory.
+	storageDir := t.TempDir()
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{},
+	)
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	s.Shutdown()
+
+	t.Logf("Supervisor shutdown")
+
+	// Check config and log files are written in storage dir
+	require.FileExists(t, filepath.Join(storageDir, "agent.log"))
+	require.FileExists(t, filepath.Join(storageDir, "effective.yaml"))
+}
+
 func findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 
