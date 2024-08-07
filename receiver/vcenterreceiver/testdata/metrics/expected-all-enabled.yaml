@@ -130,7 +130,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{virtual_machines}'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -345,7 +345,7 @@ resourceMetrics:
             name: vcenter.cluster.vsan.throughput
             unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -386,7 +386,7 @@ resourceMetrics:
             name: vcenter.datastore.disk.utilization
             unit: '%'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -3142,7 +3142,7 @@ resourceMetrics:
             name: vcenter.host.vsan.throughput
             unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -5901,7 +5901,7 @@ resourceMetrics:
             name: vcenter.host.vsan.throughput
             unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -6012,7 +6012,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: MiBy
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -6123,7 +6123,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: MiBy
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -6165,7 +6165,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: By
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -6799,7 +6799,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -7535,7 +7535,7 @@ resourceMetrics:
             name: vcenter.vm.vsan.throughput
             unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -8271,5 +8271,5 @@ resourceMetrics:
             name: vcenter.vm.vsan.throughput
             unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest

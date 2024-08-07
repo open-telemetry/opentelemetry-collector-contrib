@@ -1,5 +1,4 @@
 type: datadog
-scope_name: otelcol/datadogreceiver
 
 status:
   class: receiver
