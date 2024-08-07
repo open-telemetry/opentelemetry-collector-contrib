@@ -10,9 +10,10 @@
 package ctimefmt
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 var format1 = "%Y-%m-%d %H:%M:%S.%f"
