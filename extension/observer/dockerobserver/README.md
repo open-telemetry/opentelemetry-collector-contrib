@@ -19,7 +19,7 @@ This observer watches the Docker engine's stream of events to dynamically create
 Requires Docker API Version 1.24+.
 
 The collector will need permissions to access the Docker Engine API, specifically it will need
-read access to the Docker socket (default `unix:///var/run/docker.sock`).
+read access to the Docker socket (default `unix:///var/run/docker.sock` on non-Windows and `npipe:////./pipe/docker_engine` on Windows).
 
 
 ## Example Config
@@ -27,7 +27,7 @@ read access to the Docker socket (default `unix:///var/run/docker.sock`).
 ```yaml
 extensions:
   docker_observer:
-    # url of the docker socket, default to unix:///var/run/docker.sock
+    # url of the docker socket, defaults to unix:///var/run/docker.sock on non-Windows and npipe:////./pipe/docker_engine on Windows
     endpoint: my/path/to/docker.sock
     # list of container image names to exclude
     excluded_images: ['redis', 'another_image_name']
@@ -53,7 +53,7 @@ receivers:
 
 The URL of the docker server.
 
-default: `unix:///var/run/docker.sock`
+default: `unix:///var/run/docker.sock` on non-Windows and `npipe:////./pipe/docker_engine` on Windows
 
 ### `timeout`
 
