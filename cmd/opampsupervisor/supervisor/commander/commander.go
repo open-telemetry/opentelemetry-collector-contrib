@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -24,6 +23,7 @@ import (
 type Commander struct {
 	logger  *zap.Logger
 	cfg     config.Agent
+	logFile *os.File
 	logsDir string
 	args    []string
 	cmd     *exec.Cmd
@@ -78,7 +78,10 @@ func (c *Commander) Start(ctx context.Context) error {
 		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
 	}
 
+	c.logFile = logFile
+
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
+	c.cmd.SysProcAttr = sysProcAttrs()
 
 	// Capture standard output and standard error.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
@@ -107,6 +110,8 @@ func (c *Commander) Restart(ctx context.Context) error {
 }
 
 func (c *Commander) watch() {
+	defer c.logFile.Close()
+
 	err := c.cmd.Wait()
 
 	// cmd.Wait returns an exec.ExitError when the Collector exits unsuccessfully or stops
@@ -181,7 +186,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 		c.logger.Debug(
 			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
 			zap.Int("pid", pid))
-		if innerErr = c.cmd.Process.Signal(syscall.SIGKILL); innerErr != nil {
+		if innerErr = c.cmd.Process.Signal(os.Kill); innerErr != nil {
 			return
 		}
 	}()
@@ -191,7 +196,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 
 	c.running.Store(0)
 
-	// Let goroutine know process is finished.
+	// // Let goroutine know process is finished.
 	cancel()
 
 	return innerErr

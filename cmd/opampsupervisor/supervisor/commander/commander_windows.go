@@ -26,3 +26,12 @@ func sendShutdownSignal(process *os.Process) error {
 
 	return nil
 }
+
+func sysProcAttrs() *syscall.SysProcAttr {
+	// By default, a ctrl-break event applies to a whole process group, which ends up
+	// shutting down the supervisor. Instead, we spawn the collector in its own process
+	// group, so that sending a ctrl-break event shuts down just the collector.
+	return &syscall.SysProcAttr{
+		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+	}
+}
