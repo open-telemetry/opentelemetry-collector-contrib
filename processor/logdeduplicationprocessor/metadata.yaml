@@ -7,7 +7,7 @@ status:
   distributions: []
   warnings: []
   codeowners:
-    active: [BinaryFissionGames, MikeGoldsmith]
+    active: [BinaryFissionGames, MikeGoldsmith, djaglowski]
 
 tests:
   config:
