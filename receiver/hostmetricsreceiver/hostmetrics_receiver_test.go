@@ -54,7 +54,6 @@ var allMetrics = []string{
 	"system.network.io",
 	"system.network.packets",
 	"system.paging.operations",
-	"system.paging.usage",
 }
 
 var resourceMetrics = []string{
@@ -168,9 +167,12 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		}
 	}
 
-	// verify the expected list of metrics returned (os dependent)
-	var expectedMetrics []string
-	expectedMetrics = append(expectedMetrics, allMetrics...)
+	// verify the expected list of metrics returned (os/arch dependent)
+	expectedMetrics := allMetrics
+	if !(runtime.GOOS == "linux" && runtime.GOARCH == "arm64") {
+		expectedMetrics = append(expectedMetrics, "system.paging.usage")
+	}
+
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
 	assert.Equal(t, len(expectedMetrics), len(returnedMetrics))
 	for _, expected := range expectedMetrics {
