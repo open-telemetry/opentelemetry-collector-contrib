@@ -1,6 +1,6 @@
-module github.com/observiq/bindplane-agent/processor/logdeduplicationprocessor
+module github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdeduplicationprocessor
 
-go 1.21.9
+go 1.21.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.106.1
