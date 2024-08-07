@@ -41,7 +41,7 @@ func createconvertExponentialHistToExplicitHistFunction(_ ottl.FunctionContext, 
 	}
 
 	if len(args.DistributionFn) == 0 {
-		args.DistributionFn = "upper"
+		args.DistributionFn = "random"
 	}
 
 	if _, ok := distributionFnMap[args.DistributionFn]; !ok {
