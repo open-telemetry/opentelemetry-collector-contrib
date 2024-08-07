@@ -10,6 +10,7 @@
 package ctimefmt
 
 import (
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -72,6 +73,67 @@ func TestZulu(t *testing.T) {
 				// The former returns a Time with the UTC timezone, the latter returns a Time with a 0000 time zone offset.
 				// (See Go's documentation for `time.Parse`.)
 				t.Errorf("Given: %v, expected: %v", dt, dt1)
+			}
+		})
+	}
+}
+
+func TestToNative(t *testing.T) {
+	type args struct {
+		format string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr string
+	}{
+		{
+			name: "valid format 1",
+			args: args{
+				format: "%Y-%m-%d %H:%M:%S.%f",
+			},
+			want: "2006-01-02 15:04:05.999999",
+		},
+		{
+			name: "valid format 2",
+			args: args{
+				format: "%Y-%m-%d %l:%M:%S.%L %P, %a",
+			},
+			want: "2006-01-02 3:04:05.999 pm, Mon",
+		},
+		{
+			name: "invalid fractional second directive",
+			args: args{
+				format: "%Y-%m-%d-%H-%M-%S:%L",
+			},
+			wantErr: "invalid fractional seconds directive: ':%L'. must be preceded with '.' or ','",
+		},
+		{
+			name: "format containing decimal",
+			args: args{
+				format: "%Y-%m-%d-%H-%M-%S:%L10.0",
+			},
+			wantErr: "format string should not contain decimals",
+		},
+		{
+			name: "format containing unsupported directive",
+			args: args{
+				format: "%C-%m-%d-%H-%M-%S:.%L",
+			},
+			wantErr: "convert to go time format: [unsupported ctimefmt.ToNative() directive: %C]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ToNative(tt.args.format)
+
+			require.Equal(t, tt.want, got)
+
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.Nil(t, err)
 			}
 		})
 	}
