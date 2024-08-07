@@ -28,6 +28,7 @@ components:
         - coralogix
         - datadog
         - dataset
+        - doris
         - elasticsearch
         - file
         - googlecloud
