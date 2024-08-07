@@ -44,17 +44,17 @@ type Translation interface {
 
 	// ApplyAllResourceChanges will modify the resource part of the incoming signals
 	// This applies to all telemetry types and should be applied there
-	ApplyAllResourceChanges(ctx context.Context, in alias.Resource)
+	ApplyAllResourceChanges(ctx context.Context, in alias.Resource) error
 
 	// ApplyScopeSpanChanges will modify all spans and span events within the incoming signals
-	ApplyScopeSpanChanges(ctx context.Context, in ptrace.ScopeSpans)
+	ApplyScopeSpanChanges(ctx context.Context, in ptrace.ScopeSpans) error
 
 	// ApplyScopeLogChanges will modify all logs within the incoming signal
-	ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs)
+	ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs) error
 
 	// ApplyScopeMetricChanges will update all metrics including
 	// histograms, exponetial histograms, summarys, sum and gauges
-	ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics)
+	ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics) error
 }
 
 type translator struct {
@@ -109,10 +109,10 @@ func (t *translator) SupportedVersion(v *Version) bool {
 	return ok
 }
 
-func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias.Resource) {
+func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias.Resource) error {
 	_, ver, err := GetFamilyAndVersion(resource.SchemaUrl())
 	if err != nil {
-		return
+		return err
 	}
 	it, status := t.iterator(ctx, ver)
 	for rev, more := it(); more; rev, more = it() {
@@ -126,16 +126,17 @@ func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias
 		}
 	}
 	resource.SetSchemaUrl(t.schemaURL)
+	return nil
 }
 
-func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs) {
+func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs) error {
 	_, ver, err := GetFamilyAndVersion(in.SchemaUrl())
 	if err != nil {
-		return
+		return err
 	}
 	it, status := t.iterator(ctx, ver)
 	if status == NoChange {
-		return
+		return nil
 	}
 	for rev, more := it(); more; rev, more = it() {
 		for l := 0; l < in.LogRecords().Len(); l++ {
@@ -152,12 +153,13 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 		}
 	}
 	in.SetSchemaUrl(t.schemaURL)
+	return nil
 }
 
-func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrace.ScopeSpans) {
+func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrace.ScopeSpans) error {
 	_, ver, err := GetFamilyAndVersion(scopeSpans.SchemaUrl())
 	if err != nil {
-		return
+		return err
 	}
 	it, status := t.iterator(ctx, ver)
 	for rev, more := it(); more; rev, more = it() {
@@ -190,12 +192,13 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 		}
 		scopeSpans.SetSchemaUrl(t.schemaURL)
 	}
+	return nil
 }
 
-func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics) {
+func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics) error {
 	_, ver, err := GetFamilyAndVersion(in.SchemaUrl())
 	if err != nil {
-		return
+		return err
 	}
 	it, status := t.iterator(ctx, ver)
 	for rev, more := it(); more; rev, more = it() {
@@ -274,6 +277,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 		}
 	}
 	in.SetSchemaUrl(t.schemaURL)
+	return nil
 }
 
 func (t *translator) parseContent(r io.Reader) (errs error) {
