@@ -54,5 +54,5 @@ resourceMetrics:
             name: sqlserver.database.count
             unit: '{databases}'
         scope:
-          name: otelcol/sqlserverreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
