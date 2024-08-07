@@ -1,0 +1,31 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Measures the duration of TCP connection.
+            gauge:
+              dataPoints:
+                - asInt: "36"
+                  attributes:
+                    - key: tcp.endpoint
+                      value:
+                        stringValue: 127.0.0.1:8080
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: tcpcheck.duration
+            unit: ns
+          - description: 1 if the TCP client successfully connected, otherwise 0.
+            name: tcpcheck.status
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: tcp.endpoint
+                      value:
+                        stringValue: 127.0.0.1:8080
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+        scope:
+          name: otelcol/tcpcheckreceiver
+          version: latest
