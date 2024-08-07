@@ -466,10 +466,6 @@ func TestIntegrationLogs(t *testing.T) {
 	t.Setenv("SERVER_URL", server.URL)
 
 	// 2. Start in-process collector
-	assert.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true))
-	defer func() {
-		assert.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false))
-	}()
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_logs_config.yaml", factories)
 	go func() {
