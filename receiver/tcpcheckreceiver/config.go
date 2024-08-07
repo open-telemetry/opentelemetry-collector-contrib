@@ -25,7 +25,6 @@ var (
 	errConfigTCPCheck  = errors.New(`Invalid Config`)
 )
 
-// Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
