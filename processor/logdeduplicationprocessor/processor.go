@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
@@ -87,6 +89,7 @@ func (p *logDedupProcessor) ConsumeLogs(_ context.Context, pl plog.Logs) error {
 	for i := 0; i < pl.ResourceLogs().Len(); i++ {
 		resourceLogs := pl.ResourceLogs().At(i)
 		resourceAttrs := resourceLogs.Resource().Attributes()
+		resourceKey := pdatautil.MapHash(resourceAttrs)
 		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
 			scope := resourceLogs.ScopeLogs().At(j)
 			logs := scope.LogRecords()
@@ -96,7 +99,7 @@ func (p *logDedupProcessor) ConsumeLogs(_ context.Context, pl plog.Logs) error {
 				p.remover.RemoveFields(logRecord)
 
 				// Add the log to the aggregator
-				p.aggregator.Add(resourceAttrs, logRecord)
+				p.aggregator.Add(resourceKey, resourceAttrs, logRecord)
 			}
 		}
 	}

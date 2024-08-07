@@ -44,7 +44,8 @@ func Test_logAggregatorAdd(t *testing.T) {
 	expectedLogKey := getLogKey(logRecord)
 
 	// Add logRecord
-	aggregator.Add(resourceAttrs, logRecord)
+	resourceKey := pdatautil.MapHash(resourceAttrs)
+	aggregator.Add(resourceKey, resourceAttrs, logRecord)
 
 	// Check resourceCounter was set
 	resourceCounter, ok := aggregator.resources[expectedResourceKey]
@@ -67,7 +68,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 		return secondExpectedTimestamp
 	}
 
-	aggregator.Add(resourceAttrs, logRecord)
+	aggregator.Add(resourceKey, resourceAttrs, logRecord)
 	require.Equal(t, int64(2), lc.count)
 	require.Equal(t, secondExpectedTimestamp, lc.lastObservedTimestamp)
 }
@@ -114,7 +115,8 @@ func Test_logAggregatorExport(t *testing.T) {
 	logRecord := generateTestLogRecord(t, "body string")
 
 	// Add logRecord
-	aggregator.Add(resourceAttrs, logRecord)
+	resourceKey := pdatautil.MapHash(resourceAttrs)
+	aggregator.Add(resourceKey, resourceAttrs, logRecord)
 
 	exportedLogs := aggregator.Export()
 	require.Equal(t, 1, exportedLogs.LogRecordCount())

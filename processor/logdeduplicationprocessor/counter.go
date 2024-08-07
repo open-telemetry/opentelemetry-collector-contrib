@@ -81,12 +81,11 @@ func (l *logAggregator) Export() plog.Logs {
 }
 
 // Add adds the logRecord to the resource aggregator that is identified by the resource attributes
-func (l *logAggregator) Add(resourceAttrs pcommon.Map, logRecord plog.LogRecord) {
-	key := pdatautil.MapHash(resourceAttrs)
-	resourceCounter, ok := l.resources[key]
+func (l *logAggregator) Add(resourceKey [16]byte, resourceAttrs pcommon.Map, logRecord plog.LogRecord) {
+	resourceCounter, ok := l.resources[resourceKey]
 	if !ok {
 		resourceCounter = newResourceAggregator(resourceAttrs)
-		l.resources[key] = resourceCounter
+		l.resources[resourceKey] = resourceCounter
 	}
 
 	resourceCounter.Add(logRecord)
