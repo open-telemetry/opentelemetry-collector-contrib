@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/jaegertracing/jaeger v1.59.0
+	github.com/jaegertracing/jaeger v1.60.0
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.1
 	github.com/stretchr/testify v1.9.0
@@ -17,8 +17,6 @@ require (
 	go.opentelemetry.io/collector/confmap v0.106.1
 	go.opentelemetry.io/collector/extension v0.106.1
 	go.opentelemetry.io/collector/featuregate v1.12.0
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.65.0
@@ -78,12 +76,14 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
