@@ -669,7 +669,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 			}
 			return fmt.Errorf("%v is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is %v", logsExporterSetting.setting, enabledText)
 		}
-		if logsExporterSetting.setting == "logs::dump_payloads" && logsExporterSetting.valid {
+		if logsExporterSetting.setting == "logs::dump_payloads" && logsExporterSetting.valid && configMap.IsSet(logsExporterSetting.setting) {
 			c.warnings = append(c.warnings, fmt.Errorf("%v is deprecated and will raise an error if set when the Datadog Agent logs pipeline is enabled by default in collector version v0.108.0", logsExporterSetting.setting))
 		}
 	}
