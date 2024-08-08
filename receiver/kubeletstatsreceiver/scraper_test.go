@@ -102,6 +102,7 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 		metricGroupsToCollect: map[kubelet.MetricGroup]bool{
 			kubelet.ContainerMetricGroup: true,
 			kubelet.PodMetricGroup:       true,
+			kubelet.NodeMetricGroup:      true,
 		},
 		k8sAPIClient: client,
 	}
@@ -115,6 +116,9 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 					Enabled: true,
 				},
 				K8sPodCPUNodeUtilization: metadata.MetricConfig{
+					Enabled: true,
+				},
+				K8sNodeCPUUtilization: metadata.MetricConfig{
 					Enabled: true,
 				},
 			},
@@ -140,7 +144,7 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	require.Eventually(t, func() bool {
 		md, err = r.Scrape(context.Background())
 		require.NoError(t, err)
-		return numContainers+numPods == md.DataPointCount()
+		return numContainers+numPods+1 == md.DataPointCount()
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 

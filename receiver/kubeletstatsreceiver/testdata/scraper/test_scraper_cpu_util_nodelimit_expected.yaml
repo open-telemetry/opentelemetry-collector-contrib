@@ -1,6 +1,24 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: k8s.node.name
+          value:
+            stringValue: minikube
+    scopeMetrics:
+      - metrics:
+          - description: Node CPU utilization
+            gauge:
+              dataPoints:
+                - asDouble: 0.020717166125
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.cpu.utilization
+            unit: "1"
+        scope:
+          name: otelcol/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
         - key: k8s.namespace.name
           value:
             stringValue: default

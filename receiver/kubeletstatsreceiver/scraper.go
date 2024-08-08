@@ -83,7 +83,8 @@ func newKubletScraper(
 		nodeLimits: &kubelet.NodeCapacity{},
 	}
 
-	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
+	if metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled ||
+		metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sPodCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sContainerMemoryNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sPodMemoryNodeUtilization.Enabled {
