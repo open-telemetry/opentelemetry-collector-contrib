@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -38,8 +39,8 @@ const (
 	numVolumes    = 8
 
 	// Number of metrics by resource
-	nodeMetrics      = 19
-	podMetrics       = 19
+	nodeMetrics      = 15
+	podMetrics       = 15
 	containerMetrics = 11
 	volumeMetrics    = 5
 )
@@ -68,6 +69,44 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, dataLen, md.DataPointCount())
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
+func TestScraperWithInterfacesMetrics(t *testing.T) {
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	r, err := newKubletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(),
+		options,
+		metadata.DefaultMetricsBuilderConfig(),
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	err = featuregate.GlobalRegistry().Set("kubeletstats.collectInterfacesMetrics", true)
+	require.NoError(t, err)
+	defer func() {
+		err = featuregate.GlobalRegistry().Set("kubeletstats.collectInterfacesMetrics", false)
+		require.NoError(t, err)
+	}()
+
+	md, err := r.Scrape(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, dataLen+numPods*4+numNodes*4, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_interfaces_metrics.yaml")
 
 	// Uncomment to regenerate '*_expected.yaml' files
 	// golden.WriteMetrics(t, expectedFile, md)
