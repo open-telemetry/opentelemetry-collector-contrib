@@ -22,10 +22,11 @@ func TestAdd(t *testing.T) {
 	var obs0 = expotest.Observe0
 
 	cases := []struct {
-		name   string
-		dp, in expdp
-		want   expdp
-		flip   bool
+		name    string
+		dp, in  expdp
+		want    expdp
+		flip    bool
+		maxSize int
 	}{{
 		name: "noop",
 		dp:   expdp{PosNeg: bins{0, 0, 0, 0, 0, 0, 0, 0}.Into(), Count: 0},
@@ -36,6 +37,30 @@ func TestAdd(t *testing.T) {
 		dp:   expdp{PosNeg: bins{0, 0, 0, 0, 0, 0, 0, 0}.Into(), Count: 0},
 		in:   expdp{PosNeg: bins{1, 2, 3, 4, 5, 6, 7, 8}.Into(), Count: 2 * (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8)},
 		want: expdp{PosNeg: bins{1, 2, 3, 4, 5, 6, 7, 8}.Into(), Count: 2 * (0 + (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8))},
+	}, {}, {
+		name:    "maxsize/1",
+		dp:      expdp{PosNeg: bins{0, 0, 0, ø}.Into(), Count: 0},
+		in:      expdp{PosNeg: bins{ø, ø, ø, ø, 1, 2, 3, 4}.Into(), Count: 2 * (1 + 2 + 3 + 4)},
+		want:    expdp{PosNeg: bins{ø, ø, 0, 10, ø}.Into(), Scale: -3, Count: 2 * (0 + (1 + 2 + 3 + 4))},
+		maxSize: 1,
+	}, {}, {
+		name:    "maxsize/2",
+		dp:      expdp{PosNeg: bins{0, 0, 0, ø}.Into(), Count: 0},
+		in:      expdp{PosNeg: bins{ø, ø, ø, ø, 1, 2, 3, 4}.Into(), Count: 2 * (1 + 2 + 3 + 4)},
+		want:    expdp{PosNeg: bins{ø, ø, 0, 6, 4, ø}.Into(), Scale: -2, Count: 2 * (0 + (1 + 2 + 3 + 4))},
+		maxSize: 2,
+	}, {
+		name:    "maxsize/4",
+		dp:      expdp{PosNeg: bins{0, 0, 0, ø}.Into(), Count: 0},
+		in:      expdp{PosNeg: bins{ø, ø, ø, ø, 1, 2, 3, 4}.Into(), Count: 2 * (1 + 2 + 3 + 4)},
+		want:    expdp{PosNeg: bins{ø, 0, 0, 1, 5, 4, ø}.Into(), Scale: -1, Count: 2 * (0 + (1 + 2 + 3 + 4))},
+		maxSize: 4,
+	}, {
+		name:    "maxsize/8",
+		dp:      expdp{PosNeg: bins{0, 0, 0, ø}.Into(), Count: 0},
+		in:      expdp{PosNeg: bins{ø, ø, ø, ø, 1, 2, 3, 4}.Into(), Count: 2 * (1 + 2 + 3 + 4)},
+		want:    expdp{PosNeg: bins{0, 0, 0, 0, 1, 2, 3, 4}.Into(), Scale: 0, Count: 2 * (0 + (1 + 2 + 3 + 4))},
+		maxSize: 8,
 	}, {
 		name: "lower+shorter",
 		dp:   expdp{PosNeg: bins{ø, ø, ø, ø, ø, 1, 1, 1}.Into(), Count: 2 * 3},
@@ -84,7 +109,6 @@ func TestAdd(t *testing.T) {
 			bs := pmetric.NewExponentialHistogramDataPointBuckets()
 			expotest.ObserveInto(bs, expo.Scale(0), 1, 2, 3, 4)
 			expotest.ObserveInto(bs, expo.Scale(0), 4, 3, 2, 1)
-			bs.BucketCounts().Append([]uint64{0, 0}...) // rescaling leaves zeroed memory. this is expected
 			return bs
 		}()},
 	}}
@@ -94,10 +118,15 @@ func TestAdd(t *testing.T) {
 			return func(t *testing.T) {
 				is := expotest.Is(t)
 
+				maxSize := 160
+				if cs.maxSize > 0 {
+					maxSize = cs.maxSize
+				}
+
 				var (
-					dp   = ExpHistogram{dp.Into()}
-					in   = ExpHistogram{in.Into()}
-					want = ExpHistogram{cs.want.Into()}
+					dp   = ExpHistogram{dp.Into(), maxSize}
+					in   = ExpHistogram{in.Into(), maxSize}
+					want = ExpHistogram{cs.want.Into(), maxSize}
 				)
 
 				dp.SetTimestamp(0)
@@ -106,6 +135,7 @@ func TestAdd(t *testing.T) {
 
 				got := dp.Add(in)
 				is.Equal(want.DataPoint, got.DataPoint)
+				is.Equalf(want.MaxSize, got.MaxSize, "MaxSize")
 			}
 		}
 

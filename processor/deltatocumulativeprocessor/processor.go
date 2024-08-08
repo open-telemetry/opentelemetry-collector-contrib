@@ -34,8 +34,9 @@ type Processor struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	sums Pipeline[data.Number]
-	expo Pipeline[data.ExpHistogram]
+	sums        Pipeline[data.Number]
+	expo        Pipeline[data.ExpHistogram]
+	expoMaxSize int
 
 	mtx sync.Mutex
 }
@@ -50,8 +51,9 @@ func newProcessor(cfg *Config, log *zap.Logger, telb *metadata.TelemetryBuilder,
 		cancel: cancel,
 		next:   next,
 
-		sums: pipeline[data.Number](cfg, &tel),
-		expo: pipeline[data.ExpHistogram](cfg, &tel),
+		sums:        pipeline[data.Number](cfg, &tel),
+		expo:        pipeline[data.ExpHistogram](cfg, &tel),
+		expoMaxSize: cfg.MaxExpHistogramBuckets,
 	}
 
 	return &proc
@@ -146,7 +148,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		case pmetric.MetricTypeExponentialHistogram:
 			expo := m.ExponentialHistogram()
 			if expo.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Apply(metrics.ExpHistogram(m), p.expo.aggr.Aggregate)
+				err := streams.Apply(metrics.ExpHistogram{Metric: m, MaxSize: p.expoMaxSize}, p.expo.aggr.Aggregate)
 				errs = errors.Join(errs, err)
 				expo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
