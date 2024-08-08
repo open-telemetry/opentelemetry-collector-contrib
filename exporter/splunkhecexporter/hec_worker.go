@@ -4,6 +4,7 @@
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -27,7 +28,10 @@ type defaultHecWorker struct {
 }
 
 func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
-	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), buf)
+	nb := make([]byte, buf.Len())
+	copy(nb, buf.Bytes())
+	bodyBuf := bytes.NewReader(nb)
+	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), bodyBuf)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
