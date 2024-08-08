@@ -446,6 +446,7 @@ Available Converters:
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
+- [SHA512](#sha512)
 - [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
@@ -1204,8 +1205,24 @@ Examples:
 
 - `SHA256(attributes["device.name"])`
 
-
 - `SHA256("name")`
+
+### SHA512
+
+`SHA512(input)`
+
+The `SHA512` converter calculates sha512 hash value/digest of the `input`.
+
+The returned type is string.
+
+`input` is either a path expression to a string telemetry field or a literal string. If `input` is another type, converter raises an error.
+If an error occurs during hashing, the error will be returned.
+
+Examples:
+
+- `SHA512(attributes["device.name"])`
+
+- `SHA512("name")`
 
 ### Sort
 
@@ -1229,7 +1246,6 @@ The behavior varies based on the types of elements in the target slice:
 | Booleans | Converts all to strings, then sorts | Sorted array of booleans |
 | Mix of integers, doubles, booleans, and strings | Converts all to strings, then sorts | Sorted array of mixed types |
 | Any other types | N/A                                 | Returns an error |
-
 
 Examples:
 

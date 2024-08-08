@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.106.1
-	github.com/shirou/gopsutil/v4 v4.24.6
+	github.com/shirou/gopsutil/v4 v4.24.7
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.1
 	go.opentelemetry.io/collector/config/confighttp v0.106.1

@@ -4,7 +4,6 @@
 package zstd
 
 import (
-	"runtime"
 	"testing"
 	"time"
 
@@ -64,10 +63,6 @@ func TestMRUPut(t *testing.T) {
 }
 
 func TestMRUReset(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34252")
-	}
-
 	defer resetTest()
 
 	var m mru[*gint]
