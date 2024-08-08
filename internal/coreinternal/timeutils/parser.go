@@ -13,6 +13,8 @@ import (
 )
 
 var invalidFractionalSecondsStrptime = regexp.MustCompile(`[^.,]%[Lfs]`)
+
+// TODO this regex still seems weird - need to double check if there is a more precise alternative
 var invalidFractionalSecondsGoTime = regexp.MustCompile(`[^.,9]9+`)
 
 func StrptimeToGotime(layout string) (string, error) {
