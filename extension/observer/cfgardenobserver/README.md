@@ -20,7 +20,7 @@ The `cfgarden_observer` looks at the current host to discover Garden containers.
 ```yaml
 extensions:
   cfgarden_observer:
-    # url of the Garden socket, defaults to unix:///var/vcap/data/garden/garden.sock 
+    # path of the Garden socket, defaults to /var/vcap/data/garden/garden.sock 
     endpoint: my/path/to/garden.sock
     # determines how often to look for changes in endpoints.
     refresh_interval: 30s
@@ -41,7 +41,7 @@ receivers:
 | Name             | Type   | Default                                  | Docs                                                   |
 |------------------|--------|------------------------------------------|--------------------------------------------------------|
 | refresh_interval | string | 60s                                      | Determines how often to look for changes in endpoints. |
-| endpoint         | string | unix:///var/vcap/data/garden/garden.sock | The endpoint to connect to the Garden API.             |
+| endpoint         | string | /var/vcap/data/garden/garden.sock        | Path to garden socket.                                 |
 
 ### Endpoint Variables
 
