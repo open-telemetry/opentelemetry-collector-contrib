@@ -77,6 +77,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewStringFactory[K](),
 		NewSubstringFactory[K](),
 		NewTimeFactory[K](),
+		NewTrimFactory[K](),
 		NewTruncateTimeFactory[K](),
 		NewTraceIDFactory[K](),
 		NewUnixFactory[K](),
