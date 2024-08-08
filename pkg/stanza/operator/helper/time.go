@@ -79,10 +79,10 @@ func (t *TimeParser) Validate() error {
 			return errors.Wrap(err, "invalid gotime layout")
 		}
 	case StrptimeKey:
-		var err error
 		if err := timeutils.ValidateStrptime(t.Layout); err != nil {
 			return errors.Wrap(err, "invalid strptime layout")
 		}
+		var err error
 		t.Layout, err = timeutils.StrptimeToGotime(t.Layout)
 		if err != nil {
 			return errors.Wrap(err, "parse strptime layout")
