@@ -176,7 +176,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 		latestIterState, batchPermanentErrors := c.fillLogsBuffer(ld, buf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
-			if err := c.postEvents(ctx, buf, headers); err != nil {
+			if err := c.postEvents(ctx, buf, headers, buf.PayloadLen()); err != nil {
 				return consumererror.NewLogs(err, subLogs(ld, is))
 			}
 		}
@@ -403,7 +403,7 @@ func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.M
 		latestIterState, batchPermanentErrors := c.fillMetricsBufferMultiMetrics(merged, buf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
-			if err := c.postEvents(ctx, buf, headers); err != nil {
+			if err := c.postEvents(ctx, buf, headers, buf.PayloadLen()); err != nil {
 				return consumererror.NewMetrics(err, md)
 			}
 		}
@@ -428,7 +428,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, buf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
-			if err := c.postEvents(ctx, buf, headers); err != nil {
+			if err := c.postEvents(ctx, buf, headers, buf.PayloadLen()); err != nil {
 				return consumererror.NewMetrics(err, subMetrics(md, is))
 			}
 		}
@@ -453,7 +453,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 		latestIterState, batchPermanentErrors := c.fillTracesBuffer(td, buf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
-			if err := c.postEvents(ctx, buf, headers); err != nil {
+			if err := c.postEvents(ctx, buf, headers, buf.PayloadLen()); err != nil {
 				return consumererror.NewTraces(err, subTraces(td, is))
 			}
 		}
@@ -463,11 +463,11 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	return multierr.Combine(permanentErrors...)
 }
 
-func (c *client) postEvents(ctx context.Context, buf buffer, headers map[string]string) error {
+func (c *client) postEvents(ctx context.Context, buf buffer, headers map[string]string, eventBytes int) error {
 	if err := buf.Close(); err != nil {
 		return err
 	}
-	return c.hecWorker.send(ctx, buf, headers)
+	return c.hecWorker.send(ctx, buf, headers, eventBytes)
 }
 
 // subLogs returns a subset of logs starting from the state.
@@ -621,7 +621,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 		}
 	}
 	url, _ := c.config.getURL()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger}
+	c.hecWorker = &defaultHecWorker{url: url, client: httpClient, headers: buildHTTPHeaders(c.config, c.buildInfo), logger: c.logger, contentLimit: c.config.MaxBytesPerConn}
 	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.meter)
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
