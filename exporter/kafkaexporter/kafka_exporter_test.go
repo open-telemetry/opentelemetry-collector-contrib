@@ -174,16 +174,13 @@ func TestTracesPusher_ctx(t *testing.T) {
 	producer.ExpectSendMessageAndSucceed()
 
 	p := kafkaTracesProducer{
-		cfg: Config{
-			TopicFromContext: "kafka_topic",
-		},
 		producer:  producer,
 		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.tracesPusher(context.WithValue(context.Background(), "kafka_topic", "my_topic"), testdata.GenerateTraces(2))
+	err := p.tracesPusher(WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
 	require.NoError(t, err)
 }
 
@@ -259,16 +256,13 @@ func TestMetricsDataPusher_ctx(t *testing.T) {
 	producer.ExpectSendMessageAndSucceed()
 
 	p := kafkaMetricsProducer{
-		cfg: Config{
-			TopicFromContext: "kafka_topic",
-		},
 		producer:  producer,
 		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.metricsDataPusher(context.WithValue(context.Background(), "kafka_topic", "my_topic"), testdata.GenerateMetrics(2))
+	err := p.metricsDataPusher(WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
 }
 
@@ -344,16 +338,13 @@ func TestLogsDataPusher_ctx(t *testing.T) {
 	producer.ExpectSendMessageAndSucceed()
 
 	p := kafkaLogsProducer{
-		cfg: Config{
-			TopicFromContext: "kafka_topic",
-		},
 		producer:  producer,
 		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.logsDataPusher(context.WithValue(context.Background(), "kafka_topic", "my_topic"), testdata.GenerateLogs(1))
+	err := p.logsDataPusher(WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(1))
 	require.NoError(t, err)
 }
 
@@ -438,10 +429,9 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid metric attribute, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "resource-attr",
-				TopicFromContext:   "ctx-key",
 				Topic:              "defaultTopic",
 			},
-			ctx:       context.WithValue(context.Background(), "ctx-key", "context-topic"),
+			ctx:       WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -449,10 +439,9 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid trace attribute, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "resource-attr",
-				TopicFromContext:   "ctx-key",
 				Topic:              "defaultTopic",
 			},
-			ctx:       context.WithValue(context.Background(), "ctx-key", "context-topic"),
+			ctx:       WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateTraces(1).ResourceSpans(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -460,10 +449,9 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid log attribute, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "resource-attr",
-				TopicFromContext:   "ctx-key",
 				Topic:              "defaultTopic",
 			},
-			ctx:       context.WithValue(context.Background(), "ctx-key", "context-topic"),
+			ctx:       WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateLogs(1).ResourceLogs(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -471,7 +459,6 @@ func Test_GetTopic(t *testing.T) {
 			name: "Attribute not found",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				TopicFromContext:   "ctx-key",
 				Topic:              "defaultTopic",
 			},
 			ctx:       context.Background(),
@@ -483,49 +470,45 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid metric context, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				TopicFromContext:   "ctx-key",
 				Topic:              "defaultTopic",
 			},
-			ctx:       context.WithValue(context.Background(), "ctx-key", "context-topic"),
+			ctx:       WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "context-topic",
 		},
 		{
-			name: "Valid trace attribute, return topic name",
+			name: "Valid trace context, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				TopicFromContext:   "ctx-key",
 				Topic:              "defaultTopic",
 			},
-			ctx:       context.WithValue(context.Background(), "ctx-key", "context-topic"),
+			ctx:       WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateTraces(1).ResourceSpans(),
 			wantTopic: "context-topic",
 		},
 		{
-			name: "Valid log attribute, return topic name",
+			name: "Valid log context, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				TopicFromContext:   "ctx-key",
 				Topic:              "defaultTopic",
 			},
-			ctx:       context.WithValue(context.Background(), "ctx-key", "context-topic"),
+			ctx:       WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateLogs(1).ResourceLogs(),
 			wantTopic: "context-topic",
 		},
 
 		{
-			name: "Attribute/context not found",
+			name: "Attribute not found",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				TopicFromContext:   "nonexistent_ctx-key",
 				Topic:              "defaultTopic",
 			},
-			ctx:       context.WithValue(context.Background(), "ctx-key", "context-topic"),
+			ctx:       context.Background(),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
 		{
-			name: "TopicFromAttribute/TopicFromContext not set, return default topic",
+			name: "TopicFromAttribute, return default topic",
 			cfg: Config{
 				Topic: "defaultTopic",
 			},
