@@ -1,83 +1,83 @@
 default:
 all_set:
   metrics:
-    git.repository.branch.commit.aheadby.count:
+    vcs.repository.change.count:
       enabled: true
-    git.repository.branch.commit.behindby.count:
+    vcs.repository.change.time_open:
       enabled: true
-    git.repository.branch.count:
+    vcs.repository.change.time_to_approval:
       enabled: true
-    git.repository.branch.line.addition.count:
+    vcs.repository.change.time_to_merge:
       enabled: true
-    git.repository.branch.line.deletion.count:
+    vcs.repository.contributor.count:
       enabled: true
-    git.repository.branch.time:
+    vcs.repository.count:
       enabled: true
-    git.repository.contributor.count:
+    vcs.repository.ref.count:
       enabled: true
-    git.repository.count:
+    vcs.repository.ref.lines_added:
       enabled: true
-    git.repository.pull_request.count:
+    vcs.repository.ref.lines_deleted:
       enabled: true
-    git.repository.pull_request.time_open:
+    vcs.repository.ref.revisions_ahead:
       enabled: true
-    git.repository.pull_request.time_to_approval:
+    vcs.repository.ref.revisions_behind:
       enabled: true
-    git.repository.pull_request.time_to_merge:
+    vcs.repository.ref.time:
       enabled: true
   resource_attributes:
-    git.vendor.name:
-      enabled: true
     organization.name:
+      enabled: true
+    vcs.vendor.name:
       enabled: true
 none_set:
   metrics:
-    git.repository.branch.commit.aheadby.count:
+    vcs.repository.change.count:
       enabled: false
-    git.repository.branch.commit.behindby.count:
+    vcs.repository.change.time_open:
       enabled: false
-    git.repository.branch.count:
+    vcs.repository.change.time_to_approval:
       enabled: false
-    git.repository.branch.line.addition.count:
+    vcs.repository.change.time_to_merge:
       enabled: false
-    git.repository.branch.line.deletion.count:
+    vcs.repository.contributor.count:
       enabled: false
-    git.repository.branch.time:
+    vcs.repository.count:
       enabled: false
-    git.repository.contributor.count:
+    vcs.repository.ref.count:
       enabled: false
-    git.repository.count:
+    vcs.repository.ref.lines_added:
       enabled: false
-    git.repository.pull_request.count:
+    vcs.repository.ref.lines_deleted:
       enabled: false
-    git.repository.pull_request.time_open:
+    vcs.repository.ref.revisions_ahead:
       enabled: false
-    git.repository.pull_request.time_to_approval:
+    vcs.repository.ref.revisions_behind:
       enabled: false
-    git.repository.pull_request.time_to_merge:
+    vcs.repository.ref.time:
       enabled: false
   resource_attributes:
-    git.vendor.name:
-      enabled: false
     organization.name:
+      enabled: false
+    vcs.vendor.name:
       enabled: false
 filter_set_include:
   resource_attributes:
-    git.vendor.name:
+    organization.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
-    organization.name:
+    vcs.vendor.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
-    git.vendor.name:
-      enabled: true
-      metrics_exclude:
-        - strict: "git.vendor.name-val"
     organization.name:
       enabled: true
       metrics_exclude:
         - strict: "organization.name-val"
+    vcs.vendor.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcs.vendor.name-val"

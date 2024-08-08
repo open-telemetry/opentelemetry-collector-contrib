@@ -21,17 +21,17 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetGitVendorName sets provided value as "git.vendor.name" attribute.
-func (rb *ResourceBuilder) SetGitVendorName(val string) {
-	if rb.config.GitVendorName.Enabled {
-		rb.res.Attributes().PutStr("git.vendor.name", val)
-	}
-}
-
 // SetOrganizationName sets provided value as "organization.name" attribute.
 func (rb *ResourceBuilder) SetOrganizationName(val string) {
 	if rb.config.OrganizationName.Enabled {
 		rb.res.Attributes().PutStr("organization.name", val)
+	}
+}
+
+// SetVcsVendorName sets provided value as "vcs.vendor.name" attribute.
+func (rb *ResourceBuilder) SetVcsVendorName(val string) {
+	if rb.config.VcsVendorName.Enabled {
+		rb.res.Attributes().PutStr("vcs.vendor.name", val)
 	}
 }
 
