@@ -20,17 +20,29 @@ The `cfgarden_observer` looks at the current host to discover Garden containers.
 ```yaml
 extensions:
   cfgarden_observer:
-    # path of the Garden socket, defaults to /var/vcap/data/garden/garden.sock 
-    endpoint: my/path/to/garden.sock
     # determines how often to look for changes in endpoints.
     refresh_interval: 30s
+    # determines how often app metadata cache is refreshed
+    cache_sync_interval: 10m
+    garden:
+      # path of the Garden socket, defaults to /var/vcap/data/garden/garden.sock 
+      endpoint: my/path/to/garden.sock
+    cloud_foundry:
+      # CloudFoundry API endpoint, required
+      endpoint: https://api.cf.mydomain.com
+      # Authentication type, required
+      auth_type: client_credentials
+      # Client ID
+      client_id: myclientid
+      # Client Secret
+      client_secret: myclientsecret
 
 receivers:
   receiver_creator:
     watch_observers: [cfgarden_observer]
     receivers:
       prometheus_simple:
-        rule: type == "container" && name == "myapp"
+        rule: type == "container" && labels["prometheus.io/scrape"] == "true" 
         config:
           metrics_path: /metrics
           endpoint: '`endpoint`'
@@ -38,16 +50,30 @@ receivers:
 
 ### Configuration
 
-| Name             | Type   | Default                                  | Docs                                                   |
-|------------------|--------|------------------------------------------|--------------------------------------------------------|
-| refresh_interval | string | 60s                                      | Determines how often to look for changes in endpoints. |
-| endpoint         | string | /var/vcap/data/garden/garden.sock        | Path to garden socket.                                 |
+| Name                        | Type   | Default                           | Description                                                       |
+| --------------------------- | ------ | --------------------------------- | ----------------------------------------------------------------- |
+| refresh_interval            | string | 60s                               | Determines how often to look for changes in endpoints.            |
+| cache_sync_interval         | string | 5m                                | determines how often app metadata cache is refreshed              |
+| garden.endpoint             | string | /var/vcap/data/garden/garden.sock | Path to garden socket.                                            |
+| cloud_foundry.endpoint      | string | none. parameter is required       | CloudFoundry API endpoint                                         |
+| cloud_foundry.auth_type     | string | none. parameter is required       | Authentication type, one of: user_pass, client_credentials, token |
+| cloud_foundry.username      | string | none                              | Username (auth_type: user_pass)                                   |
+| cloud_foundry.password      | string | none                              | Password (auth_type: user_pass)                                   |
+| cloud_foundry.client_id     | string | none                              | Client ID (auth_type: client_credentials)                         |
+| cloud_foundry.client_secret | string | none                              | Client Secret (auth_type: client_credentials)                     |
+| cloud_foundry.access_token  | string | none                              | Access Token (auth_type: token)                                   |
+| cloud_foundry.refresh_token | string | none                              | Refresh Token (auth_type: token)                                  |
 
 ### Endpoint Variables
 
 Endpoint variables exposed by this observer are as follows.
 
-| Variable  | Description                                                                                |
-|-----------|--------------------------------------------------------------------------------------------|
-| type      | this value is always `container`                                                                              |
-| name      | name of the Garden container associated to the port                                        |
+| Variable     | Description                                                                       |
+| ------------ | --------------------------------------------------------------------------------- |
+| type         | This value is always `container`                                                  |
+| name         | Name of the Garden container associated to the port                               |
+| labels       | map[string]string with labels set on the log_config tags and application resource |
+| port         | Exposed port of the container                                                     |
+| container_id | ID of the container                                                               |
+| host         | Hostname or IP of the underlying host the container is running on                 |
+| transport    | Transport protocol used by the endpoint (TCP or UDP)                              |
