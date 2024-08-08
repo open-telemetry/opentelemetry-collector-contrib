@@ -43,6 +43,8 @@ The following settings can be optionally configured:
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
+- `session_timeout` (default = `10s`): The request timeout for detecting client failures when using Kafka’s group management facilities.
+- `heartbeat_interval` (default = `3s`): The expected time between heartbeats to the consumer coordinator when using Kafka’s group management facilities.
 - `auth`
   - `plain_text`
     - `username`: The username to use.

@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/sumologic")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/sumologic")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
@@ -56,25 +56,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.ExporterRequestsBytes, err = builder.meter.Int64Counter(
-		"exporter_requests_bytes",
+		"otelcol_exporter_requests_bytes",
 		metric.WithDescription("Total size of requests (in bytes)"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterRequestsDuration, err = builder.meter.Int64Counter(
-		"exporter_requests_duration",
+		"otelcol_exporter_requests_duration",
 		metric.WithDescription("Duration of HTTP requests (in milliseconds)"),
 		metric.WithUnit("ms"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterRequestsRecords, err = builder.meter.Int64Counter(
-		"exporter_requests_records",
+		"otelcol_exporter_requests_records",
 		metric.WithDescription("Total size of requests (in number of records)"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterRequestsSent, err = builder.meter.Int64Counter(
-		"exporter_requests_sent",
+		"otelcol_exporter_requests_sent",
 		metric.WithDescription("Number of requests"),
 		metric.WithUnit("1"),
 	)

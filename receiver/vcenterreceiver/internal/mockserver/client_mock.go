@@ -81,6 +81,10 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 		return routePerformanceQuery(t, body)
 	case "CreateContainerView":
 		return loadResponse("create-container-view.xml")
+	case "DestroyView":
+		return loadResponse("destroy-view.xml")
+	case "VsanPerfQueryPerf":
+		return routeVsanPerfQueryPerf(t, body)
 	}
 
 	return []byte{}, errNotFound
@@ -205,6 +209,26 @@ func routePerformanceQuery(t *testing.T, body map[string]any) ([]byte, error) {
 		return loadResponse("vm-performance-counters.xml")
 	}
 	return []byte{}, errNotFound
+}
+
+func routeVsanPerfQueryPerf(t *testing.T, body map[string]any) ([]byte, error) {
+	queryPerf := body["VsanPerfQueryPerf"].(map[string]any)
+	require.NotNil(t, queryPerf)
+	querySpecs, ok := queryPerf["querySpecs"].(map[string]any)
+	if !ok {
+		return []byte{}, errNotFound
+	}
+	entityRefID := querySpecs["entityRefId"].(string)
+	switch entityRefID {
+	case "cluster-domclient:*":
+		return loadResponse("cluster-vsan.xml")
+	case "host-domclient:*":
+		return loadResponse("host-vsan.xml")
+	case "virtual-machine:*":
+		return loadResponse("vm-vsan.xml")
+	default:
+		return []byte{}, errNotFound
+	}
 }
 
 func loadResponse(filename string) ([]byte, error) {

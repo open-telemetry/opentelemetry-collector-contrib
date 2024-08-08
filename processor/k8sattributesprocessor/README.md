@@ -26,7 +26,8 @@ The processor stores the list of running pods and the associated metadata. When 
 to the pod from where the datapoint originated, so we can add the relevant pod metadata to the datapoint. By default, it associates the incoming connection IP
 to the Pod IP. But for cases where this approach doesn't work (sending through a proxy, etc.), a custom association rule can be specified.
 
-Each association is specified as a list of sources of associations. A source is a rule that matches metadata from the datapoint to pod metadata.
+Each association is specified as a list of sources of associations. The maximum number of sources within an association is 4. 
+A source is a rule that matches metadata from the datapoint to pod metadata.
 In order to get an association applied, all the sources specified need to match.
 
 Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `from` is set to `resource_attribute`).
@@ -35,7 +36,7 @@ The following rule types are available:
   - `connection`: Takes the IP attribute from connection context (if available). In this case the processor must appear before any batching or tail sampling, which remove this information.
   - `resource_attribute`: Allows specifying the attribute name to lookup in the list of attributes of the received Resource. Semantic convention should be used for naming.
 
-Pod association configuration.
+Example for a pod association configuration:
 
 ```yaml
 pod_association:
@@ -64,7 +65,31 @@ The following attributes are added by default:
   - k8s.deployment.name
   - k8s.node.name
 
-You can change this list with `metadata` configuration.
+These attributes are also available for the use within association rules by default. 
+The `metadata` section can also be extended with additional attributes which, if present in the `metadata` section, 
+are then also available for the use within association rules. Available attributes are:
+  - k8s.namespace.name
+  - k8s.pod.name
+  - k8s.pod.hostname
+  - k8s.pod.ip
+  - k8s.pod.start_time
+  - k8s.pod.uid
+  - k8s.replicaset.uid
+  - k8s.replicaset.name
+  - k8s.deployment.uid
+  - k8s.deployment.name
+  - k8s.daemonset.uid
+  - k8s.daemonset.name
+  - k8s.statefulset.uid
+  - k8s.statefulset.name
+  - k8s.cronjob.uid
+  - k8s.cronjob.name
+  - k8s.job.uid
+  - k8s.job.name
+  - k8s.node.name
+  - k8s.cluster.uid
+  - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from metadata](#extracting-attributes-from-metadata)
+
 
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
@@ -75,12 +100,100 @@ Additional container level attributes can be extracted provided that certain res
    - k8s.container.name
    - container.image.name
    - container.image.tag
+   - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))
 2. If the `k8s.container.name` resource attribute is provided, the following additional attributes will be available:
    - container.image.name
    - container.image.tag
+   - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))
 3. If the `k8s.container.restart_count` resource attribute is provided, it can be used to associate with a particular container
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
+
+Please note, however, that container level attributes can't be used for source rules in the pod_association.
+
+Example for extracting container level attributes:
+
+```yaml
+pod_association:
+- sources:
+    - from: connection
+extract:
+  metadata:
+  - k8s.pod.name
+  - k8s.pod.uid
+  - container.image.name
+  - container.image.tag
+  - k8s.container.name
+```
+
+The previous configuration attaches the attributes listed in the `metadata` section to all resources received by a matching pod with the `k8s.container.name` attribute being present. For example, when the following trace
+
+```json
+{
+  "name": "lets-go",
+  "context": {
+    "trace_id": "0x5b8aa5a2d2c872e8321cf37308d69df2",
+    "span_id": "0x051581bf3cb55c13"
+  },
+  "parent_id": null,
+  "start_time": "2022-04-29T18:52:58.114201Z",
+  "end_time": "2022-04-29T18:52:58.114687Z",
+  "attributes": {
+    "k8s.container.name": "telemetrygen"
+  }
+}
+```
+
+is sent to the collector by the following pod,
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    workload: deployment
+  name: telemetrygen-pod
+  namespace: e2ek8senrichment
+  uid: 038e2267-b473-489b-b48c-46bafdb852eb
+spec:
+  containers:
+  - command:
+    - /telemetrygen
+    - traces
+    - --otlp-insecure
+    - --otlp-endpoint=otelcollector.svc.cluster.local:4317
+    - --duration=10s
+    - --rate=1
+    - --otlp-attributes=k8s.container.name="telemetrygen"
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+    name: telemetrygen
+status:
+  podIP: 10.244.0.11
+```
+
+the processor associates the received trace to the pod, based on the connection IP, and add those attributes to the resulting span:
+
+```json
+{
+  "name": "lets-go",
+  "context": {
+    "trace_id": "0x5b8aa5a2d2c872e8321cf37308d69df2",
+    "span_id": "0x051581bf3cb55c13"
+  },
+  "parent_id": null,
+  "start_time": "2022-04-29T18:52:58.114201Z",
+  "end_time": "2022-04-29T18:52:58.114687Z",
+  "attributes": {
+    "k8s.container.name": "telemetrygen",
+    "k8s.pod.name": "telemetrygen-pod",
+    "k8s.pod.uid": "038e2267-b473-489b-b48c-46bafdb852eb",
+    "container.image.name": "telemetrygen",
+    "container.image.tag": "latest"
+  }
+}
+```
+
+## Extracting attributes from pod labels and annotations
 
 The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces and nodes.
 The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Node annotations/labels is configured via "annotations"  and "labels" keys.
@@ -126,8 +239,10 @@ k8sattributes/2:
   auth_type: "serviceAccount"
   passthrough: false
   filter:
+    # only retrieve pods running on the same node as the collector
     node_from_env_var: KUBE_NODE_NAME
   extract:
+    # The attributes provided in 'metadata' will be added to associated resources
     metadata:
       - k8s.pod.name
       - k8s.pod.uid
@@ -135,18 +250,22 @@ k8sattributes/2:
       - k8s.namespace.name
       - k8s.node.name
       - k8s.pod.start_time
-   labels:
+    labels:
+     # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
      - tag_name: app.label.component
        key: app.kubernetes.io/component
        from: pod
   pod_association:
     - sources:
+        # This rule associates all resources containing the 'k8s.pod.ip' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
         - from: resource_attribute
           name: k8s.pod.ip
     - sources:
+        # This rule associates all resources containing the 'k8s.pod.uid' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
         - from: resource_attribute
           name: k8s.pod.uid
     - sources:
+        # This rule will use the IP from the incoming connection from which the resource is received, and find the matching pod, based on the 'pod.status.podIP' of the observed pods
         - from: connection
 ```
 
@@ -332,3 +451,51 @@ as tags.
 
 By default, the `k8s.pod.start_time` uses [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) to format the
 timestamp value as an RFC3339 compliant timestamp.
+
+## Feature Gate
+
+### `k8sattr.fieldExtractConfigRegex.disallow`
+
+The `k8sattr.fieldExtractConfigRegex.disallow` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disallows the usage of the `extract.annotations.regex` and `extract.labels.regex` fields.
+The validation performed on the configuration will fail, if at least one of the parameters is set (non-empty) and `k8sattr.fieldExtractConfigRegex.disallow` is set to `true` (default `false`).
+
+#### Example Usage
+
+The following config with the feature gate set will lead to validation error:
+
+`config.yaml`:
+
+  ```yaml
+  extract:
+    labels:
+      regex: <my-regex1>
+    annotations:
+      regex: <my-regex2>
+  ```
+
+  Run collector: `./otelcol --config config.yaml --feature-gates=k8sattr.fieldExtractConfigRegex.disallow`
+
+#### Migration
+
+Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the the `extract.annotations.regex` and `extract.labels.regex` fields.
+
+##### Example
+
+The following configuration of `k8sattributes processor`:
+
+`config.yaml`:
+
+  ```yaml
+  annotations:
+    - tag_name: a2 # extracts value of annotation with key `annotation2` with regexp and inserts it as a tag with key `a2`
+      key: annotation2
+      regex: field=(?P<value>.+)
+      from: pod
+  ```
+
+can be converted with the usage of `ExtractPatterns` function:
+
+```yaml
+  - set(cache["annotations"], ExtractPatterns(attributes["k8s.pod.annotations["annotation2"], "field=(?P<value>.+))")
+  - set(k8s.pod.annotations["a2"], cache["annotations"]["value"])
+```
