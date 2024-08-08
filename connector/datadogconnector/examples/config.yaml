@@ -78,6 +78,11 @@ connectors:
       ## A list of resource attributes that should be used as container tags.
       #
       resource_attributes_as_container_tags: ["could.availability_zone", "could.region"]
+      ## @param bucket_interval specifies the time interval size of aggregation buckets that aggregate the Datadog trace metrics.
+      ## It is also the time interval that Datadog trace metrics payloads are flushed to the pipeline.
+      ## Default is 10s if unset.
+      #
+      bucket_interval: 30s
 exporters:
   debug:
     verbosity: detailed

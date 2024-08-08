@@ -6,6 +6,7 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -75,6 +76,11 @@ type TracesConfig struct {
 
 	// ResourceAttributesAsContainerTags specifies the list of resource attributes to be used as container tags.
 	ResourceAttributesAsContainerTags []string `mapstructure:"resource_attributes_as_container_tags"`
+
+	// BucketInterval specifies the time interval size of aggregation buckets that aggregate the Datadog trace metrics.
+	// It is also the time interval that Datadog trace metrics payloads are flushed to the pipeline.
+	// Default is 10s if unset.
+	BucketInterval time.Duration `mapstructure:"bucket_interval"`
 }
 
 // Validate the configuration for errors. This is required by component.Config.
@@ -101,6 +107,10 @@ func (c *Config) Validate() error {
 
 	if c.Traces.TraceBuffer < 0 {
 		return fmt.Errorf("Trace buffer must be non-negative")
+	}
+
+	if c.Traces.BucketInterval < 0 {
+		return fmt.Errorf("bucket interval must be non-negative")
 	}
 
 	return nil
