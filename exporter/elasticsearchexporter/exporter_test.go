@@ -880,6 +880,68 @@ func TestExporterTraces(t *testing.T) {
 		))
 		rec.WaitItems(1)
 	})
+
+	t.Run("otel mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
+		})
+
+		traces := ptrace.NewTraces()
+		resourceSpans := traces.ResourceSpans()
+		rs := resourceSpans.AppendEmpty()
+
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("name")
+		span.SetTraceID(pcommon.NewTraceIDEmpty())
+		span.SetSpanID(pcommon.NewSpanIDEmpty())
+		span.SetFlags(1)
+		span.SetDroppedAttributesCount(2)
+		span.SetDroppedEventsCount(3)
+		span.SetDroppedLinksCount(4)
+		span.TraceState().FromRaw("foo")
+		span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+
+		scopeAttr := span.Attributes()
+		fillResourceAttributeMap(scopeAttr, map[string]string{
+			"attr.foo": "attr.bar",
+		})
+
+		resAttr := rs.Resource().Attributes()
+		fillResourceAttributeMap(resAttr, map[string]string{
+			"resource.foo": "resource.bar",
+		})
+
+		spanLink := span.Links().AppendEmpty()
+		spanLink.SetTraceID(pcommon.NewTraceIDEmpty())
+		spanLink.SetSpanID(pcommon.NewSpanIDEmpty())
+		spanLink.SetFlags(10)
+		spanLink.SetDroppedAttributesCount(11)
+		spanLink.TraceState().FromRaw("bar")
+		fillResourceAttributeMap(spanLink.Attributes(), map[string]string{
+			"link.attr.foo": "link.attr.bar",
+		})
+
+		mustSendTraces(t, exporter, traces)
+
+		rec.WaitItems(1)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","attributes":{"attr.foo":"attr.bar"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"traces"},"dropped_attributes_count":2,"dropped_events_count":3,"dropped_links_count":4,"duration":3600000000000,"kind":"SPAN_KIND_UNSPECIFIED","links":[{"attributes":{"link.attr.foo":"link.attr.bar"},"dropped_attributes_count":11,"span_id":"","trace_flags":10,"trace_id":"","trace_state":"bar"}],"name":"name","resource":{"attributes":{"resource.foo":"resource.bar"},"dropped_attributes_count":0,"schema_url":""},"status":{"code":"Unset","message":""},"trace_flags":1,"trace_state":"foo"}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
 }
 
 // TestExporterAuth verifies that the Elasticsearch exporter supports
