@@ -120,7 +120,7 @@ func TestValidateGotime(t *testing.T) {
 			args: args{
 				layout: "2006-01-02 15:04:05:999999",
 			},
-			wantErr: "som error",
+			wantErr: "invalid fractional seconds directive: ':999999'. must be preceded with '.' or ','",
 		},
 	}
 	for _, tt := range tests {

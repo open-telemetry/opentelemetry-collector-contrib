@@ -13,7 +13,7 @@ import (
 )
 
 var invalidFractionalSecondsStrptime = regexp.MustCompile(`[^.,]%[Lfs]`)
-var invalidFractionalSecondsGoTime = regexp.MustCompile(`[^.,](999|999999|999999999)`)
+var invalidFractionalSecondsGoTime = regexp.MustCompile(`[^.,9]9+`)
 
 func StrptimeToGotime(layout string) (string, error) {
 	return strptime.ToNative(layout)
