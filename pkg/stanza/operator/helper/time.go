@@ -73,9 +73,16 @@ func (t *TimeParser) Validate() error {
 	}
 
 	switch t.LayoutType {
-	case NativeKey, GotimeKey: // ok
+	case NativeKey: // ok
+	case GotimeKey:
+		if err := timeutils.ValidateGotime(t.Layout); err != nil {
+			return errors.Wrap(err, "invalid gotime layout")
+		}
 	case StrptimeKey:
 		var err error
+		if err := timeutils.ValidateStrptime(t.Layout); err != nil {
+			return errors.Wrap(err, "invalid strptime layout")
+		}
 		t.Layout, err = timeutils.StrptimeToGotime(t.Layout)
 		if err != nil {
 			return errors.Wrap(err, "parse strptime layout")

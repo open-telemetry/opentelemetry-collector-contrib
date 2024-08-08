@@ -5,11 +5,15 @@ package timeutils // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
 	strptime "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt"
 )
+
+var invalidFractionalSecondsStrptime = regexp.MustCompile(`[^.,]%[Lfs]`)
+var invalidFractionalSecondsGoTime = regexp.MustCompile(`[^.,](999|999999|999999999)`)
 
 func StrptimeToGotime(layout string) (string, error) {
 	return strptime.ToNative(layout)
@@ -102,6 +106,24 @@ func SetTimestampYear(t time.Time) time.Time {
 		d = d.AddDate(-1, 0, 0)
 	}
 	return d
+}
+
+// ValidateStrptime checks the given strptime layout and returns an error if it detects any known issues
+// that prevent it from being parsed.
+func ValidateStrptime(layout string) error {
+	if match := invalidFractionalSecondsStrptime.FindString(layout); match != "" {
+		return fmt.Errorf("invalid fractional seconds directive: '%s'. must be preceded with '.' or ','", match)
+	}
+
+	return nil
+}
+
+func ValidateGotime(layout string) error {
+	if match := invalidFractionalSecondsGoTime.FindString(layout); match != "" {
+		return fmt.Errorf("invalid fractional seconds directive: '%s'. must be preceded with '.' or ','", match)
+	}
+
+	return nil
 }
 
 // Allows tests to override with deterministic value

@@ -18,7 +18,6 @@ import (
 
 var ctimeRegexp = regexp.MustCompile(`%.`)
 var decimalsRegexp = regexp.MustCompile(`\d`)
-var invalidFractionalSeconds = regexp.MustCompile(`[^.,]%[Lfs]`)
 
 var ctimeSubstitutes = map[string]string{
 	"%Y": "2006",
@@ -124,10 +123,6 @@ func Parse(format, value string) (time.Time, error) {
 func ToNative(format string) (string, error) {
 	if match := decimalsRegexp.FindString(format); match != "" {
 		return "", errors.New("format string should not contain decimals")
-	}
-
-	if match := invalidFractionalSeconds.FindString(format); match != "" {
-		return "", fmt.Errorf("invalid fractional seconds directive: '%s'. must be preceded with '.' or ','", match)
 	}
 
 	var errs []error

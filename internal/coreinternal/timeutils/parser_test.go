@@ -61,3 +61,77 @@ func Test_setTimestampYear(t *testing.T) {
 		require.Equal(t, expected, yearAdded)
 	})
 }
+
+func TestValidateStrptime(t *testing.T) {
+	type args struct {
+		layout string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr string
+	}{
+		{
+			name: "valid format",
+			args: args{
+				layout: "%Y-%m-%d %H:%M:%S.%f",
+			},
+			wantErr: "",
+		},
+		{
+			name: "invalid fractional second",
+			args: args{
+				layout: "%Y-%m-%d-%H-%M-%S:%L",
+			},
+			wantErr: "invalid fractional seconds directive: ':%L'. must be preceded with '.' or ','",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateStrptime(tt.args.layout)
+
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateGotime(t *testing.T) {
+	type args struct {
+		layout string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr string
+	}{
+		{
+			name: "valid format",
+			args: args{
+				layout: "2006-01-02 15:04:05.999999",
+			},
+			wantErr: "",
+		},
+		{
+			name: "invalid fractional second",
+			args: args{
+				layout: "2006-01-02 15:04:05:999999",
+			},
+			wantErr: "som error",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateGotime(tt.args.layout)
+
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
