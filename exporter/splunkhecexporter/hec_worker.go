@@ -28,6 +28,7 @@ type defaultHecWorker struct {
 }
 
 func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
+	// We copy the bytes to a new buffer to avoid corruption. This is a workaround to avoid hitting https://github.com/golang/go/issues/51907.
 	nb := make([]byte, buf.Len())
 	copy(nb, buf.Bytes())
 	bodyBuf := bytes.NewReader(nb)
