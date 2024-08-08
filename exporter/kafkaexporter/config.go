@@ -43,9 +43,6 @@ type Config struct {
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
 
-	// TopicFromContext is the name of the context key to use as the topic name.
-	TopicFromContext string `mapstructure:"topic_from_context"`
-
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
 

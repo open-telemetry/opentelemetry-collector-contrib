@@ -268,11 +268,15 @@ func getTopic[T resource](ctx context.Context, cfg *Config, resources resourceSl
 			}
 		}
 	}
-	if cfg.TopicFromContext != "" {
-		topic, ok := ctx.Value(cfg.TopicFromContext).(string)
-		if ok {
-			return topic
-		}
+	contextTopic, ok := ctx.Value(topicContextKey{}).(string)
+	if ok {
+		return contextTopic
 	}
 	return cfg.Topic
 }
+
+func WithTopic(ctx context.Context, topic string) context.Context {
+	return context.WithValue(ctx, topicContextKey{}, topic)
+}
+
+type topicContextKey struct{}
