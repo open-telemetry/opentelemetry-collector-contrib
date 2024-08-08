@@ -1471,5 +1471,5 @@ resourceMetrics:
               isMonotonic: true
             unit: '{operations}'
         scope:
-          name: otelcol/sqlserverreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
