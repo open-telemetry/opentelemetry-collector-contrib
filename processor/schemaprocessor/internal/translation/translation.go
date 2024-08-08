@@ -159,13 +159,19 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 				if err != nil {
 					return err
 				}
-				//rev.Logs().UpdateAttrs(log.Attributes())
+				err := rev.logsRenameAttributes.Apply(log.Attributes())
+				if err != nil {
+					return err
+				}
 			case Revert:
 				err = rev.all.Rollback(log.Attributes())
 				if err != nil {
 					return err
 				}
-				//rev.Logs().RevertAttrs(log.Attributes())
+				err := rev.logsRenameAttributes.Rollback(log.Attributes())
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -201,6 +207,12 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					if err != nil {
 						return err
 					}
+					if err := rev.spanEventsRenameAttributesonSpan.Apply(event.Attributes(), span.Name()); err != nil {
+						return err
+					}
+					if err := rev.spanEventsRenameAttributesOnEvent.Apply(event.Attributes(), event.Name()); err != nil {
+						return err
+					}
 					//err = rev.spanEventsRenameAttributesonSpan.Apply(span.Attributes(), span.Name())
 					//if err != nil {
 					//	return err
@@ -217,8 +229,13 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					event := span.Events().At(e)
 					rev.spanEventsRenameEvents.Rollback(event)
 					// todo(ankit) write a migrator for conditional AND - the old code did or
-					//rev.SpanEvents().RevertAttrsIf(event.Name(), event.Attributes())
-					//rev.SpanEvents().RevertAttrsIf(span.Name(), event.Attributes())
+					if err := rev.spanEventsRenameAttributesOnEvent.Rollback(event.Attributes(), event.Name()); err != nil {
+						return err
+					}
+					if err := rev.spanEventsRenameAttributesonSpan.Rollback(event.Attributes(), span.Name()); err != nil {
+						return err
+					}
+
 
 					//err = rev.spanEventsRenameAttributesonSpan.Rollback(span.Attributes(), span.Name())
 					//if err != nil {
