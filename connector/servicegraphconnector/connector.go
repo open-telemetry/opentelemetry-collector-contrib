@@ -524,10 +524,10 @@ func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	// TODO: Remove this once legacy metric names are removed
 	if legacyMetricNamesFeatureGate.IsEnabled() {
-		return p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_duration_seconds")
+		return p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_duration")
 	}
 
-	if err := p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_server_seconds"); err != nil {
+	if err := p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_server"); err != nil {
 		return err
 	}
 
@@ -537,7 +537,7 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	if len(p.reqServerDurationSecondsCount) > 0 {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName("traces_service_graph_request_client_seconds")
+		mDuration.SetName("traces_service_graph_request_client")
 		mDuration.SetUnit(secondsStr)
 		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
 			mDuration.SetUnit(millisecondsStr)
