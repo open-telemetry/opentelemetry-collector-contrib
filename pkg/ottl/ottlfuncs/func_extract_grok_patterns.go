@@ -54,7 +54,8 @@ func extractGrokPatterns[K any](target ottl.StringGetter[K], pattern string, nco
 				return nil, fmt.Errorf("pattern ID %q should not contain ':'", parts[0])
 			}
 
-			if err := g.AddPattern(parts[0], parts[1]); err != nil {
+			err = g.AddPattern(parts[0], parts[1])
+			if err != nil {
 				return nil, fmt.Errorf("failed to add pattern %q=%q: %w", parts[0], parts[1], err)
 			}
 		}
