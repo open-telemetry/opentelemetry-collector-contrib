@@ -45,6 +45,9 @@ func ValidateAPIKey(ctx context.Context, apiKey string, logger *zap.Logger, apiC
 		return nil
 	}
 	if err != nil {
+		if httpresp != nil && httpresp.StatusCode == 403 {
+			return WrapError(ErrInvalidAPI, httpresp)
+		}
 		logger.Warn("Error while validating API key", zap.Error(err))
 		return nil
 	}

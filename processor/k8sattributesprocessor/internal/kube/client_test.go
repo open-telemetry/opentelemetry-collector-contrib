@@ -814,6 +814,7 @@ func TestExtractionRules(t *testing.T) {
 			PodName:        true,
 			PodUID:         true,
 			PodHostName:    true,
+			PodIP:          true,
 			Node:           true,
 			StartTime:      true,
 		},
@@ -825,6 +826,7 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.hostname":    "host1",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			"k8s.pod.ip":          "1.1.1.1",
 			"k8s.pod.start_time": func() string {
 				b, err := pod.GetCreationTimestamp().MarshalText()
 				require.NoError(t, err)
@@ -1486,18 +1488,21 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				{
 					Name:         "container1",
 					ContainerID:  "docker://container1-id-123",
+					ImageID:      "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da",
 					RestartCount: 0,
 				},
 				{
 					Name:         "container2",
 					ContainerID:  "docker://container2-id-456",
+					ImageID:      "sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
 					RestartCount: 2,
 				},
 			},
 			InitContainerStatuses: []api_v1.ContainerStatus{
 				{
 					Name:         "init_container",
-					ContainerID:  "containerd://init-container-id-123",
+					ContainerID:  "containerd://init-container-id-789",
+					ImageID:      "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b",
 					RestartCount: 0,
 				},
 			},
@@ -1535,7 +1540,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				ByID: map[string]*Container{
 					"container1-id-123":     {ImageName: "test/image1"},
 					"container2-id-456":     {ImageName: "example.com:port1/image2"},
-					"init-container-id-123": {ImageName: "test/init-image"},
+					"init-container-id-789": {ImageName: "test/init-image"},
 				},
 				ByName: map[string]*Container{
 					"container1":     {ImageName: "test/image1"},
@@ -1584,9 +1589,9 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
-					"init-container-id-123": {
+					"init-container-id-789": {
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "init-container-id-123"},
+							0: {ContainerID: "init-container-id-789"},
 						},
 					},
 				},
@@ -1603,7 +1608,50 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 					"init_container": {
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "init-container-id-123"},
+							0: {ContainerID: "init-container-id-789"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "container-image-repo-digest-only",
+			rules: ExtractionRules{
+				ContainerImageRepoDigests: true,
+			},
+			pod: &pod,
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123": {
+						Statuses: map[int]ContainerStatus{
+							0: {ImageRepoDigest: "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da"},
+						},
+					},
+					"container2-id-456": {
+						Statuses: map[int]ContainerStatus{
+							2: {},
+						},
+					},
+					"init-container-id-789": {
+						Statuses: map[int]ContainerStatus{
+							0: {ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
+						},
+					},
+				},
+				ByName: map[string]*Container{
+					"container1": {
+						Statuses: map[int]ContainerStatus{
+							0: {ImageRepoDigest: "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da"},
+						},
+					},
+					"container2": {
+						Statuses: map[int]ContainerStatus{
+							2: {},
+						},
+					},
+					"init_container": {
+						Statuses: map[int]ContainerStatus{
+							0: {ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
 						},
 					},
 				},
@@ -1612,9 +1660,10 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		{
 			name: "all-container-attributes",
 			rules: ExtractionRules{
-				ContainerImageName: true,
-				ContainerImageTag:  true,
-				ContainerID:        true,
+				ContainerImageName:        true,
+				ContainerImageTag:         true,
+				ContainerID:               true,
+				ContainerImageRepoDigests: true,
 			},
 			pod: &pod,
 			want: PodContainers{
@@ -1623,7 +1672,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 						ImageName: "test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "container1-id-123"},
+							0: {ContainerID: "container1-id-123", ImageRepoDigest: "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da"},
 						},
 					},
 					"container2-id-456": {
@@ -1633,11 +1682,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
-					"init-container-id-123": {
+					"init-container-id-789": {
 						ImageName: "test/init-image",
 						ImageTag:  "1.0.2",
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "init-container-id-123"},
+							0: {ContainerID: "init-container-id-789", ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
 						},
 					},
 				},
@@ -1646,7 +1695,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 						ImageName: "test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "container1-id-123"},
+							0: {ContainerID: "container1-id-123", ImageRepoDigest: "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da"},
 						},
 					},
 					"container2": {
@@ -1660,7 +1709,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 						ImageName: "test/init-image",
 						ImageTag:  "1.0.2",
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "init-container-id-123"},
+							0: {ContainerID: "init-container-id-789", ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
 						},
 					},
 				},

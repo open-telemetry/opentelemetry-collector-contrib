@@ -57,9 +57,9 @@ OUTER:
 		m.set.Logger.Debug("Reading lost file", zap.String("path", lostReader.GetFileName()))
 		go func(r *reader.Reader) {
 			defer lostWG.Done()
-			m.readingFiles.Add(ctx, 1)
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
-			m.readingFiles.Add(ctx, -1)
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, -1)
 		}(lostReader)
 	}
 	lostWG.Wait()

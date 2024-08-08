@@ -172,10 +172,15 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const counterKey = "counter"
 	const valueKey = "value"
 	// Constants are the columns for metrics from query
+	const batchRequestRate = "Batch Requests/sec"
+	const bufferCacheHitRatio = "Buffer cache hit ratio"
 	const diskReadIOThrottled = "Disk Read IO Throttled/sec"
 	const diskWriteIOThrottled = "Disk Write IO Throttled/sec"
 	const lockWaits = "Lock Waits/sec"
 	const processesBlocked = "Processes blocked"
+	const sqlCompilationRate = "SQL Compilations/sec"
+	const sqlReCompilationsRate = "SQL Re-Compilations/sec"
+	const userConnCount = "User Connections"
 
 	rows, err := s.client.QueryRows(ctx)
 
@@ -195,6 +200,22 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		}
 
 		switch row[counterKey] {
+		case batchRequestRate:
+			val, err := strconv.ParseFloat(row[valueKey], 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverBatchRequestRateDataPoint(now, val)
+			}
+		case bufferCacheHitRatio:
+			val, err := strconv.ParseFloat(row[valueKey], 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(now, val)
+			}
 		case diskReadIOThrottled:
 			errs = append(errs, s.mb.RecordSqlserverResourcePoolDiskThrottledReadRateDataPoint(now, row[valueKey]))
 		case diskWriteIOThrottled:
@@ -209,6 +230,30 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			}
 		case processesBlocked:
 			errs = append(errs, s.mb.RecordSqlserverProcessesBlockedDataPoint(now, row[valueKey]))
+		case sqlCompilationRate:
+			val, err := strconv.ParseFloat(row[valueKey], 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverBatchSQLCompilationRateDataPoint(now, val)
+			}
+		case sqlReCompilationsRate:
+			val, err := strconv.ParseFloat(row[valueKey], 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(now, val)
+			}
+		case userConnCount:
+			val, err := strconv.ParseInt(row[valueKey], 10, 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverUserConnectionCountDataPoint(now, val)
+			}
 		}
 	}
 

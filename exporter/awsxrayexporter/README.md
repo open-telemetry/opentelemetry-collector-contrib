@@ -43,6 +43,7 @@ defined in the OpenTelemetry Semantic Conventions.
 | `aws.request_id` | AWS-generated unique identifier for the request.                       | No        |
 | `aws.queue_url`  | For operations on an Amazon SQS queue, the queue's URL.                | No        |
 | `aws.table_name` | For operations on a DynamoDB table, the name of the table.             | No        |
+| `aws.xray.annotations` | The attribute is a slice(list) attribute that contains each of the string keys. If found on the span, the `awsxrayexporter` will use them in addition to the `indexed_attributes` configuration field when categorizing which attributes to index. This can be configured with `"aws.xray.annotations"=["key1", "key2"]` (Java example: `span.setAttribute(stringArrayKey("aws.xray.annotations"), List.of("key1", "key2"))`)             | No        |
 
 Any of these values supplied are used to populate the `aws` object in addition to any relevant data supplied
 by the Span Resource object. X-Ray uses this data to generate inferred segments for the remote APIs.
@@ -87,8 +88,11 @@ following values that are evaluated in this order:
 In the case of multiple values are defined, the value with higher precedence will be used to set the `cloudwatch_logs` AWS Property.
 
 `aws.log.group.arns` and `aws.log.group.names` are slice resource attributes that can be set programmatically.
-Alternatively those resource attributes can be set using the [`OTEL_RESOURCE_ATTRIBUTES` environment variable](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md#specifying-resource-information-via-an-environment-variable). In this case only a single log group/log group arn can
-be provided as a string rather than a slice.
+Alternatively those resource attributes can be set using the [`OTEL_RESOURCE_ATTRIBUTES` environment variable](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md#specifying-resource-information-via-an-environment-variable). To set multiple log group names /log group arns, you can use `&`
+to separate them. For example, 3 log groups `log-group1`, `log-group2`, and `log-group3` are set in the following command:
+```
+export OTEL_RESOURCE_ATTRIBUTES="aws.log.group.names=log-group1&log-group2&log-group3"
+```
 
 ## AWS Credential Configuration
 

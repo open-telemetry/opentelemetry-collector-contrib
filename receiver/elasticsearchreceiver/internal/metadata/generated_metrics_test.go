@@ -136,12 +136,17 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentStateActive, AttributeIndexAggregationTypePrimaryShards)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchIndexOperationsMergeCurrentDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
@@ -153,6 +158,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
@@ -774,6 +780,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ok)
 					assert.EqualValues(t, "index", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.operations.merge.current":
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.current"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.current")
+					validatedMetrics["elasticsearch.index.operations.merge.current"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently active segment merges", ms.At(i).Description())
+					assert.Equal(t, "{merges}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
 					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.operations.merge.docs_count":

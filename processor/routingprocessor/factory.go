@@ -17,17 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
-const (
-	scopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
-	nameSep   = "/"
-
-	processorKey             = "processor"
-	metricSep                = "_"
-	nonRoutedSpansKey        = "non_routed_spans"
-	nonRoutedMetricPointsKey = "non_routed_metric_points"
-	nonRoutedLogRecordsKey   = "non_routed_log_records"
-)
-
 // NewFactory creates a factory for the routing processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(

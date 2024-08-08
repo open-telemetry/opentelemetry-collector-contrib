@@ -8,6 +8,7 @@ components:
         - exceptions
         - failover
         - grafanacloud
+        - otlpjson
         - roundrobin
         - routing
         - servicegraph
@@ -46,10 +47,10 @@ components:
         - prometheus
         - prometheusremotewrite
         - pulsar
+        - rabbitmq
         - sapm
         - sentry
         - signalfx
-        - skywalking
         - splunk_hec
         - sumologic
         - syslog

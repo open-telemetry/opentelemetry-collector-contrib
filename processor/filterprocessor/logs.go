@@ -78,7 +78,7 @@ func (flp *filterLogProcessor) processLogs(ctx context.Context, ld plog.Logs) (p
 			scope := sl.Scope()
 			lrs := sl.LogRecords()
 			lrs.RemoveIf(func(lr plog.LogRecord) bool {
-				skip, err := flp.skipExpr.Eval(ctx, ottllog.NewTransformContext(lr, scope, resource))
+				skip, err := flp.skipExpr.Eval(ctx, ottllog.NewTransformContext(lr, scope, resource, sl, rl))
 				if err != nil {
 					errors = multierr.Append(errors, err)
 					return false

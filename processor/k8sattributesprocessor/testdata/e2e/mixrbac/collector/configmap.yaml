@@ -11,7 +11,8 @@ data:
         tls:
           insecure: true
     extensions:
-      health_check: {}
+      health_check:
+        endpoint: 0.0.0.0:13133
     processors:
       k8sattributes:
         filter:
@@ -42,6 +43,7 @@ data:
           - container.id
           - container.image.name
           - container.image.tag
+          - container.image.repo_digests
           - k8s.cluster.uid
         pod_association:
         - sources:
