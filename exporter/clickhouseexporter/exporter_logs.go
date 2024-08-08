@@ -134,7 +134,6 @@ const (
 	createLogsTableSQL = `
 CREATE TABLE IF NOT EXISTS %s %s (
 	Timestamp DateTime64(9) CODEC(Delta(8), ZSTD(1)),
-	TimestampDate Date DEFAULT toDate(Timestamp),
 	TimestampTime DateTime DEFAULT toDateTime(Timestamp),
 	TraceId String CODEC(ZSTD(1)),
 	SpanId String CODEC(ZSTD(1)),
@@ -158,10 +157,11 @@ CREATE TABLE IF NOT EXISTS %s %s (
 	INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_log_attr_key mapKeys(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_log_attr_value mapValues(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-	INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
+	INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8
 ) ENGINE = %s
-PARTITION BY toYYYYMM(TimestampDate)
-ORDER BY (ServiceName, TimestampDate, TimestampTime)
+PARTITION BY toDate(TimestampTime)
+PRIMARY KEY (ServiceName, TimestampTime)
+ORDER BY (ServiceName, TimestampTime, Timestamp)
 %s
 SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1;
 `

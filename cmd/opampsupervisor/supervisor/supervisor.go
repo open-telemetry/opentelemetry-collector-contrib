@@ -43,8 +43,8 @@ import (
 )
 
 var (
-	//go:embed templates/bootstrap_pipeline.yaml
-	bootstrapConfTpl string
+	//go:embed templates/nooppipeline.yaml
+	noopPipelineTpl string
 
 	//go:embed templates/extraconfig.yaml
 	extraConfigTpl string
@@ -60,8 +60,8 @@ var (
 )
 
 const (
-	persistentStateFilePath = "persistent_state.yaml"
-	agentConfigFilePath     = "effective.yaml"
+	persistentStateFileName = "persistent_state.yaml"
+	agentConfigFileName     = "effective.yaml"
 )
 
 const maxBufferedCustomMessages = 10
@@ -89,7 +89,7 @@ type Supervisor struct {
 	// Supervisor's persistent state
 	persistentState *persistentState
 
-	bootstrapTemplate      *template.Template
+	noopPipelineTemplate   *template.Template
 	opampextensionTemplate *template.Template
 	extraConfigTemplate    *template.Template
 	ownTelemetryTemplate   *template.Template
@@ -131,8 +131,6 @@ type Supervisor struct {
 	agentStartHealthCheckAttempts int
 	agentRestarting               atomic.Bool
 
-	connectedToOpAMPServer chan struct{}
-
 	// The OpAMP server to communicate with the Collector's OpAMP extension
 	opampServer     server.OpAMPServer
 	opampServerPort int
@@ -145,7 +143,6 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		mergedConfig:                 &atomic.Value{},
-		connectedToOpAMPServer:       make(chan struct{}),
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
 		doneChan:                     make(chan struct{}),
@@ -169,7 +166,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	}
 
 	var err error
-	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFile())
+	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath())
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +186,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	logger.Debug("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
-	err = s.loadInitialMergedConfig()
+	err = s.loadAndWriteInitialMergedConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed loading initial config: %w", err)
 	}
@@ -198,14 +195,11 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
 	}
 
-	if connErr := s.waitForOpAMPConnection(); connErr != nil {
-		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", connErr)
-	}
-
 	s.commander, err = commander.NewCommander(
 		s.logger,
+		s.config.Storage.Directory,
 		s.config.Agent,
-		"--config", agentConfigFilePath,
+		"--config", s.agentConfigFilePath(),
 	)
 	if err != nil {
 		return nil, err
@@ -231,7 +225,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 func (s *Supervisor) createTemplates() error {
 	var err error
 
-	if s.bootstrapTemplate, err = template.New("bootstrap").Parse(bootstrapConfTpl); err != nil {
+	if s.noopPipelineTemplate, err = template.New("nooppipeline").Parse(noopPipelineTpl); err != nil {
 		return err
 	}
 	if s.extraConfigTemplate, err = template.New("extraconfig").Parse(extraConfigTpl); err != nil {
@@ -280,12 +274,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	bootstrapConfig, err := s.composeBootstrapConfig()
+	bootstrapConfig, err := s.composeNoopConfig()
 	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile(agentConfigFilePath, bootstrapConfig, 0600)
+	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
@@ -345,8 +339,9 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	cmd, err := commander.NewCommander(
 		s.logger,
+		s.config.Storage.Directory,
 		s.config.Agent,
-		"--config", agentConfigFilePath,
+		"--config", s.agentConfigFilePath(),
 	)
 	if err != nil {
 		return err
@@ -403,7 +398,6 @@ func (s *Supervisor) startOpAMPClient() error {
 		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
-				s.connectedToOpAMPServer <- struct{}{}
 				s.logger.Debug("Connected to the server.")
 			},
 			OnConnectFailedFunc: func(_ context.Context, err error) {
@@ -679,24 +673,12 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 			return err
 		}
 	}
-	return s.waitForOpAMPConnection()
+	return nil
 }
 
-func (s *Supervisor) waitForOpAMPConnection() error {
-	// wait for the OpAMP client to connect to the server or timeout
-	select {
-	case <-s.connectedToOpAMPServer:
-		return nil
-	case <-time.After(10 * time.Second):
-		return errors.New("timed out waiting for the server to connect")
-	}
-}
-
-func (s *Supervisor) composeBootstrapConfig() ([]byte, error) {
-	var k = koanf.New("::")
-
+func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	var cfg bytes.Buffer
-	err := s.bootstrapTemplate.Execute(&cfg, map[string]any{
+	err := s.noopPipelineTemplate.Execute(&cfg, map[string]any{
 		"InstanceUid":    s.persistentState.InstanceID.String(),
 		"SupervisorPort": s.opampServerPort,
 	})
@@ -704,7 +686,17 @@ func (s *Supervisor) composeBootstrapConfig() ([]byte, error) {
 		return nil, err
 	}
 
-	if err = k.Load(rawbytes.Provider(cfg.Bytes()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	return cfg.Bytes(), nil
+}
+
+func (s *Supervisor) composeNoopConfig() ([]byte, error) {
+	var k = koanf.New("::")
+
+	cfg, err := s.composeNoopPipeline()
+	if err != nil {
+		return nil, err
+	}
+	if err = k.Load(rawbytes.Provider(cfg), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
 		return nil, err
 	}
 	if err = k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
@@ -766,7 +758,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 	return cfg.Bytes()
 }
 
-func (s *Supervisor) loadInitialMergedConfig() error {
+func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	var lastRecvRemoteConfig, lastRecvOwnMetricsConfig []byte
 	var err error
 
@@ -807,6 +799,12 @@ func (s *Supervisor) loadInitialMergedConfig() error {
 	_, err = s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		return fmt.Errorf("could not compose initial merged config: %w", err)
+	}
+
+	// write the initial merged config to disk
+	cfg := s.mergedConfig.Load().(string)
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
+		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
 	return nil
@@ -912,6 +910,17 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 			if err != nil {
 				return false, fmt.Errorf("cannot merge config named %s: %w", name, err)
 			}
+		}
+	} else {
+		// Add noop pipeline
+		var noopConfig []byte
+		noopConfig, err = s.composeNoopPipeline()
+		if err != nil {
+			return false, fmt.Errorf("could not compose noop pipeline: %w", err)
+		}
+
+		if err = k.Load(rawbytes.Provider(noopConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+			return false, fmt.Errorf("could not merge noop pipeline: %w", err)
 		}
 	}
 
@@ -1039,7 +1048,7 @@ func (s *Supervisor) healthCheck() {
 }
 
 func (s *Supervisor) runAgentProcess() {
-	if _, err := os.Stat(agentConfigFilePath); err == nil {
+	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.logger.Debug("Effective config found, starting agent initial time")
 		s.startAgent()
@@ -1111,7 +1120,7 @@ func (s *Supervisor) stopAgentApplyConfig() {
 		s.logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(agentConfigFilePath, []byte(cfg), 0600); err != nil {
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 }
@@ -1302,8 +1311,12 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 	return true
 }
 
-func (s *Supervisor) persistentStateFile() string {
-	return filepath.Join(s.config.Storage.Directory, persistentStateFilePath)
+func (s *Supervisor) persistentStateFilePath() string {
+	return filepath.Join(s.config.Storage.Directory, persistentStateFileName)
+}
+
+func (s *Supervisor) agentConfigFilePath() string {
+	return filepath.Join(s.config.Storage.Directory, agentConfigFileName)
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {
