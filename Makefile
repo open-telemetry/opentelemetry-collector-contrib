@@ -114,6 +114,10 @@ stability-tests: otelcontribcol
 gogci:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
 
+.PHONY: gogenerate
+gogenerate:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="generate"
+
 .PHONY: gotidy
 gotidy:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
@@ -280,12 +284,6 @@ docker-telemetrygen:
 	cp bin/telemetrygen_* cmd/telemetrygen/
 	cd cmd/telemetrygen && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t telemetrygen:latest .
 	rm cmd/telemetrygen/telemetrygen_*
-
-.PHONY: generate
-generate: install-tools
-	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
-	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
-	$(MAKE) gofmt
 
 .PHONY: githubgen-install
 githubgen-install:
@@ -529,6 +527,6 @@ checks:
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) gendistributions
-	$(MAKE) -j4 generate
+	$(MAKE) -j4 gogenerate
 	$(MAKE) multimod-verify
 	git diff --exit-code || (echo 'Some files need committing' &&  git status && exit 1)

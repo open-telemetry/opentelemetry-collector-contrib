@@ -223,7 +223,7 @@ When submitting a component to the community, consider breaking it down into sep
     * `make gotidy`
     * `make genotelcontribcol`
     * `make genoteltestbedcol`
-    * `make generate`
+    * `make gogenerate`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
     * `make addlicense`
@@ -236,7 +236,7 @@ When submitting a component to the community, consider breaking it down into sep
     * Add `contrib` to the list of distributions
   * Add it to the `cmd/otelcontribcol` binary by updating the `cmd/otelcontribcol/builder-config.yaml` file.
   * Please also run:
-    - `make generate`
+    - `make gogenerate`
     - `make genotelcontribcol`
   * The component's tests must also be added as a part of its respective `component_type_tests.go` file in the `cmd/otelcontribcol` directory.
   * The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
@@ -431,7 +431,7 @@ To become a Code Owner, open a PR with the following changes:
 1. Add your GitHub username to the active codeowners entry in the component's `metadata.yaml` file.
 2. Run the command `make update-codeowners`.
       * Note: A GitHub [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) must be configured for this command to work.
-      * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make generate` to regenerate the component's README header.
+      * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make gogenerate` to regenerate the component's README header.
 
 Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
 
