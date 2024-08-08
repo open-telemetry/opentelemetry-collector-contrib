@@ -27,6 +27,7 @@ body:
       - connector/otlpjson
       - connector/roundrobin
       - connector/routing
+      - connector/semconvchecker
       - connector/servicegraph
       - connector/spanmetrics
       - connector/sum
