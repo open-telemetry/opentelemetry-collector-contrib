@@ -12,7 +12,6 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - atoulme
-    - bryan-aguilar
     - crobert-1
     - dashpole
     - mwear
