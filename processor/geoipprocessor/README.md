@@ -39,7 +39,7 @@ The following settings must be configured:
 
 - `providers`: A map containing geographical location information providers. These providers are used to search for the geographical location attributes associated with an IP. Supported providers:
   - [maxmind](./internal/provider/maxmindprovider/README.md)
-- `source`: A map defining where the IP address will be looked for.
+- `source`:
   - `from`: Allows specifying the attribute source type, defaults to `resource_attribute`. Available values: `resource_attribute` or `attribute`.
 
 ## Examples
