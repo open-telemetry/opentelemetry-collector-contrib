@@ -105,7 +105,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	}
 
 	// logs sometimes take a while to be written, so a substantial wait buffer is needed
-	require.Eventually(t, logsReceived, 10*time.Second, 200*time.Millisecond)
+	require.Eventually(t, logsReceived, 20*time.Second, 200*time.Millisecond)
 	results := sink.AllLogs()
 	require.Len(t, results, 1)
 
@@ -170,7 +170,7 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	}
 
 	// logs sometimes take a while to be written, so a substantial wait buffer is needed
-	require.Eventually(t, logsReceived, 10*time.Second, 200*time.Millisecond)
+	require.Eventually(t, logsReceived, 20*time.Second, 200*time.Millisecond)
 	results := sink.AllLogs()
 	require.Len(t, results, 1)
 

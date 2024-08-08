@@ -36,7 +36,12 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, fmt.Errorf("the `start_at` field must be set to `beginning` or `end`")
 	}
 
-	return &Input{
+	if (c.Remote.Server != "" || c.Remote.Username != "" || c.Remote.Password != "") && // any not empty
+		(c.Remote.Server == "" || c.Remote.Username == "" || c.Remote.Password == "") { // any empty
+		return nil, fmt.Errorf("remote configuration must have non-empty `username` and `password`")
+	}
+
+	input := &Input{
 		InputOperator:    inputOperator,
 		buffer:           NewBuffer(),
 		channel:          c.Channel,
@@ -45,5 +50,9 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		pollInterval:     c.PollInterval,
 		raw:              c.Raw,
 		excludeProviders: c.ExcludeProviders,
-	}, nil
+		remote:           c.Remote,
+	}
+	input.startRemoteSession = input.defaultStartRemoteSession
+
+	return input, nil
 }

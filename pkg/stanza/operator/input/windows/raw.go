@@ -17,6 +17,7 @@ type EventRaw struct {
 	RenderedLevel string      `xml:"RenderingInfo>Level"`
 	Level         string      `xml:"System>Level"`
 	Body          string      `xml:"-"`
+	RemoteServer  string      `xml:"RemoteServer,omitempty"`
 }
 
 // parseTimestamp will parse the timestamp of the event.

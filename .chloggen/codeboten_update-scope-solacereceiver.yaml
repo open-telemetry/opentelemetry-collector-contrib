@@ -7,7 +7,7 @@ change_type: breaking
 component: solacereceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Update the scope name for telemetry produced by the solacereceiver from otelcol/solacereceiver to github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
+note: "Update the scope name for telemetry produced by the solacereceiver from `otelcol/solacereceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver`"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34466]

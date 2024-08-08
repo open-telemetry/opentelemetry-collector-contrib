@@ -7,7 +7,7 @@ change_type: breaking
 component: zookeeperreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Update the scope name for telemetry produced by the zookeeperreceiver from otelcol/zookeeper to github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+note: "Update the scope name for telemetry produced by the zookeeperreceiver from `otelcol/zookeeper` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver`"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34450]
