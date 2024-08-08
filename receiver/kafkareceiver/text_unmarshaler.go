@@ -36,7 +36,7 @@ func (r *textLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	return p, nil
 }
 
-func (r *textLogsUnmarshaler) Encoding() string {
+func (r *textLogsUnmarshaler) FormatType() string {
 	return "text"
 }
 

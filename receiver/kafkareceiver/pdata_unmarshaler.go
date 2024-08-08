@@ -18,7 +18,7 @@ func (p pdataLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	return p.Unmarshaler.UnmarshalLogs(buf)
 }
 
-func (p pdataLogsUnmarshaler) Encoding() string {
+func (p pdataLogsUnmarshaler) FormatType() string {
 	return p.encoding
 }
 
@@ -38,7 +38,7 @@ func (p pdataTracesUnmarshaler) Unmarshal(buf []byte) (ptrace.Traces, error) {
 	return p.Unmarshaler.UnmarshalTraces(buf)
 }
 
-func (p pdataTracesUnmarshaler) Encoding() string {
+func (p pdataTracesUnmarshaler) FormatType() string {
 	return p.encoding
 }
 
@@ -58,7 +58,7 @@ func (p pdataMetricsUnmarshaler) Unmarshal(buf []byte) (pmetric.Metrics, error) 
 	return p.Unmarshaler.UnmarshalMetrics(buf)
 }
 
-func (p pdataMetricsUnmarshaler) Encoding() string {
+func (p pdataMetricsUnmarshaler) FormatType() string {
 	return p.encoding
 }
 

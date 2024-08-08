@@ -27,7 +27,7 @@ func (j jaegerProtoSpanUnmarshaler) Unmarshal(bytes []byte) (ptrace.Traces, erro
 	return jaegerSpanToTraces(span)
 }
 
-func (j jaegerProtoSpanUnmarshaler) Encoding() string {
+func (j jaegerProtoSpanUnmarshaler) FormatType() string {
 	return "jaeger_proto"
 }
 
@@ -45,7 +45,7 @@ func (j jaegerJSONSpanUnmarshaler) Unmarshal(data []byte) (ptrace.Traces, error)
 	return jaegerSpanToTraces(span)
 }
 
-func (j jaegerJSONSpanUnmarshaler) Encoding() string {
+func (j jaegerJSONSpanUnmarshaler) FormatType() string {
 	return "jaeger_json"
 }
 

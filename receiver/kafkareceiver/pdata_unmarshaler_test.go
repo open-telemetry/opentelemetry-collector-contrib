@@ -14,15 +14,15 @@ import (
 
 func TestNewPdataTracesUnmarshaler(t *testing.T) {
 	um := newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, "test")
-	assert.Equal(t, "test", um.Encoding())
+	assert.Equal(t, "test", um.FormatType())
 }
 
 func TestNewPdataMetricsUnmarshaler(t *testing.T) {
 	um := newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, "test")
-	assert.Equal(t, "test", um.Encoding())
+	assert.Equal(t, "test", um.FormatType())
 }
 
 func TestNewPdataLogsUnmarshaler(t *testing.T) {
 	um := newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, "test")
-	assert.Equal(t, "test", um.Encoding())
+	assert.Equal(t, "test", um.FormatType())
 }

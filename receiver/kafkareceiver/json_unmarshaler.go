@@ -38,6 +38,6 @@ func (r *jsonLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	return p, nil
 }
 
-func (r *jsonLogsUnmarshaler) Encoding() string {
+func (r *jsonLogsUnmarshaler) FormatType() string {
 	return "json"
 }

@@ -21,7 +21,7 @@ const (
 	defaultTracesTopic       = "otlp_spans"
 	defaultMetricsTopic      = "otlp_metrics"
 	defaultLogsTopic         = "otlp_logs"
-	defaultEncoding          = "otlp_proto"
+	defaultFormatType        = "otlp_proto"
 	defaultBroker            = "localhost:9092"
 	defaultClientID          = "otel-collector"
 	defaultGroupID           = defaultClientID
@@ -42,7 +42,7 @@ const (
 	defaultAutoCommitInterval = 1 * time.Second
 )
 
-var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
+var errUnrecognizedFormatType = fmt.Errorf("unrecognized format")
 
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
@@ -51,7 +51,7 @@ type FactoryOption func(factory *kafkaReceiverFactory)
 func withTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
 		for _, unmarshaler := range tracesUnmarshalers {
-			factory.tracesUnmarshalers[unmarshaler.Encoding()] = unmarshaler
+			factory.tracesUnmarshalers[unmarshaler.FormatType()] = unmarshaler
 		}
 	}
 }
@@ -60,7 +60,7 @@ func withTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOpti
 func withMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
 		for _, unmarshaler := range metricsUnmarshalers {
-			factory.metricsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
+			factory.metricsUnmarshalers[unmarshaler.FormatType()] = unmarshaler
 		}
 	}
 }
@@ -69,7 +69,7 @@ func withMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryO
 func withLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
 		for _, unmarshaler := range logsUnmarshalers {
-			factory.logsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
+			factory.logsUnmarshalers[unmarshaler.FormatType()] = unmarshaler
 		}
 	}
 }
@@ -95,7 +95,8 @@ func NewFactory(options ...FactoryOption) receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Encoding:          defaultEncoding,
+		Encoding:          nil,
+		FormatType:        defaultFormatType,
 		Brokers:           []string{defaultBroker},
 		ClientID:          defaultClientID,
 		GroupID:           defaultGroupID,
@@ -135,17 +136,17 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-	for encoding, unmarshal := range defaultTracesUnmarshalers() {
-		f.tracesUnmarshalers[encoding] = unmarshal
+	for formatType, unmarshal := range defaultTracesUnmarshalers() {
+		f.tracesUnmarshalers[formatType] = unmarshal
 	}
 
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	unmarshaler := f.tracesUnmarshalers[oCfg.Encoding]
+	unmarshaler := f.tracesUnmarshalers[oCfg.FormatType]
 	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
+		return nil, errUnrecognizedFormatType
 	}
 
 	r, err := newTracesReceiver(oCfg, set, unmarshaler, nextConsumer)
@@ -161,17 +162,17 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	for encoding, unmarshal := range defaultMetricsUnmarshalers() {
-		f.metricsUnmarshalers[encoding] = unmarshal
+	for formatType, unmarshal := range defaultMetricsUnmarshalers() {
+		f.metricsUnmarshalers[formatType] = unmarshal
 	}
 
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	unmarshaler := f.metricsUnmarshalers[oCfg.Encoding]
+	unmarshaler := f.metricsUnmarshalers[oCfg.FormatType]
 	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
+		return nil, errUnrecognizedFormatType
 	}
 
 	r, err := newMetricsReceiver(oCfg, set, unmarshaler, nextConsumer)
@@ -187,15 +188,15 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	for encoding, unmarshaler := range defaultLogsUnmarshalers(set.BuildInfo.Version, set.Logger) {
-		f.logsUnmarshalers[encoding] = unmarshaler
+	for formatType, unmarshaler := range defaultLogsUnmarshalers(set.BuildInfo.Version, set.Logger) {
+		f.logsUnmarshalers[formatType] = unmarshaler
 	}
 
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
-	unmarshaler, err := getLogsUnmarshaler(oCfg.Encoding, f.logsUnmarshalers)
+	unmarshaler, err := getLogsUnmarshaler(oCfg.FormatType, f.logsUnmarshalers)
 	if err != nil {
 		return nil, err
 	}
@@ -207,23 +208,23 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	return r, nil
 }
 
-func getLogsUnmarshaler(encoding string, unmarshalers map[string]LogsUnmarshaler) (LogsUnmarshaler, error) {
+func getLogsUnmarshaler(formatType string, unmarshalers map[string]LogsUnmarshaler) (LogsUnmarshaler, error) {
 	var enc string
-	unmarshaler, ok := unmarshalers[encoding]
+	unmarshaler, ok := unmarshalers[formatType]
 	if !ok {
-		split := strings.SplitN(encoding, "_", 2)
+		split := strings.SplitN(formatType, "_", 2)
 		prefix := split[0]
 		if len(split) > 1 {
 			enc = split[1]
 		}
 		unmarshaler, ok = unmarshalers[prefix].(LogsUnmarshalerWithEnc)
 		if !ok {
-			return nil, errUnrecognizedEncoding
+			return nil, errUnrecognizedFormatType
 		}
 	}
 
 	if unmarshalerWithEnc, ok := unmarshaler.(LogsUnmarshalerWithEnc); ok {
-		// This should be called even when enc is an empty string to initialize the encoding.
+		// This should be called even when enc is an empty string to initialize the format.
 		unmarshaler, err := unmarshalerWithEnc.WithEnc(enc)
 		if err != nil {
 			return nil, err

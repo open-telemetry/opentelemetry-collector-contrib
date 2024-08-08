@@ -84,7 +84,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 			traces, err := test.unmarshaler.Unmarshal(test.bytes)
 			require.NoError(t, err)
 			assert.Equal(t, test.expected, traces)
-			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
+			assert.Equal(t, test.encoding, test.unmarshaler.FormatType())
 		})
 	}
 }

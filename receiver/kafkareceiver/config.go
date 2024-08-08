@@ -54,8 +54,10 @@ type Config struct {
 	HeartbeatInterval time.Duration `mapstructure:"heartbeat_interval"`
 	// The name of the kafka topic to consume from (default "otlp_spans" for traces, "otlp_metrics" for metrics, "otlp_logs" for logs)
 	Topic string `mapstructure:"topic"`
-	// Encoding of the messages (default "otlp_proto")
-	Encoding string `mapstructure:"encoding"`
+	// Encoding of the messages (default "none")
+	Encoding *component.ID `mapstructure:"encoding"`
+	// FormatType of the messages (default "otlp_proto")
+	FormatType string `mapstructure:"format"`
 	// The consumer group that receiver will be consuming messages from (default "otel-collector")
 	GroupID string `mapstructure:"group_id"`
 	// The consumer client ID that receiver will use (default "otel-collector")

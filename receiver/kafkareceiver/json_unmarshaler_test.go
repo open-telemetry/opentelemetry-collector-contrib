@@ -13,7 +13,7 @@ import (
 func TestNewJSONUnmarshaler(t *testing.T) {
 	t.Parallel()
 	um := newJSONLogsUnmarshaler()
-	assert.Equal(t, "json", um.Encoding())
+	assert.Equal(t, "json", um.FormatType())
 }
 
 func TestPlogReturnType(t *testing.T) {

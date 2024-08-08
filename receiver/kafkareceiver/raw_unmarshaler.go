@@ -19,6 +19,6 @@ func (r rawLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	return l, nil
 }
 
-func (r rawLogsUnmarshaler) Encoding() string {
+func (r rawLogsUnmarshaler) FormatType() string {
 	return "raw"
 }
