@@ -1,5 +1,4 @@
 type: elasticsearch
-scope_name: otelcol/elasticsearchreceiver
 
 status:
   class: receiver
