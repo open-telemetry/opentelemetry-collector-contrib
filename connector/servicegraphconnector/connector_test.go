@@ -155,6 +155,8 @@ func verifyHappyCaseMetricsWithDuration(durationSum float64) func(t *testing.T, 
 		mClientDuration := ms.At(2)
 		assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
 		verifyDuration(t, mClientDuration, durationSum)
+
+		verifyUnit(t, mClientDuration.Unit(), secondsStr)
 	}
 }
 
@@ -202,6 +204,10 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	v, ok := attrs.Get(k)
 	assert.True(t, ok)
 	assert.Equal(t, expected, v.AsString())
+}
+
+func verifyUnit(t *testing.T, actual, expected string) {
+	assert.Equal(t, expected, actual)
 }
 
 func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {

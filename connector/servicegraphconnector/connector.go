@@ -31,6 +31,8 @@ const (
 	clientKind         = "client"
 	serverKind         = "server"
 	virtualNodeLabel   = "virtual_node"
+	millisecondsStr    = "ms"
+	secondsStr         = "s"
 )
 
 var (
@@ -536,6 +538,10 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 	if len(p.reqServerDurationSecondsCount) > 0 {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName("traces_service_graph_request_client_seconds")
+		mDuration.SetUnit(secondsStr)
+		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+			mDuration.SetUnit(millisecondsStr)
+		}
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
@@ -565,6 +571,10 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 	if len(p.reqServerDurationSecondsCount) > 0 {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName(mName)
+		mDuration.SetUnit(secondsStr)
+		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+			mDuration.SetUnit(millisecondsStr)
+		}
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
