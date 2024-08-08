@@ -116,6 +116,66 @@ func (b builder) addHistogramDatapointWithMinMaxAndExemplars(start, ts pcommon.T
 	return b
 }
 
+type expHistogramConfig struct {
+	count          uint64
+	sum            float64
+	min            float64
+	max            float64
+	zeroThreshold  float64
+	zeroCount      uint64
+	scale          int32
+	positiveOffset int32
+	positiveCount  []uint64
+	negativeOffset int32
+	negativeCount  []uint64
+	exemplarValues []float64
+}
+
+func (b builder) addExpHistogramDatapoint(config expHistogramConfig) builder {
+	if b.metric.Type() != pmetric.MetricTypeExponentialHistogram {
+		panic(b.metric.Type().String())
+	}
+	dp := b.metric.ExponentialHistogram().DataPoints().AppendEmpty()
+	dp.SetCount(config.count)
+	dp.SetSum(config.sum)
+	dp.SetMin(config.min)
+	dp.SetMax(config.max)
+	dp.SetZeroThreshold(config.zeroThreshold)
+	dp.SetZeroCount(config.zeroCount)
+	dp.SetScale(config.scale)
+	dp.Positive().SetOffset(config.positiveOffset)
+	dp.Positive().BucketCounts().FromRaw(config.positiveCount)
+	dp.Negative().SetOffset(config.negativeOffset)
+	dp.Negative().BucketCounts().FromRaw(config.negativeCount)
+	for ei := 0; ei < len(config.exemplarValues); ei++ {
+		exemplar := dp.Exemplars().AppendEmpty()
+		exemplar.SetTimestamp(1)
+		exemplar.SetDoubleValue(config.exemplarValues[ei])
+	}
+	dp.SetStartTimestamp(1)
+	dp.SetTimestamp(1)
+	return b
+}
+
+func buildExpHistogramBucket(m map[int]uint64) []uint64 {
+	if len(m) == 0 {
+		return []uint64{}
+	}
+	maxIndex := 0
+	for index := range m {
+		if index > maxIndex {
+			maxIndex = index
+		}
+	}
+
+	result := make([]uint64, maxIndex+1)
+	for index, count := range m {
+		result[index] = count
+	}
+
+	return result
+}
+
 // setUnit sets the unit of this metric
 func (b builder) setUnit(unit string) builder {
 	b.metric.SetUnit(unit)
