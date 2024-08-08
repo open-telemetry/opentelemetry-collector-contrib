@@ -38,9 +38,9 @@ const (
 	numVolumes    = 8
 
 	// Number of metrics by resource
-	nodeMetrics      = 15
-	podMetrics       = 15
-	containerMetrics = 11
+	nodeMetrics      = 16
+	podMetrics       = 16
+	containerMetrics = 12
 	volumeMetrics    = 5
 )
 

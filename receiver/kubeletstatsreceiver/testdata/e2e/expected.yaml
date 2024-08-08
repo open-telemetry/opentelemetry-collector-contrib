@@ -5,151 +5,159 @@ resourceMetrics:
           value:
             stringValue: kind-control-plane
     scopeMetrics:
-      - scope:
-          name: otelcol/kubeletstatsreceiver
-          version: latest
-        metrics:
-          - name: k8s.node.cpu.time
-            description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
+      - metrics:
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
+            name: k8s.node.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 53.395386155
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
             unit: s
-            sum:
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
+            gauge:
               dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asDouble: 10.314631
+                - asDouble: 0.111234682
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.cpu.usage
+            unit: '{cpu}'
+          - description: Node CPU utilization
+            gauge:
+              dataPoints:
+                - asDouble: 0.111234682
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.cpu.utilization
+            unit: "1"
+          - description: Node filesystem available
+            gauge:
+              dataPoints:
+                - asInt: "224390217728"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.filesystem.available
+            unit: By
+          - description: Node filesystem capacity
+            gauge:
+              dataPoints:
+                - asInt: "497624072192"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.filesystem.capacity
+            unit: By
+          - description: Node filesystem usage
+            gauge:
+              dataPoints:
+                - asInt: "252405039104"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.filesystem.usage
+            unit: By
+          - description: Node memory available
+            gauge:
+              dataPoints:
+                - asInt: "32523874304"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.memory.available
+            unit: By
+          - description: Node memory major_page_faults
+            gauge:
+              dataPoints:
+                - asInt: "245"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.memory.major_page_faults
+            unit: "1"
+          - description: Node memory page_faults
+            gauge:
+              dataPoints:
+                - asInt: "87887"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.memory.page_faults
+            unit: "1"
+          - description: Node memory rss
+            gauge:
+              dataPoints:
+                - asInt: "477716480"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.memory.rss
+            unit: By
+          - description: Node memory usage
+            gauge:
+              dataPoints:
+                - asInt: "1980579840"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.memory.usage
+            unit: By
+          - description: Node memory working_set
+            gauge:
+              dataPoints:
+                - asInt: "822366208"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.memory.working_set
+            unit: By
+          - description: Node network errors
+            name: k8s.node.network.errors
+            sum:
               aggregationTemporality: 2
-              isMonotonic: true
-          - name: k8s.node.cpu.utilization
-            description: Node CPU utilization
-            unit: "1"
-            gauge:
               dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asDouble: 0.554881989
-          - name: k8s.node.filesystem.available
-            description: Node filesystem available
-            unit: By
-            gauge:
-              dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "38961741824"
-          - name: k8s.node.filesystem.capacity
-            description: Node filesystem capacity
-            unit: By
-            gauge:
-              dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "67317051392"
-          - name: k8s.node.filesystem.usage
-            description: Node filesystem usage
-            unit: By
-            gauge:
-              dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "24902610944"
-          - name: k8s.node.memory.available
-            description: Node memory available
-            unit: By
-            gauge:
-              dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "8197382144"
-          - name: k8s.node.memory.major_page_faults
-            description: Node memory major_page_faults
-            unit: "1"
-            gauge:
-              dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "39"
-          - name: k8s.node.memory.page_faults
-            description: Node memory page_faults
-            unit: "1"
-            gauge:
-              dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "150931"
-          - name: k8s.node.memory.rss
-            description: Node memory rss
-            unit: By
-            gauge:
-              dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "95629312"
-          - name: k8s.node.memory.usage
-            description: Node memory usage
-            unit: By
-            gauge:
-              dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "710131712"
-          - name: k8s.node.memory.working_set
-            description: Node memory working_set
-            unit: By
-            gauge:
-              dataPoints:
-                - startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "148717568"
-          - name: k8s.node.network.errors
-            description: Node network errors
-            unit: "1"
-            sum:
-              dataPoints:
-                - attributes:
-                    - key: interface
-                      value:
-                        stringValue: eth0
+                - asInt: "0"
+                  attributes:
                     - key: direction
                       value:
                         stringValue: receive
-                  startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "0"
-                - attributes:
                     - key: interface
                       value:
                         stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
                     - key: direction
                       value:
                         stringValue: transmit
-                  startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "0"
-              aggregationTemporality: 2
-              isMonotonic: true
-          - name: k8s.node.network.io
-            description: Node network IO
-            unit: By
-            sum:
-              dataPoints:
-                - attributes:
                     - key: interface
                       value:
                         stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: Node network IO
+            name: k8s.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "44895"
+                  attributes:
                     - key: direction
                       value:
                         stringValue: receive
-                  startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "329819"
-                - attributes:
                     - key: interface
                       value:
                         stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "153555"
+                  attributes:
                     - key: direction
                       value:
                         stringValue: transmit
-                  startTimeUnixNano: "1692645620000000000"
-                  timeUnixNano: "1694562475653709858"
-                  asInt: "78161"
-              aggregationTemporality: 2
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
+            unit: By
+        scope:
+          name: otelcol/kubeletstatsreceiver
+          version: 0.105.0-dev

@@ -96,7 +96,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerCPUUsage: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ContainerCPUUtilization: MetricConfig{
 			Enabled: true,
@@ -153,7 +153,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sNodeCPUUsage: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		K8sNodeCPUUtilization: MetricConfig{
 			Enabled: true,
@@ -201,7 +201,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sPodCPUUsage: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		K8sPodCPUUtilization: MetricConfig{
 			Enabled: true,
