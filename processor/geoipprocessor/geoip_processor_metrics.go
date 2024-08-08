@@ -12,7 +12,7 @@ import (
 func (g *geoIPProcessor) processMetrics(ctx context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := ms.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
-		switch g.sourceConfig.From {
+		switch g.cfg.Source.From {
 		case resourceSource:
 			err := g.processAttributes(ctx, rm.At(i).Resource().Attributes())
 			if err != nil {

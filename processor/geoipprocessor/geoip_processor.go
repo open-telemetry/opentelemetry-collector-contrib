@@ -32,14 +32,14 @@ type geoIPProcessor struct {
 	providers          []provider.GeoIPProvider
 	resourceAttributes []attribute.Key
 
-	sourceConfig SourceConfig
+	cfg *Config
 }
 
-func newGeoIPProcessor(sourceConfig SourceConfig, resourceAttributes []attribute.Key, providers []provider.GeoIPProvider) *geoIPProcessor {
+func newGeoIPProcessor(processorConfig *Config, resourceAttributes []attribute.Key, providers []provider.GeoIPProvider) *geoIPProcessor {
 	return &geoIPProcessor{
 		resourceAttributes: resourceAttributes,
 		providers:          providers,
-		sourceConfig:       sourceConfig,
+		cfg:                processorConfig,
 	}
 }
 

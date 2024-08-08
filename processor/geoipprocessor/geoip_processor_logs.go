@@ -12,7 +12,7 @@ import (
 func (g *geoIPProcessor) processLogs(ctx context.Context, ls plog.Logs) (plog.Logs, error) {
 	rl := ls.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
-		switch g.sourceConfig.From {
+		switch g.cfg.Source.From {
 		case resourceSource:
 			err := g.processAttributes(ctx, rl.At(i).Resource().Attributes())
 			if err != nil {
