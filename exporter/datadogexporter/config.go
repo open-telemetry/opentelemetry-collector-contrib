@@ -324,6 +324,7 @@ type LogsConfig struct {
 
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
 	// Note: this config option does not apply when enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+	// Deprecated: This config option is not supported in the Datadog Agent logs pipeline.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
 
 	// UseCompression enables the logs agent to compress logs before sending them.
@@ -667,6 +668,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 				enabledText = "disabled"
 			}
 			return fmt.Errorf("%v is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is %v", logsExporterSetting.setting, enabledText)
+		}
+		if logsExporterSetting.setting == "logs::dump_payloads" && logsExporterSetting.valid && configMap.IsSet(logsExporterSetting.setting) {
+			c.warnings = append(c.warnings, fmt.Errorf("%v is deprecated and will raise an error if set when the Datadog Agent logs pipeline is enabled by default in collector version v0.108.0", logsExporterSetting.setting))
 		}
 	}
 
