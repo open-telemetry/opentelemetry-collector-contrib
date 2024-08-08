@@ -12,6 +12,7 @@ import (
 // RevisionV1 represents all changes that are to be
 // applied to a signal at a given version.
 // todo(ankit) are log changes handled?  i dont think soooo
+// todo(ankit) split
 type RevisionV1 struct {
 	ver                               *Version
 	all                               *migrate.AttributeChangeSetSlice
@@ -22,6 +23,7 @@ type RevisionV1 struct {
 	spanEventsRenameAttributesOnEvent *migrate.ConditionalAttributeSetSlice
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
 	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
+	logsRenameAttributes              *migrate.AttributeChangeSetSlice
 }
 
 // NewRevision processes the VersionDef and assigns the version to this revision
@@ -31,6 +33,11 @@ type RevisionV1 struct {
 // Generics would be handy here.
 // todo(ankit) investigate this
 func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
+	// todo(ankit) change logs to be an ast.Attributes type so I dont have to change this
+	var logChanges ast.Attributes
+	for _, change := range def.Logs.Changes {
+		logChanges.Changes = append(logChanges.Changes, ast.AttributeChange{RenameAttributes: change.RenameAttributes})
+	}
 	return &RevisionV1{
 		ver:                               ver,
 		all:                               newAttributeChangeSetSliceFromChanges(def.All),
@@ -41,6 +48,7 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		spanEventsRenameAttributesOnEvent: newSpanEventConditionalNames(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
 		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
+		logsRenameAttributes:              newAttributeChangeSetSliceFromChanges(logChanges),
 	}
 }
 

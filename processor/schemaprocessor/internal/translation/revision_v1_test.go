@@ -35,6 +35,7 @@ func TestNewRevisionV1(t *testing.T) {
 				spanEventsRenameAttributesOnEvent: migrate.NewConditionalAttributeSetSlice(),
 				metricsRenameAttributes:           migrate.NewConditionalAttributeSetSlice(),
 				metricsRenameMetrics:              migrate.NewSignalNameChangeSlice(),
+				logsRenameAttributes:              migrate.NewAttributeChangeSetSlice(),
 			},
 		},
 		{
@@ -198,6 +199,11 @@ func TestNewRevisionV1(t *testing.T) {
 				metricsRenameMetrics: migrate.NewSignalNameChangeSlice(
 					migrate.NewSignalNameChange(map[string]string{
 						"service.computed.uptime": "service.uptime",
+					}),
+				),
+				logsRenameAttributes: migrate.NewAttributeChangeSetSlice(
+					migrate.NewAttributeChangeSet(map[string]string{
+						"ERROR": "error",
 					}),
 				),
 			},
