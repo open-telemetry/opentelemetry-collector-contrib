@@ -122,12 +122,12 @@ func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias
 			if err != nil {
 				return err
 			}
-			err = rev.resource.Apply(resource.Resource().Attributes())
+			err = rev.resources.Apply(resource.Resource().Attributes())
 			if err != nil {
 				return err
 			}
 		case Revert:
-			err = rev.resource.Rollback(resource.Resource().Attributes())
+			err = rev.resources.Rollback(resource.Resource().Attributes())
 			if err != nil {
 				return err
 			}
@@ -201,7 +201,7 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					if err != nil {
 						return err
 					}
-					//err = rev.eventAttrsOnSpan.Apply(span.Attributes(), span.Name())
+					//err = rev.spanEventsRenameAttributesonSpan.Apply(span.Attributes(), span.Name())
 					//if err != nil {
 					//	return err
 					//}
@@ -210,17 +210,17 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					// todo(ankit) write a migrator for conditional AND - the old code did or
 					//rev.SpanEvents().UpdateAttrsIf(span.Name(), event.Attributes())
 					//rev.SpanEvents().UpdateAttrsIf(event.Name(), event.Attributes())
-					rev.eventNames.Apply(event)
+					rev.spanEventsRenameEvents.Apply(event)
 				}
 			case Revert:
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
-					rev.eventNames.Rollback(event)
+					rev.spanEventsRenameEvents.Rollback(event)
 					// todo(ankit) write a migrator for conditional AND - the old code did or
 					//rev.SpanEvents().RevertAttrsIf(event.Name(), event.Attributes())
 					//rev.SpanEvents().RevertAttrsIf(span.Name(), event.Attributes())
 
-					//err = rev.eventAttrsOnSpan.Rollback(span.Attributes(), span.Name())
+					//err = rev.spanEventsRenameAttributesonSpan.Rollback(span.Attributes(), span.Name())
 					//if err != nil {
 					//	return err
 					//}
@@ -266,7 +266,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -278,7 +278,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -290,7 +290,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -302,7 +302,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -314,15 +314,15 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
 					}
 				}
-				rev.metricNames.Apply(metric)
+				rev.metricsRenameMetrics.Apply(metric)
 			case Revert:
-				rev.metricNames.Rollback(metric)
+				rev.metricsRenameMetrics.Rollback(metric)
 				switch metric.Type() {
 				case pmetric.MetricTypeExponentialHistogram:
 					for dp := 0; dp < metric.ExponentialHistogram().DataPoints().Len(); dp++ {
@@ -331,7 +331,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -343,7 +343,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -355,7 +355,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -367,7 +367,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -379,7 +379,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}

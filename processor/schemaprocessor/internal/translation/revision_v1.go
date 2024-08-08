@@ -13,15 +13,15 @@ import (
 // applied to a signal at a given version.
 // todo(ankit) are log changes handled?  i dont think soooo
 type RevisionV1 struct {
-	ver              *Version
-	all              *migrate.AttributeChangeSetSlice
-	resource         *migrate.AttributeChangeSetSlice
-	spans            *migrate.ConditionalAttributeSetSlice
-	eventNames       *migrate.SignalNameChangeSlice
-	eventAttrsOnSpan *migrate.ConditionalAttributeSetSlice
-	eventAttrsOnName *migrate.ConditionalAttributeSetSlice
-	metricsAttrs     *migrate.ConditionalAttributeSetSlice
-	metricNames      *migrate.SignalNameChangeSlice
+	ver                               *Version
+	all                               *migrate.AttributeChangeSetSlice
+	resources                         *migrate.AttributeChangeSetSlice
+	spans                             *migrate.ConditionalAttributeSetSlice
+	spanEventsRenameEvents            *migrate.SignalNameChangeSlice
+	spanEventsRenameAttributesonSpan  *migrate.ConditionalAttributeSetSlice
+	spanEventsRenameAttributesOnEvent *migrate.ConditionalAttributeSetSlice
+	metricsRenameMetrics              *migrate.SignalNameChangeSlice
+	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
 }
 
 // NewRevision processes the VersionDef and assigns the version to this revision
@@ -32,15 +32,15 @@ type RevisionV1 struct {
 // todo(ankit) investigate this
 func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 	return &RevisionV1{
-		ver:              ver,
-		all:              newAttributeChangeSetSliceFromChanges(def.All),
-		resource:         newAttributeChangeSetSliceFromChanges(def.Resources),
-		spans:            newSpanConditionalAttributeSlice(def.Spans),
-		eventNames:       newSpanEventSignalSlice(def.SpanEvents),
-		eventAttrsOnSpan: newSpanEventConditionalSpans(def.SpanEvents),
-		eventAttrsOnName: newSpanEventConditionalNames(def.SpanEvents),
-		metricsAttrs:     newMetricConditionalSlice(def.Metrics),
-		metricNames:      newMetricNameSignalSlice(def.Metrics),
+		ver:                               ver,
+		all:                               newAttributeChangeSetSliceFromChanges(def.All),
+		resources:                         newAttributeChangeSetSliceFromChanges(def.Resources),
+		spans:                             newSpanConditionalAttributeSlice(def.Spans),
+		spanEventsRenameEvents:            newSpanEventSignalSlice(def.SpanEvents),
+		spanEventsRenameAttributesonSpan:  newSpanEventConditionalSpans(def.SpanEvents),
+		spanEventsRenameAttributesOnEvent: newSpanEventConditionalNames(def.SpanEvents),
+		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
+		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
 	}
 }
 

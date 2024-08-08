@@ -26,15 +26,15 @@ func TestNewRevisionV1(t *testing.T) {
 			inVersion:    &Version{1, 1, 1},
 			inDefinition: ast.VersionDef{},
 			expect: &RevisionV1{
-				ver:              &Version{1, 1, 1},
-				all:              migrate.NewAttributeChangeSetSlice(),
-				resource:         migrate.NewAttributeChangeSetSlice(),
-				spans:            migrate.NewConditionalAttributeSetSlice(),
-				eventNames:       migrate.NewSignalNameChangeSlice(),
-				eventAttrsOnSpan: migrate.NewConditionalAttributeSetSlice(),
-				eventAttrsOnName: migrate.NewConditionalAttributeSetSlice(),
-				metricsAttrs:     migrate.NewConditionalAttributeSetSlice(),
-				metricNames:      migrate.NewSignalNameChangeSlice(),
+				ver:                               &Version{1, 1, 1},
+				all:                               migrate.NewAttributeChangeSetSlice(),
+				resources:                         migrate.NewAttributeChangeSetSlice(),
+				spans:                             migrate.NewConditionalAttributeSetSlice(),
+				spanEventsRenameEvents:            migrate.NewSignalNameChangeSlice(),
+				spanEventsRenameAttributesonSpan:  migrate.NewConditionalAttributeSetSlice(),
+				spanEventsRenameAttributesOnEvent: migrate.NewConditionalAttributeSetSlice(),
+				metricsRenameAttributes:           migrate.NewConditionalAttributeSetSlice(),
+				metricsRenameMetrics:              migrate.NewSignalNameChangeSlice(),
 			},
 		},
 		{
@@ -152,7 +152,7 @@ func TestNewRevisionV1(t *testing.T) {
 						"status": "state",
 					}),
 				),
-				resource: migrate.NewAttributeChangeSetSlice(
+				resources: migrate.NewAttributeChangeSetSlice(
 					migrate.NewAttributeChangeSet(map[string]string{
 						"service_name": "service.name",
 					}),
@@ -166,12 +166,12 @@ func TestNewRevisionV1(t *testing.T) {
 						map[string]string{"deployment.environment": "service.deployment.environment"},
 					),
 				),
-				eventNames: migrate.NewSignalNameChangeSlice(
+				spanEventsRenameEvents: migrate.NewSignalNameChangeSlice(
 					migrate.NewSignalNameChange(map[string]string{
 						"started": "application started",
 					}),
 				),
-				eventAttrsOnSpan: migrate.NewConditionalAttributeSetSlice(
+				spanEventsRenameAttributesonSpan: migrate.NewConditionalAttributeSetSlice(
 					migrate.NewConditionalAttributeSet(
 						map[string]string{
 							"service.app.name": "service.name",
@@ -179,7 +179,7 @@ func TestNewRevisionV1(t *testing.T) {
 						"service running",
 					),
 				),
-				eventAttrsOnName: migrate.NewConditionalAttributeSetSlice(
+				spanEventsRenameAttributesOnEvent: migrate.NewConditionalAttributeSetSlice(
 					migrate.NewConditionalAttributeSet(
 						map[string]string{
 							"service.app.name": "service.name",
@@ -187,7 +187,7 @@ func TestNewRevisionV1(t *testing.T) {
 						"service errored",
 					),
 				),
-				metricsAttrs: migrate.NewConditionalAttributeSetSlice(
+				metricsRenameAttributes: migrate.NewConditionalAttributeSetSlice(
 					migrate.NewConditionalAttributeSet(
 						map[string]string{
 							"runtime": "service.language",
@@ -195,7 +195,7 @@ func TestNewRevisionV1(t *testing.T) {
 						"service.runtime",
 					),
 				),
-				metricNames: migrate.NewSignalNameChangeSlice(
+				metricsRenameMetrics: migrate.NewSignalNameChangeSlice(
 					migrate.NewSignalNameChange(map[string]string{
 						"service.computed.uptime": "service.uptime",
 					}),
