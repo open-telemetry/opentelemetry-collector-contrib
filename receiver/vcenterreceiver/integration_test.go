@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -77,9 +78,10 @@ func TestIntegration(t *testing.T) {
 		require.True(t, set)
 
 		s := session.NewManager(c)
-		newVcenterClient = func(cfg *Config) *vcenterClient {
+		newVcenterClient = func(l *zap.Logger, cfg *Config) *vcenterClient {
 			client := &vcenterClient{
-				cfg: cfg,
+				logger: l,
+				cfg:    cfg,
 				moClient: &govmomi.Client{
 					Client:         c,
 					SessionManager: s,
@@ -88,10 +90,11 @@ func TestIntegration(t *testing.T) {
 			require.NoError(t, client.EnsureConnection(context.Background()))
 			client.vimDriver = c
 			client.finder = find.NewFinder(c)
-			// Performance metrics rely on time based publishing so this is inherently flaky for an
+			// Performance/vSAN metrics rely on time based publishing so this is inherently flaky for an
 			// integration test, so setting the performance manager to nil to not attempt to compare
 			// performance metrics. Coverage for this is encompassed in ./scraper_test.go
 			client.pm = nil
+			client.vsanDriver = nil
 			return client
 		}
 		defer func() {

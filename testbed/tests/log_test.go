@@ -70,6 +70,15 @@ func TestLog10kDPS(t *testing.T) {
 			},
 		},
 		{
+			name:     "kubernetes containers parser",
+			sender:   datasenders.NewKubernetesContainerParserWriter(),
+			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 110,
+				ExpectedMaxRAM: 150,
+			},
+		},
+		{
 			name:     "k8s CRI-Containerd",
 			sender:   datasenders.NewKubernetesCRIContainerdWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),

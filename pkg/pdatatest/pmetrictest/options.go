@@ -180,7 +180,7 @@ func IgnoreMetricAttributeValue(attributeName string, metricNames ...string) Com
 	})
 }
 
-// IgnoreMetricAttributeValue is a CompareMetricsOption that clears value of the metric attribute.
+// IgnoreDatapointAttributesOrder is a CompareMetricsOption that ignores the order of datapoint attributes.
 func IgnoreDatapointAttributesOrder() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
 		orderDatapointAttributes(expected)

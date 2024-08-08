@@ -81,6 +81,33 @@ All other defaults are as defined by [confighttp].
 
 The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper]. However, the sending queue is currently disabled by default.
 
+### Batching
+
+> [!WARNING]
+> The `batcher` config is experimental and may change without notice.
+
+The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterbatcher/config.go).
+
+- `batcher`:
+  - `enabled` (default=unset): Enable batching of requests into a single bulk request.
+  - `min_size_items` (default=5000): Minimum number of log records / spans in the buffer to trigger a flush immediately.
+  - `max_size_items` (default=10000): Maximum number of log records / spans in a request.
+  - `flush_timeout` (default=30s): Maximum time of the oldest item spent inside the buffer, aka "max age of buffer". A flush will happen regardless of the size of content in buffer.
+
+By default, the exporter will perform its own buffering and batching, as configured through the
+`flush` config, and `batcher` will be unused. By setting `batcher::enabled` to either `true` or
+`false`, the exporter will not perform any of its own buffering or batching, and the `flush` config
+will be ignored. In a future release when the `batcher` config is stable, and has feature parity
+with the exporter's existing `flush` config, it will be enabled by default.
+
+Using the common `batcher` functionality provides several benefits over the default behavior:
+ - Combined with a persistent queue, or no queue at all, `batcher` enables at least once delivery.
+   With the default behavior, the exporter will accept data and process it asynchronously,
+   which interacts poorly with queuing.
+ - By ensuring the exporter makes requests to Elasticsearch synchronously,
+   client metadata can be passed through to Elasticsearch requests,
+   e.g. by using the [`headers_setter` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/headerssetterextension/README.md).
+
 ### Elasticsearch document routing
 
 Telemetry data will be written to signal specific data streams by default:
@@ -172,6 +199,9 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
   - `retry_on_status` (default=[429, 500, 502, 503, 504]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it is recommended to set it to `[429]`. WARNING: The default will be changed to `[429]` in the future.
+
+> [!NOTE]
+> The `flush` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
 
 ### Elasticsearch node discovery
 

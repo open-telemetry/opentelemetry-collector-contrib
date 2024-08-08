@@ -29,6 +29,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/otlpjson
       - connector/roundrobin
       - connector/routing
       - connector/servicegraph
@@ -124,6 +125,7 @@ body:
       - internal/docker
       - internal/exp/metrics
       - internal/filter
+      - internal/grpcutil
       - internal/k8sconfig
       - internal/k8stest
       - internal/kafka
@@ -166,6 +168,7 @@ body:
       - processor/groupbytrace
       - processor/interval
       - processor/k8sattributes
+      - processor/logdeduplication
       - processor/logstransform
       - processor/metricsgeneration
       - processor/metricstransform

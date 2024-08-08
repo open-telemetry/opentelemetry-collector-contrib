@@ -16,7 +16,7 @@
 * @open-telemetry/collector-contrib-approvers
 
 cmd/githubgen/                                                      @open-telemetry/collector-contrib-approvers @atoulme
-cmd/opampsupervisor/                                                @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
+cmd/opampsupervisor/                                                @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan @BinaryFissionGames
 cmd/otelcontribcol/                                                 @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                                 @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                                   @open-telemetry/collector-contrib-approvers @mx-psi @codeboten
@@ -29,6 +29,7 @@ connector/datadogconnector/                                         @open-teleme
 connector/exceptionsconnector/                                      @open-telemetry/collector-contrib-approvers @jpkrohling @marctc
 connector/failoverconnector/                                        @open-telemetry/collector-contrib-approvers @akats7 @djaglowski @fatsheep9146
 connector/grafanacloudconnector/                                    @open-telemetry/collector-contrib-approvers @jpkrohling @rlankfo @jcreixell
+connector/otlpjsonconnector/                                        @open-telemetry/collector-contrib-approvers @djaglowski @ChrsMark
 connector/roundrobinconnector/                                      @open-telemetry/collector-contrib-approvers @bogdandrutu
 connector/routingconnector/                                         @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                                    @open-telemetry/collector-contrib-approvers @jpkrohling @mapno @JaredTan95
@@ -111,7 +112,7 @@ extension/observer/hostobserver/                                    @open-teleme
 extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
 extension/oidcauthextension/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/opampcustommessages/                                      @open-telemetry/collector-contrib-approvers @BinaryFissionGames @evan-bradley
-extension/opampextension/                                           @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan
+extension/opampextension/                                           @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan @BinaryFissionGames
 extension/pprofextension/                                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/remotetapextension/                                       @open-telemetry/collector-contrib-approvers @atoulme
 extension/sigv4authextension/                                       @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
@@ -128,6 +129,7 @@ internal/coreinternal/                                              @open-teleme
 internal/docker/                                                    @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
 internal/exp/metrics/                                               @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams
 internal/filter/                                                    @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+internal/grpcutil/                                                  @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3 @lquerel
 internal/k8sconfig/                                                 @open-telemetry/collector-contrib-approvers @dmitryax
 internal/k8stest/                                                   @open-telemetry/collector-contrib-approvers @crobert-1
 internal/kafka/                                                     @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
@@ -172,12 +174,13 @@ processor/groupbyattrsprocessor/                                    @open-teleme
 processor/groupbytraceprocessor/                                    @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/intervalprocessor/                                        @open-telemetry/collector-contrib-approvers @RichieSams @sh0rez @djaglowski
 processor/k8sattributesprocessor/                                   @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick @fatsheep9146 @TylerHelmuth
+processor/logdeduplicationprocessor/                                @open-telemetry/collector-contrib-approvers @BinaryFissionGames @MikeGoldsmith @djaglowski
 processor/logstransformprocessor/                                   @open-telemetry/collector-contrib-approvers @djaglowski @dehaansa
 processor/metricsgenerationprocessor/                               @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/metricstransformprocessor/                                @open-telemetry/collector-contrib-approvers @dmitryax
 processor/probabilisticsamplerprocessor/                            @open-telemetry/collector-contrib-approvers @jpkrohling @jmacd
 processor/redactionprocessor/                                       @open-telemetry/collector-contrib-approvers @dmitryax @mx-psi @TylerHelmuth
-processor/remotetapprocessor/                                       @open-telemetry/collector-contrib-approvers @atoulme
+processor/remotetapprocessor/                                       @open-telemetry/collector-contrib-approvers @atoulme @jaronoff97
 processor/resourcedetectionprocessor/                               @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 processor/resourcedetectionprocessor/internal/aws/ec2/              @open-telemetry/collector-contrib-approvers
 processor/resourcedetectionprocessor/internal/aws/ecs/              @open-telemetry/collector-contrib-approvers
