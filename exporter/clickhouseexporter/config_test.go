@@ -358,6 +358,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			fields: fields{
 				Endpoint:         "tcp://127.0.0.1:9000?compress=none",
 				ConnectionParams: map[string]string{"compress": "br"},
+				Compress:         "lz4",
 			},
 			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=br",
 		},
