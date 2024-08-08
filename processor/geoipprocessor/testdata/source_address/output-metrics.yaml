@@ -36,7 +36,7 @@ resourceMetrics:
             stringValue: Europe/London
         - key: ip
           value:
-            stringValue: 1.2.3.4
+            stringValue: 1.2.2.1
         - key: source.address
           value:
             stringValue: 1.2.3.4

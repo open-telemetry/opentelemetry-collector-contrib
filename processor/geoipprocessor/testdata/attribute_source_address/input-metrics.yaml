@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: ip
           value:
-            stringValue: 1.2.3.4
+            stringValue: 1.2.2.1
     schemaUrl: https://test-res-schema.com/schema
     scopeMetrics:
       - metrics:

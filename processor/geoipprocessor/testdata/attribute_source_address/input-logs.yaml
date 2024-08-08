@@ -3,7 +3,7 @@ resourceLogs:
       attributes:
         - key: ip
           value:
-            stringValue: 1.2.3.4
+            stringValue: 1.2.2.1
     scopeLogs:
       - logRecords:
           - attributes:

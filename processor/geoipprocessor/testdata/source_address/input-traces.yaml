@@ -6,7 +6,7 @@ resourceSpans:
             stringValue: 1.2.3.4
         - key: ip
           value:
-            stringValue: 1.2.3.4
+            stringValue: 1.2.2.1
     scopeSpans:
       - scope: {}
         spans:
