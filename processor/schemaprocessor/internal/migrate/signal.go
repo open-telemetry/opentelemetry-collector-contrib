@@ -66,6 +66,7 @@ func NewSignalNameChangeSlice(changes ...*SignalNameChange) *SignalNameChangeSli
 	return values
 }
 
+// todo make this return an err
 func (slice *SignalNameChangeSlice) Apply(signal alias.NamedSignal) {
 	slice.do(StateSelectorApply, signal)
 }

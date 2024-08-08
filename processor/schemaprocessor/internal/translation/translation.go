@@ -118,11 +118,23 @@ func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias
 	for rev, more := it(); more; rev, more = it() {
 		switch status {
 		case Update:
-			rev.All().UpdateAttrs(resource.Resource().Attributes())
-			rev.Resources().UpdateAttrs(resource.Resource().Attributes())
+			err = rev.all.Apply(resource.Resource().Attributes())
+			if err != nil {
+				return err
+			}
+			err = rev.resource.Apply(resource.Resource().Attributes())
+			if err != nil {
+				return err
+			}
 		case Revert:
-			rev.Resources().RevertAttrs(resource.Resource().Attributes())
-			rev.All().RevertAttrs(resource.Resource().Attributes())
+			err = rev.resource.Rollback(resource.Resource().Attributes())
+			if err != nil {
+				return err
+			}
+			err = rev.all.Rollback(resource.Resource().Attributes())
+			if err != nil {
+				return err
+			}
 		}
 	}
 	resource.SetSchemaUrl(t.schemaURL)
@@ -143,12 +155,17 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 			log := in.LogRecords().At(l)
 			switch status {
 			case Update:
-				rev.All().UpdateAttrs(log.Attributes())
-				rev.Logs().UpdateAttrs(log.Attributes())
+				err = rev.all.Apply(log.Attributes())
+				if err != nil {
+					return err
+				}
+				//rev.Logs().UpdateAttrs(log.Attributes())
 			case Revert:
-				rev.Logs().RevertAttrs(log.Attributes())
-				rev.All().RevertAttrs(log.Attributes())
-
+				err = rev.all.Rollback(log.Attributes())
+				if err != nil {
+					return err
+				}
+				//rev.Logs().RevertAttrs(log.Attributes())
 			}
 		}
 	}
@@ -167,27 +184,61 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 			span := scopeSpans.Spans().At(i)
 			switch status {
 			case Update:
-				rev.All().UpdateAttrs(span.Attributes())
-				rev.Spans().UpdateAttrsIf(span.Name(), span.Attributes())
-				rev.Spans().UpdateSignal(span)
+				err = rev.all.Apply(span.Attributes())
+				if err != nil {
+					return err
+				}
+				err = rev.spans.Apply(span.Attributes())
+				if err != nil {
+					return err
+				}
+				// todo(ankit) is this even allowed?  spans aren't renameable as far as i know
+				//rev.Spans().UpdateSignal(span)
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
-					rev.All().RevertAttrs(event.Attributes())
-					rev.SpanEvents().UpdateAttrsIf(span.Name(), event.Attributes())
-					rev.SpanEvents().UpdateAttrsIf(event.Name(), event.Attributes())
-					rev.SpanEvents().UpdateSignal(event)
+					// todo(ankit) in the original code it rollbacks the below line
+					err = rev.all.Apply(event.Attributes())
+					if err != nil {
+						return err
+					}
+					//err = rev.eventAttrsOnSpan.Apply(span.Attributes(), span.Name())
+					//if err != nil {
+					//	return err
+					//}
+
+
+					// todo(ankit) write a migrator for conditional AND - the old code did or
+					//rev.SpanEvents().UpdateAttrsIf(span.Name(), event.Attributes())
+					//rev.SpanEvents().UpdateAttrsIf(event.Name(), event.Attributes())
+					rev.eventNames.Apply(event)
 				}
 			case Revert:
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
-					rev.SpanEvents().RevertSignal(event)
-					rev.SpanEvents().RevertAttrsIf(event.Name(), event.Attributes())
-					rev.SpanEvents().RevertAttrsIf(span.Name(), event.Attributes())
-					rev.All().RevertAttrs(event.Attributes())
+					rev.eventNames.Rollback(event)
+					// todo(ankit) write a migrator for conditional AND - the old code did or
+					//rev.SpanEvents().RevertAttrsIf(event.Name(), event.Attributes())
+					//rev.SpanEvents().RevertAttrsIf(span.Name(), event.Attributes())
+
+					//err = rev.eventAttrsOnSpan.Rollback(span.Attributes(), span.Name())
+					//if err != nil {
+					//	return err
+					//}
+					err = rev.all.Rollback(event.Attributes())
+					if err != nil {
+						return err
+					}
+
 				}
-				rev.Spans().RevertSignal(span)
-				rev.Spans().RevertAttrsIf(span.Name(), span.Attributes())
-				rev.All().RevertAttrs(span.Attributes())
+				//rev.Spans().RevertSignal(span)
+				err = rev.spans.Rollback(span.Attributes())
+				if err != nil {
+					return err
+				}
+				err = rev.all.Rollback(span.Attributes())
+				if err != nil {
+					return err
+				}
 			}
 		}
 		scopeSpans.SetSchemaUrl(t.schemaURL)
@@ -206,71 +257,132 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 			metric := in.Metrics().At(i)
 			switch status {
 			case Update:
+				// todo(ankit) handle MetricTypeEmpty
 				switch metric.Type() {
 				case pmetric.MetricTypeExponentialHistogram:
 					for dp := 0; dp < metric.ExponentialHistogram().DataPoints().Len(); dp++ {
 						datam := metric.ExponentialHistogram().DataPoints().At(dp)
-						rev.All().UpdateAttrs(datam.Attributes())
-						rev.Metrics().UpdateAttrsIf(metric.Name(), datam.Attributes())
+						err = rev.all.Apply(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				case pmetric.MetricTypeHistogram:
 					for dp := 0; dp < metric.Histogram().DataPoints().Len(); dp++ {
 						datam := metric.Histogram().DataPoints().At(dp)
-						rev.All().UpdateAttrs(datam.Attributes())
-						rev.Metrics().UpdateAttrsIf(metric.Name(), datam.Attributes())
+						err = rev.all.Apply(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				case pmetric.MetricTypeGauge:
 					for dp := 0; dp < metric.Gauge().DataPoints().Len(); dp++ {
 						datam := metric.Gauge().DataPoints().At(dp)
-						rev.All().UpdateAttrs(datam.Attributes())
-						rev.Metrics().UpdateAttrsIf(metric.Name(), datam.Attributes())
+						err = rev.all.Apply(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				case pmetric.MetricTypeSum:
 					for dp := 0; dp < metric.Sum().DataPoints().Len(); dp++ {
 						datam := metric.Sum().DataPoints().At(dp)
-						rev.All().UpdateAttrs(datam.Attributes())
-						rev.Metrics().UpdateAttrsIf(metric.Name(), datam.Attributes())
+						err = rev.all.Apply(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				case pmetric.MetricTypeSummary:
 					for dp := 0; dp < metric.Summary().DataPoints().Len(); dp++ {
 						datam := metric.Summary().DataPoints().At(dp)
-						rev.All().UpdateAttrs(datam.Attributes())
-						rev.Metrics().UpdateAttrsIf(metric.Name(), datam.Attributes())
+						err = rev.all.Apply(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Apply(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				}
-				rev.Metrics().UpdateSignal(metric)
+				rev.metricNames.Apply(metric)
 			case Revert:
-				rev.Metrics().RevertSignal(metric)
+				rev.metricNames.Rollback(metric)
 				switch metric.Type() {
 				case pmetric.MetricTypeExponentialHistogram:
 					for dp := 0; dp < metric.ExponentialHistogram().DataPoints().Len(); dp++ {
 						datam := metric.ExponentialHistogram().DataPoints().At(dp)
-						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
-						rev.All().RevertAttrs(datam.Attributes())
+						err = rev.all.Rollback(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				case pmetric.MetricTypeHistogram:
 					for dp := 0; dp < metric.Histogram().DataPoints().Len(); dp++ {
 						datam := metric.Histogram().DataPoints().At(dp)
-						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
-						rev.All().RevertAttrs(datam.Attributes())
+						err = rev.all.Rollback(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				case pmetric.MetricTypeGauge:
 					for dp := 0; dp < metric.Gauge().DataPoints().Len(); dp++ {
 						datam := metric.Gauge().DataPoints().At(dp)
-						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
-						rev.All().RevertAttrs(datam.Attributes())
+						err = rev.all.Rollback(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				case pmetric.MetricTypeSum:
 					for dp := 0; dp < metric.Sum().DataPoints().Len(); dp++ {
 						datam := metric.Sum().DataPoints().At(dp)
-						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
-						rev.All().RevertAttrs(datam.Attributes())
+						err = rev.all.Rollback(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				case pmetric.MetricTypeSummary:
 					for dp := 0; dp < metric.Summary().DataPoints().Len(); dp++ {
 						datam := metric.Summary().DataPoints().At(dp)
-						rev.Metrics().RevertAttrsIf(metric.Name(), datam.Attributes())
-						rev.All().RevertAttrs(datam.Attributes())
+						err = rev.all.Rollback(datam.Attributes())
+						if err != nil {
+							return err
+						}
+						err = rev.metricsAttrs.Rollback(datam.Attributes(), metric.Name())
+						if err != nil {
+							return err
+						}
 					}
 				}
 			}
@@ -300,7 +412,7 @@ func (t *translator) parseContent(r io.Reader) (errs error) {
 			zap.Stringer("version", version),
 		)
 		t.indexes[*version], t.revisions = len(t.revisions), append(t.revisions,
-			newRevision(version, def),
+			*NewRevision(version, def),
 		)
 	}
 	sort.Sort(t)
