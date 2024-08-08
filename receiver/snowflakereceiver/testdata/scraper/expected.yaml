@@ -371,5 +371,5 @@ resourceMetrics:
             name: snowflake.total_elapsed_time.avg
             unit: s
         scope:
-          name: otelcol/snowflakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver
           version: latest
