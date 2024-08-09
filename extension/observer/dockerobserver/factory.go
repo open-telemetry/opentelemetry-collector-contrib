@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/docker/docker/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
@@ -25,7 +26,7 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint:          "unix:///var/run/docker.sock",
+		Endpoint:          client.DefaultDockerHost,
 		Timeout:           5 * time.Second,
 		CacheSyncInterval: 60 * time.Minute,
 		DockerAPIVersion:  defaultDockerAPIVersion,
