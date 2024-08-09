@@ -285,6 +285,40 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish otel mapping mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
+		})
+		mustSendLogs(t, exporter, newLogsWithAttributeAndResourceMap(
+			map[string]string{
+				"data_stream.dataset": "attr.dataset",
+				"attr.foo":            "attr.foo.value",
+			},
+			map[string]string{
+				"data_stream.dataset":   "resource.attribute.dataset",
+				"data_stream.namespace": "resource.attribute.namespace",
+				"resource.attr.foo":     "resource.attr.foo.value",
+			},
+		))
+		rec.WaitItems(1)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0,"schema_url":""},"severity_number":0,"trace_flags":0}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
 	t.Run("retry http request", func(t *testing.T) {
 		failures := 0
 		rec := newBulkRecorder()
