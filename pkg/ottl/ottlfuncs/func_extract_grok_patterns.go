@@ -47,7 +47,11 @@ func extractGrokPatterns[K any](target ottl.StringGetter[K], pattern string, nco
 			// split pattern in format key=val
 			parts := strings.SplitN(patternDefinition, "=", 2)
 			if len(parts) == 1 {
-				return nil, fmt.Errorf("pattern %q supplied to ExtractGrokPatterns at index %d has incorrect format, expecting PATTERNNAME=pattern definition", patternDefinition[:20], i)
+				trimmedPattern := patternDefinition
+				if len(patternDefinition) > 20 {
+					trimmedPattern = fmt.Sprintf("%s...", patternDefinition[:17]) // keep whole string 20 characters long including ...
+				}
+				return nil, fmt.Errorf("pattern %q supplied to ExtractGrokPatterns at index %d has incorrect format, expecting PATTERNNAME=pattern definition", trimmedPattern, i)
 			}
 
 			if strings.ContainsRune(parts[0], ':') {
@@ -65,11 +69,11 @@ func extractGrokPatterns[K any](target ottl.StringGetter[K], pattern string, nco
 		return nil, fmt.Errorf("the pattern supplied to ExtractGrokPatterns is not a valid pattern: %w", err)
 	}
 
-	return func(ctx context.Context, tCtx K) (any, error) {
-		if namedCapturesOnly && !g.HasCaptureGroups() {
-			return nil, fmt.Errorf("at least 1 named capture group must be supplied in the given regex")
-		}
+	if namedCapturesOnly && !g.HasCaptureGroups() {
+		return nil, fmt.Errorf("at least 1 named capture group must be supplied in the given regex")
+	}
 
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
@@ -87,8 +91,6 @@ func extractGrokPatterns[K any](target ottl.StringGetter[K], pattern string, nco
 				result.PutBool(k, val)
 			case float64:
 				result.PutDouble(k, val)
-			case int64:
-				result.PutInt(k, val)
 			case int:
 				result.PutInt(k, int64(val))
 			case string:
