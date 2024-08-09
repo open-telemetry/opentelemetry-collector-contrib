@@ -321,6 +321,15 @@ func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.D
 	return nil
 }
 
+func summaryToValue(dp pmetric.SummaryDataPoint) (pcommon.Value, error) {
+	// quantiles are ignored
+	vm := pcommon.NewValueMap()
+	m := vm.Map()
+	m.PutDouble("sum", dp.Sum())
+	m.PutInt("value_count", int64(dp.Count()))
+	return vm, nil
+}
+
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 	// Histogram conversion function is from
 	// https://github.com/elastic/apm-data/blob/3b28495c3cbdc0902983134276eb114231730249/input/otlp/metrics.go#L277
