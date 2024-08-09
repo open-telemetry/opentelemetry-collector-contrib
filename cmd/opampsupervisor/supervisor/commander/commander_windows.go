@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	win32API = windows.NewLazySystemDLL("kernel32.dll")
+	kernel32API = windows.NewLazySystemDLL("kernel32.dll")
 
-	ctrlEventProc = win32API.NewProc("GenerateConsoleCtrlEvent")
+	ctrlEventProc = kernel32API.NewProc("GenerateConsoleCtrlEvent")
 )
 
 func sendShutdownSignal(process *os.Process) error {
