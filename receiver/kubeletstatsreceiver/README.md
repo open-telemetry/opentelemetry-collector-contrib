@@ -285,3 +285,8 @@ rules:
     resources: ["nodes/proxy"]
     verbs: ["get"]
 ```
+### Feature Gates
+
+#### `kubeletstats.collectInterfacesMetrics`
+
+When enabled, collects network metrics for all interfaces. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30196 for more information.
