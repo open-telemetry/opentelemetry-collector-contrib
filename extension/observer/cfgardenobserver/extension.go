@@ -124,26 +124,28 @@ func (g *cfGardenObserver) Start(_ context.Context, _ component.Host) error {
 		return err
 	}
 
-	g.once.Do(
-		func() {
-			go func() {
-				cacheRefreshTicker := time.NewTicker(g.config.CacheSyncInterval)
-				defer cacheRefreshTicker.Stop()
+	if g.config.IncludeAppLabels {
+		g.once.Do(
+			func() {
+				go func() {
+					cacheRefreshTicker := time.NewTicker(g.config.CacheSyncInterval)
+					defer cacheRefreshTicker.Stop()
 
-				for {
-					select {
-					case <-g.ctx.Done():
-						return
-					case <-cacheRefreshTicker.C:
-						err = g.SyncApps()
-						if err != nil {
-							g.logger.Error("could not sync app cache", zap.Error(err))
+					for {
+						select {
+						case <-g.ctx.Done():
+							return
+						case <-cacheRefreshTicker.C:
+							err = g.SyncApps()
+							if err != nil {
+								g.logger.Error("could not sync app cache", zap.Error(err))
+							}
 						}
 					}
-				}
-			}()
-		},
-	)
+				}()
+			},
+		)
+	}
 
 	return nil
 }
@@ -192,11 +194,14 @@ func (g *cfGardenObserver) containerEndpoints(handle string, info garden.Contain
 	}
 	ports := strings.Split(portsProp, ",")
 
-	app, err := g.App(info)
-	if err != nil {
-		g.logger.Error("error fetching Application", zap.Error(err))
-		fmt.Println("ERROR")
-		return nil
+	var app *resource.App
+	var err error
+	if g.config.IncludeAppLabels {
+		app, err = g.App(info)
+		if err != nil {
+			g.logger.Error("error fetching Application", zap.Error(err))
+			return nil
+		}
 	}
 
 	endpoints := []observer.Endpoint{}
@@ -230,7 +235,6 @@ func (g *cfGardenObserver) containerLabels(info garden.ContainerInfo, app *resou
 	labels := make(map[string]string)
 	tags, err := parseTags(info)
 	if err != nil {
-		fmt.Println(err)
 		g.logger.Warn("not able to parse container tags into labels", zap.Error(err))
 		return nil
 	}
@@ -238,8 +242,10 @@ func (g *cfGardenObserver) containerLabels(info garden.ContainerInfo, app *resou
 		labels[k] = v
 	}
 
-	for k, v := range app.Metadata.Labels {
-		labels[k] = *v
+	if app != nil {
+		for k, v := range app.Metadata.Labels {
+			labels[k] = *v
+		}
 	}
 
 	return labels

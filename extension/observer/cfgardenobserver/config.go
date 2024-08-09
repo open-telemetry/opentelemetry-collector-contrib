@@ -19,23 +19,33 @@ type Config struct {
 
 	// RefreshInterval determines the frequency at which the observer
 	// needs to poll for collecting information about new processes.
+	// Default: "1m"
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 
 	// The time to wait before resyncing app information on cached containers
 	// using the CloudFoundry API. Example: cache_sync_interval: "20m"
 	// Default: "5m"
 	CacheSyncInterval time.Duration `mapstructure:"cache_sync_interval"`
+
+	// Determines whether or not Application labels get added to the Endpoint labels.
+	// This requires cloud_foundry to be configured, such that API calls can be made
+	// Default: false
+	IncludeAppLabels bool `mapstructure:"include_app_labels"`
 }
 
 // Validate overrides the embedded noop validation so that load config can trigger
 // our own validation logic.
 func (config *Config) Validate() error {
+	if !config.IncludeAppLabels {
+		return nil
+	}
+
 	c := config.CloudFoundry
 	if c.Endpoint == "" {
-		return errors.New("config.Endpoint must be specified")
+		return errors.New("config.Endpoint must be specified when include_app_labels is set to true")
 	}
 	if c.AuthType == "" {
-		return errors.New("config.AuthType must be specified")
+		return errors.New("config.AuthType must be specified when include_app_labels is set to true")
 	}
 
 	switch c.AuthType {
