@@ -8,7 +8,8 @@ import "errors"
 var errNoSchema = errors.New("no schema provided")
 
 type Config struct {
-	Schema string `mapstructure:"schema"`
+	Schema   string `mapstructure:"schema"`
+	SchemaID uint32 `mapstructure:"schema_id"`
 }
 
 func (c *Config) Validate() error {
