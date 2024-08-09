@@ -116,7 +116,7 @@ Emeritus Maintainers
 
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
-Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
+Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md).
 
 ## PRs and Reviews
 
