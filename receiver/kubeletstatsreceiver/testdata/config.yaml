@@ -34,3 +34,21 @@ kubeletstats/container_cpu_node_utilization:
   metrics:
     k8s.container.cpu.node.utilization:
       enabled: true
+kubeletstats/pod_cpu_node_utilization:
+  collection_interval: 10s
+  metric_groups: [ container, pod, node ]
+  metrics:
+    k8s.pod.cpu.node.utilization:
+      enabled: true
+kubeletstats/container_memory_node_utilization:
+  collection_interval: 10s
+  metric_groups: [ container, pod, node ]
+  metrics:
+    k8s.container.memory.node.utilization:
+      enabled: true
+kubeletstats/pod_memory_node_utilization:
+  collection_interval: 10s
+  metric_groups: [ container, pod, node ]
+  metrics:
+    k8s.pod.memory.node.utilization:
+      enabled: true

@@ -25,7 +25,7 @@ import (
 
 type metricsReceiver struct {
 	config        *Config
-	set           receiver.CreateSettings
+	set           receiver.Settings
 	clientFactory clientFactory
 	scraper       *ContainerScraper
 	mb            *metadata.MetricsBuilder
@@ -33,7 +33,7 @@ type metricsReceiver struct {
 }
 
 func newMetricsReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config *Config,
 	clientFactory clientFactory,
 ) *metricsReceiver {
@@ -51,7 +51,7 @@ func newMetricsReceiver(
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -66,11 +66,6 @@ func createMetricsReceiver(
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	err := r.config.Validate()
-	if err != nil {
-		return err
-	}
-
 	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
 	if err != nil {
 		return err

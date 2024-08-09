@@ -45,8 +45,10 @@ Editors:
 
 Available Editors:
 
+- [append](#append)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
+- [keep_matching_keys](#keep_matching_keys)
 - [flatten](#flatten)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
@@ -57,6 +59,19 @@ Available Editors:
 - [replace_pattern](#replace_pattern)
 - [set](#set)
 - [truncate_all](#truncate_all)
+
+### append
+
+`append(target, Optional[value], Optional[values])`
+
+The `append` function appends single or multiple string values to `target`. 
+`append` converts scalar values into an array if the field exists but is not an array, and creates an array containing the provided values if the field doesn’t exist.
+
+Resulting field is always of type `pcommon.Slice` and will not convert the types of existing or new items in the slice. This means that it is possible to create a slice whose elements have different types.  Be careful when using `append` to set attribute values, as this will produce values that are not possible to create through OpenTelemetry APIs [according to](https://opentelemetry.io/docs/specs/otel/common/#attribute) the OpenTelemetry specification.
+
+  - `append(attributes["tags"], "prod")`
+  - `append(attributes["tags"], values = ["staging", "staging:east"])`
+  - `append(attributes["tags_copy"], attributes["tags"])`
 
 ### delete_key
 
@@ -91,6 +106,23 @@ Examples:
 - `delete_matching_keys(attributes, "(?i).*password.*")`
 
 - `delete_matching_keys(resource.attributes, "(?i).*password.*")`
+
+### keep_matching_keys
+
+`keep_matching_keys(target, pattern)`
+
+The `keep_matching_keys` function keeps all keys from a `pcommon.Map` that match a regex pattern.
+
+`target` is a path expression to a `pcommon.Map` type field. `pattern` is a regex string.
+
+All keys that match the pattern will remain in the map, while non matching keys will be removed.
+
+Examples:
+
+
+- `keep_matching_keys(attributes, "(?i).*version.*")`
+
+- `keep_matching_keys(resource.attributes, "(?i).*version.*")`
 
 ### flatten
 
@@ -383,6 +415,8 @@ Available Converters:
 - [Day](#day)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Format](#format)
+- [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
 - [Double](#double)
@@ -391,6 +425,7 @@ Available Converters:
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
 - [IsInt](#isint)
+- [IsRootSpan](#isrootspan)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsList](#islist)
@@ -411,6 +446,7 @@ Available Converters:
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
+- [SHA512](#sha512)
 - [SpanID](#spanid)
 - [Split](#split)
 - [String](#string)
@@ -572,6 +608,52 @@ Examples:
 
 - `FNV("name")`
 
+### Format
+
+```Format(formatString, []formatArguments)```
+
+The `Format` Converter takes the given format string and formats it using `fmt.Sprintf` and the given arguments.
+
+`formatString` is a string. `formatArguments` is an array of values.
+
+If the `formatString` is not a string or does not exist, the `Format` Converter will return an error.
+If any of the `formatArgs` are incorrect (e.g. missing, or an incorrect type for the corresponding format specifier), then a string will still be returned, but with Go's default error handling for `fmt.Sprintf`.
+
+Format specifiers that can be used in `formatString` are documented in Go's [fmt package documentation](https://pkg.go.dev/fmt#hdr-Printing)
+
+Examples:
+
+- `Format("%02d", [attributes["priority"]])`
+- `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
+- `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
+
+### Hex
+
+`Hex(value)`
+
+The `Hex` converter converts the `value` to its hexadecimal representation.
+
+The returned type is string representation of the hexadecimal value.
+
+The input `value` types:
+
+- float64 (`1.1` will result to `0x3ff199999999999a`)
+- string (`"1"` will result in `0x31`)
+- bool (`true` will result in `0x01`; `false` to `0x00`)
+- int64 (`12` will result in `0xC`)
+- []byte (without any changes - `0x02` will result to `0x02`)
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Hex(attributes["http.status_code"])`
+
+
+- `Hex(2.0)`
+
 ### Hour
 
 `Hour(value)`
@@ -683,6 +765,23 @@ Examples:
 - `IsInt(body)`
 
 - `IsInt(attributes["maybe a int"])`
+
+### IsRootSpan
+
+`IsRootSpan()`
+
+The `IsRootSpan` Converter returns `true` if the span in the corresponding context is root, which means
+its `parent_span_id` is equal to hexadecimal representation of zero.
+
+This function is supported with [OTTL span context](../contexts/ottlspan/README.md). In any other context it is not supported.
+
+The function returns `false` in all other scenarios, including `parent_span_id == ""` or `parent_span_id == nil`.
+
+Examples:
+
+- `IsRootSpan()`
+
+- `set(attributes["isRoot"], "true") where IsRootSpan()`
 
 ### IsMap
 
@@ -932,7 +1031,7 @@ Examples:
 
 `ParseJSON(target)`
 
-The `ParseJSON` Converter returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+The `ParseJSON` Converter returns a `pcommon.Map` or `pcommon.Slice` struct that is a result of parsing the target string as JSON
 
 `target` is a Getter that returns a string. This string should be in json format.
 If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
@@ -952,6 +1051,9 @@ JSON objects -> map[string]any
 Examples:
 
 - `ParseJSON("{\"attr\":true}")`
+
+
+- `ParseJSON("[\"attr1\",\"attr2\"]")`
 
 
 - `ParseJSON(attributes["kubernetes"])`
@@ -1084,7 +1186,7 @@ Examples:
 
 - `SHA1("name")`
 
-**Note:** According to the National Institute of Standards and Technology (NIST), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+**Note:** [According to the National Institute of Standards and Technology (NIST)](https://csrc.nist.gov/projects/hash-functions), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer a SHA-2 family function (such as SHA-256 or SHA-512) whenever possible.
 
 ### SHA256
 
@@ -1105,7 +1207,22 @@ Examples:
 
 - `SHA256("name")`
 
-**Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+### SHA512
+
+`SHA512(input)`
+
+The `SHA512` converter calculates sha512 hash value/digest of the `input`.
+
+The returned type is string.
+
+`input` is either a path expression to a string telemetry field or a literal string. If `input` is another type, converter raises an error.
+If an error occurs during hashing, the error will be returned.
+
+Examples:
+
+- `SHA512(attributes["device.name"])`
+
+- `SHA512("name")`
 
 ### SpanID
 
@@ -1338,6 +1455,44 @@ Examples:
 
 - `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
 
+### URL
+
+`URL(url_string)`
+
+Parses a Uniform Resource Locator (URL) string and extracts its components as an object.
+This URL object includes properties for the URL’s domain, path, fragment, port, query, scheme, user info, username, and password.
+
+`original`, `domain`, `scheme`, and `path` are always present. Other properties are present only if they have corresponding values.
+
+`url_string` is a `string`.
+
+- `URL("http://www.example.com")`
+
+results in 
+```
+  "url.original": "http://www.example.com",
+  "url.scheme":   "http",
+  "url.domain":   "www.example.com",
+  "url.path":     "",
+```
+
+- `URL("http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment")`
+
+results in 
+```
+  "url.path":      "/foo.gif",
+  "url.fragment":  "fragment",
+  "url.extension": "gif",
+  "url.password":  "mypassword",
+  "url.original":  "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment",
+  "url.scheme":    "http",
+  "url.port":      80,
+  "url.user_info": "myusername:mypassword",
+  "url.domain":    "www.example.com",
+  "url.query":     "key1=val1&key2=val2",
+  "url.username":  "myusername",
+```
+
 ### UUID
 
 `UUID()`
@@ -1368,3 +1523,24 @@ Functions should be named and formatted according to the following standards.
 - Functions that interact with multiple items MUST have plurality in the name. Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
 - Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
 - Functions that change a specific target MUST set the target as the first parameter.
+
+## Adding New Editors/Converters
+
+Before raising a PR with a new Editor or Converter, raise an issue to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
+
+Your proposal likely will be accepted if:
+- The proposed functionality is missing,
+- The proposed solution significantly improves user experience and readability for very common use cases,
+- The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
+
+It will be up for discussion if your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
+
+Your proposal likely won't be accepted if:
+- User experience is worse and assumes a highly technical user,
+- The performance of your proposal very negatively affects the processing pipeline.
+
+As with code, OTTL aims for readability first. This means:
+- Using short, meaningful, and descriptive names,
+- Ensuring naming consistency across Editors and Converters,
+- Avoiding deep nesting to achieve desired transformations,
+- Ensuring Editors and Converters have a single responsibility.

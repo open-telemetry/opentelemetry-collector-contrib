@@ -49,7 +49,7 @@ func Test_scraper_readStats(t *testing.T) {
 
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
-	s := newScraper(haProxyCfg, receivertest.NewNopCreateSettings())
+	s := newScraper(haProxyCfg, receivertest.NewNopSettings())
 	m, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, m)
@@ -93,7 +93,7 @@ func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
-	s := newScraper(haProxyCfg, receivertest.NewNopCreateSettings())
+	s := newScraper(haProxyCfg, receivertest.NewNopSettings())
 	m, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, m)
@@ -137,7 +137,7 @@ func Test_scraper_readStatsWithNoValues(t *testing.T) {
 
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
-	s := newScraper(haProxyCfg, receivertest.NewNopCreateSettings())
+	s := newScraper(haProxyCfg, receivertest.NewNopSettings())
 	m, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, m)

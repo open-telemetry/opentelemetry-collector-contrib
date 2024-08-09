@@ -36,7 +36,7 @@ type logExporter struct {
 }
 
 // Create new logicmonitor logs exporter
-func newLogsExporter(_ context.Context, cfg component.Config, set exporter.CreateSettings) *logExporter {
+func newLogsExporter(_ context.Context, cfg component.Config, set exporter.Settings) *logExporter {
 	oCfg := cfg.(*Config)
 
 	return &logExporter{

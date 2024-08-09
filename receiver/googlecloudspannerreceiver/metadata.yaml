@@ -1,10 +1,9 @@
 type: googlecloudspanner
-scope_name: otelcol/googlecloudspannerreceiver
 
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
     active: [varunraiko]

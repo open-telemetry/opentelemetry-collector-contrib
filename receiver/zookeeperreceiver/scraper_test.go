@@ -290,7 +290,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(core)
 			z, err := newZookeeperMetricsScraper(settings, cfg)
 			require.NoError(t, err)
@@ -339,7 +339,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	z, err := newZookeeperMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	z, err := newZookeeperMetricsScraper(receivertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	require.NoError(t, z.shutdown(context.Background()))
 }

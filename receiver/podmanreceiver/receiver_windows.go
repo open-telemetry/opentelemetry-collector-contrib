@@ -13,7 +13,7 @@ import (
 )
 
 func newMetricsReceiver(
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	_ *Config,
 	_ consumer.Metrics,
 	_ any,
@@ -23,7 +23,7 @@ func newMetricsReceiver(
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {

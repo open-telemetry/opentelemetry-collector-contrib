@@ -20,13 +20,13 @@ var _ receiver.Metrics = (*purefaReceiver)(nil)
 
 type purefaReceiver struct {
 	cfg  *Config
-	set  receiver.CreateSettings
+	set  receiver.Settings
 	next consumer.Metrics
 
 	wrapped receiver.Metrics
 }
 
-func newReceiver(cfg *Config, set receiver.CreateSettings, next consumer.Metrics) *purefaReceiver {
+func newReceiver(cfg *Config, set receiver.Settings, next consumer.Metrics) *purefaReceiver {
 	return &purefaReceiver{
 		cfg:  cfg,
 		set:  set,

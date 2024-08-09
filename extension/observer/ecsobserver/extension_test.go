@@ -34,7 +34,7 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = refreshInterval
 		sdCfg.ResultFile = output
-		cs := extensiontest.NewNopCreateSettings()
+		cs := extensiontest.NewNopSettings()
 		cs.ReportStatus = func(event *component.StatusEvent) {
 			require.NoError(t, event.Err())
 		}
@@ -58,7 +58,7 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = 100 * time.Millisecond
 		sdCfg.ResultFile = "testdata/ut_ext_critical_error.actual.yaml"
-		cs := extensiontest.NewNopCreateSettings()
+		cs := extensiontest.NewNopSettings()
 		statusEventChan := make(chan *component.StatusEvent)
 		cs.TelemetrySettings.ReportStatus = func(e *component.StatusEvent) {
 			statusEventChan <- e

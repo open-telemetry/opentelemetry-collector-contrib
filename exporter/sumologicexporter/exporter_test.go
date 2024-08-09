@@ -19,13 +19,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
@@ -51,14 +51,6 @@ func createTestConfig() *Config {
 	config.MaxRequestBodySize = 20_971_520
 	config.MetricFormat = OTLPMetricFormat
 	return config
-}
-
-func createExporterCreateSettings() exporter.CreateSettings {
-	return exporter.CreateSettings{
-		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
-		},
-	}
 }
 
 // prepareExporterTest prepares an exporter test object using provided config
@@ -90,7 +82,8 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	cfg.ClientConfig.Endpoint = testServer.URL
 	cfg.ClientConfig.Auth = nil
 
-	exp := initExporter(cfg, createExporterCreateSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	require.NoError(t, err)
 
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 
@@ -243,18 +236,21 @@ func TestPartiallyFailed(t *testing.T) {
 }
 
 func TestInvalidHTTPCLient(t *testing.T) {
-	exp := initExporter(&Config{
+	exp, err := initExporter(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "test_endpoint",
-			CustomRoundTripper: func(_ http.RoundTripper) (http.RoundTripper, error) {
-				return nil, errors.New("roundTripperException")
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
+					MinVersion: "invalid",
+				},
 			},
 		},
-	}, createExporterCreateSettings())
+	}, exportertest.NewNopSettings())
+	require.NoError(t, err)
 
 	assert.EqualError(t,
 		exp.start(context.Background(), componenttest.NewNopHost()),
-		"failed to create HTTP Client: roundTripperException",
+		"failed to create HTTP Client: failed to load TLS config: invalid TLS min_version: unsupported TLS version: \"invalid\"",
 	)
 }
 
@@ -513,7 +509,8 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	cfg := createConfig()
 	cfg.ClientConfig.Endpoint = testServer.URL
 
-	exp := initExporter(cfg, createExporterCreateSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	require.NoError(b, err)
 	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(b, exp.shutdown(context.Background()))

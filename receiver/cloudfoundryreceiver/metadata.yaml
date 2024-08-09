@@ -1,10 +1,10 @@
 type: cloudfoundry
-scope_name: otelcol/cloudfoundryreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [crobert-1]

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -58,9 +58,8 @@ type Parser struct {
 	helper.ParserOperator
 	recombineParser         operator.Operator
 	format                  string
-	json                    jsoniter.API
 	addMetadataFromFilepath bool
-	crioLogEmitter          *helper.LogEmitter
+	criLogEmitter           *helper.LogEmitter
 	asyncConsumerStarted    bool
 	criConsumerStartOnce    sync.Once
 	criConsumers            *sync.WaitGroup
@@ -91,7 +90,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 		}
 	case containerdFormat, crioFormat:
 		p.criConsumerStartOnce.Do(func() {
-			err = p.crioLogEmitter.Start(nil)
+			err = p.criLogEmitter.Start(nil)
 			if err != nil {
 				p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
 				return
@@ -101,7 +100,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 				return
 			}
-			go p.crioConsumer(ctx)
+			go p.criConsumer(ctx)
 			p.asyncConsumerStarted = true
 		})
 
@@ -111,8 +110,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			return p.HandleEntryError(ctx, entry, err)
 		}
 		if skip {
-			p.Write(ctx, entry)
-			return nil
+			return p.Write(ctx, entry)
 		}
 
 		if format == containerdFormat {
@@ -153,20 +151,23 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	return nil
 }
 
-// crioConsumer receives log entries from the crioLogEmitter and
+// criConsumer receives log entries from the criLogEmitter and
 // writes them to the output of the main parser
-func (p *Parser) crioConsumer(ctx context.Context) {
-	entriesChan := p.crioLogEmitter.OutChannel()
+func (p *Parser) criConsumer(ctx context.Context) {
+	entriesChan := p.criLogEmitter.OutChannel()
 	p.criConsumers.Add(1)
 	defer p.criConsumers.Done()
 	for entries := range entriesChan {
 		for _, e := range entries {
-			p.Write(ctx, e)
+			err := p.Write(ctx, e)
+			if err != nil {
+				p.Logger().Error("failed to write entry", zap.Error(err))
+			}
 		}
 	}
 }
 
-// Stop ensures that the internal recombineParser, the internal crioLogEmitter and
+// Stop ensures that the internal recombineParser, the internal criLogEmitter and
 // the crioConsumer are stopped in the proper order without being affected by
 // any possible race conditions
 func (p *Parser) Stop() error {
@@ -180,11 +181,11 @@ func (p *Parser) Stop() error {
 	if err != nil {
 		stopErrs = append(stopErrs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
 	}
-	// the recombineParser will call the Process of the crioLogEmitter synchronously so the entries will be first
-	// written to the channel before the Stop of the recombineParser returns. Then since the crioLogEmitter handles
+	// the recombineParser will call the Process of the criLogEmitter synchronously so the entries will be first
+	// written to the channel before the Stop of the recombineParser returns. Then since the criLogEmitter handles
 	// the entries synchronously it is safe to call its Stop.
-	// After crioLogEmitter is stopped the crioConsumer will consume the remaining messages and return.
-	err = p.crioLogEmitter.Stop()
+	// After criLogEmitter is stopped the crioConsumer will consume the remaining messages and return.
+	err = p.criLogEmitter.Stop()
 	if err != nil {
 		stopErrs = append(stopErrs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
 	}
@@ -243,7 +244,7 @@ func (p *Parser) parseDocker(value any) (any, error) {
 	}
 
 	parsedValue := make(map[string]any)
-	err := p.json.UnmarshalFromString(raw, &parsedValue)
+	err := json.Unmarshal([]byte(raw), &parsedValue)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +301,7 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 	}
 
 	for originalKey, attributeKey := range k8sMetadataMapping {
-		newField := entry.NewAttributeField(attributeKey)
+		newField := entry.NewResourceField(attributeKey)
 		if err := newField.Set(e, parsedValues[originalKey]); err != nil {
 			return fmt.Errorf("failed to set %v as metadata at %v", originalKey, attributeKey)
 		}
@@ -354,5 +355,10 @@ func parseTime(e *entry.Entry, layout string) error {
 	}
 	// timeutils.ParseGotime calls timeutils.SetTimestampYear before returning the timeValue
 	e.Timestamp = timeValue
+
+	if removeOriginalTimeField.IsEnabled() {
+		e.Delete(entry.NewAttributeField(parseFrom))
+	}
+
 	return nil
 }

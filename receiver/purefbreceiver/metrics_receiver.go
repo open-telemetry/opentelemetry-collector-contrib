@@ -20,13 +20,13 @@ var _ receiver.Metrics = (*purefbMetricsReceiver)(nil)
 
 type purefbMetricsReceiver struct {
 	cfg  *Config
-	set  receiver.CreateSettings
+	set  receiver.Settings
 	next consumer.Metrics
 
 	wrapped receiver.Metrics
 }
 
-func newReceiver(cfg *Config, set receiver.CreateSettings, next consumer.Metrics) *purefbMetricsReceiver {
+func newReceiver(cfg *Config, set receiver.Settings, next consumer.Metrics) *purefbMetricsReceiver {
 	return &purefbMetricsReceiver{
 		cfg:  cfg,
 		set:  set,

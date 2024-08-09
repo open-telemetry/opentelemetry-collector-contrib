@@ -66,7 +66,7 @@ type jReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings receiver.CreateSettings
+	settings receiver.Settings
 
 	grpcObsrecv *receiverhelper.ObsReport
 	httpObsrecv *receiverhelper.ObsReport
@@ -95,7 +95,7 @@ func newJaegerReceiver(
 	id component.ID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 ) (*jReceiver, error) {
 	grpcObsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             id,

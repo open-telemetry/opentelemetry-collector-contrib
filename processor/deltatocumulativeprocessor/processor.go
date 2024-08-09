@@ -13,13 +13,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/maybe"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
@@ -40,11 +40,10 @@ type Processor struct {
 	mtx sync.Mutex
 }
 
-func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consumer.Metrics) *Processor {
+func newProcessor(cfg *Config, log *zap.Logger, telb *metadata.TelemetryBuilder, next consumer.Metrics) *Processor {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	tel := telemetry.New(meter)
-
+	tel := telemetry.New(telb)
 	proc := Processor{
 		log:    log,
 		ctx:    ctx,
@@ -138,7 +137,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		case pmetric.MetricTypeSum:
 			sum := m.Sum()
 			if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Aggregate(metrics.Sum(m), p.sums.aggr)
+				err := streams.Apply(metrics.Sum(m), p.sums.aggr.Aggregate)
 				errs = errors.Join(errs, err)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
@@ -147,7 +146,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		case pmetric.MetricTypeExponentialHistogram:
 			expo := m.ExponentialHistogram()
 			if expo.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Aggregate(metrics.ExpHistogram(m), p.expo.aggr)
+				err := streams.Apply(metrics.ExpHistogram(m), p.expo.aggr.Aggregate)
 				errs = errors.Join(errs, err)
 				expo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}

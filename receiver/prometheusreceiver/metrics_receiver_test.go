@@ -1623,7 +1623,7 @@ scrape_configs:
       - %s
         `, strings.TrimPrefix(svr.URL, "http://")), false, gokitlog.NewNopLogger())
 	require.NoError(t, err)
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	receiver := newPrometheusReceiver(set, &Config{
 		PrometheusConfig: (*PromConfig)(cfg),
 	}, new(consumertest.MetricsSink))

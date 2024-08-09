@@ -23,7 +23,7 @@ import (
 func TestNewReceiver_invalid_version_err(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.ProtocolVersion = "invalid"
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopCreateSettings(), nil)
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -31,11 +31,11 @@ func TestNewReceiver_invalid_version_err(t *testing.T) {
 func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers", "cpu"}
-	mockScraper := func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error) {
 		return nil, nil
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopCreateSettings(), nil)
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
 	assert.Nil(t, r)
 	expectedError := fmt.Errorf("no scraper found for key: cpu")
 	if assert.Error(t, err) {
@@ -52,7 +52,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 			},
 		},
 	}
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopCreateSettings(), nil)
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -61,13 +61,13 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error) {
 		return scraperhelper.NewScraper("brokers", func(context.Context) (pmetric.Metrics, error) {
 			return pmetric.Metrics{}, nil
 		})
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopCreateSettings(), consumertest.NewNop())
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -75,11 +75,11 @@ func TestNewReceiver(t *testing.T) {
 func TestNewReceiver_handles_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error) {
 		return nil, fmt.Errorf("fail")
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopCreateSettings(), consumertest.NewNop())
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }

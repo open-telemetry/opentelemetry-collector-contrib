@@ -9,9 +9,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v4/common"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/load"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -27,7 +27,7 @@ const metricsLen = 3
 
 // scraper for Load Metrics
 type scraper struct {
-	settings   receiver.CreateSettings
+	settings   receiver.Settings
 	config     *Config
 	mb         *metadata.MetricsBuilder
 	skipScrape bool
@@ -38,7 +38,7 @@ type scraper struct {
 }
 
 // newLoadScraper creates a set of Load related metrics
-func newLoadScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
+func newLoadScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
 	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, load: getSampledLoadAverages}
 }
 

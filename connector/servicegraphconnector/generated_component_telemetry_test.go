@@ -21,8 +21,8 @@ type componentTestTelemetry struct {
 	meterProvider *sdkmetric.MeterProvider
 }
 
-func (tt *componentTestTelemetry) NewCreateSettings() connector.CreateSettings {
-	settings := connectortest.NewNopCreateSettings()
+func (tt *componentTestTelemetry) NewSettings() connector.Settings {
+	settings := connectortest.NewNopSettings()
 	settings.MeterProvider = tt.meterProvider
 	settings.ID = component.NewID(component.MustNewType("servicegraph"))
 

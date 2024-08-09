@@ -31,7 +31,7 @@ type kubernetesReceiver struct {
 	resourceWatcher *resourceWatcher
 
 	config          *Config
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	metricsConsumer consumer.Metrics
 	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
@@ -125,7 +125,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 
 // newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newMetricsReceiver(
-	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics,
+	ctx context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	var err error
 	r := receivers.GetOrAdd(
@@ -144,7 +144,7 @@ func newMetricsReceiver(
 
 // newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newLogsReceiver(
-	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Logs,
+	ctx context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	var err error
 	r := receivers.GetOrAdd(
@@ -162,7 +162,7 @@ func newLogsReceiver(
 }
 
 // newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+func newReceiver(_ context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 	rCfg := cfg.(*Config)
 	obsrecv, err := receiverhelper.NewObsReport(
 		receiverhelper.ObsReportSettings{

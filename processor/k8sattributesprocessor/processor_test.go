@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -45,7 +44,7 @@ func newPodIdentifier(from string, name string, value string) kube.PodIdentifier
 func newTracesProcessor(cfg component.Config, next consumer.Traces, errFunc func(error), options ...option) (processor.Traces, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopCreateSettings()
+	set := processortest.NewNopSettings()
 	set.ReportStatus = func(event *component.StatusEvent) {
 		errFunc(event.Err())
 	}
@@ -61,7 +60,7 @@ func newTracesProcessor(cfg component.Config, next consumer.Traces, errFunc func
 func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, errFunc func(error), options ...option) (processor.Metrics, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopCreateSettings()
+	set := processortest.NewNopSettings()
 	set.ReportStatus = func(event *component.StatusEvent) {
 		errFunc(event.Err())
 	}
@@ -77,7 +76,7 @@ func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metr
 func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, errFunc func(error), options ...option) (processor.Logs, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopCreateSettings()
+	set := processortest.NewNopSettings()
 	set.ReportStatus = func(event *component.StatusEvent) {
 		errFunc(event.Err())
 	}
@@ -93,7 +92,7 @@ func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, errF
 // withKubeClientProvider sets the specific implementation for getting K8s Client instances
 func withKubeClientProvider(kcp kube.ClientProvider) option {
 	return func(p *kubernetesprocessor) error {
-		return p.initKubeClient(p.logger, kcp)
+		return p.initKubeClient(p.telemetrySettings, kcp)
 	}
 }
 
@@ -224,7 +223,7 @@ func TestNewProcessor(t *testing.T) {
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
-	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
+	clientProvider := func(_ component.TelemetrySettings, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
 
@@ -951,7 +950,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 		name         string
 		op           func(kp *kubernetesprocessor)
 		resourceGens []generateResourceFunc
-		wantAttrs    map[string]string
+		wantAttrs    map[string]any
 	}{
 		{
 			name: "all-by-name",
@@ -983,7 +982,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 				withContainerName("app"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
@@ -1020,7 +1019,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 				withContainerID("767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				conventions.AttributeContainerID:        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				conventions.AttributeK8SContainerName:   "app",
@@ -1057,7 +1056,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 				withContainerName("app"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
@@ -1065,7 +1064,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "container-id-only",
+			name: "container-id-with-runid",
 			op: func(kp *kubernetesprocessor) {
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
 					Containers: kube.PodContainers{
@@ -1074,6 +1073,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 								Statuses: map[int]kube.ContainerStatus{
 									0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
 									1: {ContainerID: "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e"},
+									2: {ContainerID: "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848"},
 								},
 							},
 						},
@@ -1085,7 +1085,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 				withContainerRunID("1"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                           "1.1.1.1",
 				conventions.AttributeK8SContainerName:         "app",
 				conventions.AttributeK8SContainerRestartCount: "1",
@@ -1113,10 +1113,35 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPassthroughIP("1.1.1.1"),
 				withContainerName("app"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                   "1.1.1.1",
 				conventions.AttributeK8SContainerName: "app",
 				conventions.AttributeContainerID:      "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
+			},
+		},
+		{
+			name: "container-repo-digests",
+			op: func(kp *kubernetesprocessor) {
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Statuses: map[int]kube.ContainerStatus{
+									2: {ImageRepoDigest: "docker.io/otel/collector@sha256:deadbeef02"},
+								},
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPassthroughIP("1.1.1.1"),
+				withContainerName("app"),
+			},
+			wantAttrs: map[string]any{
+				kube.K8sIPLabelName:                   "1.1.1.1",
+				conventions.AttributeK8SContainerName: "app",
+				containerImageRepoDigests:             []string{"docker.io/otel/collector@sha256:deadbeef02"},
 			},
 		},
 		{
@@ -1141,7 +1166,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("new-app"),
 				withContainerRunID("0"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                           "1.1.1.1",
 				conventions.AttributeK8SContainerName:         "new-app",
 				conventions.AttributeK8SContainerRestartCount: "0",
@@ -1168,7 +1193,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 				withContainerRunID("1"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                           "1.1.1.1",
 				conventions.AttributeK8SContainerName:         "app",
 				conventions.AttributeK8SContainerRestartCount: "1",
@@ -1195,7 +1220,12 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 		m.assertResource(0, func(r pcommon.Resource) {
 			require.Equal(t, len(tt.wantAttrs), r.Attributes().Len())
 			for k, v := range tt.wantAttrs {
-				assertResourceHasStringAttribute(t, r, k, v)
+				switch val := v.(type) {
+				case string:
+					assertResourceHasStringAttribute(t, r, k, val)
+				case []string:
+					assertResourceHasStringSlice(t, r, k, val)
+				}
 			}
 		})
 	}
@@ -1475,6 +1505,17 @@ func assertResourceHasStringAttribute(t *testing.T, r pcommon.Resource, k, v str
 	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
 	assert.EqualValues(t, pcommon.ValueTypeStr, got.Type(), "attribute %s is not of type string", k)
 	assert.EqualValues(t, v, got.Str(), "attribute %s is not equal to %s", k, v)
+}
+
+func assertResourceHasStringSlice(t *testing.T, r pcommon.Resource, k string, v []string) {
+	got, ok := r.Attributes().Get(k)
+	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
+	assert.EqualValues(t, pcommon.ValueTypeSlice, got.Type(), "attribute %s is not of type slice", k)
+	slice := got.Slice()
+	for i := 0; i < slice.Len(); i++ {
+		assert.EqualValues(t, pcommon.ValueTypeStr, slice.At(i).Type())
+		assert.EqualValues(t, v[i], slice.At(i).AsString(), "attribute %s[%d] is not equal to %s", k, i, v[i])
+	}
 }
 
 func Test_intFromAttribute(t *testing.T) {

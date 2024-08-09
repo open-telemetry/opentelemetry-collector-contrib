@@ -63,7 +63,7 @@ func (f *metricsFailover) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func newMetricsToMetrics(set connector.CreateSettings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
+func newMetricsToMetrics(set connector.Settings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
 	config := cfg.(*Config)
 	mr, ok := metrics.(connector.MetricsRouterAndConsumer)
 	if !ok {

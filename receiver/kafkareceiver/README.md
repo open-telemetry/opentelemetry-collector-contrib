@@ -27,7 +27,8 @@ The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
-- `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the kafka topic to read from
+- `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the kafka topic to read from.
+  Only one telemetry type may be used for a given topic.
 - `encoding` (default = otlp_proto): The encoding of the payload received from kafka. Available encodings:
   - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`, `ExportLogsServiceRequest` or `ExportMetricsServiceRequest` respectively.
   - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
@@ -42,6 +43,8 @@ The following settings can be optionally configured:
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
+- `session_timeout` (default = `10s`): The request timeout for detecting client failures when using Kafka’s group management facilities.
+- `heartbeat_interval` (default = `3s`): The expected time between heartbeats to the consumer coordinator when using Kafka’s group management facilities.
 - `auth`
   - `plain_text`
     - `username`: The username to use.
@@ -71,6 +74,7 @@ The following settings can be optionally configured:
     - `password`: The Kerberos password used for authenticate with KDC
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
+    - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. When
     disabled, the client does not make the initial request to broker at the

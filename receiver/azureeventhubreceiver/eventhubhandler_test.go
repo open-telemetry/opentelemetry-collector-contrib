@@ -57,13 +57,18 @@ func (m mockListenerHandleWrapper) Err() error {
 }
 
 type mockDataConsumer struct {
-	logsUnmarshaler  eventLogsUnmarshaler
-	nextLogsConsumer consumer.Logs
-	obsrecv          *receiverhelper.ObsReport
+	logsUnmarshaler    eventLogsUnmarshaler
+	nextLogsConsumer   consumer.Logs
+	nextTracesConsumer consumer.Traces
+	obsrecv            *receiverhelper.ObsReport
 }
 
 func (m *mockDataConsumer) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
 	m.nextLogsConsumer = nextLogsConsumer
+}
+
+func (m *mockDataConsumer) setNextTracesConsumer(nextTracesConsumer consumer.Traces) {
+	m.nextTracesConsumer = nextTracesConsumer
 }
 
 func (m *mockDataConsumer) setNextMetricsConsumer(_ consumer.Metrics) {}
@@ -88,7 +93,7 @@ func TestEventhubHandler_Start(t *testing.T) {
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
 	ehHandler := &eventhubHandler{
-		settings:     receivertest.NewNopCreateSettings(),
+		settings:     receivertest.NewNopSettings(),
 		dataConsumer: &mockDataConsumer{},
 		config:       config.(*Config),
 	}
@@ -107,12 +112,12 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              "",
 		LongLivedCtx:           false,
-		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(),
 	})
 	require.NoError(t, err)
 
 	ehHandler := &eventhubHandler{
-		settings: receivertest.NewNopCreateSettings(),
+		settings: receivertest.NewNopSettings(),
 		config:   config.(*Config),
 		dataConsumer: &mockDataConsumer{
 			logsUnmarshaler:  newRawLogsUnmarshaler(zap.NewNop()),

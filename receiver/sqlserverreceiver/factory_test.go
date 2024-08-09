@@ -52,7 +52,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				factory := NewFactory()
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					nil,
 					consumertest.NewNop(),
 				)
@@ -66,12 +66,12 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				r, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg.(*Config))
+				scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg.(*Config))
 				require.Empty(t, scrapers)
 				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 				require.NoError(t, r.Shutdown(context.Background()))
@@ -87,12 +87,12 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
+				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, directDBConnectionEnabled(cfg))
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
-				params := receivertest.NewNopCreateSettings()
+				params := receivertest.NewNopSettings()
 				scrapers, err := setupScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -125,7 +125,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 				r, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)

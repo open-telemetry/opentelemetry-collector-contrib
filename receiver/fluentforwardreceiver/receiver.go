@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
 
 // Give the event channel a bit of buffer to help reduce backpressure on
@@ -28,7 +30,7 @@ type fluentReceiver struct {
 	cancel    context.CancelFunc
 }
 
-func newFluentReceiver(set receiver.CreateSettings, conf *Config, next consumer.Logs) (receiver.Logs, error) {
+func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) (receiver.Logs, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "http",
@@ -37,10 +39,16 @@ func newFluentReceiver(set receiver.CreateSettings, conf *Config, next consumer.
 	if err != nil {
 		return nil, err
 	}
-	eventCh := make(chan Event, eventChannelLength)
-	collector := newCollector(eventCh, next, set.Logger, obsrecv)
 
-	server := newServer(eventCh, set.Logger)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	eventCh := make(chan Event, eventChannelLength)
+	collector := newCollector(eventCh, next, set.Logger, obsrecv, telemetryBuilder)
+
+	server := newServer(eventCh, set.Logger, telemetryBuilder)
 
 	return &fluentReceiver{
 		collector: collector,

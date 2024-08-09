@@ -106,9 +106,9 @@ type factory struct {
 	registry *featuregate.Registry
 }
 
-func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
+func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
 	f.onceProvider.Do(func() {
-		f.sourceProvider, f.providerErr = hostmetadata.GetSourceProvider(set, configHostname)
+		f.sourceProvider, f.providerErr = hostmetadata.GetSourceProvider(set, configHostname, timeout)
 	})
 	return f.sourceProvider, f.providerErr
 }
@@ -121,7 +121,7 @@ func (f *factory) AttributesTranslator(set component.TelemetrySettings) (*attrib
 }
 
 // Reporter builds and returns an *inframetadata.Reporter.
-func (f *factory) Reporter(params exporter.CreateSettings, pcfg hostmetadata.PusherConfig) (*inframetadata.Reporter, error) {
+func (f *factory) Reporter(params exporter.Settings, pcfg hostmetadata.PusherConfig) (*inframetadata.Reporter, error) {
 	f.onceReporter.Do(func() {
 		pusher := hostmetadata.NewPusher(params, pcfg)
 		f.reporter, f.reporterErr = inframetadata.NewReporter(params.Logger, pusher, metadataReporterPeriod)
@@ -148,7 +148,7 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.Settings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
 	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
@@ -251,7 +251,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
-func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, agentVersion string, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion string, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
 		go func() {
@@ -275,7 +275,7 @@ func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, s
 					}
 					// The DD Connector doesn't set the agent version, so we'll set it here
 					sp.AgentVersion = agentVersion
-					statsToAgent <- sp
+					statsWriter.Write(sp)
 				}
 			}
 		}()
@@ -285,11 +285,11 @@ func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, s
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	c component.Config,
 ) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.sourceTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -313,17 +313,16 @@ func (f *factory) createMetricsExporter(
 		cancel()
 		return nil, err
 	}
-	statsToAgent := make(chan *pb.StatsPayload)
 	metricsClient := metricsclient.InitializeMetricClient(set.MeterProvider, metricsclient.ExporterSourceTag)
 	timingReporter := timing.New(metricsClient)
-	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector(), metricsClient, timingReporter)
+	statsWriter := writer.NewStatsWriter(acfg, telemetry.NewNoopCollector(), metricsClient, timingReporter)
 
 	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
 	go statsWriter.Run()
 
 	statsIn := make(chan []byte, 1000)
 	statsv := set.BuildInfo.Command + set.BuildInfo.Version
-	f.consumeStatsPayload(ctx, &wg, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
+	f.consumeStatsPayload(ctx, &wg, statsIn, statsWriter, statsv, acfg.AgentVersion, set.Logger)
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
 	if err != nil {
@@ -379,9 +378,6 @@ func (f *factory) createMetricsExporter(
 			if statsIn != nil {
 				close(statsIn)
 			}
-			if statsToAgent != nil {
-				close(statsToAgent)
-			}
 			return nil
 		}),
 	)
@@ -395,7 +391,7 @@ func (f *factory) createMetricsExporter(
 // createTracesExporter creates a trace exporter based on this config.
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	c component.Config,
 ) (exporter.Traces, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
@@ -413,7 +409,7 @@ func (f *factory) createTracesExporter(
 		wg     sync.WaitGroup // waits for agent to exit
 	)
 
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.sourceTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -493,14 +489,14 @@ func (f *factory) createTracesExporter(
 // createLogsExporter creates a logs exporter based on the config.
 func (f *factory) createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	c component.Config,
 ) (exporter.Logs, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
 
 	var pusher consumer.ConsumeLogsFunc
 	var logsAgent logsagentpipeline.LogsAgent
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.sourceTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}

@@ -18,7 +18,7 @@ import (
 
 func TestRedisRunnable(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = logger
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:6379"
@@ -33,12 +33,12 @@ func TestRedisRunnable(t *testing.T) {
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 	il := ilm.Scope()
-	assert.Equal(t, "otelcol/redisreceiver", il.Name())
+	assert.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver", il.Name())
 }
 
 func TestNewReceiver_invalid_endpoint(t *testing.T) {
 	c := createDefaultConfig().(*Config)
-	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), c, nil)
+	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), c, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid endpoint")
 }
@@ -50,7 +50,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 			CAFile: "/invalid",
 		},
 	}
-	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), c, nil)
+	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), c, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)

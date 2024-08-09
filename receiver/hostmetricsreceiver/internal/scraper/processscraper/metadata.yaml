@@ -1,5 +1,4 @@
 type: hostmetricsreceiver/process
-scope_name: otelcol/hostmetricsreceiver/process
 
 parent: hostmetrics
 
@@ -92,7 +91,7 @@ metrics:
       Percentage of total CPU time used by the process since last scrape,
       expressed as a value between 0 and 1.
       On the first scrape, no data point is emitted for this metric.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [state]
@@ -118,7 +117,7 @@ metrics:
   process.memory.utilization:
     enabled: false
     description: Percentage of total physical memory that is used by the process.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
 

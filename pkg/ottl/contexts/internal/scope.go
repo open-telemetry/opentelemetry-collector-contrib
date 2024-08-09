@@ -13,6 +13,7 @@ import (
 
 type InstrumentationScopeContext interface {
 	GetInstrumentationScope() pcommon.InstrumentationScope
+	GetScopeSchemaURLItem() SchemaURLItem
 }
 
 func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
@@ -32,6 +33,8 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.
 		return accessInstrumentationScopeAttributesKey[K](mapKeys), nil
 	case "dropped_attributes_count":
 		return accessInstrumentationScopeDroppedAttributesCount[K](), nil
+	case "schema_url":
+		return accessInstrumentationScopeSchemaURLItem[K](), nil
 	default:
 		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Instrumentation Scope", InstrumentationScopeRef)
 	}
@@ -112,6 +115,20 @@ func accessInstrumentationScopeDroppedAttributesCount[K InstrumentationScopeCont
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if i, ok := val.(int64); ok {
 				tCtx.GetInstrumentationScope().SetDroppedAttributesCount(uint32(i))
+			}
+			return nil
+		},
+	}
+}
+
+func accessInstrumentationScopeSchemaURLItem[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			return tCtx.GetScopeSchemaURLItem().SchemaUrl(), nil
+		},
+		Setter: func(_ context.Context, tCtx K, val any) error {
+			if schemaURL, ok := val.(string); ok {
+				tCtx.GetScopeSchemaURLItem().SetSchemaUrl(schemaURL)
 			}
 			return nil
 		},

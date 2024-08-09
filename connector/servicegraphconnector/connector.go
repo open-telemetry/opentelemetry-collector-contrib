@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ const (
 	metricKeySeparator = string(byte(0))
 	clientKind         = "client"
 	serverKind         = "server"
+	virtualNodeLabel   = "virtual_node"
 )
 
 var (
@@ -349,19 +351,29 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 		e.ConnectionType = store.VirtualNode
 		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
+			if p.config.VirtualNodeExtraLabel {
+				e.VirtualNodeLabel = store.ClientVirtualNode
+			}
 			p.onComplete(e)
 		}
 
 		if len(e.ServerService) == 0 {
 			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
+			if p.config.VirtualNodeExtraLabel {
+				e.VirtualNodeLabel = store.ServerVirtualNode
+			}
 			p.onComplete(e)
 		}
 	}
 }
 
 func (p *serviceGraphConnector) aggregateMetricsForEdge(e *store.Edge) {
-	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), e.Dimensions)
+	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), strconv.FormatBool(e.Failed), e.Dimensions)
 	dimensions := buildDimensions(e)
+
+	if p.config.VirtualNodeExtraLabel {
+		dimensions = addExtraLabel(dimensions, virtualNodeLabel, string(e.VirtualNodeLabel))
+	}
 
 	p.seriesMutex.Lock()
 	defer p.seriesMutex.Unlock()
@@ -434,6 +446,11 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 	return dims
 }
 
+func addExtraLabel(dimensions pcommon.Map, label, value string) pcommon.Map {
+	dimensions.PutStr(label, value)
+	return dimensions
+}
+
 func (p *serviceGraphConnector) buildMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
@@ -455,44 +472,48 @@ func (p *serviceGraphConnector) buildMetrics() (pmetric.Metrics, error) {
 }
 
 func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
-	for key, c := range p.reqTotal {
+	if len(p.reqTotal) > 0 {
 		mCount := ilm.Metrics().AppendEmpty()
 		mCount.SetName("traces_service_graph_request_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
-		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
-		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
-		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntValue(c)
+		for key, c := range p.reqTotal {
+			dpCalls := mCount.Sum().DataPoints().AppendEmpty()
+			dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			dpCalls.SetIntValue(c)
 
-		dimensions, ok := p.dimensionsForSeries(key)
-		if !ok {
-			return fmt.Errorf("failed to find dimensions for key %s", key)
+			dimensions, ok := p.dimensionsForSeries(key)
+			if !ok {
+				return fmt.Errorf("failed to find dimensions for key %s", key)
+			}
+
+			dimensions.CopyTo(dpCalls.Attributes())
 		}
-
-		dimensions.CopyTo(dpCalls.Attributes())
 	}
 
-	for key, c := range p.reqFailedTotal {
+	if len(p.reqFailedTotal) > 0 {
 		mCount := ilm.Metrics().AppendEmpty()
 		mCount.SetName("traces_service_graph_request_failed_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
-		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
-		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
-		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntValue(c)
+		for key, c := range p.reqFailedTotal {
+			dpCalls := mCount.Sum().DataPoints().AppendEmpty()
+			dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+			dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			dpCalls.SetIntValue(c)
 
-		dimensions, ok := p.dimensionsForSeries(key)
-		if !ok {
-			return fmt.Errorf("failed to find dimensions for key %s", key)
+			dimensions, ok := p.dimensionsForSeries(key)
+			if !ok {
+				return fmt.Errorf("failed to find dimensions for key %s", key)
+			}
+
+			dimensions.CopyTo(dpCalls.Attributes())
 		}
-
-		dimensions.CopyTo(dpCalls.Attributes())
 	}
 
 	return nil
@@ -512,64 +533,67 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 }
 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	for key := range p.reqServerDurationSecondsCount {
+	if len(p.reqServerDurationSecondsCount) > 0 {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName("traces_service_graph_request_client_seconds")
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-		dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
-		dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
-		dpDuration.SetTimestamp(timestamp)
-		dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
-		dpDuration.BucketCounts().FromRaw(p.reqServerDurationSecondsBucketCounts[key])
-		dpDuration.SetCount(p.reqServerDurationSecondsCount[key])
-		dpDuration.SetSum(p.reqServerDurationSecondsSum[key])
+		for key := range p.reqServerDurationSecondsCount {
+			dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
+			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+			dpDuration.SetTimestamp(timestamp)
+			dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
+			dpDuration.BucketCounts().FromRaw(p.reqServerDurationSecondsBucketCounts[key])
+			dpDuration.SetCount(p.reqServerDurationSecondsCount[key])
+			dpDuration.SetSum(p.reqServerDurationSecondsSum[key])
 
-		// TODO: Support exemplars
-		dimensions, ok := p.dimensionsForSeries(key)
-		if !ok {
-			return fmt.Errorf("failed to find dimensions for key %s", key)
+			// TODO: Support exemplars
+			dimensions, ok := p.dimensionsForSeries(key)
+			if !ok {
+				return fmt.Errorf("failed to find dimensions for key %s", key)
+			}
+
+			dimensions.CopyTo(dpDuration.Attributes())
 		}
-
-		dimensions.CopyTo(dpDuration.Attributes())
 	}
 	return nil
 }
 
 func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMetrics, mName string) error {
-	for key := range p.reqServerDurationSecondsCount {
+	if len(p.reqServerDurationSecondsCount) > 0 {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName(mName)
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-		dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
-		dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
-		dpDuration.SetTimestamp(timestamp)
-		dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
-		dpDuration.BucketCounts().FromRaw(p.reqClientDurationSecondsBucketCounts[key])
-		dpDuration.SetCount(p.reqClientDurationSecondsCount[key])
-		dpDuration.SetSum(p.reqClientDurationSecondsSum[key])
+		for key := range p.reqServerDurationSecondsCount {
 
-		// TODO: Support exemplars
-		dimensions, ok := p.dimensionsForSeries(key)
-		if !ok {
-			return fmt.Errorf("failed to find dimensions for key %s", key)
+			dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
+			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+			dpDuration.SetTimestamp(timestamp)
+			dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
+			dpDuration.BucketCounts().FromRaw(p.reqClientDurationSecondsBucketCounts[key])
+			dpDuration.SetCount(p.reqClientDurationSecondsCount[key])
+			dpDuration.SetSum(p.reqClientDurationSecondsSum[key])
+
+			// TODO: Support exemplars
+			dimensions, ok := p.dimensionsForSeries(key)
+			if !ok {
+				return fmt.Errorf("failed to find dimensions for key %s", key)
+			}
+
+			dimensions.CopyTo(dpDuration.Attributes())
 		}
-
-		dimensions.CopyTo(dpDuration.Attributes())
 	}
 	return nil
 }
 
-func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectionType string, edgeDimensions map[string]string) string {
+func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectionType, failed string, edgeDimensions map[string]string) string {
 	var metricKey strings.Builder
-	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType)
+	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType + metricKeySeparator + failed)
 
 	for _, dimName := range p.config.Dimensions {
 		dim, ok := edgeDimensions[dimName]

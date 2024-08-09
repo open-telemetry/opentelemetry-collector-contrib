@@ -14,16 +14,17 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/prometheusremotewrite")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/prometheusremotewrite")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	meter                                             metric.Meter
 	ExporterPrometheusremotewriteFailedTranslations   metric.Int64Counter
 	ExporterPrometheusremotewriteTranslatedTimeSeries metric.Int64Counter
 	level                                             configtelemetry.Level
@@ -46,23 +47,20 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	for _, op := range options {
 		op(&builder)
 	}
-	var (
-		err, errs error
-		meter     metric.Meter
-	)
+	var err, errs error
 	if builder.level >= configtelemetry.LevelBasic {
-		meter = Meter(settings)
+		builder.meter = Meter(settings)
 	} else {
-		meter = noop.Meter{}
+		builder.meter = noop.Meter{}
 	}
-	builder.ExporterPrometheusremotewriteFailedTranslations, err = meter.Int64Counter(
-		"exporter_prometheusremotewrite_failed_translations",
+	builder.ExporterPrometheusremotewriteFailedTranslations, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_failed_translations",
 		metric.WithDescription("Number of translation operations that failed to translate metrics from Otel to Prometheus"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterPrometheusremotewriteTranslatedTimeSeries, err = meter.Int64Counter(
-		"exporter_prometheusremotewrite_translated_time_series",
+	builder.ExporterPrometheusremotewriteTranslatedTimeSeries, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_translated_time_series",
 		metric.WithDescription("Number of Prometheus time series that were translated from OTel metrics"),
 		metric.WithUnit("1"),
 	)

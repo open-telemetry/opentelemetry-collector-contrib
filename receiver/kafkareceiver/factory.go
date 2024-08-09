@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -19,14 +18,16 @@ import (
 )
 
 const (
-	defaultTracesTopic   = "otlp_spans"
-	defaultMetricsTopic  = "otlp_metrics"
-	defaultLogsTopic     = "otlp_logs"
-	defaultEncoding      = "otlp_proto"
-	defaultBroker        = "localhost:9092"
-	defaultClientID      = "otel-collector"
-	defaultGroupID       = defaultClientID
-	defaultInitialOffset = offsetLatest
+	defaultTracesTopic       = "otlp_spans"
+	defaultMetricsTopic      = "otlp_metrics"
+	defaultLogsTopic         = "otlp_logs"
+	defaultEncoding          = "otlp_proto"
+	defaultBroker            = "localhost:9092"
+	defaultClientID          = "otel-collector"
+	defaultGroupID           = defaultClientID
+	defaultInitialOffset     = offsetLatest
+	defaultSessionTimeout    = 10 * time.Second
+	defaultHeartbeatInterval = 3 * time.Second
 
 	// default from sarama.NewConfig()
 	defaultMetadataRetryMax = 3
@@ -75,8 +76,6 @@ func withLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 
 // NewFactory creates Kafka receiver factory.
 func NewFactory(options ...FactoryOption) receiver.Factory {
-	_ = view.Register(metricViews()...)
-
 	f := &kafkaReceiverFactory{
 		tracesUnmarshalers:  map[string]TracesUnmarshaler{},
 		metricsUnmarshalers: map[string]MetricsUnmarshaler{},
@@ -96,11 +95,13 @@ func NewFactory(options ...FactoryOption) receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Encoding:      defaultEncoding,
-		Brokers:       []string{defaultBroker},
-		ClientID:      defaultClientID,
-		GroupID:       defaultGroupID,
-		InitialOffset: defaultInitialOffset,
+		Encoding:          defaultEncoding,
+		Brokers:           []string{defaultBroker},
+		ClientID:          defaultClientID,
+		GroupID:           defaultGroupID,
+		InitialOffset:     defaultInitialOffset,
+		SessionTimeout:    defaultSessionTimeout,
+		HeartbeatInterval: defaultHeartbeatInterval,
 		Metadata: kafkaexporter.Metadata{
 			Full: defaultMetadataFull,
 			Retry: kafkaexporter.MetadataRetry{
@@ -130,7 +131,7 @@ type kafkaReceiverFactory struct {
 
 func (f *kafkaReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
@@ -156,7 +157,7 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 
 func (f *kafkaReceiverFactory) createMetricsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -182,7 +183,7 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 
 func (f *kafkaReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {

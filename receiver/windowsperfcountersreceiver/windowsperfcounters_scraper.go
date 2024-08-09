@@ -24,6 +24,7 @@ const instanceLabelName = "instance"
 type perfCounterMetricWatcher struct {
 	winperfcounters.PerfCounterWatcher
 	MetricRep
+	recreate bool
 }
 
 type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
@@ -67,6 +68,7 @@ func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 				watcher := perfCounterMetricWatcher{
 					PerfCounterWatcher: pcw,
 					MetricRep:          MetricRep{Name: pcw.Path()},
+					recreate:           counterCfg.RecreateQuery,
 				}
 				if counterCfg.MetricRep.Name != "" {
 					watcher.MetricRep.Name = counterCfg.MetricRep.Name
@@ -130,8 +132,15 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		counterVals, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
-			scrapeFailures += 1
+			scrapeFailures++
 			continue
+		}
+
+		if watcher.recreate {
+			err := watcher.Reset()
+			if err != nil {
+				errs = multierr.Append(errs, err)
+			}
 		}
 
 		for _, val := range counterVals {
@@ -148,9 +157,24 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
 		}
 	}
+
+	// Drop metrics with no datapoints. This happens when configured counters don't exist on the host.
+	// This may result in a Metrics message with no metrics if all counters are missing.
+	metricSlice.RemoveIf(func(m pmetric.Metric) bool {
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
+			return m.Gauge().DataPoints().Len() == 0
+		case pmetric.MetricTypeSum:
+			return m.Sum().DataPoints().Len() == 0
+		default:
+			return false
+		}
+	})
+
 	if scrapeFailures != 0 && scrapeFailures != len(s.watchers) {
 		errs = scrapererror.NewPartialScrapeError(errs, scrapeFailures)
 	}
+
 	return md, errs
 }
 

@@ -318,6 +318,9 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 // When a file it rotated out of pattern via copy/truncate, we should
 // detect that our old handle is stale and not attempt to read from it.
 func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
 	t.Parallel()
 
 	tempDir := t.TempDir()

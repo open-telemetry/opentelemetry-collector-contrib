@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/open-telemetry/otel-arrow/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -31,7 +31,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	assert.Equal(t, "round_robin", cfg.(*Config).ClientConfig.BalancerName)
 	assert.Equal(t, arrow.DefaultPrioritizer, cfg.(*Config).Arrow.Prioritizer)
@@ -42,7 +42,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
 			TimeoutSettings: exporterhelper.TimeoutSettings{

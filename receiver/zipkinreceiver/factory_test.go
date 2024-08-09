@@ -24,7 +24,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	tReceiver, err := createTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
@@ -32,7 +32,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	tReceiver, err = createTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")

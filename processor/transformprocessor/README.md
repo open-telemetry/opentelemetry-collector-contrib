@@ -22,14 +22,21 @@ Each condition and statement can access and transform telemetry using functions 
 - [Contexts](#contexts)
 - [Supported functions](#supported-functions)
 - [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 
 ## Config
 
 The transform processor allows configuring multiple context statements for traces, metrics, and logs.
 The value of `context` specifies which [OTTL Context](#contexts) to use when interpreting the associated statements.
-The conditions and statement strings, which must be OTTL compatible, will be passed to the OTTL and interpreted using the associated context. The conditions string should contain a string with a WHERE clause body without the `where` keyword at the beginning.
-Each context will be processed in the order specified and each condition and statement for a context will be executed in the order specified. Conditions are executed first, if a context doesn't meet the conditions, the associated statement will be skipped.
+The global conditions and statement strings, which must be OTTL compatible, will be passed to OTTL and interpreted using the associated context.
+The condition string should contain a Where clause body without the `where` keyword at the beginning.
+
+Each context will be processed in the order specified.
+Within a context, each global condition is checked and if any evaluates to true, the statements are executed in order.
+If a context doesn't meet any of the conditions, then the associated statement will be skipped.
+
+Each statement may have a Where clause that acts as an additional check for whether to execute the statement.
 
 The transform processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing a statement.
 
@@ -70,7 +77,7 @@ Valid values for `context` are:
 | metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
 | log_statements    | `resource`, `scope`, and `log`                 |
 
-`conditions` is a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements.
+`conditions` is a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements. The conditions are ORed together, which means only one condition needs to evaluate to true in order for the statements (including their individual Where clauses) to be executed.
 
 ```yaml
 transform:
@@ -211,6 +218,8 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
+- [scale_metric](#scale_metric)
+- [aggregate_on_attributes](#aggregate_on_attributes)
 
 ### convert_sum_to_gauge
 
@@ -346,6 +355,66 @@ Examples:
 
 - `copy_metric(desc="new desc") where description == "old desc"`
 
+### scale_metric
+
+`scale_metric(factor, Optional[unit])`
+
+The `scale_metric` function multiplies the values in the data points in the metric by the float value `factor`.
+If the optional string `unit` is provided, the metric's unit will be set to this value.
+The supported data types are:
+
+Supported metric types are `Gauge`, `Sum`, `Histogram`, and `Summary`.
+
+Examples:
+
+- `scale_metric(0.1)`: Scale the metric by a factor of `0.1`. The unit of the metric will not be modified.
+- `scale_metric(10.0, "kWh")`: Scale the metric by a factor of `10.0` and sets the unit to `kWh`.
+
+### aggregate_on_attributes
+
+`aggregate_on_attributes(function, Optional[attributes])`
+
+The `aggregate_on_attributes` function aggregates all datapoints in the metric based on the supplied attributes. `function` is a case-sensitive string that represents the aggregation function and `attributes` is an optional list of attribute keys to aggregate upon.
+
+`aggregate_on_attributes` function removes all attributes that are present in datapoints except the ones that are specified in the `attributes` parameter. If `attributes` parameter is not set, all attributes are removed from datapoints. Afterwards all datapoints are aggregated depending on the attributes left (none or the ones present in the list).
+
+The following metric types can be aggregated:
+
+- sum
+- gauge
+- histogram
+- exponential histogram
+
+Supported aggregation functions are:
+
+- sum
+- max
+- min
+- mean
+- median
+- count
+
+**NOTE:** Only the `sum` aggregation function is supported for histogram and exponential histogram datatypes.
+
+Examples:
+
+- `aggregate_on_attributes("sum", ["attr1", "attr2"]) where name == "system.memory.usage"`
+- `aggregate_on_attributes("max") where name == "system.memory.usage"`
+
+The `aggregate_on_attributes` function can also be used in conjunction with 
+[keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
+[delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
+
+For example, to remove attribute keys matching a regex and aggregate the metrics on the remaining attributes, you can perform the following statement sequence:
+
+```yaml
+statements:
+   - delete_matching_keys(attributes, "(?i).*myRegex.*") where name == "system.memory.usage"
+   - aggregate_on_attributes("sum") where name == "system.memory.usage"
+```
+
+To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
+
 ## Examples
 
 ### Perform transformation if field does not exist
@@ -468,6 +537,53 @@ transform:
         - set(severity_number, SEVERITY_NUMBER_ERROR) where IsString(body) and IsMatch(body, "\\sERROR\\s")
 ```
 
+## Troubleshooting
+
+When using OTTL you can enable debug logging in the collector to print out useful information,
+such as the current Statement and the current TransformContext, to help you troubleshoot
+why a statement is not behaving as you expect. This feature is very verbose, but provides you an accurate
+view into how OTTL views the underlying data.
+
+```yaml
+receivers:
+  filelog:
+    start_at: beginning
+    include: [ test.log ]
+
+processors:
+  transform:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(resource.attributes["test"], "pass")
+          - set(instrumentation_scope.attributes["test"], ["pass"])
+          - set(attributes["test"], true)
+
+exporters:
+  debug:
+
+service:
+  telemetry:
+    logs:
+      level: debug
+  pipelines:
+    logs:
+      receivers:
+        - filelog
+      processors:
+        - transform
+      exporters:
+        - debug
+```
+
+```
+2024-05-29T16:38:09.600-0600    debug   ottl@v0.101.0/parser.go:265     initial TransformContext        {"kind": "processor", "name": "transform", "pipeline": "logs", "TransformContext": {"resource": {"attributes": {}, "dropped_attribute_count": 0}, "scope": {"attributes": {}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log"}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
+2024-05-29T16:38:09.600-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(resource.attributes[\"test\"], \"pass\")", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log"}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
+2024-05-29T16:38:09.600-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(instrumentation_scope.attributes[\"test\"], [\"pass\"])", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {"test": ["pass"]}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log"}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
+2024-05-29T16:38:09.601-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(attributes[\"test\"], true)", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {"test": ["pass"]}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log", "test": true}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
@@ -481,3 +597,28 @@ The transform processor uses the [OpenTelemetry Transformation Language](https:/
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the transform processor is NOOP.  To modify a data type you must use a function specific to that purpose.
 - [Identity Conflict](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name and when reducing/changing existing attributes.  Adding new attributes is safe.
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs.
+
+## Feature Gate
+
+### `transform.flatten.logs`
+
+The `transform.flatten.logs` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the `flatten_data` configuration option (default `false`). With `flatten_data: true`, the processor provides each log record with a distinct copy of its resource and scope. Then, after applying all transformations, the log records are regrouped by resource and scope.
+
+This option is useful when applying transformations which alter the resource or scope. e.g. `set(resource.attributes["to"], attributes["from"])`, which may otherwise result in unexpected behavior. Using this option typically incurs a performance penalty as the processor must compute many hashes and create copies of resource and scope information for every log record.
+
+The feature is currently only available for log processing.
+
+#### Example Usage
+  
+`config.yaml`:
+  
+  ```yaml
+  transform:
+    flatten_data: true
+    log_statements:
+      - context: log
+        statements:
+          - set(resource.attributes["to"], attributes["from"])
+  ```
+  
+  Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`

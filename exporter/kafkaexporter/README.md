@@ -38,6 +38,7 @@ The following settings can be optionally configured:
     - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
+- `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
 - `auth`
   - `plain_text`
     - `username`: The username to use.
@@ -68,6 +69,7 @@ The following settings can be optionally configured:
     - `password`: The Kerberos password used for authenticate with KDC
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
+    - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. When
     disabled, the client does not make the initial request to broker at the

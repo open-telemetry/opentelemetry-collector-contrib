@@ -27,11 +27,11 @@ type pulsarTracesConsumer struct {
 	cancel          context.CancelFunc
 	consumer        pulsar.Consumer
 	unmarshaler     TracesUnmarshaler
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
+func newTracesReceiver(config Config, set receiver.Settings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -125,11 +125,11 @@ type pulsarMetricsConsumer struct {
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
+func newMetricsReceiver(config Config, set receiver.Settings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -226,11 +226,11 @@ type pulsarLogsConsumer struct {
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
+func newLogsReceiver(config Config, set receiver.Settings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding

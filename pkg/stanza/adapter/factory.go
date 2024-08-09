@@ -37,7 +37,7 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rc
 func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 	return func(
 		_ context.Context,
-		params rcvr.CreateSettings,
+		params rcvr.Settings,
 		cfg component.Config,
 		nextConsumer consumer.Logs,
 	) (rcvr.Logs, error) {
@@ -46,7 +46,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		emitterOpts := []helper.EmitterOption{}
+		var emitterOpts []helper.EmitterOption
 		if baseCfg.maxBatchSize > 0 {
 			emitterOpts = append(emitterOpts, helper.WithMaxBatchSize(baseCfg.maxBatchSize))
 		}
@@ -62,7 +62,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			return nil, err
 		}
 
-		converterOpts := []converterOption{}
+		var converterOpts []converterOption
 		if baseCfg.numWorkers > 0 {
 			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
 		}

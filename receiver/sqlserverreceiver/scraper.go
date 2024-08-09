@@ -114,6 +114,11 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 	const logicalFilenameKey = "logical_filename"
 	const fileTypeKey = "file_type"
 	const readLatencyMsKey = "read_latency_ms"
+	const writeLatencyMsKey = "write_latency_ms"
+	const readCountKey = "reads"
+	const writeCountKey = "writes"
+	const readBytesKey = "read_bytes"
+	const writeBytesKey = "write_bytes"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -139,8 +144,21 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		} else {
-			s.mb.RecordSqlserverDatabaseIoReadLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey])
+			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead)
 		}
+
+		val, err = strconv.ParseFloat(row[writeLatencyMsKey], 64)
+		if err != nil {
+			err = fmt.Errorf("row %d: %w", i, err)
+			errs = append(errs, err)
+		} else {
+			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite)
+		}
+
+		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[readCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[writeCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[readBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[writeBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
 	}
 
 	if len(rows) == 0 {
@@ -154,10 +172,15 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const counterKey = "counter"
 	const valueKey = "value"
 	// Constants are the columns for metrics from query
+	const batchRequestRate = "Batch Requests/sec"
+	const bufferCacheHitRatio = "Buffer cache hit ratio"
 	const diskReadIOThrottled = "Disk Read IO Throttled/sec"
 	const diskWriteIOThrottled = "Disk Write IO Throttled/sec"
 	const lockWaits = "Lock Waits/sec"
 	const processesBlocked = "Processes blocked"
+	const sqlCompilationRate = "SQL Compilations/sec"
+	const sqlReCompilationsRate = "SQL Re-Compilations/sec"
+	const userConnCount = "User Connections"
 
 	rows, err := s.client.QueryRows(ctx)
 
@@ -177,6 +200,22 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		}
 
 		switch row[counterKey] {
+		case batchRequestRate:
+			val, err := strconv.ParseFloat(row[valueKey], 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverBatchRequestRateDataPoint(now, val)
+			}
+		case bufferCacheHitRatio:
+			val, err := strconv.ParseFloat(row[valueKey], 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(now, val)
+			}
 		case diskReadIOThrottled:
 			errs = append(errs, s.mb.RecordSqlserverResourcePoolDiskThrottledReadRateDataPoint(now, row[valueKey]))
 		case diskWriteIOThrottled:
@@ -191,6 +230,30 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			}
 		case processesBlocked:
 			errs = append(errs, s.mb.RecordSqlserverProcessesBlockedDataPoint(now, row[valueKey]))
+		case sqlCompilationRate:
+			val, err := strconv.ParseFloat(row[valueKey], 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverBatchSQLCompilationRateDataPoint(now, val)
+			}
+		case sqlReCompilationsRate:
+			val, err := strconv.ParseFloat(row[valueKey], 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(now, val)
+			}
+		case userConnCount:
+			val, err := strconv.ParseInt(row[valueKey], 10, 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverUserConnectionCountDataPoint(now, val)
+			}
 		}
 	}
 

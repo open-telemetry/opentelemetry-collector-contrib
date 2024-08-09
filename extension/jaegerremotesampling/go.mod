@@ -4,8 +4,9 @@ go 1.21.0
 
 require (
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/jaegertracing/jaeger v1.57.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.0
+	github.com/jaegertracing/jaeger v1.60.0
+	github.com/jonboulle/clockwork v0.4.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.106.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v0.102.1
@@ -31,16 +32,16 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-logr/logr v1.4.1 // indirect
+	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/klauspost/compress v1.17.8 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
@@ -62,7 +63,7 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.18.2 // indirect
+	github.com/spf13/viper v1.19.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.opentelemetry.io/collector v0.102.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.102.1 // indirect

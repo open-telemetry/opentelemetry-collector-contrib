@@ -33,7 +33,7 @@ import (
 )
 
 type metricsExporter struct {
-	params           exporter.CreateSettings
+	params           exporter.Settings
 	cfg              *Config
 	agntConfig       *config.AgentConfig
 	ctx              context.Context
@@ -89,7 +89,7 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 
 func newMetricsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 	agntConfig *config.AgentConfig,
 	onceMetadata *sync.Once,

@@ -114,6 +114,10 @@ async function getIssuesData({octokit, context}) {
       filterPrs: true,
       alias: "issuesSponsorNeeded",
     },
+    "waiting-for-code-owners": {
+      filterPrs: false,
+      alias: "issuesCodeOwnerNeeded",
+    }
   };
 
   const issuesNew = await getNewIssues({octokit, context});
@@ -151,6 +155,11 @@ async function getIssuesData({octokit, context}) {
       count: 0,
       data: []
     },
+    issuesCodeOwnerNeeded: {
+      title: "Issues and PRs that need code owner review",
+      count: 0,
+      data: []
+    }
   }
 
   // add new issues
@@ -179,6 +188,24 @@ async function getIssuesData({octokit, context}) {
     stats.issuesNewSponsorNeeded.data.push({ url, title, number });
   });
   return stats
+}
+
+function generateComponentsLookingForOwnersReportSection(lookingForOwners) {
+  let count = 0
+  let section = []
+
+  // NOTE: the newline after <summary> is required for markdown to render correctly
+  section.push(`<details>
+    <summary> Components </summary>\n`);
+  for (const components of Object.values(lookingForOwners)) {
+    count += Object.keys(components).length
+    for (const [componentName, metadatafilePath] of Object.entries(components)) {
+      section.push(`- [ ] [${componentName}](${path.join("../blob/main/", path.dirname(metadatafilePath))}) `)
+    }
+  }
+
+  section.push(`</details>`)
+  return {count, section}
 }
 
 function generateReport({ issuesData, previousReport, componentData }) {
@@ -219,9 +246,10 @@ function generateReport({ issuesData, previousReport, componentData }) {
 
   // generate report for components
   out.push('\n## Components Report', '<ul>');
-  for (const lbl of Object.keys(componentData)) {
+  var {byStatus, lookingForOwners} = componentData
+  for (const lbl of Object.keys(byStatus)) {
     const section = [``];
-    const data = componentData[lbl];
+    const data = byStatus[lbl];
     const count = Object.keys(data).length;
 
     section.push(`<li> ${lbl}: ${count}`);
@@ -238,6 +266,11 @@ function generateReport({ issuesData, previousReport, componentData }) {
     section.push('</li>');
     out.push(section.join('\n'));
   }
+
+  let {count, section} = generateComponentsLookingForOwnersReportSection(lookingForOwners)
+  out.push(`<li> Seeking new code owners: ${count}`)
+  out.push(...section)
+  out.push('</li>')
   out.push('</ul>');
 
   const report = out.join('\n');
@@ -285,7 +318,8 @@ function parseJsonFromText(text) {
     // Parse the found string to JSON
     return JSON.parse(match[1]);
   } else {
-    throw new Error("JSON data not found");
+    debug({msg: "No JSON found in previous issue"})
+    return null
   }
 }
 
@@ -377,37 +411,43 @@ function processFiles(files) {
 }
 
 const processStatusResults = (results) => {
-  const filteredResults = {};
-
+  const byStatus = {};
+  const lookingForOwners = {};
   for (const component in results) {
       for (const name in results[component]) {
           const { path, data } = results[component][name];
 
-          if (data && data.status && data.status.stability) {
+          if (data && data.status) {
+            if (data.status.stability) {
               const { stability } = data.status;
               const statuses = ['unmaintained', 'deprecated'];
 
               for (const status of statuses) {
                   if (stability[status] && stability[status].length > 0) {
-                      if (!filteredResults[status]) {
-                          filteredResults[status] = {};
+                      if (!byStatus[status]) {
+                          byStatus[status] = {};
                       }
-                      filteredResults[status][name] = { path, stability: data.status.stability, component };
+                      byStatus[status][name] = { path, stability: data.status.stability, component };
                   }
               }
+            }
+            if (data.status.codeowners && data.status.codeowners.seeking_new) {
+              if (!(component in lookingForOwners)) {
+                lookingForOwners[component] = {}
+              }
+              lookingForOwners[component][name] = path
+            }
           }
       }
   }
 
-  return filteredResults;
+  return {byStatus, lookingForOwners};
 };
 
 async function processComponents() {
   const results = findFilesByName(`.`, 'metadata.yaml');
   const resultsClean = processFiles(results)
-  const resultsWithStability = processStatusResults(resultsClean)
-  return resultsWithStability
-
+  return processStatusResults(resultsClean)
 }
 
 async function main({ github, context }) {

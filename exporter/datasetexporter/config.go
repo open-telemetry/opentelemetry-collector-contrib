@@ -111,6 +111,7 @@ const bufferRetryInitialInterval = 5 * time.Second
 const bufferRetryMaxInterval = 30 * time.Second
 const bufferRetryMaxElapsedTime = 300 * time.Second
 const bufferRetryShutdownTimeout = 30 * time.Second
+const bufferMaxParallelOutgoing = 100
 
 type BufferSettings struct {
 	MaxLifetime          time.Duration `mapstructure:"max_lifetime"`
@@ -120,6 +121,7 @@ type BufferSettings struct {
 	RetryMaxInterval     time.Duration `mapstructure:"retry_max_interval"`
 	RetryMaxElapsedTime  time.Duration `mapstructure:"retry_max_elapsed_time"`
 	RetryShutdownTimeout time.Duration `mapstructure:"retry_shutdown_timeout"`
+	MaxParallelOutgoing  int           `mapstructure:"max_parallel_outgoing"`
 }
 
 // newDefaultBufferSettings returns the default settings for BufferSettings.
@@ -132,6 +134,7 @@ func newDefaultBufferSettings() BufferSettings {
 		RetryMaxInterval:     bufferRetryMaxInterval,
 		RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
 		RetryShutdownTimeout: bufferRetryShutdownTimeout,
+		MaxParallelOutgoing:  bufferMaxParallelOutgoing,
 	}
 }
 
@@ -202,39 +205,34 @@ func (c *Config) String() string {
 	return s
 }
 
-func (c *Config) convert() (*ExporterConfig, error) {
-	err := c.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("config is not valid: %w", err)
-	}
-
+func (c *Config) convert() *ExporterConfig {
 	return &ExporterConfig{
-			datasetConfig: &datasetConfig.DataSetConfig{
-				Endpoint: c.DatasetURL,
-				Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
-				BufferSettings: buffer_config.DataSetBufferSettings{
-					MaxLifetime:              c.BufferSettings.MaxLifetime,
-					PurgeOlderThan:           c.BufferSettings.PurgeOlderThan,
-					MaxSize:                  buffer.LimitBufferSize,
-					GroupBy:                  c.BufferSettings.GroupBy,
-					RetryInitialInterval:     c.BufferSettings.RetryInitialInterval,
-					RetryMaxInterval:         c.BufferSettings.RetryMaxInterval,
-					RetryMaxElapsedTime:      c.BufferSettings.RetryMaxElapsedTime,
-					RetryMultiplier:          backoff.DefaultMultiplier,
-					RetryRandomizationFactor: backoff.DefaultRandomizationFactor,
-					RetryShutdownTimeout:     c.BufferSettings.RetryShutdownTimeout,
-				},
-				ServerHostSettings: server_host_config.DataSetServerHostSettings{
-					UseHostName: c.ServerHostSettings.UseHostName,
-					ServerHost:  c.ServerHostSettings.ServerHost,
-				},
-				Debug: c.Debug,
+		datasetConfig: &datasetConfig.DataSetConfig{
+			Endpoint: c.DatasetURL,
+			Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
+			BufferSettings: buffer_config.DataSetBufferSettings{
+				MaxLifetime:              c.BufferSettings.MaxLifetime,
+				PurgeOlderThan:           c.BufferSettings.PurgeOlderThan,
+				MaxSize:                  buffer.LimitBufferSize,
+				GroupBy:                  c.BufferSettings.GroupBy,
+				RetryInitialInterval:     c.BufferSettings.RetryInitialInterval,
+				RetryMaxInterval:         c.BufferSettings.RetryMaxInterval,
+				RetryMaxElapsedTime:      c.BufferSettings.RetryMaxElapsedTime,
+				RetryMultiplier:          backoff.DefaultMultiplier,
+				RetryRandomizationFactor: backoff.DefaultRandomizationFactor,
+				RetryShutdownTimeout:     c.BufferSettings.RetryShutdownTimeout,
+				MaxParallelOutgoing:      c.BufferSettings.MaxParallelOutgoing,
 			},
-			tracesSettings:     c.TracesSettings,
-			logsSettings:       c.LogsSettings,
-			serverHostSettings: c.ServerHostSettings,
+			ServerHostSettings: server_host_config.DataSetServerHostSettings{
+				UseHostName: c.ServerHostSettings.UseHostName,
+				ServerHost:  c.ServerHostSettings.ServerHost,
+			},
+			Debug: c.Debug,
 		},
-		nil
+		tracesSettings:     c.TracesSettings,
+		logsSettings:       c.LogsSettings,
+		serverHostSettings: c.ServerHostSettings,
+	}
 }
 
 type ExporterConfig struct {

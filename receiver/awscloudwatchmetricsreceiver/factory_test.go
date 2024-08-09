@@ -23,7 +23,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "eu-west-2"
 	_, err := NewFactory().CreateMetricsReceiver(
-		context.Background(), receivertest.NewNopCreateSettings(),
+		context.Background(), receivertest.NewNopSettings(),
 		cfg, nil)
 	require.NoError(t, err)
 }

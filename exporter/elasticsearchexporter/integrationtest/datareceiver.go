@@ -47,15 +47,34 @@ type esDataReceiver struct {
 	receiver          receiver.Logs
 	endpoint          string
 	decodeBulkRequest bool
+	batcherEnabled    *bool
 	t                 testing.TB
 }
 
-func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool) *esDataReceiver {
-	return &esDataReceiver{
+type dataReceiverOption func(*esDataReceiver)
+
+func newElasticsearchDataReceiver(t testing.TB, opts ...dataReceiverOption) *esDataReceiver {
+	r := &esDataReceiver{
 		DataReceiverBase:  testbed.DataReceiverBase{},
 		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		decodeBulkRequest: decodeBulkRequest,
+		decodeBulkRequest: true,
 		t:                 t,
+	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
+}
+
+func withDecodeBulkRequest(decode bool) dataReceiverOption {
+	return func(r *esDataReceiver) {
+		r.decodeBulkRequest = decode
+	}
+}
+
+func withBatcherEnabled(enabled bool) dataReceiverOption {
+	return func(r *esDataReceiver) {
+		r.batcherEnabled = &enabled
 	}
 }
 
@@ -74,7 +93,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	cfg.ServerConfig.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
 	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
@@ -102,20 +121,34 @@ func (es *esDataReceiver) Stop() error {
 
 func (es *esDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
-	cfgFormat := `
+	cfgFormat := fmt.Sprintf(`
   elasticsearch:
     endpoints: [%s]
     logs_index: %s
     traces_index: %s
-    flush:
-      interval: 1s
     sending_queue:
       enabled: true
     retry:
       enabled: true
-      max_requests: 10000
-`
-	return fmt.Sprintf(cfgFormat, es.endpoint, TestLogsIndex, TestTracesIndex)
+      initial_interval: 100ms
+      max_interval: 1s
+      max_requests: 10000`,
+		es.endpoint, TestLogsIndex, TestTracesIndex,
+	)
+
+	if es.batcherEnabled == nil {
+		cfgFormat += `
+    flush:
+      interval: 1s`
+	} else {
+		cfgFormat += fmt.Sprintf(`
+    batcher:
+      flush_timeout: 1s
+      enabled: %v`,
+			*es.batcherEnabled,
+		)
+	}
+	return cfgFormat + "\n"
 }
 
 func (es *esDataReceiver) ProtocolName() string {
@@ -144,7 +177,7 @@ func createDefaultConfig() component.Config {
 
 func createLogsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rawCfg component.Config,
 	next consumer.Logs,
 ) (receiver.Logs, error) {
@@ -157,7 +190,7 @@ func createLogsReceiver(
 
 func createTracesReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rawCfg component.Config,
 	next consumer.Traces,
 ) (receiver.Traces, error) {
@@ -169,7 +202,7 @@ func createTracesReceiver(
 }
 
 type mockESReceiver struct {
-	params receiver.CreateSettings
+	params receiver.Settings
 	config *config
 
 	tracesConsumer consumer.Traces
@@ -178,7 +211,7 @@ type mockESReceiver struct {
 	server *http.Server
 }
 
-func newMockESReceiver(params receiver.CreateSettings, cfg *config) receiver.Logs {
+func newMockESReceiver(params receiver.Settings, cfg *config) receiver.Logs {
 	return &mockESReceiver{
 		params: params,
 		config: cfg,
@@ -216,7 +249,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
 		if !es.config.DecodeBulkRequests {
-			w.WriteHeader(http.StatusOK)
+			fmt.Fprintln(w, "{}")
 			return
 		}
 		_, response := docappendertest.DecodeBulkRequest(r)

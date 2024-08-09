@@ -1,5 +1,4 @@
 type: awscloudwatchmetrics
-scope_name: otelcol/awscloudwatchmetricsreceiver
 
 status:
   class: receiver

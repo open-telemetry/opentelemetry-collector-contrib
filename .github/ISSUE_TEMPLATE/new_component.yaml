@@ -27,6 +27,7 @@ body:
       description: A vendor-specific component directly interfaces with a vendor-specific API and is expected to be maintained by a representative of the same vendor.
       options:
         - label: This is a vendor-specific component
+        - label: If this is a vendor-specific component, I am a member of the OpenTelemetry organization.
         - label: If this is a vendor-specific component, I am proposing to contribute and support it as a representative of the vendor.
   - type: input
     attributes:

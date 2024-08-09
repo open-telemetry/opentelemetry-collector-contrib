@@ -120,8 +120,17 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 }
 
 func (cfg *Config) Validate() error {
-	if cfg.Metrics.K8sContainerCPUNodeUtilization.Enabled && cfg.NodeName == "" {
-		return errors.New("for k8s.container.cpu.node.utilization node setting is required. Check the readme on how to set the required setting")
+	if cfg.NodeName == "" {
+		switch {
+		case cfg.Metrics.K8sContainerCPUNodeUtilization.Enabled:
+			return errors.New("for k8s.container.cpu.node.utilization node setting is required. Check the readme on how to set the required setting")
+		case cfg.Metrics.K8sPodCPUNodeUtilization.Enabled:
+			return errors.New("for k8s.pod.cpu.node.utilization node setting is required. Check the readme on how to set the required setting")
+		case cfg.Metrics.K8sContainerMemoryNodeUtilization.Enabled:
+			return errors.New("for k8s.container.memory.node.utilization node setting is required. Check the readme on how to set the required setting")
+		case cfg.Metrics.K8sPodMemoryNodeUtilization.Enabled:
+			return errors.New("for k8s.pod.memory.node.utilization node setting is required. Check the readme on how to set the required setting")
+		}
 	}
 	return nil
 }

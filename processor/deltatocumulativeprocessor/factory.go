@@ -22,12 +22,16 @@ func NewFactory() processor.Factory {
 	)
 }
 
-func createMetricsProcessor(_ context.Context, set processor.CreateSettings, cfg component.Config, next consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(_ context.Context, set processor.Settings, cfg component.Config, next consumer.Metrics) (processor.Metrics, error) {
 	pcfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	meter := metadata.Meter(set.TelemetrySettings)
-	return newProcessor(pcfg, set.Logger, meter, next), nil
+	telb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	return newProcessor(pcfg, set.Logger, telb, next), nil
 }

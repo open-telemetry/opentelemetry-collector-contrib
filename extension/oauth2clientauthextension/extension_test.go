@@ -11,8 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confighttp"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -282,34 +281,34 @@ func TestFailContactingOAuth(t *testing.T) {
 	defer server.Close()
 
 	serverURL, err := url.Parse(server.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	oauth2Authenticator, err := newClientAuthenticator(&Config{
 		ClientID:     "dummy",
 		ClientSecret: "ABC",
 		TokenURL:     serverURL.String(),
 	}, zap.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test for gRPC connections
 	credential, err := oauth2Authenticator.perRPCCredentials()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = credential.GetRequestMetadata(context.Background())
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
 	assert.Contains(t, err.Error(), serverURL.String())
 
-	// Test for HTTP connections
-	setting := confighttp.ClientConfig{
-		Endpoint: "http://example.com/",
-		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			return oauth2Authenticator.roundTripper(next)
-		},
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	baseRoundTripper := (http.RoundTripper)(transport)
+	roundTripper, err := oauth2Authenticator.roundTripper(baseRoundTripper)
+	require.NoError(t, err)
+
+	client := &http.Client{
+		Transport: roundTripper,
 	}
 
-	client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-	req, err := http.NewRequest("POST", setting.Endpoint, nil)
-	assert.NoError(t, err)
+	req, err := http.NewRequest("POST", "http://example.com/", nil)
+	require.NoError(t, err)
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
 	assert.Contains(t, err.Error(), serverURL.String())

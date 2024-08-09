@@ -14,16 +14,17 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/otelarrowreceiver")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/otelarrowreceiver")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	meter                             metric.Meter
 	OtelArrowReceiverInFlightBytes    metric.Int64UpDownCounter
 	OtelArrowReceiverInFlightItems    metric.Int64UpDownCounter
 	OtelArrowReceiverInFlightRequests metric.Int64UpDownCounter
@@ -47,29 +48,26 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	for _, op := range options {
 		op(&builder)
 	}
-	var (
-		err, errs error
-		meter     metric.Meter
-	)
+	var err, errs error
 	if builder.level >= configtelemetry.LevelBasic {
-		meter = Meter(settings)
+		builder.meter = Meter(settings)
 	} else {
-		meter = noop.Meter{}
+		builder.meter = noop.Meter{}
 	}
-	builder.OtelArrowReceiverInFlightBytes, err = meter.Int64UpDownCounter(
-		"otel_arrow_receiver_in_flight_bytes",
+	builder.OtelArrowReceiverInFlightBytes, err = builder.meter.Int64UpDownCounter(
+		"otelcol_otel_arrow_receiver_in_flight_bytes",
 		metric.WithDescription("Number of bytes in flight"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelArrowReceiverInFlightItems, err = meter.Int64UpDownCounter(
-		"otel_arrow_receiver_in_flight_items",
+	builder.OtelArrowReceiverInFlightItems, err = builder.meter.Int64UpDownCounter(
+		"otelcol_otel_arrow_receiver_in_flight_items",
 		metric.WithDescription("Number of items in flight"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelArrowReceiverInFlightRequests, err = meter.Int64UpDownCounter(
-		"otel_arrow_receiver_in_flight_requests",
+	builder.OtelArrowReceiverInFlightRequests, err = builder.meter.Int64UpDownCounter(
+		"otelcol_otel_arrow_receiver_in_flight_requests",
 		metric.WithDescription("Number of requests in flight"),
 		metric.WithUnit("1"),
 	)
