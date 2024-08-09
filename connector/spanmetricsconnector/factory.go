@@ -17,6 +17,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 )
 
+const DefaultNamespace = "traces.span.metrics"
+
 // NewFactory creates a factory for the spanmetrics connector.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
@@ -33,6 +35,7 @@ func createDefaultConfig() component.Config {
 		ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 		MetricsFlushInterval:     60 * time.Second,
 		Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+		Namespace:                DefaultNamespace,
 	}
 }
 
