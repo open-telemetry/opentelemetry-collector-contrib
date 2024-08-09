@@ -6,10 +6,9 @@ package googlecloudmonitoringreceiver // import "github.com/open-telemetry/opent
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 type monitoringReceiver struct {
