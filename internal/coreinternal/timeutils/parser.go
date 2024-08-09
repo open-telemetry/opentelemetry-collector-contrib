@@ -4,7 +4,6 @@
 package timeutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -12,9 +11,6 @@ import (
 
 	strptime "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt"
 )
-
-var invalidFractionalSecondsStrptime = regexp.MustCompile(`[^.,]%[Lfs]`)
-var decimalsRegexp = regexp.MustCompile(`\d`)
 
 // TODO this regex still seems weird - need to double check if there is a more precise alternative
 var invalidFractionalSecondsGoTime = regexp.MustCompile(`[^.,9]9+`)
@@ -115,15 +111,7 @@ func SetTimestampYear(t time.Time) time.Time {
 // ValidateStrptime checks the given strptime layout and returns an error if it detects any known issues
 // that prevent it from being parsed.
 func ValidateStrptime(layout string) error {
-	if match := decimalsRegexp.FindString(layout); match != "" {
-		return errors.New("format string should not contain decimals")
-	}
-
-	if match := invalidFractionalSecondsStrptime.FindString(layout); match != "" {
-		return fmt.Errorf("invalid fractional seconds directive: '%s'. must be preceded with '.' or ','", match)
-	}
-
-	return nil
+	return strptime.Validate(layout)
 }
 
 func ValidateGotime(layout string) error {
