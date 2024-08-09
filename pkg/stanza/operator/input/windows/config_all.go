@@ -35,4 +35,13 @@ type Config struct {
 	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty"`
 	Raw                bool          `mapstructure:"raw,omitempty"`
 	ExcludeProviders   []string      `mapstructure:"exclude_providers,omitempty"`
+	Remote             RemoteConfig  `mapstructure:"remote,omitempty"`
+}
+
+// RemoteConfig is the configuration for a remote server.
+type RemoteConfig struct {
+	Server   string `mapstructure:"server"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Domain   string `mapstructure:"domain,omitempty"`
 }
