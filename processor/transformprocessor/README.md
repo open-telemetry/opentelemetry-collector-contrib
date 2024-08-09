@@ -220,6 +220,8 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
+- [convert_exponential_hist_to_explicit_hist](#convert_exponential_hist_to_explicit_hist)
+
 
 ### convert_sum_to_gauge
 
@@ -355,6 +357,39 @@ Examples:
 
 - `copy_metric(desc="new desc") where description == "old desc"`
 
+
+### convert_exponential_hist_to_explicit_hist
+
+`convert_exponential_hist_to_explicit_hist(distribution, [ExplicitBounds])`
+
+The `convert_exponential_hist_to_explicit_hist` function converts an ExponentialHistogram to an Explicit (_normal_) Histogram.
+
+This function requires 2 arguments:
+
+- `distribution` - This argument defines the convertion algorithm used to distribute the exponential datapoints into a new Explicit Histogram. There are 4 distribution options:
+<br>
+  - __upper__ - This approach identifies the highest possible value of each exponential bucket (_the upper bound_) and uses it to distribute the datapoints by comparing the upper bound of each bucket with the ExplicitBounds provided. This approach works better for small/narrow exponential histograms where the difference between the upper bounds and lower bounds are small.
+<br>
+  - __midpoint__ - This approach works in a similar way to the __upper__ approach, but instead of using the upper bound, it uses the midpoint of each exponential bucket. The midpoint is identified by calculationg the average of the upper and lower bounds. This approach also works better for small/narrow exponential histograms.
+<br>
+  - __uniform__ - This approach distributes the datapoints for each bucket uniformly across the overlapping __ExplicitBounds__. This approach works better for large/wide exponential histograms.
+<br>
+  - __random__ - This approach distributes the datapoints for each bucket randomly across the overlapping __ExplicitBounds__. This approach works better for large/wide exponential histograms.
+<br>
+- `ExplicitBounds` represents the list of bucket boundaries for the new histogram. This argument is __required__ and __cannot be empty__.
+
+__WARNING:__
+
+The process of converting an ExponentialHistogram to an Explicit Histogram is not perfect and may result in a loss of precision. It is important to define an appropriate set of bucket boundaries and identify the best distribution approach for your data in order to minimize this loss. 
+
+For example, selecting Boundaries that are too high or too low may result histogram buckets that are too wide or too narrow, respectively.
+
+This function should only be used when Exponential Histograms are not suitable for the downstream consumers or if upstream metric sources are unable to generate Explicit Histograms.
+
+Example:
+
+- `convert_exponential_hist_to_explicit_hist("random", [10.0, 100.0, 1000.0, 10000.0])`
+
 ### scale_metric
 
 `scale_metric(factor, Optional[unit])`
@@ -414,6 +449,7 @@ statements:
 ```
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
+
 
 ## Examples
 

@@ -18,6 +18,12 @@ var useConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().Mus
 	featuregate.WithRegisterDescription("When enabled will use metric context for conversion between sum and gauge"),
 )
 
+var useConvertExponentialHistogramToExplicitHistogram = featuregate.GlobalRegistry().MustRegister(
+	"processor.transform.ConvertExponentialHistogramToExplicitHistogram",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled will use metric context for conversion of exponential histograms to explicit histograms"),
+)
+
 func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
 	functions := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
 
@@ -57,6 +63,14 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		for _, f := range []ottl.Factory[ottlmetric.TransformContext]{
 			newConvertSumToGaugeFactory(),
 			newConvertGaugeToSumFactory(),
+		} {
+			metricFunctions[f.Name()] = f
+		}
+	}
+
+	if useConvertExponentialHistogramToExplicitHistogram.IsEnabled() {
+		for _, f := range []ottl.Factory[ottlmetric.TransformContext]{
+			newconvertExponentialHistToExplicitHistFactory(),
 		} {
 			metricFunctions[f.Name()] = f
 		}
