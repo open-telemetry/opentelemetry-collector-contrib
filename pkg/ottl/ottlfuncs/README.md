@@ -606,6 +606,42 @@ This parameter lets you define your own custom patterns to improve readability w
 If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` errors on startup.
 
 Parsing is done using [Elastic Go-Grok](https://github.com/elastic/go-grok?tab=readme-ov-file) library.
+Grok is a regular expression dialect that supports reusable aliased expressions. It sits on `re2` regex library so any valid `re2` expressions are valid in grok.
+Grok uses this regular expression language to allow naming existing patterns and combining them into more complex patterns that match your fields
+
+Pattern can be specified in either of these forms:
+ - `%{SYNTAX}` - e.g {NUMBER}
+ - `%{SYNTAX:ID}` - e.g {NUMBER:MY_AGE}
+ - `%{SYNTAX:ID:TYPE}` - e.g {NUMBER:MY_AGE:INT}
+
+Where `SYNTAX` is a pattern that will match your text, `ID` is identifier you give to the piece of text being matched and `TYPE` data type you want to cast your named field.
+Supported types are `int`, `long`, `double`, `float` and boolean
+
+The [Elastic Go-Grok](https://github.com/elastic/go-grok) ships with numerous predefined grok patterns that simplify working with grok.
+In collector Complete set is included consisting of a default set and all additional sets adding product/tool specific capabilities (like [aws](https://github.com/elastic/go-grok/blob/main/patterns/aws.go) or [java](https://github.com/elastic/go-grok/blob/main/patterns/java.go) patterns).
+
+
+Default set consists of:
+
+| Name | Example |
+|-----|-----|
+| WORD |  "hello", "world123", "test_data" |
+| NOTSPACE | "example", "text-with-dashes", "12345" |
+| SPACE | " ", "\t", "  " |
+| INT | "123", "-456", "+789" |
+| NUMBER | "123", "456.789", "-0.123" |
+| BOOL |"true", "false", "true" |
+| BASE10NUM | "123", "-123.456", "0.789" |
+| BASE16NUM | "1a2b", "0x1A2B", "-0x1a2b3c" |
+| BASE16FLOAT |  "0x1.a2b3", "-0x1A2B3C.D" |
+| POSINT | "123", "456", "789" |
+| NONNEGINT | "0", "123", "456" |
+| GREEDYDATA |"anything goes", "literally anything", "123 #@!" |
+| QUOTEDSTRING | "\"This is a quote\"", "'single quoted'" |
+| UUID |"123e4567-e89b-12d3-a456-426614174000" |
+| URN | "urn:isbn:0451450523", "urn:ietf:rfc:2648" |
+
+and many more. Complete list can be found [here](https://github.com/elastic/go-grok/blob/main/patterns/default.go).
 
 Examples:
 
