@@ -30,7 +30,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
+	config := &Config{
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		Brokers:              []string{defaultBroker},
 		GroupMatch:           defaultGroupMatch,
@@ -38,6 +38,10 @@ func createDefaultConfig() component.Config {
 		ClientID:             defaultClientID,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
+	if config.ClusterAlias != "" {
+		config.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	}
+	return config
 }
 
 func createMetricsReceiver(

@@ -456,6 +456,7 @@ require (
 	github.com/elastic/go-docappender/v2 v2.2.1 // indirect
 	github.com/elastic/go-elasticsearch/v7 v7.17.10 // indirect
 	github.com/elastic/go-elasticsearch/v8 v8.14.0 // indirect
+	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/go-structform v0.0.11 // indirect
 	github.com/elastic/go-sysinfo v1.7.1 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
@@ -587,6 +588,7 @@ require (
 	github.com/linode/linodego v1.35.0 // indirect
 	github.com/logicmonitor/lm-data-sdk-go v1.3.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c // indirect
+	github.com/magefile/mage v1.15.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
