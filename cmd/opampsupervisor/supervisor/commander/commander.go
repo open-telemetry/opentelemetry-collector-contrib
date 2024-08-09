@@ -23,7 +23,6 @@ import (
 type Commander struct {
 	logger  *zap.Logger
 	cfg     config.Agent
-	logFile *os.File
 	logsDir string
 	args    []string
 	cmd     *exec.Cmd
@@ -73,29 +72,28 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
 	logFilePath := filepath.Join(c.logsDir, "agent.log")
-	logFile, err := os.Create(logFilePath)
+	stdoutFile, err := os.Create(logFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
 	}
-
-	c.logFile = logFile
 
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
 	c.cmd.SysProcAttr = sysProcAttrs()
 
 	// Capture standard output and standard error.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
-	c.cmd.Stdout = logFile
-	c.cmd.Stderr = logFile
+	c.cmd.Stdout = stdoutFile
+	c.cmd.Stderr = stdoutFile
 
 	if err := c.cmd.Start(); err != nil {
+		stdoutFile.Close()
 		return err
 	}
 
 	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 	c.running.Store(1)
 
-	go c.watch()
+	go c.watch(stdoutFile)
 
 	return nil
 }
@@ -109,8 +107,8 @@ func (c *Commander) Restart(ctx context.Context) error {
 	return c.Start(ctx)
 }
 
-func (c *Commander) watch() {
-	defer c.logFile.Close()
+func (c *Commander) watch(stdoutFile *os.File) {
+	defer stdoutFile.Close()
 
 	err := c.cmd.Wait()
 
