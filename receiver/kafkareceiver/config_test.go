@@ -62,6 +62,9 @@ func TestLoadConfig(t *testing.T) {
 					Enable:   true,
 					Interval: 1 * time.Second,
 				},
+				MinFetchSize:     1,
+				DefaultFetchSize: 1048576,
+				MaxFetchSize:     0,
 			},
 		},
 		{
@@ -96,6 +99,9 @@ func TestLoadConfig(t *testing.T) {
 					Enable:   true,
 					Interval: 1 * time.Second,
 				},
+				MinFetchSize:     1,
+				DefaultFetchSize: 1048576,
+				MaxFetchSize:     0,
 			},
 		},
 	}
