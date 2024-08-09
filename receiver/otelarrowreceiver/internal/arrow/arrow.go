@@ -477,14 +477,19 @@ func (id *inFlightData) consumeDone(ctx context.Context, consumeErrPtr *error) {
 		id.span.SetStatus(otelcodes.Error, retErr.Error())
 	}
 
-	id.replyToCaller(retErr)
+	id.replyToCaller(ctx, retErr)
 	id.anyDone(ctx)
 }
 
-func (id *inFlightData) replyToCaller(callerErr error) {
-	id.pendingCh <- batchResp{
+func (id *inFlightData) replyToCaller(ctx context.Context, callerErr error) {
+	select {
+	case id.pendingCh <- batchResp{
 		id:  id.batchID,
 		err: callerErr,
+	}:
+		// OK: Responded.
+	case <-ctx.Done():
+		// OK: Never responded due to cancelation.
 	}
 }
 
@@ -585,7 +590,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		var authErr error
 		inflightCtx, authErr = r.authServer.Authenticate(inflightCtx, authHdrs)
 		if authErr != nil {
-			flight.replyToCaller(status.Error(codes.Unauthenticated, authErr.Error()))
+			flight.replyToCaller(inflightCtx, status.Error(codes.Unauthenticated, authErr.Error()))
 			return nil
 		}
 	}

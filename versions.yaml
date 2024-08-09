@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.105.0
+    version: v0.106.1
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
@@ -16,6 +16,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector
@@ -124,6 +125,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
@@ -164,6 +166,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdeduplicationprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor
