@@ -79,6 +79,13 @@ func TestValidateGotime(t *testing.T) {
 			wantErr: "",
 		},
 		{
+			name: "valid format 2",
+			args: args{
+				layout: "2006-01-02 15:04:05,999999",
+			},
+			wantErr: "",
+		},
+		{
 			name: "invalid fractional second",
 			args: args{
 				layout: "2006-01-02 15:04:05:999999",

@@ -12,7 +12,6 @@ import (
 	strptime "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt"
 )
 
-// TODO this regex still seems weird - need to double check if there is a more precise alternative
 var invalidFractionalSecondsGoTime = regexp.MustCompile(`[^.,9]9+`)
 
 func StrptimeToGotime(layout string) (string, error) {
