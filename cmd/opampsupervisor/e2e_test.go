@@ -214,6 +214,8 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -285,6 +287,8 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	// Verify the collector runs eventually by pinging the healthcheck extension
@@ -336,6 +340,8 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	s := newSupervisor(t, "basic", map[string]string{
 		"url": server.addr,
 	})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	// Verify the collector is running by checking the metrics endpoint
@@ -420,6 +426,8 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -496,6 +504,8 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -551,6 +561,8 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -598,6 +610,8 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -707,6 +721,8 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -860,6 +876,8 @@ func TestSupervisorRestartCommand(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -926,6 +944,8 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 		server.ConnectionCallbacksStruct{})
 
 	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
@@ -986,6 +1006,8 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 
 	s := newSupervisor(t, "persistence", map[string]string{"url": initialServer.addr, "storage_dir": tempDir})
 
+	require.Nil(t, s.Start())
+
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
 
 	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
@@ -1028,6 +1050,8 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 	defer newServer.shutdown()
 
 	s1 := newSupervisor(t, "persistence", map[string]string{"url": newServer.addr, "storage_dir": tempDir})
+
+	require.Nil(t, s1.Start())
 	defer s1.Shutdown()
 
 	waitForSupervisorConnection(newServer.supervisorConnected, true)
@@ -1074,6 +1098,8 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
+	require.Nil(t, s.Start())
+
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	t.Logf("Supervisor connected")
@@ -1103,6 +1129,8 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1156,6 +1184,8 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
+	require.Nil(t, s.Start())
+
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	t.Logf("Supervisor connected")
@@ -1183,6 +1213,8 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1213,6 +1245,8 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
+
+	require.Nil(t, s.Start())
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
