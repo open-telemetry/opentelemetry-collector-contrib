@@ -81,7 +81,7 @@ func TestConnectorConsume(t *testing.T) {
 				},
 			},
 			sampleTraces:  buildSampleTrace(t, "val"),
-			verifyMetrics: verifyHappyCaseMetrics,
+			verifyMetrics: verifyHappyCaseMetricsWithDuration(2, 1),
 		},
 		{
 			name: "test fix failed label not work",
@@ -163,7 +163,7 @@ func TestConnectorConsume(t *testing.T) {
 			},
 			sampleTraces:  buildSampleTrace(t, "val"),
 			gates:         []*featuregate.Gate{legacyLatencyUnitMsFeatureGate},
-			verifyMetrics: verifyHappyCaseMetricsWithDuration(1000),
+			verifyMetrics: verifyHappyCaseMetricsWithDuration(2000, 1000),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -209,11 +209,7 @@ func getGoldenTraces(t *testing.T, file string) ptrace.Traces {
 	return td
 }
 
-func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
-	verifyHappyCaseMetricsWithDuration(1)(t, md)
-}
-
-func verifyHappyCaseMetricsWithDuration(durationSum float64) func(t *testing.T, md pmetric.Metrics) {
+func verifyHappyCaseMetricsWithDuration(serverDurationSum, clientDurationSum float64) func(t *testing.T, md pmetric.Metrics) {
 	return func(t *testing.T, md pmetric.Metrics) {
 		assert.Equal(t, 3, md.MetricCount())
 
@@ -231,11 +227,11 @@ func verifyHappyCaseMetricsWithDuration(durationSum float64) func(t *testing.T, 
 
 		mServerDuration := ms.At(1)
 		assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
-		verifyDuration(t, mServerDuration, durationSum)
+		verifyDuration(t, mServerDuration, serverDurationSum, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0})
 
 		mClientDuration := ms.At(2)
 		assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
-		verifyDuration(t, mClientDuration, durationSum)
+		verifyDuration(t, mClientDuration, clientDurationSum, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
 	}
 }
 
@@ -259,16 +255,16 @@ func verifyCount(t *testing.T, m pmetric.Metric) {
 	verifyAttr(t, attributes, "client_some-attribute", "val")
 }
 
-func verifyDuration(t *testing.T, m pmetric.Metric, durationSum float64) {
+func verifyDuration(t *testing.T, m pmetric.Metric, durationSum float64, bs []uint64) {
 	assert.Equal(t, pmetric.MetricTypeHistogram, m.Type())
 	dps := m.Histogram().DataPoints()
 	assert.Equal(t, 1, dps.Len())
 
 	dp := dps.At(0)
-	assert.Equal(t, durationSum, dp.Sum()) // Duration: 1sec
+	assert.Equal(t, durationSum, dp.Sum()) // Duration: client is 1sec, server is 2sec
 	assert.Equal(t, uint64(1), dp.Count())
 	buckets := pcommon.NewUInt64Slice()
-	buckets.FromRaw([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
+	buckets.FromRaw(bs)
 	assert.Equal(t, buckets, dp.BucketCounts())
 
 	attributes := dp.Attributes()
@@ -287,7 +283,10 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 
 func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
-	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+	// client: 1s
+	cEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+	// server: 2s
+	sEnd := time.Date(2022, 1, 2, 3, 4, 7, 6, time.UTC)
 
 	traces := ptrace.NewTraces()
 
@@ -312,7 +311,7 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	clientSpan.SetTraceID(traceID)
 	clientSpan.SetKind(ptrace.SpanKindClient)
 	clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
-	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
+	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(cEnd))
 	clientSpan.Attributes().PutStr("some-attribute", attrValue) // Attribute selected as dimension for metrics
 	serverSpan := scopeSpans.Spans().AppendEmpty()
 	serverSpan.SetName("server span")
@@ -321,7 +320,7 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	serverSpan.SetParentSpanID(clientSpanID)
 	serverSpan.SetKind(ptrace.SpanKindServer)
 	serverSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
-	serverSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
+	serverSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(sEnd))
 
 	return traces
 }
