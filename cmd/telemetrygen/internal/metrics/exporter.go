@@ -30,7 +30,7 @@ func grpcExporterOptions(cfg *Config) ([]otlpmetricgrpc.Option, error) {
 	}
 
 	if len(cfg.Headers) > 0 {
-		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithHeaders(cfg.Headers))
+		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithHeaders(cfg.GetHeaders()))
 	}
 
 	return grpcExpOpt, nil
@@ -55,7 +55,7 @@ func httpExporterOptions(cfg *Config) ([]otlpmetrichttp.Option, error) {
 	}
 
 	if len(cfg.Headers) > 0 {
-		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithHeaders(cfg.Headers))
+		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithHeaders(cfg.GetHeaders()))
 	}
 
 	return httpExpOpt, nil
