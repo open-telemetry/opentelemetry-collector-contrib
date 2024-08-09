@@ -6,6 +6,8 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 import (
 	"context"
 	"math"
+	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -15,19 +17,23 @@ import (
 )
 
 type cumulativeToDeltaProcessor struct {
-	includeFS       filterset.FilterSet
-	excludeFS       filterset.FilterSet
-	logger          *zap.Logger
-	deltaCalculator *tracking.MetricTracker
-	cancelFunc      context.CancelFunc
+	includeFS          filterset.FilterSet
+	excludeFS          filterset.FilterSet
+	includeMetricTypes []string
+	excludeMetricTypes []string
+	logger             *zap.Logger
+	deltaCalculator    *tracking.MetricTracker
+	cancelFunc         context.CancelFunc
 }
 
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
 	p := &cumulativeToDeltaProcessor{
-		logger:          logger,
-		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStaleness, config.InitialValue),
-		cancelFunc:      cancel,
+		logger:             logger,
+		deltaCalculator:    tracking.NewMetricTracker(ctx, logger, config.MaxStaleness, config.InitialValue),
+		cancelFunc:         cancel,
+		includeMetricTypes: config.Include.MetricTypes,
+		excludeMetricTypes: config.Exclude.MetricTypes,
 	}
 	if len(config.Include.Metrics) > 0 {
 		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
@@ -43,7 +49,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
 		rm.ScopeMetrics().RemoveIf(func(ilm pmetric.ScopeMetrics) bool {
 			ilm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
-				if !ctdp.shouldConvertMetric(m.Name()) {
+				if !ctdp.shouldConvertMetric(m) {
 					return false
 				}
 				switch m.Type() {
@@ -111,9 +117,11 @@ func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 	return nil
 }
 
-func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) bool {
-	return (ctdp.includeFS == nil || ctdp.includeFS.Matches(metricName)) &&
-		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metricName))
+func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metric pmetric.Metric) bool {
+	return (ctdp.includeFS == nil || ctdp.includeFS.Matches(metric.Name())) &&
+		(len(ctdp.includeMetricTypes) == 0 || slices.Contains(ctdp.includeMetricTypes, strings.ToLower(metric.Type().String()))) &&
+		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metric.Name())) &&
+		(len(ctdp.excludeMetricTypes) == 0 || !slices.Contains(ctdp.excludeMetricTypes, strings.ToLower(metric.Type().String())))
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in any, baseIdentity tracking.MetricIdentity) {
