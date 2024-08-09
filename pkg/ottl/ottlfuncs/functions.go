@@ -72,6 +72,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewSHA1Factory[K](),
 		NewSHA256Factory[K](),
 		NewSHA512Factory[K](),
+		NewSortFactory[K](),
 		NewSpanIDFactory[K](),
 		NewSplitFactory[K](),
 		NewFormatFactory[K](),
