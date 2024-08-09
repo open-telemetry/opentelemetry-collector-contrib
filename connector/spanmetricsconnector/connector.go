@@ -302,7 +302,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
 		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 
-		if p.config.Namespace != "" {
+		if p.config.Namespace != "" && p.config.Namespace == DefaultNamespace {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName("", metricNameCalls))
 			sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
@@ -316,7 +316,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 			metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
 			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
-			if p.config.Namespace != "" {
+			if p.config.Namespace != "" && p.config.Namespace == DefaultNamespace {
 				metric = sm.Metrics().AppendEmpty()
 				metric.SetName(buildMetricName("", metricNameDuration))
 				metric.SetUnit(p.config.Histogram.Unit.String())
@@ -332,7 +332,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 			metric.SetName(buildMetricName(p.config.Namespace, metricNameEvents))
 			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 
-			if p.config.Namespace != "" {
+			if p.config.Namespace != "" && p.config.Namespace == DefaultNamespace {
 				metric = sm.Metrics().AppendEmpty()
 				metric.SetName(buildMetricName("", metricNameEvents))
 				events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
