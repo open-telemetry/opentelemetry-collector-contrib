@@ -6,6 +6,8 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -37,6 +39,101 @@ var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("v0.102.0"),
 )
 
+type kubeletTransport struct {
+	kubeletURL          string
+	wrappedRoundTripper http.RoundTripper
+}
+
+func (k kubeletTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if strings.Contains(req.URL.Path, "/pods") {
+		kubeletUrl, err := url.Parse(k.kubeletURL)
+		if err != nil {
+			return nil, err
+		}
+		req.URL = kubeletUrl
+	}
+	return k.wrappedRoundTripper.RoundTrip(req)
+}
+
+type kubeletWatcher struct {
+	kubeletURL      string
+	updateFunc      func(list *api_v1.PodList)
+	client          kubernetes.Interface
+	pollingInterval time.Duration
+	filters         Filters
+
+	logger *zap.Logger
+}
+
+func newKubeletWatcher(apiCfg k8sconfig.APIConfig, kubeletURL string, updateFunc func(list *api_v1.PodList), logger *zap.Logger) (*kubeletWatcher, error) {
+	restCfg, _ := k8sconfig.CreateRestConfig(apiCfg)
+
+	restCfg.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return &kubeletTransport{
+			wrappedRoundTripper: rt,
+			kubeletURL:          kubeletURL,
+		}
+	}
+
+	kc, err := kubernetes.NewForConfig(restCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	kw := &kubeletWatcher{
+		kubeletURL:      kubeletURL,
+		client:          kc,
+		updateFunc:      updateFunc,
+		pollingInterval: 10,
+		logger:          logger,
+	}
+
+	return kw, nil
+}
+
+func (kw *kubeletWatcher) Run(stopCh chan struct{}) {
+	for {
+		select {
+		case <-time.After(kw.pollingInterval * time.Second):
+
+			list, err := kw.client.CoreV1().Pods(kw.filters.Namespace).List(context.TODO(), meta_v1.ListOptions{})
+			if err != nil {
+				kw.logger.Error("could not get data from kubelet API", zap.Error(err))
+				continue
+			}
+
+			// filter out pods that do not match the namespace
+
+			filteredPods := &api_v1.PodList{
+				Items: make([]api_v1.Pod, len(list.Items)),
+			}
+			matchedPodCount := 0
+			for _, pod := range list.Items {
+				if kw.filters.Namespace != "" && pod.Namespace != kw.filters.Namespace {
+					continue
+				}
+				for _, labelFilter := range kw.filters.Labels {
+					if labelValue, ok := pod.Labels[labelFilter.Key]; !ok || labelValue != labelFilter.Value {
+						continue
+					}
+				}
+				// TODO also apply field filter, but not relevant to the poc for now
+
+				filteredPods.Items[matchedPodCount] = pod
+				matchedPodCount++
+			}
+
+			filteredPods.Items = filteredPods.Items[0:matchedPodCount]
+
+			kw.updateFunc(filteredPods)
+
+		case <-stopCh:
+			break
+		}
+	}
+
+}
+
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
 	m                  sync.RWMutex
@@ -51,6 +148,7 @@ type WatchClient struct {
 	cronJobRegex       *regexp.Regexp
 	deleteQueue        []deleteRequest
 	stopCh             chan struct{}
+	kubeletWatcher     *kubeletWatcher
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -73,6 +171,7 @@ type WatchClient struct {
 	ReplicaSets map[string]*ReplicaSet
 
 	telemetryBuilder *metadata.TelemetryBuilder
+	useKubelet       bool
 }
 
 // Extract replicaset name from the pod name. Pod name is created using
@@ -99,6 +198,7 @@ func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules Extr
 		cronJobRegex:     cronJobRegex,
 		stopCh:           make(chan struct{}),
 		telemetryBuilder: telemetryBuilder,
+		useKubelet:       true, // TODO remove and make configurable
 	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
@@ -144,19 +244,28 @@ func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules Extr
 		}
 	}
 
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
-	err = c.informer.SetTransform(
-		func(object any) (any, error) {
-			originalPod, success := object.(*api_v1.Pod)
-			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-				return object, nil
-			}
+	if c.useKubelet {
+		// TODO set this to https://<node-name>/pods when running inside the cluster
+		kw, err := newKubeletWatcher(apiCfg, fmt.Sprintf("https://localhost:53044/api/v1/nodes/%s/proxy/pods", c.Filters.Node), c.handlePodListUpdate, c.logger)
+		if err != nil {
+			return nil, err
+		}
+		c.kubeletWatcher = kw
+	} else {
+		c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+		err = c.informer.SetTransform(
+			func(object any) (any, error) {
+				originalPod, success := object.(*api_v1.Pod)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
 
-			return removeUnnecessaryPodData(originalPod, c.Rules), nil
-		},
-	)
-	if err != nil {
-		return nil, err
+				return removeUnnecessaryPodData(originalPod, c.Rules), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	c.namespaceInformer = newNamespaceInformer(c.kc)
@@ -190,17 +299,21 @@ func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules Extr
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
-	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handlePodAdd,
-		UpdateFunc: c.handlePodUpdate,
-		DeleteFunc: c.handlePodDelete,
-	})
-	if err != nil {
-		c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+	if c.useKubelet {
+		go c.kubeletWatcher.Run(c.stopCh)
+	} else {
+		_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handlePodAdd,
+			UpdateFunc: c.handlePodUpdate,
+			DeleteFunc: c.handlePodDelete,
+		})
+		if err != nil {
+			c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+		}
+		go c.informer.Run(c.stopCh)
 	}
-	go c.informer.Run(c.stopCh)
 
-	_, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
@@ -238,6 +351,56 @@ func (c *WatchClient) Start() {
 // Stop signals the the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
 	close(c.stopCh)
+}
+
+func (c *WatchClient) handlePodListUpdate(list *api_v1.PodList) {
+	keepPods := map[PodIdentifier]bool{}
+	for _, pod := range list.Items {
+
+		newPod := c.podFromAPI(&pod)
+
+		c.m.Lock()
+		addedPod := false
+		updatedPod := false
+		for _, id := range c.getIdentifiersFromAssoc(newPod) {
+			keepPods[id] = true
+			// compare initial scheduled timestamp for existing pod and new pod with same identifier
+			// and only replace old pod if scheduled time of new pod is newer or equal.
+			// This should fix the case where scheduler has assigned the same attributes (like IP address)
+			// to a new pod but update event for the old pod came in later.
+			if p, ok := c.Pods[id]; ok {
+				if pod.Status.StartTime.Before(p.StartTime) {
+					continue
+				} else {
+					// in this case we have an update of an existing pod
+					updatedPod = true
+				}
+			} else {
+				// if the pod has not been there before, this is a new one
+				addedPod = true
+			}
+			c.Pods[id] = newPod
+		}
+
+		if addedPod {
+			c.telemetryBuilder.OtelsvcK8sPodAdded.Add(context.Background(), 1)
+		} else if updatedPod {
+			c.telemetryBuilder.OtelsvcK8sPodUpdated.Add(context.Background(), 1)
+		}
+		c.m.Unlock()
+	}
+
+	c.m.Lock()
+	// compare last known list of pods to the ones we have added or updated
+	deletedPods := map[string]bool{}
+	for id, pod := range c.Pods {
+		if keep, ok := keepPods[id]; !ok || !keep {
+			deletedPods[fmt.Sprintf("%s/%s", pod.Namespace, pod.Name)] = true
+			c.appendDeleteQueue(id, pod.Name)
+		}
+	}
+	c.telemetryBuilder.OtelsvcK8sPodDeleted.Add(context.Background(), int64(len(deletedPods)))
+	c.m.Unlock()
 }
 
 func (c *WatchClient) handlePodAdd(obj any) {
