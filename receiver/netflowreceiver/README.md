@@ -58,7 +58,7 @@ service:
 
 We recommend using the batch processor to reduce the number of log requests being sent to the exporter. The batch processor will batch log records together and send them in a single request to the exporter.
 
-You would then configure your network devices to send netflow, sflow, or ipfix data to the collector on the specified ports.
+You would then configure your network devices to send netflow, sflow, or ipfix data to the Collector on the specified ports.
 
 ## Configuration
 
