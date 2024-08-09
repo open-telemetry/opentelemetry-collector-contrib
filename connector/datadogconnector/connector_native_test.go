@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.uber.org/zap"
@@ -29,12 +28,6 @@ var _ component.Component = (*traceToMetricConnectorNative)(nil) // testing that
 
 // create test to create a connector, check that basic code compiles
 func TestNewConnectorNative(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
-	assert.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	}()
-
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopSettings()
@@ -48,12 +41,6 @@ func TestNewConnectorNative(t *testing.T) {
 }
 
 func TestTraceToTraceConnectorNative(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
-	assert.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	}()
-
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopSettings()
@@ -73,12 +60,6 @@ func creteConnectorNative(t *testing.T) (*traceToMetricConnectorNative, *consume
 }
 
 func creteConnectorNativeWithCfg(t *testing.T, cfg *Config) (*traceToMetricConnectorNative, *consumertest.MetricsSink) {
-	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
-	assert.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	}()
-
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopSettings()
