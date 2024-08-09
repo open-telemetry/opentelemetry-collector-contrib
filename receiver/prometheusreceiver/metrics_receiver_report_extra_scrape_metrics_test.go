@@ -92,7 +92,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 			name := target.name
 			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name], target.normalizedName)
+				scrapes = getValidScrapes(t, pResults[name], target)
 				assert.GreaterOrEqual(t, 1, len(scrapes))
 				if reportExtraScrapeMetrics {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics + 3 internal extra scraper metrics = 10

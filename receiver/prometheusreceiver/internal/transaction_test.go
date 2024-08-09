@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -176,6 +177,57 @@ func testTransactionAppendResource(t *testing.T, enableNativeHistograms bool) {
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
 	require.Equal(t, expectedResource, gotResource)
+}
+
+func TestTransactionAppendMultipleResources(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendMultipleResources(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendMultipleResources(t *testing.T, enableNativeHistograms bool) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, enableNativeHistograms)
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test-1",
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.NoError(t, err)
+	_, err = tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test-2",
+		model.MetricNameLabel: startTimeMetricName,
+	}), time.Now().UnixMilli(), 1.0)
+	assert.NoError(t, err)
+	assert.NoError(t, tr.Commit())
+
+	expectedResources := []pcommon.Resource{
+		CreateResource("test-1", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http")),
+		CreateResource("test-2", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http")),
+	}
+
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	require.Equal(t, 2, mds[0].ResourceMetrics().Len())
+
+	for _, expectedResource := range expectedResources {
+		foundResource := false
+		expectedServiceName, _ := expectedResource.Attributes().Get(conventions.AttributeServiceName)
+		for i := 0; i < mds[0].ResourceMetrics().Len(); i++ {
+			res := mds[0].ResourceMetrics().At(i).Resource()
+			if serviceName, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
+				if serviceName.AsString() == expectedServiceName.AsString() {
+					foundResource = true
+					require.Equal(t, expectedResource, res)
+					break
+				}
+			}
+		}
+		require.True(t, foundResource)
+	}
 }
 
 func TestReceiverVersionAndNameAreAttached(t *testing.T) {
