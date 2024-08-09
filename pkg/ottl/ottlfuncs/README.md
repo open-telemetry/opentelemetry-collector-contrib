@@ -605,7 +605,7 @@ This parameter lets you define your own custom patterns to improve readability w
 
 If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` errors on startup.
 
-Parsing is done using [Elastic Go-Grok](https://github.com/elastic/go-grok?tab=readme-ov-file#default-set-of-patterns) library.
+Parsing is done using [Elastic Go-Grok](https://github.com/elastic/go-grok?tab=readme-ov-file) library.
 
 Examples:
 
