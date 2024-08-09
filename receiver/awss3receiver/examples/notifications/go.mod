@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/open-telemetry/opamp-go v0.15.0
-	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240809151205-7638bb298172
 )
 
 require (
