@@ -14,7 +14,7 @@ import (
 
 var useConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().MustRegister(
 	"processor.transform.ConvertBetweenSumAndGaugeMetricContext",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled will use metric context for conversion between sum and gauge"),
 )
 
