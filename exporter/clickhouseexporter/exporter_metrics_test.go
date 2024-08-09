@@ -17,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
 func TestMetricsClusterConfig(t *testing.T) {
@@ -31,6 +33,26 @@ func TestMetricsTableEngineConfig(t *testing.T) {
 		exporter := newTestMetricsExporter(t, dsn, fns...)
 		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
 	})
+}
+
+func Test_generateMetricMetricTableNames(t *testing.T) {
+	cfg := Config{
+		MetricsTables: MetricTablesConfig{
+			Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_custom_gauge"},
+			Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_custom_sum"},
+			Summary:              internal.MetricTypeConfig{Name: "otel_metrics_custom_summary"},
+			Histogram:            internal.MetricTypeConfig{Name: "otel_metrics_custom_histogram"},
+			ExponentialHistogram: internal.MetricTypeConfig{Name: "otel_metrics_custom_exp_histogram"},
+		},
+	}
+
+	require.Equal(t, internal.MetricTablesConfigMapper{
+		pmetric.MetricTypeGauge:                cfg.MetricsTables.Gauge,
+		pmetric.MetricTypeSum:                  cfg.MetricsTables.Sum,
+		pmetric.MetricTypeSummary:              cfg.MetricsTables.Summary,
+		pmetric.MetricTypeHistogram:            cfg.MetricsTables.Histogram,
+		pmetric.MetricTypeExponentialHistogram: cfg.MetricsTables.ExponentialHistogram,
+	}, generateMetricTablesConfigMapper(&cfg))
 }
 
 func TestExporter_pushMetricsData(t *testing.T) {
