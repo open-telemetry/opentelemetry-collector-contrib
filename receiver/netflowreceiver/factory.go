@@ -11,9 +11,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-var (
-	typeStr = component.MustNewType("netflow")
-)
 
 const (
 	defaultSockets   = 1
