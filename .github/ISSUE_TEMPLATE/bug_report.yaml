@@ -229,6 +229,7 @@ body:
       - receiver/flinkmetrics
       - receiver/fluentforward
       - receiver/gitprovider
+      - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy
