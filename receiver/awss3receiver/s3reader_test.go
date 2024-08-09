@@ -483,7 +483,7 @@ func Test_readAll_ContextDone(t *testing.T) {
 		dataCallbackKeys = append(dataCallbackKeys, key)
 		return nil
 	})
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.Len(t, dataCallbackKeys, 0)
 	require.Equal(t, []statusNotification{
 		{
@@ -493,11 +493,12 @@ func Test_readAll_ContextDone(t *testing.T) {
 			EndTime:       testTime.Add(time.Minute * 2),
 			IngestTime:    testTime,
 		}, {
-			TelemetryType: "traces",
-			IngestStatus:  IngestStatusCompleted,
-			StartTime:     testTime,
-			EndTime:       testTime.Add(time.Minute * 2),
-			IngestTime:    testTime,
+			TelemetryType:  "traces",
+			IngestStatus:   IngestStatusFailed,
+			StartTime:      testTime,
+			EndTime:        testTime.Add(time.Minute * 2),
+			IngestTime:     testTime,
+			FailureMessage: "context canceled",
 		},
 	}, notifier.messages)
 }

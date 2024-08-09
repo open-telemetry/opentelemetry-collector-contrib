@@ -78,13 +78,14 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 		select {
 		case <-ctx.Done():
 			s3Reader.sendStatus(ctx, statusNotification{
-				TelemetryType: telemetryType,
-				IngestStatus:  IngestStatusCompleted,
-				StartTime:     s3Reader.startTime,
-				EndTime:       s3Reader.endTime,
-				IngestTime:    currentTime,
+				TelemetryType:  telemetryType,
+				IngestStatus:   IngestStatusFailed,
+				StartTime:      s3Reader.startTime,
+				EndTime:        s3Reader.endTime,
+				IngestTime:     currentTime,
+				FailureMessage: ctx.Err().Error(),
 			})
-			return nil
+			return ctx.Err()
 		default:
 			if err := s3Reader.readTelemetryForTime(ctx, currentTime, telemetryType, dataCallback); err != nil {
 				s3Reader.sendStatus(ctx, statusNotification{
