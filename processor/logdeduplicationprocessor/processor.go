@@ -62,7 +62,7 @@ func (p *logDedupProcessor) Capabilities() consumer.Capabilities {
 }
 
 // Shutdown stops the processor.
-func (p *logDedupProcessor) Shutdown(ctx context.Context) error {
+func (p *logDedupProcessor) Shutdown(_ context.Context) error {
 	if p.cancel != nil {
 		// Call cancel to stop the export interval goroutine and wait for it to finish.
 		p.cancel()
