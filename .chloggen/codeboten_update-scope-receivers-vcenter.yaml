@@ -7,7 +7,7 @@ change_type: breaking
 component: vcenterreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Update the scope name for telemetry produced by the vcenterreceiver from otelcol/vcenter to github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+note: "Update the scope name for telemetry produced by the vcenterreceiver from `otelcol/vcenter` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver`"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34449]
