@@ -13,7 +13,7 @@
 
 The netflow receiver can listen for [netflow](https://en.wikipedia.org/wiki/NetFlow), [sflow](https://en.wikipedia.org/wiki/SFlow), and [ipfix](https://en.wikipedia.org/wiki/IP_Flow_Information_Export) data and convert it to OpenTelemetry logs. The receiver is based on the [goflow2](https://github.com/netsampler/goflow2) project.
 
-This gives Opentelemetry users the capability of monitoring network traffic, and answer questions like:
+This gives OpenTelemetry users the capability of monitoring network traffic, and answer questions like:
 
 * Which protocols are passing through the network?
 * Which servers and clients are producing the highest amount of traffic?
