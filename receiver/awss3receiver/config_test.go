@@ -41,7 +41,7 @@ func TestConfig_Validate_Valid(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-
+	opampExtension := component.NewIDWithName(component.MustNewType("opamp"), "bar")
 	tests := []struct {
 		id           component.ID
 		expected     component.Config
@@ -88,6 +88,9 @@ func TestLoadConfig(t *testing.T) {
 						Extension: component.NewIDWithName(component.MustNewType("nop"), "nop"),
 						Suffix:    "nop",
 					},
+				},
+				Notifications: Notifications{
+					OpAMP: &opampExtension,
 				},
 			},
 		},

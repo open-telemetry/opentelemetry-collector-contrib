@@ -22,11 +22,12 @@ type s3Reader struct {
 	filePrefix        string
 	startTime         time.Time
 	endTime           time.Time
+	notifier          statusNotifier
 }
 
 type s3ReaderDataCallback func(context.Context, string, []byte) error
 
-func newS3Reader(ctx context.Context, cfg *Config) (*s3Reader, error) {
+func newS3Reader(ctx context.Context, notifier statusNotifier, cfg *Config) (*s3Reader, error) {
 	listObjectsClient, getObjectClient, err := newS3Client(ctx, cfg.S3Downloader)
 	if err != nil {
 		return nil, err
@@ -52,9 +53,11 @@ func newS3Reader(ctx context.Context, cfg *Config) (*s3Reader, error) {
 		s3Partition:       cfg.S3Downloader.S3Partition,
 		startTime:         startTime,
 		endTime:           endTime,
+		notifier:          notifier,
 	}, nil
 }
 
+//nolint:golint,unparam
 func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dataCallback s3ReaderDataCallback) error {
 	var timeStep time.Duration
 	if s3Reader.s3Partition == "hour" {
@@ -64,15 +67,45 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 	}
 
 	for currentTime := s3Reader.startTime; currentTime.Before(s3Reader.endTime); currentTime = currentTime.Add(timeStep) {
+		s3Reader.sendStatus(ctx, statusNotification{
+			TelemetryType: telemetryType,
+			IngestStatus:  IngestStatusIngesting,
+			StartTime:     s3Reader.startTime,
+			EndTime:       s3Reader.endTime,
+			IngestTime:    currentTime,
+		})
+
 		select {
 		case <-ctx.Done():
+			s3Reader.sendStatus(ctx, statusNotification{
+				TelemetryType: telemetryType,
+				IngestStatus:  IngestStatusCompleted,
+				StartTime:     s3Reader.startTime,
+				EndTime:       s3Reader.endTime,
+				IngestTime:    currentTime,
+			})
 			return nil
 		default:
 			if err := s3Reader.readTelemetryForTime(ctx, currentTime, telemetryType, dataCallback); err != nil {
+				s3Reader.sendStatus(ctx, statusNotification{
+					TelemetryType:  telemetryType,
+					IngestStatus:   IngestStatusFailed,
+					StartTime:      s3Reader.startTime,
+					EndTime:        s3Reader.endTime,
+					IngestTime:     currentTime,
+					FailureMessage: err.Error(),
+				})
 				return err
 			}
 		}
 	}
+	s3Reader.sendStatus(ctx, statusNotification{
+		TelemetryType: telemetryType,
+		IngestStatus:  IngestStatusCompleted,
+		StartTime:     s3Reader.startTime,
+		EndTime:       s3Reader.endTime,
+		IngestTime:    s3Reader.endTime,
+	})
 	return nil
 }
 
@@ -132,6 +165,12 @@ func (s3Reader *s3Reader) retrieveObject(ctx context.Context, key string) ([]byt
 		return nil, err
 	}
 	return contents, nil
+}
+
+func (s3Reader *s3Reader) sendStatus(ctx context.Context, status statusNotification) {
+	if s3Reader.notifier != nil {
+		s3Reader.notifier.SendStatus(ctx, status)
+	}
 }
 
 func getTimeKeyPartitionHour(t time.Time) string {
