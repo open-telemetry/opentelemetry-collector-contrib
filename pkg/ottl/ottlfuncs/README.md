@@ -433,6 +433,7 @@ Available Converters:
 - [IsString](#isstring)
 - [Len](#len)
 - [Log](#log)
+- [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
 - [Minute](#minute)
@@ -989,6 +990,26 @@ Examples:
 
 
 - `Int(Log(attributes["duration_ms"])`
+
+### MD5
+
+`MD5(value)`
+
+The `MD5` Converter converts the `value` to a md5 hash/digest.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `MD5(attributes["device.name"])`
+
+- `MD5("name")`
+
+**Note:** According to the National Institute of Standards and Technology (NIST), MD5 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer a SHA-2 family function (e.g. SHA-256, SHA-512) whenever possible.
 
 ### Microseconds
 
