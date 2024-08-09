@@ -189,8 +189,6 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 	require.NoError(t, err)
 	t.Cleanup(func() { cfgFile.Close() })
 
-	// t.Logf("%s", buf.Bytes())
-
 	_, err = cfgFile.Write(buf.Bytes())
 	require.NoError(t, err)
 

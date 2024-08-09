@@ -196,7 +196,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 
 	c.running.Store(0)
 
-	// // Let goroutine know process is finished.
+	// Let goroutine know process is finished.
 	cancel()
 
 	return innerErr
