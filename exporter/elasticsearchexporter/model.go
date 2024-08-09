@@ -413,7 +413,6 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddSpanID("span_id", span.SpanID())
 	document.AddString("trace_state", span.TraceState().AsRaw())
 	document.AddSpanID("parent_span_id", span.ParentSpanID())
-	document.AddInt("trace_flags", int64(span.Flags()))
 	document.AddString("name", span.Name())
 	document.AddString("kind", traceutil.SpanKindStr(span.Kind()))
 	document.AddInt("duration", int64(span.EndTimestamp()-span.StartTimestamp()))
@@ -438,7 +437,6 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 		mAttr := linkMap.PutEmptyMap("attributes")
 		spanLink.Attributes().CopyTo(mAttr)
 		linkMap.PutInt("dropped_attributes_count", int64(spanLink.DroppedAttributesCount()))
-		linkMap.PutInt("trace_flags", int64(spanLink.Flags()))
 	}
 	document.AddAttribute("links", links)
 
