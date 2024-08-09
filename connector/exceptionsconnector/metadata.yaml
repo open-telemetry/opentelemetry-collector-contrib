@@ -1,5 +1,4 @@
 type: exceptions
-scope_name: otelcol/exceptions
 
 status:
   class: connector
