@@ -37,12 +37,14 @@ func (v *KeyValue) Set(s string) error {
 		return errFormatOTLPAttributes
 	}
 	val := kv[1]
-	parsedBool, err := strconv.ParseBool(val)
-	if err == nil {
-		(*v)[kv[0]] = parsedBool
+	if val == "true" {
+		(*v)[kv[0]] = true
 		return nil
 	}
-
+	if val == "false" {
+		(*v)[kv[0]] = false
+		return nil
+	}
 	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
 		return errDoubleQuotesOTLPAttributes
 	}
