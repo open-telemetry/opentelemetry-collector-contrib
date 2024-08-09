@@ -21,6 +21,13 @@ const (
 type Config struct {
 	// Providers specifies the sources to extract geographical information about a given IP.
 	Providers map[string]provider.Config `mapstructure:"-"`
+
+	// Source section allows specifying the source type to look for the IP. Available options: resource_attribute or attribute.
+	Source SourceConfig `mapstructure:"source"`
+}
+
+type SourceConfig struct {
+	From string `mapstructure:"from"`
 }
 
 var (
@@ -38,6 +45,12 @@ func (cfg *Config) Validate() error {
 		if err := providerConfig.Validate(); err != nil {
 			return fmt.Errorf("error validating provider %s: %w", providerID, err)
 		}
+	}
+
+	switch cfg.Source.From {
+	case resourceSource, attributeSource:
+	default:
+		return fmt.Errorf("unknown source specified, available sources: %s, %s", resourceSource, attributeSource)
 	}
 	return nil
 }

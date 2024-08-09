@@ -35,6 +35,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "maxmind"),
 			expected: &Config{
+				Source: SourceConfig{
+					From: "resource_attribute",
+				},
 				Providers: map[string]provider.Config{
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
@@ -43,6 +46,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:                    component.NewIDWithName(metadata.Type, "invalid_providers_config"),
 			unmarshalErrorMessage: "unexpected sub-config value kind for key:providers value:this should be a map kind:string",
+		},
+		{
+			id:                   component.NewIDWithName(metadata.Type, "invalid_source"),
+			validateErrorMessage: "unknown source specified, available sources: resource_attribute, attribute",
 		},
 	}
 
