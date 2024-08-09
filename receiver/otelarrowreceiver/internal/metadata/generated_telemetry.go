@@ -13,12 +13,14 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+const ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver"
+
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver")
+	return settings.MeterProvider.Meter(ScopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver")
+	return settings.TracerProvider.Tracer(ScopeName)
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
