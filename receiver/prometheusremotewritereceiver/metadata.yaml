@@ -1,0 +1,13 @@
+type: prometheus_remote_write_receiver
+scope_name: otelcol/promatheusremotewritereceiver
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [justinmason]
+
+tests:
+  config:
