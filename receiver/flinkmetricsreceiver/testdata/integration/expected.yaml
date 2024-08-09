@@ -164,7 +164,7 @@ resourceMetrics:
                   timeUnixNano: "1656013053528397000"
             unit: '{threads}'
         scope:
-          name: otelcol/flinkmetricsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
           version: latest
   - resource:
       attributes:
@@ -394,7 +394,7 @@ resourceMetrics:
                   timeUnixNano: "1656013053528397000"
             unit: By
         scope:
-          name: otelcol/flinkmetricsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
           version: latest
   - resource:
       attributes:
@@ -464,7 +464,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{restarts}'
         scope:
-          name: otelcol/flinkmetricsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
           version: latest
   - resource:
       attributes:
@@ -547,7 +547,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{records}'
         scope:
-          name: otelcol/flinkmetricsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
           version: latest
   - resource:
       attributes:
@@ -657,5 +657,5 @@ resourceMetrics:
               isMonotonic: true
             unit: '{records}'
         scope:
-          name: otelcol/flinkmetricsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
           version: latest

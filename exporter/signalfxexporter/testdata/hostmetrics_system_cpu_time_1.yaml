@@ -91,5 +91,5 @@ resourceMetrics:
               isMonotonic: true
             unit: s
         scope:
-          name: otelcol/hostmetricsreceiver/cpu
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
           version: latest

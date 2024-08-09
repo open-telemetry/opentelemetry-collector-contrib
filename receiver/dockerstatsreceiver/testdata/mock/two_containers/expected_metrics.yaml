@@ -782,7 +782,7 @@ resourceMetrics:
             name: container.uptime
             unit: s
         scope:
-          name: otelcol/dockerstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -1567,5 +1567,5 @@ resourceMetrics:
             name: container.uptime
             unit: s
         scope:
-          name: otelcol/dockerstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
           version: latest

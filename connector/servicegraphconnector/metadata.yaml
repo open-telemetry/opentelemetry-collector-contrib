@@ -1,5 +1,4 @@
 type: servicegraph
-scope_name: otelcol/servicegraph
 
 status:
   class: connector

@@ -1,5 +1,4 @@
 type: otelarrow
-scope_name: otelcol/otelarrowreceiver
 
 status:
   class: receiver

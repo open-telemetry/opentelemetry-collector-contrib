@@ -1,5 +1,4 @@
 type: grafanacloud
-scope_name: otelcol/grafanacloud
 
 status:
   class: connector

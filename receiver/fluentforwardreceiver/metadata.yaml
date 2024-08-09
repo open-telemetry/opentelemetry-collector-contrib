@@ -1,5 +1,4 @@
 type: fluentforward
-scope_name: otelcol/fluentforwardreceiver
 
 status:
   class: receiver

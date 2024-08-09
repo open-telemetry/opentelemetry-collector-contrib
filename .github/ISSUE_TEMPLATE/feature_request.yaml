@@ -154,6 +154,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
+      - processor/coralogix
       - processor/cumulativetodelta
       - processor/deltatocumulative
       - processor/deltatorate
@@ -163,7 +164,7 @@ body:
       - processor/groupbytrace
       - processor/interval
       - processor/k8sattributes
-      - processor/logdeduplication
+      - processor/logdedup
       - processor/logstransform
       - processor/metricsgeneration
       - processor/metricstransform

@@ -1,5 +1,4 @@
 type: chrony
-scope_name: otelcol/chronyreceiver
 
 status:
   class: receiver

@@ -24,7 +24,7 @@ const nativeIngestFeatureGateName = "connector.datadogconnector.NativeIngest"
 // NativeIngestFeatureGate is the feature gate that controls native OTel spans ingestion in Datadog APM stats
 var NativeIngestFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	nativeIngestFeatureGateName,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, datadogconnector uses the native OTel API to ingest OTel spans and produce APM stats."),
 	featuregate.WithRegisterFromVersion("v0.104.0"),
 )
@@ -53,10 +53,10 @@ func createDefaultConfig() component.Config {
 func createTracesToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (c connector.Traces, err error) {
 	metricsClient := metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ConnectorSourceTag)
 	if NativeIngestFeatureGate.IsEnabled() {
-		params.Logger.Info("Datadog connector using the native OTel API to ingest OTel spans and produce APM stats")
+		params.Logger.Info("Datadog connector using the native OTel API to ingest OTel spans and produce APM stats. To revert to the legacy processing pipeline, disable the feature gate", zap.String("feature gate", nativeIngestFeatureGateName))
 		c, err = newTraceToMetricConnectorNative(params.TelemetrySettings, cfg, nextConsumer, metricsClient)
 	} else {
-		params.Logger.Info("Datadog connector using the old processing pipelines to ingest OTel spans and produce APM stats. To opt in the new native OTel APM stats API, enable the feature gate", zap.String("feature gate", nativeIngestFeatureGateName))
+		params.Logger.Info("Datadog connector using the old processing pipelines to ingest OTel spans and produce APM stats.")
 		c, err = newTraceToMetricConnector(params.TelemetrySettings, cfg, nextConsumer, metricsClient, timing.New(metricsClient))
 	}
 	if err != nil {

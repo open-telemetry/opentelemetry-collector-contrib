@@ -1,5 +1,4 @@
 type: groupbytrace
-scope_name: otelcol/groupbytrace
 
 status:
   class: processor

@@ -268,7 +268,6 @@ The following GitHub users are the currently available sponsors, either by being
 * [@fatsheep9146](https://github.com/fatsheep9146)
 * [@andrzej-stencel](https://github.com/andrzej-stencel)
 * [@songy23](https://github.com/songy23)
-* [@Bryan Aguilar](https://github.com/bryan-aguilar)
 * [@atoulme](https://github.com/atoulme)
 * [@crobert-1](https://github.com/crobert-1)
 
