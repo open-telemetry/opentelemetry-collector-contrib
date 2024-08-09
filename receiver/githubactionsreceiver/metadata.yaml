@@ -1,0 +1,10 @@
+type: githubactions
+
+status:
+  class: receiver
+  stability:
+    alpha: [traces]
+  distributions:
+  codeowners:
+    active: ["krzko", "rich-bain"]
+    emeritus:
