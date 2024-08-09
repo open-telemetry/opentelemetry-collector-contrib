@@ -172,6 +172,7 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 	if runtime.GOOS == "windows" {
 		extension = ".exe"
 	}
+
 	configData := map[string]string{
 		"goos":        runtime.GOOS,
 		"goarch":      runtime.GOARCH,
@@ -184,7 +185,10 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 	}
 	err = templ.Execute(&buf, configData)
 	require.NoError(t, err)
-	cfgFile, _ := os.CreateTemp(t.TempDir(), "config_*.yaml")
+	cfgFile, err := os.CreateTemp(t.TempDir(), "config_*.yaml")
+	require.NoError(t, err)
+	t.Cleanup(func() { cfgFile.Close() })
+
 	_, err = cfgFile.Write(buf.Bytes())
 	require.NoError(t, err)
 
@@ -617,11 +621,13 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 	tempDir := t.TempDir()
 	testKeyFile, err := os.CreateTemp(tempDir, "confKey")
 	require.NoError(t, err)
+	t.Cleanup(func() { testKeyFile.Close() })
+
 	n, err := testKeyFile.Write([]byte(testKeyFile.Name()))
 	require.NoError(t, err)
 	require.NotZero(t, n)
 
-	colCfgTpl, err := os.ReadFile(path.Join("testdata", "collector", "split_config.yaml"))
+	colCfgTpl, err := os.ReadFile(filepath.Join("testdata", "collector", "split_config.yaml"))
 	require.NoError(t, err)
 
 	templ, err := template.New("").Parse(string(colCfgTpl))
@@ -770,9 +776,11 @@ func createSimplePipelineCollectorConf(t *testing.T) (*bytes.Buffer, []byte, *os
 	tempDir := t.TempDir()
 	inputFile, err := os.CreateTemp(tempDir, "input_*.yaml")
 	require.NoError(t, err)
+	t.Cleanup(func() { inputFile.Close() })
 
 	outputFile, err := os.CreateTemp(tempDir, "output_*.yaml")
 	require.NoError(t, err)
+	t.Cleanup(func() { outputFile.Close() })
 
 	colCfgTpl, err := os.ReadFile(path.Join(wd, "testdata", "collector", "simple_pipeline.yaml"))
 	require.NoError(t, err)
