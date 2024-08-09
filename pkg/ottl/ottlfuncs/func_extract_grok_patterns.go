@@ -47,7 +47,7 @@ func extractGrokPatterns[K any](target ottl.StringGetter[K], pattern string, nco
 			// split pattern in format key=val
 			parts := strings.SplitN(patternDefinition, "=", 2)
 			if len(parts) == 1 {
-				return nil, fmt.Errorf("pattern supplied to ExtractGrokPatterns at index %d has incorrect format, expecting PATTERNNAME=pattern definition", i)
+				return nil, fmt.Errorf("pattern %q supplied to ExtractGrokPatterns at index %d has incorrect format, expecting PATTERNNAME=pattern definition", patternDefinition[:20], i)
 			}
 
 			if strings.ContainsRune(parts[0], ':') {
