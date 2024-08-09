@@ -85,6 +85,13 @@ func TestValidateStrptime(t *testing.T) {
 			},
 			wantErr: "invalid fractional seconds directive: ':%L'. must be preceded with '.' or ','",
 		},
+		{
+			name: "format including decimal",
+			args: args{
+				layout: "2006-%m-%d-%H-%M-%S:%L",
+			},
+			wantErr: "format string should not contain decimals",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

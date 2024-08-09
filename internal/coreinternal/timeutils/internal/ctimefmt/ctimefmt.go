@@ -17,7 +17,6 @@ import (
 )
 
 var ctimeRegexp = regexp.MustCompile(`%.`)
-var decimalsRegexp = regexp.MustCompile(`\d`)
 
 var ctimeSubstitutes = map[string]string{
 	"%Y": "2006",
@@ -121,10 +120,6 @@ func Parse(format, value string) (time.Time, error) {
 // ToNative converts ctime-like format string to Go native layout
 // (which is used by time.Time.Format() and time.Parse() functions).
 func ToNative(format string) (string, error) {
-	if match := decimalsRegexp.FindString(format); match != "" {
-		return "", errors.New("format string should not contain decimals")
-	}
-
 	var errs []error
 	replaceFunc := func(directive string) string {
 		if subst, ok := ctimeSubstitutes[directive]; ok {
