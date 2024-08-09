@@ -89,6 +89,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					AwsVolumeID:                  ResourceAttributeConfig{Enabled: true},
 					ContainerID:                  ResourceAttributeConfig{Enabled: true},
+					CsiDriver:                    ResourceAttributeConfig{Enabled: true},
+					CsiVolumeHandle:              ResourceAttributeConfig{Enabled: true},
 					FsType:                       ResourceAttributeConfig{Enabled: true},
 					GcePdName:                    ResourceAttributeConfig{Enabled: true},
 					GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: true},
@@ -173,6 +175,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					AwsVolumeID:                  ResourceAttributeConfig{Enabled: false},
 					ContainerID:                  ResourceAttributeConfig{Enabled: false},
+					CsiDriver:                    ResourceAttributeConfig{Enabled: false},
+					CsiVolumeHandle:              ResourceAttributeConfig{Enabled: false},
 					FsType:                       ResourceAttributeConfig{Enabled: false},
 					GcePdName:                    ResourceAttributeConfig{Enabled: false},
 					GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: false},
@@ -224,6 +228,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				AwsVolumeID:                  ResourceAttributeConfig{Enabled: true},
 				ContainerID:                  ResourceAttributeConfig{Enabled: true},
+				CsiDriver:                    ResourceAttributeConfig{Enabled: true},
+				CsiVolumeHandle:              ResourceAttributeConfig{Enabled: true},
 				FsType:                       ResourceAttributeConfig{Enabled: true},
 				GcePdName:                    ResourceAttributeConfig{Enabled: true},
 				GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: true},
@@ -244,6 +250,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				AwsVolumeID:                  ResourceAttributeConfig{Enabled: false},
 				ContainerID:                  ResourceAttributeConfig{Enabled: false},
+				CsiDriver:                    ResourceAttributeConfig{Enabled: false},
+				CsiVolumeHandle:              ResourceAttributeConfig{Enabled: false},
 				FsType:                       ResourceAttributeConfig{Enabled: false},
 				GcePdName:                    ResourceAttributeConfig{Enabled: false},
 				GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: false},
