@@ -166,7 +166,7 @@ pkg/winperfcounters/                                                @open-teleme
 
 processor/attributesprocessor/                                      @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth
-processor/coralogixprocessor/                                       @open-telemetry/collector-contrib-approvers @galrose @crobert-1 @eyalatz @roycald245
+processor/coralogixprocessor/                                       @open-telemetry/collector-contrib-approvers @galrose @crobert-1 # @eyalatz @roycald245
 processor/deltatocumulativeprocessor/                               @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams @jpkrohling
 processor/deltatorateprocessor/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                                          @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
