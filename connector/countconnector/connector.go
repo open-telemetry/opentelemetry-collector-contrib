@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
-const scopeName = "otelcol/countconnector"
+const scopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 
 // count can count spans, span event, metrics, data points, or log records
 // and emit the counts onto a metrics pipeline.
