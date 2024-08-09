@@ -321,13 +321,14 @@ func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.D
 	return nil
 }
 
-func summaryToValue(dp pmetric.SummaryDataPoint) (pcommon.Value, error) {
-	// quantiles are ignored
+func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
+	// TODO: Add support for quantiles
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
 	m.PutDouble("sum", dp.Sum())
 	m.PutInt("value_count", int64(dp.Count()))
-	return vm, nil
+	return vm
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {

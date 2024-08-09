@@ -269,11 +269,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val, err := summaryToValue(dp)
-						if err != nil {
-							errs = append(errs, err)
-							continue
-						}
+						val := summaryToValue(dp)
 						if err := upsertDataPoint(dp, val); err != nil {
 							errs = append(errs, err)
 							continue
