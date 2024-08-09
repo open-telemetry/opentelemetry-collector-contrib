@@ -16,8 +16,8 @@ require (
 	go.opentelemetry.io/collector/confmap v0.106.1
 	go.opentelemetry.io/collector/consumer v0.106.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.1
-	go.opentelemetry.io/collector/featuregate v1.12.0
-	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240809151205-7638bb298172
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240809151205-7638bb298172
 	go.opentelemetry.io/collector/processor v0.106.1
 	go.opentelemetry.io/collector/receiver v0.106.1
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.106.1
@@ -87,12 +87,12 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/collector v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.106.1 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.106.1 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.12.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240809151205-7638bb298172 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/config/internal v0.106.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.1 // indirect
 	go.opentelemetry.io/collector/extension v0.106.1 // indirect

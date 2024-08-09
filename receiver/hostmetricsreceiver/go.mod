@@ -17,10 +17,10 @@ require (
 	go.opentelemetry.io/collector/confmap v0.106.1
 	go.opentelemetry.io/collector/consumer v0.106.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.1
-	go.opentelemetry.io/collector/featuregate v1.12.0
+	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240809151205-7638bb298172
 	go.opentelemetry.io/collector/filter v0.106.1
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.106.1
-	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240809151205-7638bb298172
 	go.opentelemetry.io/collector/receiver v0.106.1
 	go.opentelemetry.io/collector/semconv v0.106.1
 	go.uber.org/goleak v1.3.0
