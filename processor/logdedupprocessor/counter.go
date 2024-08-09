@@ -4,6 +4,7 @@
 package logdedupprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
 
 import (
+	"context"
 	"hash/fnv"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 // Attributes names for first and last observed timestamps
@@ -27,15 +29,16 @@ type logAggregator struct {
 	resources         map[[16]byte]*resourceAggregator
 	logCountAttribute string
 	timezone          *time.Location
+	telemetryBuilder  *metadata.TelemetryBuilder
 }
 
 // newLogAggregator creates a new LogCounter.
-func newLogAggregator(logCountAttribute string, timezone *time.Location) *logAggregator {
-
+func newLogAggregator(logCountAttribute string, timezone *time.Location, telemetryBuilder *metadata.TelemetryBuilder) *logAggregator {
 	return &logAggregator{
 		resources:         make(map[[16]byte]*resourceAggregator),
 		logCountAttribute: logCountAttribute,
 		timezone:          timezone,
+		telemetryBuilder:  telemetryBuilder,
 	}
 }
 
@@ -51,6 +54,9 @@ func (l *logAggregator) Export() plog.Logs {
 
 		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 		for _, lc := range resource.logCounters {
+			// Count deduped logs
+			l.telemetryBuilder.DedupeProcessorDropped.Add(context.Background(), lc.count)
+
 			lr := scopeLogs.LogRecords().AppendEmpty()
 
 			baseRecord := lc.logRecord

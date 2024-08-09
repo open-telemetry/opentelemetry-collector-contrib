@@ -11,3 +11,13 @@ status:
 
 tests:
   config:
+
+telemetry:
+  metrics:
+    dedupe_processor_dropped:
+      description: Number of deduplicated log records.
+      unit: "{records}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
