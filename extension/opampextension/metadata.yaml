@@ -1,5 +1,4 @@
 type: opamp
-scope_name: otelcol/opamp
 
 status:
   class: extension
@@ -7,7 +6,7 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [portertech, evan-bradley, tigrannajaryan]
+    active: [portertech, evan-bradley, tigrannajaryan, BinaryFissionGames]
 
 tests:
   config:

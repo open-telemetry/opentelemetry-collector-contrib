@@ -1,0 +1,13 @@
+type: logdedup
+
+status:
+  class: processor
+  stability:
+    alpha: [logs]
+  distributions: []
+  warnings: []
+  codeowners:
+    active: [BinaryFissionGames, MikeGoldsmith, djaglowski]
+
+tests:
+  config:

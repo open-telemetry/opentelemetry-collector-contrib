@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"runtime"
 	"sync"
@@ -495,6 +496,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		)
 		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
+		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
 		mustSendMetrics(t, exporter, metrics)
 
 		rec.WaitItems(1)
@@ -628,6 +630,103 @@ func TestExporterMetrics(t *testing.T) {
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("publish histogram", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooDps := fooMetric.SetEmptyHistogram().DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+		fooOtherDp := fooDps.AppendEmpty()
+		fooOtherDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
+		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(2)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3]}}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("publish only valid data points", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooDps := fooMetric.SetEmptyHistogram().DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		fooDp.BucketCounts().FromRaw([]uint64{})
+		fooOtherDp := fooDps.AppendEmpty()
+		fooOtherDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
+		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
+		barMetric := metricSlice.AppendEmpty()
+		barMetric.SetName("metric.bar")
+		barDps := barMetric.SetEmptySum().DataPoints()
+		barDp := barDps.AppendEmpty()
+		barDp.SetDoubleValue(math.Inf(1))
+		barOtherDp := barDps.AppendEmpty()
+		barOtherDp.SetDoubleValue(1.0)
+
+		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		require.ErrorContains(t, err, "invalid histogram data point")
+		require.ErrorContains(t, err, "invalid number data point")
+
+		rec.WaitItems(2)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"bar":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}}}`),
 			},
 		}
 
@@ -811,6 +910,43 @@ func TestExporterAuth(t *testing.T) {
 
 	mustSendLogRecords(t, exporter, plog.NewLogRecord())
 	<-done
+}
+
+func TestExporterBatcher(t *testing.T) {
+	var requests []*http.Request
+	testauthID := component.NewID(component.MustNewType("authtest"))
+	batcherEnabled := false // sync bulk indexer is used without batching
+	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		cfg.Batcher = BatcherConfig{Enabled: &batcherEnabled}
+		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+	})
+	err := exporter.Start(context.Background(), &mockHost{
+		extensions: map[component.ID]component.Component{
+			testauthID: &authtest.MockClient{
+				ResultRoundTripper: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+					requests = append(requests, req)
+					return nil, errors.New("nope")
+				}),
+			},
+		},
+	})
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, exporter.Shutdown(context.Background()))
+	}()
+
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty().Body().SetStr("log record body")
+
+	type key struct{}
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value1"), logs)
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value2"), logs)
+	require.Len(t, requests, 2) // flushed immediately by Consume
+
+	assert.Equal(t, "value1", requests[0].Context().Value(key{}))
+	assert.Equal(t, "value2", requests[1].Context().Value(key{}))
 }
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Traces {
