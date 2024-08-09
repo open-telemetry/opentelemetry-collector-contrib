@@ -246,6 +246,7 @@ receiver/jmxreceiver/                                               @open-teleme
 receiver/journaldreceiver/                                          @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                                        @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv
 receiver/k8seventsreceiver/                                         @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth
+receiver/k8slogreceiver/                                            @open-telemetry/collector-contrib-approvers @h0cheung @TylerHelmuth
 receiver/k8sobjectsreceiver/                                        @open-telemetry/collector-contrib-approvers @dmitryax @hvaghani221 @TylerHelmuth
 receiver/kafkametricsreceiver/                                      @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkareceiver/                                             @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
@@ -306,10 +307,10 @@ testbed/mockdatasenders/mockdatadogagentexporter/                   @open-teleme
 # List of distribution maintainers for OpenTelemetry Collector Contrib
 #
 #####################################################
-reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers 
-reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers 
+reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers
+reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
 
 
 ## UNMAINTAINED components
 
-receiver/googlecloudspannerreceiver/                                @open-telemetry/collector-contrib-approvers 
+receiver/googlecloudspannerreceiver/                                @open-telemetry/collector-contrib-approvers
