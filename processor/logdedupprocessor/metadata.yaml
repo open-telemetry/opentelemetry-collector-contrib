@@ -14,7 +14,7 @@ tests:
 
 telemetry:
   metrics:
-    dedupe_processor_dropped:
+    dedupe_processor_deduplicated:
       description: Number of deduplicated log records.
       unit: "{records}"
       enabled: true

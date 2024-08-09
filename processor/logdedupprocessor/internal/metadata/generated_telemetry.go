@@ -24,9 +24,9 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                  metric.Meter
-	DedupeProcessorDropped metric.Int64Counter
-	level                  configtelemetry.Level
+	meter                       metric.Meter
+	DedupeProcessorDeduplicated metric.Int64Counter
+	level                       configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -52,8 +52,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	} else {
 		builder.meter = noop.Meter{}
 	}
-	builder.DedupeProcessorDropped, err = builder.meter.Int64Counter(
-		"otelcol_dedupe_processor_dropped",
+	builder.DedupeProcessorDeduplicated, err = builder.meter.Int64Counter(
+		"otelcol_dedupe_processor_deduplicated",
 		metric.WithDescription("Number of deduplicated log records."),
 		metric.WithUnit("{records}"),
 	)

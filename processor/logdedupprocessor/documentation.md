@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_dedupe_processor_dropped
+### otelcol_dedupe_processor_deduplicated
 
 Number of deduplicated log records.
 
