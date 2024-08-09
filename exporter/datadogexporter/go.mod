@@ -310,10 +310,10 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.106.2-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/client v0.106.2-0.20240809151205-7638bb298172 // indirect
+	go.opentelemetry.io/collector/component/componentprofiles v0.106.2-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.106.2-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.106.2-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/config/internal v0.106.2-0.20240809151205-7638bb298172 // indirect
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.106.2-0.20240808165808-ecbe02ed685a // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.106.2-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.106.2-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.106.2-0.20240809151205-7638bb298172 // indirect
@@ -332,7 +332,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.28.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
-	go.opentelemetry.io/otel/bridge/opencensus v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.4.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.28.0 // indirect

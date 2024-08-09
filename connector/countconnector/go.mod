@@ -51,6 +51,7 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector v0.106.2-0.20240809151205-7638bb298172 // indirect
+	go.opentelemetry.io/collector/component/componentprofiles v0.106.2-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.106.2-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.2-0.20240809151205-7638bb298172 // indirect
 	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240809151205-7638bb298172 // indirect
