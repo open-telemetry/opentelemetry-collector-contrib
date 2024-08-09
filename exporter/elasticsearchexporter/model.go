@@ -355,7 +355,9 @@ func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
 func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string) {
 	resourceMapVal := pcommon.NewValueMap()
 	resourceMap := resourceMapVal.Map()
-	resourceMap.PutStr("schema_url", resourceSchemaURL)
+	if resourceSchemaURL != "" {
+		resourceMap.PutStr("schema_url", resourceSchemaURL)
+	}
 	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
 	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
 	resource.Attributes().CopyTo(resourceAttrMap)
@@ -441,10 +443,8 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddAttribute("links", links)
 
 	document.AddInt("dropped_links_count", int64(span.DroppedLinksCount()))
-	status := pcommon.NewMap()
-	status.PutStr("message", span.Status().Message())
-	status.PutStr("code", span.Status().Code().String())
-	document.AddAttributes("status", status)
+	document.AddString("status.message", span.Status().Message())
+	document.AddString("status.code", span.Status().Code().String())
 
 	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
