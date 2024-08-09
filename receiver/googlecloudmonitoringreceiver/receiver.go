@@ -47,6 +47,6 @@ func (m *monitoringReceiver) Shutdown(context.Context) error {
 }
 
 func (m *monitoringReceiver) initialize(ctx context.Context) error {
-	// Implement the logic for handling metrics here.
+	// TODO: Implement the logic for handling metrics here.
 	return nil
 }

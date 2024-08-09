@@ -33,19 +33,15 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 120 * time.Second,
 				InitialDelay:       1 * time.Second,
 			},
-			Region:            "us-central1",
-			ProjectID:         "my-project-id",
-			ServiceAccountKey: "path/to/service_account.json",
-			Services: []Service{
+			ProjectID: "my-project-id",
+			MetricsList: []MetricConfig{
 				{
-					ServiceName: "compute",
-					Delay:       60 * time.Second,
-					MetricName:  "compute.googleapis.com/instance/cpu/usage_time",
+					MetricName: "compute.googleapis.com/instance/cpu/usage_time",
+					Delay:      60 * time.Second,
 				},
 				{
-					ServiceName: "connectors",
-					Delay:       60 * time.Second,
-					MetricName:  "connectors.googleapis.com/flex/instance/cpu/usage_time",
+					MetricName: "connectors.googleapis.com/flex/instance/cpu/usage_time",
+					Delay:      60 * time.Second,
 				},
 			},
 		},
@@ -55,29 +51,29 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidateService(t *testing.T) {
 	testCases := map[string]struct {
-		service      Service
+		metric       MetricConfig
 		requireError bool
 	}{
 		"Valid Service": {
-			Service{
-				ServiceName: "service_name",
-				Delay:       0,
+			MetricConfig{
+				MetricName: "metric_name",
+				Delay:      0 * time.Second,
 			}, false},
-		"Empty ServiceName": {
-			Service{
-				ServiceName: "",
-				Delay:       0,
+		"Empty MetricName": {
+			MetricConfig{
+				MetricName: "",
+				Delay:      0,
 			}, true},
 		"Negative Delay": {
-			Service{
-				ServiceName: "service_name",
-				Delay:       -1,
+			MetricConfig{
+				MetricName: "metric_name",
+				Delay:      -1 * time.Second,
 			}, true},
 	}
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := testCase.service.Validate()
+			err := testCase.metric.Validate()
 			if testCase.requireError {
 				require.Error(t, err)
 			} else {
@@ -88,20 +84,20 @@ func TestValidateService(t *testing.T) {
 }
 
 func TestValidateConfig(t *testing.T) {
-	validService := Service{
-		ServiceName: "service_name",
-		Delay:       0 * time.Second,
+	validMetric := MetricConfig{
+		MetricName: "metric_name",
+		Delay:      0 * time.Second,
 	}
 
 	testCases := map[string]struct {
-		services           []Service
+		metricsList        []MetricConfig
 		collectionInterval time.Duration
 		requireError       bool
 	}{
-		"Valid Config":                {[]Service{validService}, 60 * time.Second, false},
+		"Valid Config":                {[]MetricConfig{validMetric}, 60 * time.Second, false},
 		"Empty Services":              {nil, 60 * time.Second, true},
-		"Invalid Service in Services": {[]Service{{}}, 60 * time.Second, true},
-		"Invalid Collection Interval": {[]Service{validService}, 0 * time.Second, true},
+		"Invalid Service in Services": {[]MetricConfig{{}}, 60 * time.Second, true},
+		"Invalid Collection Interval": {[]MetricConfig{validMetric}, 0 * time.Second, true},
 	}
 
 	for name, testCase := range testCases {
@@ -110,7 +106,7 @@ func TestValidateConfig(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: testCase.collectionInterval,
 				},
-				Services: testCase.services,
+				MetricsList: testCase.metricsList,
 			}
 
 			err := cfg.Validate()

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver
 
-go 1.21.3
+go 1.21.12
 
 require (
 	github.com/stretchr/testify v1.9.0

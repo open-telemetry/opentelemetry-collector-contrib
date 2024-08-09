@@ -16,16 +16,13 @@ const minCollectionIntervalSeconds = 60
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
-	Region            string    `mapstructure:"region"`
-	ProjectID         string    `mapstructure:"project_id"`
-	ServiceAccountKey string    `mapstructure:"service_account_key"`
-	Services          []Service `mapstructure:"services"`
+	ProjectID   string         `mapstructure:"project_id"`
+	MetricsList []MetricConfig `mapstructure:"metrics_list"`
 }
 
-type Service struct {
-	ServiceName string        `mapstructure:"service_name"`
-	MetricName  string        `mapstructure:"metric_name"`
-	Delay       time.Duration `mapstructure:"delay"`
+type MetricConfig struct {
+	MetricName string        `mapstructure:"metric_name"`
+	Delay      time.Duration `mapstructure:"delay"`
 }
 
 func (config *Config) Validate() error {
@@ -33,12 +30,12 @@ func (config *Config) Validate() error {
 		return fmt.Errorf("\"collection_interval\" must be not lower than %v seconds, current value is %v seconds", minCollectionIntervalSeconds, config.CollectionInterval.Seconds())
 	}
 
-	if len(config.Services) == 0 {
-		return errors.New("missing required field \"services\" or its value is empty")
+	if len(config.MetricsList) == 0 {
+		return errors.New("missing required field \"metrics_list\" or its value is empty")
 	}
 
-	for _, service := range config.Services {
-		if err := service.Validate(); err != nil {
+	for _, metric := range config.MetricsList {
+		if err := metric.Validate(); err != nil {
 			return err
 		}
 	}
@@ -46,13 +43,13 @@ func (config *Config) Validate() error {
 	return nil
 }
 
-func (service Service) Validate() error {
-	if service.ServiceName == "" {
-		return errors.New("field \"service_name\" is required and cannot be empty for service configuration")
+func (metric MetricConfig) Validate() error {
+	if metric.MetricName == "" {
+		return errors.New("field \"metric_name\" is required and cannot be empty for metric configuration")
 	}
 
-	if service.Delay < 0 {
-		return errors.New("field \"delay\" cannot be negative for service configuration")
+	if metric.Delay < 0 {
+		return errors.New("field \"delay\" cannot be negative for metric configuration")
 	}
 
 	return nil

@@ -1,5 +1,4 @@
 type: deltatocumulative
-scope_name: otelcol/deltatocumulative
 
 status:
   class: processor
