@@ -161,5 +161,5 @@ resourceMetrics:
             name: git.repository.pull_request.time_to_merge
             unit: s
         scope:
-          name: otelcol/gitproviderreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver
           version: latest
