@@ -37,7 +37,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -238,7 +238,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -303,7 +303,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -364,7 +364,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {

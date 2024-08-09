@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
@@ -120,8 +121,6 @@ func TestTraceIntegrity(t *testing.T) {
 		NumTraces:    defaultNumTraces,
 	}
 	nextConsumer := new(consumertest.TracesSink)
-	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -130,7 +129,7 @@ func TestTraceIntegrity(t *testing.T) {
 		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -182,7 +181,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, err := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg, withTickerFrequency(time.Millisecond))
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg, withTickerFrequency(time.Millisecond))
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -215,7 +214,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, err := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg, withTickerFrequency(time.Millisecond))
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg, withTickerFrequency(time.Millisecond))
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -269,7 +268,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testLatencyPolicy,
 	}
-	sp, err := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg, withTickerFrequency(time.Millisecond))
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg, withTickerFrequency(time.Millisecond))
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -313,7 +312,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, err := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg, withTickerFrequency(100*time.Millisecond))
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg, withTickerFrequency(100*time.Millisecond))
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -347,7 +346,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg, withTickerFrequency(100*time.Millisecond))
+	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg, withTickerFrequency(100*time.Millisecond))
 	require.NoError(t, sp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, sp.Shutdown(context.Background()))
@@ -387,12 +386,10 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			},
 		},
 	}
-	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
 	idb := newSyncIDBatcher()
 	msp := new(consumertest.TracesSink)
 
-	p, err := newTracesProcessor(context.Background(), ct, msp, cfg, withDecisionBatcher(idb))
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, cfg, withDecisionBatcher(idb))
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -449,8 +446,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 func TestSubSecondDecisionTime(t *testing.T) {
 	// prepare
 	msp := new(consumertest.TracesSink)
-
-	tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), msp, Config{
+	tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, Config{
 		DecisionWait: 500 * time.Millisecond,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs:   testPolicy,
@@ -501,7 +497,6 @@ func TestPolicyLoggerAddsPolicyName(t *testing.T) {
 
 func TestDuplicatePolicyName(t *testing.T) {
 	// prepare
-	set := componenttest.NewNopTelemetrySettings()
 	msp := new(consumertest.TracesSink)
 
 	alwaysSample := sharedPolicyCfg{
@@ -509,7 +504,7 @@ func TestDuplicatePolicyName(t *testing.T) {
 		Type: AlwaysSample,
 	}
 
-	_, err := newTracesProcessor(context.Background(), set, msp, Config{
+	_, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{

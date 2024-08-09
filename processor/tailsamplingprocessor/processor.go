@@ -45,8 +45,8 @@ type policy struct {
 type tailSamplingSpanProcessor struct {
 	ctx context.Context
 
-	telemetry *metadata.TelemetryBuilder
-	logger    *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
+	logger           *zap.Logger
 
 	nextConsumer    consumer.Traces
 	maxNumTraces    uint64
@@ -83,8 +83,9 @@ type Option func(*tailSamplingSpanProcessor)
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(ctx context.Context, settings component.TelemetrySettings, nextConsumer consumer.Traces, cfg Config, opts ...Option) (processor.Traces, error) {
-	telemetry, err := metadata.NewTelemetryBuilder(settings)
+func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config, opts ...Option) (processor.Traces, error) {
+	telemetrySettings := set.TelemetrySettings
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(telemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -97,14 +98,14 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 	}
 
 	tsp := &tailSamplingSpanProcessor{
-		ctx:            ctx,
-		telemetry:      telemetry,
-		nextConsumer:   nextConsumer,
-		maxNumTraces:   cfg.NumTraces,
-		sampledIDCache: sampledDecisions,
-		logger:         settings.Logger,
-		numTracesOnMap: &atomic.Uint64{},
-		deleteChan:     make(chan pcommon.TraceID, cfg.NumTraces),
+		ctx:              ctx,
+		telemetryBuilder: telemetryBuilder,
+		nextConsumer:     nextConsumer,
+		maxNumTraces:     cfg.NumTraces,
+		sampledIDCache:   sampledDecisions,
+		logger:           telemetrySettings.Logger,
+		numTracesOnMap:   &atomic.Uint64{},
+		deleteChan:       make(chan pcommon.TraceID, cfg.NumTraces),
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
@@ -119,6 +120,7 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 	if tsp.policies == nil {
 		policyNames := map[string]bool{}
 		tsp.policies = make([]*policy, len(cfg.PolicyCfgs))
+		componentID := set.ID.Name()
 		for i := range cfg.PolicyCfgs {
 			policyCfg := &cfg.PolicyCfgs[i]
 
@@ -127,14 +129,18 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 			}
 			policyNames[policyCfg.Name] = true
 
-			eval, err := getPolicyEvaluator(settings, policyCfg)
+			eval, err := getPolicyEvaluator(telemetrySettings, policyCfg)
 			if err != nil {
 				return nil, err
+			}
+			uniquePolicyName := policyCfg.Name
+			if componentID != "" {
+				uniquePolicyName = fmt.Sprintf("%s.%s", componentID, policyCfg.Name)
 			}
 			p := &policy{
 				name:      policyCfg.Name,
 				evaluator: eval,
-				attribute: metric.WithAttributes(attribute.String("policy", policyCfg.Name)),
+				attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
 			}
 			tsp.policies[i] = p
 		}
@@ -256,11 +262,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.DecisionTime = time.Now()
 
 		decision := tsp.makeDecision(id, trace, &metrics)
-		tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Microsecond))
-		tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
-		tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
-		tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
-		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
+		tsp.telemetryBuilder.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Microsecond))
+		tsp.telemetryBuilder.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
+		tsp.telemetryBuilder.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
+		tsp.telemetryBuilder.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
+		tsp.telemetryBuilder.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -298,15 +304,15 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	for _, p := range tsp.policies {
 		policyEvaluateStartTime := time.Now()
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
-		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(time.Since(policyEvaluateStartTime)/time.Microsecond), p.attribute)
+		tsp.telemetryBuilder.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(time.Since(policyEvaluateStartTime)/time.Microsecond), p.attribute)
 		if err != nil {
 			samplingDecision[sampling.Error] = true
 			metrics.evaluateErrorCount++
 			tsp.logger.Debug("Sampling policy error", zap.Error(err))
 		} else {
-			tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
+			tsp.telemetryBuilder.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
 			if telemetry.IsMetricStatCountSpansSampledEnabled() {
-				tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
+				tsp.telemetryBuilder.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
 			}
 
 			samplingDecision[decision] = true
@@ -365,7 +371,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
 			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(tsp.ctx, int64(len(spans)))
+			tsp.telemetryBuilder.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(tsp.ctx, int64(len(spans)))
 			continue
 		}
 
@@ -423,7 +429,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 				appendToTraces(traceTd, resourceSpans, spans)
 				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
 			case sampling.NotSampled:
-				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
+				tsp.telemetryBuilder.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
 			default:
 				tsp.logger.Warn("Encountered unexpected sampling decision",
 					zap.Int("decision", int(finalDecision)))
@@ -431,7 +437,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		}
 	}
 
-	tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
+	tsp.telemetryBuilder.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
 }
 
 func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
@@ -464,7 +470,7 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 		return
 	}
 
-	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
+	tsp.telemetryBuilder.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
 }
 
 // releaseSampledTrace sends the trace data to the next consumer.
