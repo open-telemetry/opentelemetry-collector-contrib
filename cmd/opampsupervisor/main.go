@@ -26,6 +26,13 @@ func main() {
 		return
 	}
 
+	err = supervisor.Start()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(-1)
+		return
+	}
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	<-interrupt
