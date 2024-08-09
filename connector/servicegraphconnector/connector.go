@@ -545,9 +545,9 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dpDuration.SetTimestamp(timestamp)
 			dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
-			dpDuration.BucketCounts().FromRaw(p.reqServerDurationSecondsBucketCounts[key])
-			dpDuration.SetCount(p.reqServerDurationSecondsCount[key])
-			dpDuration.SetSum(p.reqServerDurationSecondsSum[key])
+			dpDuration.BucketCounts().FromRaw(p.reqClientDurationSecondsBucketCounts[key])
+			dpDuration.SetCount(p.reqClientDurationSecondsCount[key])
+			dpDuration.SetSum(p.reqClientDurationSecondsSum[key])
 
 			// TODO: Support exemplars
 			dimensions, ok := p.dimensionsForSeries(key)
@@ -575,9 +575,9 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dpDuration.SetTimestamp(timestamp)
 			dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
-			dpDuration.BucketCounts().FromRaw(p.reqClientDurationSecondsBucketCounts[key])
-			dpDuration.SetCount(p.reqClientDurationSecondsCount[key])
-			dpDuration.SetSum(p.reqClientDurationSecondsSum[key])
+			dpDuration.BucketCounts().FromRaw(p.reqServerDurationSecondsBucketCounts[key])
+			dpDuration.SetCount(p.reqServerDurationSecondsCount[key])
+			dpDuration.SetSum(p.reqServerDurationSecondsSum[key])
 
 			// TODO: Support exemplars
 			dimensions, ok := p.dimensionsForSeries(key)
