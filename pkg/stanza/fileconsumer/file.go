@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
@@ -30,11 +31,13 @@ type Manager struct {
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
+	archive       archive.Archive
 
-	pollInterval  time.Duration
-	persister     operator.Persister
-	maxBatches    int
-	maxBatchFiles int
+	pollInterval   time.Duration
+	persister      operator.Persister
+	maxBatches     int
+	maxBatchFiles  int
+	pollsToArchive int
 
 	telemetryBuilder *metadata.TelemetryBuilder
 }
@@ -58,6 +61,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 			m.readerFactory.FromBeginning = true
 			m.tracker.LoadMetadata(offsets)
 		}
+		m.archive.SetStorageClient(persister)
+	} else if m.pollsToArchive > 0 {
+		return fmt.Errorf("archiving is not supported in memory, please use a storage extension")
 	}
 
 	// Start polling goroutine

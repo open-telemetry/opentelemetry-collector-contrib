@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
@@ -87,6 +88,7 @@ type Config struct {
 	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
 	Compression             string          `mapstructure:"compression,omitempty"`
+	PollsToArchive          int             `mapstructure:"-"`
 }
 
 type HeaderConfig struct {
@@ -179,6 +181,13 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
 
+	var a archive.Archive
+	if c.PollsToArchive <= 0 {
+		a = archive.NewNopArchive()
+	} else {
+		a = archive.NewArchive(c.PollsToArchive)
+	}
+
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
@@ -192,6 +201,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatches:       c.MaxBatches,
 		tracker:          t,
 		telemetryBuilder: telemetryBuilder,
+		archive:          a,
 	}, nil
 }
 
