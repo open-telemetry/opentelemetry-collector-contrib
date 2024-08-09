@@ -19,7 +19,9 @@ var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	// The URL of the docker server.  Default is "unix:///var/run/docker.sock"
+	// The URL of the docker server.  Default is derived from
+	// the environment variable ${DOCKER_HOST}, with a fallback
+	// to "unix:///var/run/docker.sock" if no ${DOCKER_HOST}.
 	Endpoint string `mapstructure:"endpoint"`
 
 	// A mapping of container label names to MetricDescriptor label keys.
