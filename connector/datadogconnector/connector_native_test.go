@@ -65,6 +65,7 @@ func creteConnectorNativeWithCfg(t *testing.T, cfg *Config) (*traceToMetricConne
 	creationParams := connectortest.NewNopSettings()
 	metricsSink := &consumertest.MetricsSink{}
 
+	cfg.Traces.BucketInterval = 1 * time.Second
 	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
 	assert.NoError(t, err)
 

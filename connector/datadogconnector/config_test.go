@@ -5,6 +5,7 @@ package datadogconnector
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -69,6 +70,19 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
 			},
+		},
+		{
+			name: "With bucket_interval",
+			cfg: &Config{
+				Traces: TracesConfig{BucketInterval: 30 * time.Second},
+			},
+		},
+		{
+			name: "neg bucket_interval",
+			cfg: &Config{
+				Traces: TracesConfig{BucketInterval: -30 * time.Second},
+			},
+			err: "bucket interval must be non-negative",
 		},
 	}
 	for _, testInstance := range tests {

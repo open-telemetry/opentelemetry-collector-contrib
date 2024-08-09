@@ -125,6 +125,7 @@ func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.Metric
 	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion, "az"}
+	cfg.Traces.BucketInterval = 1 * time.Second
 
 	metricsSink := &consumertest.MetricsSink{}
 
