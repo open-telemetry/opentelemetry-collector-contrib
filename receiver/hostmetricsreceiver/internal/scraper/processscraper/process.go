@@ -30,6 +30,7 @@ type processMetadata struct {
 	executable *executableMetadata
 	command    *commandMetadata
 	username   string
+	status     string
 	handle     processHandle
 	createTime int64
 }
@@ -52,6 +53,7 @@ func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Re
 	rb.SetProcessExecutableName(m.executable.name)
 	rb.SetProcessExecutablePath(m.executable.path)
 	rb.SetProcessCgroup(m.executable.cgroup)
+	rb.SetProcessState(m.status)
 	if m.command != nil {
 		rb.SetProcessCommand(m.command.command)
 		if m.command.commandLineSlice != nil {
@@ -98,6 +100,7 @@ type processHandle interface {
 	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
 	RlimitUsageWithContext(ctx context.Context, gatherUsed bool) ([]process.RlimitStat, error)
 	CgroupWithContext(ctx context.Context) (string, error)
+	StatusWithContext(ctx context.Context) ([]string, error)
 }
 
 type gopsProcessHandles struct {

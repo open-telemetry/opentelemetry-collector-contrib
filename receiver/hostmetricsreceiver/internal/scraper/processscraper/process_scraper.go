@@ -253,6 +253,10 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 				errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
 			}
 		}
+		status, err := getProcessStatus(ctx, handle)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf("error reading process status for pid %v: %w", pid, err))
+		}
 
 		createTime, err := s.getProcessCreateTime(handle, ctx)
 		if err != nil {
@@ -275,6 +279,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			executable: executable,
 			command:    command,
 			username:   username,
+			status:     status,
 			handle:     handle,
 			createTime: createTime,
 		}

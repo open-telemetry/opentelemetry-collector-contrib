@@ -67,3 +67,7 @@ func getProcessCommand(ctx context.Context, proc processHandle) (*commandMetadat
 	command := &commandMetadata{command: cmd, commandLine: cmdline}
 	return command, nil
 }
+
+func getProcessStatus(ctx context.Context, proc processHandle) (string, error) {
+	return "", nil
+}
