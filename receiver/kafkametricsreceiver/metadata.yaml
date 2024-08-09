@@ -1,5 +1,4 @@
 type: kafkametrics
-scope_name: otelcol/kafkametricsreceiver
 
 status:
   class: receiver
