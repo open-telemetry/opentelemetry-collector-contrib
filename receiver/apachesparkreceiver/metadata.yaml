@@ -1,5 +1,4 @@
 type: apachespark
-scope_name: otelcol/apachesparkreceiver
 
 status:
   class: receiver

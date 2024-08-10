@@ -179,5 +179,5 @@ resourceMetrics:
             name: vcs.repository.ref.time
             unit: s
         scope:
-          name: otelcol/gitproviderreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver
           version: latest

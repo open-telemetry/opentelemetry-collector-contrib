@@ -16,7 +16,8 @@ import (
 // Config defines configuration for docker observer
 type Config struct {
 
-	// The URL of the docker server.  Default is "unix:///var/run/docker.sock"
+	// The URL of the docker server.  Default is "unix:///var/run/docker.sock" on non-Windows
+	// and "npipe:////./pipe/docker_engine" on Windows
 	Endpoint string `mapstructure:"endpoint"`
 
 	// The maximum amount of time to wait for docker API responses.  Default is 5s

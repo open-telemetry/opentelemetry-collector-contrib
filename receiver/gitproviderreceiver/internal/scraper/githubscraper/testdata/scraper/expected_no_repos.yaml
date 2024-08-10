@@ -19,5 +19,5 @@ resourceMetrics:
             name: vcs.repository.count
             unit: '{repository}'
         scope:
-          name: otelcol/gitproviderreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver
           version: latest

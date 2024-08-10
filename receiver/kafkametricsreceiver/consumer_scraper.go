@@ -161,7 +161,10 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	return s.mb.Emit(), scrapeError
+	rb := s.mb.NewResourceBuilder()
+	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
+
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeError
 }
 
 func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,

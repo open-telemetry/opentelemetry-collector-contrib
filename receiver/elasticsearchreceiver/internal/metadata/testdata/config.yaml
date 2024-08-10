@@ -41,6 +41,8 @@ all_set:
       enabled: true
     elasticsearch.index.operations.completed:
       enabled: true
+    elasticsearch.index.operations.merge.current:
+      enabled: true
     elasticsearch.index.operations.merge.docs_count:
       enabled: true
     elasticsearch.index.operations.merge.size:
@@ -233,6 +235,8 @@ none_set:
     elasticsearch.index.documents:
       enabled: false
     elasticsearch.index.operations.completed:
+      enabled: false
+    elasticsearch.index.operations.merge.current:
       enabled: false
     elasticsearch.index.operations.merge.docs_count:
       enabled: false

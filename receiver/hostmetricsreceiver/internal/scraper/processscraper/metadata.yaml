@@ -1,5 +1,4 @@
 type: hostmetricsreceiver/process
-scope_name: otelcol/hostmetricsreceiver/process
 
 parent: hostmetrics
 
