@@ -20,7 +20,6 @@ This gives OpenTelemetry users the capability of monitoring network traffic, and
 * What ports are involved in these network calls?
 * How many bytes and packets are being sent and received?
 
-
 ## Getting started
 
 By default the receiver will listen for ipfix and netflow on port `2055` and sflow on port `6343`. The receiver can be configured to listen on different ports and protocols.
@@ -30,11 +29,10 @@ Example configuration:
 ```yaml
 receivers:
   netflow:
-    listeners:
-      - scheme: netflow
-        port: 2055
-        sockets: 16
-        workers: 32
+    - scheme: netflow
+      port: 2055
+      sockets: 16
+      workers: 32
 
 processors:
   batch:
@@ -62,18 +60,18 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 
 ## Configuration
 
-| Field | Description | Examples |
-|-------|-------------|--------|
-| scheme | The type of flow data that the listener will receive | `sflow`, `netflow`, `flow` |
-| hostname | The hostname or IP address that the listener will bind to | `localhost` |
-| port | The port that the listener will bind to | `2055` |
-| sockets | The number of sockets that the listener will use | 1 |
-| workers | The number of workers that the listener will use to decode incoming flow messages | 2 |
-| queue_size | The size of the queue that the listener will use | 1000 |
+| Field | Description | Examples | Default |
+|-------|-------------|--------| ------- |
+| scheme | The type of flow data that to receive | `sflow`, `netflow`, `flow` | `netflow` |
+| hostname | The hostname or IP address to bind to | `localhost` | `0.0.0.0` |
+| port | The port to bind to | `2055` | `2055` |
+| sockets | The number of sockets to use | 1 | 1 |
+| workers | The number of workers used to decode incoming flow messages | 2 | 2 |
+| queue_size | The size of the incoming netflow packets queue | 1000 | 1000000 |
 
 ## Data format
 
-The netflow data is standardized for the different schemas and is converted to OpenTelemetry logs. The output will look like this:
+The netflow data is standardized for the different schemas and is converted to OpenTelemetry logs. The output will follow the format:
 
 ```json
 {

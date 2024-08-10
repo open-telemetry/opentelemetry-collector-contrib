@@ -6,11 +6,11 @@ package netflowreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 )
-
 
 const (
 	defaultSockets   = 1
@@ -21,30 +21,20 @@ const (
 // NewFactory creates a factory for netflow receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelAlpha))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Listeners: []ListenerConfig{
-			{
-				Scheme:    "sflow",
-				Port:      6343,
-				Sockets:   defaultSockets,
-				Workers:   defaultWorkers,
-				QueueSize: defaultQueueSize,
-			},
-			{
-				Scheme:    "netflow",
-				Port:      2055,
-				Sockets:   defaultSockets,
-				Workers:   defaultWorkers,
-				QueueSize: defaultQueueSize,
-			},
-		},
+		Scheme:    "netflow",
+		Port:      2055,
+		Sockets:   defaultSockets,
+		Workers:   defaultWorkers,
+		QueueSize: defaultQueueSize,
 	}
+
 }
 
 func createLogsReceiver(_ context.Context, params receiver.CreateSettings, cfg component.Config, consumer consumer.Logs) (receiver.Logs, error) {

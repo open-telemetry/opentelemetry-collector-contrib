@@ -30,38 +30,14 @@ func TestLoadConfig(t *testing.T) {
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "two_listeners"),
-			expected: &Config{
-				Listeners: []ListenerConfig{
-					{
-						Scheme:    "netflow",
-						Port:      2055,
-						Sockets:   1,
-						Workers:   4,
-						QueueSize: 0,
-					},
-					{
-						Scheme:    "sflow",
-						Port:      6443,
-						Sockets:   1,
-						Workers:   2,
-						QueueSize: 1000,
-					},
-				},
-			},
-		},
-		{
 			id: component.NewIDWithName(metadata.Type, "one_listener"),
 			expected: &Config{
-				Listeners: []ListenerConfig{
-					{
-						Scheme:    "netflow",
-						Port:      2055,
-						Sockets:   1,
-						Workers:   1,
-						QueueSize: 0,
-					},
-				},
+
+				Scheme:    "netflow",
+				Port:      2055,
+				Sockets:   1,
+				Workers:   1,
+				QueueSize: 1000000,
 			},
 		},
 	}

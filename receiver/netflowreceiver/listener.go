@@ -10,7 +10,7 @@ import (
 )
 
 type Listener struct {
-	config      ListenerConfig
+	config      Config
 	logger      *zap.Logger
 	recv        *utils.UDPReceiver
 	logConsumer consumer.Logs

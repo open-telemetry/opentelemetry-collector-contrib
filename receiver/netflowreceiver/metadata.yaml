@@ -5,7 +5,6 @@ status:
   class: receiver
   stability:
     development: [logs]
-  distributions:
-    - contrib
+  distributions: []
   codeowners:
     active: [evan-bradley, dlopes7]
