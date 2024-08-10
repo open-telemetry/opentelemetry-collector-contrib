@@ -154,7 +154,11 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) *supervisor.Supervisor {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
-	s, err := supervisor.NewSupervisor(zap.NewNop(), cfgFile.Name())
+
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(zap.NewNop(), cfg)
 	require.NoError(t, err)
 
 	return s

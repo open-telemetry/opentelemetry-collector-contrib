@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
 func main() {
@@ -19,7 +20,14 @@ func main() {
 
 	logger, _ := zap.NewDevelopment()
 
-	supervisor, err := supervisor.NewSupervisor(logger, *configFlag)
+	cfg, err := config.Load(*configFlag)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(-1)
+		return
+	}
+
+	supervisor, err := supervisor.NewSupervisor(logger, cfg)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(-1)
