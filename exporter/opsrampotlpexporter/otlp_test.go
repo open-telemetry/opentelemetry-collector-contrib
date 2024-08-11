@@ -230,7 +230,7 @@ func TestSendTraces(t *testing.T) {
 		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
@@ -331,7 +331,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			if test.useTLS {
 				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
 			}
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
@@ -386,7 +386,7 @@ func TestSendMetrics(t *testing.T) {
 		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
@@ -465,7 +465,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -527,7 +527,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -583,7 +583,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -666,7 +666,7 @@ func TestSendLogData(t *testing.T) {
 		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)

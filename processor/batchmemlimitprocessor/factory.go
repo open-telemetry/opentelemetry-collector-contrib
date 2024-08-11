@@ -26,7 +26,7 @@ func createDefaultConfig() component.Config {
 
 func createMemoryLimiterProcessor(
 	_ context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {

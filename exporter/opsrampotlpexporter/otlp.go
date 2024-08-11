@@ -76,7 +76,7 @@ type opsrampOTLPExporter struct {
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg component.Config, set exporter.CreateSettings) (*opsrampOTLPExporter, error) {
+func newExporter(cfg component.Config, set exporter.Settings) (*opsrampOTLPExporter, error) {
 	oCfg := cfg.(*Config)
 
 	accessToken, err := getAuthToken(oCfg.Security)
