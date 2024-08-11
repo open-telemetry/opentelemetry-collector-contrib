@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -102,9 +103,9 @@ func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.Metri
 	return errs
 }
 
-func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
+func convertExemplars(exemplars pmetric.ExemplarSlice) (OrderedMap, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
 	var (
-		attrs    clickhouse.ArraySet
+		attrs    OrderedMap
 		times    clickhouse.ArraySet
 		values   clickhouse.ArraySet
 		traceIDs clickhouse.ArraySet
@@ -112,7 +113,11 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, cli
 	)
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		attrs = append(attrs, attributesToMap(exemplar.FilteredAttributes()))
+		orderedMap := attributesToMap(exemplar.FilteredAttributes())
+		mapIterator := orderedMap.Iterator()
+		for mapIterator.Next() {
+			attrs.Put(mapIterator.Key(), mapIterator.Value())
+		}
 		times = append(times, exemplar.Timestamp().AsTime())
 		values = append(values, getValue(exemplar.IntValue(), exemplar.DoubleValue(), exemplar.ValueType()))
 
@@ -159,13 +164,15 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 	}
 }
 
-func attributesToMap(attributes pcommon.Map) map[string]string {
-	m := make(map[string]string, attributes.Len())
+func attributesToMap(attributes pcommon.Map) column.IterableOrderedMap {
+
+	om := NewOrderedMap()
+	//m := make(map[string]string, attributes.Len())
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.AsString()
+		om.Put(k, v.AsString())
 		return true
 	})
-	return m
+	return om
 }
 
 func convertSliceToArraySet[T any](slice []T) clickhouse.ArraySet {
