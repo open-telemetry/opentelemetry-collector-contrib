@@ -76,13 +76,16 @@ func createDefaultConfig() component.Config {
 		},
 		Mapping: MappingsSettings{
 			Mode:  "none",
-			Dedup: true,
 			Dedot: true,
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
 			PrefixSeparator: "-",
 			DateFormat:      "%Y.%m.%d",
+		},
+		TelemetrySettings: TelemetrySettings{
+			LogRequestBody:  false,
+			LogResponseBody: false,
 		},
 	}
 }

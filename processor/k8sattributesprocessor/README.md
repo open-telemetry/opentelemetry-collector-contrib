@@ -332,3 +332,51 @@ as tags.
 
 By default, the `k8s.pod.start_time` uses [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) to format the
 timestamp value as an RFC3339 compliant timestamp.
+
+## Feature Gate
+
+### `k8sattr.fieldExtractConfigRegex.disallow`
+
+The `k8sattr.fieldExtractConfigRegex.disallow` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disallows the usage of the `extract.annotations.regex` and `extract.labels.regex` fields.
+The validation performed on the configuration will fail, if at least one of the parameters is set (non-empty) and `k8sattr.fieldExtractConfigRegex.disallow` is set to `true` (default `false`).
+
+#### Example Usage
+
+The following config with the feature gate set will lead to validation error:
+
+`config.yaml`:
+
+  ```yaml
+  extract:
+    labels:
+      regex: <my-regex1>
+    annotations:
+      regex: <my-regex2>
+  ```
+
+  Run collector: `./otelcol --config config.yaml --feature-gates=k8sattr.fieldExtractConfigRegex.disallow`
+
+#### Migration
+
+Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the the `extract.annotations.regex` and `extract.labels.regex` fields.
+
+##### Example
+
+The following configuration of `k8sattributes processor`:
+
+`config.yaml`:
+
+  ```yaml
+  annotations:
+    - tag_name: a2 # extracts value of annotation with key `annotation2` with regexp and inserts it as a tag with key `a2`
+      key: annotation2
+      regex: field=(?P<value>.+)
+      from: pod
+  ```
+
+can be converted with the usage of `ExtractPatterns` function:
+
+```yaml
+  - set(cache["annotations"], ExtractPatterns(attributes["k8s.pod.annotations["annotation2"], "field=(?P<value>.+))")
+  - set(k8s.pod.annotations["a2"], cache["annotations"]["value"])
+```

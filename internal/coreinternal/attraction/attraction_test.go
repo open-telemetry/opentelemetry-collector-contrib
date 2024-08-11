@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"regexp"
 	"testing"
 
@@ -958,6 +959,9 @@ func TestFromContext(t *testing.T) {
 		Auth: mockInfoAuth{
 			"source_auth_val": "auth_val",
 		},
+		Addr: &net.IPAddr{
+			IP: net.IPv4(192, 168, 1, 1),
+		},
 	})
 
 	testCases := []struct {
@@ -1007,6 +1011,12 @@ func TestFromContext(t *testing.T) {
 			ctx:                mdCtx,
 			expectedAttributes: map[string]any{},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.unknown_val", Action: INSERT},
+		},
+		{
+			name:               "with_address",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]any{"dest": "192.168.1.1"},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "client.address", Action: INSERT},
 		},
 	}
 

@@ -72,6 +72,15 @@ type Config struct {
 	Flush                   FlushSettings          `mapstructure:"flush"`
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
+
+	// TelemetrySettings contains settings useful for testing/debugging purposes
+	// This is experimental and may change at any time.
+	TelemetrySettings `mapstructure:"telemetry"`
+}
+
+type TelemetrySettings struct {
+	LogRequestBody  bool `mapstructure:"log_request_body"`
+	LogResponseBody bool `mapstructure:"log_response_body"`
 }
 
 type LogstashFormatSettings struct {
@@ -151,18 +160,12 @@ type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
 
-	// Additional field mappings.
-	Fields map[string]string `mapstructure:"fields"`
-
-	// File to read additional fields mappings from.
-	File string `mapstructure:"file"`
-
-	// Try to find and remove duplicate fields
+	// Dedup is non-operational, and will be removed in the future.
 	//
-	// Deprecated: [v0.104.0] deduplication will always be applied in future,
-	// with no option to disable. Disabling deduplication is not meaningful,
-	// as Elasticsearch will reject documents with duplicate JSON object keys.
-	Dedup bool `mapstructure:"dedup"`
+	// Deprecated: [v0.104.0] deduplication is always enabled, and cannot be
+	// disabled. Disabling deduplication is not meaningful, as Elasticsearch
+	// will always reject documents with duplicate JSON object keys.
+	Dedup *bool `mapstructure:"dedup,omitempty"`
 
 	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
 	// in future, and never for other modes. Elasticsearch's "dot_expander"
@@ -176,6 +179,7 @@ type MappingMode int
 const (
 	MappingNone MappingMode = iota
 	MappingECS
+	MappingOTel
 	MappingRaw
 )
 
@@ -190,6 +194,8 @@ func (m MappingMode) String() string {
 		return ""
 	case MappingECS:
 		return "ecs"
+	case MappingOTel:
+		return "otel"
 	case MappingRaw:
 		return "raw"
 	default:
@@ -202,6 +208,7 @@ var mappingModes = func() map[string]MappingMode {
 	for _, m := range []MappingMode{
 		MappingNone,
 		MappingECS,
+		MappingOTel,
 		MappingRaw,
 	} {
 		table[strings.ToLower(m.String())] = m
@@ -319,8 +326,8 @@ func (cfg *Config) MappingMode() MappingMode {
 }
 
 func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
-	if !cfg.Mapping.Dedup {
-		logger.Warn("dedup has been deprecated, and will always be enabled in future")
+	if cfg.Mapping.Dedup != nil {
+		logger.Warn("dedup is deprecated, and is always enabled")
 	}
 	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
 		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")

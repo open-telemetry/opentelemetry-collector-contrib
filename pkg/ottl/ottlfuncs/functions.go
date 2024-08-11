@@ -72,6 +72,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewSHA256Factory[K](),
 		NewSpanIDFactory[K](),
 		NewSplitFactory[K](),
+		NewFormatFactory[K](),
 		NewStringFactory[K](),
 		NewSubstringFactory[K](),
 		NewTimeFactory[K](),
@@ -86,5 +87,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewURLFactory[K](),
 		NewAppendFactory[K](),
 		NewYearFactory[K](),
+		NewHexFactory[K](),
 	}
 }

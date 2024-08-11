@@ -47,7 +47,7 @@ type kubletScraper struct {
 	m                     sync.RWMutex
 
 	// A struct that keeps Node's resource capacities
-	nodeLimits *kubelet.NodeLimits
+	nodeLimits *kubelet.NodeCapacity
 }
 
 func newKubletScraper(
@@ -80,11 +80,13 @@ func newKubletScraper(
 			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
 		stopCh:     make(chan struct{}),
-		nodeLimits: &kubelet.NodeLimits{},
+		nodeLimits: &kubelet.NodeCapacity{},
 	}
 
 	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
-		metricsConfig.Metrics.K8sPodCPUNodeUtilization.Enabled {
+		metricsConfig.Metrics.K8sPodCPUNodeUtilization.Enabled ||
+		metricsConfig.Metrics.K8sContainerMemoryNodeUtilization.Enabled ||
+		metricsConfig.Metrics.K8sPodMemoryNodeUtilization.Enabled {
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
 	}
 
@@ -113,7 +115,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	var node kubelet.NodeLimits
+	var node kubelet.NodeCapacity
 	if r.nodeInformer != nil {
 		node = r.node()
 	}
@@ -159,7 +161,7 @@ func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuil
 	}
 }
 
-func (r *kubletScraper) node() kubelet.NodeLimits {
+func (r *kubletScraper) node() kubelet.NodeCapacity {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	return *r.nodeLimits
@@ -209,7 +211,13 @@ func (r *kubletScraper) addOrUpdateNode(node *v1.Node) {
 
 	if cpu, ok := node.Status.Capacity["cpu"]; ok {
 		if q, err := resource.ParseQuantity(cpu.String()); err == nil {
-			r.nodeLimits.CPUNanoCoresLimit = float64(q.MilliValue()) / 1000
+			r.nodeLimits.CPUCapacity = float64(q.MilliValue()) / 1000
+		}
+	}
+	if memory, ok := node.Status.Capacity["memory"]; ok {
+		// ie: 32564740Ki
+		if q, err := resource.ParseQuantity(memory.String()); err == nil {
+			r.nodeLimits.MemoryCapacity = float64(q.Value())
 		}
 	}
 }

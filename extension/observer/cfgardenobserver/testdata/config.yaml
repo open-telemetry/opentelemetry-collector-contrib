@@ -1,0 +1,4 @@
+cfgarden_observer:
+cfgarden_observer/all_settings:
+  refresh_interval: 20s
+  endpoint: unix:///var/vcap/data/garden/custom.sock 
