@@ -134,6 +134,60 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:      "editor with empty map",
+			statement: `fff({})`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "fff",
+					Arguments: []argument{
+						{
+							Value: value{
+								Map: &mapValue{
+									Values: nil,
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "editor with converter with a map",
+			statement: `fff(GetSomething({"foo":"bar"}))`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "fff",
+					Arguments: []argument{
+						{
+							Value: value{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "GetSomething",
+										Arguments: []argument{
+											{
+												Value: value{
+													Map: &mapValue{
+														Values: []mapItem{
+															{
+																Key:   ottltest.Strp("foo"),
+																Value: &value{String: ottltest.Strp("bar")},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
 			name:      "editor with nested map",
 			statement: `fff({"mapAttr": {"foo": "bar", "get": bear.honey, "arrayAttr":["foo", "bar"]}})`,
 			expected: &parsedStatement{

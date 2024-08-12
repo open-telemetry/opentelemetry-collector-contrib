@@ -123,6 +123,13 @@ func Test_lexer(t *testing.T) {
 			{"OpMultDiv", "*"},
 			{"Float", "2.9"},
 		}},
+		{"Map", `{"foo":"bar"}`, false, []result{
+			{"LBrace", "{"},
+			{"String", `"foo"`},
+			{"Colon", ":"},
+			{"String", `"bar"`},
+			{"RBrace", "}"},
+		}},
 	}
 
 	for _, tt := range tests {
