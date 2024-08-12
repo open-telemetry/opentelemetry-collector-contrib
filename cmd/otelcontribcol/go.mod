@@ -150,6 +150,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.106.1
@@ -542,6 +543,7 @@ require (
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hetznercloud/hcloud-go/v2 v2.9.0 // indirect
+	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.104 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -736,6 +738,7 @@ require (
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	github.com/tidwall/wal v1.1.7 // indirect
 	github.com/tinylib/msgp v1.2.0 // indirect
+	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
@@ -872,9 +875,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hapro
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver => ../../receiver/httpcheckreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver => ../../extension/observer/dockerobserver
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver => ../../receiver/huaweicloudcesreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver => ../../extension/observer/dockerobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver => ../../extension/observer/k8sobserver
 

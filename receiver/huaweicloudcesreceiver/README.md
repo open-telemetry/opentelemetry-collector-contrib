@@ -153,8 +153,6 @@ converts to
       "resource": {
         "attributes": {
             "cloud.provider": "huawei_cloud",
-            "service.name": "ces_service",
-            "service.version": "v1",
             "project.id": "project_1",
             "region": "eu-west-101"
           }
@@ -174,7 +172,7 @@ converts to
               },
               "metadata": {
                     "publicip_id":  "test-baae-4dd9-ad3f-1234",
-                    "namespace" : "SYS.VPC"
+                    "system.namespace" : "SYS.VPC"
                 }
             }
           ]
@@ -193,7 +191,7 @@ converts to
               },
               "metadata": {
                   "publicip_id": "test-baae-4dd9-ad3f-1234",
-                  "namespace":"SYS.VPC"
+                  "system.namespace":"SYS.VPC"
               }
             }
           ]

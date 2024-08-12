@@ -1,11 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
-
-// Package huaweicloudexporter provides a metrics exporter for the OpenTelemetry collector.
-// This package is subject to change and may break configuration settings and behavior.
-package huaweicloudcesreceiver
+package huaweicloudcesreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver"
 
 import (
 	"context"
@@ -34,7 +30,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	next consumer.Metrics) (receiver.Metrics, error) {
 

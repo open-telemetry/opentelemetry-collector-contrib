@@ -32,7 +32,7 @@ type cesReceiver struct {
 	config           *Config
 }
 
-func newHuaweiCloudCesReceiver(settings receiver.CreateSettings, cfg *Config, next consumer.Metrics) *cesReceiver {
+func newHuaweiCloudCesReceiver(settings receiver.Settings, cfg *Config, next consumer.Metrics) *cesReceiver {
 	rcvr := &cesReceiver{
 		logger:       settings.Logger,
 		config:       cfg,
