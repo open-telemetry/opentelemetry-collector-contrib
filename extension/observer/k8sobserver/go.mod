@@ -6,9 +6,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.106.1
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.106.1
-	go.opentelemetry.io/collector/confmap v0.106.1
-	go.opentelemetry.io/collector/extension v0.106.1
+	go.opentelemetry.io/collector/component v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/confmap v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/extension v0.106.2-0.20240809191011-ef07ea073562
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	k8s.io/api v0.29.3
@@ -54,10 +54,10 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.12.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240809191011-ef07ea073562 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
