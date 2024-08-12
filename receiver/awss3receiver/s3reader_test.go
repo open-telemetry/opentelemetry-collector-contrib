@@ -405,6 +405,6 @@ func Test_readAll_ContextDone(t *testing.T) {
 		dataCallbackKeys = append(dataCallbackKeys, key)
 		return nil
 	})
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.Len(t, dataCallbackKeys, 0)
 }
