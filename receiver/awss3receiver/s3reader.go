@@ -66,18 +66,21 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 	} else {
 		timeStep = time.Minute
 	}
-	s3Reader.logger.Info("Start reading telemetry")
+	s3Reader.logger.Info("Start reading telemetry", zap.Time("start_time", s3Reader.startTime), zap.Time("end_time", s3Reader.endTime))
 	for currentTime := s3Reader.startTime; currentTime.Before(s3Reader.endTime); currentTime = currentTime.Add(timeStep) {
 		select {
 		case <-ctx.Done():
-			return nil
+			s3Reader.logger.Error("Context cancelled, stopping reading telemetry", zap.Time("time", currentTime))
+			return ctx.Err()
 		default:
+			s3Reader.logger.Info("Reading telemetry", zap.Time("time", currentTime))
 			if err := s3Reader.readTelemetryForTime(ctx, currentTime, telemetryType, dataCallback); err != nil {
+				s3Reader.logger.Error("Error reading telemetry", zap.Error(err), zap.Time("time", currentTime))
 				return err
 			}
 		}
 	}
-	s3Reader.logger.Info("Finished reading telemetry")
+	s3Reader.logger.Info("Finished reading telemetry", zap.Time("start_time", s3Reader.startTime), zap.Time("end_time", s3Reader.endTime))
 	return nil
 }
 
@@ -87,7 +90,7 @@ func (s3Reader *s3Reader) readTelemetryForTime(ctx context.Context, t time.Time,
 	}
 	prefix := s3Reader.getObjectPrefixForTime(t, telemetryType)
 	params.Prefix = &prefix
-	s3Reader.logger.Debug("Reading telemetry for time", zap.String("prefix", prefix))
+	s3Reader.logger.Debug("Finding telemetry with prefix", zap.String("prefix", prefix))
 	p := s3Reader.listObjectsClient.NewListObjectsV2Paginator(params)
 
 	firstPage := true
@@ -97,7 +100,7 @@ func (s3Reader *s3Reader) readTelemetryForTime(ctx context.Context, t time.Time,
 			return err
 		}
 		if firstPage && len(page.Contents) == 0 {
-			s3Reader.logger.Info("No telemetry found for time", zap.String("prefix", prefix))
+			s3Reader.logger.Info("No telemetry found for time", zap.String("prefix", prefix), zap.Time("time", t))
 		} else {
 			for _, obj := range page.Contents {
 				data, err := s3Reader.retrieveObject(ctx, *obj.Key)
