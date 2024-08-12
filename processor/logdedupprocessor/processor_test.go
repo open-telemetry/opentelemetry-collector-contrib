@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func Test_newProcessor(t *testing.T) {
@@ -53,14 +53,13 @@ func Test_newProcessor(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			logsSink := &consumertest.LogsSink{}
-			logger := zap.NewNop()
+			settings := processortest.NewNopSettings()
 
 			if tc.expected != nil {
-				tc.expected.consumer = logsSink
-				tc.expected.logger = logger
+				tc.expected.nextConsumer = logsSink
 			}
 
-			actual, err := newProcessor(tc.cfg, logsSink, logger)
+			actual, err := newProcessor(tc.cfg, logsSink, settings)
 			if tc.expectedErr != nil {
 				require.ErrorContains(t, err, tc.expectedErr.Error())
 				require.Nil(t, actual)
@@ -69,8 +68,7 @@ func Test_newProcessor(t *testing.T) {
 				require.Equal(t, tc.expected.emitInterval, actual.emitInterval)
 				require.NotNil(t, actual.aggregator)
 				require.NotNil(t, actual.remover)
-				require.Equal(t, tc.expected.consumer, actual.consumer)
-				require.Equal(t, tc.expected.logger, actual.logger)
+				require.Equal(t, tc.expected.nextConsumer, actual.nextConsumer)
 			}
 		})
 	}
@@ -81,7 +79,7 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 	cancel()
 
 	logsSink := &consumertest.LogsSink{}
-	logger := zap.NewNop()
+	settings := processortest.NewNopSettings()
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -89,7 +87,7 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, logger)
+	p, err := newProcessor(cfg, logsSink, settings)
 	require.NoError(t, err)
 
 	// Start then stop the processor checking for errors
@@ -106,7 +104,7 @@ func TestProcessorCapabilities(t *testing.T) {
 
 func TestShutdownBeforeStart(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	logger := zap.NewNop()
+	settings := processortest.NewNopSettings()
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -117,7 +115,7 @@ func TestShutdownBeforeStart(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, logger)
+	p, err := newProcessor(cfg, logsSink, settings)
 	require.NoError(t, err)
 	require.NotPanics(t, func() {
 		err := p.Shutdown(context.Background())
@@ -127,7 +125,7 @@ func TestShutdownBeforeStart(t *testing.T) {
 
 func TestProcessorConsume(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	logger := zap.NewNop()
+	settings := processortest.NewNopSettings()
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -138,7 +136,7 @@ func TestProcessorConsume(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, logger)
+	p, err := newProcessor(cfg, logsSink, settings)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -193,7 +191,6 @@ func TestProcessorConsume(t *testing.T) {
 
 func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	logger := zap.NewNop()
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -201,7 +198,7 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	}
 
 	// Create & start a processor
-	p, err := newProcessor(cfg, logsSink, logger)
+	p, err := newProcessor(cfg, logsSink, processortest.NewNopSettings())
 	require.NoError(t, err)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
