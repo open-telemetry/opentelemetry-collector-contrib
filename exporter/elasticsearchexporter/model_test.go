@@ -890,7 +890,7 @@ type OTelRecord struct {
 	SpanID                 OTelSpanID           `json:"span_id"`
 	Timestamp              time.Time            `json:"@timestamp"`
 	ObservedTimestamp      time.Time            `json:"observed_timestamp"`
-	TraceFlags             uint32               `json:"trace_flags"`
+	TraceFlags             uint32               `json:"-"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
 	Attributes             map[string]any       `json:"attributes"`
