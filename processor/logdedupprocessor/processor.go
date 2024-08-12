@@ -111,18 +111,23 @@ func (p *logDedupProcessor) handleExportInterval(ctx context.Context) {
 			}
 			return
 		case <-ticker.C:
-			p.mux.Lock()
-			defer p.mux.Unlock()
-
-			logs := p.aggregator.Export()
-			// Only send logs if we have some
-			if logs.LogRecordCount() > 0 {
-				err := p.consumer.ConsumeLogs(ctx, logs)
-				if err != nil {
-					p.logger.Error("failed to consume logs", zap.Error(err))
-				}
-			}
-			p.aggregator.Reset()
+			p.exportLogs(ctx)
 		}
 	}
+}
+
+// exportLogs exports the logs to the next consumer.
+func (p *logDedupProcessor) exportLogs(ctx context.Context) {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	logs := p.aggregator.Export()
+	// Only send logs if we have some
+	if logs.LogRecordCount() > 0 {
+		err := p.consumer.ConsumeLogs(ctx, logs)
+		if err != nil {
+			p.logger.Error("failed to consume logs", zap.Error(err))
+		}
+	}
+	p.aggregator.Reset()
 }
