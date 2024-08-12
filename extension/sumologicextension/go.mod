@@ -8,12 +8,12 @@ require (
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/shirou/gopsutil/v4 v4.24.7
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.106.1
-	go.opentelemetry.io/collector/config/confighttp v0.106.1
-	go.opentelemetry.io/collector/config/configopaque v1.12.0
-	go.opentelemetry.io/collector/extension v0.106.1
-	go.opentelemetry.io/collector/extension/auth v0.106.1
-	go.opentelemetry.io/collector/featuregate v1.12.0
+	go.opentelemetry.io/collector/component v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/config/confighttp v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/extension v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/extension/auth v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240809191011-ef07ea073562
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.65.0
@@ -52,16 +52,16 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector v0.106.1 // indirect
-	go.opentelemetry.io/collector/client v0.106.1 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.106.1 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/internal v0.106.1 // indirect
-	go.opentelemetry.io/collector/confmap v0.106.1 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.12.0 // indirect
+	go.opentelemetry.io/collector v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/client v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/config/internal v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/confmap v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240809191011-ef07ea073562 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
@@ -70,9 +70,9 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

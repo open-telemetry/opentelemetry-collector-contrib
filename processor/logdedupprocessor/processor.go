@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package logdeduplicationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdeduplicationprocessor"
+package logdedupprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
 
 import (
 	"context"
@@ -62,23 +62,13 @@ func (p *logDedupProcessor) Capabilities() consumer.Capabilities {
 }
 
 // Shutdown stops the processor.
-func (p *logDedupProcessor) Shutdown(ctx context.Context) error {
+func (p *logDedupProcessor) Shutdown(_ context.Context) error {
 	if p.cancel != nil {
+		// Call cancel to stop the export interval goroutine and wait for it to finish.
 		p.cancel()
-	}
-
-	doneChan := make(chan struct{})
-	go func() {
-		defer close(doneChan)
 		p.wg.Wait()
-	}()
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-doneChan:
-		return nil
 	}
+	return nil
 }
 
 // ConsumeLogs processes the logs.
@@ -117,6 +107,9 @@ func (p *logDedupProcessor) handleExportInterval(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			if err := ctx.Err(); err != context.Canceled {
+				p.logger.Error("context error", zap.Error(err))
+			}
 			return
 		case <-ticker.C:
 			p.mux.Lock()

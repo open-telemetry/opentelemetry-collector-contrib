@@ -3,7 +3,7 @@ type: logdedup
 status:
   class: processor
   stability:
-    development: [logs]
+    alpha: [logs]
   distributions: []
   warnings: []
   codeowners:

@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	envprovider "go.opentelemetry.io/collector/confmap/provider/envprovider"
 	fileprovider "go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	httpprovider "go.opentelemetry.io/collector/confmap/provider/httpprovider"
@@ -40,9 +39,6 @@ func main() {
 					yamlprovider.NewFactory(),
 					s3provider.NewFactory(),
 					secretsmanagerprovider.NewFactory(),
-				},
-				ConverterFactories: []confmap.ConverterFactory{
-					expandconverter.NewFactory(),
 				},
 			},
 		},
