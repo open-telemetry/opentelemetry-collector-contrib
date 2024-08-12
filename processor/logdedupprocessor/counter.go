@@ -4,7 +4,6 @@
 package logdedupprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
 
 import (
-	"hash/fnv"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -24,16 +23,15 @@ var timeNow = time.Now
 
 // logAggregator tracks the number of times a specific logRecord has been seen.
 type logAggregator struct {
-	resources         map[[16]byte]*resourceAggregator
+	resources         map[uint64]*resourceAggregator
 	logCountAttribute string
 	timezone          *time.Location
 }
 
 // newLogAggregator creates a new LogCounter.
 func newLogAggregator(logCountAttribute string, timezone *time.Location) *logAggregator {
-
 	return &logAggregator{
-		resources:         make(map[[16]byte]*resourceAggregator),
+		resources:         make(map[uint64]*resourceAggregator),
 		logCountAttribute: logCountAttribute,
 		timezone:          timezone,
 	}
@@ -43,37 +41,30 @@ func newLogAggregator(logCountAttribute string, timezone *time.Location) *logAgg
 func (l *logAggregator) Export() plog.Logs {
 	logs := plog.NewLogs()
 
-	for _, resource := range l.resources {
-		resourceLogs := logs.ResourceLogs().AppendEmpty()
-		resourceAttrs := resourceLogs.Resource().Attributes()
-		resourceAttrs.EnsureCapacity(resourceAttrs.Len())
-		resource.attributes.CopyTo(resourceAttrs)
+	for _, resourceAggregator := range l.resources {
+		rl := logs.ResourceLogs().AppendEmpty()
+		resourceAggregator.resource.CopyTo(rl.Resource())
 
-		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-		for _, lc := range resource.logCounters {
-			lr := scopeLogs.LogRecords().AppendEmpty()
+		for _, scopeAggregator := range resourceAggregator.scopeCounters {
+			sl := rl.ScopeLogs().AppendEmpty()
+			scopeAggregator.scope.CopyTo(sl.Scope())
 
-			baseRecord := lc.logRecord
+			for _, logAggregator := range scopeAggregator.logCounters {
+				lr := sl.LogRecords().AppendEmpty()
+				logAggregator.logRecord.CopyTo(lr)
 
-			// Copy contents of base record
-			baseRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(lc.firstObservedTimestamp))
-			baseRecord.Body().CopyTo(lr.Body())
+				// Set log record timestamps
+				lr.SetTimestamp(pcommon.NewTimestampFromTime(timeNow()))
+				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(logAggregator.firstObservedTimestamp))
 
-			lr.Attributes().EnsureCapacity(baseRecord.Attributes().Len())
-			baseRecord.Attributes().CopyTo(lr.Attributes())
-
-			lr.SetSeverityNumber(baseRecord.SeverityNumber())
-			lr.SetSeverityText(baseRecord.SeverityText())
-
-			// Add attributes for log count and timestamps
-			lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(lc.firstObservedTimestamp))
-			lr.SetTimestamp(pcommon.NewTimestampFromTime(timeNow()))
-			lr.Attributes().PutInt(l.logCountAttribute, lc.count)
-
-			firstTimestampStr := lc.firstObservedTimestamp.In(l.timezone).Format(time.RFC3339)
-			lastTimestampStr := lc.lastObservedTimestamp.In(l.timezone).Format(time.RFC3339)
-			lr.Attributes().PutStr(firstObservedTSAttr, firstTimestampStr)
-			lr.Attributes().PutStr(lastObservedTSAttr, lastTimestampStr)
+				// Add attributes for log count and first/last observed timestamps
+				lr.Attributes().EnsureCapacity(lr.Attributes().Len() + 3)
+				lr.Attributes().PutInt(l.logCountAttribute, logAggregator.count)
+				firstTimestampStr := logAggregator.firstObservedTimestamp.In(l.timezone).Format(time.RFC3339)
+				lr.Attributes().PutStr(firstObservedTSAttr, firstTimestampStr)
+				lastTimestampStr := logAggregator.lastObservedTimestamp.In(l.timezone).Format(time.RFC3339)
+				lr.Attributes().PutStr(lastObservedTSAttr, lastTimestampStr)
+			}
 		}
 	}
 
@@ -81,42 +72,67 @@ func (l *logAggregator) Export() plog.Logs {
 }
 
 // Add adds the logRecord to the resource aggregator that is identified by the resource attributes
-func (l *logAggregator) Add(resourceKey [16]byte, resourceAttrs pcommon.Map, logRecord plog.LogRecord) {
-	resourceCounter, ok := l.resources[resourceKey]
+func (l *logAggregator) Add(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord) {
+	key := getResourceKey(resource)
+	resourceAggregator, ok := l.resources[key]
 	if !ok {
-		resourceCounter = newResourceAggregator(resourceAttrs)
-		l.resources[resourceKey] = resourceCounter
+		resourceAggregator = newResourceAggregator(resource)
+		l.resources[key] = resourceAggregator
 	}
-
-	resourceCounter.Add(logRecord)
+	resourceAggregator.Add(scope, logRecord)
 }
 
 // Reset resets the counter.
 func (l *logAggregator) Reset() {
-	l.resources = make(map[[16]byte]*resourceAggregator)
+	l.resources = make(map[uint64]*resourceAggregator)
 }
 
 // resourceAggregator dimensions the counter by resource.
 type resourceAggregator struct {
-	attributes  pcommon.Map
-	logCounters map[[8]byte]*logCounter
+	resource      pcommon.Resource
+	scopeCounters map[uint64]*scopeAggregator
 }
 
 // newResourceAggregator creates a new ResourceCounter.
-func newResourceAggregator(attributes pcommon.Map) *resourceAggregator {
+func newResourceAggregator(resource pcommon.Resource) *resourceAggregator {
 	return &resourceAggregator{
-		attributes:  attributes,
-		logCounters: make(map[[8]byte]*logCounter),
+		resource:      resource,
+		scopeCounters: make(map[uint64]*scopeAggregator),
 	}
 }
 
 // Add increments the counter that the logRecord matches.
-func (r *resourceAggregator) Add(logRecord plog.LogRecord) {
+func (r *resourceAggregator) Add(scope pcommon.InstrumentationScope, logRecord plog.LogRecord) {
+	key := getScopeKey(scope)
+	scopeAggregator, ok := r.scopeCounters[key]
+	if !ok {
+		scopeAggregator = newScopeAggregator(scope)
+		r.scopeCounters[key] = scopeAggregator
+	}
+	scopeAggregator.Add(logRecord)
+}
+
+// scopeAggregator dimensions the counter by scope.
+type scopeAggregator struct {
+	scope       pcommon.InstrumentationScope
+	logCounters map[uint64]*logCounter
+}
+
+// newScopeAggregator creates a new ScopeCounter.
+func newScopeAggregator(scope pcommon.InstrumentationScope) *scopeAggregator {
+	return &scopeAggregator{
+		scope:       scope,
+		logCounters: make(map[uint64]*logCounter),
+	}
+}
+
+// Add increments the counter that the logRecord matches.
+func (s *scopeAggregator) Add(logRecord plog.LogRecord) {
 	key := getLogKey(logRecord)
-	lc, ok := r.logCounters[key]
+	lc, ok := s.logCounters[key]
 	if !ok {
 		lc = newLogCounter(logRecord)
-		r.logCounters[key] = lc
+		s.logCounters[key] = lc
 	}
 	lc.Increment()
 }
@@ -135,6 +151,7 @@ func newLogCounter(logRecord plog.LogRecord) *logCounter {
 		logRecord:              logRecord,
 		count:                  0,
 		firstObservedTimestamp: timeNow().UTC(),
+		lastObservedTimestamp:  timeNow().UTC(),
 	}
 }
 
@@ -144,21 +161,28 @@ func (a *logCounter) Increment() {
 	a.count++
 }
 
+// getResourceKey creates a unique hash for the resource to use as a map key
+func getResourceKey(resource pcommon.Resource) uint64 {
+	return pdatautil.Hash64(
+		pdatautil.WithMap(resource.Attributes()),
+	)
+}
+
+// getScopeKey creates a unique hash for the scope to use as a map key
+func getScopeKey(scope pcommon.InstrumentationScope) uint64 {
+	return pdatautil.Hash64(
+		pdatautil.WithMap(scope.Attributes()),
+		pdatautil.WithString(scope.Name()),
+		pdatautil.WithString(scope.Version()),
+	)
+}
+
 // getLogKey creates a unique hash for the log record to use as a map key
-/* #nosec G104 -- According to Hash interface write can never return an error */
-func getLogKey(logRecord plog.LogRecord) [8]byte {
-	hasher := fnv.New64()
-	attrHash := pdatautil.MapHash(logRecord.Attributes())
-
-	hasher.Write(attrHash[:])
-	bodyHash := pdatautil.ValueHash(logRecord.Body())
-	hasher.Write(bodyHash[:])
-	hasher.Write([]byte(logRecord.SeverityNumber().String()))
-	hasher.Write([]byte(logRecord.SeverityText()))
-	hash := hasher.Sum(nil)
-
-	// convert from slice to fixed size array to use as key
-	var key [8]byte
-	copy(key[:], hash)
-	return key
+func getLogKey(logRecord plog.LogRecord) uint64 {
+	return pdatautil.Hash64(
+		pdatautil.WithMap(logRecord.Attributes()),
+		pdatautil.WithValue(logRecord.Body()),
+		pdatautil.WithString(logRecord.SeverityNumber().String()),
+		pdatautil.WithString(logRecord.SeverityText()),
+	)
 }
