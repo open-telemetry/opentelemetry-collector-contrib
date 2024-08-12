@@ -6,10 +6,10 @@ package logdedupprocessor // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"time"
 
+	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/cespare/xxhash/v2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
