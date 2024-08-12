@@ -19,14 +19,12 @@ const (
 	lastObservedTSAttr  = "last_observed_timestamp"
 )
 
-type hashedKey [8]byte
-
 // timeNow can be reassigned for testing
 var timeNow = time.Now
 
 // logAggregator tracks the number of times a specific logRecord has been seen.
 type logAggregator struct {
-	resources         map[hashedKey]*resourceAggregator
+	resources         map[uint64]*resourceAggregator
 	logCountAttribute string
 	timezone          *time.Location
 }
@@ -34,7 +32,7 @@ type logAggregator struct {
 // newLogAggregator creates a new LogCounter.
 func newLogAggregator(logCountAttribute string, timezone *time.Location) *logAggregator {
 	return &logAggregator{
-		resources:         make(map[hashedKey]*resourceAggregator),
+		resources:         make(map[uint64]*resourceAggregator),
 		logCountAttribute: logCountAttribute,
 		timezone:          timezone,
 	}
@@ -87,20 +85,20 @@ func (l *logAggregator) Add(resource pcommon.Resource, scope pcommon.Instrumenta
 
 // Reset resets the counter.
 func (l *logAggregator) Reset() {
-	l.resources = make(map[hashedKey]*resourceAggregator)
+	l.resources = make(map[uint64]*resourceAggregator)
 }
 
 // resourceAggregator dimensions the counter by resource.
 type resourceAggregator struct {
 	resource      pcommon.Resource
-	scopeCounters map[hashedKey]*scopeAggregator
+	scopeCounters map[uint64]*scopeAggregator
 }
 
 // newResourceAggregator creates a new ResourceCounter.
 func newResourceAggregator(resource pcommon.Resource) *resourceAggregator {
 	return &resourceAggregator{
 		resource:      resource,
-		scopeCounters: make(map[hashedKey]*scopeAggregator),
+		scopeCounters: make(map[uint64]*scopeAggregator),
 	}
 }
 
@@ -118,14 +116,14 @@ func (r *resourceAggregator) Add(scope pcommon.InstrumentationScope, logRecord p
 // scopeAggregator dimensions the counter by scope.
 type scopeAggregator struct {
 	scope       pcommon.InstrumentationScope
-	logCounters map[hashedKey]*logCounter
+	logCounters map[uint64]*logCounter
 }
 
 // newScopeAggregator creates a new ScopeCounter.
 func newScopeAggregator(scope pcommon.InstrumentationScope) *scopeAggregator {
 	return &scopeAggregator{
 		scope:       scope,
-		logCounters: make(map[hashedKey]*logCounter),
+		logCounters: make(map[uint64]*logCounter),
 	}
 }
 
@@ -165,35 +163,25 @@ func (a *logCounter) Increment() {
 }
 
 // getResourceKey creates a unique hash for the resource to use as a map key
-func getResourceKey(resource pcommon.Resource) hashedKey {
+func getResourceKey(resource pcommon.Resource) uint64 {
 	hasher := xxhash.New()
 	attrsHash := pdatautil.MapHash(resource.Attributes())
 	_, _ = hasher.Write(attrsHash[:])
-	hash := hasher.Sum(nil)
-
-	// convert from slice to fixed size array to use as key
-	var key hashedKey
-	copy(key[:], hash)
-	return key
+	return hasher.Sum64()
 }
 
 // getScopeKey creates a unique hash for the scope to use as a map key
-func getScopeKey(scope pcommon.InstrumentationScope) hashedKey {
+func getScopeKey(scope pcommon.InstrumentationScope) uint64 {
 	hasher := xxhash.New()
 	attrsHash := pdatautil.MapHash(scope.Attributes())
 	_, _ = hasher.Write(attrsHash[:])
 	_, _ = hasher.Write([]byte(scope.Name()))
 	_, _ = hasher.Write([]byte(scope.Version()))
-	hash := hasher.Sum(nil)
-
-	// convert from slice to fixed size array to use as key
-	var key hashedKey
-	copy(key[:], hash)
-	return key
+	return hasher.Sum64()
 }
 
 // getLogKey creates a unique hash for the log record to use as a map key
-func getLogKey(logRecord plog.LogRecord) hashedKey {
+func getLogKey(logRecord plog.LogRecord) uint64 {
 	hasher := xxhash.New()
 	attrsHash := pdatautil.MapHash(logRecord.Attributes())
 	_, _ = hasher.Write(attrsHash[:])
@@ -201,10 +189,5 @@ func getLogKey(logRecord plog.LogRecord) hashedKey {
 	_, _ = hasher.Write(bodyHash[:])
 	_, _ = hasher.Write([]byte(logRecord.SeverityNumber().String()))
 	_, _ = hasher.Write([]byte(logRecord.SeverityText()))
-	hash := hasher.Sum(nil)
-
-	// convert from slice to fixed size array to use as key
-	var key hashedKey
-	copy(key[:], hash)
-	return key
+	return hasher.Sum64()
 }
