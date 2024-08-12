@@ -418,7 +418,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	case pcommon.ValueTypeMap:
 		m := pcommon.NewMap()
 		value.Map().CopyTo(m)
-		document.Add("metrics."+metric.Name(), objmodel.ComplexObjectValue(m))
+		document.Add("metrics."+metric.Name(), objmodel.UnflattenedObjectValue(m))
 	default:
 		document.Add("metrics."+metric.Name(), objmodel.ValueFromAttribute(value))
 	}
