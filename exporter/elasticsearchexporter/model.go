@@ -167,7 +167,6 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 
 	document.AddTraceID("trace_id", record.TraceID())
 	document.AddSpanID("span_id", record.SpanID())
-	document.AddInt("trace_flags", int64(record.Flags()))
 	document.AddString("severity_text", record.SeverityText())
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
