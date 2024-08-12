@@ -37,23 +37,31 @@ func Test_logAggregatorAdd(t *testing.T) {
 	// Setup aggregator
 	aggregator := newLogAggregator("log_count", time.UTC)
 	logRecord := plog.NewLogRecord()
-	resourceAttrs := pcommon.NewMap()
-	resourceAttrs.PutStr("one", "two")
 
-	expectedResourceKey := pdatautil.MapHash(resourceAttrs)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("one", "two")
+
+	scope := pcommon.NewInstrumentationScope()
+
+	expectedResourceKey := getResourceKey(resource)
+	expectedScopeKey := getScopeKey(scope)
 	expectedLogKey := getLogKey(logRecord)
 
 	// Add logRecord
-	resourceKey := pdatautil.MapHash(resourceAttrs)
-	aggregator.Add(resourceKey, resourceAttrs, logRecord)
+	aggregator.Add(resource, scope, logRecord)
 
 	// Check resourceCounter was set
 	resourceCounter, ok := aggregator.resources[expectedResourceKey]
 	require.True(t, ok)
-	require.Equal(t, resourceAttrs, resourceCounter.attributes)
+	require.Equal(t, resource, resourceCounter.resource)
+
+	// check scopeCounter was set
+	scopeCounter, ok := resourceCounter.scopeCounters[expectedScopeKey]
+	require.True(t, ok)
+	require.Equal(t, scope, scopeCounter.scope)
 
 	// Check logCounter was set
-	lc, ok := resourceCounter.logCounters[expectedLogKey]
+	lc, ok := scopeCounter.logCounters[expectedLogKey]
 	require.True(t, ok)
 
 	// Check fields on logCounter
@@ -68,7 +76,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 		return secondExpectedTimestamp
 	}
 
-	aggregator.Add(resourceKey, resourceAttrs, logRecord)
+	aggregator.Add(resource, scope, logRecord)
 	require.Equal(t, int64(2), lc.count)
 	require.Equal(t, secondExpectedTimestamp, lc.lastObservedTimestamp)
 }
@@ -76,10 +84,10 @@ func Test_logAggregatorAdd(t *testing.T) {
 func Test_logAggregatorReset(t *testing.T) {
 	aggregator := newLogAggregator("log_count", time.UTC)
 	for i := 0; i < 2; i++ {
-		resourceAttrs := pcommon.NewMap()
-		resourceAttrs.PutInt("i", int64(i))
-		key := pdatautil.MapHash(resourceAttrs)
-		aggregator.resources[key] = newResourceAggregator(resourceAttrs)
+		resource := pcommon.NewResource()
+		resource.Attributes().PutInt("i", int64(i))
+		key := getResourceKey(resource)
+		aggregator.resources[key] = newResourceAggregator(resource)
 	}
 
 	require.Len(t, aggregator.resources, 2)
@@ -108,15 +116,16 @@ func Test_logAggregatorExport(t *testing.T) {
 	// Setup aggregator
 
 	aggregator := newLogAggregator(defaultLogCountAttribute, location)
-	resourceAttrs := pcommon.NewMap()
-	resourceAttrs.PutStr("one", "two")
-	expectedHash := pdatautil.MapHash(resourceAttrs)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("one", "two")
+	expectedHash := pdatautil.MapHash(resource.Attributes())
+
+	scope := pcommon.NewInstrumentationScope()
 
 	logRecord := generateTestLogRecord(t, "body string")
 
 	// Add logRecord
-	resourceKey := pdatautil.MapHash(resourceAttrs)
-	aggregator.Add(resourceKey, resourceAttrs, logRecord)
+	aggregator.Add(resource, scope, logRecord)
 
 	exportedLogs := aggregator.Export()
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
@@ -163,18 +172,57 @@ func Test_logAggregatorExport(t *testing.T) {
 }
 
 func Test_newResourceAggregator(t *testing.T) {
-	attributes := pcommon.NewMap()
-	attributes.PutStr("one", "two")
-	aggregator := newResourceAggregator(attributes)
-	require.NotNil(t, aggregator.logCounters)
-	require.Equal(t, attributes, aggregator.attributes)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("one", "two")
+	aggregator := newResourceAggregator(resource)
+	require.NotNil(t, aggregator.scopeCounters)
+	require.Equal(t, resource, aggregator.resource)
+}
+
+func Test_newScopeCounter(t *testing.T) {
+	scope := pcommon.NewInstrumentationScope()
+	scope.Attributes().PutStr("one", "two")
+	sc := newScopeAggregator(scope)
+	require.Equal(t, scope, sc.scope)
+	require.NotNil(t, sc.logCounters)
 }
 
 func Test_newLogCounter(t *testing.T) {
+	oldTimeNow := timeNow
+	defer func() {
+		timeNow = oldTimeNow
+	}()
+
+	now := time.Now().UTC()
+	timeNow = func() time.Time { return now }
 	logRecord := plog.NewLogRecord()
 	lc := newLogCounter(logRecord)
 	require.Equal(t, logRecord, lc.logRecord)
 	require.Equal(t, int64(0), lc.count)
+	require.Equal(t, now, lc.firstObservedTimestamp)
+	require.Equal(t, now, lc.lastObservedTimestamp)
+}
+
+func Test_logCounterIncrement(t *testing.T) {
+	oldTimeNow := timeNow
+	defer func() {
+		timeNow = oldTimeNow
+	}()
+
+	first := time.Now().UTC()
+	timeNow = func() time.Time { return first }
+	logRecord := plog.NewLogRecord()
+	lc := newLogCounter(logRecord)
+	require.Equal(t, logRecord, lc.logRecord)
+	require.Equal(t, int64(0), lc.count)
+	require.Equal(t, first, lc.firstObservedTimestamp)
+
+	last := time.Now().UTC()
+	timeNow = func() time.Time { return last }
+	lc.Increment()
+	require.Equal(t, int64(1), lc.count)
+	require.Equal(t, first, lc.firstObservedTimestamp)
+	require.Equal(t, last, lc.lastObservedTimestamp)
 }
 
 func Test_getLogKey(t *testing.T) {
