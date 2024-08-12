@@ -416,9 +416,9 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 
 	switch value.Type() {
 	case pcommon.ValueTypeMap:
-		histogramMap := pcommon.NewMap()
-		value.Map().CopyTo(histogramMap)
-		document.Add("metrics."+metric.Name(), objmodel.ComplexObjectValue(histogramMap))
+		m := pcommon.NewMap()
+		value.Map().CopyTo(m)
+		document.Add("metrics."+metric.Name(), objmodel.ComplexObjectValue(m))
 	default:
 		document.Add("metrics."+metric.Name(), objmodel.ValueFromAttribute(value))
 	}
@@ -442,7 +442,8 @@ func metricDpToDynamicTemplate(metric pmetric.Metric, dp dataPoint) string {
 				return "counter_long"
 			}
 			return "gauge_long"
-			// FIXME: NumberDataPointValueTypeEmpty handling
+		default:
+			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
 		}
 	case pmetric.MetricTypeGauge:
 		switch dp.(pmetric.NumberDataPoint).ValueType() {
@@ -450,7 +451,8 @@ func metricDpToDynamicTemplate(metric pmetric.Metric, dp dataPoint) string {
 			return "gauge_double"
 		case pmetric.NumberDataPointValueTypeInt:
 			return "gauge_long"
-			// FIXME: NumberDataPointValueTypeEmpty handling
+		default:
+			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
 		}
 	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram:
 		return "histogram"
