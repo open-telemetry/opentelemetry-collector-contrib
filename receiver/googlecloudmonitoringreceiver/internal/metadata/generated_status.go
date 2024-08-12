@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("googlecloudmonitoring")
+	Type      = component.MustNewType("googlecloudmonitoring")
+	ScopeName = "otelcol/googlecloudmonitoringreceiver"
 )
 
 const (
