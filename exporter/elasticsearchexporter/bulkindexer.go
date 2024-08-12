@@ -108,8 +108,8 @@ type syncBulkIndexerSession struct {
 }
 
 // Add adds an item to the sync bulk indexer session.
-func (s *syncBulkIndexerSession) Add(_ context.Context, index string, document io.WriterTo) error {
-	return s.bi.Add(docappender.BulkIndexerItem{Index: index, Body: document})
+func (s *syncBulkIndexerSession) Add(_ context.Context, index string, document io.WriterTo, dynamicTemplates map[string]string) error {
+	return s.bi.Add(docappender.BulkIndexerItem{Index: index, Body: document, DynamicTemplates: dynamicTemplates})
 }
 
 // End is a no-op.

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.21.0
 
 require (
-	github.com/elastic/go-docappender/v2 v2.2.1
+	github.com/elastic/go-docappender/v2 v2.3.0
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.106.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.106.1
@@ -43,8 +43,8 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.14.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/go-structform v0.0.11 // indirect
-	github.com/elastic/go-sysinfo v1.14.0 // indirect
-	github.com/elastic/go-windows v1.0.1 // indirect
+	github.com/elastic/go-sysinfo v1.14.1 // indirect
+	github.com/elastic/go-windows v1.0.2 // indirect
 	github.com/expr-lang/expr v1.16.9 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -180,7 +180,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.28.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240723171418-e6d459c13d2a // indirect
