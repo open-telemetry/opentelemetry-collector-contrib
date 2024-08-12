@@ -1,5 +1,4 @@
 type: mongodb
-scope_name: otelcol/mongodbreceiver
 
 status:
   class: receiver
@@ -346,7 +345,7 @@ metrics:
     extended_documentation:
       A value of '1' indicates healthy.
       A value of '0' indicates unhealthy.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [ ]

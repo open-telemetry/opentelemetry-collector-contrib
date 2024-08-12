@@ -20,7 +20,7 @@
 > The Datadog Exporter now skips APM stats computation by default. It is recommended to only use the [Datadog Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/datadogconnector) in order to compute APM stats.
 > To temporarily revert to the previous behavior, disable the `exporter.datadogexporter.DisableAPMStats` feature gate. Example: `otelcol --config=config.yaml --feature-gates=-exporter.datadogexporter.DisableAPMStats`
 
-Visit the [official documentation](https://docs.datadoghq.com/tracing/trace_collection/open_standards/otel_collector_datadog_exporter/) for usage instructions.
+Find the full configs of Datadog exporter and their usage in [collector.yaml](./examples/collector.yaml). More example configs can be found in the [official documentation](https://docs.datadoghq.com/opentelemetry/collector_exporter/configuration/).
 
 ## FAQs
 

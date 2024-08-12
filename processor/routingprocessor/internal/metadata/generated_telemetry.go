@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/routing")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/routing")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
@@ -55,19 +55,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.RoutingProcessorNonRoutedLogRecords, err = builder.meter.Int64Counter(
-		"routing_processor_non_routed_log_records",
+		"otelcol_routing_processor_non_routed_log_records",
 		metric.WithDescription("Number of log records that were not routed to some or all exporters."),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.RoutingProcessorNonRoutedMetricPoints, err = builder.meter.Int64Counter(
-		"routing_processor_non_routed_metric_points",
+		"otelcol_routing_processor_non_routed_metric_points",
 		metric.WithDescription("Number of metric points that were not routed to some or all exporters."),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.RoutingProcessorNonRoutedSpans, err = builder.meter.Int64Counter(
-		"routing_processor_non_routed_spans",
+		"otelcol_routing_processor_non_routed_spans",
 		metric.WithDescription("Number of spans that were not routed to some or all exporters."),
 		metric.WithUnit("{spans}"),
 	)

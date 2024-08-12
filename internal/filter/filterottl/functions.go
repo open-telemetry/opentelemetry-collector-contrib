@@ -21,7 +21,10 @@ import (
 )
 
 func StandardSpanFuncs() map[string]ottl.Factory[ottlspan.TransformContext] {
-	return ottlfuncs.StandardConverters[ottlspan.TransformContext]()
+	m := ottlfuncs.StandardConverters[ottlspan.TransformContext]()
+	isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
+	m[isRootSpanFactory.Name()] = isRootSpanFactory
+	return m
 }
 
 func StandardSpanEventFuncs() map[string]ottl.Factory[ottlspanevent.TransformContext] {

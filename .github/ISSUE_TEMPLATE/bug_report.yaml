@@ -30,10 +30,12 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/otlpjson
       - connector/roundrobin
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
+      - connector/sum
       - examples/demo
       - exporter/alertmanager
       - exporter/alibabacloudlogservice
@@ -75,7 +77,6 @@ body:
       - exporter/sapm
       - exporter/sentry
       - exporter/signalfx
-      - exporter/skywalking
       - exporter/splunkhec
       - exporter/sumologic
       - exporter/syslog
@@ -101,6 +102,7 @@ body:
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
+      - extension/observer/cfgardenobserver
       - extension/observer/dockerobserver
       - extension/observer/ecsobserver
       - extension/observer/ecstaskobserver
@@ -116,6 +118,7 @@ body:
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
+      - extension/storage/redisstorage
       - extension/sumologic
       - internal/aws
       - internal/collectd
@@ -123,11 +126,13 @@ body:
       - internal/docker
       - internal/exp/metrics
       - internal/filter
+      - internal/grpcutil
       - internal/k8sconfig
       - internal/k8stest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
+      - internal/otelarrow
       - internal/pdatautil
       - internal/sharedcomponent
       - internal/splunk
@@ -155,6 +160,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
+      - processor/coralogix
       - processor/cumulativetodelta
       - processor/deltatocumulative
       - processor/deltatorate
@@ -164,6 +170,7 @@ body:
       - processor/groupbytrace
       - processor/interval
       - processor/k8sattributes
+      - processor/logdedup
       - processor/logstransform
       - processor/metricsgeneration
       - processor/metricstransform

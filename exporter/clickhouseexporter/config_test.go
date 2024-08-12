@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 				ConnectionParams: map[string]string{},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
-					NumConsumers: 1,
+					NumConsumers: 10,
 					QueueSize:    100,
 					StorageID:    &storageID,
 				},
@@ -108,6 +108,7 @@ func TestConfig_buildDSN(t *testing.T) {
 		Username         string
 		Password         string
 		Database         string
+		Compress         string
 		ConnectionParams map[string]string
 		AsyncInsert      *bool
 	}
@@ -126,6 +127,9 @@ func TestConfig_buildDSN(t *testing.T) {
 		}
 		if fields.ConnectionParams != nil {
 			cfg.ConnectionParams = fields.ConnectionParams
+		}
+		if fields.Compress != "" {
+			cfg.Compress = fields.Compress
 		}
 		if fields.AsyncInsert != nil {
 			cfg.AsyncInsert = *fields.AsyncInsert
@@ -155,7 +159,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?async_insert=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "Support tcp scheme",
@@ -165,7 +169,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "prefers database name from config over from DSN",
@@ -178,7 +182,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true",
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true&compress=lz4",
 		},
 		{
 			name: "use database name from DSN if not set in config",
@@ -190,7 +194,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true",
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true&compress=lz4",
 		},
 		{
 			name: "invalid config",
@@ -210,29 +214,29 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "https://127.0.0.1:9000/default?async_insert=true&secure=true",
+			want: "https://127.0.0.1:9000/default?async_insert=true&compress=lz4&secure=true",
 		},
 		{
 			name: "Preserve query parameters",
 			fields: fields{
-				Endpoint: "clickhouse://127.0.0.1:9000?secure=true&foo=bar",
+				Endpoint: "clickhouse://127.0.0.1:9000?secure=true&compress=lz4&foo=bar",
 			},
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&compress=lz4&foo=bar&secure=true",
 		},
 		{
 			name: "Parse clickhouse settings",
 			fields: fields{
-				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=lz4",
+				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=br",
 			},
 			wantChOptions: ChOptions{
 				Secure:      true,
 				DialTimeout: 30 * time.Second,
-				Compress:    clickhouse.CompressionLZ4,
+				Compress:    clickhouse.CompressionBrotli,
 			},
-			want: "https://127.0.0.1:9000/default?async_insert=true&compress=lz4&dial_timeout=30s&secure=true",
+			want: "https://127.0.0.1:9000/default?async_insert=true&compress=br&dial_timeout=30s&secure=true",
 		},
 		{
 			name: "Should respect connection parameters",
@@ -243,7 +247,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&compress=lz4&foo=bar&secure=true",
 		},
 		{
 			name: "support replace database in DSN with config to override database",
@@ -251,21 +255,21 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000/otel",
 				Database: "override",
 			},
-			want: "tcp://127.0.0.1:9000/override?async_insert=true",
+			want: "tcp://127.0.0.1:9000/override?async_insert=true&compress=lz4",
 		},
 		{
 			name: "when config option is missing, preserve async_insert false in DSN",
 			fields: fields{
 				Endpoint: "tcp://127.0.0.1:9000?async_insert=false",
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
 		},
 		{
 			name: "when config option is missing, preserve async_insert true in DSN",
 			fields: fields{
 				Endpoint: "tcp://127.0.0.1:9000?async_insert=true",
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "ignore config option when async_insert is present in connection params as false",
@@ -275,7 +279,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert:      &configTrue,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
 		},
 		{
 			name: "ignore config option when async_insert is present in connection params as true",
@@ -285,7 +289,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert:      &configFalse,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "ignore config option when async_insert is present in DSN as false",
@@ -294,7 +298,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert: &configTrue,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
 		},
 		{
 			name: "use async_insert true config option when it is not present in DSN",
@@ -303,7 +307,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert: &configTrue,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "use async_insert false config option when it is not present in DSN",
@@ -312,7 +316,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert: &configFalse,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
 		},
 		{
 			name: "set async_insert to true when not present in config or DSN",
@@ -320,7 +324,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000",
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "connection_params takes priority over endpoint and async_insert option.",
@@ -330,7 +334,33 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert:      &configFalse,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "use compress br config option when it is not present in DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000",
+				Compress: "br",
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=br",
+		},
+		{
+			name: "set compress to lz4 when not present in config or DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000",
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "connection_params takes priority over endpoint and compress option.",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?compress=none",
+				ConnectionParams: map[string]string{"compress": "br"},
+				Compress:         "lz4",
+			},
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=br",
 		},
 	}
 	for _, tt := range tests {

@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/groupbyattrs")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/groupbyattrs")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
@@ -61,55 +61,55 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.ProcessorGroupbyattrsLogGroups, err = builder.meter.Int64Histogram(
-		"processor_groupbyattrs_log_groups",
+		"otelcol_processor_groupbyattrs_log_groups",
 		metric.WithDescription("Distribution of groups extracted for logs"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbyattrsMetricGroups, err = builder.meter.Int64Histogram(
-		"processor_groupbyattrs_metric_groups",
+		"otelcol_processor_groupbyattrs_metric_groups",
 		metric.WithDescription("Distribution of groups extracted for metrics"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbyattrsNumGroupedLogs, err = builder.meter.Int64Counter(
-		"processor_groupbyattrs_num_grouped_logs",
+		"otelcol_processor_groupbyattrs_num_grouped_logs",
 		metric.WithDescription("Number of logs that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbyattrsNumGroupedMetrics, err = builder.meter.Int64Counter(
-		"processor_groupbyattrs_num_grouped_metrics",
+		"otelcol_processor_groupbyattrs_num_grouped_metrics",
 		metric.WithDescription("Number of metrics that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbyattrsNumGroupedSpans, err = builder.meter.Int64Counter(
-		"processor_groupbyattrs_num_grouped_spans",
+		"otelcol_processor_groupbyattrs_num_grouped_spans",
 		metric.WithDescription("Number of spans that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbyattrsNumNonGroupedLogs, err = builder.meter.Int64Counter(
-		"processor_groupbyattrs_num_non_grouped_logs",
+		"otelcol_processor_groupbyattrs_num_non_grouped_logs",
 		metric.WithDescription("Number of logs that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbyattrsNumNonGroupedMetrics, err = builder.meter.Int64Counter(
-		"processor_groupbyattrs_num_non_grouped_metrics",
+		"otelcol_processor_groupbyattrs_num_non_grouped_metrics",
 		metric.WithDescription("Number of metrics that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbyattrsNumNonGroupedSpans, err = builder.meter.Int64Counter(
-		"processor_groupbyattrs_num_non_grouped_spans",
+		"otelcol_processor_groupbyattrs_num_non_grouped_spans",
 		metric.WithDescription("Number of spans that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbyattrsSpanGroups, err = builder.meter.Int64Histogram(
-		"processor_groupbyattrs_span_groups",
+		"otelcol_processor_groupbyattrs_span_groups",
 		metric.WithDescription("Distribution of groups extracted for spans"),
 		metric.WithUnit("1"),
 	)

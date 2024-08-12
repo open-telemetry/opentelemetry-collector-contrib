@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/kafkareceiver")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/kafkareceiver")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
@@ -60,49 +60,49 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.KafkaReceiverCurrentOffset, err = builder.meter.Int64Gauge(
-		"kafka_receiver_current_offset",
+		"otelcol_kafka_receiver_current_offset",
 		metric.WithDescription("Current message offset"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverMessages, err = builder.meter.Int64Counter(
-		"kafka_receiver_messages",
+		"otelcol_kafka_receiver_messages",
 		metric.WithDescription("Number of received messages"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverOffsetLag, err = builder.meter.Int64Gauge(
-		"kafka_receiver_offset_lag",
+		"otelcol_kafka_receiver_offset_lag",
 		metric.WithDescription("Current offset lag"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverPartitionClose, err = builder.meter.Int64Counter(
-		"kafka_receiver_partition_close",
+		"otelcol_kafka_receiver_partition_close",
 		metric.WithDescription("Number of finished partitions"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverPartitionStart, err = builder.meter.Int64Counter(
-		"kafka_receiver_partition_start",
+		"otelcol_kafka_receiver_partition_start",
 		metric.WithDescription("Number of started partitions"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverUnmarshalFailedLogRecords, err = builder.meter.Int64Counter(
-		"kafka_receiver_unmarshal_failed_log_records",
+		"otelcol_kafka_receiver_unmarshal_failed_log_records",
 		metric.WithDescription("Number of log records failed to be unmarshaled"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverUnmarshalFailedMetricPoints, err = builder.meter.Int64Counter(
-		"kafka_receiver_unmarshal_failed_metric_points",
+		"otelcol_kafka_receiver_unmarshal_failed_metric_points",
 		metric.WithDescription("Number of metric points failed to be unmarshaled"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverUnmarshalFailedSpans, err = builder.meter.Int64Counter(
-		"kafka_receiver_unmarshal_failed_spans",
+		"otelcol_kafka_receiver_unmarshal_failed_spans",
 		metric.WithDescription("Number of spans failed to be unmarshaled"),
 		metric.WithUnit("1"),
 	)

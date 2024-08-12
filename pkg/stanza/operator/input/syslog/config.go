@@ -51,6 +51,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	syslogParserCfg.BaseConfig = c.BaseConfig
 	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
 	syslogParserCfg.OutputIDs = c.OutputIDs
+	syslogParserCfg.MaxOctets = c.MaxOctets
 	syslogParser, err := syslogParserCfg.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)

@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -24,9 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -66,31 +63,69 @@ func TestConnectorShutdown(t *testing.T) {
 }
 
 func TestConnectorConsume(t *testing.T) {
-	// Prepare
-	cfg := &Config{
-		Dimensions: []string{"some-attribute", "non-existing-attribute"},
-		Store:      StoreConfig{MaxItems: 10},
-	}
+	t.Run("test common case", func(t *testing.T) {
+		// Prepare
+		cfg := &Config{
+			Dimensions: []string{"some-attribute", "non-existing-attribute"},
+			Store:      StoreConfig{MaxItems: 10},
+		}
 
-	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zaptest.NewLogger(t)
-	conn, err := newConnector(set, cfg, newMockMetricsExporter())
-	require.NoError(t, err)
-	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+		set := componenttest.NewNopTelemetrySettings()
+		set.Logger = zaptest.NewLogger(t)
+		conn, err := newConnector(set, cfg, newMockMetricsExporter())
+		require.NoError(t, err)
+		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
-	// Test & verify
-	td := buildSampleTrace(t, "val")
-	// The assertion is part of verifyHappyCaseMetrics func.
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+		// Test & verify
+		td := buildSampleTrace(t, "val")
+		// The assertion is part of verifyHappyCaseMetrics func.
+		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
-	// Force collection
-	conn.store.Expire()
-	md, err := conn.buildMetrics()
-	assert.NoError(t, err)
-	verifyHappyCaseMetrics(t, md)
+		// Force collection
+		conn.store.Expire()
+		md, err := conn.buildMetrics()
+		assert.NoError(t, err)
+		verifyHappyCaseMetrics(t, md)
 
-	// Shutdown the connector
-	assert.NoError(t, conn.Shutdown(context.Background()))
+		// Shutdown the connector
+		assert.NoError(t, conn.Shutdown(context.Background()))
+	})
+	t.Run("test fix failed label not work", func(t *testing.T) {
+		cfg := &Config{
+			Store: StoreConfig{MaxItems: 10},
+		}
+		set := componenttest.NewNopTelemetrySettings()
+		set.Logger = zaptest.NewLogger(t)
+		conn, err := newConnector(set, cfg, newMockMetricsExporter())
+		require.NoError(t, err)
+
+		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+		defer require.NoError(t, conn.Shutdown(context.Background()))
+
+		// this trace simulate two services' trace: foo, bar
+		// foo called bar three times, two success, one failed
+		td, err := golden.ReadTraces("testdata/failed-label-not-work-simple-trace.yaml")
+		assert.NoError(t, err)
+		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+		// Force collection
+		conn.store.Expire()
+		actualMetrics, err := conn.buildMetrics()
+		assert.NoError(t, err)
+
+		// Verify
+		expectedMetrics, err := golden.ReadMetrics("testdata/failed-label-not-work-expect-metrics.yaml")
+		assert.NoError(t, err)
+
+		err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreDatapointAttributesOrder(),
+		)
+		require.NoError(t, err)
+	})
 }
 
 func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
@@ -262,7 +297,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 			Dimensions: []string{},
 		},
 	}
-	metricKey := p.buildMetricKey("foo", "bar", "", map[string]string{})
+	metricKey := p.buildMetricKey("foo", "bar", "", "false", map[string]string{})
 
 	testCases := []struct {
 		caseStr  string
@@ -387,14 +422,6 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
-func setupTelemetry(reader *sdkmetric.ManualReader) component.TelemetrySettings {
-	settings := componenttest.NewNopTelemetrySettings()
-	settings.MetricsLevel = configtelemetry.LevelNormal
-
-	settings.MeterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	return settings
-}
-
 func TestValidateOwnTelemetry(t *testing.T) {
 	cfg := &Config{
 		Dimensions: []string{"some-attribute", "non-existing-attribute"},
@@ -405,10 +432,8 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	}
 
 	mockMetricsExporter := newMockMetricsExporter()
-
-	reader := sdkmetric.NewManualReader()
-	set := setupTelemetry(reader)
-	p, err := newConnector(set, cfg, mockMetricsExporter)
+	set := setupTestTelemetry()
+	p, err := newConnector(set.NewSettings().TelemetrySettings, cfg, mockMetricsExporter)
 	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -430,26 +455,20 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	// Shutdown the connector
 	assert.NoError(t, p.Shutdown(context.Background()))
-
-	rm := metricdata.ResourceMetrics{}
-	assert.NoError(t, reader.Collect(context.Background(), &rm))
-	require.Len(t, rm.ScopeMetrics, 1)
-	sm := rm.ScopeMetrics[0]
-	require.Len(t, sm.Metrics, 1)
-	got := sm.Metrics[0]
-	want := metricdata.Metrics{
-		Name:        "connector_servicegraph_total_edges",
-		Description: "Total number of unique edges",
-		Unit:        "1",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints: []metricdata.DataPoint[int64]{
-				{Value: 2},
+	set.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_connector_servicegraph_total_edges",
+			Description: "Total number of unique edges",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{Value: 2},
+				},
 			},
 		},
-	}
-	metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+	})
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {
