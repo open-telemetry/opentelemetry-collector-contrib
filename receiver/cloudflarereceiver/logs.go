@@ -39,8 +39,6 @@ type logsReceiver struct {
 
 const secretHeaderName = "X-CF-Secret"
 
-var receiverScopeName = "otelcol/" + metadata.Type.String()
-
 func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{
 		cfg:               &cfg.Logs,
@@ -233,7 +231,7 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 			resource.Attributes().PutStr("cloudflare.zone", zone)
 		}
 		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-		scopeLogs.Scope().SetName(receiverScopeName)
+		scopeLogs.Scope().SetName(metadata.ScopeName)
 
 		for _, log := range logGroup {
 			logRecord := scopeLogs.LogRecords().AppendEmpty()

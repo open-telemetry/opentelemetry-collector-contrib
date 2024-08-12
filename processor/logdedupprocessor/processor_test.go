@@ -190,3 +190,37 @@ func TestProcessorConsume(t *testing.T) {
 	err = p.Shutdown(context.Background())
 	require.NoError(t, err)
 }
+
+func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
+	logsSink := &consumertest.LogsSink{}
+	logger := zap.NewNop()
+	cfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          1 * time.Second,
+		Timezone:          defaultTimezone,
+	}
+
+	// Create & start a processor
+	p, err := newProcessor(cfg, logsSink, logger)
+	require.NoError(t, err)
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// Create logs payload
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
+
+	// Consume the logs
+	err = p.ConsumeLogs(context.Background(), logs)
+	require.NoError(t, err)
+
+	// Shutdown the processor before it exports the logs
+	err = p.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	// Ensure the logs are exported
+	exportedLogs := logsSink.AllLogs()
+	require.Len(t, exportedLogs, 1)
+}
