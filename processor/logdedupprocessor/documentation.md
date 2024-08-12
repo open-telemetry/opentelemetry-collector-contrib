@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_dedupe_processor_aggregated_logs
 
-Number of aggregated log records.
+Total number of log records that were aggregated together.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

@@ -54,7 +54,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	}
 	builder.DedupeProcessorAggregatedLogs, err = builder.meter.Int64Counter(
 		"otelcol_dedupe_processor_aggregated_logs",
-		metric.WithDescription("Number of aggregated log records."),
+		metric.WithDescription("Total number of log records that were aggregated together."),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
