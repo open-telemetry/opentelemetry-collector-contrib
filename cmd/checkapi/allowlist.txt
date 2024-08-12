@@ -1,2 +1,3 @@
 extension/observer
 extension/opampcustommessages
+exporter/kafkaexporter/topic

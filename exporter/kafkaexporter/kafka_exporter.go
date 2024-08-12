@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
@@ -268,15 +269,9 @@ func getTopic[T resource](ctx context.Context, cfg *Config, resources resourceSl
 			}
 		}
 	}
-	contextTopic, ok := ctx.Value(topicContextKey{}).(string)
+	contextTopic, ok := topic.FromContext(ctx)
 	if ok {
 		return contextTopic
 	}
 	return cfg.Topic
 }
-
-func WithTopic(ctx context.Context, topic string) context.Context {
-	return context.WithValue(ctx, topicContextKey{}, topic)
-}
-
-type topicContextKey struct{}

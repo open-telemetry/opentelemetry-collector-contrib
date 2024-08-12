@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
@@ -180,7 +181,7 @@ func TestTracesPusher_ctx(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.tracesPusher(WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
+	err := p.tracesPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
 	require.NoError(t, err)
 }
 
@@ -262,7 +263,7 @@ func TestMetricsDataPusher_ctx(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.metricsDataPusher(WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
+	err := p.metricsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
 }
 
@@ -344,7 +345,7 @@ func TestLogsDataPusher_ctx(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.logsDataPusher(WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(1))
+	err := p.logsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(1))
 	require.NoError(t, err)
 }
 
@@ -431,7 +432,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			ctx:       WithTopic(context.Background(), "context-topic"),
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -441,7 +442,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			ctx:       WithTopic(context.Background(), "context-topic"),
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateTraces(1).ResourceSpans(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -451,7 +452,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			ctx:       WithTopic(context.Background(), "context-topic"),
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateLogs(1).ResourceLogs(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -472,7 +473,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "nonexistent_attribute",
 				Topic:              "defaultTopic",
 			},
-			ctx:       WithTopic(context.Background(), "context-topic"),
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "context-topic",
 		},
@@ -482,7 +483,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "nonexistent_attribute",
 				Topic:              "defaultTopic",
 			},
-			ctx:       WithTopic(context.Background(), "context-topic"),
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateTraces(1).ResourceSpans(),
 			wantTopic: "context-topic",
 		},
@@ -492,7 +493,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "nonexistent_attribute",
 				Topic:              "defaultTopic",
 			},
-			ctx:       WithTopic(context.Background(), "context-topic"),
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateLogs(1).ResourceLogs(),
 			wantTopic: "context-topic",
 		},
