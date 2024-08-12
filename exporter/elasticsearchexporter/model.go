@@ -413,7 +413,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddString("trace_state", span.TraceState().AsRaw())
 	document.AddSpanID("parent_span_id", span.ParentSpanID())
 	document.AddString("name", span.Name())
-	document.AddString("kind", traceutil.SpanKindStr(span.Kind()))
+	document.AddString("kind", span.Kind().String())
 	document.AddInt("duration", int64(span.EndTimestamp()-span.StartTimestamp()))
 
 	attributeMap := span.Attributes()
