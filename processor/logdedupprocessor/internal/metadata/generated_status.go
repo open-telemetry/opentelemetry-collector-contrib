@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("logdedup")
+	Type      = component.MustNewType("logdedup")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
 )
 
 const (
