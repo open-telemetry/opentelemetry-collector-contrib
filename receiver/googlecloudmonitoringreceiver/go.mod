@@ -4,9 +4,9 @@ go 1.21.12
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.106.2-0.20240809151205-7638bb298172
-	go.opentelemetry.io/collector/confmap v0.106.2-0.20240809151205-7638bb298172
-	go.opentelemetry.io/collector/consumer v0.106.2-0.20240809151205-7638bb298172
+	go.opentelemetry.io/collector/component v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/confmap v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/consumer v0.106.2-0.20240809191011-ef07ea073562
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.1
 	go.opentelemetry.io/collector/pdata v1.12.1-0.20240809151205-7638bb298172
 	go.opentelemetry.io/collector/receiver v0.106.2-0.20240809151205-7638bb298172
@@ -21,7 +21,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golangci/golangci-lint v1.59.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
