@@ -1552,11 +1552,14 @@ Examples:
 
 `UserAgent(value)`
 
-The `UserAgent` Converter parses the string argument trying to match it against well-known user-agent strings as defined
-[here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml)
+The `UserAgent` Converter parses the string argument trying to match it against well-known user-agent strings.
+
+`value` is a string or a path to a string.  If `value` is not a string an error is returned.
 
 The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version` and `user_agent.original`
 as defined in semconv v1.25.0.
+
+Parsing is done using the [uap-go package](github.com/ua-parser/uap-go). The specific formats it recognizes can be found [here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
 
 Examples:
 
