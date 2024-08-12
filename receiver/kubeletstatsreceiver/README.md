@@ -285,3 +285,18 @@ rules:
     resources: ["nodes/proxy"]
     verbs: ["get"]
 ```
+
+### Warning about metrics' deprecation
+
+The following metrics will be removed in `v0.111.0` version:
+- `k8s.node.cpu.utilization` (replaced by `k8s.node.cpu.usage`)
+- `k8s.pod.cpu.utilization` (replaced by `k8s.pod.cpu.usage`)
+- `container.cpu.utilization` (replaced by `container.cpu.usage`)
+
+Users can use the following metrics instead:
+- `k8s.node.usage`
+- `k8s.pod.usage`
+- `container.usage`
+
+More information about the deprecation plan and
+the background reasoning can be found at https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885.
