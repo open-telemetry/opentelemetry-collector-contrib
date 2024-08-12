@@ -36,7 +36,7 @@ func itemRequestsSortFunc(a, b itemRequest) int {
 	return comp
 }
 
-func assertItemsEqual(t *testing.T, expected, actual []itemRequest, assertOrder bool) {
+func assertItemsEqual(t *testing.T, expected, actual []itemRequest, assertOrder bool) { // nolint:unparam
 	expectedItems := expected
 	actualItems := actual
 	if !assertOrder {
