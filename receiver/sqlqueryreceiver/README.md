@@ -135,6 +135,7 @@ receivers:
         tracking_column: log_id
         logs:
           - body_column: log_body
+            attribute_columns: [ "log_attribute_1", "log_attribute_2" ]
       - sql: "select count(*) as count, genre from movie group by genre"
         metrics:
           - metric_name: movie.genres
