@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/logde
 go 1.21.0
 
 require (
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.106.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.2-0.20240809191011-ef07ea073562
@@ -23,7 +24,6 @@ require (
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
