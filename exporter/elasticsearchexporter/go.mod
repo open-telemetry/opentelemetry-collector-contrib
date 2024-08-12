@@ -114,5 +114,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
-
-replace github.com/elastic/go-docappender/v2 => github.com/carsonip/go-docappender/v2 v2.1.4-0.20240724195935-eb306ad386c9
