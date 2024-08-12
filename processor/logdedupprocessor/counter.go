@@ -55,7 +55,7 @@ func (l *logAggregator) Export() plog.Logs {
 		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 		for _, lc := range resource.logCounters {
 			// Count aggregated logs records
-			l.telemetryBuilder.DedupeProcessorAggregatedLogs.Add(context.Background(), lc.count)
+			l.telemetryBuilder.DedupProcessorAggregatedLogs.Record(context.Background(), int64(lc.count))
 
 			lr := scopeLogs.LogRecords().AppendEmpty()
 

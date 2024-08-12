@@ -14,10 +14,9 @@ tests:
 
 telemetry:
   metrics:
-    dedupe_processor_aggregated_logs:
-      description: Total number of log records that were aggregated together.
+    dedup_processor_aggregated_logs:
+      description: Number of log records that were aggregated together.
       unit: "{records}"
       enabled: true
-      sum:
+      histogram:
         value_type: int
-        monotonic: true
