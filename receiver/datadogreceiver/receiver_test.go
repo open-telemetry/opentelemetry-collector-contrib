@@ -8,11 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/DataDog/agent-payload/v5/gogen"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/DataDog/agent-payload/v5/gogen"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

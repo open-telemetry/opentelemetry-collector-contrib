@@ -120,7 +120,7 @@ func (mt *MetricsTranslator) TranslateSeriesV2(series []*gogen.MetricPayload_Met
 		dimensions := parseSeriesProperties(serie.Metric, strings.ToLower(serie.Type.String()), serie.Tags, resourceMap["host"], mt.buildInfo.Version, mt.stringPool)
 		for k, v := range resourceMap {
 			if k == "host" {
-				continue
+				continue // Host has already been added as a resource attribute in parseSeriesProperties(), so avoid duplicating that attribute
 			}
 			dimensions.resourceAttrs.PutStr(k, v)
 		}

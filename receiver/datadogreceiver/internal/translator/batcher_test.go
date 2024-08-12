@@ -64,8 +64,8 @@ func TestMetricBatcher(t *testing.T) {
 				require.Equal(t, 1, resource1.ScopeMetrics().At(0).Metrics().Len())
 				require.Equal(t, 1, resource2.ScopeMetrics().At(0).Metrics().Len())
 
-				require.Equal(t, "TestCount1", resource1.ScopeMetrics().At(0).Metrics().At(0).Name())
-				require.Equal(t, "TestCount1", resource2.ScopeMetrics().At(0).Metrics().At(0).Name())
+				requireSum(t, resource1.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
+				requireSum(t, resource2.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
 			},
 		},
 		{
@@ -110,6 +110,8 @@ func TestMetricBatcher(t *testing.T) {
 
 				require.Equal(t, "TestCount1", resource.ScopeMetrics().At(0).Metrics().At(0).Name())
 				require.Equal(t, "TestCount2", resource.ScopeMetrics().At(0).Metrics().At(1).Name())
+				requireSum(t, resource.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
+				requireSum(t, resource.ScopeMetrics().At(0).Metrics().At(1), "TestCount2", 1)
 			},
 		},
 		{
@@ -162,8 +164,8 @@ func TestMetricBatcher(t *testing.T) {
 				require.Equal(t, 1, resource1.ScopeMetrics().At(0).Metrics().Len())
 				require.Equal(t, 1, resource2.ScopeMetrics().At(0).Metrics().Len())
 
-				require.Equal(t, "TestCount1", resource1.ScopeMetrics().At(0).Metrics().At(0).Name())
-				require.Equal(t, "TestCount1", resource2.ScopeMetrics().At(0).Metrics().At(0).Name())
+				requireSum(t, resource1.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
+				requireSum(t, resource2.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
 			},
 		},
 		{
@@ -210,8 +212,8 @@ func TestMetricBatcher(t *testing.T) {
 				require.Equal(t, "TestMetric", resource.ScopeMetrics().At(0).Metrics().At(0).Name())
 				require.Equal(t, "TestMetric", resource.ScopeMetrics().At(0).Metrics().At(1).Name())
 
-				require.Equal(t, pmetric.MetricTypeSum, resource.ScopeMetrics().At(0).Metrics().At(0).Type())
-				require.Equal(t, pmetric.MetricTypeGauge, resource.ScopeMetrics().At(0).Metrics().At(1).Type())
+				requireSum(t, resource.ScopeMetrics().At(0).Metrics().At(0), "TestMetric", 1)
+				requireGauge(t, resource.ScopeMetrics().At(0).Metrics().At(1), "TestMetric", 1)
 			},
 		},
 		{
@@ -255,10 +257,7 @@ func TestMetricBatcher(t *testing.T) {
 
 				require.Equal(t, 1, resource.ScopeMetrics().Len())
 
-				require.Equal(t, "TestMetric", resource.ScopeMetrics().At(0).Metrics().At(0).Name())
-
-				require.Equal(t, pmetric.MetricTypeSum, resource.ScopeMetrics().At(0).Metrics().At(0).Type())
-				require.Equal(t, 2, resource.ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len())
+				requireSum(t, resource.ScopeMetrics().At(0).Metrics().At(0), "TestMetric", 2)
 			},
 		},
 	}

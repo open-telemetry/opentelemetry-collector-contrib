@@ -117,7 +117,6 @@ func (s *StringPool) Intern(str string) string {
 }
 
 type attributes struct {
-	host     string
 	resource pcommon.Map
 	scope    pcommon.Map
 	dp       pcommon.Map
