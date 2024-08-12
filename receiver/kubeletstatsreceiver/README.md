@@ -294,9 +294,9 @@ The following metrics will be removed in `v0.111.0` version:
 - `container.cpu.utilization` (replaced by `container.cpu.usage`)
 
 Users can use the following metrics instead:
-- `k8s.node.usage`
-- `k8s.pod.usage`
-- `container.usage`
+- `k8s.node.cpu.usage`
+- `k8s.pod.cpu.usage`
+- `container.cpu.usage`
 
 More information about the deprecation plan and
 the background reasoning can be found at https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885.
