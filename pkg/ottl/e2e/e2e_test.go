@@ -379,6 +379,18 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ExtractGrokPatterns("http://user:password@example.com:80/path?query=string", "%{ELB_URI}", true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("url.scheme", "http")
+				m.PutStr("url.username", "user")
+				m.PutStr("url.domain", "example.com")
+				m.PutInt("url.port", 80)
+				m.PutStr("url.path", "/path")
+				m.PutStr("url.query", "query=string")
+			},
+		},
+		{
 			statement: `set(attributes["test"], FNV("pass"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutInt("test", 266877920130663416)
@@ -496,6 +508,12 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], Log(1))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutDouble("test", 0)
+			},
+		},
+		{
+			statement: `set(attributes["test"], MD5("pass"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "1a1dc91c907325c69271ddf0c944bc72")
 			},
 		},
 		{
