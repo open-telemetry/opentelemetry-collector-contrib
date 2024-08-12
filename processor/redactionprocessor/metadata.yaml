@@ -3,7 +3,7 @@ type: redaction
 status:
   class: processor
   stability:
-    beta: [traces]
+    beta: [traces,logs,metrics]
   distributions: [contrib]
   codeowners:
     active: [dmitryax, mx-psi, TylerHelmuth]
