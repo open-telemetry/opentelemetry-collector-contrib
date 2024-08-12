@@ -6,7 +6,6 @@ package logdedupprocessor // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"time"
 
-	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -164,30 +163,26 @@ func (a *logCounter) Increment() {
 
 // getResourceKey creates a unique hash for the resource to use as a map key
 func getResourceKey(resource pcommon.Resource) uint64 {
-	hasher := xxhash.New()
-	attrsHash := pdatautil.MapHash(resource.Attributes())
-	_, _ = hasher.Write(attrsHash[:])
-	return hasher.Sum64()
+	return pdatautil.Hash64(
+		pdatautil.WithMap(resource.Attributes()),
+	)
 }
 
 // getScopeKey creates a unique hash for the scope to use as a map key
 func getScopeKey(scope pcommon.InstrumentationScope) uint64 {
-	hasher := xxhash.New()
-	attrsHash := pdatautil.MapHash(scope.Attributes())
-	_, _ = hasher.Write(attrsHash[:])
-	_, _ = hasher.Write([]byte(scope.Name()))
-	_, _ = hasher.Write([]byte(scope.Version()))
-	return hasher.Sum64()
+	return pdatautil.Hash64(
+		pdatautil.WithMap(scope.Attributes()),
+		pdatautil.WithString(scope.Name()),
+		pdatautil.WithString(scope.Version()),
+	)
 }
 
 // getLogKey creates a unique hash for the log record to use as a map key
 func getLogKey(logRecord plog.LogRecord) uint64 {
-	hasher := xxhash.New()
-	attrsHash := pdatautil.MapHash(logRecord.Attributes())
-	_, _ = hasher.Write(attrsHash[:])
-	bodyHash := pdatautil.ValueHash(logRecord.Body())
-	_, _ = hasher.Write(bodyHash[:])
-	_, _ = hasher.Write([]byte(logRecord.SeverityNumber().String()))
-	_, _ = hasher.Write([]byte(logRecord.SeverityText()))
-	return hasher.Sum64()
+	return pdatautil.Hash64(
+		pdatautil.WithMap(logRecord.Attributes()),
+		pdatautil.WithValue(logRecord.Body()),
+		pdatautil.WithString(logRecord.SeverityNumber().String()),
+		pdatautil.WithString(logRecord.SeverityText()),
+	)
 }
