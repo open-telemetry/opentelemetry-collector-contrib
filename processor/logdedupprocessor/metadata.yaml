@@ -14,8 +14,8 @@ tests:
 
 telemetry:
   metrics:
-    dedupe_processor_deduplicated:
-      description: Number of deduplicated log records.
+    dedupe_processor_aggregated_logs:
+      description: Number of aggregated log records.
       unit: "{records}"
       enabled: true
       sum:
