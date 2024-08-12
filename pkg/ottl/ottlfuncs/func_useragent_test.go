@@ -81,6 +81,15 @@ func TestUserAgentParser(t *testing.T) {
 				semconv.AttributeUserAgentVersion:  "",
 			},
 		},
+		{
+			Name:     "Otel collector 0.106.1 linux/amd64 user agent",
+			UAString: "OpenTelemetry Collector Contrib/0.106.1 (linux/amd64)",
+			ExpectedMap: map[string]any{
+				semconv.AttributeUserAgentOriginal: "OpenTelemetry Collector Contrib/0.106.1 (linux/amd64)",
+				semconv.AttributeUserAgentName:     "Other",
+				semconv.AttributeUserAgentVersion:  "",
+			},
+		},
 	}
 
 	for _, tt := range testCases {
