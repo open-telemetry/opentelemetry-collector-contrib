@@ -103,21 +103,29 @@ func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.Metri
 	return errs
 }
 
-func convertExemplars(exemplars pmetric.ExemplarSlice) (OrderedMap, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
+func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
 	var (
-		attrs    OrderedMap
-		times    clickhouse.ArraySet
-		values   clickhouse.ArraySet
-		traceIDs clickhouse.ArraySet
-		spanIDs  clickhouse.ArraySet
+		attrs         column.IterableOrderedMap
+		exemplarAttrs clickhouse.ArraySet
+		times         clickhouse.ArraySet
+		values        clickhouse.ArraySet
+		traceIDs      clickhouse.ArraySet
+		spanIDs       clickhouse.ArraySet
 	)
+
+	attrs = NewOrderedMap()
+
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
 		orderedMap := attributesToMap(exemplar.FilteredAttributes())
 		mapIterator := orderedMap.Iterator()
+
 		for mapIterator.Next() {
 			attrs.Put(mapIterator.Key(), mapIterator.Value())
 		}
+
+		exemplarAttrs = append(exemplarAttrs, attrs)
+
 		times = append(times, exemplar.Timestamp().AsTime())
 		values = append(values, getValue(exemplar.IntValue(), exemplar.DoubleValue(), exemplar.ValueType()))
 
@@ -125,7 +133,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (OrderedMap, clickhouse.A
 		traceIDs = append(traceIDs, hex.EncodeToString(traceID[:]))
 		spanIDs = append(spanIDs, hex.EncodeToString(spanID[:]))
 	}
-	return attrs, times, values, traceIDs, spanIDs
+	return exemplarAttrs, times, values, traceIDs, spanIDs
 }
 
 // https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358

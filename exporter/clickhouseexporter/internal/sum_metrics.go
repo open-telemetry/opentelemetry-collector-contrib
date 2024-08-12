@@ -121,6 +121,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 			for i := 0; i < model.sum.DataPoints().Len(); i++ {
 				dp := model.sum.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
+
 				_, err = statement.ExecContext(ctx,
 					model.metadata.ResAttr,
 					model.metadata.ResURL,
