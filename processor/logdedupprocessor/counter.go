@@ -165,11 +165,10 @@ func (a *logCounter) Increment() {
 }
 
 // getResourceKey creates a unique hash for the resource to use as a map key
-/* #nosec G104 -- According to Hash interface write can never return an error */
 func getResourceKey(resource pcommon.Resource) hashedKey {
 	hasher := xxhash.New()
 	attrsHash := pdatautil.MapHash(resource.Attributes())
-	hasher.Write(attrsHash[:])
+	_, _ = hasher.Write(attrsHash[:])
 	hash := hasher.Sum(nil)
 
 	// convert from slice to fixed size array to use as key
@@ -179,13 +178,12 @@ func getResourceKey(resource pcommon.Resource) hashedKey {
 }
 
 // getScopeKey creates a unique hash for the scope to use as a map key
-/* #nosec G104 -- According to Hash interface write can never return an error */
 func getScopeKey(scope pcommon.InstrumentationScope) hashedKey {
 	hasher := xxhash.New()
 	attrsHash := pdatautil.MapHash(scope.Attributes())
-	hasher.Write(attrsHash[:])
-	hasher.Write([]byte(scope.Name()))
-	hasher.Write([]byte(scope.Version()))
+	_, _ = hasher.Write(attrsHash[:])
+	_, _ = hasher.Write([]byte(scope.Name()))
+	_, _ = hasher.Write([]byte(scope.Version()))
 	hash := hasher.Sum(nil)
 
 	// convert from slice to fixed size array to use as key
@@ -195,15 +193,14 @@ func getScopeKey(scope pcommon.InstrumentationScope) hashedKey {
 }
 
 // getLogKey creates a unique hash for the log record to use as a map key
-/* #nosec G104 -- According to Hash interface write can never return an error */
 func getLogKey(logRecord plog.LogRecord) hashedKey {
 	hasher := xxhash.New()
 	attrsHash := pdatautil.MapHash(logRecord.Attributes())
-	hasher.Write(attrsHash[:])
+	_, _ = hasher.Write(attrsHash[:])
 	bodyHash := pdatautil.ValueHash(logRecord.Body())
-	hasher.Write(bodyHash[:])
-	hasher.Write([]byte(logRecord.SeverityNumber().String()))
-	hasher.Write([]byte(logRecord.SeverityText()))
+	_, _ = hasher.Write(bodyHash[:])
+	_, _ = hasher.Write([]byte(logRecord.SeverityNumber().String()))
+	_, _ = hasher.Write([]byte(logRecord.SeverityText()))
 	hash := hasher.Sum(nil)
 
 	// convert from slice to fixed size array to use as key
