@@ -13,12 +13,14 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+const ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
+
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/deltatocumulative")
+	return settings.MeterProvider.Meter(ScopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/deltatocumulative")
+	return settings.TracerProvider.Tracer(ScopeName)
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry

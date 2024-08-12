@@ -13,12 +13,14 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+const ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
+
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/k8sattributes")
+	return settings.MeterProvider.Meter(ScopeName)
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/k8sattributes")
+	return settings.TracerProvider.Tracer(ScopeName)
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry

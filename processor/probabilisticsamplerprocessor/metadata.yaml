@@ -1,5 +1,4 @@
 type: probabilistic_sampler
-scope_name: otelcol/probabilisticsampler
 
 status:
   class: processor

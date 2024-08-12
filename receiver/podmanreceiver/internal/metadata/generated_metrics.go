@@ -706,7 +706,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/podmanreceiver")
+	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricContainerBlockioIoServiceBytesRecursiveRead.emit(ils.Metrics())
