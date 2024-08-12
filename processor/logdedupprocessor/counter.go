@@ -42,7 +42,7 @@ func newLogAggregator(logCountAttribute string, timezone *time.Location, telemet
 }
 
 // Export exports the counter as a Logs
-func (l *logAggregator) Export() plog.Logs {
+func (l *logAggregator) Export(ctx context.Context) plog.Logs {
 	logs := plog.NewLogs()
 
 	for _, resourceAggregator := range l.resources {
@@ -55,7 +55,7 @@ func (l *logAggregator) Export() plog.Logs {
 
 			for _, logAggregator := range scopeAggregator.logCounters {
 				// Record aggregated logs records
-				l.telemetryBuilder.DedupProcessorAggregatedLogs.Record(context.Background(), logAggregator.count)
+				l.telemetryBuilder.DedupProcessorAggregatedLogs.Record(ctx, logAggregator.count)
 
 				lr := sl.LogRecords().AppendEmpty()
 				logAggregator.logRecord.CopyTo(lr)

@@ -131,7 +131,7 @@ func (p *logDedupProcessor) exportLogs(ctx context.Context) {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
-	logs := p.aggregator.Export()
+	logs := p.aggregator.Export(ctx)
 	// Only send logs if we have some
 	if logs.LogRecordCount() > 0 {
 		err := p.nextConsumer.ConsumeLogs(ctx, logs)
