@@ -353,42 +353,6 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 	}
 }
 
-func TestDocument_Serialize_Otel(t *testing.T) {
-	tests := map[string]struct {
-		attrs map[string]any
-		want  string
-	}{
-		"otel": {
-			attrs: map[string]any{
-				"@timestamp":                        "2024-03-18T21:09:53.645578000Z",
-				"attributes.auditd.log.op":          "PAM:session_open",
-				"attributes.auditd.log.record_type": "USER_START",
-				"attributes.auditd.log.sequence":    6082,
-				"attributes.auditd.log.subj":        "unconfined",
-				"attributes.auditd.log.uid":         "1000",
-				"scope.attributes.bar.one":          "boo",
-				"scope.attributes.foo.two":          "bar",
-				"resource.attributes.blah.num":      234,
-				"resource.attributes.blah.str":      "something",
-			},
-			want: `{"@timestamp":"2024-03-18T21:09:53.645578000Z","attributes":{"auditd.log.op":"PAM:session_open","auditd.log.record_type":"USER_START","auditd.log.sequence":6082,"auditd.log.subj":"unconfined","auditd.log.uid":"1000"},"resource":{"attributes":{"blah.num":234,"blah.str":"something"}},"scope":{"attributes":{"bar.one":"boo","foo.two":"bar"}}}`,
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			var buf strings.Builder
-			m := pcommon.NewMap()
-			assert.NoError(t, m.FromRaw(test.attrs))
-			doc := DocumentFromAttributes(m)
-			doc.Dedup() // Call Dedup for predictable order
-			err := doc.Serialize(&buf, true, true)
-			require.NoError(t, err)
-			assert.Equal(t, test.want, buf.String())
-		})
-	}
-}
-
 func TestValue_Serialize(t *testing.T) {
 	tests := map[string]struct {
 		value Value

@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("googlecloudspanner")
+	Type      = component.MustNewType("googlecloudspanner")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 )
 
 const (
