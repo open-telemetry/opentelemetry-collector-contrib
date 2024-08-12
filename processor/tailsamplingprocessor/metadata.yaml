@@ -1,5 +1,4 @@
 type: tail_sampling
-scope_name: otelcol/tailsampling
 
 status:
   class: processor
