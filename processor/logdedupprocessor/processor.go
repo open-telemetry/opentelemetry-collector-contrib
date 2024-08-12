@@ -106,6 +106,8 @@ func (p *logDedupProcessor) handleExportInterval(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			// Export any remaining logs
+			p.exportLogs(ctx)
 			if err := ctx.Err(); err != context.Canceled {
 				p.logger.Error("context error", zap.Error(err))
 			}
