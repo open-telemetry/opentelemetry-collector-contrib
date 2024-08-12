@@ -4,12 +4,14 @@
 package logdedupprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
 
 import (
+	"context"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 // Attributes names for first and last observed timestamps
@@ -26,19 +28,21 @@ type logAggregator struct {
 	resources         map[uint64]*resourceAggregator
 	logCountAttribute string
 	timezone          *time.Location
+	telemetryBuilder  *metadata.TelemetryBuilder
 }
 
 // newLogAggregator creates a new LogCounter.
-func newLogAggregator(logCountAttribute string, timezone *time.Location) *logAggregator {
+func newLogAggregator(logCountAttribute string, timezone *time.Location, telemetryBuilder *metadata.TelemetryBuilder) *logAggregator {
 	return &logAggregator{
 		resources:         make(map[uint64]*resourceAggregator),
 		logCountAttribute: logCountAttribute,
 		timezone:          timezone,
+		telemetryBuilder:  telemetryBuilder,
 	}
 }
 
 // Export exports the counter as a Logs
-func (l *logAggregator) Export() plog.Logs {
+func (l *logAggregator) Export(ctx context.Context) plog.Logs {
 	logs := plog.NewLogs()
 
 	for _, resourceAggregator := range l.resources {
@@ -50,6 +54,9 @@ func (l *logAggregator) Export() plog.Logs {
 			scopeAggregator.scope.CopyTo(sl.Scope())
 
 			for _, logAggregator := range scopeAggregator.logCounters {
+				// Record aggregated logs records
+				l.telemetryBuilder.DedupProcessorAggregatedLogs.Record(ctx, logAggregator.count)
+
 				lr := sl.LogRecords().AppendEmpty()
 				logAggregator.logRecord.CopyTo(lr)
 
