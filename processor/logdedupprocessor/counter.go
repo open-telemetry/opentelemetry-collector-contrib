@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/cespare/xxhash/v2"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
