@@ -1,5 +1,4 @@
 type: ecs_task_observer
-scope_name: otelcol/ecstaskobserver
 
 status:
   class: extension

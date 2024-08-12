@@ -33,6 +33,7 @@ Tails and parses logs from windows event log API using the [opentelemetry-log-co
 | `retry_on_failure.initial_interval` | `1 second`   | Time to wait after the first failure before retrying.                                                                                                                                                                                          |
 | `retry_on_failure.max_interval`     | `30 seconds` | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                           |
 | `retry_on_failure.max_elapsed_time` | `5 minutes`  | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                                  |
+| remote                              | object       | Remote configuration for connecting to a remote machine to collect logs. Includes server (the address of the remote server), with username, password, and optional domain.                                                    |
 
 ### Operators
 
@@ -88,3 +89,24 @@ Output entry sample:
 }
 ```
 
+#### Remote Configuration
+
+If collection of the local event log is desired, a separate receiver needs to be created.
+
+**Requirements for Remote Configuration:**
+
+- The remote computer must enable the "Remote Event Log Management" Windows Firewall exception. Otherwise, when you try to use the session handle, the call will error with `RPC_S_SERVER_UNAVAILABLE`.
+- The computer to which you are connecting must be running Windows Vista or later.
+
+
+Single server configuration:
+```yaml
+receivers:
+    windowseventlog:
+        channel: application
+        remote:
+            server:   "remote-server"
+            username: "user"
+            password: "password"
+            domain:   "domain"
+```

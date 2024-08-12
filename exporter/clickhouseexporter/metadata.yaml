@@ -1,5 +1,4 @@
 type: clickhouse
-scope_name: otelcol/clickhouse
 
 status:
   class: exporter

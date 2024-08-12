@@ -41,18 +41,6 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
 	setResourcePoolMemoryUsageAttrFeatureGate(t, true)
-	optConfigs.Metrics.VcenterVMVsanLatencyAvg.Enabled = true
-	optConfigs.Metrics.VcenterVMVsanOperations.Enabled = true
-	optConfigs.Metrics.VcenterVMVsanThroughput.Enabled = true
-	optConfigs.Metrics.VcenterHostVsanCacheHitRate.Enabled = true
-	optConfigs.Metrics.VcenterHostVsanThroughput.Enabled = true
-	optConfigs.Metrics.VcenterHostVsanOperations.Enabled = true
-	optConfigs.Metrics.VcenterHostVsanLatencyAvg.Enabled = true
-	optConfigs.Metrics.VcenterHostVsanCongestions.Enabled = true
-	optConfigs.Metrics.VcenterClusterVsanLatencyAvg.Enabled = true
-	optConfigs.Metrics.VcenterClusterVsanOperations.Enabled = true
-	optConfigs.Metrics.VcenterClusterVsanThroughput.Enabled = true
-	optConfigs.Metrics.VcenterClusterVsanCongestions.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
