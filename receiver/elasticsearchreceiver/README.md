@@ -63,5 +63,5 @@ The following metric are available with versions:
 - `elasticsearch.cluster.state_update.time` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml).
-Refer to [documentation.md](./documentation.md) for information on how to enable and disable metrics scraped by this
+Refer to [documentation.md](./documentation.md) for information on how to enable and disable metrics produced by this
 receiver.
