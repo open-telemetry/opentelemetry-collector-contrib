@@ -196,7 +196,9 @@ spec:
       serviceAccountName: otelcontribcol
       containers:
       - name: otelcontribcol
-        image: otelcontribcol:latest # If you are not building the Collector locally (make docker-otelcontribcol), specify a published image:   otel/opentelemetry-collector-contrib
+        # This image is created by running `make docker-otelcontribcol`.
+        # If you are not building the collector locally, specify a published image: `otel/opentelemetry-collector-contrib`
+        image: otelcontribcol:latest
         args: ["--config", "/etc/config/config.yaml"]
         volumeMounts:
         - name: config
