@@ -5,11 +5,18 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/ua-parser/uap-go/uaparser"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 )
+
+// userAgentParser holds the reference to a lazily initialized user agent parser
+var userAgentParser *uaparser.Parser
+
+// uaParserInitOnce is used to lazily initialize the userAgentParser variable
+var uaParserInitOnce sync.Once
 
 type UserAgentArguments[K any] struct {
 	UserAgent ottl.StringGetter[K]
@@ -28,15 +35,20 @@ func createUserAgentFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	return userAgent[K](args.UserAgent), nil
 }
 
+func uaParser() *uaparser.Parser {
+	uaParserInitOnce.Do(func() {
+		userAgentParser = uaparser.NewFromSaved()
+	})
+	return userAgentParser
+}
+
 func userAgent[K any](userAgentSource ottl.StringGetter[K]) ottl.ExprFunc[K] { //revive:disable-line:var-naming
 	return func(ctx context.Context, tCtx K) (any, error) {
 		userAgentString, err := userAgentSource.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		// TODO: maybe we want to manage the regex definitions separately?
-		parser := uaparser.NewFromSaved()
-		parsedUserAgent := parser.ParseUserAgent(userAgentString)
+		parsedUserAgent := uaParser().ParseUserAgent(userAgentString)
 		return map[string]any{
 			semconv.AttributeUserAgentName:     parsedUserAgent.Family,
 			semconv.AttributeUserAgentOriginal: userAgentString,
