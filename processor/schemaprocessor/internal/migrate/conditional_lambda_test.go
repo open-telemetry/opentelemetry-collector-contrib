@@ -9,6 +9,7 @@ import (
 "github.com/stretchr/testify/assert"
 "go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
 )
 
@@ -152,116 +153,128 @@ func TestConditionalLambdaAttributeSetRollback(t *testing.T) {
 	}
 }
 
-//func TestConditionalLambdaAttribueSetSliceApply(t *testing.T) {
-//	t.Parallel()
-//
-//	for _, tc := range []struct {
-//		name   string
-//		slice  *ConditionalLambdaAttributeSetSlice
-//		check  string
-//		attrs  pcommon.Map
-//		expect pcommon.Map
-//	}{
-//		{
-//			name:  "No changes",
-//			slice: NewConditionalLambdaAttributeSetSlice(),
-//			check: "application start",
-//			attrs: testHelperBuildMap(func(m pcommon.Map) {
-//				m.PutStr("service.version", "v0.0.0")
-//			}),
-//			expect: testHelperBuildMap(func(m pcommon.Map) {
-//				m.PutStr("service.version", "v0.0.0")
-//			}),
-//		},
-//		{
-//			name: "Not matched check value",
-//			slice: NewConditionalLambdaAttributeSetSlice(
-//				NewConditionalLambdaAttributeSet[string](
-//					map[string]string{
-//						"service_version": "service.version",
-//					},
-//				),
-//				// intentially silly to be make it clear
-//				// that this should not be applied
-//				NewConditionalLambdaAttributeSet(
-//					map[string]string{
-//						"service.version": "shark.attack",
-//					},
-//					"shark spotted",
-//				),
-//			),
-//			check: "application start",
-//			attrs: testHelperBuildMap(func(m pcommon.Map) {
-//				m.PutStr("service_version", "v0.0.0")
-//			}),
-//			expect: testHelperBuildMap(func(m pcommon.Map) {
-//				m.PutStr("service.version", "v0.0.0")
-//			}),
-//		},
-//	} {
-//		tc := tc
-//		t.Run(tc.name, func(t *testing.T) {
-//			t.Parallel()
-//
-//			assert.NoError(t, tc.slice.Apply(tc.attrs, tc.check))
-//			assert.Equal(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
-//		})
-//	}
-//}
-//
-//func TestConditionalLambdaAttribueSetSliceRollback(t *testing.T) {
-//	t.Parallel()
-//
-//	for _, tc := range []struct {
-//		name   string
-//		slice  *ConditionalLambdaAttributeSetSlice
-//		check  string
-//		attrs  pcommon.Map
-//		expect pcommon.Map
-//	}{
-//		{
-//			name:  "No changes",
-//			slice: NewConditionalLambdaAttributeSetSlice(),
-//			check: "application start",
-//			attrs: testHelperBuildMap(func(m pcommon.Map) {
-//				m.PutStr("service.version", "v0.0.0")
-//			}),
-//			expect: testHelperBuildMap(func(m pcommon.Map) {
-//				m.PutStr("service.version", "v0.0.0")
-//			}),
-//		},
-//		{
-//			name: "Not matched check value",
-//			slice: NewConditionalLambdaAttributeSetSlice(
-//				NewConditionalLambdaAttributeSet[string](
-//					map[string]string{
-//						"service_version": "service.version",
-//					},
-//				),
-//				// intentially silly to be make it clear
-//				// that this should not be applied
-//				NewConditionalLambdaAttributeSet(
-//					map[string]string{
-//						"service.version": "shark.attack",
-//					},
-//					"shark spotted",
-//				),
-//			),
-//			check: "application start",
-//			attrs: testHelperBuildMap(func(m pcommon.Map) {
-//				m.PutStr("service.version", "v0.0.0")
-//			}),
-//			expect: testHelperBuildMap(func(m pcommon.Map) {
-//				m.PutStr("service_version", "v0.0.0")
-//			}),
-//		},
-//	} {
-//		tc := tc
-//		t.Run(tc.name, func(t *testing.T) {
-//			t.Parallel()
-//
-//			assert.NoError(t, tc.slice.Rollback(tc.attrs, tc.check))
-//			assert.Equal(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
-//		})
-//	}
-//}
+func TestConditionalLambdaAttributeSetSliceApply(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name   string
+		slice  *ConditionalLambdaAttributeSetSlice[pmetric.ResourceMetrics]
+		in     pcommon.Map
+		expect pcommon.Map
+	}{
+		{
+			name:  "No changes",
+			slice: NewConditionalLambdaAttributeSetSlice(
+				NewConditionalLambdaAttributeSet(map[string]string{}, func(resource pmetric.ResourceMetrics) bool {
+					return true
+				}),
+			),
+			in: testHelperBuildMap(func(m pcommon.Map) {
+				m.PutStr("service.version", "v0.0.0")
+			}),
+			expect: testHelperBuildMap(func(m pcommon.Map) {
+				m.PutStr("service.version", "v0.0.0")
+			}),
+		},
+		{
+			name: "Not matched check value",
+			slice: NewConditionalLambdaAttributeSetSlice(
+				NewConditionalLambdaAttributeSet(
+					map[string]string{
+						"service_version": "service.version",
+					},
+					func(resource pmetric.ResourceMetrics) bool {
+						return true
+					},
+				),
+				NewConditionalLambdaAttributeSet(
+					map[string]string{
+						"service.version": "shark.attack",
+					},
+					func(resource pmetric.ResourceMetrics) bool {
+						return false
+					},
+				),
+			),
+			in: testHelperBuildMap(func(m pcommon.Map) {
+				m.PutStr("service_version", "v0.0.0")
+			}),
+			expect: testHelperBuildMap(func(m pcommon.Map) {
+				m.PutStr("service.version", "v0.0.0")
+			}),
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			metrics := pmetric.NewResourceMetrics()
+			tc.in.CopyTo(metrics.Resource().Attributes())
+
+			assert.NoError(t, tc.slice.Apply(tc.in, metrics))
+			assert.Equal(t, tc.expect.AsRaw(), tc.in.AsRaw(), "Must match the expected values")
+		})
+	}
+}
+
+func TestConditionalLambdaAttributeSetSliceRollback(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name   string
+		slice  *ConditionalLambdaAttributeSetSlice[pmetric.ResourceMetrics]
+		in     pcommon.Map
+		expect pcommon.Map
+	}{
+		{
+			name:  "No changes",
+			slice: NewConditionalLambdaAttributeSetSlice(
+				NewConditionalLambdaAttributeSet(map[string]string{}, func(resource pmetric.ResourceMetrics) bool {
+					return true
+				}),
+			),
+			in: testHelperBuildMap(func(m pcommon.Map) {
+				m.PutStr("service.version", "v0.0.0")
+			}),
+			expect: testHelperBuildMap(func(m pcommon.Map) {
+				m.PutStr("service.version", "v0.0.0")
+			}),
+		},
+		{
+			name: "Not matched check value",
+			slice: NewConditionalLambdaAttributeSetSlice(
+				NewConditionalLambdaAttributeSet(
+					map[string]string{
+						"service_version": "service.version",
+					},
+					func(resource pmetric.ResourceMetrics) bool {
+						return true
+					},
+				),
+				NewConditionalLambdaAttributeSet(
+					map[string]string{
+						"service.version": "shark.attack",
+					},
+					func(resource pmetric.ResourceMetrics) bool {
+						return false
+					},
+				),
+			),
+			in: testHelperBuildMap(func(m pcommon.Map) {
+				m.PutStr("service.version", "v0.0.0")
+			}),
+			expect: testHelperBuildMap(func(m pcommon.Map) {
+				m.PutStr("service_version", "v0.0.0")
+			}),
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			metrics := pmetric.NewResourceMetrics()
+			tc.in.CopyTo(metrics.Resource().Attributes())
+
+			assert.NoError(t, tc.slice.Rollback(tc.in, metrics))
+			assert.Equal(t, tc.expect.AsRaw(), tc.in.AsRaw(), "Must match the expected values")
+		})
+	}
+}
