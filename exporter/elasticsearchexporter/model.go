@@ -306,12 +306,13 @@ func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error)
 
 func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaUrl string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
 	switch m.mode {
-	case MappingECS:
-		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaUrl, metric, dp, value)
 	case MappingOTel:
 		return m.upsertMetricDataPointValueOTelMode(documents, resource, resourceSchemaURL, scope, scopeSchemaUrl, metric, dp, value)
+	case MappingECS:
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaUrl, metric, dp, value)
 	default:
-		return errors.New("unsupported mode")
+		// Defaults to ECS for backward compatibility
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaUrl, metric, dp, value)
 	}
 }
 
