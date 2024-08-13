@@ -43,7 +43,7 @@ func (ca *ConditionalLambdaAttributeSet[T]) Rollback(attrs pcommon.Map, resource
 }
 
 func (ca *ConditionalLambdaAttributeSet[T]) check(resource T) bool {
-	if resource == nil {
+	if &resource == nil {
 		return true
 	}
 	return ca.testFunc(resource)
