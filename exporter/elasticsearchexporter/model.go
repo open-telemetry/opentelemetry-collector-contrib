@@ -458,8 +458,7 @@ func metricDpToDynamicTemplate(metric pmetric.Metric, dp dataPoint) string {
 	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram:
 		return "histogram"
 	case pmetric.MetricTypeSummary:
-		// FIXME: summary_gauge / summary_counter
-		//return "aggregate_metric_double"
+		return "summary_gauge"
 	}
 	return ""
 }

@@ -805,6 +805,15 @@ func TestExporterMetrics(t *testing.T) {
 		sumDp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
 		sumDp.SetDoubleValue(1.5)
 
+		summaryMetric := metricSlice.AppendEmpty()
+		summaryMetric.SetName("metric.summary")
+		summaryDps := summaryMetric.SetEmptySummary().DataPoints()
+		summaryDp := summaryDps.AppendEmpty()
+		summaryDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3*3600, 0)))
+		summaryDp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(3*3600, 0)))
+		summaryDp.SetCount(1)
+		summaryDp.SetSum(1.5)
+
 		mustSendMetrics(t, exporter, metrics)
 
 		rec.WaitItems(2)
@@ -821,6 +830,10 @@ func TestExporterMetrics(t *testing.T) {
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T02:00:00.000000000Z"}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary_gauge"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T03:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T03:00:00.000000000Z"}`),
 			},
 		}
 
