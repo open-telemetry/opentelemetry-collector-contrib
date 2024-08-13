@@ -206,7 +206,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.107.0
-	github.com/prometheus/prometheus v0.53.1
+	github.com/prometheus/prometheus v0.54.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.0
 	go.opentelemetry.io/collector/config/configgrpc v0.107.0
