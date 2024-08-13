@@ -379,7 +379,7 @@ require (
 	github.com/aerospike/aerospike-client-go/v7 v7.6.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
-	github.com/aliyun/aliyun-log-go-sdk v0.1.81 // indirect
+	github.com/aliyun/aliyun-log-go-sdk v0.1.82 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/apache/arrow/go/v15 v15.0.0 // indirect
 	github.com/apache/arrow/go/v16 v16.1.0 // indirect
