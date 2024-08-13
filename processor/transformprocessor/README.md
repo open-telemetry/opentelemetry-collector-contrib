@@ -383,7 +383,7 @@ This function requires 2 arguments:
       6. Allocate count: [0, 0, __10__, 0, 0]
       7. Final Counts: [0, 0, __10__, 0, 0]
 <br>
-  - __midpoint__ - This approach works in a similar way to the __upper__ approach, but instead of using the upper bound, it uses the midpoint of each exponential bucket. The midpoint is identified by calculationg the average of the upper and lower bounds. This approach also works better for small/narrow exponential histograms.
+  - __midpoint__ - This approach works in a similar way to the __upper__ approach, but instead of using the upper bound, it uses the midpoint of each exponential bucket. The midpoint is identified by calculating the average of the upper and lower bounds. This approach also works better for small/narrow exponential histograms.
 <br>
 
     >The __uniform__ and __random__ distribution algorithms both utilise the concept of intersecting boundaries.
