@@ -12,7 +12,6 @@ import (
 	"net/http"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
-
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
