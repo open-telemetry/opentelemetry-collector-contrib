@@ -53,7 +53,8 @@ receivers:
 | Name                        | Type   | Default                           | Description                                                       |
 | --------------------------- | ------ | --------------------------------- | ----------------------------------------------------------------- |
 | refresh_interval            | string | 60s                               | Determines how often to look for changes in endpoints.            |
-| cache_sync_interval         | string | 5m                                | determines how often app metadata cache is refreshed              |
+| cache_sync_interval         | string | 5m                                | Determines how often app metadata cache is refreshed              |
+| include_app_labels          | bool   | false                             | Determines whether or not app labels get added to container labels|
 | garden.endpoint             | string | /var/vcap/data/garden/garden.sock | Path to garden socket.                                            |
 | cloud_foundry.endpoint      | string | none. parameter is required       | CloudFoundry API endpoint                                         |
 | cloud_foundry.auth_type     | string | none. parameter is required       | Authentication type, one of: user_pass, client_credentials, token |
