@@ -92,10 +92,10 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 						eventAttrs := event.Attributes()
 
 						c.keyBuf.Reset()
-						buildKey(c.keyBuf, serviceName, span, c.dimensions, eventAttrs)
+						buildKey(c.keyBuf, serviceName, span, c.dimensions, eventAttrs, resourceAttr)
 						key := c.keyBuf.String()
 
-						attrs := buildDimensionKVs(c.dimensions, serviceName, span, eventAttrs)
+						attrs := buildDimensionKVs(c.dimensions, serviceName, span, eventAttrs, resourceAttr)
 						exc := c.addException(key, attrs)
 						c.addExemplar(exc, span.TraceID(), span.SpanID())
 					}
@@ -175,7 +175,7 @@ func (c *metricsConnector) addExemplar(exc *exception, traceID pcommon.TraceID, 
 	e.SetDoubleValue(float64(exc.count))
 }
 
-func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.Span, eventAttrs pcommon.Map) pcommon.Map {
+func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.Span, eventAttrs pcommon.Map, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(3 + len(dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
@@ -183,7 +183,7 @@ func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.S
 	dims.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	dims.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	for _, d := range dimensions {
-		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs); ok {
+		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
 			v.CopyTo(dims.PutEmpty(d.name))
 		}
 	}
@@ -195,14 +195,14 @@ func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.S
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []dimension, eventAttrs pcommon.Map) {
+func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []dimension, eventAttrs pcommon.Map, resourceAttrs pcommon.Map) {
 	concatDimensionValue(dest, serviceName, false)
 	concatDimensionValue(dest, span.Name(), true)
 	concatDimensionValue(dest, traceutil.SpanKindStr(span.Kind()), true)
 	concatDimensionValue(dest, traceutil.StatusCodeStr(span.Status().Code()), true)
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs); ok {
+		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
 			concatDimensionValue(dest, v.AsString(), true)
 		}
 	}
