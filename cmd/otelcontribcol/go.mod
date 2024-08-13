@@ -237,7 +237,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.107.0
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.107.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.107.0
-	golang.org/x/sys v0.24.0
+	golang.org/x/sys v0.23.0
 )
 
 require (
@@ -457,8 +457,8 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.14.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/go-structform v0.0.11 // indirect
-	github.com/elastic/go-sysinfo v1.14.1 // indirect
-	github.com/elastic/go-windows v1.0.2 // indirect
+	github.com/elastic/go-sysinfo v1.7.1 // indirect
+	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/envoyproxy/go-control-plane v0.12.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
@@ -562,6 +562,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
 	github.com/jonboulle/clockwork v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
@@ -830,7 +831,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
-	howett.net/plist v1.0.1 // indirect
+	howett.net/plist v1.0.0 // indirect
 	k8s.io/api v0.29.3 // indirect
 	k8s.io/apimachinery v0.29.3 // indirect
 	k8s.io/client-go v0.29.3 // indirect
