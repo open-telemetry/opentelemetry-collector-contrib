@@ -26,13 +26,13 @@ The following configuration options are supported:
 ```yaml
 receivers:
   googlecloudmonitoring:
-    collection_interval: 120s
+    collection_interval: 2m # Can be specified in seconds (s), minutes (m), or hours (h)
     project_id: my-project-id
     metrics_list:
       - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
-        delay: 60s
+        delay: 1m # Can be specified in seconds (s), minutes (m), or hours (h)
       - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
-        delay: 60s
+        delay: 60s # Can be specified in seconds (s), minutes (m), or hours (h)
 ```
 
 - `collection_interval` (Optional): The interval at which metrics are collected. Default is 60s.
