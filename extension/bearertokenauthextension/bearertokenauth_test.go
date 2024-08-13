@@ -92,7 +92,7 @@ func TestBearerAuthenticator(t *testing.T) {
 	}
 	expectedHeaders := http.Header{
 		"Foo":           {"bar"},
-		"Authorization": {bauth.bearerToken()},
+		"Authorization": {"Bearer " + string(cfg.BearerToken)},
 	}
 
 	resp, err := roundTripper.RoundTrip(&http.Request{Header: orgHeaders})
