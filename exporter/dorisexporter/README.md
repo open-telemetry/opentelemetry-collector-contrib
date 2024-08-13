@@ -28,7 +28,8 @@ The following configuration options are supported:
 * `create_schema` (default = true) Whether databases and tables are created automatically.
 * `mysql_endpoint` The mysql protocol address to create the schema; ignored if `create_schema` is false.
 * `history_days` (default = 0) Data older than these days will be deleted; ignored if `create_schema` is false. If set to 0, historical data will not be deleted.
-* `create_history_days` (default = 0) The number of days in the history partition that was created when the table was created. ignored if `create_schema` is false. If `history_days` is not 0, `create_history_days` needs to be less than or equal to `history_days`.
+* `create_history_days` (default = 0) The number of days in the history partition that was created when the table was created; ignored if `create_schema` is false. If `history_days` is not 0, `create_history_days` needs to be less than or equal to `history_days`.
+* `replication_num` (default = 1) The number of replicas of the table; ignored if `create_schema` is false.
 * `timezone` (default is the time zone of the opentelemetry collector) The time zone of doris.
 * `timeout` (default = 5s) Time to wait per individual attempt to send data to a backend.
 * `sending_queue`  [details here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
@@ -57,6 +58,7 @@ exporters:
     mysql_endpoint: localhost:9030
     history_days: 0
     create_history_days: 0
+    replication_num: 1
     timezone: Asia/Shanghai
     timeout: 5s
     sending_queue:

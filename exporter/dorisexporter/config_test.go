@@ -68,6 +68,7 @@ func TestLoadConfig(t *testing.T) {
 				MySQLEndpoint:     "localhost:9030",
 				HistoryDays:       0,
 				CreateHistoryDays: 0,
+				ReplicationNum:    2,
 				TimeZone:          "Asia/Shanghai",
 			},
 		},

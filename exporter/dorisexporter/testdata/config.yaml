@@ -14,6 +14,7 @@ doris/full:
   mysql_endpoint: localhost:9030
   history_days: 0
   create_history_days: 0
+  replication_num: 2
   timezone: Asia/Shanghai
   timeout: 5s
   sending_queue:

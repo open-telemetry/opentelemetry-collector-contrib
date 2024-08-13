@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -35,9 +36,11 @@ type Config struct {
 	MySQLEndpoint string `mapstructure:"mysql_endpoint"`
 	// Data older than these days will be deleted; ignored if create_schema is false. If set to 0, historical data will not be deleted.
 	HistoryDays int32 `mapstructure:"history_days"`
-	// The number of days in the history partition that was created when the table was created. ignored if create_schema is false.
+	// The number of days in the history partition that was created when the table was created; ignored if create_schema is false.
 	// If history_days is not 0, create_history_days needs to be less than or equal to history_days.
 	CreateHistoryDays int32 `mapstructure:"create_history_days"`
+	// ReplicationNum is the number of replicas of the table; ignored if create_schema is false.
+	ReplicationNum int32 `mapstructure:"replication_num"`
 	// Timezone is the timezone of the doris.
 	TimeZone string `mapstructure:"timezone"`
 }
@@ -70,6 +73,10 @@ func (cfg *Config) Validate() (err error) {
 
 		if cfg.HistoryDays > 0 && cfg.CreateHistoryDays > cfg.HistoryDays {
 			err = errors.Join(err, errors.New("create_history_days must be less than or equal to history_days"))
+		}
+
+		if cfg.ReplicationNum < 1 {
+			err = errors.Join(err, errors.New("replication_num must be greater than or equal to 1"))
 		}
 	}
 
@@ -104,4 +111,25 @@ func (cfg *Config) start() int32 {
 
 func (cfg *Config) timeZone() (*time.Location, error) {
 	return time.LoadLocation(cfg.TimeZone)
+}
+
+const (
+	properties = `
+PROPERTIES (
+"replication_num" = "%d",
+"enable_single_replica_compaction" = "true",
+"compaction_policy" = "time_series",
+"dynamic_partition.enable" = "true",
+"dynamic_partition.create_history_partition" = "true",
+"dynamic_partition.time_unit" = "DAY",
+"dynamic_partition.start" = "%d",
+"dynamic_partition.history_partition_num" = "%d",
+"dynamic_partition.end" = "1",
+"dynamic_partition.prefix" = "p"
+)
+`
+)
+
+func (cfg *Config) propertiesStr() string {
+	return fmt.Sprintf(properties, cfg.ReplicationNum, cfg.start(), cfg.CreateHistoryDays)
 }
