@@ -5,9 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
-	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -96,40 +94,4 @@ func (cfg *Config) Validate() (err error) {
 	}
 
 	return err
-}
-
-const (
-	defaultStart = -2147483648 // IntMin
-)
-
-func (cfg *Config) start() int32 {
-	if cfg.HistoryDays == 0 {
-		return defaultStart
-	}
-	return -cfg.HistoryDays
-}
-
-func (cfg *Config) timeZone() (*time.Location, error) {
-	return time.LoadLocation(cfg.TimeZone)
-}
-
-const (
-	properties = `
-PROPERTIES (
-"replication_num" = "%d",
-"enable_single_replica_compaction" = "true",
-"compaction_policy" = "time_series",
-"dynamic_partition.enable" = "true",
-"dynamic_partition.create_history_partition" = "true",
-"dynamic_partition.time_unit" = "DAY",
-"dynamic_partition.start" = "%d",
-"dynamic_partition.history_partition_num" = "%d",
-"dynamic_partition.end" = "1",
-"dynamic_partition.prefix" = "p"
-)
-`
-)
-
-func (cfg *Config) propertiesStr() string {
-	return fmt.Sprintf(properties, cfg.ReplicationNum, cfg.start(), cfg.CreateHistoryDays)
 }
