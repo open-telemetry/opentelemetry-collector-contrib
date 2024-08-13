@@ -34,7 +34,7 @@ func Test_DataPointFunctions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			defer testutil.SetFeatureGateForTest(t, useConvertBetweenSumAndGaugeMetricContext, tt.flagEnabled)()
+			defer testutil.SetFeatureGateForTest(t, UseConvertBetweenSumAndGaugeMetricContext, tt.flagEnabled)()
 
 			expected := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
 			expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
