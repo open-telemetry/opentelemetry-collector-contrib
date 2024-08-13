@@ -304,19 +304,19 @@ func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error)
 	return buf.Bytes(), nil
 }
 
-func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaUrl string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
 	switch m.mode {
 	case MappingOTel:
-		return m.upsertMetricDataPointValueOTelMode(documents, resource, resourceSchemaURL, scope, scopeSchemaUrl, metric, dp, value)
+		return m.upsertMetricDataPointValueOTelMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
 	case MappingECS:
-		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaUrl, metric, dp, value)
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
 	default:
 		// Defaults to ECS for backward compatibility
-		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaUrl, metric, dp, value)
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
 	}
 }
 
-func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, _ pcommon.InstrumentationScope, scopeSchemaUrl string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
 	hash := metricHash(dp.Timestamp(), dp.Attributes())
 	var (
 		document objmodel.Document
@@ -334,7 +334,7 @@ func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]obj
 	return nil
 }
 
-func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaUrl string, scope pcommon.InstrumentationScope, scopeSchemaUrl string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
 	// documents is per-resource. Therefore, there is no need to hash resource attributes
 	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit())
 	var (
@@ -360,8 +360,8 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		}
 
 		forEachDataStreamKey(func(key string) {
-			if value, exists := attributeMap.Get(key); exists {
-				document.AddAttribute(key, value)
+			if val, exists := attributeMap.Get(key); exists {
+				document.AddAttribute(key, val)
 				attributeMap.Remove(key)
 			}
 		})
@@ -371,7 +371,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		// Resource
 		resourceMapVal := pcommon.NewValueMap()
 		resourceMap := resourceMapVal.Map()
-		resourceMap.PutStr("schema_url", resourceSchemaUrl)
+		resourceMap.PutStr("schema_url", resourceSchemaURL)
 		resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
 		resourceAttrMap := resourceMap.PutEmptyMap("attributes")
 
@@ -393,8 +393,8 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		if scope.Version() != "" {
 			scopeMap.PutStr("version", scope.Version())
 		}
-		if scopeSchemaUrl != "" {
-			scopeMap.PutStr("schema_url", scopeSchemaUrl)
+		if scopeSchemaURL != "" {
+			scopeMap.PutStr("schema_url", scopeSchemaURL)
 		}
 		if scope.DroppedAttributesCount() > 0 {
 			scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
