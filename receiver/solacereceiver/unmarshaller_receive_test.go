@@ -70,7 +70,8 @@ func TestReceiveUnmarshallerMapResourceSpan(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -345,7 +346,8 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -618,7 +620,8 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.unmarshallingErrors,
+								Value:      tt.unmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -675,7 +678,8 @@ func TestReceiveUnmarshallerRGMID(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.numErr,
+								Value:      tt.numErr,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -910,7 +914,8 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value: 1,
+						Value:      1,
+						Attributes: u.metricAttrs,
 					},
 				},
 			},

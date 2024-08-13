@@ -316,7 +316,8 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 							IsMonotonic: true,
 							DataPoints: []metricdata.DataPoint[int64]{
 								{
-									Value: 1,
+									Value:      1,
+									Attributes: u.metricAttrs,
 								},
 							},
 						},
@@ -439,7 +440,8 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -650,7 +652,8 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
