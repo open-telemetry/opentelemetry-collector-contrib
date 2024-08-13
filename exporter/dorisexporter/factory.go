@@ -52,7 +52,7 @@ func createLogsExporter(ctx context.Context, set exporter.Settings, cfg componen
 		ctx,
 		set,
 		cfg,
-		func(ctx context.Context, ld plog.Logs) error {
+		func(_ context.Context, _ plog.Logs) error {
 			return nil
 		},
 	)
@@ -63,7 +63,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, cfg compon
 		ctx,
 		set,
 		cfg,
-		func(ctx context.Context, td ptrace.Traces) error {
+		func(_ context.Context, _ ptrace.Traces) error {
 			return nil
 		},
 	)
@@ -74,7 +74,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings, cfg compo
 		ctx,
 		set,
 		cfg,
-		func(ctx context.Context, md pmetric.Metrics) error {
+		func(_ context.Context, _ pmetric.Metrics) error {
 			return nil
 		},
 	)
