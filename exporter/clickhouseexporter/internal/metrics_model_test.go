@@ -21,7 +21,7 @@ func Test_attributesToMap(t *testing.T) {
 	attributes.PutBool("bool", true)
 	attributes.PutInt("int", 0)
 	attributes.PutDouble("double", 0.0)
-	result := attributesToMap(attributes)
+	result := OtelAttributesToOrderedMap(attributes)
 
 	expected := map[string]string{
 		"key":    "value",
@@ -70,7 +70,7 @@ func Test_convertExemplars(t *testing.T) {
 		exemplar.FilteredAttributes().PutStr("key2", "value2")
 
 		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
-		require.Equal(t, map[string]string{"key1": "value1", "key2": "value2"}, ConvertOArraySetToMap(attrs))
+		require.Equal(t, map[string]string{"key1": "value1", "key2": "value2"}, convertArraySetOrderedMapToMap(attrs))
 		require.Equal(t, clickhouse.ArraySet{time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)}, times)
 		require.Equal(t, clickhouse.ArraySet{0.0}, values)
 		require.Equal(t, clickhouse.ArraySet{"00000000000000000000000000000000"}, traceIDs)
@@ -158,7 +158,7 @@ func Test_convertExemplars(t *testing.T) {
 
 		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
 
-		require.Equal(t, map[string]string{"key1": "value1", "key2": "value2", "key3": "value3", "key4": "value4"}, ConvertOArraySetToMap(attrs))
+		require.Equal(t, map[string]string{"key1": "value1", "key2": "value2", "key3": "value3", "key4": "value4"}, convertArraySetOrderedMapToMap(attrs))
 		require.Equal(t, clickhouse.ArraySet{time.Unix(1672218930, 0).UTC(), time.Unix(1672219930, 0).UTC()}, times)
 		require.Equal(t, clickhouse.ArraySet{20.0, 16.0}, values)
 		require.Equal(t, clickhouse.ArraySet{"01020304000000000000000000000000", "01020305000000000000000000000000"}, traceIDs)

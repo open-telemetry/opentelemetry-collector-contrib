@@ -121,20 +121,20 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 			for i := 0; i < model.sum.DataPoints().Len(); i++ {
 				dp := model.sum.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-
+	
 				_, err = statement.ExecContext(ctx,
-					model.metadata.ResAttr,
+					NewOrderedMapFromMap(model.metadata.ResAttr),
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
 					model.metadata.ScopeInstr.Version(),
-					attributesToMap(model.metadata.ScopeInstr.Attributes()),
+					OtelAttributesToOrderedMap(model.metadata.ScopeInstr.Attributes()),
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
 					serviceName,
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,
-					attributesToMap(dp.Attributes()),
+					OtelAttributesToOrderedMap(dp.Attributes()),
 					dp.StartTimestamp().AsTime(),
 					dp.Timestamp().AsTime(),
 					getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType()),

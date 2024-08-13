@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"sort"
+
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 )
@@ -15,6 +17,25 @@ func NewOrderedMap() *OrderedMap {
 	return &OrderedMap{}
 }
 
+// NewOrderedMapFromMap converts a map to an ordered map
+// Provided to limit the changes to the existing code so OrderedMap can introduced
+// without large changes to the types that are used
+//
+// Parameters:
+//   - mapIn: The map that will be converted into a OrderedMap.
+//
+// Returns:
+//
+//	A OrderedMap containing the same key-value pairs as the mapIn.
+func NewOrderedMapFromMap(mapIn map[string]string) *OrderedMap {
+	om := NewOrderedMap()
+	for k, v := range mapIn {
+		om.Put(k, v)
+	}
+	om.Sort()
+	return om
+}
+
 func (om *OrderedMap) Put(key any, value any) {
 	om.Keys = append(om.Keys, key)
 	om.Values = append(om.Values, value)
@@ -22,6 +43,32 @@ func (om *OrderedMap) Put(key any, value any) {
 
 func (om *OrderedMap) Iterator() column.MapIterator {
 	return NewOrderedMapIterator(om)
+}
+
+// Sort sorts the OrderedMap by its keys.
+func (om *OrderedMap) Sort() {
+	// Create a slice of indices and sort it based on the keys
+	indices := make([]int, len(om.Keys))
+	for i := range indices {
+		indices[i] = i
+	}
+
+	sort.Slice(indices, func(i, j int) bool {
+		return om.Keys[indices[i]].(string) < om.Keys[indices[j]].(string)
+	})
+
+	// Create new slices for sorted keys and values
+	sortedKeys := make([]any, len(om.Keys))
+	sortedValues := make([]any, len(om.Values))
+
+	for i, idx := range indices {
+		sortedKeys[i] = om.Keys[idx]
+		sortedValues[i] = om.Values[idx]
+	}
+
+	// Update the OrderedMap with sorted keys and values
+	om.Keys = sortedKeys
+	om.Values = sortedValues
 }
 
 type OrderedMapIter struct {
@@ -62,7 +109,9 @@ func ConvertOrderedMapToMap(orderedMap *OrderedMap) map[string]string {
 	return result
 }
 
-func ConvertOArraySetToMap(list clickhouse.ArraySet) map[string]string {
+// convertArraySetOrderedMapToMap converts a clickhouse.ArraySet of ordered maps to a map
+// This is used for testing purposes to compare the expected and actual values
+func convertArraySetOrderedMapToMap(list clickhouse.ArraySet) map[string]string {
 	result := make(map[string]string)
 	for _, orderedMap := range list {
 		mapValue, ok := orderedMap.(column.IterableOrderedMap)

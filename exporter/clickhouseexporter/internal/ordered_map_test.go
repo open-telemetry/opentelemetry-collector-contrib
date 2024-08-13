@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,5 +48,21 @@ func TestConvertOrderedMapToMap(t *testing.T) {
 
 		expected := map[string]string{}
 		assert.Equal(t, expected, result)
+	})
+
+	t.Run("Sort OrderedMap", func(t *testing.T) {
+		orderedMap := NewOrderedMap()
+		orderedMap.Put("key1", "value1")
+		orderedMap.Put("key3", "value3")
+		orderedMap.Put("key0", "value0")
+		orderedMap.Put("key2", "value2")
+
+		orderedMap.Sort()
+
+		for i := range orderedMap.Keys {
+			assert.Equal(t, fmt.Sprintf("key%v", i), orderedMap.Keys[i])
+			assert.Equal(t, fmt.Sprintf("value%v", i), orderedMap.Values[i])
+		}
+
 	})
 }

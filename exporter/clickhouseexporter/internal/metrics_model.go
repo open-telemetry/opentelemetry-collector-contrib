@@ -117,7 +117,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, cli
 
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		orderedMap := attributesToMap(exemplar.FilteredAttributes())
+		orderedMap := OtelAttributesToOrderedMap(exemplar.FilteredAttributes())
 		mapIterator := orderedMap.Iterator()
 
 		for mapIterator.Next() {
@@ -172,14 +172,16 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 	}
 }
 
-func attributesToMap(attributes pcommon.Map) column.IterableOrderedMap {
+// OtelAttributesToOrderedMap converts Otel attributes to OrderedMap
+// This will Sort the attributes by key
+func OtelAttributesToOrderedMap(attributes pcommon.Map) column.IterableOrderedMap {
 
 	om := NewOrderedMap()
-	//m := make(map[string]string, attributes.Len())
 	attributes.Range(func(k string, v pcommon.Value) bool {
 		om.Put(k, v.AsString())
 		return true
 	})
+	om.Sort()
 	return om
 }
 
