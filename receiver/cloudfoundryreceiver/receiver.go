@@ -17,12 +17,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
 
 const (
-	transport              = "http"
-	dataFormat             = "cloudfoundry"
-	instrumentationLibName = "otelcol/cloudfoundry"
+	transport  = "http"
+	dataFormat = "cloudfoundry"
 )
 
 var _ receiver.Metrics = (*cloudFoundryReceiver)(nil)
@@ -214,13 +215,13 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 func createLibraryMetricsSlice(metrics pmetric.Metrics) pmetric.MetricSlice {
 	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
 	libraryMetrics := resourceMetric.ScopeMetrics().AppendEmpty()
-	libraryMetrics.Scope().SetName(instrumentationLibName)
+	libraryMetrics.Scope().SetName(metadata.ScopeName)
 	return libraryMetrics.Metrics()
 }
 
 func createLibraryLogsSlice(logs plog.Logs) plog.LogRecordSlice {
 	resourceLog := logs.ResourceLogs().AppendEmpty()
 	libraryLogs := resourceLog.ScopeLogs().AppendEmpty()
-	libraryLogs.Scope().SetName(instrumentationLibName)
+	libraryLogs.Scope().SetName(metadata.ScopeName)
 	return libraryLogs.LogRecords()
 }
