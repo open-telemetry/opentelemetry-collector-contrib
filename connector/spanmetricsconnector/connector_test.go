@@ -1475,11 +1475,11 @@ func TestSpanMetrics_Events(t *testing.T) {
 		eventsConfig            EventsConfig
 		shouldEventsMetricExist bool
 	}{
-		// {
-		// 	name:                    "events disabled",
-		// 	eventsConfig:            EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
-		// 	shouldEventsMetricExist: false,
-		// },
+		{
+			name:                    "events disabled",
+			eventsConfig:            EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			shouldEventsMetricExist: false,
+		},
 		{
 			name:                    "events enabled",
 			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
@@ -1502,10 +1502,10 @@ func TestSpanMetrics_Events(t *testing.T) {
 				for ilmC := 0; ilmC < ism.Len(); ilmC++ {
 					m := ism.At(ilmC).Metrics()
 					if !tt.shouldEventsMetricExist {
-						assert.Equal(t, 4, m.Len())
+						assert.Equal(t, 2, m.Len())
 						continue
 					}
-					assert.Equal(t, 6, m.Len())
+					assert.Equal(t, 3, m.Len())
 					for mC := 0; mC < m.Len(); mC++ {
 						metric := m.At(mC)
 						if metric.Name() != "events" {

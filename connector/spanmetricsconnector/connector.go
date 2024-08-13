@@ -295,49 +295,29 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 			return startTime
 		}
 
-		sums := rawMetrics.sums
-		// Duplicate metric to avoid breaking change:
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227
-		metric := sm.Metrics().AppendEmpty()
-		metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
-		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
-
-		if p.config.Namespace != "" && p.config.Namespace == DefaultNamespace {
-			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName("", metricNameCalls))
-			sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+		metricsNamespace := p.config.Namespace
+		if legacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
+			metricsNamespace = ""
 		}
+
+		sums := rawMetrics.sums
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
+		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
-			// Duplicate metric to avoid breaking change:
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227
 			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
+			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
 			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
-			if p.config.Namespace != "" && p.config.Namespace == DefaultNamespace {
-				metric = sm.Metrics().AppendEmpty()
-				metric.SetName(buildMetricName("", metricNameDuration))
-				metric.SetUnit(p.config.Histogram.Unit.String())
-				histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
-			}
 		}
 
 		events := rawMetrics.events
 		if p.events.Enabled {
-			// Duplicate metric to avoid breaking change:
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227
 			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameEvents))
+			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
 			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
-
-			if p.config.Namespace != "" && p.config.Namespace == DefaultNamespace {
-				metric = sm.Metrics().AppendEmpty()
-				metric.SetName(buildMetricName("", metricNameEvents))
-				events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
-			}
-
 		}
 
 		for mk := range deltaMetricKeys {

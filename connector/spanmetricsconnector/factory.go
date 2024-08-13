@@ -13,11 +13,27 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 )
 
-const DefaultNamespace = "traces.span.metrics"
+const (
+	DefaultNamespace                      = "traces.span.metrics"
+	legacyLatencyMetricNamesFeatureGateID = "connector.spanmetrics.legacyLatencyMetricNames"
+)
+
+var legacyMetricNamesFeatureGate *featuregate.Gate
+
+func init() {
+	// TODO: Remove this feature gate when the legacy metric names are removed.
+	legacyMetricNamesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		legacyLatencyMetricNamesFeatureGateID,
+		featuregate.StageBeta,
+		featuregate.WithRegisterDescription("When enabled, connector uses legacy metric names."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227"),
+	)
+}
 
 // NewFactory creates a factory for the spanmetrics connector.
 func NewFactory() connector.Factory {
