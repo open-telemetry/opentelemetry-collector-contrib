@@ -1,20 +1,15 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !windows
-
-// TODO review if tests should succeed on Windows
-
 package docker
 
 import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -47,34 +42,14 @@ func TestInvalidExclude(t *testing.T) {
 	assert.Equal(t, "could not determine docker client excluded images: invalid glob item: unexpected end of input", err.Error())
 }
 
-func tmpSock(t *testing.T) (net.Listener, string) {
-	f, err := os.CreateTemp(os.TempDir(), "testsock")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := f.Name()
-	assert.NoError(t, os.Remove(addr))
-
-	listener, err := net.Listen("unix", addr)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return listener, addr
-}
-
 func TestWatchingTimeouts(t *testing.T) {
-	listener, addr := tmpSock(t)
+	listener, addr := testListener(t)
 	defer func() {
 		assert.NoError(t, listener.Close())
 	}()
 
-	defer func() {
-		assert.NoError(t, os.Remove(addr))
-	}()
-
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: portableEndpoint(addr),
 		Timeout:  50 * time.Millisecond,
 	}
 
@@ -109,17 +84,14 @@ func TestWatchingTimeouts(t *testing.T) {
 }
 
 func TestFetchingTimeouts(t *testing.T) {
-	listener, addr := tmpSock(t)
+	listener, addr := testListener(t)
 
 	defer func() {
 		assert.NoError(t, listener.Close())
 	}()
-	defer func() {
-		assert.NoError(t, os.Remove(addr))
-	}()
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: portableEndpoint(addr),
 		Timeout:  50 * time.Millisecond,
 	}
 
@@ -165,17 +137,13 @@ func TestFetchingTimeouts(t *testing.T) {
 }
 
 func TestToStatsJSONErrorHandling(t *testing.T) {
-	listener, addr := tmpSock(t)
+	listener, addr := testListener(t)
 	defer func() {
 		assert.NoError(t, listener.Close())
 	}()
 
-	defer func() {
-		assert.NoError(t, os.Remove(addr))
-	}()
-
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: portableEndpoint(addr),
 		Timeout:  50 * time.Millisecond,
 	}
 
@@ -253,4 +221,12 @@ func TestEventLoopHandlesError(t *testing.T) {
 	case <-finished:
 		return
 	}
+}
+
+func portableEndpoint(addr string) string {
+	endpoint := fmt.Sprintf("unix://%s", addr)
+	if runtime.GOOS == "windows" {
+		endpoint = fmt.Sprintf("npipe://%s", strings.ReplaceAll(addr, "\\", "/"))
+	}
+	return endpoint
 }

@@ -7,6 +7,18 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.107.0
+
+### 🚀 New components 🚀
+
+- `googlecloudmonitoringreceiver`: Adding new component - [Google Cloud monitoring](https://cloud.google.com/monitoring/api/metrics_gcp) receiver to fetch GCP Cloud Metrics and transform to OpenTelemetry compatible format. (#33762)
+
+### 💡 Enhancements 💡
+
+- `internal/grpcutil`: Add internal/grpcutil package with gRPC-specified timeout parsing (#33688)
+- `pmetrictest`: Add support for histogram comparison options (#34521)
+- `kafkaexporter`: add an ability to partition logs based on resource attributes. (#33229)
+
 ## v0.106.1
 
 ## v0.106.0
