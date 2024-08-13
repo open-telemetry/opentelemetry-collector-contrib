@@ -130,30 +130,6 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	return document
 }
 
-func forEachDataStreamKey(fn func(key string)) {
-	for _, key := range []string{dataStreamType, dataStreamDataset, dataStreamNamespace} {
-		fn(key)
-	}
-}
-
-// addDataStreamAttributes adds data_stream.* attributes to document
-func addDataStreamAttributes(document *objmodel.Document, attr pcommon.Map) {
-	forEachDataStreamKey(func(key string) {
-		if value, exists := attr.Get(key); exists {
-			document.AddAttribute(key, value)
-		}
-	})
-}
-
-// stripDataStreamAttributes removes data_stream.* attributes from map
-func stripDataStreamAttributes(attr pcommon.Map) {
-	forEachDataStreamKey(func(key string) {
-		if _, exists := attr.Get(key); exists {
-			attr.Remove(key)
-		}
-	})
-}
-
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
 	var document objmodel.Document
 
@@ -171,14 +147,7 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
-	// At this point the data_stream attributes are expected to be in the record attributes,
-	// updated by the router.
-	// Move them to the top of the document and remove them from the record
-	attributeMap := record.Attributes()
-	addDataStreamAttributes(&document, attributeMap)
-	stripDataStreamAttributes(attributeMap)
-	document.AddAttributes("attributes", attributeMap)
-
+	m.encodeAttributesOTelMode(&document, record.Attributes())
 	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
@@ -360,7 +329,13 @@ func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resour
 	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
 	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
 	resource.Attributes().CopyTo(resourceAttrMap)
-	stripDataStreamAttributes(resourceAttrMap)
+	resourceAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
+		switch key {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		return false
+	})
 
 	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
 }
@@ -384,11 +359,32 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 	if scopeAttributes.Len() > 0 {
 		scopeAttrMap := scopeMap.PutEmptyMap("attributes")
 		scopeAttributes.CopyTo(scopeAttrMap)
-		stripDataStreamAttributes(scopeAttrMap)
+		scopeAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
+			switch key {
+			case dataStreamType, dataStreamDataset, dataStreamNamespace:
+				return true
+			}
+			return false
+		})
 	}
 	if scopeMap.Len() > 0 {
 		document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
 	}
+}
+
+func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
+	attributeMap.RemoveIf(func(key string, val pcommon.Value) bool {
+		switch key {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			// At this point the data_stream attributes are expected to be in the record attributes,
+			// updated by the router.
+			// Move them to the top of the document and remove them from the record
+			document.AddAttribute(key, val)
+			return true
+		}
+		return false
+	})
+	document.AddAttributes("attributes", attributeMap)
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
@@ -416,10 +412,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddString("kind", span.Kind().String())
 	document.AddInt("duration", int64(span.EndTimestamp()-span.StartTimestamp()))
 
-	attributeMap := span.Attributes()
-	addDataStreamAttributes(&document, attributeMap)
-	stripDataStreamAttributes(attributeMap)
-	document.AddAttributes("attributes", attributeMap)
+	m.encodeAttributesOTelMode(&document, span.Attributes())
 
 	document.AddInt("dropped_attributes_count", int64(span.DroppedAttributesCount()))
 	document.AddInt("dropped_events_count", int64(span.DroppedEventsCount()))
