@@ -8,7 +8,7 @@ import (
 
 var (
 	Type      = component.MustNewType("loki")
-	ScopeName = "otelcol/loki"
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 )
 
 const (
