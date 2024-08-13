@@ -5,9 +5,9 @@ status:
   class: exporter
   stability:
     development: [traces, metrics, logs]
-  distributions: [contrib]
+  distributions: []
   codeowners:
-    active: [atoulme]
+    active: [atoulme, joker-star-l]
 
 # TODO: Update the exporter to pass the tests
 tests:
