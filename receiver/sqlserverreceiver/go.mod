@@ -97,7 +97,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/sijms/go-ora/v2 v2.8.19 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/snowflakedb/gosnowflake v1.10.1 // indirect
+	github.com/snowflakedb/gosnowflake v1.11.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/collector v0.107.0 // indirect
