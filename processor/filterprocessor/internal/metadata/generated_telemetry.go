@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/filter")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/filter")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry

@@ -74,5 +74,5 @@ resourceMetrics:
             name: openshift.appliedclusterquota.used
             unit: "{resource}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest

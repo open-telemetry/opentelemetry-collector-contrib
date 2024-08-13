@@ -6,12 +6,14 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
@@ -720,5 +722,66 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 				},
 			},
 		},
+	}
+}
+
+func TestAzureScraperClientOptions(t *testing.T) {
+	type fields struct {
+		cfg *Config
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   *arm.ClientOptions
+	}{
+		{
+			name: "AzureCloud_options",
+			fields: fields{
+				cfg: &Config{
+					Cloud: azureCloud,
+				},
+			},
+			want: &arm.ClientOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloud.AzurePublic,
+				},
+			},
+		},
+		{
+			name: "AzureGovernmentCloud_options",
+			fields: fields{
+				cfg: &Config{
+					Cloud: azureGovernmentCloud,
+				},
+			},
+			want: &arm.ClientOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloud.AzureGovernment,
+				},
+			},
+		},
+		{
+			name: "AzureChinaCloud_options",
+			fields: fields{
+				cfg: &Config{
+					Cloud: azureChinaCloud,
+				},
+			},
+			want: &arm.ClientOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloud.AzureChina,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &azureScraper{
+				cfg: tt.fields.cfg,
+			}
+			if got := s.getArmClientOptions(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getArmClientOptions() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
