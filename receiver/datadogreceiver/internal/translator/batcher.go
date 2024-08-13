@@ -48,14 +48,14 @@ var metricTypeMap = map[string]pmetric.MetricType{
 }
 
 func parseSeriesProperties(name string, metricType string, tags []string, host string, version string, stringPool *StringPool) dimensions {
-	resourceAttrs, scopeAttrs, dpAttrs := tagsToAttributes(tags, host, stringPool)
+	attrs := tagsToAttributes(tags, host, stringPool)
 	return dimensions{
 		name:          name,
 		metricType:    metricTypeMap[metricType],
 		buildInfo:     version,
-		resourceAttrs: resourceAttrs,
-		scopeAttrs:    scopeAttrs,
-		dpAttrs:       dpAttrs,
+		resourceAttrs: attrs.resource,
+		scopeAttrs:    attrs.scope,
+		dpAttrs:       attrs.dp,
 	}
 }
 
