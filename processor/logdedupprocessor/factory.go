@@ -24,11 +24,11 @@ func NewFactory() processor.Factory {
 }
 
 // createLogsProcessor creates a log processor.
-func createLogsProcessor(_ context.Context, params processor.Settings, cfg component.Config, consumer consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(_ context.Context, settings processor.Settings, cfg component.Config, consumer consumer.Logs) (processor.Logs, error) {
 	processorCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config type: %+v", cfg)
 	}
 
-	return newProcessor(processorCfg, consumer, params.Logger)
+	return newProcessor(processorCfg, consumer, settings)
 }
