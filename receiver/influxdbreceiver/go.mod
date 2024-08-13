@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0

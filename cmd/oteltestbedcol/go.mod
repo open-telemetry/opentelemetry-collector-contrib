@@ -2,9 +2,9 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
 
-go 1.21.0
+go 1.22.0
 
-toolchain go1.21.12
+toolchain go1.22.6
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.107.0
