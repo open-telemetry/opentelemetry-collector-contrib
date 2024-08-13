@@ -11,7 +11,6 @@ import (
 
 // RevisionV1 represents all changes that are to be
 // applied to a signal at a given version.
-// todo(ankit) are log changes handled?  i dont think soooo
 // todo(ankit) split
 type RevisionV1 struct {
 	ver                               *Version
