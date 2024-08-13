@@ -423,7 +423,8 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	default:
 		document.Add("metrics."+metric.Name(), objmodel.ValueFromAttribute(value))
 	}
-	// FIXME: support quantiles
+	// TODO: support quantiles
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
 
 	document.AddDynamicTemplate("metrics."+metric.Name(), metricDpToDynamicTemplate(metric, dp))
 	documents[hash] = document
