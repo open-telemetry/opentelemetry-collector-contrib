@@ -4,19 +4,25 @@
 package logdedupprocessor
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 func Test_newLogAggregator(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC, telemetryBuilder)
 	require.Equal(t, cfg.LogCountAttribute, aggregator.logCountAttribute)
 	require.Equal(t, time.UTC, aggregator.timezone)
 	require.NotNil(t, aggregator.resources)
@@ -34,8 +40,11 @@ func Test_logAggregatorAdd(t *testing.T) {
 		return firstExpectedTimestamp
 	}
 
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
 	// Setup aggregator
-	aggregator := newLogAggregator("log_count", time.UTC)
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder)
 	logRecord := plog.NewLogRecord()
 
 	resource := pcommon.NewResource()
@@ -82,7 +91,10 @@ func Test_logAggregatorAdd(t *testing.T) {
 }
 
 func Test_logAggregatorReset(t *testing.T) {
-	aggregator := newLogAggregator("log_count", time.UTC)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder)
 	for i := 0; i < 2; i++ {
 		resource := pcommon.NewResource()
 		resource.Attributes().PutInt("i", int64(i))
@@ -114,8 +126,10 @@ func Test_logAggregatorExport(t *testing.T) {
 	}
 
 	// Setup aggregator
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 
-	aggregator := newLogAggregator(defaultLogCountAttribute, location)
+	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder)
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("one", "two")
 	expectedHash := pdatautil.MapHash(resource.Attributes())
@@ -127,7 +141,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	// Add logRecord
 	aggregator.Add(resource, scope, logRecord)
 
-	exportedLogs := aggregator.Export()
+	exportedLogs := aggregator.Export(context.Background())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
 	require.Equal(t, 1, exportedLogs.ResourceLogs().Len())
 
