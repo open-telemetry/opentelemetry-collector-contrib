@@ -4,13 +4,13 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: redisreceiver
+component: lokiexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Update the scope name for telemetry produced by the redisreceiver from `otelcol/redisreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver`"
+note: "Update the scope name for telemetry produced by the lokiexporter from `otelcol/loki` to `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter`"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [34470]
+issues: [34612]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
