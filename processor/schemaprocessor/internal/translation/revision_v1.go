@@ -4,6 +4,7 @@
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 
 import (
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
@@ -18,6 +19,7 @@ type RevisionV1 struct {
 	resources                         *migrate.AttributeChangeSetSlice
 	spans                             *migrate.ConditionalAttributeSetSlice
 	spanEventsRenameEvents            *migrate.SignalNameChangeSlice
+	spanEventsRenameAttributesOnSpanEvent *migrate.ConditionalLambdaAttributeSetSlice[ptrace.Span]
 	spanEventsRenameAttributesOnSpan  *migrate.ConditionalAttributeSetSlice
 	spanEventsRenameAttributesOnEvent *migrate.ConditionalAttributeSetSlice
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
@@ -43,6 +45,7 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		resources:                         newAttributeChangeSetSliceFromChanges(def.Resources),
 		spans:                             newSpanConditionalAttributeSlice(def.Spans),
 		spanEventsRenameEvents:            newSpanEventSignalSlice(def.SpanEvents),
+		spanEventsRenameAttributesOnSpanEvent: newSpanEventsRenameAttributesOnSpanEventEvent(def.SpanEvents),
 		spanEventsRenameAttributesOnSpan:  newSpanEventConditionalSpans(def.SpanEvents),
 		spanEventsRenameAttributesOnEvent: newSpanEventConditionalNames(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
@@ -124,4 +127,43 @@ func newMetricNameSignalSlice(metrics ast.Metrics) *migrate.SignalNameChangeSlic
 		values = append(values, migrate.NewSignalNameChange(ch.RenameMetrics))
 	}
 	return migrate.NewSignalNameChangeSlice(values...)
+}
+
+func newSpanEventsRenameAttributesOnSpanEventEvent(spanEvents ast.SpanEvents) *migrate.ConditionalLambdaAttributeSetSlice[ptrace.Span]{
+	var conditions []*migrate.ConditionalLambdaAttributeSet[ptrace.Span]
+	for _, ch := range spanEvents.Changes {
+		if rename := ch.RenameAttributes; rename != nil {
+			conditions = append(conditions, migrate.NewConditionalLambdaAttributeSet(
+				ch.RenameAttributes.AttributeMap,
+				func(span ptrace.Span) bool {
+					var spanNameMatches, spanEventMatches bool
+					if ch.RenameAttributes.ApplyToSpans == nil || len(ch.RenameAttributes.ApplyToSpans) == 0 {
+						spanNameMatches = true
+					} else {
+						for _, spanName := range ch.RenameAttributes.ApplyToSpans {
+							if span.Name() == string(spanName) {
+								spanNameMatches = true
+								break
+							}
+						}
+					}
+					if ch.RenameAttributes.ApplyToEvents == nil || len(ch.RenameAttributes.ApplyToEvents) == 0 {
+						spanEventMatches = true
+					} else {
+						for _, eventName := range ch.RenameAttributes.ApplyToEvents {
+							for i := 0; i < span.Events().Len(); i++  {
+								spanEvent := span.Events().At(i)
+								if spanEvent.Name() == string(eventName) {
+									spanNameMatches = true
+									break
+								}
+							}
+						}
+					}
+					return spanNameMatches && spanEventMatches
+				},
+			))
+		}
+	}
+	return migrate.NewConditionalLambdaAttributeSetSlice(conditions...)
 }

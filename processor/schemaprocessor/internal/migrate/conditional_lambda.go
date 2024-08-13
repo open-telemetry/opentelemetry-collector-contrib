@@ -7,20 +7,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 )
 
-type ResourceTestFunc[T alias.Attributed] func(resource T) bool
+type ResourceTestFunc[T any] func(resource T) bool
 
-type ConditionalLambdaAttributeSet[T alias.Attributed] struct {
+type ConditionalLambdaAttributeSet[T any] struct {
 	testFunc ResourceTestFunc[T]
 	attrs *AttributeChangeSet
 }
 
-type ConditionalLambdaAttributeSetSlice[T alias.Attributed] []*ConditionalLambdaAttributeSet[T]
+type ConditionalLambdaAttributeSetSlice[T any] []*ConditionalLambdaAttributeSet[T]
 
-func NewConditionalLambdaAttributeSet[T alias.Attributed](mappings ast.AttributeMap, testFunc ResourceTestFunc[T]) *ConditionalLambdaAttributeSet[T] {
+func NewConditionalLambdaAttributeSet[T any](mappings ast.AttributeMap, testFunc ResourceTestFunc[T]) *ConditionalLambdaAttributeSet[T] {
 
 	return &ConditionalLambdaAttributeSet[T]{
 		testFunc:    testFunc,
@@ -49,7 +47,7 @@ func (ca *ConditionalLambdaAttributeSet[T]) check(resource T) bool {
 	return ca.testFunc(resource)
 }
 
-func NewConditionalLambdaAttributeSetSlice[T alias.Attributed](conditions ...*ConditionalLambdaAttributeSet[T]) *ConditionalLambdaAttributeSetSlice[T] {
+func NewConditionalLambdaAttributeSetSlice[T any](conditions ...*ConditionalLambdaAttributeSet[T]) *ConditionalLambdaAttributeSetSlice[T] {
 	values := new(ConditionalLambdaAttributeSetSlice[T])
 	for _, c := range conditions {
 		(*values) = append((*values), c)
