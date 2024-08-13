@@ -11,16 +11,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 )
 
-type ResourceTestFunc[T alias.Resource] func(resource T) bool
+type ResourceTestFunc[T alias.Attributed] func(resource T) bool
 
-type ConditionalLambdaAttributeSet[T alias.Resource] struct {
+type ConditionalLambdaAttributeSet[T alias.Attributed] struct {
 	testFunc ResourceTestFunc[T]
 	attrs *AttributeChangeSet
 }
 
-type ConditionalLambdaAttributeSetSlice[T alias.Resource] []*ConditionalLambdaAttributeSet[T]
+type ConditionalLambdaAttributeSetSlice[T alias.Attributed] []*ConditionalLambdaAttributeSet[T]
 
-func NewConditionalLambdaAttributeSet[T alias.Resource](mappings ast.AttributeMap, testFunc ResourceTestFunc[T]) *ConditionalLambdaAttributeSet[T] {
+func NewConditionalLambdaAttributeSet[T alias.Attributed](mappings ast.AttributeMap, testFunc ResourceTestFunc[T]) *ConditionalLambdaAttributeSet[T] {
 
 	return &ConditionalLambdaAttributeSet[T]{
 		testFunc:    testFunc,
@@ -49,7 +49,7 @@ func (ca *ConditionalLambdaAttributeSet[T]) check(resource T) bool {
 	return ca.testFunc(resource)
 }
 
-func NewConditionalLambdaAttributeSetSlice[T alias.Resource](conditions ...*ConditionalLambdaAttributeSet[T]) *ConditionalLambdaAttributeSetSlice[T] {
+func NewConditionalLambdaAttributeSetSlice[T alias.Attributed](conditions ...*ConditionalLambdaAttributeSet[T]) *ConditionalLambdaAttributeSetSlice[T] {
 	values := new(ConditionalLambdaAttributeSetSlice[T])
 	for _, c := range conditions {
 		(*values) = append((*values), c)
