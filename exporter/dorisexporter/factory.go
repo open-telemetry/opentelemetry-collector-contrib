@@ -11,6 +11,9 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter/internal/metadata"
 )
@@ -45,13 +48,34 @@ func createDefaultConfig() component.Config {
 }
 
 func createLogsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
-	return nil, nil
+	return exporterhelper.NewLogsExporter(
+		ctx,
+		set,
+		cfg,
+		func(ctx context.Context, ld plog.Logs) error {
+			return nil
+		},
+	)
 }
 
 func createTracesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
-	return nil, nil
+	return exporterhelper.NewTracesExporter(
+		ctx,
+		set,
+		cfg,
+		func(ctx context.Context, td ptrace.Traces) error {
+			return nil
+		},
+	)
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
-	return nil, nil
+	return exporterhelper.NewMetricsExporter(
+		ctx,
+		set,
+		cfg,
+		func(ctx context.Context, md pmetric.Metrics) error {
+			return nil
+		},
+	)
 }
