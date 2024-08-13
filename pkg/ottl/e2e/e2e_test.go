@@ -493,6 +493,19 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], "pass") where IsMatchVersion("1.2.3", "1.2.x")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "pass") where IsMatchVersion(resource.attributes["app.version"], "1.2.x")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+
+		{
 			statement: `set(attributes["test"], "pass") where IsString("")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
@@ -938,6 +951,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 func constructLogTransformContext() ottllog.TransformContext {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("host.name", "localhost")
+	resource.Attributes().PutStr("app.version", "1.2.3")
 
 	scope := pcommon.NewInstrumentationScope()
 	scope.SetName("scope")
