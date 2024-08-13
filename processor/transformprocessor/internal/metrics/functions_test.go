@@ -39,6 +39,7 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["extract_count_metric"] = newExtractCountMetricFactory()
 	expected["copy_metric"] = newCopyMetricFactory()
 	expected["scale_metric"] = newScaleMetricFactory()
+	expected["convert_exponential_hist_to_explicit_hist"] = newconvertExponentialHistToExplicitHistFactory()
 
 	defer testutil.SetFeatureGateForTest(t, useConvertBetweenSumAndGaugeMetricContext, true)()
 	actual := MetricFunctions()
