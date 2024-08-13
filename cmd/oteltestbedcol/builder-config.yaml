@@ -8,7 +8,7 @@ dist:
   name: oteltestbedcol
   description: OpenTelemetry Collector binary for testbed only tests.
   version: 0.106.1-dev
-  otelcol_version: 0.106.1
+  otelcol_version: 0.107.0
 
 extensions:
   - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.107.0
