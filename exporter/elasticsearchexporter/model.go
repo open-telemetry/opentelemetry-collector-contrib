@@ -422,6 +422,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	default:
 		document.Add("metrics."+metric.Name(), objmodel.ValueFromAttribute(value))
 	}
+	// FIXME: support quantiles
 
 	document.AddDynamicTemplate("metrics."+metric.Name(), metricDpToDynamicTemplate(metric, dp))
 	documents[hash] = document
