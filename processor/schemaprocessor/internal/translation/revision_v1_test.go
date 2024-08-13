@@ -31,7 +31,7 @@ func TestNewRevisionV1(t *testing.T) {
 				resources:                         migrate.NewAttributeChangeSetSlice(),
 				spans:                             migrate.NewConditionalAttributeSetSlice(),
 				spanEventsRenameEvents:            migrate.NewSignalNameChangeSlice(),
-				spanEventsRenameAttributesonSpan:  migrate.NewConditionalAttributeSetSlice(),
+				spanEventsRenameAttributesOnSpan:  migrate.NewConditionalAttributeSetSlice(),
 				spanEventsRenameAttributesOnEvent: migrate.NewConditionalAttributeSetSlice(),
 				metricsRenameAttributes:           migrate.NewConditionalAttributeSetSlice(),
 				metricsRenameMetrics:              migrate.NewSignalNameChangeSlice(),
@@ -172,7 +172,7 @@ func TestNewRevisionV1(t *testing.T) {
 						"started": "application started",
 					}),
 				),
-				spanEventsRenameAttributesonSpan: migrate.NewConditionalAttributeSetSlice(
+				spanEventsRenameAttributesOnSpan: migrate.NewConditionalAttributeSetSlice(
 					migrate.NewConditionalAttributeSet(
 						map[string]string{
 							"service.app.name": "service.name",

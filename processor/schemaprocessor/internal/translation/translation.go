@@ -207,13 +207,13 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					if err != nil {
 						return err
 					}
-					if err := rev.spanEventsRenameAttributesonSpan.Apply(event.Attributes(), span.Name()); err != nil {
+					if err := rev.spanEventsRenameAttributesOnSpan.Apply(event.Attributes(), span.Name()); err != nil {
 						return err
 					}
 					if err := rev.spanEventsRenameAttributesOnEvent.Apply(event.Attributes(), event.Name()); err != nil {
 						return err
 					}
-					//err = rev.spanEventsRenameAttributesonSpan.Apply(span.Attributes(), span.Name())
+					//err = rev.spanEventsRenameAttributesOnSpan.Apply(span.Attributes(), span.Name())
 					//if err != nil {
 					//	return err
 					//}
@@ -232,12 +232,12 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					if err := rev.spanEventsRenameAttributesOnEvent.Rollback(event.Attributes(), event.Name()); err != nil {
 						return err
 					}
-					if err := rev.spanEventsRenameAttributesonSpan.Rollback(event.Attributes(), span.Name()); err != nil {
+					if err := rev.spanEventsRenameAttributesOnSpan.Rollback(event.Attributes(), span.Name()); err != nil {
 						return err
 					}
 
 
-					//err = rev.spanEventsRenameAttributesonSpan.Rollback(span.Attributes(), span.Name())
+					//err = rev.spanEventsRenameAttributesOnSpan.Rollback(span.Attributes(), span.Name())
 					//if err != nil {
 					//	return err
 					//}

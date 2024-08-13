@@ -18,7 +18,7 @@ type RevisionV1 struct {
 	resources                         *migrate.AttributeChangeSetSlice
 	spans                             *migrate.ConditionalAttributeSetSlice
 	spanEventsRenameEvents            *migrate.SignalNameChangeSlice
-	spanEventsRenameAttributesonSpan  *migrate.ConditionalAttributeSetSlice
+	spanEventsRenameAttributesOnSpan  *migrate.ConditionalAttributeSetSlice
 	spanEventsRenameAttributesOnEvent *migrate.ConditionalAttributeSetSlice
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
 	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
@@ -43,7 +43,7 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		resources:                         newAttributeChangeSetSliceFromChanges(def.Resources),
 		spans:                             newSpanConditionalAttributeSlice(def.Spans),
 		spanEventsRenameEvents:            newSpanEventSignalSlice(def.SpanEvents),
-		spanEventsRenameAttributesonSpan:  newSpanEventConditionalSpans(def.SpanEvents),
+		spanEventsRenameAttributesOnSpan:  newSpanEventConditionalSpans(def.SpanEvents),
 		spanEventsRenameAttributesOnEvent: newSpanEventConditionalNames(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
 		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
