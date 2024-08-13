@@ -6,13 +6,13 @@ package redactionprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"regexp"
 	"sort"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
