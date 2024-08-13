@@ -335,7 +335,6 @@ func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]obj
 
 func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaUrl string, scope pcommon.InstrumentationScope, scopeSchemaUrl string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
 	// documents is per-resource. Therefore, there is no need to hash resource attributes
-	// FIXME: exclude DS attributes in hash
 	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit())
 	var (
 		document objmodel.Document
@@ -751,10 +750,23 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 
 	hasher.Write([]byte(unit))
 
-	mapHash(hasher, scopeAttrs)
-	mapHash(hasher, dp.Attributes())
+	mapHashExcludeDataStreamAttr(hasher, scopeAttrs)
+	mapHashExcludeDataStreamAttr(hasher, dp.Attributes())
 
 	return hasher.Sum32()
+}
+
+func mapHashExcludeDataStreamAttr(hasher hash.Hash, m pcommon.Map) {
+	m.Range(func(k string, v pcommon.Value) bool {
+		switch k {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		hasher.Write([]byte(k))
+		valueHash(hasher, v)
+
+		return true
+	})
 }
 
 func mapHash(hasher hash.Hash, m pcommon.Map) {
