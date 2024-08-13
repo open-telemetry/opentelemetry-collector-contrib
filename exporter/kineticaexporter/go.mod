@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/kineticadb/kinetica-api-go v0.0.5
-	github.com/samber/lo v1.46.0
+	github.com/samber/lo v1.47.0
 	github.com/stretchr/testify v1.9.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.opentelemetry.io/collector/component v0.107.0
