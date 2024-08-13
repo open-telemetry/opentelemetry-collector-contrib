@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("awss3")
+	Type      = component.MustNewType("awss3")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 )
 
 const (

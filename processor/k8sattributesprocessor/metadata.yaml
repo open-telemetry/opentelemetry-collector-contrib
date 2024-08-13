@@ -1,5 +1,4 @@
 type: k8sattributes
-scope_name: otelcol/k8sattributes
 
 status:
   class: processor
@@ -102,6 +101,10 @@ resource_attributes:
     description: Name of the image the container was built on. Requires container.id or k8s.container.name.
     type: string
     enabled: true
+  container.image.repo_digests:
+    description: Repo digests of the container image as provided by the container runtime.
+    type: slice
+    enabled: false
   container.image.tag:
     description: Container image tag. Requires container.id or k8s.container.name.
     type: string

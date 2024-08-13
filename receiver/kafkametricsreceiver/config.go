@@ -14,6 +14,9 @@ import (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
+	// Alias name of the kafka cluster
+	ClusterAlias string `mapstructure:"cluster_alias"`
+
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
 

@@ -1,5 +1,4 @@
 type: loki
-scope_name: otelcol/lokireceiver
 
 status:
   class: receiver

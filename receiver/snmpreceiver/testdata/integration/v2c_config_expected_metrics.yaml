@@ -27,7 +27,7 @@ resourceMetrics:
             name: snmp.test.metric.sysservices
             unit: by
         scope:
-          name: otelcol/snmpreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
           version: latest
   - resource:
       attributes:
@@ -53,7 +53,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/snmpreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
           version: latest
   - resource:
       attributes:
@@ -79,7 +79,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/snmpreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
           version: latest
   - resource:
       attributes:
@@ -105,5 +105,5 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/snmpreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
           version: latest

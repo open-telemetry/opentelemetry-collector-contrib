@@ -9,6 +9,32 @@ resourceMetrics:
             stringValue: .geoip_databases
     scopeMetrics:
       - metrics:
+          - description: The number of documents for an index.
+            name: elasticsearch.index.documents
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "40"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: state
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "40"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: state
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{documents}'
           - description: The number of operations completed for an index.
             name: elasticsearch.index.operations.completed
             sum:
@@ -236,6 +262,18 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
+          - description: The number of currently active segment merges
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: elasticsearch.index.operations.merge.current
+            unit: '{merges}'
           - description: Time spent on operations for an index.
             name: elasticsearch.index.operations.time
             sum:
@@ -463,6 +501,26 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ms
+          - description: Number of segments of an index.
+            name: elasticsearch.index.segments.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{segments}'
           - description: The size of the shards assigned to this index.
             name: elasticsearch.index.shards.size
             sum:
@@ -477,7 +535,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: By
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest
   - resource:
       attributes:
@@ -489,6 +547,32 @@ resourceMetrics:
             stringValue: _all
     scopeMetrics:
       - metrics:
+          - description: The number of documents for an index.
+            name: elasticsearch.index.documents
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "40"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: state
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "40"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: state
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{documents}'
           - description: The number of operations completed for an index.
             name: elasticsearch.index.operations.completed
             sum:
@@ -716,6 +800,18 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
+          - description: The number of currently active segment merges
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: elasticsearch.index.operations.merge.current
+            unit: '{merges}'
           - description: Time spent on operations for an index.
             name: elasticsearch.index.operations.time
             sum:
@@ -943,6 +1039,26 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ms
+          - description: Number of segments of an index.
+            name: elasticsearch.index.segments.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{segments}'
           - description: The size of the shards assigned to this index.
             name: elasticsearch.index.shards.size
             sum:
@@ -957,7 +1073,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: By
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest
   - resource:
       attributes:
@@ -1539,8 +1655,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "15746158592"
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The amount of disk space across all file stores for this node.
             name: elasticsearch.node.fs.disk.total
@@ -1548,8 +1664,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "67371577344"
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The number of HTTP connections to the node.
             name: elasticsearch.node.http.connections
@@ -2179,5 +2295,5 @@ resourceMetrics:
             name: jvm.threads.count
             unit: "1"
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest

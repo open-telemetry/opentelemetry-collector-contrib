@@ -1,5 +1,4 @@
 type: roundrobin
-scope_name: otelcol/roundrobinconnector
 
 status:
   class: connector

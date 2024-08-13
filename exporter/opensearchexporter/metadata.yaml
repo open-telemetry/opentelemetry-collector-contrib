@@ -1,5 +1,4 @@
 type: opensearch
-scope_name: otelcol/opensearch
 
 status:
   class: exporter

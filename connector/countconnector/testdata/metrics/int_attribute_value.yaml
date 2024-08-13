@@ -28,4 +28,4 @@ resourceMetrics:
                   timeUnixNano: "1678391923821179000"
               isMonotonic: true
         scope:
-          name: otelcol/countconnector
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector

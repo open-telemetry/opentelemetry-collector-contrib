@@ -1,5 +1,4 @@
 type: ack
-scope_name: otelcol/ack
 
 status:
   class: extension

@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("http_forwarder")
+	Type      = component.MustNewType("http_forwarder")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension"
 )
 
 const (

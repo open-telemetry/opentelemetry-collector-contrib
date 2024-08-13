@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("count")
+	Type      = component.MustNewType("count")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 )
 
 const (

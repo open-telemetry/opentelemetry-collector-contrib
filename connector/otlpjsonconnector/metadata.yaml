@@ -1,5 +1,4 @@
 type: otlpjson
-scope_name: otelcol/otlpjson
 
 status:
   class: connector

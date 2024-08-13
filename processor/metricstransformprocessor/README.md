@@ -107,7 +107,7 @@ processors:
             label_set: [labels...]
             # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
             aggregation_type: {sum, mean, min, max, count, median}
-            # experimental_scale specifies the scalar to apply to values
+            # experimental_scale specifies the scalar to apply to values. Scaling exponential histograms inherently involves some loss of accuracy. 
             experimental_scale: <scalar>
             # value_actions contain a list of operations that will be performed on the selected label
             value_actions:

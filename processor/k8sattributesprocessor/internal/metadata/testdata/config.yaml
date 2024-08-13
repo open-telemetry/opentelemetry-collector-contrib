@@ -5,6 +5,8 @@ all_set:
       enabled: true
     container.image.name:
       enabled: true
+    container.image.repo_digests:
+      enabled: true
     container.image.tag:
       enabled: true
     k8s.cluster.uid:
@@ -54,6 +56,8 @@ none_set:
     container.id:
       enabled: false
     container.image.name:
+      enabled: false
+    container.image.repo_digests:
       enabled: false
     container.image.tag:
       enabled: false

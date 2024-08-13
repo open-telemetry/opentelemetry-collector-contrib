@@ -1,5 +1,4 @@
 type: filter
-scope_name: otelcol/filter
 
 status:
   class: processor

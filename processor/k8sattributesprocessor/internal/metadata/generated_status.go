@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("k8sattributes")
+	Type      = component.MustNewType("k8sattributes")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 )
 
 const (

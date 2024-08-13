@@ -1,5 +1,4 @@
 type: ecs_observer
-scope_name: otelcol/ecsobserver
 
 status:
   class: extension

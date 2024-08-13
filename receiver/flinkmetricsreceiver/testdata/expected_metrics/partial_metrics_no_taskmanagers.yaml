@@ -224,5 +224,5 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: By
         scope:
-          name: otelcol/flinkmetricsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
           version: latest

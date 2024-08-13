@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("azuremonitor")
+	Type      = component.MustNewType("azuremonitor")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 )
 
 const (

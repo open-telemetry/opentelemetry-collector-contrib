@@ -49,16 +49,16 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Dataset:   "ngnix",
 				Namespace: "eu",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: sampleEndpoint,
-					Timeout:  2 * time.Minute,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(config *confighttp.ClientConfig) {
+					config.Endpoint = sampleEndpoint
+					config.Timeout = 2 * time.Minute
+					config.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-					MaxIdleConns:    &maxIdleConns,
-					IdleConnTimeout: &idleConnTimeout,
-					Auth:            &configauth.Authentication{AuthenticatorID: component.MustNewID("sample_basic_auth")},
-				},
+					}
+					config.MaxIdleConns = &maxIdleConns
+					config.IdleConnTimeout = &idleConnTimeout
+					config.Auth = &configauth.Authentication{AuthenticatorID: component.MustNewID("sample_basic_auth")}
+				}),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     100 * time.Millisecond,
@@ -130,6 +130,14 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := newDefaultConfig().(*Config)
 	for _, fn := range fns {
 		fn(cfg)
+	}
+	return cfg
+}
+
+func withDefaultHTTPClientConfig(fns ...func(config *confighttp.ClientConfig)) confighttp.ClientConfig {
+	cfg := confighttp.NewDefaultClientConfig()
+	for _, fn := range fns {
+		fn(&cfg)
 	}
 	return cfg
 }

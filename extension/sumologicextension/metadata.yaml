@@ -1,5 +1,4 @@
 type: sumologic
-scope_name: otelcol/sumologic
 
 status:
   class: extension

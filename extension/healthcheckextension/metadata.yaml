@@ -1,5 +1,4 @@
 type: health_check
-scope_name: otelcol/healthcheck
 
 status:
   class: extension

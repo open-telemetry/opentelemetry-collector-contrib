@@ -54,7 +54,7 @@ const (
 
 	DefaultObserverType = DisableObserver
 
-	receiverName = "otelcol/statsdreceiver"
+	receiverName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 )
 
 type TimerHistogramMapping struct {

@@ -6,7 +6,9 @@ package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bufio"
 	"net/url"
+	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -29,6 +31,7 @@ func reqToLog(sc *bufio.Scanner,
 
 	for sc.Scan() {
 		logRecord := scopeLog.LogRecords().AppendEmpty()
+		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		line := sc.Text()
 		logRecord.Body().SetStr(line)
 	}

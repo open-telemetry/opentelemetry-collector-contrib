@@ -1,5 +1,4 @@
 type: syslog
-scope_name: otelcol/syslogreceiver
 
 status:
   class: receiver

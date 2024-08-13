@@ -47,15 +47,16 @@ func TestMetricBatcher(t *testing.T) {
 			},
 			expect: func(t *testing.T, result pmetric.Metrics) {
 				// Different hosts should result in different ResourceMetrics
+				requireMetricAndDataPointCounts(t, result, 2, 2)
 				require.Equal(t, 2, result.ResourceMetrics().Len())
 				resource1 := result.ResourceMetrics().At(0)
 				resource2 := result.ResourceMetrics().At(1)
-				v, exists := resource1.Resource().Attributes().Get("host.name")
-				require.True(t, exists)
-				require.Equal(t, "Host1", v.AsString())
-				v, exists = resource2.Resource().Attributes().Get("host.name")
-				require.True(t, exists)
-				require.Equal(t, "Host2", v.AsString())
+
+				res1ExpectedAttrs := tagsToAttributes([]string{"env:tag1", "service:test1", "version:tag1"}, "Host1", newStringPool())
+				requireResourceAttributes(t, resource1.Resource().Attributes(), res1ExpectedAttrs.resource)
+
+				res2ExpectedAttrs := tagsToAttributes([]string{"env:tag1", "service:test1", "version:tag1"}, "Host2", newStringPool())
+				requireResourceAttributes(t, resource2.Resource().Attributes(), res2ExpectedAttrs.resource)
 
 				require.Equal(t, 1, resource1.ScopeMetrics().Len())
 				require.Equal(t, 1, resource2.ScopeMetrics().Len())
@@ -63,8 +64,8 @@ func TestMetricBatcher(t *testing.T) {
 				require.Equal(t, 1, resource1.ScopeMetrics().At(0).Metrics().Len())
 				require.Equal(t, 1, resource2.ScopeMetrics().At(0).Metrics().Len())
 
-				require.Equal(t, "TestCount1", resource1.ScopeMetrics().At(0).Metrics().At(0).Name())
-				require.Equal(t, "TestCount1", resource2.ScopeMetrics().At(0).Metrics().At(0).Name())
+				requireSum(t, resource1.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
+				requireSum(t, resource2.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
 			},
 		},
 		{
@@ -98,18 +99,19 @@ func TestMetricBatcher(t *testing.T) {
 			expect: func(t *testing.T, result pmetric.Metrics) {
 				// The different metrics will fall under the same ResourceMetric and ScopeMetric
 				// and there will be separate metrics under the ScopeMetric.Metrics()
+				requireMetricAndDataPointCounts(t, result, 2, 2)
 				require.Equal(t, 1, result.ResourceMetrics().Len())
 				resource := result.ResourceMetrics().At(0)
 
-				v, exists := resource.Resource().Attributes().Get("host.name")
-				require.True(t, exists)
-				require.Equal(t, "Host1", v.AsString())
+				expectedAttrs := tagsToAttributes([]string{"env:tag1", "service:test1", "version:tag1"}, "Host1", newStringPool())
+				requireResourceAttributes(t, resource.Resource().Attributes(), expectedAttrs.resource)
 
 				require.Equal(t, 1, resource.ScopeMetrics().Len())
 
-				require.Equal(t, 2, resource.ScopeMetrics().At(0).Metrics().Len())
 				require.Equal(t, "TestCount1", resource.ScopeMetrics().At(0).Metrics().At(0).Name())
 				require.Equal(t, "TestCount2", resource.ScopeMetrics().At(0).Metrics().At(1).Name())
+				requireSum(t, resource.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
+				requireSum(t, resource.ScopeMetrics().At(0).Metrics().At(1), "TestCount2", 1)
 			},
 		},
 		{
@@ -142,21 +144,16 @@ func TestMetricBatcher(t *testing.T) {
 			},
 			expect: func(t *testing.T, result pmetric.Metrics) {
 				// Differences in attribute values should result in different resourceMetrics
+				requireMetricAndDataPointCounts(t, result, 2, 2)
 				require.Equal(t, 2, result.ResourceMetrics().Len())
 				resource1 := result.ResourceMetrics().At(0)
 				resource2 := result.ResourceMetrics().At(1)
-				v, exists := resource1.Resource().Attributes().Get("host.name")
-				require.True(t, exists)
-				require.Equal(t, "Host1", v.AsString())
-				v, exists = resource2.Resource().Attributes().Get("host.name")
-				require.True(t, exists)
-				require.Equal(t, "Host1", v.AsString())
-				v, exists = resource1.Resource().Attributes().Get("deployment.environment")
-				require.True(t, exists)
-				require.Equal(t, "dev", v.AsString())
-				v, exists = resource2.Resource().Attributes().Get("deployment.environment")
-				require.True(t, exists)
-				require.Equal(t, "prod", v.AsString())
+
+				res1ExpectedAttrs := tagsToAttributes([]string{"env:dev", "version:tag1"}, "Host1", newStringPool())
+				requireResourceAttributes(t, resource1.Resource().Attributes(), res1ExpectedAttrs.resource)
+
+				res2ExpectedAttrs := tagsToAttributes([]string{"env:prod", "version:tag1"}, "Host1", newStringPool())
+				requireResourceAttributes(t, resource2.Resource().Attributes(), res2ExpectedAttrs.resource)
 
 				require.Equal(t, 1, resource1.ScopeMetrics().Len())
 				require.Equal(t, 1, resource1.ScopeMetrics().Len())
@@ -167,8 +164,8 @@ func TestMetricBatcher(t *testing.T) {
 				require.Equal(t, 1, resource1.ScopeMetrics().At(0).Metrics().Len())
 				require.Equal(t, 1, resource2.ScopeMetrics().At(0).Metrics().Len())
 
-				require.Equal(t, "TestCount1", resource1.ScopeMetrics().At(0).Metrics().At(0).Name())
-				require.Equal(t, "TestCount1", resource2.ScopeMetrics().At(0).Metrics().At(0).Name())
+				requireSum(t, resource1.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
+				requireSum(t, resource2.ScopeMetrics().At(0).Metrics().At(0), "TestCount1", 1)
 			},
 		},
 		{
@@ -203,22 +200,20 @@ func TestMetricBatcher(t *testing.T) {
 				// The different metrics will fall under the same ResourceMetric and ScopeMetric
 				// and there will be separate metrics under the ScopeMetric.Metrics() due to the different
 				// data types
+				requireMetricAndDataPointCounts(t, result, 2, 2)
 				require.Equal(t, 1, result.ResourceMetrics().Len())
 				resource := result.ResourceMetrics().At(0)
 
-				v, exists := resource.Resource().Attributes().Get("host.name")
-				require.True(t, exists)
-				require.Equal(t, "Host1", v.AsString())
+				expectedAttrs := tagsToAttributes([]string{"env:dev", "version:tag1"}, "Host1", newStringPool())
+				requireResourceAttributes(t, resource.Resource().Attributes(), expectedAttrs.resource)
 
 				require.Equal(t, 1, resource.ScopeMetrics().Len())
-
-				require.Equal(t, 2, resource.ScopeMetrics().At(0).Metrics().Len())
 
 				require.Equal(t, "TestMetric", resource.ScopeMetrics().At(0).Metrics().At(0).Name())
 				require.Equal(t, "TestMetric", resource.ScopeMetrics().At(0).Metrics().At(1).Name())
 
-				require.Equal(t, pmetric.MetricTypeSum, resource.ScopeMetrics().At(0).Metrics().At(0).Type())
-				require.Equal(t, pmetric.MetricTypeGauge, resource.ScopeMetrics().At(0).Metrics().At(1).Type())
+				requireSum(t, resource.ScopeMetrics().At(0).Metrics().At(0), "TestMetric", 1)
+				requireGauge(t, resource.ScopeMetrics().At(0).Metrics().At(1), "TestMetric", 1)
 			},
 		},
 		{
@@ -253,21 +248,16 @@ func TestMetricBatcher(t *testing.T) {
 				// Same host, tags, and metric name but two different datapoints
 				// should result in a single resourceMetric, scopeMetric, and metric
 				// but two different datapoints under that metric
+				requireMetricAndDataPointCounts(t, result, 1, 2)
 				require.Equal(t, 1, result.ResourceMetrics().Len())
 				resource := result.ResourceMetrics().At(0)
 
-				v, exists := resource.Resource().Attributes().Get("host.name")
-				require.True(t, exists)
-				require.Equal(t, "Host1", v.AsString())
+				expectedAttrs := tagsToAttributes([]string{"env:dev", "version:tag1"}, "Host1", newStringPool())
+				requireResourceAttributes(t, resource.Resource().Attributes(), expectedAttrs.resource)
 
 				require.Equal(t, 1, resource.ScopeMetrics().Len())
 
-				require.Equal(t, 1, resource.ScopeMetrics().At(0).Metrics().Len())
-
-				require.Equal(t, "TestMetric", resource.ScopeMetrics().At(0).Metrics().At(0).Name())
-
-				require.Equal(t, pmetric.MetricTypeSum, resource.ScopeMetrics().At(0).Metrics().At(0).Type())
-				require.Equal(t, 2, resource.ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len())
+				requireSum(t, resource.ScopeMetrics().At(0).Metrics().At(0), "TestMetric", 2)
 			},
 		},
 	}

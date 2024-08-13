@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/versions"
+	"github.com/docker/docker/client"
 )
 
 type Config struct {
 	// The URL of the docker server. Default is "unix:///var/run/docker.sock"
+	// on non-Windows and "npipe:////./pipe/docker_engine" on Windows
 	Endpoint string `mapstructure:"endpoint"`
 
 	// The maximum amount of time to wait for docker API responses. Default is 5s
@@ -43,7 +45,7 @@ func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, 
 // to be used when creating a docker client
 func NewDefaultConfig() *Config {
 	cfg := &Config{
-		Endpoint:         "unix:///var/run/docker.sock",
+		Endpoint:         client.DefaultDockerHost,
 		Timeout:          5 * time.Second,
 		DockerAPIVersion: minimumRequiredDockerAPIVersion,
 	}

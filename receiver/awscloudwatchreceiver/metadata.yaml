@@ -1,5 +1,4 @@
 type: awscloudwatch
-scope_name: otelcol/awscloudwatchreceiver
 
 status:
   class: receiver

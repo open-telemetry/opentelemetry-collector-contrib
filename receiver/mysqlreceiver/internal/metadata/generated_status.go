@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("mysql")
+	Type      = component.MustNewType("mysql")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 )
 
 const (

@@ -1,5 +1,4 @@
 type: googlemanagedprometheus
-scope_name: otelcol/googlemanagedprometheus
 
 status:
   class: exporter

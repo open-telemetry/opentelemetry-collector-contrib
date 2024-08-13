@@ -196,7 +196,7 @@ resourceMetrics:
                   timeUnixNano: "1682363222253814000"
             unit: '{sessions}'
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest
   - resource:
       attributes:
@@ -335,7 +335,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest
   - resource:
       attributes:
@@ -474,7 +474,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest
   - resource:
       attributes:
@@ -613,7 +613,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest
   - resource:
       attributes:
@@ -765,5 +765,5 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest

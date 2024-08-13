@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("attributes")
+	Type      = component.MustNewType("attributes")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 )
 
 const (

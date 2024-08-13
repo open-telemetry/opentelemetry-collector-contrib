@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/deltatocumulative")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/deltatocumulative")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry

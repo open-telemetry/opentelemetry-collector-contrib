@@ -1,5 +1,4 @@
 type: redis
-scope_name: otelcol/redisreceiver
 
 status:
   class: receiver

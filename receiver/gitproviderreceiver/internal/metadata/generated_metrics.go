@@ -10,51 +10,77 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 )
 
-// AttributePullRequestState specifies the a value pull_request.state attribute.
-type AttributePullRequestState int
+// AttributeChangeState specifies the a value change.state attribute.
+type AttributeChangeState int
 
 const (
-	_ AttributePullRequestState = iota
-	AttributePullRequestStateOpen
-	AttributePullRequestStateMerged
+	_ AttributeChangeState = iota
+	AttributeChangeStateOpen
+	AttributeChangeStateMerged
 )
 
-// String returns the string representation of the AttributePullRequestState.
-func (av AttributePullRequestState) String() string {
+// String returns the string representation of the AttributeChangeState.
+func (av AttributeChangeState) String() string {
 	switch av {
-	case AttributePullRequestStateOpen:
+	case AttributeChangeStateOpen:
 		return "open"
-	case AttributePullRequestStateMerged:
+	case AttributeChangeStateMerged:
 		return "merged"
 	}
 	return ""
 }
 
-// MapAttributePullRequestState is a helper map of string to AttributePullRequestState attribute value.
-var MapAttributePullRequestState = map[string]AttributePullRequestState{
-	"open":   AttributePullRequestStateOpen,
-	"merged": AttributePullRequestStateMerged,
+// MapAttributeChangeState is a helper map of string to AttributeChangeState attribute value.
+var MapAttributeChangeState = map[string]AttributeChangeState{
+	"open":   AttributeChangeStateOpen,
+	"merged": AttributeChangeStateMerged,
 }
 
-type metricGitRepositoryBranchCommitAheadbyCount struct {
+// AttributeRefType specifies the a value ref.type attribute.
+type AttributeRefType int
+
+const (
+	_ AttributeRefType = iota
+	AttributeRefTypeBranch
+	AttributeRefTypeTag
+)
+
+// String returns the string representation of the AttributeRefType.
+func (av AttributeRefType) String() string {
+	switch av {
+	case AttributeRefTypeBranch:
+		return "branch"
+	case AttributeRefTypeTag:
+		return "tag"
+	}
+	return ""
+}
+
+// MapAttributeRefType is a helper map of string to AttributeRefType attribute value.
+var MapAttributeRefType = map[string]AttributeRefType{
+	"branch": AttributeRefTypeBranch,
+	"tag":    AttributeRefTypeTag,
+}
+
+type metricVcsRepositoryChangeCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.branch.commit.aheadby.count metric with initial data.
-func (m *metricGitRepositoryBranchCommitAheadbyCount) init() {
-	m.data.SetName("git.repository.branch.commit.aheadby.count")
-	m.data.SetDescription("The number of commits a branch is ahead of the default branch (trunk).")
-	m.data.SetUnit("{commit}")
+// init fills vcs.repository.change.count metric with initial data.
+func (m *metricVcsRepositoryChangeCount) init() {
+	m.data.SetName("vcs.repository.change.count")
+	m.data.SetDescription("The number of changes (pull requests) in a repository, categorized by their state (either open or merged).")
+	m.data.SetUnit("{change}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricGitRepositoryBranchCommitAheadbyCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryChangeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, changeStateAttributeValue string, repositoryNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -62,19 +88,19 @@ func (m *metricGitRepositoryBranchCommitAheadbyCount) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("change.state", changeStateAttributeValue)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryBranchCommitAheadbyCount) updateCapacity() {
+func (m *metricVcsRepositoryChangeCount) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryBranchCommitAheadbyCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcsRepositoryChangeCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -82,8 +108,8 @@ func (m *metricGitRepositoryBranchCommitAheadbyCount) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricGitRepositoryBranchCommitAheadbyCount(cfg MetricConfig) metricGitRepositoryBranchCommitAheadbyCount {
-	m := metricGitRepositoryBranchCommitAheadbyCount{config: cfg}
+func newMetricVcsRepositoryChangeCount(cfg MetricConfig) metricVcsRepositoryChangeCount {
+	m := metricVcsRepositoryChangeCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -91,229 +117,22 @@ func newMetricGitRepositoryBranchCommitAheadbyCount(cfg MetricConfig) metricGitR
 	return m
 }
 
-type metricGitRepositoryBranchCommitBehindbyCount struct {
+type metricVcsRepositoryChangeTimeOpen struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.branch.commit.behindby.count metric with initial data.
-func (m *metricGitRepositoryBranchCommitBehindbyCount) init() {
-	m.data.SetName("git.repository.branch.commit.behindby.count")
-	m.data.SetDescription("The number of commits a branch is behind the default branch (trunk).")
-	m.data.SetUnit("{commit}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricGitRepositoryBranchCommitBehindbyCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryBranchCommitBehindbyCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryBranchCommitBehindbyCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricGitRepositoryBranchCommitBehindbyCount(cfg MetricConfig) metricGitRepositoryBranchCommitBehindbyCount {
-	m := metricGitRepositoryBranchCommitBehindbyCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricGitRepositoryBranchCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills git.repository.branch.count metric with initial data.
-func (m *metricGitRepositoryBranchCount) init() {
-	m.data.SetName("git.repository.branch.count")
-	m.data.SetDescription("The number of branches in a repository.")
-	m.data.SetUnit("{branch}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricGitRepositoryBranchCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryBranchCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryBranchCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricGitRepositoryBranchCount(cfg MetricConfig) metricGitRepositoryBranchCount {
-	m := metricGitRepositoryBranchCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricGitRepositoryBranchLineAdditionCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills git.repository.branch.line.addition.count metric with initial data.
-func (m *metricGitRepositoryBranchLineAdditionCount) init() {
-	m.data.SetName("git.repository.branch.line.addition.count")
-	m.data.SetDescription("The number of lines added in a branch relative to the default branch (trunk).")
-	m.data.SetUnit("{line}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricGitRepositoryBranchLineAdditionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryBranchLineAdditionCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryBranchLineAdditionCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricGitRepositoryBranchLineAdditionCount(cfg MetricConfig) metricGitRepositoryBranchLineAdditionCount {
-	m := metricGitRepositoryBranchLineAdditionCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricGitRepositoryBranchLineDeletionCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills git.repository.branch.line.deletion.count metric with initial data.
-func (m *metricGitRepositoryBranchLineDeletionCount) init() {
-	m.data.SetName("git.repository.branch.line.deletion.count")
-	m.data.SetDescription("The number of lines deleted in a branch relative to the default branch (trunk).")
-	m.data.SetUnit("{line}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricGitRepositoryBranchLineDeletionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryBranchLineDeletionCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryBranchLineDeletionCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricGitRepositoryBranchLineDeletionCount(cfg MetricConfig) metricGitRepositoryBranchLineDeletionCount {
-	m := metricGitRepositoryBranchLineDeletionCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricGitRepositoryBranchTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills git.repository.branch.time metric with initial data.
-func (m *metricGitRepositoryBranchTime) init() {
-	m.data.SetName("git.repository.branch.time")
-	m.data.SetDescription("Time a branch created from the default branch (trunk) has existed.")
+// init fills vcs.repository.change.time_open metric with initial data.
+func (m *metricVcsRepositoryChangeTimeOpen) init() {
+	m.data.SetName("vcs.repository.change.time_open")
+	m.data.SetDescription("The amount of time a change (pull request) has been open.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricGitRepositoryBranchTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryChangeTimeOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -322,18 +141,18 @@ func (m *metricGitRepositoryBranchTime) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryBranchTime) updateCapacity() {
+func (m *metricVcsRepositoryChangeTimeOpen) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryBranchTime) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcsRepositoryChangeTimeOpen) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -341,8 +160,8 @@ func (m *metricGitRepositoryBranchTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricGitRepositoryBranchTime(cfg MetricConfig) metricGitRepositoryBranchTime {
-	m := metricGitRepositoryBranchTime{config: cfg}
+func newMetricVcsRepositoryChangeTimeOpen(cfg MetricConfig) metricVcsRepositoryChangeTimeOpen {
+	m := metricVcsRepositoryChangeTimeOpen{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -350,22 +169,126 @@ func newMetricGitRepositoryBranchTime(cfg MetricConfig) metricGitRepositoryBranc
 	return m
 }
 
-type metricGitRepositoryContributorCount struct {
+type metricVcsRepositoryChangeTimeToApproval struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.contributor.count metric with initial data.
-func (m *metricGitRepositoryContributorCount) init() {
-	m.data.SetName("git.repository.contributor.count")
+// init fills vcs.repository.change.time_to_approval metric with initial data.
+func (m *metricVcsRepositoryChangeTimeToApproval) init() {
+	m.data.SetName("vcs.repository.change.time_to_approval")
+	m.data.SetDescription("The amount of time it took a change (pull request) to go from open to approved.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsRepositoryChangeTimeToApproval) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsRepositoryChangeTimeToApproval) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsRepositoryChangeTimeToApproval) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsRepositoryChangeTimeToApproval(cfg MetricConfig) metricVcsRepositoryChangeTimeToApproval {
+	m := metricVcsRepositoryChangeTimeToApproval{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcsRepositoryChangeTimeToMerge struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.repository.change.time_to_merge metric with initial data.
+func (m *metricVcsRepositoryChangeTimeToMerge) init() {
+	m.data.SetName("vcs.repository.change.time_to_merge")
+	m.data.SetDescription("The amount of time it took a change (pull request) to go from open to merged.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsRepositoryChangeTimeToMerge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsRepositoryChangeTimeToMerge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsRepositoryChangeTimeToMerge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsRepositoryChangeTimeToMerge(cfg MetricConfig) metricVcsRepositoryChangeTimeToMerge {
+	m := metricVcsRepositoryChangeTimeToMerge{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcsRepositoryContributorCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.repository.contributor.count metric with initial data.
+func (m *metricVcsRepositoryContributorCount) init() {
+	m.data.SetName("vcs.repository.contributor.count")
 	m.data.SetDescription("The number of unique contributors to a repository.")
 	m.data.SetUnit("{contributor}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricGitRepositoryContributorCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
+func (m *metricVcsRepositoryContributorCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -377,14 +300,14 @@ func (m *metricGitRepositoryContributorCount) recordDataPoint(start pcommon.Time
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryContributorCount) updateCapacity() {
+func (m *metricVcsRepositoryContributorCount) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryContributorCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcsRepositoryContributorCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -392,8 +315,8 @@ func (m *metricGitRepositoryContributorCount) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricGitRepositoryContributorCount(cfg MetricConfig) metricGitRepositoryContributorCount {
-	m := metricGitRepositoryContributorCount{config: cfg}
+func newMetricVcsRepositoryContributorCount(cfg MetricConfig) metricVcsRepositoryContributorCount {
+	m := metricVcsRepositoryContributorCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -401,21 +324,21 @@ func newMetricGitRepositoryContributorCount(cfg MetricConfig) metricGitRepositor
 	return m
 }
 
-type metricGitRepositoryCount struct {
+type metricVcsRepositoryCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.count metric with initial data.
-func (m *metricGitRepositoryCount) init() {
-	m.data.SetName("git.repository.count")
+// init fills vcs.repository.count metric with initial data.
+func (m *metricVcsRepositoryCount) init() {
+	m.data.SetName("vcs.repository.count")
 	m.data.SetDescription("The number of repositories in an organization.")
 	m.data.SetUnit("{repository}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricGitRepositoryCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricVcsRepositoryCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -426,14 +349,14 @@ func (m *metricGitRepositoryCount) recordDataPoint(start pcommon.Timestamp, ts p
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryCount) updateCapacity() {
+func (m *metricVcsRepositoryCount) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcsRepositoryCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -441,8 +364,8 @@ func (m *metricGitRepositoryCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricGitRepositoryCount(cfg MetricConfig) metricGitRepositoryCount {
-	m := metricGitRepositoryCount{config: cfg}
+func newMetricVcsRepositoryCount(cfg MetricConfig) metricVcsRepositoryCount {
+	m := metricVcsRepositoryCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -450,22 +373,22 @@ func newMetricGitRepositoryCount(cfg MetricConfig) metricGitRepositoryCount {
 	return m
 }
 
-type metricGitRepositoryPullRequestCount struct {
+type metricVcsRepositoryRefCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.pull_request.count metric with initial data.
-func (m *metricGitRepositoryPullRequestCount) init() {
-	m.data.SetName("git.repository.pull_request.count")
-	m.data.SetDescription("The number of pull requests in a repository, categorized by their state (either open or merged).")
-	m.data.SetUnit("{pull_request}")
+// init fills vcs.repository.ref.count metric with initial data.
+func (m *metricVcsRepositoryRefCount) init() {
+	m.data.SetName("vcs.repository.ref.count")
+	m.data.SetDescription("The number of refs of type branch in a repository.")
+	m.data.SetUnit("{ref}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricGitRepositoryPullRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pullRequestStateAttributeValue string, repositoryNameAttributeValue string) {
+func (m *metricVcsRepositoryRefCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -473,19 +396,19 @@ func (m *metricGitRepositoryPullRequestCount) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("pull_request.state", pullRequestStateAttributeValue)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryPullRequestCount) updateCapacity() {
+func (m *metricVcsRepositoryRefCount) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryPullRequestCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcsRepositoryRefCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -493,8 +416,8 @@ func (m *metricGitRepositoryPullRequestCount) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricGitRepositoryPullRequestCount(cfg MetricConfig) metricGitRepositoryPullRequestCount {
-	m := metricGitRepositoryPullRequestCount{config: cfg}
+func newMetricVcsRepositoryRefCount(cfg MetricConfig) metricVcsRepositoryRefCount {
+	m := metricVcsRepositoryRefCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -502,22 +425,234 @@ func newMetricGitRepositoryPullRequestCount(cfg MetricConfig) metricGitRepositor
 	return m
 }
 
-type metricGitRepositoryPullRequestTimeOpen struct {
+type metricVcsRepositoryRefLinesAdded struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.pull_request.time_open metric with initial data.
-func (m *metricGitRepositoryPullRequestTimeOpen) init() {
-	m.data.SetName("git.repository.pull_request.time_open")
-	m.data.SetDescription("The amount of time a pull request has been open.")
+// init fills vcs.repository.ref.lines_added metric with initial data.
+func (m *metricVcsRepositoryRefLinesAdded) init() {
+	m.data.SetName("vcs.repository.ref.lines_added")
+	m.data.SetDescription("The number of lines added in a ref (branch) relative to the default branch (trunk).")
+	m.data.SetUnit("{line}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsRepositoryRefLinesAdded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsRepositoryRefLinesAdded) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsRepositoryRefLinesAdded) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsRepositoryRefLinesAdded(cfg MetricConfig) metricVcsRepositoryRefLinesAdded {
+	m := metricVcsRepositoryRefLinesAdded{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcsRepositoryRefLinesDeleted struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.repository.ref.lines_deleted metric with initial data.
+func (m *metricVcsRepositoryRefLinesDeleted) init() {
+	m.data.SetName("vcs.repository.ref.lines_deleted")
+	m.data.SetDescription("The number of lines deleted in a ref (branch) relative to the default branch (trunk).")
+	m.data.SetUnit("{line}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsRepositoryRefLinesDeleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsRepositoryRefLinesDeleted) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsRepositoryRefLinesDeleted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsRepositoryRefLinesDeleted(cfg MetricConfig) metricVcsRepositoryRefLinesDeleted {
+	m := metricVcsRepositoryRefLinesDeleted{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcsRepositoryRefRevisionsAhead struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.repository.ref.revisions_ahead metric with initial data.
+func (m *metricVcsRepositoryRefRevisionsAhead) init() {
+	m.data.SetName("vcs.repository.ref.revisions_ahead")
+	m.data.SetDescription("The number of revisions (commits) a ref (branch) is ahead of the default branch (trunk).")
+	m.data.SetUnit("{revision}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsRepositoryRefRevisionsAhead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsRepositoryRefRevisionsAhead) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsRepositoryRefRevisionsAhead) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsRepositoryRefRevisionsAhead(cfg MetricConfig) metricVcsRepositoryRefRevisionsAhead {
+	m := metricVcsRepositoryRefRevisionsAhead{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcsRepositoryRefRevisionsBehind struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.repository.ref.revisions_behind metric with initial data.
+func (m *metricVcsRepositoryRefRevisionsBehind) init() {
+	m.data.SetName("vcs.repository.ref.revisions_behind")
+	m.data.SetDescription("The number of revisions (commits) a ref (branch) is behind the default branch (trunk).")
+	m.data.SetUnit("{revision}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsRepositoryRefRevisionsBehind) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsRepositoryRefRevisionsBehind) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsRepositoryRefRevisionsBehind) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsRepositoryRefRevisionsBehind(cfg MetricConfig) metricVcsRepositoryRefRevisionsBehind {
+	m := metricVcsRepositoryRefRevisionsBehind{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcsRepositoryRefTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.repository.ref.time metric with initial data.
+func (m *metricVcsRepositoryRefTime) init() {
+	m.data.SetName("vcs.repository.ref.time")
+	m.data.SetDescription("Time a ref (branch) created from the default branch (trunk) has existed. The `ref.type` attribute will always be `branch`.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricGitRepositoryPullRequestTimeOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
+func (m *metricVcsRepositoryRefTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -526,18 +661,19 @@ func (m *metricGitRepositoryPullRequestTimeOpen) recordDataPoint(start pcommon.T
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
+	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryPullRequestTimeOpen) updateCapacity() {
+func (m *metricVcsRepositoryRefTime) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryPullRequestTimeOpen) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcsRepositoryRefTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -545,112 +681,8 @@ func (m *metricGitRepositoryPullRequestTimeOpen) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricGitRepositoryPullRequestTimeOpen(cfg MetricConfig) metricGitRepositoryPullRequestTimeOpen {
-	m := metricGitRepositoryPullRequestTimeOpen{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricGitRepositoryPullRequestTimeToApproval struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills git.repository.pull_request.time_to_approval metric with initial data.
-func (m *metricGitRepositoryPullRequestTimeToApproval) init() {
-	m.data.SetName("git.repository.pull_request.time_to_approval")
-	m.data.SetDescription("The amount of time it took a pull request to go from open to approved.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricGitRepositoryPullRequestTimeToApproval) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryPullRequestTimeToApproval) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryPullRequestTimeToApproval) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricGitRepositoryPullRequestTimeToApproval(cfg MetricConfig) metricGitRepositoryPullRequestTimeToApproval {
-	m := metricGitRepositoryPullRequestTimeToApproval{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricGitRepositoryPullRequestTimeToMerge struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills git.repository.pull_request.time_to_merge metric with initial data.
-func (m *metricGitRepositoryPullRequestTimeToMerge) init() {
-	m.data.SetName("git.repository.pull_request.time_to_merge")
-	m.data.SetDescription("The amount of time it took a pull request to go from open to merged.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricGitRepositoryPullRequestTimeToMerge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
-	dp.Attributes().PutStr("branch.name", branchNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricGitRepositoryPullRequestTimeToMerge) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricGitRepositoryPullRequestTimeToMerge) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricGitRepositoryPullRequestTimeToMerge(cfg MetricConfig) metricGitRepositoryPullRequestTimeToMerge {
-	m := metricGitRepositoryPullRequestTimeToMerge{config: cfg}
+func newMetricVcsRepositoryRefTime(cfg MetricConfig) metricVcsRepositoryRefTime {
+	m := metricVcsRepositoryRefTime{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -661,25 +693,25 @@ func newMetricGitRepositoryPullRequestTimeToMerge(cfg MetricConfig) metricGitRep
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                       MetricsBuilderConfig // config of the metrics builder.
-	startTime                                    pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                              int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                    component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter               map[string]filter.Filter
-	resourceAttributeExcludeFilter               map[string]filter.Filter
-	metricGitRepositoryBranchCommitAheadbyCount  metricGitRepositoryBranchCommitAheadbyCount
-	metricGitRepositoryBranchCommitBehindbyCount metricGitRepositoryBranchCommitBehindbyCount
-	metricGitRepositoryBranchCount               metricGitRepositoryBranchCount
-	metricGitRepositoryBranchLineAdditionCount   metricGitRepositoryBranchLineAdditionCount
-	metricGitRepositoryBranchLineDeletionCount   metricGitRepositoryBranchLineDeletionCount
-	metricGitRepositoryBranchTime                metricGitRepositoryBranchTime
-	metricGitRepositoryContributorCount          metricGitRepositoryContributorCount
-	metricGitRepositoryCount                     metricGitRepositoryCount
-	metricGitRepositoryPullRequestCount          metricGitRepositoryPullRequestCount
-	metricGitRepositoryPullRequestTimeOpen       metricGitRepositoryPullRequestTimeOpen
-	metricGitRepositoryPullRequestTimeToApproval metricGitRepositoryPullRequestTimeToApproval
-	metricGitRepositoryPullRequestTimeToMerge    metricGitRepositoryPullRequestTimeToMerge
+	config                                  MetricsBuilderConfig // config of the metrics builder.
+	startTime                               pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                         int                  // maximum observed number of metrics per resource.
+	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                               component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter          map[string]filter.Filter
+	resourceAttributeExcludeFilter          map[string]filter.Filter
+	metricVcsRepositoryChangeCount          metricVcsRepositoryChangeCount
+	metricVcsRepositoryChangeTimeOpen       metricVcsRepositoryChangeTimeOpen
+	metricVcsRepositoryChangeTimeToApproval metricVcsRepositoryChangeTimeToApproval
+	metricVcsRepositoryChangeTimeToMerge    metricVcsRepositoryChangeTimeToMerge
+	metricVcsRepositoryContributorCount     metricVcsRepositoryContributorCount
+	metricVcsRepositoryCount                metricVcsRepositoryCount
+	metricVcsRepositoryRefCount             metricVcsRepositoryRefCount
+	metricVcsRepositoryRefLinesAdded        metricVcsRepositoryRefLinesAdded
+	metricVcsRepositoryRefLinesDeleted      metricVcsRepositoryRefLinesDeleted
+	metricVcsRepositoryRefRevisionsAhead    metricVcsRepositoryRefRevisionsAhead
+	metricVcsRepositoryRefRevisionsBehind   metricVcsRepositoryRefRevisionsBehind
+	metricVcsRepositoryRefTime              metricVcsRepositoryRefTime
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -694,36 +726,36 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:        mbc,
-		startTime:     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer: pmetric.NewMetrics(),
-		buildInfo:     settings.BuildInfo,
-		metricGitRepositoryBranchCommitAheadbyCount:  newMetricGitRepositoryBranchCommitAheadbyCount(mbc.Metrics.GitRepositoryBranchCommitAheadbyCount),
-		metricGitRepositoryBranchCommitBehindbyCount: newMetricGitRepositoryBranchCommitBehindbyCount(mbc.Metrics.GitRepositoryBranchCommitBehindbyCount),
-		metricGitRepositoryBranchCount:               newMetricGitRepositoryBranchCount(mbc.Metrics.GitRepositoryBranchCount),
-		metricGitRepositoryBranchLineAdditionCount:   newMetricGitRepositoryBranchLineAdditionCount(mbc.Metrics.GitRepositoryBranchLineAdditionCount),
-		metricGitRepositoryBranchLineDeletionCount:   newMetricGitRepositoryBranchLineDeletionCount(mbc.Metrics.GitRepositoryBranchLineDeletionCount),
-		metricGitRepositoryBranchTime:                newMetricGitRepositoryBranchTime(mbc.Metrics.GitRepositoryBranchTime),
-		metricGitRepositoryContributorCount:          newMetricGitRepositoryContributorCount(mbc.Metrics.GitRepositoryContributorCount),
-		metricGitRepositoryCount:                     newMetricGitRepositoryCount(mbc.Metrics.GitRepositoryCount),
-		metricGitRepositoryPullRequestCount:          newMetricGitRepositoryPullRequestCount(mbc.Metrics.GitRepositoryPullRequestCount),
-		metricGitRepositoryPullRequestTimeOpen:       newMetricGitRepositoryPullRequestTimeOpen(mbc.Metrics.GitRepositoryPullRequestTimeOpen),
-		metricGitRepositoryPullRequestTimeToApproval: newMetricGitRepositoryPullRequestTimeToApproval(mbc.Metrics.GitRepositoryPullRequestTimeToApproval),
-		metricGitRepositoryPullRequestTimeToMerge:    newMetricGitRepositoryPullRequestTimeToMerge(mbc.Metrics.GitRepositoryPullRequestTimeToMerge),
-		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
-	}
-	if mbc.ResourceAttributes.GitVendorName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["git.vendor.name"] = filter.CreateFilter(mbc.ResourceAttributes.GitVendorName.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.GitVendorName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["git.vendor.name"] = filter.CreateFilter(mbc.ResourceAttributes.GitVendorName.MetricsExclude)
+		config:                                  mbc,
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               settings.BuildInfo,
+		metricVcsRepositoryChangeCount:          newMetricVcsRepositoryChangeCount(mbc.Metrics.VcsRepositoryChangeCount),
+		metricVcsRepositoryChangeTimeOpen:       newMetricVcsRepositoryChangeTimeOpen(mbc.Metrics.VcsRepositoryChangeTimeOpen),
+		metricVcsRepositoryChangeTimeToApproval: newMetricVcsRepositoryChangeTimeToApproval(mbc.Metrics.VcsRepositoryChangeTimeToApproval),
+		metricVcsRepositoryChangeTimeToMerge:    newMetricVcsRepositoryChangeTimeToMerge(mbc.Metrics.VcsRepositoryChangeTimeToMerge),
+		metricVcsRepositoryContributorCount:     newMetricVcsRepositoryContributorCount(mbc.Metrics.VcsRepositoryContributorCount),
+		metricVcsRepositoryCount:                newMetricVcsRepositoryCount(mbc.Metrics.VcsRepositoryCount),
+		metricVcsRepositoryRefCount:             newMetricVcsRepositoryRefCount(mbc.Metrics.VcsRepositoryRefCount),
+		metricVcsRepositoryRefLinesAdded:        newMetricVcsRepositoryRefLinesAdded(mbc.Metrics.VcsRepositoryRefLinesAdded),
+		metricVcsRepositoryRefLinesDeleted:      newMetricVcsRepositoryRefLinesDeleted(mbc.Metrics.VcsRepositoryRefLinesDeleted),
+		metricVcsRepositoryRefRevisionsAhead:    newMetricVcsRepositoryRefRevisionsAhead(mbc.Metrics.VcsRepositoryRefRevisionsAhead),
+		metricVcsRepositoryRefRevisionsBehind:   newMetricVcsRepositoryRefRevisionsBehind(mbc.Metrics.VcsRepositoryRefRevisionsBehind),
+		metricVcsRepositoryRefTime:              newMetricVcsRepositoryRefTime(mbc.Metrics.VcsRepositoryRefTime),
+		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.OrganizationName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["organization.name"] = filter.CreateFilter(mbc.ResourceAttributes.OrganizationName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.OrganizationName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["organization.name"] = filter.CreateFilter(mbc.ResourceAttributes.OrganizationName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.VcsVendorName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcs.vendor.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcsVendorName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcsVendorName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcs.vendor.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcsVendorName.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -784,21 +816,21 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/gitproviderreceiver")
+	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricGitRepositoryBranchCommitAheadbyCount.emit(ils.Metrics())
-	mb.metricGitRepositoryBranchCommitBehindbyCount.emit(ils.Metrics())
-	mb.metricGitRepositoryBranchCount.emit(ils.Metrics())
-	mb.metricGitRepositoryBranchLineAdditionCount.emit(ils.Metrics())
-	mb.metricGitRepositoryBranchLineDeletionCount.emit(ils.Metrics())
-	mb.metricGitRepositoryBranchTime.emit(ils.Metrics())
-	mb.metricGitRepositoryContributorCount.emit(ils.Metrics())
-	mb.metricGitRepositoryCount.emit(ils.Metrics())
-	mb.metricGitRepositoryPullRequestCount.emit(ils.Metrics())
-	mb.metricGitRepositoryPullRequestTimeOpen.emit(ils.Metrics())
-	mb.metricGitRepositoryPullRequestTimeToApproval.emit(ils.Metrics())
-	mb.metricGitRepositoryPullRequestTimeToMerge.emit(ils.Metrics())
+	mb.metricVcsRepositoryChangeCount.emit(ils.Metrics())
+	mb.metricVcsRepositoryChangeTimeOpen.emit(ils.Metrics())
+	mb.metricVcsRepositoryChangeTimeToApproval.emit(ils.Metrics())
+	mb.metricVcsRepositoryChangeTimeToMerge.emit(ils.Metrics())
+	mb.metricVcsRepositoryContributorCount.emit(ils.Metrics())
+	mb.metricVcsRepositoryCount.emit(ils.Metrics())
+	mb.metricVcsRepositoryRefCount.emit(ils.Metrics())
+	mb.metricVcsRepositoryRefLinesAdded.emit(ils.Metrics())
+	mb.metricVcsRepositoryRefLinesDeleted.emit(ils.Metrics())
+	mb.metricVcsRepositoryRefRevisionsAhead.emit(ils.Metrics())
+	mb.metricVcsRepositoryRefRevisionsBehind.emit(ils.Metrics())
+	mb.metricVcsRepositoryRefTime.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(rm)
@@ -830,64 +862,64 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
-// RecordGitRepositoryBranchCommitAheadbyCountDataPoint adds a data point to git.repository.branch.commit.aheadby.count metric.
-func (mb *MetricsBuilder) RecordGitRepositoryBranchCommitAheadbyCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricGitRepositoryBranchCommitAheadbyCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+// RecordVcsRepositoryChangeCountDataPoint adds a data point to vcs.repository.change.count metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryChangeCountDataPoint(ts pcommon.Timestamp, val int64, changeStateAttributeValue AttributeChangeState, repositoryNameAttributeValue string) {
+	mb.metricVcsRepositoryChangeCount.recordDataPoint(mb.startTime, ts, val, changeStateAttributeValue.String(), repositoryNameAttributeValue)
 }
 
-// RecordGitRepositoryBranchCommitBehindbyCountDataPoint adds a data point to git.repository.branch.commit.behindby.count metric.
-func (mb *MetricsBuilder) RecordGitRepositoryBranchCommitBehindbyCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricGitRepositoryBranchCommitBehindbyCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+// RecordVcsRepositoryChangeTimeOpenDataPoint adds a data point to vcs.repository.change.time_open metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeOpenDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryChangeTimeOpen.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
 }
 
-// RecordGitRepositoryBranchCountDataPoint adds a data point to git.repository.branch.count metric.
-func (mb *MetricsBuilder) RecordGitRepositoryBranchCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
-	mb.metricGitRepositoryBranchCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue)
+// RecordVcsRepositoryChangeTimeToApprovalDataPoint adds a data point to vcs.repository.change.time_to_approval metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeToApprovalDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryChangeTimeToApproval.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
 }
 
-// RecordGitRepositoryBranchLineAdditionCountDataPoint adds a data point to git.repository.branch.line.addition.count metric.
-func (mb *MetricsBuilder) RecordGitRepositoryBranchLineAdditionCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricGitRepositoryBranchLineAdditionCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+// RecordVcsRepositoryChangeTimeToMergeDataPoint adds a data point to vcs.repository.change.time_to_merge metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeToMergeDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string) {
+	mb.metricVcsRepositoryChangeTimeToMerge.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue)
 }
 
-// RecordGitRepositoryBranchLineDeletionCountDataPoint adds a data point to git.repository.branch.line.deletion.count metric.
-func (mb *MetricsBuilder) RecordGitRepositoryBranchLineDeletionCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricGitRepositoryBranchLineDeletionCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+// RecordVcsRepositoryContributorCountDataPoint adds a data point to vcs.repository.contributor.count metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryContributorCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
+	mb.metricVcsRepositoryContributorCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue)
 }
 
-// RecordGitRepositoryBranchTimeDataPoint adds a data point to git.repository.branch.time metric.
-func (mb *MetricsBuilder) RecordGitRepositoryBranchTimeDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricGitRepositoryBranchTime.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+// RecordVcsRepositoryCountDataPoint adds a data point to vcs.repository.count metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcsRepositoryCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordGitRepositoryContributorCountDataPoint adds a data point to git.repository.contributor.count metric.
-func (mb *MetricsBuilder) RecordGitRepositoryContributorCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
-	mb.metricGitRepositoryContributorCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue)
+// RecordVcsRepositoryRefCountDataPoint adds a data point to vcs.repository.ref.count metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryRefCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
+	mb.metricVcsRepositoryRefCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refTypeAttributeValue.String())
 }
 
-// RecordGitRepositoryCountDataPoint adds a data point to git.repository.count metric.
-func (mb *MetricsBuilder) RecordGitRepositoryCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricGitRepositoryCount.recordDataPoint(mb.startTime, ts, val)
+// RecordVcsRepositoryRefLinesAddedDataPoint adds a data point to vcs.repository.ref.lines_added metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryRefLinesAddedDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
+	mb.metricVcsRepositoryRefLinesAdded.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
 }
 
-// RecordGitRepositoryPullRequestCountDataPoint adds a data point to git.repository.pull_request.count metric.
-func (mb *MetricsBuilder) RecordGitRepositoryPullRequestCountDataPoint(ts pcommon.Timestamp, val int64, pullRequestStateAttributeValue AttributePullRequestState, repositoryNameAttributeValue string) {
-	mb.metricGitRepositoryPullRequestCount.recordDataPoint(mb.startTime, ts, val, pullRequestStateAttributeValue.String(), repositoryNameAttributeValue)
+// RecordVcsRepositoryRefLinesDeletedDataPoint adds a data point to vcs.repository.ref.lines_deleted metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryRefLinesDeletedDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
+	mb.metricVcsRepositoryRefLinesDeleted.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
 }
 
-// RecordGitRepositoryPullRequestTimeOpenDataPoint adds a data point to git.repository.pull_request.time_open metric.
-func (mb *MetricsBuilder) RecordGitRepositoryPullRequestTimeOpenDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricGitRepositoryPullRequestTimeOpen.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+// RecordVcsRepositoryRefRevisionsAheadDataPoint adds a data point to vcs.repository.ref.revisions_ahead metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryRefRevisionsAheadDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
+	mb.metricVcsRepositoryRefRevisionsAhead.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
 }
 
-// RecordGitRepositoryPullRequestTimeToApprovalDataPoint adds a data point to git.repository.pull_request.time_to_approval metric.
-func (mb *MetricsBuilder) RecordGitRepositoryPullRequestTimeToApprovalDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricGitRepositoryPullRequestTimeToApproval.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+// RecordVcsRepositoryRefRevisionsBehindDataPoint adds a data point to vcs.repository.ref.revisions_behind metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryRefRevisionsBehindDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
+	mb.metricVcsRepositoryRefRevisionsBehind.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
 }
 
-// RecordGitRepositoryPullRequestTimeToMergeDataPoint adds a data point to git.repository.pull_request.time_to_merge metric.
-func (mb *MetricsBuilder) RecordGitRepositoryPullRequestTimeToMergeDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
-	mb.metricGitRepositoryPullRequestTimeToMerge.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
+// RecordVcsRepositoryRefTimeDataPoint adds a data point to vcs.repository.ref.time metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryRefTimeDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
+	mb.metricVcsRepositoryRefTime.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -35,6 +35,13 @@ func (rb *ResourceBuilder) SetContainerImageName(val string) {
 	}
 }
 
+// SetContainerImageRepoDigests sets provided value as "container.image.repo_digests" attribute.
+func (rb *ResourceBuilder) SetContainerImageRepoDigests(val []any) {
+	if rb.config.ContainerImageRepoDigests.Enabled {
+		rb.res.Attributes().PutEmptySlice("container.image.repo_digests").FromRaw(val)
+	}
+}
+
 // SetContainerImageTag sets provided value as "container.image.tag" attribute.
 func (rb *ResourceBuilder) SetContainerImageTag(val string) {
 	if rb.config.ContainerImageTag.Enabled {

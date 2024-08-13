@@ -1,5 +1,4 @@
 type: oauth2client
-scope_name: otelcol/oauth2clientauth
 
 status:
   class: extension

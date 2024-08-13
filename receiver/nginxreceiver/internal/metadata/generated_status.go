@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("nginx")
+	Type      = component.MustNewType("nginx")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 )
 
 const (

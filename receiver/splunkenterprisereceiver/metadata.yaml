@@ -1,5 +1,4 @@
 type: splunkenterprise
-scope_name: otelcol/splunkenterprisereceiver
 
 status:
   class: receiver

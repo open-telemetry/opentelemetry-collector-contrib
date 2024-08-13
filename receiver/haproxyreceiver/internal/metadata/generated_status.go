@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("haproxy")
+	Type      = component.MustNewType("haproxy")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver"
 )
 
 const (

@@ -1,5 +1,4 @@
 type: sqlserver
-scope_name: otelcol/sqlserverreceiver
 
 status:
   class: receiver

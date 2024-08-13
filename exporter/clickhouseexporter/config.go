@@ -46,6 +46,8 @@ type Config struct {
 	ClusterName string `mapstructure:"cluster_name"`
 	// CreateSchema if set to true will run the DDL for creating the database and tables. default is true.
 	CreateSchema bool `mapstructure:"create_schema"`
+	// Compress controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4).
+	Compress string `mapstructure:"compress"`
 	// AsyncInsert if true will enable async inserts. Default is `true`.
 	// Ignored if async inserts are configured in the `endpoint` or `connection_params`.
 	// Async inserts may still be overridden server-side.
@@ -106,6 +108,12 @@ func (cfg *Config) buildDSN() (string, error) {
 	// Use async_insert from config if not specified in DSN.
 	if !queryParams.Has("async_insert") {
 		queryParams.Set("async_insert", fmt.Sprintf("%t", cfg.AsyncInsert))
+	}
+
+	if !queryParams.Has("compress") && (cfg.Compress == "" || cfg.Compress == "true") {
+		queryParams.Set("compress", "lz4")
+	} else if !queryParams.Has("compress") {
+		queryParams.Set("compress", cfg.Compress)
 	}
 
 	// Use database from config if not specified in path, or if config is not default.

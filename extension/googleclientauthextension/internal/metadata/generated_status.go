@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("googleclientauth")
+	Type      = component.MustNewType("googleclientauth")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 )
 
 const (

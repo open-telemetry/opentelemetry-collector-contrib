@@ -283,11 +283,16 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 	return nil
 }
 
-// Set of prefixes for the OTel attributes that needs to stay flattened
+// Under OTel mode, set of key prefixes where keys should be flattened from that level,
+// such that a document (root or not) with fields {"attributes.a.b": 1} will be serialized as {"attributes": {"a.b": 1}}
+// It is not aware of whether it is a root document or sub-document.
+// NOTE: This works very delicately with the implementation of OTel mode that
+// e.g. resource.attributes is a "resource" objmodel.Document under the root document that contains attributes
+// added using AddAttributes func as flattened keys.
+// Therefore, there will be correctness issues when attributes are added / used in other ways, but it is working
+// for current use cases and the proper fix will be slightly too complex. YAGNI.
 var otelPrefixSet = map[string]struct{}{
-	"attributes.":          {},
-	"resource.attributes.": {},
-	"scope.attributes.":    {},
+	"attributes.": {},
 }
 
 func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {

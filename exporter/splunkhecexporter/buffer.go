@@ -22,6 +22,7 @@ type buffer interface {
 	Reset()
 	Len() int
 	Empty() bool
+	Bytes() []byte
 }
 
 type cancellableBytesWriter struct {
@@ -57,6 +58,10 @@ func (c *cancellableBytesWriter) Len() int {
 
 func (c *cancellableBytesWriter) Empty() bool {
 	return c.innerWriter.Len() == 0
+}
+
+func (c *cancellableBytesWriter) Bytes() []byte {
+	return c.innerWriter.Bytes()
 }
 
 type cancellableGzipWriter struct {
@@ -123,6 +128,10 @@ func (c *cancellableGzipWriter) Len() int {
 
 func (c *cancellableGzipWriter) Empty() bool {
 	return c.rawLen == 0
+}
+
+func (c *cancellableGzipWriter) Bytes() []byte {
+	return c.innerBuffer.Bytes()
 }
 
 // bufferPool is a pool of buffer objects.

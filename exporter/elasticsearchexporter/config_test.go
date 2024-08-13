@@ -73,14 +73,14 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-				},
+					}
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -143,14 +143,14 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-				},
+					}
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -213,14 +213,14 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-				},
+					}
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -420,6 +420,14 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
 	for _, fn := range fns {
 		fn(cfg)
+	}
+	return cfg
+}
+
+func withDefaultHTTPClientConfig(fns ...func(config *confighttp.ClientConfig)) confighttp.ClientConfig {
+	cfg := confighttp.NewDefaultClientConfig()
+	for _, fn := range fns {
+		fn(&cfg)
 	}
 	return cfg
 }

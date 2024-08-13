@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("failover")
+	Type      = component.MustNewType("failover")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 )
 
 const (

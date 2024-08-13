@@ -1,5 +1,4 @@
 type: http_forwarder
-scope_name: otelcol/httpforwarder
 
 status:
   class: extension

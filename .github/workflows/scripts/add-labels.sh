@@ -20,10 +20,13 @@ if [[ ${COMMENT:0:6} != "/label" ]]; then
 fi
 
 declare -A COMMON_LABELS
+COMMON_LABELS["arm64"]="arm64"
 COMMON_LABELS["good-first-issue"]="good first issue"
 COMMON_LABELS["help-wanted"]="help wanted"
 COMMON_LABELS["needs-discussion"]="needs discussion"
 COMMON_LABELS["needs-triage"]="needs triage"
+COMMON_LABELS["os:mac"]="os:mac"
+COMMON_LABELS["os:windows"]="os:windows"
 COMMON_LABELS["waiting-for-author"]="waiting for author"
 
 LABELS=$(echo "${COMMENT}" | sed -E 's%^/label%%')

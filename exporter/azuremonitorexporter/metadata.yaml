@@ -1,5 +1,4 @@
 type: azuremonitor
-scope_name: otelcol/azuremonitor
 
 status:
   class: exporter

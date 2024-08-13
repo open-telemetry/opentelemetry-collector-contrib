@@ -1,5 +1,4 @@
 type: sapm
-scope_name: otelcol/sapmreceiver
 
 status:
   class: receiver

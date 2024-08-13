@@ -21,7 +21,7 @@ resourceMetrics:
             name: metric2
             unit: '{units}'
         scope:
-          name: otelcol/snmpreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
           version: latest
   - resource:
       attributes:
@@ -45,5 +45,5 @@ resourceMetrics:
             name: metric2
             unit: '{units}'
         scope:
-          name: otelcol/snmpreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
           version: latest

@@ -1,5 +1,4 @@
 type: pulsar
-scope_name: otelcol/pulsar
 
 status:
   class: exporter

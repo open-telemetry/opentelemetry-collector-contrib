@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -23,6 +24,7 @@ import (
 type Commander struct {
 	logger  *zap.Logger
 	cfg     config.Agent
+	logsDir string
 	args    []string
 	cmd     *exec.Cmd
 	doneCh  chan struct{}
@@ -30,9 +32,10 @@ type Commander struct {
 	running *atomic.Int64
 }
 
-func NewCommander(logger *zap.Logger, cfg config.Agent, args ...string) (*Commander, error) {
+func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
 		logger:  logger,
+		logsDir: logsDir,
 		cfg:     cfg,
 		args:    args,
 		running: &atomic.Int64{},
@@ -69,7 +72,7 @@ func (c *Commander) Start(ctx context.Context) error {
 
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
-	logFilePath := "agent.log"
+	logFilePath := filepath.Join(c.logsDir, "agent.log")
 	logFile, err := os.Create(logFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
