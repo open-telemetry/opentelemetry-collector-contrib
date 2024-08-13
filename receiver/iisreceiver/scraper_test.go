@@ -171,7 +171,7 @@ func newMockWatcherFactory(watchErr error) func(string, string,
 }
 
 func newMockWatcherFactorFromPath(watchErr error, value float64) func(string) (winperfcounters.PerfCounterWatcher, error) {
-	return func(s string) (winperfcounters.PerfCounterWatcher, error) {
+	return func(_ string) (winperfcounters.PerfCounterWatcher, error) {
 		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
 	}
 }
