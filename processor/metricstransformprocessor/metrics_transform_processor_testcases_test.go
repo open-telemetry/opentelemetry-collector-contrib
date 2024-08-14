@@ -7,6 +7,8 @@ import (
 	"regexp"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 )
 
 type metricsTransformTest struct {
@@ -223,7 +225,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -251,7 +253,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: mean,
+								AggregationType: aggregateutil.Mean,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -279,7 +281,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: max,
+								AggregationType: aggregateutil.Max,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -308,7 +310,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: count,
+								AggregationType: aggregateutil.Count,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -328,6 +330,35 @@ var (
 			},
 		},
 		{
+			name: "metric_label_aggregation_median_int_update",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:          aggregateLabels,
+								AggregationType: aggregateutil.Median,
+								LabelSet:        []string{"label1"},
+							},
+							labelSetMap: map[string]bool{"label1": true},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value1").
+					addIntDatapoint(1, 2, 4, "label1-value1", "label2-value2").
+					addIntDatapoint(1, 2, 2, "label1-value1", "label2-value2").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addIntDatapoint(1, 2, 2, "label1-value1").build(),
+			},
+		},
+		{
 			name: "metric_label_aggregation_min_int_update",
 			transforms: []internalTransform{
 				{
@@ -337,7 +368,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: min,
+								AggregationType: aggregateutil.Min,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -366,7 +397,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -394,7 +425,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: mean,
+								AggregationType: aggregateutil.Mean,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -422,7 +453,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: max,
+								AggregationType: aggregateutil.Max,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -450,7 +481,35 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: count,
+								AggregationType: aggregateutil.Count,
+								LabelSet:        []string{"label1"},
+							},
+							labelSetMap: map[string]bool{"label1": true},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+					addDoubleDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+					addDoubleDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+					addDoubleDatapoint(1, 2, 2, "label1-value1").build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_median_double_update",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:          aggregateLabels,
+								AggregationType: aggregateutil.Median,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -478,7 +537,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: min,
+								AggregationType: aggregateutil.Min,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -512,7 +571,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								LabelSet:        []string{"label1", "label2"},
 							},
 							labelSetMap: map[string]bool{"label1": true, "label2": true},
@@ -548,7 +607,7 @@ var (
 							configOperation: Operation{
 								Action:          aggregateLabelValues,
 								NewValue:        "new/label2-value",
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								Label:           "label2",
 							},
 							aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
@@ -583,7 +642,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -619,7 +678,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -650,7 +709,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: mean,
+								AggregationType: aggregateutil.Mean,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -1009,7 +1068,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -1041,7 +1100,7 @@ var (
 							configOperation: Operation{
 								Action:          aggregateLabelValues,
 								NewValue:        "new/label2-value",
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								Label:           "label2",
 							},
 							aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
@@ -1072,7 +1131,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -1168,7 +1227,7 @@ var (
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     sum,
+					AggregationType:     aggregateutil.Sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1199,7 +1258,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: sum,
+								AggregationType: aggregateutil.Sum,
 								LabelSet:        []string{"$1", "new_label"},
 							},
 							labelSetMap: map[string]bool{"$1": true, "new_label": true},
@@ -1244,7 +1303,7 @@ var (
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     sum,
+					AggregationType:     aggregateutil.Sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1265,7 +1324,7 @@ var (
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     sum,
+					AggregationType:     aggregateutil.Sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1286,7 +1345,7 @@ var (
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     sum,
+					AggregationType:     aggregateutil.Sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1309,7 +1368,7 @@ var (
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     sum,
+					AggregationType:     aggregateutil.Sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1573,6 +1632,151 @@ var (
 					addHistogramDatapointWithMinMaxAndExemplars(1, 1, 1, 100, 100, 100, []float64{100}, []uint64{1, 1}, []float64{100}).build(),
 				metricBuilder(pmetric.MetricTypeHistogram, "metric2").
 					addHistogramDatapointWithMinMaxAndExemplars(2, 2, 2, 40, 10, 30, []float64{20}, []uint64{1, 2}, []float64{10, 30}).build(),
+			},
+		},
+		{
+			name: "metric_experimental_scale_value_exp_histogram",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: scaleValue,
+								Scale:  1000,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: scaleValue,
+								Scale:  .1,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric3"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: scaleValue,
+								Scale:  100000,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric4"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: scaleValue,
+								Scale:  42.123,
+							},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric1").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          5,
+						sum:            1359,
+						scale:          4,
+						min:            10,
+						max:            500,
+						zeroThreshold:  5,
+						zeroCount:      1,
+						positiveOffset: 53,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 53: 1, 74: 1, 90: 2}), // 10, 100, 250, 499, 500
+						exemplarValues: []float64{100, 300},
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric2").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            10100.000123,
+						scale:          2,
+						min:            0.000123,
+						max:            10000,
+						positiveOffset: -52,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 78: 1, 105: 1}), // 0.000123, 100, 10000
+						exemplarValues: []float64{100, 300},
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric3").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            4.3678,
+						scale:          7,
+						min:            1.123,
+						max:            1.789,
+						positiveOffset: 21,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 48: 1, 86: 1}), // 1.123, 1.456, 1.789
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric4").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            6.00003,
+						scale:          20,
+						min:            2,
+						max:            2.00002,
+						negativeOffset: 1048575,
+						negativeCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 8: 1, 16: 1}), // 2, 2.00001, 2.00002
+					}).build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric1").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          5,
+						sum:            1359000,
+						scale:          4,
+						min:            10000,
+						max:            500000,
+						zeroThreshold:  5000,
+						zeroCount:      1,
+						positiveOffset: 212,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 53: 1, 74: 1, 90: 2}),
+						exemplarValues: []float64{100000, 300000},
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric2").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            1010.0000123,
+						scale:          2,
+						min:            0.0000123,
+						max:            1000,
+						positiveOffset: -65,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 78: 1, 105: 1}),
+						exemplarValues: []float64{10, 30},
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric3").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            436780,
+						scale:          7,
+						min:            112300,
+						max:            178900,
+						positiveOffset: 2147,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 48: 1, 86: 1}),
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric4").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            252.73926368999997,
+						scale:          20,
+						min:            84.246,
+						max:            84.24684246,
+						negativeOffset: 6707253,
+						negativeCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 8: 1, 16: 1}),
+					}).build(),
 			},
 		},
 		{

@@ -1,6 +1,139 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
+    scopeMetrics:
+      - metrics:
+          - description: The number of clusters in the datacenter.
+            name: vcenter.datacenter.cluster.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: gray
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: green
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: red
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: yellow
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{clusters}'
+          - description: The total amount of CPU available to the datacenter.
+            name: vcenter.datacenter.cpu.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "186696"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{MHz}'
+          - description: The number of datastores in the datacenter.
+            name: vcenter.datacenter.datastore.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{datastores}'
+          - description: The amount of available and used disk space in the datacenter.
+            name: vcenter.datacenter.disk.space
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "51693551508648"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5917763748696"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of hosts in the datacenter.
+            name: vcenter.datacenter.host.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                    - key: status
+                      value:
+                        stringValue: green
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{hosts}'
+          - description: The total amount of memory available to the datacenter.
+            name: vcenter.datacenter.memory.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1645526253568"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of VM's in the datacenter.
+            name: vcenter.datacenter.vm.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                    - key: status
+                      value:
+                        stringValue: green
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                    - key: status
+                      value:
+                        stringValue: yellow
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{virtual_machines}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -101,8 +234,118 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{virtual_machine_templates}'
+          - description: The congestions of IOs generated by all vSAN clients in the cluster.
+            gauge:
+              dataPoints:
+                - asDouble: 5
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 6
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.cluster.vsan.congestions
+            unit: '{congestions/sec}'
+          - description: The overall cluster latency while accessing vSAN storage.
+            gauge:
+              dataPoints:
+                - asInt: "14"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "15"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "17"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.cluster.vsan.latency.avg
+            unit: us
+          - description: The vSAN IOPs of a cluster.
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "11"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "12"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "13"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.cluster.vsan.operations
+            unit: '{operations/sec}'
+          - description: The vSAN throughput of a cluster.
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 2
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 3
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.cluster.vsan.throughput
+            unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -143,7 +386,7 @@ resourceMetrics:
             name: vcenter.datastore.disk.utilization
             unit: '%'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -2777,8 +3020,129 @@ resourceMetrics:
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: '{KiBy/s}'
+          - description: The host's read IOs which could be satisfied by the local client cache.
+            gauge:
+              dataPoints:
+                - asInt: "82"
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "88"
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.cache.hit_rate
+            unit: '%'
+          - description: The congestions of IOs generated by all vSAN clients in the host.
+            gauge:
+              dataPoints:
+                - asDouble: 3
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.congestions
+            unit: '{congestions/sec}'
+          - description: The host latency while accessing vSAN storage.
+            gauge:
+              dataPoints:
+                - asInt: "24"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "25"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "26"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "27"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.latency.avg
+            unit: us
+          - description: The vSAN IOPs of a host.
+            gauge:
+              dataPoints:
+                - asInt: "20"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "21"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "22"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "23"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.operations
+            unit: '{operations/sec}'
+          - description: The vSAN throughput of a host.
+            gauge:
+              dataPoints:
+                - asDouble: 6
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 7
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 8
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 9
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.throughput
+            unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -5415,8 +5779,129 @@ resourceMetrics:
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: '{KiBy/s}'
+          - description: The host's read IOs which could be satisfied by the local client cache.
+            gauge:
+              dataPoints:
+                - asInt: "92"
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "96"
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.cache.hit_rate
+            unit: '%'
+          - description: The congestions of IOs generated by all vSAN clients in the host.
+            gauge:
+              dataPoints:
+                - asDouble: 2
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.congestions
+            unit: '{congestions/sec}'
+          - description: The host latency while accessing vSAN storage.
+            gauge:
+              dataPoints:
+                - asInt: "14"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "15"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "17"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.latency.avg
+            unit: us
+          - description: The vSAN IOPs of a host.
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "11"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "12"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "13"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.operations
+            unit: '{operations/sec}'
+          - description: The vSAN throughput of a host.
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 2
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 3
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.vsan.throughput
+            unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -5452,6 +5937,35 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
+          - description: The amount of memory in a resource pool that is ballooned due to virtualization.
+            name: vcenter.resource_pool.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
+            name: vcenter.resource_pool.memory.granted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "199617"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: private
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: shared
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The amount of shares of memory in the resource pool.
             name: vcenter.resource_pool.memory.shares
             sum:
@@ -5461,6 +5975,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{shares}'
+          - description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
+            name: vcenter.resource_pool.memory.swapped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The usage of the memory by the resource pool.
             name: vcenter.resource_pool.memory.usage
             sum:
@@ -5470,7 +5993,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: MiBy
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -5506,6 +6029,35 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
+          - description: The amount of memory in a resource pool that is ballooned due to virtualization.
+            name: vcenter.resource_pool.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
+            name: vcenter.resource_pool.memory.granted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "199617"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: private
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: shared
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The amount of shares of memory in the resource pool.
             name: vcenter.resource_pool.memory.shares
             sum:
@@ -5515,6 +6067,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{shares}'
+          - description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
+            name: vcenter.resource_pool.memory.swapped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The usage of the memory by the resource pool.
             name: vcenter.resource_pool.memory.usage
             sum:
@@ -5524,7 +6085,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: MiBy
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -5566,7 +6127,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: By
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -6200,7 +6761,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -6836,8 +7397,107 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: The virtual machine latency while accessing vSAN storage.
+            gauge:
+              dataPoints:
+                - asInt: "14"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "15"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "17"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.vsan.latency.avg
+            unit: us
+          - description: The vSAN IOPs of a virtual machine.
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "11"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "12"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "13"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.vsan.operations
+            unit: '{operations/sec}'
+          - description: The vSAN throughput of a virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 2
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 3
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.vsan.throughput
+            unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -7473,6 +8133,105 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: The virtual machine latency while accessing vSAN storage.
+            gauge:
+              dataPoints:
+                - asInt: "24"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "25"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "26"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "27"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.vsan.latency.avg
+            unit: us
+          - description: The vSAN IOPs of a virtual machine.
+            gauge:
+              dataPoints:
+                - asInt: "20"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "21"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asInt: "22"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asInt: "23"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.vsan.operations
+            unit: '{operations/sec}'
+          - description: The vSAN throughput of a virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 6
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 7
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 8
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 9
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.vsan.throughput
+            unit: By/s
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest

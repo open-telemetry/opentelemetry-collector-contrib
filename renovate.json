@@ -5,7 +5,7 @@
       "dependencies"
     ],
     "constraints": {
-      "go": "1.21.0"
+      "go": "1.22.0"
     },
     "schedule": ["every tuesday"],
     "extends": ["config:recommended"],
