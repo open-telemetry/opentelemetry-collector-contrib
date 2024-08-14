@@ -146,7 +146,6 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.107.0 // indirect
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.107.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.107.0 // indirect
-	go.opentelemetry.io/collector/extension/ballastextension v0.107.0 // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.107.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.0 // indirect
