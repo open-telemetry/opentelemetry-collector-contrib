@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	DefaultNamespace                      = "traces.span.metrics"
+	DefaultNamespace               = "traces.span.metrics"
 	legacyMetricNamesFeatureGateID = "connector.spanmetrics.legacyMetricNames"
 )
 
@@ -28,7 +28,7 @@ var legacyMetricNamesFeatureGate *featuregate.Gate
 func init() {
 	// TODO: Remove this feature gate when the legacy metric names are removed.
 	legacyMetricNamesFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		legacyLatencyMetricNamesFeatureGateID,
+		legacyMetricNamesFeatureGateID,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, connector uses legacy metric names."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227"),
