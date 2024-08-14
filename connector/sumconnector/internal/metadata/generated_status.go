@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("sum")
+	Type      = component.MustNewType("sum")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector"
 )
 
 const (

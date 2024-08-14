@@ -60,8 +60,8 @@ var (
 )
 
 const (
-	persistentStateFilePath = "persistent_state.yaml"
-	agentConfigFilePath     = "effective.yaml"
+	persistentStateFileName = "persistent_state.yaml"
+	agentConfigFileName     = "effective.yaml"
 )
 
 const maxBufferedCustomMessages = 10
@@ -165,43 +165,48 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
+	return s, nil
+}
+
+func (s *Supervisor) Start() error {
 	var err error
-	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFile())
+	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = s.getBootstrapInfo(); err != nil {
-		return nil, fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
+		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
 	healthCheckPort, err := s.findRandomPort()
 
 	if err != nil {
-		return nil, fmt.Errorf("could not find port for health check: %w", err)
+		return fmt.Errorf("could not find port for health check: %w", err)
 	}
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
-	logger.Debug("Supervisor starting",
+	s.logger.Debug("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
 	err = s.loadAndWriteInitialMergedConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed loading initial config: %w", err)
+		return fmt.Errorf("failed loading initial config: %w", err)
 	}
 
 	if err = s.startOpAMP(); err != nil {
-		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
+		return fmt.Errorf("cannot start OpAMP client: %w", err)
 	}
 
 	s.commander, err = commander.NewCommander(
 		s.logger,
+		s.config.Storage.Directory,
 		s.config.Agent,
-		"--config", agentConfigFilePath,
+		"--config", s.agentConfigFilePath(),
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	s.startHealthCheckTicker()
@@ -218,7 +223,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		s.forwardCustomMessagesToServerLoop()
 	}()
 
-	return s, nil
+	return nil
 }
 
 func (s *Supervisor) createTemplates() error {
@@ -278,7 +283,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	err = os.WriteFile(agentConfigFilePath, bootstrapConfig, 0600)
+	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
@@ -338,8 +343,9 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	cmd, err := commander.NewCommander(
 		s.logger,
+		s.config.Storage.Directory,
 		s.config.Agent,
-		"--config", agentConfigFilePath,
+		"--config", s.agentConfigFilePath(),
 	)
 	if err != nil {
 		return err
@@ -801,7 +807,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 
 	// write the initial merged config to disk
 	cfg := s.mergedConfig.Load().(string)
-	if err := os.WriteFile(agentConfigFilePath, []byte(cfg), 0600); err != nil {
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
@@ -1046,7 +1052,7 @@ func (s *Supervisor) healthCheck() {
 }
 
 func (s *Supervisor) runAgentProcess() {
-	if _, err := os.Stat(agentConfigFilePath); err == nil {
+	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.logger.Debug("Effective config found, starting agent initial time")
 		s.startAgent()
@@ -1118,7 +1124,7 @@ func (s *Supervisor) stopAgentApplyConfig() {
 		s.logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(agentConfigFilePath, []byte(cfg), 0600); err != nil {
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 }
@@ -1309,8 +1315,12 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 	return true
 }
 
-func (s *Supervisor) persistentStateFile() string {
-	return filepath.Join(s.config.Storage.Directory, persistentStateFilePath)
+func (s *Supervisor) persistentStateFilePath() string {
+	return filepath.Join(s.config.Storage.Directory, persistentStateFileName)
+}
+
+func (s *Supervisor) agentConfigFilePath() string {
+	return filepath.Join(s.config.Storage.Directory, agentConfigFileName)
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {
