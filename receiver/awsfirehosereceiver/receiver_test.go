@@ -100,6 +100,7 @@ func TestFirehoseRequest(t *testing.T) {
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {
+		cfg              *Config
 		headers          map[string]string
 		commonAttributes map[string]string
 		body             any
@@ -108,6 +109,7 @@ func TestFirehoseRequest(t *testing.T) {
 		wantErr          error
 	}{
 		"WithoutRequestId/Header": {
+			cfg: cfg,
 			headers: map[string]string{
 				headerFirehoseRequestID: "",
 			},
@@ -116,6 +118,7 @@ func TestFirehoseRequest(t *testing.T) {
 			wantErr:        errInHeaderMissingRequestID,
 		},
 		"WithDifferentAccessKey": {
+			cfg: cfg,
 			headers: map[string]string{
 				headerFirehoseAccessKey: "test",
 			},
@@ -123,7 +126,21 @@ func TestFirehoseRequest(t *testing.T) {
 			wantStatusCode: http.StatusUnauthorized,
 			wantErr:        errInvalidAccessKey,
 		},
+		"WithAccessKeyButNotConfigured": {
+			cfg: &Config{
+				RecordType: defaultRecordType,
+			},
+			headers: map[string]string{
+				headerFirehoseAccessKey: "no-such-key",
+			},
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+				testFirehoseRecord("test"),
+			}),
+			wantStatusCode: http.StatusOK,
+			wantErr:        nil,
+		},
 		"WithoutRequestId/Body": {
+			cfg: cfg,
 			headers: map[string]string{
 				headerFirehoseRequestID: testFirehoseRequestID,
 			},
@@ -132,6 +149,7 @@ func TestFirehoseRequest(t *testing.T) {
 			wantErr:        errInBodyMissingRequestID,
 		},
 		"WithDifferentRequestIds": {
+			cfg: cfg,
 			headers: map[string]string{
 				headerFirehoseRequestID: testFirehoseRequestID,
 			},
@@ -140,21 +158,25 @@ func TestFirehoseRequest(t *testing.T) {
 			wantErr:        errInBodyDiffRequestID,
 		},
 		"WithInvalidBody": {
+			cfg:            cfg,
 			body:           "{ test: ",
 			wantStatusCode: http.StatusBadRequest,
 			wantErr:        errors.New("json: cannot unmarshal string into Go value of type awsfirehosereceiver.firehoseRequest"),
 		},
 		"WithNoRecords": {
+			cfg:            cfg,
 			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
 			wantStatusCode: http.StatusOK,
 		},
 		"WithFirehoseConsumerError": {
+			cfg:            cfg,
 			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
 			consumer:       newNopFirehoseConsumer(http.StatusInternalServerError, firehoseConsumerErr),
 			wantStatusCode: http.StatusInternalServerError,
 			wantErr:        firehoseConsumerErr,
 		},
 		"WithCorruptBase64Records": {
+			cfg: cfg,
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				{Data: "XXXXXaGVsbG8="},
 			}),
@@ -162,12 +184,14 @@ func TestFirehoseRequest(t *testing.T) {
 			wantErr:        fmt.Errorf("unable to base64 decode the record at index 0: %w", base64.CorruptInputError(12)),
 		},
 		"WithValidRecords": {
+			cfg: cfg,
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("test"),
 			}),
 			wantStatusCode: http.StatusOK,
 		},
 		"WithValidRecords/CommonAttributes": {
+			cfg: cfg,
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("test"),
 			}),
@@ -206,7 +230,7 @@ func TestFirehoseRequest(t *testing.T) {
 			if consumer == nil {
 				consumer = defaultConsumer
 			}
-			r := testFirehoseReceiver(cfg, consumer)
+			r := testFirehoseReceiver(testCase.cfg, consumer)
 
 			got := httptest.NewRecorder()
 			r.ServeHTTP(got, request)
