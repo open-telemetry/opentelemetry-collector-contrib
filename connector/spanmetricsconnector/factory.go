@@ -20,7 +20,7 @@ import (
 
 const (
 	DefaultNamespace                      = "traces.span.metrics"
-	legacyLatencyMetricNamesFeatureGateID = "connector.spanmetrics.legacyLatencyMetricNames"
+	legacyMetricNamesFeatureGateID = "connector.spanmetrics.legacyMetricNames"
 )
 
 var legacyMetricNamesFeatureGate *featuregate.Gate
