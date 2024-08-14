@@ -16,6 +16,7 @@ issues: [32584]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
+  To retain the previous behavior, set retry.retry_on_status to `[429, 500, 502, 503, 504]`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
