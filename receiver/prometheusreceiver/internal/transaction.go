@@ -26,9 +26,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
-
-const receiverName = "otelcol/prometheusreceiver"
 
 type transaction struct {
 	isNew                  bool
@@ -320,7 +319,7 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 		// If metrics don't include otel_scope_name or otel_scope_version
 		// labels, use the receiver name and version.
 		if scope == emptyScopeID {
-			ils.Scope().SetName(receiverName)
+			ils.Scope().SetName(mdata.ScopeName)
 			ils.Scope().SetVersion(t.buildInfo.Version)
 		} else {
 			// Otherwise, use the scope that was provided with the metrics.

@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/pdata v1.13.0
 	go.uber.org/goleak v1.3.0
 )
 
