@@ -890,11 +890,10 @@ type OTelRecord struct {
 	SpanID                 OTelSpanID           `json:"span_id"`
 	Timestamp              time.Time            `json:"@timestamp"`
 	ObservedTimestamp      time.Time            `json:"observed_timestamp"`
-	TraceFlags             uint32               `json:"-"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
 	Attributes             map[string]any       `json:"attributes"`
-	DroppedAttributesCount uint32               `json:"dropped_attrbutes_count"`
+	DroppedAttributesCount uint32               `json:"dropped_attributes_count"`
 	Scope                  OTelScope            `json:"scope"`
 	Resource               OTelResource         `json:"resource"`
 	Datastream             OTelRecordDatastream `json:"data_stream"`
@@ -910,14 +909,14 @@ type OTelScope struct {
 	Name                   string         `json:"name"`
 	Version                string         `json:"version"`
 	Attributes             map[string]any `json:"attributes"`
-	DroppedAttributesCount uint32         `json:"dropped_attrbutes_count"`
-	Schema                 string         `json:"schema"`
+	DroppedAttributesCount uint32         `json:"dropped_attributes_count"`
+	SchemaURL              string         `json:"schema_url"`
 }
 
 type OTelResource struct {
 	Attributes             map[string]any `json:"attributes"`
-	DroppedAttributesCount uint32         `json:"dropped_attrbutes_count"`
-	Schema                 string         `json:"schema"`
+	DroppedAttributesCount uint32         `json:"dropped_attributes_count"`
+	SchemaURL              string         `json:"schema_url"`
 }
 
 type OTelSpanID pcommon.SpanID
@@ -1057,7 +1056,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		// This sets the data_stream values default or derived from the record/scope/resources
 		routeLogRecord(record, scope, resource, "", true)
 
-		b, err := m.encodeLog(resource, tc.rec.Resource.Schema, record, scope, tc.rec.Scope.Schema)
+		b, err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL)
 		require.NoError(t, err)
 
 		want := tc.rec
@@ -1082,7 +1081,6 @@ func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcom
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
 	record.SetSpanID(pcommon.SpanID(rec.SpanID))
-	record.SetFlags(plog.LogRecordFlags(rec.TraceFlags))
 	record.SetSeverityNumber(plog.SeverityNumber(rec.SeverityNumber))
 	record.SetSeverityText(rec.SeverityText)
 	record.SetDroppedAttributesCount(rec.DroppedAttributesCount)
@@ -1136,7 +1134,6 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
     "severity_number": 17,
     "severity_text": "ERROR",
     "span_id": "0102030405060708",
-    "trace_flags": 1234,
     "trace_id": "01020304050607080900010203040506"
 }`
 
