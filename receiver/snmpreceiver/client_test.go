@@ -276,7 +276,7 @@ func TestGetScalarData(t *testing.T) {
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
 				expectedErr1 := fmt.Errorf("problem with getting scalar data: problem with SNMP GET for OIDs '%v': %w", oidSlice, getError)
 				expectedErr2 := fmt.Errorf("problem with getting scalar data: problem connecting while trying to reset connection: %w", connectErr)
-				expectedErr := fmt.Errorf(expectedErr1.Error() + "; " + expectedErr2.Error())
+				expectedErr := errors.New(expectedErr1.Error() + "; " + expectedErr2.Error())
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
 				require.Nil(t, returnedSNMPData)
 			},
@@ -638,7 +638,7 @@ func TestGetIndexedData(t *testing.T) {
 				returnedSNMPData := client.GetIndexedData(oidSlice, &scraperErrors)
 				expectedErr1 := fmt.Errorf("problem with getting indexed data: problem with SNMP WALK for OID '1': %w", walkError)
 				expectedErr2 := fmt.Errorf("problem with getting indexed data: problem connecting while trying to reset connection: %w", connectErr)
-				expectedErr := fmt.Errorf(expectedErr1.Error() + "; " + expectedErr2.Error())
+				expectedErr := errors.New(expectedErr1.Error() + "; " + expectedErr2.Error())
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
 				require.Nil(t, returnedSNMPData)
 			},
