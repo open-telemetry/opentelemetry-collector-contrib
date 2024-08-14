@@ -52,7 +52,7 @@ func getProviderFactory(key string) (provider.GeoIPProviderFactory, bool) {
 // createDefaultConfig returns a default configuration for the processor.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Context: ContextID(resource),
+		Context: resource,
 	}
 }
 

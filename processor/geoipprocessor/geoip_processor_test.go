@@ -90,37 +90,37 @@ var testCases = []struct {
 	{
 		name:             "default source.address attribute, not found",
 		goldenDir:        "no_source_address",
-		context:          ContextID(resource),
+		context:          resource,
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
 		name:             "default source.address attribute",
 		goldenDir:        "source_address",
-		context:          ContextID(resource),
+		context:          resource,
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
 		name:             "default source.ip attribute with an unspecified IP address should be skipped",
 		goldenDir:        "unspecified_address",
-		context:          ContextID(resource),
+		context:          resource,
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
 		name:             "custom source attributes",
 		goldenDir:        "custom_sources",
-		context:          ContextID(resource),
+		context:          resource,
 		lookupAttributes: []attribute.Key{"ip", "host.ip"},
 	},
 	{
 		name:             "do not add resource attributes with an invalid ip",
 		goldenDir:        "invalid_address",
-		context:          ContextID(resource),
+		context:          resource,
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
 		name:             "source address located in inner attributes",
 		goldenDir:        "attribute_source_address",
-		context:          ContextID(record),
+		context:          record,
 		lookupAttributes: defaultResourceAttributes,
 	},
 }
