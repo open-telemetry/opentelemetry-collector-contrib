@@ -10,7 +10,6 @@ import (
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
-	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
 	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
@@ -52,7 +51,6 @@ func components() (otelcol.Factories, error) {
 	factories := otelcol.Factories{}
 
 	factories.Extensions, err = extension.MakeFactoryMap(
-		ballastextension.NewFactory(),
 		zpagesextension.NewFactory(),
 		pprofextension.NewFactory(),
 		filestorage.NewFactory(),
@@ -61,7 +59,6 @@ func components() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 	factories.ExtensionModules = make(map[component.Type]string, len(factories.Extensions))
-	factories.ExtensionModules[ballastextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/ballastextension v0.107.0"
 	factories.ExtensionModules[zpagesextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/zpagesextension v0.107.0"
 	factories.ExtensionModules[pprofextension.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.107.0"
 	factories.ExtensionModules[filestorage.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.107.0"
