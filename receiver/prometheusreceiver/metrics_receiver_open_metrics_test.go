@@ -149,7 +149,7 @@ func TestOpenMetricsInvalid(t *testing.T) {
 func getOpenMetricsTestData(testNameFilterFunc func(testName string) bool) map[string]string {
 	testDir, err := os.Open(testDir)
 	if err != nil {
-		log.Fatalf("failed opening openmetrics test directory")
+		log.Fatal("failed opening openmetrics test directory")
 	}
 	defer testDir.Close()
 

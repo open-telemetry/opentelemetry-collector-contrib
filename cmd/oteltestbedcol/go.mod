@@ -55,7 +55,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.107.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.107.0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/sys v0.23.0
+	golang.org/x/sys v0.24.0
 )
 
 require (
