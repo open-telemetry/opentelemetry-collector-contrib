@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.107.0
