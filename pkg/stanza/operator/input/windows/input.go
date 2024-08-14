@@ -63,13 +63,13 @@ func (i *Input) defaultStartRemoteSession() error {
 		return nil
 	}
 
-	login := EvtRpcLogin{
+	login := EvtRPCLogin{
 		Server:   windows.StringToUTF16Ptr(i.remote.Server),
 		User:     windows.StringToUTF16Ptr(i.remote.Username),
 		Password: windows.StringToUTF16Ptr(i.remote.Password),
 	}
 
-	sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login, 0, 0)
+	sessionHandle, err := evtOpenSession(EvtRPCLoginClass, &login, 0, 0)
 	if err != nil {
 		return fmt.Errorf("failed to open session for server %s: %w", i.remote.Server, err)
 	}
@@ -304,7 +304,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 
 	entry.Timestamp = eventXML.parseTimestamp()
 	entry.Severity = eventXML.parseRenderedSeverity()
-	i.Write(ctx, entry)
+	_ = i.Write(ctx, entry)
 }
 
 // sendEventRaw will send EventRaw as an entry to the operator's output.
@@ -318,7 +318,7 @@ func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
 
 	entry.Timestamp = eventRaw.parseTimestamp()
 	entry.Severity = eventRaw.parseRenderedSeverity()
-	i.Write(ctx, entry)
+	_ = i.Write(ctx, entry)
 }
 
 // getBookmarkXML will get the bookmark xml from the offsets database.
