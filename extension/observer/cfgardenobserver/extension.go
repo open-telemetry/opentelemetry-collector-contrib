@@ -35,11 +35,11 @@ const (
 
 type cfGardenObserver struct {
 	*observer.EndpointsWatcher
-	cancel context.CancelFunc
-	config *Config
-	ctx    context.Context
-	logger *zap.Logger
-	once   *sync.Once
+	cancel   context.CancelFunc
+	config   *Config
+	doneChan <-chan struct{}
+	logger   *zap.Logger
+	once     *sync.Once
 
 	garden garden.Client
 	cf     *client.Client
@@ -86,7 +86,7 @@ func (g *cfGardenObserver) SyncApps() error {
 			continue
 		}
 
-		app, err := g.cf.Applications.Get(g.ctx, appID)
+		app, err := g.cf.Applications.Get(context.Background(), appID)
 		if err != nil {
 			return fmt.Errorf("error fetching application: %w", err)
 		}
@@ -109,7 +109,7 @@ func (g *cfGardenObserver) App(info garden.ContainerInfo) (*resource.App, error)
 		return app, nil
 	}
 
-	app, err := g.cf.Applications.Get(g.ctx, appID)
+	app, err := g.cf.Applications.Get(context.Background(), appID)
 	if err != nil {
 		return nil, err
 	}
@@ -119,9 +119,9 @@ func (g *cfGardenObserver) App(info garden.ContainerInfo) (*resource.App, error)
 }
 
 func (g *cfGardenObserver) Start(_ context.Context, _ component.Host) error {
-	gCtx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	g.cancel = cancel
-	g.ctx = gCtx
+	g.doneChan = ctx.Done()
 
 	g.garden = gardenClient.New(gardenConnection.New("unix", g.config.Garden.Endpoint))
 
@@ -140,7 +140,7 @@ func (g *cfGardenObserver) Start(_ context.Context, _ component.Host) error {
 
 					for {
 						select {
-						case <-g.ctx.Done():
+						case <-g.doneChan:
 							return
 						case <-cacheRefreshTicker.C:
 							err = g.SyncApps()
