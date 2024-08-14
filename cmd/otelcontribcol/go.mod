@@ -227,7 +227,6 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.107.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.107.0
 	go.opentelemetry.io/collector/extension v0.107.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.107.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.107.0
 	go.opentelemetry.io/collector/otelcol v0.107.0
 	go.opentelemetry.io/collector/pdata v1.13.0
@@ -237,7 +236,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.107.0
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.107.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.107.0
-	golang.org/x/sys v0.23.0
+	golang.org/x/sys v0.24.0
 )
 
 require (
@@ -373,7 +372,7 @@ require (
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
-	github.com/SAP/go-hdb v1.10.4 // indirect
+	github.com/SAP/go-hdb v1.11.0 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/aerospike/aerospike-client-go/v7 v7.6.1 // indirect
@@ -713,7 +712,7 @@ require (
 	github.com/signalfx/sapm-proto v0.14.0 // indirect
 	github.com/sijms/go-ora/v2 v2.8.19 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/snowflakedb/gosnowflake v1.10.1 // indirect
+	github.com/snowflakedb/gosnowflake v1.11.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/solarwindscloud/apm-proto v1.0.6 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
@@ -759,7 +758,7 @@ require (
 	go.elastic.co/fastjson v1.3.0 // indirect
 	go.etcd.io/bbolt v1.3.10 // indirect
 	go.mongodb.org/atlas v0.36.0 // indirect
-	go.mongodb.org/mongo-driver v1.16.0 // indirect
+	go.mongodb.org/mongo-driver v1.16.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.107.0 // indirect
 	go.opentelemetry.io/collector/client v1.13.0 // indirect
