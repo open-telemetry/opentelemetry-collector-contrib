@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0
