@@ -227,7 +227,6 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.107.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.107.0
 	go.opentelemetry.io/collector/extension v0.107.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.107.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.107.0
 	go.opentelemetry.io/collector/otelcol v0.107.0
 	go.opentelemetry.io/collector/pdata v1.13.0
