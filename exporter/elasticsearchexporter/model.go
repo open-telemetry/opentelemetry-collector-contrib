@@ -432,6 +432,10 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	return nil
 }
 
+// metricDpToDynamicTemplate returns the name of dynamic template that applies to the metric and data point,
+// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
+// dynamic template that is defined in ES mapping, e.g.
+// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
 func metricDpToDynamicTemplate(metric pmetric.Metric, dp dataPoint) string {
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
