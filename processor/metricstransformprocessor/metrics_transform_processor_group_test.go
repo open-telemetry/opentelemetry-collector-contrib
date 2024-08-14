@@ -34,6 +34,7 @@ var (
 					MetricIncludeFilter: internalFilterStrict{include: "foo/metric"},
 					Action:              Group,
 					GroupResourceLabels: map[string]string{"resource.type": "foo"},
+					GroupResourceLabelsList: map[string][]string{"resource.type": {"foo", "bar"}},
 				},
 			},
 		},

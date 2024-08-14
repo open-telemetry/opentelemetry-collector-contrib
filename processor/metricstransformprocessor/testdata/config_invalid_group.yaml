@@ -4,3 +4,4 @@ metricstransform:
       action: group
       match_type: strict
       # group_resource_labels: absent
+      # group_resource_labels_list: absent

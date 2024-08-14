@@ -53,7 +53,7 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_group.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", groupResourceLabelsFieldName, actionFieldName, Group),
+			errorMessage: fmt.Sprintf("missing required field %q or %q while %q is %v", groupResourceLabelsFieldName, groupResourceLabelsListFieldName, actionFieldName, Group),
 		},
 		{
 			configName:   "config_invalid_action.yaml",

@@ -21,6 +21,9 @@ const (
 	// groupResourceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
 	groupResourceLabelsFieldName = "group_resource_labels"
 
+	// groupResourceLabelListFieldName is the mapstructure field name for GroupResouceLabelsList field
+	groupResourceLabelListFieldName = "group_resource_labels_list"
+
 	// aggregationTypeFieldName is the mapstructure field name for aggregationType field
 	aggregationTypeFieldName = "aggregation_type"
 
@@ -72,8 +75,11 @@ type transform struct {
 	NewName string `mapstructure:"new_name"`
 
 	// GroupResourceLabels specifes resource labels that will be appended to this group's new ResourceMetrics message
-	// REQUIRED only if Action is GROUP
 	GroupResourceLabels map[string]string `mapstructure:"group_resource_labels"`
+
+	// GroupResourceLabelsList specifes resource labels string lists that will be appended to this group's new ResourceMetrics message
+	// One of {GroupResourceLabels, GroupResourceLabelsList} REQUIRED only if Action is GROUP
+	GroupResourceLabelsList map[string][]string `mapstructure:"group_resource_labels_list"`
 
 	// AggregationType specifies how to aggregate.
 	// REQUIRED only if Action is COMBINE.

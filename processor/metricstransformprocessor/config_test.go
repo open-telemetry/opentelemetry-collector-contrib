@@ -138,6 +138,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 						Action:              "group",
 						GroupResourceLabels: map[string]string{"metric_group": "2"},
+						GroupResourceLabelsList: map[string][]string{"metric_groups": {"2", "3"}},
 					},
 				},
 			},

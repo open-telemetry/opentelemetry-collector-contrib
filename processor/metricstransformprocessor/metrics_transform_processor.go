@@ -25,6 +25,7 @@ type internalTransform struct {
 	Action              ConfigAction
 	NewName             string
 	GroupResourceLabels map[string]string
+	GroupResourceLabelsList map[string][]string
 	AggregationType     aggregateutil.AggregationType
 	SubmatchCase        submatchCase
 	Operations          []internalOperation
