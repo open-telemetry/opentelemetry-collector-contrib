@@ -207,9 +207,9 @@ func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-        var services []translator.ServiceCheck
+	var services []translator.ServiceCheck
 
-        err = json.Unmarshal(buf.Bytes(), &services)
+	err = json.Unmarshal(buf.Bytes(), &services)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		ddr.params.Logger.Error(err.Error())

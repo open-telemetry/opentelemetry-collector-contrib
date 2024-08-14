@@ -7,12 +7,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 

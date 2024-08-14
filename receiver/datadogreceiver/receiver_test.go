@@ -176,7 +176,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 
 	dd, err := newDataDogReceiver(
 		cfg,
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
