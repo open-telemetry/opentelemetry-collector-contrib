@@ -22,6 +22,20 @@ type Config struct {
 	// This can be set when creating or updating the Firehose delivery
 	// stream.
 	AccessKey configopaque.String `mapstructure:"access_key"`
+	// NamePrefixes is a list of attributes that are used to determine
+	// the name of the metric. If the attribute is not found in the
+	// record, or its string value is empty, the default value is used.
+	// Fields are applied in order, and sepatated by a period.
+	// Currently, only resource attributes are supported.
+	NamePrefixes []NamePrefixConfig `mapstructure:"name_prefixes"`
+}
+
+type NamePrefixConfig struct {
+	// AttributeName is the name of the attribute in the record.
+	AttributeName string `mapstructure:"attribute_name"`
+	// Default is the value to use if the attribute is not found or
+	// is empty.
+	Default string `mapstructure:"default"`
 }
 
 // Validate checks that the endpoint and record type exist and
@@ -33,5 +47,21 @@ func (c *Config) Validate() error {
 	if c.RecordType == "" {
 		return errors.New("must specify record type")
 	}
-	return validateRecordType(c.RecordType)
+	if err := validateRecordType(c.RecordType); err != nil {
+		return err
+	}
+
+	return validateNamePrefixes(c.NamePrefixes)
+}
+
+func validateNamePrefixes(namePrefixes []NamePrefixConfig) error {
+	for _, namePrefix := range namePrefixes {
+		if namePrefix.AttributeName == "" {
+			return errors.New("name_prefixes must specify attribute_name")
+		}
+		if namePrefix.Default == "" {
+			return errors.New("name_prefixes must specify default")
+		}
+	}
+	return nil
 }

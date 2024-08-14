@@ -6,8 +6,11 @@ package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
@@ -22,6 +25,9 @@ type metricsConsumer struct {
 	// unmarshaler is the configured MetricsUnmarshaler
 	// to use when processing the records.
 	unmarshaler unmarshaler.MetricsUnmarshaler
+	// namePrefixes is a list of attributes that are used to determine
+	// the name of the metric.
+	namePrefixes []NamePrefixConfig
 }
 
 var _ firehoseConsumer = (*metricsConsumer)(nil)
@@ -41,8 +47,9 @@ func newMetricsReceiver(
 	}
 
 	mc := &metricsConsumer{
-		consumer:    nextConsumer,
-		unmarshaler: configuredUnmarshaler,
+		consumer:     nextConsumer,
+		unmarshaler:  configuredUnmarshaler,
+		namePrefixes: config.NamePrefixes,
 	}
 
 	return &firehoseReceiver{
@@ -63,14 +70,11 @@ func (mc *metricsConsumer) Consume(ctx context.Context, records [][]byte, common
 	}
 
 	if commonAttributes != nil {
-		for i := 0; i < md.ResourceMetrics().Len(); i++ {
-			rm := md.ResourceMetrics().At(i)
-			for k, v := range commonAttributes {
-				if _, found := rm.Resource().Attributes().Get(k); !found {
-					rm.Resource().Attributes().PutStr(k, v)
-				}
-			}
-		}
+		applyCommonAttributes(md, commonAttributes)
+	}
+
+	if len(mc.namePrefixes) > 0 {
+		applyNamePrefixes(md, mc.namePrefixes)
 	}
 
 	err = mc.consumer.ConsumeMetrics(ctx, md)
@@ -78,4 +82,67 @@ func (mc *metricsConsumer) Consume(ctx context.Context, records [][]byte, common
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusOK, nil
+}
+
+func applyCommonAttributes(md pmetric.Metrics, commonAttributes map[string]string) {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for k, v := range commonAttributes {
+			if _, found := rm.Resource().Attributes().Get(k); !found {
+				rm.Resource().Attributes().PutStr(k, v)
+			}
+		}
+	}
+}
+
+func applyNamePrefixes(md pmetric.Metrics, namePrefixes []NamePrefixConfig) {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				m := ilm.Metrics().At(k)
+				newName := makePrefixedName(namePrefixes, m.Name(), rm.Resource().Attributes())
+				m.SetName(newName)
+			}
+		}
+	}
+}
+
+func makePrefixedName(namePrefixes []NamePrefixConfig, name string, ra pcommon.Map) string {
+	parts := make([]string, 0, len(namePrefixes)+1)
+
+	for _, np := range namePrefixes {
+		attrVal, found := ra.Get(np.AttributeName)
+		if !found {
+			parts = append(parts, np.Default)
+			continue
+		}
+		s := attrVal.AsString()
+		if s == "" {
+			parts = append(parts, np.Default)
+			continue
+		}
+		parts = append(parts, sanitizeValue(s))
+	}
+
+	parts = append(parts, name)
+	return strings.Join(parts, ".")
+}
+
+// replace all non-alphanumeric characters with underscores, other than _ and -.
+func sanitizeValue(value string) string {
+	s := strings.Map(func(r rune) rune {
+		if r == '_' || r == '-' {
+			return r
+		}
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			return r
+		}
+		return '_'
+	}, value)
+	// replace runs of underscores with a single underscore
+	s = strings.ReplaceAll(s, "__", "_")
+	// trim leading and trailing underscores
+	return strings.Trim(s, "_")
 }

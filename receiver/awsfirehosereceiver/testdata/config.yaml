@@ -5,3 +5,8 @@ awsfirehose:
   tls:
     cert_file: server.crt
     key_file: server.key
+  name_prefixes:
+    - attribute_name: alice
+      default: "alice"
+    - attribute_name: bob
+      default: "bob"

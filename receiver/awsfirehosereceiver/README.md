@@ -28,37 +28,57 @@ receivers:
       cert_file: server.crt
       key_file: server.key
 ```
+
 The configuration includes the Opentelemetry collector's server [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration),
 which allows for a variety of settings. Only the most relevant ones will be discussed here, but all are available.
 The AWS Kinesis Data Firehose Delivery Streams currently only support HTTPS endpoints using port 443. This can be potentially circumvented
 using a Load Balancer.
 
-### endpoint:
+### endpoint
+
 The address:port to bind the listener to.
 
 default: `localhost:4433`
 
 You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:4433`. This feature gate will be removed in a future release.
 
-### tls:
+### tls
+
 See [documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#server-configuration) for more details.
 
 A `cert_file` and `key_file` are required.
 
-### record_type:
+### record_type
+
 The type of record being received from the delivery stream. Each unmarshaler handles a specific type, so the field allows the receiver to use the correct one.
 
 default: `cwmetrics`
 
 See the [Record Types](#record-types) section for all available options.
 
-### access_key (Optional):
+### access_key (Optional)
+
 The access key to be checked on each request received. This can be set when creating or updating the delivery stream.
 See [documentation](https://docs.aws.amazon.com/firehose/latest/dev/create-destination.html#create-destination-http) for details.
+
+### name_prefixes
+
+This allows changing the metric name based on attribute values.  For example, given a metric
+named `bytes_received`, it will be renamed to `aws.some-service.bytes_received`:
+
+```yaml
+receivers:
+  awsfirehose:
+    name_prefixes:
+      - attribute_name: cloud.provider
+        default: aws
+      - attribute_name: service.name
+        default: unnamed
+```
 
 ## Record Types
 
 ### cwmetrics
+
 The record type for the CloudWatch metric stream. Expects the format for the records to be JSON.
 See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Metric-Streams.html) for details.
-

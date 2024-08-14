@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -118,4 +119,148 @@ func TestMetricsConsumer(t *testing.T) {
 		gotRm := gotRms.At(0)
 		require.Equal(t, 1, gotRm.Resource().Attributes().Len())
 	})
+}
+
+func TestSanitizeValue(t *testing.T) {
+	testCases := map[string]struct {
+		input    string
+		expected string
+	}{
+		"EmptyString": {
+			input:    "",
+			expected: "",
+		},
+		"OnlyAlphanumeric": {
+			input:    "abc123",
+			expected: "abc123",
+		},
+		"WithUnderscore": {
+			input:    "abc_123",
+			expected: "abc_123",
+		},
+		"WithDash": {
+			input:    "abc-123",
+			expected: "abc-123",
+		},
+		"WithDot": {
+			input:    "abc.123",
+			expected: "abc_123",
+		},
+		"WithSpecialCharacters": {
+			input:    "abc!@#$%^&*()",
+			expected: "abc",
+		},
+		"WithMixedCharacters": {
+			input:    "abc_123!@#$%^&*()",
+			expected: "abc_123",
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			got := sanitizeValue(testCase.input)
+			require.Equal(t, testCase.expected, got)
+		})
+	}
+}
+
+func TestMakePrefixedName(t *testing.T) {
+	testCases := map[string]struct {
+		namePrefixes []NamePrefixConfig
+		attributes   map[string]string
+		basename     string
+		expected     string
+	}{
+		"EmptyNamePrefixes": {
+			namePrefixes: nil,
+			attributes: map[string]string{
+				"attr1": "value1",
+			},
+			basename: "alice.bob",
+			expected: "alice.bob",
+		},
+		"EmptyAttributes": {
+			namePrefixes: []NamePrefixConfig{
+				{
+					AttributeName: "attr1",
+					Default:       "default",
+				},
+			},
+			attributes: nil,
+			basename:   "alice.bob",
+			expected:   "default.alice.bob",
+		},
+		"EmptyAttributeValue": {
+			namePrefixes: []NamePrefixConfig{
+				{
+					AttributeName: "attr1",
+					Default:       "default",
+				},
+			},
+			attributes: map[string]string{
+				"attr1": "",
+			},
+			basename: "alice.bob",
+			expected: "default.alice.bob",
+		},
+		"MissingAttribute": {
+			namePrefixes: []NamePrefixConfig{
+				{
+					AttributeName: "attr1",
+					Default:       "default",
+				},
+			},
+			attributes: map[string]string{
+				"attr2": "value2",
+			},
+			basename: "alice.bob",
+			expected: "default.alice.bob",
+		},
+		"Valid": {
+			namePrefixes: []NamePrefixConfig{
+				{
+					AttributeName: "attr1",
+					Default:       "default",
+				},
+			},
+			attributes: map[string]string{
+				"attr1": "value1",
+			},
+			basename: "alice.bob",
+			expected: "value1.alice.bob",
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			ra := pcommon.NewMap()
+			for k, v := range testCase.attributes {
+				ra.PutStr(k, v)
+			}
+			got := makePrefixedName(testCase.namePrefixes, testCase.basename, ra)
+			require.Equal(t, testCase.expected, got)
+		})
+	}
+}
+
+func TestApplyNamePrefixes(t *testing.T) {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("attr1", "value1")
+
+	namePrefixes := []NamePrefixConfig{
+		{
+			AttributeName: "attr1",
+			Default:       "default",
+		},
+	}
+
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	m := ilm.Metrics().AppendEmpty()
+	m.SetName("name")
+
+	applyNamePrefixes(md, namePrefixes)
+
+	got := m.Name()
+	require.Equal(t, "value1.name", got)
 }

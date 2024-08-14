@@ -33,6 +33,16 @@ func TestLoadConfig(t *testing.T) {
 	require.Equal(t, &Config{
 		RecordType: "cwmetrics",
 		AccessKey:  "some_access_key",
+		NamePrefixes: []NamePrefixConfig{
+			{
+				AttributeName: "alice",
+				Default:       "alice",
+			},
+			{
+				AttributeName: "bob",
+				Default:       "bob",
+			},
+		},
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "0.0.0.0:4433",
 			TLSSetting: &configtls.ServerConfig{
