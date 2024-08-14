@@ -1,9 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest
 
-go 1.21.0
+go 1.22.0
 
 require (
-	github.com/elastic/go-docappender/v2 v2.2.1
+	github.com/elastic/go-docappender/v2 v2.3.0
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.107.0
