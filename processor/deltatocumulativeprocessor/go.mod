@@ -1,8 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
 
-go 1.21.0
+go 1.22.0
 
 require (
+	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.107.0
 	github.com/stretchr/testify v1.9.0

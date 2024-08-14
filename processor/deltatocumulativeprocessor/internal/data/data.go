@@ -21,8 +21,26 @@ type Point[Self any] interface {
 	Add(Self) Self
 }
 
+type Typed[Self any] interface {
+	Point[Self]
+	Number | Histogram | ExpHistogram
+}
+
 type Number struct {
 	pmetric.NumberDataPoint
+}
+
+func Zero[P Typed[P]]() P {
+	var point P
+	switch ty := any(&point).(type) {
+	case *Number:
+		ty.NumberDataPoint = pmetric.NewNumberDataPoint()
+	case *Histogram:
+		ty.HistogramDataPoint = pmetric.NewHistogramDataPoint()
+	case *ExpHistogram:
+		ty.DataPoint = pmetric.NewExponentialHistogramDataPoint()
+	}
+	return point
 }
 
 func (dp Number) Clone() Number {
