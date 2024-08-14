@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/goleak v1.3.0
-	golang.org/x/sys v0.23.0
+	golang.org/x/sys v0.24.0
 )
 
 require go.opentelemetry.io/collector/consumer/consumertest v0.107.0
