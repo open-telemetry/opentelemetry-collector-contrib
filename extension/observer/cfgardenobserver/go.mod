@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
 
-go 1.21.0
+go 1.22.0
 
 require (
 	code.cloudfoundry.org/garden v0.0.0-20240711201323-3e0daa304ebb
