@@ -84,43 +84,43 @@ var baseProviderMock = providerMock{
 var testCases = []struct {
 	name             string
 	goldenDir        string
-	sourceConfig     SourceConfig
+	context          ContextID
 	lookupAttributes []attribute.Key
 }{
 	{
 		name:             "default source.address attribute, not found",
 		goldenDir:        "no_source_address",
-		sourceConfig:     SourceConfig{From: resourceSource},
+		context:          ContextID(resource),
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
 		name:             "default source.address attribute",
 		goldenDir:        "source_address",
-		sourceConfig:     SourceConfig{From: resourceSource},
+		context:          ContextID(resource),
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
 		name:             "default source.ip attribute with an unspecified IP address should be skipped",
 		goldenDir:        "unspecified_address",
-		sourceConfig:     SourceConfig{From: resourceSource},
+		context:          ContextID(resource),
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
 		name:             "custom source attributes",
 		goldenDir:        "custom_sources",
-		sourceConfig:     SourceConfig{From: resourceSource},
+		context:          ContextID(resource),
 		lookupAttributes: []attribute.Key{"ip", "host.ip"},
 	},
 	{
 		name:             "do not add resource attributes with an invalid ip",
 		goldenDir:        "invalid_address",
-		sourceConfig:     SourceConfig{From: resourceSource},
+		context:          ContextID(resource),
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
 		name:             "source address located in inner attributes",
 		goldenDir:        "attribute_source_address",
-		sourceConfig:     SourceConfig{From: attributeSource},
+		context:          ContextID(record),
 		lookupAttributes: defaultResourceAttributes,
 	},
 }
@@ -217,7 +217,7 @@ func TestProcessor(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Source: tt.sourceConfig, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}}
+			cfg := &Config{Context: tt.context, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}}
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}

@@ -12,13 +12,13 @@ import (
 func (g *geoIPProcessor) processMetrics(ctx context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := ms.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
-		switch g.cfg.Source.From {
-		case resourceSource:
+		switch g.cfg.Context {
+		case resource:
 			err := g.processAttributes(ctx, rm.At(i).Resource().Attributes())
 			if err != nil {
 				return ms, err
 			}
-		case attributeSource:
+		case record:
 			for j := 0; j < rm.At(i).ScopeMetrics().Len(); j++ {
 				for k := 0; k < rm.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 					err := g.processMetricAttributes(ctx, rm.At(i).ScopeMetrics().At(j).Metrics().At(k))

@@ -24,7 +24,7 @@ func TestProcessorWithMaxMind(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run("maxmind_"+tt.name, func(t *testing.T) {
-			cfg := &Config{Source: tt.sourceConfig, Providers: map[string]provider.Config{"maxmind": &maxmindConfig}}
+			cfg := &Config{Context: tt.context, Providers: map[string]provider.Config{"maxmind": &maxmindConfig}}
 
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})

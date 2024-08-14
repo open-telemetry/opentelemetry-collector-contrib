@@ -39,8 +39,9 @@ The following settings must be configured:
 
 - `providers`: A map containing geographical location information providers. These providers are used to search for the geographical location attributes associated with an IP. Supported providers:
   - [maxmind](./internal/provider/maxmindprovider/README.md)
-- `source`:
-  - `from`: Allows specifying the attribute source type, defaults to `resource_attribute`. Available values: `resource_attribute` or `attribute`.
+- `context`: Allows specifying the underlying telemetry context the processor will work with. Available values:
+  - `resource`(default): Resource attributes.
+  - `record`: Attributes within a data point, log record or a span.
 
 ## Examples
 
@@ -48,6 +49,7 @@ The following settings must be configured:
 processors:
     # processor name: geoip
     geoip:
+      context: resource
       providers:
         maxmind:
           database_path: /tmp/mygeodb

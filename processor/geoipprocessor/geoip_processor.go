@@ -15,11 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
-const (
-	resourceSource  = "resource_attribute"
-	attributeSource = "attribute"
-)
-
 var (
 	errIPNotFound        = errors.New("no IP address found in the resource attributes")
 	errParseIP           = errors.New("could not parse IP address")

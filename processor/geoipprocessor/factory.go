@@ -52,10 +52,7 @@ func getProviderFactory(key string) (provider.GeoIPProviderFactory, bool) {
 // createDefaultConfig returns a default configuration for the processor.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Source: SourceConfig{
-			// set `resource_attribute` as the default source of the the IP address.
-			From: resourceSource,
-		},
+		Context: ContextID(resource),
 	}
 }
 
