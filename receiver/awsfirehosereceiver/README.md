@@ -56,6 +56,8 @@ See the [Record Types](#record-types) section for all available options.
 The access key to be checked on each request received. This can be set when creating or updating the delivery stream.
 See [documentation](https://docs.aws.amazon.com/firehose/latest/dev/create-destination.html#create-destination-http) for details.
 
+If a key is configured in the receiver, it is checked in all incoming requests.  If no key is configured or it is the empty string, any incoming key is accepted, including no key.
+
 ## Record Types
 
 ### cwmetrics
