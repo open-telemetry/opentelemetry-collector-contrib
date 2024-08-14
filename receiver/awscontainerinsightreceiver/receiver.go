@@ -142,7 +142,7 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 	hostName string, kubeletClient *kubeletutil.KubeletClient) error {
 	k8sDecorator, err := stores.NewK8sDecorator(ctx, kubeletClient, acir.config.TagService, acir.config.PrefFullPodName,
 		acir.config.AddFullPodNameMetricLabel, acir.config.AddContainerNameMetricLabel,
-		acir.config.EnableControlPlaneMetrics, acir.config.KubeConfigPath, hostName,
+		acir.config.EnableControlPlaneMetrics, acir.config.EnableAcceleratedComputeMetrics, acir.config.KubeConfigPath, hostName,
 		acir.config.RunOnSystemd, acir.settings.Logger)
 	if err != nil {
 		acir.settings.Logger.Warn("Unable to start K8s decorator", zap.Error(err))
@@ -177,7 +177,7 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 			acir.settings.Logger.Warn("Unable to elect leader node", zap.Error(err))
 		}
 
-		acir.k8sapiserver, err = k8sapiserver.NewK8sAPIServer(hostInfo, acir.settings.Logger, leaderElection, acir.config.AddFullPodNameMetricLabel, acir.config.EnableControlPlaneMetrics, acir.config.EnableAcceleratedComputeMetrics)
+		acir.k8sapiserver, err = k8sapiserver.NewK8sAPIServer(hostInfo, acir.settings.Logger, leaderElection, acir.config.AddFullPodNameMetricLabel, acir.config.EnableControlPlaneMetrics)
 		if err != nil {
 			acir.k8sapiserver = nil
 			acir.settings.Logger.Warn("Unable to connect to api-server", zap.Error(err))

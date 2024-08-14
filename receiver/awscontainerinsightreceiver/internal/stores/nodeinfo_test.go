@@ -97,6 +97,18 @@ func TestGetNodeStatusAllocatablePods(t *testing.T) {
 	assert.Equal(t, uint64(0), nodeStatusAllocatablePods)
 }
 
+func TestGetNodeStatusCapacityGPUs(t *testing.T) {
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCapacityGPUs, valid := nodeInfo.getNodeStatusCapacityGPUs()
+	assert.True(t, valid)
+	assert.Equal(t, uint64(20), nodeStatusCapacityGPUs)
+
+	nodeInfo = newNodeInfo("testNode2", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCapacityGPUs, valid = nodeInfo.getNodeStatusCapacityGPUs()
+	assert.True(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCapacityGPUs)
+}
+
 func TestGetNodeStatusCondition(t *testing.T) {
 	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
 	nodeStatusCondition, valid := nodeInfo.getNodeStatusCondition(v1.NodeReady)

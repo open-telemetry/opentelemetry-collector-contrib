@@ -7,13 +7,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type NodeInfo struct {
-	Name         string
-	Conditions   []*NodeCondition
-	Capacity     v1.ResourceList
-	Allocatable  v1.ResourceList
-	ProviderID   string
-	InstanceType string
+type nodeInfo struct {
+	name        string
+	conditions  []*NodeCondition
+	capacity    v1.ResourceList
+	allocatable v1.ResourceList
 }
 
 type NodeCondition struct {

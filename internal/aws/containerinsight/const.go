@@ -141,9 +141,10 @@ const (
 	EfaRxDropped          = "rx_dropped"
 	EfaTxBytes            = "tx_bytes"
 
-	GpuLimit   = "gpu_limit"
-	GpuTotal   = "gpu_total"
-	GpuRequest = "gpu_request"
+	GpuLimit            = "gpu_limit"
+	GpuUsageTotal       = "gpu_usage_total"
+	GpuRequest          = "gpu_request"
+	GpuReservedCapacity = "gpu_reserved_capacity"
 
 	// Define the metric types
 	TypeCluster            = "Cluster"
@@ -325,8 +326,9 @@ func init() {
 		EfaRxDropped:          UnitCountPerSec,
 		EfaTxBytes:            UnitBytesPerSec,
 
-		GpuLimit:   UnitCount,
-		GpuTotal:   UnitCount,
-		GpuRequest: UnitCount,
+		GpuLimit:            UnitCount,
+		GpuUsageTotal:       UnitCount,
+		GpuRequest:          UnitCount,
+		GpuReservedCapacity: UnitPercent,
 	}
 }

@@ -81,11 +81,13 @@ func getBaseTestPodInfo() *corev1.Pod {
             "resources": {
               "limits": {
                 "cpu": "10m",
-                "memory": "50Mi"
+                "memory": "50Mi",
+				"nvidia.com/gpu": "1"
               },
               "requests": {
                 "cpu": "10m",
-                "memory": "50Mi"
+                "memory": "50Mi",
+				"nvidia.com/gpu": "1"
               }
             },
             "volumeMounts": [
@@ -279,6 +281,27 @@ func TestPodStore_decorateMem(t *testing.T) {
 	podStore.decorateMem(metric, pod)
 
 	assert.Equal(t, float64(20), metric.GetField("container_memory_utilization_over_container_limit").(float64))
+}
+
+func TestPodStore_decorateGpu(t *testing.T) {
+	podStore := getPodStore()
+	defer require.NoError(t, podStore.Shutdown())
+
+	pod := getBaseTestPodInfo()
+
+	// test pod metrics
+	tags := map[string]string{ci.MetricType: ci.TypePod}
+	fields := map[string]any{}
+
+	metric := generateMetric(fields, tags)
+	podStore.includeEnhancedMetrics = true
+	podStore.enableAcceleratedComputeMetrics = true
+	podStore.decorateGPU(metric, pod)
+
+	assert.Equal(t, uint64(1), metric.GetField("pod_gpu_request").(uint64))
+	assert.Equal(t, uint64(1), metric.GetField("pod_gpu_limit").(uint64))
+	assert.Equal(t, uint64(1), metric.GetField("pod_gpu_usage_total").(uint64))
+	assert.Equal(t, float64(5), metric.GetField("pod_gpu_reserved_capacity").(float64))
 }
 
 func TestPodStore_previousCleanupLocking(_ *testing.T) {
@@ -956,7 +979,13 @@ func TestPodStore_decorateNode(t *testing.T) {
 	assert.False(t, metric.HasField("node_status_allocatable_pods"))
 
 	podStore.includeEnhancedMetrics = true
+	podStore.enableAcceleratedComputeMetrics = true
 	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(1), metric.GetField("node_gpu_request").(uint64))
+	assert.Equal(t, uint64(20), metric.GetField("node_gpu_limit").(uint64))
+	assert.Equal(t, uint64(1), metric.GetField("node_gpu_usage_total").(uint64))
+	assert.Equal(t, float64(5), metric.GetField("node_gpu_reserved_capacity").(float64))
 
 	assert.Equal(t, uint64(1), metric.GetField("node_status_condition_ready").(uint64))
 	assert.Equal(t, uint64(0), metric.GetField("node_status_condition_disk_pressure").(uint64))

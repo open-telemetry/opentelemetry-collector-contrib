@@ -58,7 +58,7 @@ type Config struct {
 	// The default value is false.
 	EnableControlPlaneMetrics bool `mapstructure:"enable_control_plane_metrics"`
 
-	// EnableAcceleratedComputeMetrics enabled features with accelerated compute resources where metrics are scraped from vendor specific sources
+	// EnableAcceleratedComputeMetrics enables features with accelerated compute resources where metrics are scraped from vendor specific sources
 	EnableAcceleratedComputeMetrics bool `mapstructure:"accelerated_compute_metrics"`
 
 	// KubeConfigPath is an optional attribute to override the default kube config path in an EC2 environment

@@ -9,13 +9,16 @@ import (
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type nodeStats struct {
-	podCnt       int
-	containerCnt int
-	cpuReq       uint64
-	memReq       uint64
+	podCnt        int
+	containerCnt  int
+	cpuReq        uint64
+	memReq        uint64
+	gpuReq        uint64
+	gpuUsageTotal uint64
 }
 
 type nodeInfo struct {
@@ -101,6 +104,15 @@ func (n *nodeInfo) getNodeStatusAllocatablePods() (uint64, bool) {
 	}
 	pods, _ := allocatableResources.Pods().AsInt64()
 	return forceConvertToInt64(pods, n.logger), true
+}
+
+func (n *nodeInfo) getNodeStatusCapacityGPUs() (uint64, bool) {
+	capacityResources, ok := n.provider.NodeToCapacityMap()[n.nodeName]
+	if !ok {
+		return 0, false
+	}
+	gpus := capacityResources.Name(resourceSpecNvidiaGpuKey, resource.DecimalExponent).Value()
+	return forceConvertToInt64(gpus, n.logger), true
 }
 
 func (n *nodeInfo) getNodeStatusCondition(conditionType v1.NodeConditionType) (uint64, bool) {

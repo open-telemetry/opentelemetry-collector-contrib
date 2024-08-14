@@ -431,6 +431,10 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 		"node_network_tx_packets":             37.802748111760124,
 		"node_number_of_running_containers":   int32(7),
 		"node_number_of_running_pods":         int64(7),
+		"node_gpu_request":                    int32(7),
+		"node_gpu_limit":                      int32(7),
+		"node_gpu_usage_total":                int32(7),
+		"node_gpu_reserved_capacity":          3.0093851356081194,
 	}
 	expectedUnits = map[string]string{
 		"node_cpu_limit":                      "",
@@ -467,6 +471,10 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 		"node_network_tx_packets":             UnitCountPerSec,
 		"node_number_of_running_containers":   UnitCount,
 		"node_number_of_running_pods":         UnitCount,
+		"node_gpu_request":                    UnitCount,
+		"node_gpu_limit":                      UnitCount,
+		"node_gpu_usage_total":                UnitCount,
+		"node_gpu_reserved_capacity":          UnitPercent,
 	}
 	tags = map[string]string{
 		"AutoScalingGroupName": "eks-a6bb9db9-267c-401c-db55-df8ef645b06f",
@@ -716,6 +724,10 @@ func TestConvertToOTLPMetricsForPodMetrics(t *testing.T) {
 		"pod_status_unknown":                    0,
 		"pod_status_ready":                      1,
 		"pod_status_scheduled":                  1,
+		"pod_gpu_request":                       1,
+		"pod_gpu_limit":                         1,
+		"pod_gpu_usage_total":                   1,
+		"pod_gpu_reserved_capacity":             2.3677681271483983,
 	}
 	expectedUnits = map[string]string{
 		"pod_cpu_limit":                         "",
@@ -762,6 +774,10 @@ func TestConvertToOTLPMetricsForPodMetrics(t *testing.T) {
 		"pod_status_unknown":                    UnitCount,
 		"pod_status_ready":                      UnitCount,
 		"pod_status_scheduled":                  UnitCount,
+		"pod_gpu_request":                       UnitCount,
+		"pod_gpu_limit":                         UnitCount,
+		"pod_gpu_usage_total":                   UnitCount,
+		"pod_gpu_reserved_capacity":             UnitPercent,
 	}
 	tags = map[string]string{
 		"ClusterName":  "eks-aoc",
@@ -907,40 +923,6 @@ func TestConvertToOTLPMetricsForPodEfaMetrics(t *testing.T) {
 		"PodName":       "cloudwatch-agent",
 		"ContainerName": "cloudwatch-agent",
 		"Type":          "PodEFA",
-		"Version":       "0",
-		"Timestamp":     timestamp,
-	}
-	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
-	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
-}
-
-func TestConvertToOTLPMetricsForAcceleratorCountMetrics(t *testing.T) {
-	var fields map[string]any
-	var expectedUnits map[string]string
-	var tags map[string]string
-	var md pmetric.Metrics
-	now := time.Now()
-	timestamp := strconv.FormatInt(now.UnixNano(), 10)
-
-	fields = map[string]any{
-		"pod_gpu_limit":   int64(3),
-		"pod_gpu_total":   int64(3),
-		"pod_gpu_request": int64(3),
-	}
-	expectedUnits = map[string]string{
-		"pod_gpu_limit":   UnitCount,
-		"pod_gpu_total":   UnitCount,
-		"pod_gpu_request": UnitCount,
-	}
-	tags = map[string]string{
-		"ClusterName":   "eks-aoc",
-		"InstanceId":    "i-01bf9fb097cbf3205",
-		"InstanceType":  "t2.xlarge",
-		"Namespace":     "amazon-cloudwatch",
-		"NodeName":      "ip-192-168-12-170.ec2.internal",
-		"PodName":       "cloudwatch-agent",
-		"ContainerName": "cloudwatch-agent",
-		"Type":          "PodGPU",
 		"Version":       "0",
 		"Timestamp":     timestamp,
 	}

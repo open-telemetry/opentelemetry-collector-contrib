@@ -22,6 +22,7 @@ const (
 	// https://github.com/kubernetes/apimachinery/blob/master/pkg/util/rand/rand.go#L83
 	kubeAllowedStringAlphaNums = "bcdfghjklmnpqrstvwxz2456789"
 	cronJobAllowedString       = "0123456789"
+	resourceSpecNvidiaGpuKey   = "nvidia.com/gpu"
 )
 
 func createPodKeyFromMetaData(pod *corev1.Pod) string {

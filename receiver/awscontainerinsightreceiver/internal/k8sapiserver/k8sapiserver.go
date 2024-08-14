@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -62,7 +61,6 @@ type K8sAPIServer struct {
 	leaderElection            *LeaderElection
 	addFullPodNameMetricLabel bool
 	includeEnhancedMetrics    bool
-	enableAcceleratedMetrics  bool
 }
 
 type clusterNameProvider interface {
@@ -72,7 +70,7 @@ type clusterNameProvider interface {
 type Option func(*K8sAPIServer)
 
 // NewK8sAPIServer creates a k8sApiServer which can generate cluster-level metrics
-func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection *LeaderElection, addFullPodNameMetricLabel bool, includeEnhancedMetrics bool, enableAcceleratedMetrics bool, options ...Option) (*K8sAPIServer, error) {
+func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection *LeaderElection, addFullPodNameMetricLabel bool, includeEnhancedMetrics bool, options ...Option) (*K8sAPIServer, error) {
 
 	k := &K8sAPIServer{
 		logger:                    logger,
@@ -80,7 +78,6 @@ func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection
 		leaderElection:            leaderElection,
 		addFullPodNameMetricLabel: addFullPodNameMetricLabel,
 		includeEnhancedMetrics:    includeEnhancedMetrics,
-		enableAcceleratedMetrics:  enableAcceleratedMetrics,
 	}
 
 	for _, opt := range options {
@@ -128,9 +125,6 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	result = append(result, k.getStatefulSetMetrics(clusterName, timestampNs)...)
 	result = append(result, k.getReplicaSetMetrics(clusterName, timestampNs)...)
 	result = append(result, k.getPendingPodStatusMetrics(clusterName, timestampNs)...)
-	if k.enableAcceleratedMetrics {
-		result = append(result, k.getAcceleratorCountMetrics(clusterName, timestampNs)...)
-	}
 
 	return result
 }
@@ -357,7 +351,7 @@ func (k *K8sAPIServer) getPendingPodStatusMetrics(clusterName, timestampNs strin
 			}
 
 			attributes[ci.PodStatus] = string(v1.PodPending)
-			attributes["k8s.node.name"] = pendingNodeName
+			attributes["k8s.node.name"] = "pending"
 
 			kubernetesBlob := map[string]any{}
 			k.getKubernetesBlob(podInfo, kubernetesBlob, attributes)
@@ -446,95 +440,6 @@ func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob 
 		attributes[ci.AttributeFullPodName] = pod.Name
 		kubernetesBlob["pod_name"] = pod.Name
 	}
-}
-
-func (k *K8sAPIServer) getAcceleratorCountMetrics(clusterName, timestampNs string) []pmetric.Metrics {
-	var metrics []pmetric.Metrics
-	podsList := k.leaderElection.podClient.PodInfos()
-	nodeInfos := k.leaderElection.nodeClient.NodeInfos()
-	podKeyToServiceNamesMap := k.leaderElection.epClient.PodKeyToServiceNames()
-	for _, podInfo := range podsList {
-		// only care for pending and running pods
-		if podInfo.Phase != v1.PodPending && podInfo.Phase != v1.PodRunning {
-			continue
-		}
-
-		fields := map[string]any{}
-
-		var podLimit, podRequest, podTotal int64
-		var gpuAllocated bool
-		for _, container := range podInfo.Containers {
-			// check if at least 1 container is using gpu to add count metrics for a pod
-			_, found := container.Resources.Limits[resourceSpecNvidiaGpuKey]
-			gpuAllocated = gpuAllocated || found
-
-			if len(container.Resources.Limits) == 0 {
-				continue
-			}
-			podRequest += container.Resources.Requests.Name(resourceSpecNvidiaGpuKey, resource.DecimalExponent).Value()
-			limit := container.Resources.Limits.Name(resourceSpecNvidiaGpuKey, resource.DecimalExponent).Value()
-			// still counting pending pods to get total # of limit from spec
-			podLimit += limit
-
-			// sum of running pods only. a pod will be stuck in pending state when there is less or no gpu available than limit value
-			// e.g. limit=2,available=1 - *_gpu_limit=2, *_gpu_request=2, *_gpu_total=0
-			// request value is optional and must be equal to limit https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/
-			if podInfo.Phase == v1.PodRunning {
-				podTotal += limit
-			}
-		}
-		// skip adding gpu count metrics when none of containers has gpu resource allocated
-		if !gpuAllocated {
-			continue
-		}
-		// add pod level count metrics here then metricstransformprocessor will duplicate to node/cluster level metrics
-		fields[ci.MetricName(ci.TypePod, ci.GpuLimit)] = podLimit
-		fields[ci.MetricName(ci.TypePod, ci.GpuRequest)] = podRequest
-		fields[ci.MetricName(ci.TypePod, ci.GpuTotal)] = podTotal
-
-		attributes := map[string]string{
-			ci.ClusterNameKey:        clusterName,
-			ci.MetricType:            ci.TypePodGPU,
-			ci.Timestamp:             timestampNs,
-			ci.AttributeK8sNamespace: podInfo.Namespace,
-			ci.Version:               "0",
-		}
-
-		podKey := k8sutil.CreatePodKey(podInfo.Namespace, podInfo.Name)
-		if serviceList, ok := podKeyToServiceNamesMap[podKey]; ok {
-			if len(serviceList) > 0 {
-				attributes[ci.TypeService] = serviceList[0]
-			}
-		}
-
-		kubernetesBlob := map[string]any{}
-		k.getKubernetesBlob(podInfo, kubernetesBlob, attributes)
-		if podInfo.NodeName != "" {
-			// decorate with instance ID and type attributes which become dimensions for node_gpu_* metrics
-			attributes[ci.NodeNameKey] = podInfo.NodeName
-			kubernetesBlob["host"] = podInfo.NodeName
-			if nodeInfo, ok := nodeInfos[podInfo.NodeName]; ok {
-				attributes[ci.InstanceID] = k8sutil.ParseInstanceIDFromProviderID(nodeInfo.ProviderID)
-				attributes[ci.InstanceType] = nodeInfo.InstanceType
-			}
-		} else {
-			// fallback when node name is not available
-			attributes[ci.NodeNameKey] = pendingNodeName
-			kubernetesBlob["host"] = pendingNodeName
-		}
-		if len(kubernetesBlob) > 0 {
-			kubernetesInfo, err := json.Marshal(kubernetesBlob)
-			if err != nil {
-				k.logger.Warn("Error parsing kubernetes blob for pod metrics")
-			} else {
-				attributes[ci.AttributeKubernetes] = string(kubernetesInfo)
-			}
-		}
-		attributes[ci.SourcesKey] = "[\"apiserver\"]"
-		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
-		metrics = append(metrics, md)
-	}
-	return metrics
 }
 
 // Shutdown stops the k8sApiServer

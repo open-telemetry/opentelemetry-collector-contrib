@@ -28,6 +28,7 @@ const (
 	podsExpiry         = 2 * time.Minute
 	memoryKey          = "memory"
 	cpuKey             = "cpu"
+	gpuKey             = "nvidia.com/gpu"
 	splitRegexStr      = "\\.|-"
 	kubeProxy          = "kube-proxy"
 )
@@ -109,19 +110,19 @@ type podClient interface {
 type PodStore struct {
 	cache *mapWithExpiry
 	// prevMeasurements per each Type (Pod, Container, etc)
-	prevMeasurements          sync.Map // map[string]*mapWithExpiry
-	podClient                 podClient
-	k8sClient                 replicaSetInfoProvider
-	lastRefreshed             time.Time
-	nodeInfo                  *nodeInfo
-	prefFullPodName           bool
-	logger                    *zap.Logger
-	addFullPodNameMetricLabel bool
-	includeEnhancedMetrics    bool
+	prevMeasurements                sync.Map // map[string]*mapWithExpiry
+	podClient                       podClient
+	k8sClient                       replicaSetInfoProvider
+	lastRefreshed                   time.Time
+	nodeInfo                        *nodeInfo
+	prefFullPodName                 bool
+	logger                          *zap.Logger
+	addFullPodNameMetricLabel       bool
+	includeEnhancedMetrics          bool
+	enableAcceleratedComputeMetrics bool
 }
 
-func NewPodStore(client podClient, prefFullPodName bool, addFullPodNameMetricLabel bool,
-	includeEnhancedMetrics bool, hostName string, isSystemdEnabled bool, logger *zap.Logger) (*PodStore, error) {
+func NewPodStore(client podClient, prefFullPodName bool, addFullPodNameMetricLabel bool, includeEnhancedMetrics bool, enableAcceleratedComputeMetrics bool, hostName string, isSystemdEnabled bool, logger *zap.Logger) (*PodStore, error) {
 	if hostName == "" {
 		return nil, fmt.Errorf("missing environment variable %s. Please check your deployment YAML config or passed as part of the agent config", ci.HostName)
 	}
@@ -147,13 +148,14 @@ func NewPodStore(client podClient, prefFullPodName bool, addFullPodNameMetricLab
 		cache:            newMapWithExpiry(podsExpiry),
 		prevMeasurements: sync.Map{},
 		//prevMeasurements:          make(map[string]*mapWithExpiry),
-		podClient:                 client,
-		nodeInfo:                  nodeInfo,
-		prefFullPodName:           prefFullPodName,
-		includeEnhancedMetrics:    includeEnhancedMetrics,
-		k8sClient:                 k8sClient,
-		logger:                    logger,
-		addFullPodNameMetricLabel: addFullPodNameMetricLabel,
+		podClient:                       client,
+		nodeInfo:                        nodeInfo,
+		prefFullPodName:                 prefFullPodName,
+		includeEnhancedMetrics:          includeEnhancedMetrics,
+		enableAcceleratedComputeMetrics: enableAcceleratedComputeMetrics,
+		k8sClient:                       k8sClient,
+		logger:                          logger,
+		addFullPodNameMetricLabel:       addFullPodNameMetricLabel,
 	}
 
 	return podStore, nil
@@ -239,6 +241,7 @@ func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob
 		if entry.pod.Name != "" {
 			p.decorateCPU(metric, &entry.pod)
 			p.decorateMem(metric, &entry.pod)
+			p.decorateGPU(metric, &entry.pod)
 			p.addStatus(metric, &entry.pod)
 			addContainerCount(metric, &entry.pod)
 			addContainerID(&entry.pod, metric, kubernetesBlob, p.logger)
@@ -292,6 +295,8 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 	var containerCount int
 	var cpuRequest uint64
 	var memRequest uint64
+	var gpuRequest uint64
+	var gpuUsageTotal uint64
 
 	for i := range podList {
 		pod := podList[i]
@@ -306,6 +311,13 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 			cpuRequest += tmpCPUReq
 			tmpMemReq, _ := getResourceSettingForPod(&pod, p.nodeInfo.getMemCapacity(), memoryKey, getRequestForContainer)
 			memRequest += tmpMemReq
+			if tmpGpuLimit, ok := getResourceSettingForPod(&pod, 0, gpuKey, getLimitForContainer); ok {
+				tmpGpuReq, _ := getResourceSettingForPod(&pod, 0, gpuKey, getRequestForContainer)
+				gpuRequest += tmpGpuReq
+				if pod.Status.Phase == corev1.PodRunning {
+					gpuUsageTotal += tmpGpuLimit
+				}
+			}
 		}
 		if pod.Status.Phase == corev1.PodRunning {
 			podCount++
@@ -319,10 +331,18 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 
 		p.setCachedEntry(podKey, &cachedEntry{
 			pod:      pod,
-			creation: now})
+			creation: now,
+		})
 	}
 
-	p.nodeInfo.setNodeStats(nodeStats{podCnt: podCount, containerCnt: containerCount, memReq: memRequest, cpuReq: cpuRequest})
+	p.nodeInfo.setNodeStats(nodeStats{
+		podCnt:        podCount,
+		containerCnt:  containerCount,
+		memReq:        memRequest,
+		cpuReq:        cpuRequest,
+		gpuReq:        gpuRequest,
+		gpuUsageTotal: gpuUsageTotal,
+	})
 }
 
 func (p *PodStore) decorateNode(metric CIMetric) {
@@ -379,6 +399,34 @@ func (p *PodStore) decorateNode(metric CIMetric) {
 		}
 		if nodeStatusConditionUnknown, ok := p.nodeInfo.getNodeConditionUnknown(); ok {
 			metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusConditionUnknown), nodeStatusConditionUnknown)
+		}
+		if p.enableAcceleratedComputeMetrics {
+			if nodeStatusCapacityGPUs, ok := p.nodeInfo.getNodeStatusCapacityGPUs(); ok && nodeStatusCapacityGPUs != 0 {
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuRequest), nodeStats.gpuReq)
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuLimit), nodeStatusCapacityGPUs)
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuUsageTotal), nodeStats.gpuUsageTotal)
+				metric.AddField(ci.MetricName(ci.TypeNode, ci.GpuReservedCapacity), float64(nodeStats.gpuReq)/float64(nodeStatusCapacityGPUs)*100)
+			}
+		}
+	}
+}
+
+func (p *PodStore) decorateGPU(metric CIMetric, pod *corev1.Pod) {
+	if p.includeEnhancedMetrics && p.enableAcceleratedComputeMetrics && metric.GetTag(ci.MetricType) == ci.TypePod &&
+		pod.Status.Phase != corev1.PodSucceeded && pod.Status.Phase != corev1.PodFailed {
+
+		if podGpuLimit, ok := getResourceSettingForPod(pod, 0, gpuKey, getLimitForContainer); ok {
+			podGpuRequest, _ := getResourceSettingForPod(pod, 0, gpuKey, getRequestForContainer)
+			metric.AddField(ci.MetricName(ci.TypePod, ci.GpuRequest), podGpuRequest)
+			metric.AddField(ci.MetricName(ci.TypePod, ci.GpuLimit), podGpuLimit)
+			var podGpuUsageTotal uint64
+			if pod.Status.Phase == corev1.PodRunning { // Set the GPU limit as the usage_total for running pods only
+				podGpuUsageTotal = podGpuLimit
+			}
+			metric.AddField(ci.MetricName(ci.TypePod, ci.GpuUsageTotal), podGpuUsageTotal)
+			if nodeStatusCapacityGPUs, ok := p.nodeInfo.getNodeStatusCapacityGPUs(); ok && nodeStatusCapacityGPUs != 0 {
+				metric.AddField(ci.MetricName(ci.TypePod, ci.GpuReservedCapacity), float64(podGpuLimit)/float64(nodeStatusCapacityGPUs)*100)
+			}
 		}
 	}
 }

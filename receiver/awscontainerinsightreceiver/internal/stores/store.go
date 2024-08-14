@@ -43,15 +43,16 @@ type K8sDecorator struct {
 	podStore *PodStore
 }
 
-func NewK8sDecorator(ctx context.Context, kubeletClient *kubeletutil.KubeletClient, tagService bool, prefFullPodName bool, addFullPodNameMetricLabel bool,
-	addContainerNameMetricLabel bool, includeEnhancedMetrics bool, kubeConfigPath string,
-	hostName string, isSystemd bool, logger *zap.Logger) (*K8sDecorator, error) {
+func NewK8sDecorator(ctx context.Context, kubeletClient *kubeletutil.KubeletClient, tagService bool, prefFullPodName bool,
+	addFullPodNameMetricLabel bool, addContainerNameMetricLabel bool, includeEnhancedMetrics bool, enableAcceleratedComputeMetrics bool,
+	kubeConfigPath string, hostName string, isSystemd bool, logger *zap.Logger) (*K8sDecorator, error) {
+
 	k := &K8sDecorator{
 		ctx:                         ctx,
 		addContainerNameMetricLabel: addContainerNameMetricLabel,
 	}
 
-	podstore, err := NewPodStore(kubeletClient, prefFullPodName, addFullPodNameMetricLabel, includeEnhancedMetrics, hostName, isSystemd, logger)
+	podstore, err := NewPodStore(kubeletClient, prefFullPodName, addFullPodNameMetricLabel, includeEnhancedMetrics, enableAcceleratedComputeMetrics, hostName, isSystemd, logger)
 	if err != nil {
 		return nil, err
 	}
