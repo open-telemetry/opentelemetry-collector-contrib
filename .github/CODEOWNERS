@@ -137,6 +137,7 @@ internal/kubelet/                                                   @open-teleme
 internal/metadataproviders/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 internal/otelarrow/                                                 @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3
 internal/pdatautil/                                                 @open-telemetry/collector-contrib-approvers @djaglowski
+internal/rabbitmq/                                                  @open-telemetry/collector-contrib-approvers @swar8080 @atoulme
 internal/sharedcomponent/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/splunk/                                                    @open-telemetry/collector-contrib-approvers @dmitryax
 internal/sqlquery/                                                  @open-telemetry/collector-contrib-approvers @crobert-1 @dmitryax
