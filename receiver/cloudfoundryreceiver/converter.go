@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 const (
@@ -79,6 +80,13 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 			log.SetFlags(plog.LogRecordFlags(flags))
 		}
 	}
+	return nil
+}
+
+func convertEnvelopeToSpan(envelope *loggregator_v2.Envelope, spanSlice ptrace.SpanSlice, startTime time.Time) error {
+	span := spanSlice.AppendEmpty()
+	// TODO
+	copyEnvelopeAttributes(span.Attributes(), envelope)
 	return nil
 }
 

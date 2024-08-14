@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -35,6 +36,7 @@ type cloudFoundryReceiver struct {
 	config            Config
 	nextMetrics       consumer.Metrics
 	nextLogs          consumer.Logs
+	nextTraces        consumer.Traces
 	obsrecv           *receiverhelper.ObsReport
 	goroutines        sync.WaitGroup
 	receiverStartTime time.Time
@@ -88,6 +90,30 @@ func newCloudFoundryLogsReceiver(
 	return result, nil
 }
 
+// newCloudFoundryTracesReceiver creates the Cloud Foundry traces receiver with the given parameters.
+func newCloudFoundryTracesReceiver(
+	settings receiver.Settings,
+	config Config,
+	nextConsumer consumer.Traces) (*cloudFoundryReceiver, error) {
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             settings.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := &cloudFoundryReceiver{
+		settings:          settings.TelemetrySettings,
+		config:            config,
+		nextTraces:        nextConsumer,
+		obsrecv:           obsrecv,
+		receiverStartTime: time.Now(),
+	}
+	return result, nil
+}
+
 func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host) error {
 	tokenProvider, tokenErr := newUAATokenProvider(
 		cfr.settings.Logger,
@@ -129,6 +155,8 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 			cfr.streamLogs(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID))
 		} else if cfr.nextMetrics != nil {
 			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID))
+		} else if cfr.nextTraces != nil {
+			cfr.streamTraces(innerCtx, streamFactory.CreateTracesStream(innerCtx, cfr.config.RLPGateway.ShardID))
 		}
 		cfr.settings.Logger.Debug("cloudfoundry receiver stopped")
 	}()
@@ -211,6 +239,38 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 	}
 }
 
+func (cfr *cloudFoundryReceiver) streamTraces(
+	ctx context.Context,
+	stream loggregator.EnvelopeStream) {
+
+	for {
+		envelopes := stream()
+		if envelopes == nil {
+			if ctx.Err() == nil {
+				cfr.settings.ReportStatus(
+					component.NewFatalErrorEvent(
+						errors.New("RLP gateway trace streamer shut down due to an error"),
+					),
+				)
+			}
+			break
+		}
+		traces := ptrace.NewTraces()
+		libraryTraces := createLibraryTracesSlice(traces)
+		observedTime := time.Now()
+		for _, envelope := range envelopes {
+			if envelope != nil {
+				_ = convertEnvelopeToSpan(envelope, libraryTraces, observedTime)
+			}
+		}
+		if libraryTraces.Len() > 0 {
+			obsCtx := cfr.obsrecv.StartLogsOp(ctx)
+			err := cfr.nextTraces.ConsumeTraces(ctx, traces)
+			cfr.obsrecv.EndLogsOp(obsCtx, dataFormat, traces.SpanCount(), err)
+		}
+	}
+}
+
 func createLibraryMetricsSlice(metrics pmetric.Metrics) pmetric.MetricSlice {
 	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
 	libraryMetrics := resourceMetric.ScopeMetrics().AppendEmpty()
@@ -223,4 +283,11 @@ func createLibraryLogsSlice(logs plog.Logs) plog.LogRecordSlice {
 	libraryLogs := resourceLog.ScopeLogs().AppendEmpty()
 	libraryLogs.Scope().SetName(instrumentationLibName)
 	return libraryLogs.LogRecords()
+}
+
+func createLibraryTracesSlice(traces ptrace.Traces) ptrace.SpanSlice {
+	resourceTrace := traces.ResourceSpans().AppendEmpty()
+	libraryTraces := resourceTrace.ScopeSpans().AppendEmpty()
+	libraryTraces.Scope().SetName(instrumentationLibName)
+	return libraryTraces.Spans()
 }
