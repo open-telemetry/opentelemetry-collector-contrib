@@ -26,7 +26,7 @@ func TestConfig_Validate(t *testing.T) {
 				HuaweiSessionConfig: HuaweiSessionConfig{
 					RegionName: "cn-north-1",
 				},
-				ProjectId: "my_project",
+				ProjectID: "my_project",
 				Period:    300,
 				Filter:    "min",
 			},
@@ -41,7 +41,7 @@ func TestConfig_Validate(t *testing.T) {
 				HuaweiSessionConfig: HuaweiSessionConfig{
 					RegionName: "cn-north-1",
 				},
-				ProjectId: "my_project",
+				ProjectID: "my_project",
 				Period:    100,
 				Filter:    "min",
 			},
@@ -53,7 +53,7 @@ func TestConfig_Validate(t *testing.T) {
 				HuaweiSessionConfig: HuaweiSessionConfig{
 					RegionName: "cn-north-1",
 				},
-				ProjectId: "my_project",
+				ProjectID: "my_project",
 				Period:    300,
 				Filter:    "invalid",
 			},
@@ -65,7 +65,7 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				ProjectId: "my_project",
+				ProjectID: "my_project",
 				Period:    300,
 				Filter:    "min",
 			},
@@ -95,7 +95,7 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				ProjectId: "my_project",
+				ProjectID: "my_project",
 				Period:    300,
 				Filter:    "min",
 			},
@@ -111,7 +111,7 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				ProjectId: "my_project",
+				ProjectID: "my_project",
 				Period:    300,
 				Filter:    "min",
 			},
@@ -129,7 +129,7 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				ProjectId: "my_project",
+				ProjectID: "my_project",
 				Period:    300,
 				Filter:    "min",
 			},
