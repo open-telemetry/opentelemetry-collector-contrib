@@ -4,9 +4,11 @@
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"strconv"
@@ -35,6 +37,7 @@ func HandleHTTPCode(resp *http.Response) error {
 	if resp.Body != nil {
 		var jsonResponse map[string]any
 		bodyString, _ := io.ReadAll(resp.Body)
+		resp.Body = ioutil.NopCloser(bytes.NewBuffer(bodyString))
 		unmarshalError := json.Unmarshal(bodyString, &jsonResponse)
 
 		if unmarshalError == nil {
