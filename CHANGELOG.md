@@ -9,6 +9,8 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ## v0.107.0
 
+This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
+
 ### 🛑 Breaking changes 🛑
 
 - `clickhouseexporter`: Add `compress` option to ClickHouse exporter, with default value of `lz4` (#34365)
@@ -127,7 +129,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `exporter/prometheusremotewrite`: Reduce memory allocations of prometheus remote write exporter "batchtimeseries" when large batch sizes are used (#34269)
 - `clickhouseexporter`: Updated the default logs table to a more optimized schema (#34203)
   Improved partitioning and time range queries.
-- `bearertokenauthextension`: use constant time comparison (#34516)
+- `bearertokenauthextension`: use constant time comparison. This fixes CVE-2024-42368 (#34516)
 - `processor/k8sattributes`: Add support for `container.image.repo_digests` metadata (#34029)
 - `datadogconnector`: Move feature gate `connector.datadogconnector.NativeIngest` to beta (#34549)
   When this feature gate is enabled (default), the datadog connector uses the new API to produce APM stats under the hood. | The new API has better throughput when your spans have many attributes (especially container related attributes). Funtional-wise the new API should have no user-facing change compared to the old API. | However if you observe any unexpected behaviors, you can disable this feature gate to revert to the old stats processing APIs.
