@@ -178,20 +178,19 @@ func TestTranslateCheckRun(t *testing.T) {
 				},
 			},
 			expect: func(t *testing.T, result pmetric.Metrics) {
-				expectedResourceAttrs, expectedScopeAttrs, expectedDpAttrs := tagsToAttributes([]string{}, "", newStringPool())
-				requireResourceMetrics(t, result, expectedResourceAttrs, 1)
+				expectedAttrs := tagsToAttributes([]string{}, "", newStringPool())
+				require.Equal(t, 1, result.ResourceMetrics().Len())
+				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				require.Equal(t, 1, result.MetricCount())
 				require.Equal(t, 1, result.DataPointCount())
 
-				requireScopeMetrics(t, result, 1, 1)
-
-				requireScope(t, result, expectedScopeAttrs, "otelcol/datadogreceiver", component.NewDefaultBuildInfo().Version)
+				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 				requireGauge(t, metric, "service_check", 1)
 
 				dp := metric.Gauge().DataPoints().At(0)
-				requireDp(t, dp, expectedDpAttrs, 1700000000, 0)
+				requireDp(t, dp, expectedAttrs.dp, 1700000000, 0)
 			},
 		},
 		{
@@ -205,20 +204,19 @@ func TestTranslateCheckRun(t *testing.T) {
 				},
 			},
 			expect: func(t *testing.T, result pmetric.Metrics) {
-				expectedResourceAttrs, expectedScopeAttrs, expectedDpAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "foo", newStringPool())
-				requireResourceMetrics(t, result, expectedResourceAttrs, 1)
+				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "foo", newStringPool())
+				require.Equal(t, 1, result.ResourceMetrics().Len())
+				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				require.Equal(t, 1, result.MetricCount())
 				require.Equal(t, 1, result.DataPointCount())
 
-				requireScopeMetrics(t, result, 1, 1)
-
-				requireScope(t, result, expectedScopeAttrs, "otelcol/datadogreceiver", component.NewDefaultBuildInfo().Version)
+				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 				requireGauge(t, metric, "service_check", 1)
 
 				dp := metric.Gauge().DataPoints().At(0)
-				requireDp(t, dp, expectedDpAttrs, 0, 0)
+				requireDp(t, dp, expectedAttrs.dp, 0, 0)
 			},
 		},
 	}
@@ -312,7 +310,7 @@ func TestTranslateCheckRunStatuses(t *testing.T) {
 
 			requireScopeMetrics(t, result, 1, 1)
 
-			requireScope(t, result, pcommon.NewMap(), "otelcol/datadogreceiver", component.NewDefaultBuildInfo().Version)
+			requireScope(t, result, pcommon.NewMap(), component.NewDefaultBuildInfo().Version)
 
 			metrics := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			for i := 0; i < metrics.Len(); i++ {

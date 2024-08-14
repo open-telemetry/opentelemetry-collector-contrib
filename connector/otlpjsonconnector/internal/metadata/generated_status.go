@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("otlpjson")
+	Type      = component.MustNewType("otlpjson")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector"
 )
 
 const (
-	LogsToMetricsStability = component.StabilityLevelDevelopment
-	LogsToTracesStability  = component.StabilityLevelDevelopment
-	LogsToLogsStability    = component.StabilityLevelDevelopment
+	LogsToMetricsStability = component.StabilityLevelAlpha
+	LogsToTracesStability  = component.StabilityLevelAlpha
+	LogsToLogsStability    = component.StabilityLevelAlpha
 )

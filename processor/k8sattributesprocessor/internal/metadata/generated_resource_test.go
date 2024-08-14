@@ -15,6 +15,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb := NewResourceBuilder(cfg)
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerImageRepoDigests([]any{"container.image.repo_digests-item1", "container.image.repo_digests-item2"})
 			rb.SetContainerImageTag("container.image.tag-val")
 			rb.SetK8sClusterUID("k8s.cluster.uid-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
@@ -45,7 +46,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 8, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 24, res.Attributes().Len())
+				assert.Equal(t, 25, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -62,6 +63,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "container.image.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("container.image.repo_digests")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, []any{"container.image.repo_digests-item1", "container.image.repo_digests-item2"}, val.Slice().AsRaw())
 			}
 			val, ok = res.Attributes().Get("container.image.tag")
 			assert.True(t, ok)

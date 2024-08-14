@@ -9,13 +9,17 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"errors"
+	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync/atomic"
@@ -36,6 +40,7 @@ import (
 	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
@@ -74,10 +79,17 @@ type testingOpAMPServer struct {
 	addr                string
 	supervisorConnected chan bool
 	sendToSupervisor    func(*protobufs.ServerToAgent)
+	start               func()
 	shutdown            func()
 }
 
 func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, callbacks server.ConnectionCallbacksStruct) *testingOpAMPServer {
+	s := newUnstartedOpAMPServer(t, connectingCallback, callbacks)
+	s.start()
+	return s
+}
+
+func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, callbacks server.ConnectionCallbacksStruct) *testingOpAMPServer {
 	var agentConn atomic.Value
 	var isAgentConnected atomic.Bool
 	var didShutdown atomic.Bool
@@ -108,7 +120,7 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 	require.NoError(t, err)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/opamp", handler)
-	httpSrv := httptest.NewServer(mux)
+	httpSrv := httptest.NewUnstartedServer(mux)
 
 	shutdown := func() {
 		if !didShutdown.Load() {
@@ -135,6 +147,7 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 		addr:                httpSrv.Listener.Addr().String(),
 		supervisorConnected: connectedChan,
 		sendToSupervisor:    send,
+		start:               httpSrv.Start,
 		shutdown:            shutdown,
 	}
 }
@@ -197,6 +210,8 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -238,6 +253,152 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
+func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
+	storageDir := t.TempDir()
+	remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
+
+	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
+	remoteConfigProto := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"": {Body: cfg.Bytes()},
+			},
+		},
+		ConfigHash: hash,
+	}
+	marshalledRemoteConfig, err := proto.Marshal(remoteConfigProto)
+	require.NoError(t, err)
+
+	require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0600))
+
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{
+		OnConnectedFunc: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+	})
+	defer server.shutdown()
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	// Verify the collector runs eventually by pinging the healthcheck extension
+	require.Eventually(t, func() bool {
+		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+		if err != nil {
+			t.Logf("Failed healthcheck: %s", err)
+			return false
+		}
+		require.NoError(t, resp.Body.Close())
+		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 3*time.Second, 100*time.Millisecond)
+
+	// Start the server and wait for the supervisor to connect
+	server.start()
+
+	// Verify supervisor connects to server
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+}
+
+func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
+	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
+
+	configuredChan := make(chan struct{})
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{
+		OnConnectedFunc: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+		OnMessageFunc: func(ctx context.Context, conn types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			lastCfgHash := message.GetRemoteConfigStatus().GetLastRemoteConfigHash()
+			if bytes.Equal(lastCfgHash, hash) {
+				close(configuredChan)
+			}
+
+			return &protobufs.ServerToAgent{}
+		},
+	})
+	defer server.shutdown()
+
+	// The supervisor is started without a running OpAMP server.
+	// The supervisor should start successfully, even if the OpAMP server is stopped.
+	s := newSupervisor(t, "basic", map[string]string{
+		"url": server.addr,
+	})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	// Verify the collector is running by checking the metrics endpoint
+	require.Eventually(t, func() bool {
+		resp, err := http.DefaultClient.Get("http://localhost:8888/metrics")
+		if err != nil {
+			t.Logf("Failed check for prometheus metrics: %s", err)
+			return false
+		}
+		require.NoError(t, resp.Body.Close())
+		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 3*time.Second, 100*time.Millisecond)
+
+	// Start the server and wait for the supervisor to connect
+	server.start()
+
+	// Verify supervisor connects to server
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+
+	// Verify that the collector can run a new config sent to it
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	select {
+	case <-configuredChan:
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "timed out waiting for collector to reconfigure")
+	}
+
+	sampleLog := `{"body":"hello, world"}`
+	n, err := inputFile.WriteString(sampleLog + "\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+
+		n, err = outputFile.Read(logRecord)
+		if !errors.Is(err, io.EOF) {
+			require.NoError(t, err)
+		}
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+
+}
+
 func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	var healthReport atomic.Value
 	var agentConfig atomic.Value
@@ -261,6 +422,8 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -337,6 +500,8 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -392,6 +557,8 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -439,6 +606,8 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -546,6 +715,8 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -639,6 +810,29 @@ func createBadCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
 	return bytes.NewBuffer(colCfg), h.Sum(nil)
 }
 
+func createHealthCheckCollectorConf(t *testing.T) (cfg *bytes.Buffer, hash []byte, remotePort int) {
+	colCfgTpl, err := os.ReadFile(path.Join("testdata", "collector", "healthcheck_config.yaml"))
+	require.NoError(t, err)
+
+	templ, err := template.New("").Parse(string(colCfgTpl))
+	require.NoError(t, err)
+
+	port, err := findRandomPort()
+
+	var confmapBuf bytes.Buffer
+	err = templ.Execute(
+		&confmapBuf,
+		map[string]string{
+			"HealthCheckEndpoint": fmt.Sprintf("localhost:%d", port),
+		},
+	)
+	require.NoError(t, err)
+
+	h := sha256.Sum256(confmapBuf.Bytes())
+
+	return &confmapBuf, h[:], port
+}
+
 // Wait for the Supervisor to connect to or disconnect from the OpAMP server
 func waitForSupervisorConnection(connection chan bool, connected bool) {
 	select {
@@ -674,6 +868,8 @@ func TestSupervisorRestartCommand(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -740,6 +936,8 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 		server.ConnectionCallbacksStruct{})
 
 	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
@@ -800,6 +998,8 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 
 	s := newSupervisor(t, "persistence", map[string]string{"url": initialServer.addr, "storage_dir": tempDir})
 
+	require.Nil(t, s.Start())
+
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
 
 	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
@@ -842,6 +1042,8 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 	defer newServer.shutdown()
 
 	s1 := newSupervisor(t, "persistence", map[string]string{"url": newServer.addr, "storage_dir": tempDir})
+
+	require.Nil(t, s1.Start())
 	defer s1.Shutdown()
 
 	waitForSupervisorConnection(newServer.supervisorConnected, true)
@@ -888,6 +1090,8 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
+	require.Nil(t, s.Start())
+
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	t.Logf("Supervisor connected")
@@ -917,6 +1121,8 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -970,6 +1176,8 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
+	require.Nil(t, s.Start())
+
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	t.Logf("Supervisor connected")
@@ -997,6 +1205,8 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
+
+	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -1011,4 +1221,52 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 	}
 
 	require.Equal(t, newID, uuid.UUID(newRecievedAgentID))
+}
+
+func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
+	// Tests that the agent logs and effective.yaml are written under the storage directory.
+	storageDir := t.TempDir()
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{},
+	)
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	require.Nil(t, s.Start())
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	s.Shutdown()
+
+	t.Logf("Supervisor shutdown")
+
+	// Check config and log files are written in storage dir
+	require.FileExists(t, filepath.Join(storageDir, "agent.log"))
+	require.FileExists(t, filepath.Join(storageDir, "effective.yaml"))
+}
+
+func findRandomPort() (int, error) {
+	l, err := net.Listen("tcp", "localhost:0")
+
+	if err != nil {
+		return 0, err
+	}
+
+	port := l.Addr().(*net.TCPAddr).Port
+
+	err = l.Close()
+
+	if err != nil {
+		return 0, err
+	}
+
+	return port, nil
 }
