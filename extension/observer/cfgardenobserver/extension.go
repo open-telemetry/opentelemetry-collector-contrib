@@ -35,9 +35,8 @@ const (
 
 type cfGardenObserver struct {
 	*observer.EndpointsWatcher
-	cancel   context.CancelFunc
 	config   *Config
-	doneChan <-chan struct{}
+	doneChan chan struct{}
 	logger   *zap.Logger
 	once     *sync.Once
 
@@ -60,9 +59,7 @@ func newObserver(config *Config, logger *zap.Logger) (extension.Extension, error
 		once:       &sync.Once{},
 		containers: make(map[string]garden.ContainerInfo),
 		apps:       make(map[string]*resource.App),
-		cancel: func() {
-			// Safe value provided on initialisation
-		},
+		doneChan:   make(chan struct{}),
 	}
 	g.EndpointsWatcher = observer.NewEndpointsWatcher(g, config.RefreshInterval, logger)
 	return g, nil
@@ -119,10 +116,6 @@ func (g *cfGardenObserver) App(info garden.ContainerInfo) (*resource.App, error)
 }
 
 func (g *cfGardenObserver) Start(_ context.Context, _ component.Host) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	g.cancel = cancel
-	g.doneChan = ctx.Done()
-
 	g.garden = gardenClient.New(gardenConnection.New("unix", g.config.Garden.Endpoint))
 
 	var err error
@@ -158,7 +151,7 @@ func (g *cfGardenObserver) Start(_ context.Context, _ component.Host) error {
 }
 
 func (g *cfGardenObserver) Shutdown(_ context.Context) error {
-	g.cancel()
+	close(g.doneChan)
 	return nil
 }
 
