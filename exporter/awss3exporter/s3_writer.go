@@ -8,7 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"time"
 
@@ -37,7 +37,7 @@ func getTimeKey(time time.Time, partition string) string {
 }
 
 func randomInRange(low, hi int) int {
-	return low + rand.Intn(hi-low)
+	return low + rand.IntN(hi-low)
 }
 
 func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix string, metadata string, fileFormat string, compression configcompression.Type) string {

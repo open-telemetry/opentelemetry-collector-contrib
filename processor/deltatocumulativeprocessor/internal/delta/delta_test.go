@@ -5,7 +5,7 @@ package delta_test
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"sync"
 	"testing"
@@ -91,11 +91,11 @@ func TestAddition(t *testing.T) {
 
 	want := make(map[Idx]int64)
 	for i := 0; i < 100; i++ {
-		stream := streams[rand.Intn(10)]
+		stream := streams[rand.IntN(10)]
 		dp := stream.dp.Clone()
 		dp.SetTimestamp(dp.Timestamp() + pcommon.Timestamp(i))
 
-		val := int64(rand.Intn(255))
+		val := int64(rand.IntN(255))
 		dp.SetIntValue(val)
 		want[stream.idx] += val
 

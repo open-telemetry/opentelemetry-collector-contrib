@@ -4,7 +4,7 @@
 package streams_test
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -82,7 +82,7 @@ func TestDrop(t *testing.T) {
 
 	var want []data.Number
 	maybe := aggr(func(_ streams.Ident, dp data.Number) (data.Number, error) {
-		if rand.Intn(2) == 1 {
+		if rand.IntN(2) == 1 {
 			want = append(want, dp)
 			return dp, nil
 		}

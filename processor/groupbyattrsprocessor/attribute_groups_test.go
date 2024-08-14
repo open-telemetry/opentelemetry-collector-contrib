@@ -5,7 +5,7 @@ package groupbyattrsprocessor
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ func simpleResource() pcommon.Resource {
 	rs.Attributes().PutInt("somekey2", 123)
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("random-", i)
-		v := fmt.Sprint("value-", rand.Intn(100))
+		v := fmt.Sprint("value-", rand.IntN(100))
 		rs.Attributes().PutStr(k, v)
 	}
 	return rs
@@ -31,7 +31,7 @@ func randomAttributeMap() pcommon.Map {
 	attrs := pcommon.NewMap()
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("key-", i)
-		v := fmt.Sprint("value-", rand.Intn(500000))
+		v := fmt.Sprint("value-", rand.IntN(500000))
 		attrs.PutStr(k, v)
 	}
 	return attrs
@@ -150,6 +150,6 @@ func BenchmarkAttrGrouping(b *testing.B) {
 	lg := newLogsGroup()
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		lg.findOrCreateResourceLogs(res, groups[rand.Intn(count)])
+		lg.findOrCreateResourceLogs(res, groups[rand.IntN(count)])
 	}
 }

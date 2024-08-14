@@ -5,7 +5,7 @@ package cwlogs
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"testing"
 	"time"

@@ -5,7 +5,7 @@ package arrow // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
-	"math/rand"
+	"math/rand/v2"
 	"runtime"
 	"sort"
 	"time"
@@ -85,8 +85,8 @@ func (lp *bestOfNPrioritizer) downgrade(ctx context.Context) {
 	}
 }
 
-func (lp *bestOfNPrioritizer) sendOne(item writeItem, rnd *rand.Rand, tmp []streamSorter) {
-	stream := lp.streamFor(item, rnd, tmp)
+func (lp *bestOfNPrioritizer) sendOne(item writeItem, tmp []streamSorter) {
+	stream := lp.streamFor(item, tmp)
 	writeCh := stream.toWrite
 	select {
 	case writeCh <- item:
@@ -100,13 +100,12 @@ func (lp *bestOfNPrioritizer) sendOne(item writeItem, rnd *rand.Rand, tmp []stre
 
 func (lp *bestOfNPrioritizer) run() {
 	tmp := make([]streamSorter, len(lp.state))
-	rnd := rand.New(rand.NewSource(rand.Int63()))
 	for {
 		select {
 		case <-lp.done:
 			return
 		case item := <-lp.input:
-			lp.sendOne(item, rnd, tmp)
+			lp.sendOne(item, tmp)
 		}
 	}
 }
@@ -135,7 +134,7 @@ func (lp *bestOfNPrioritizer) nextWriter() streamWriter {
 	}
 }
 
-func (lp *bestOfNPrioritizer) streamFor(_ writeItem, rnd *rand.Rand, tmp []streamSorter) *streamWorkState {
+func (lp *bestOfNPrioritizer) streamFor(_ writeItem, tmp []streamSorter) *streamWorkState {
 	// Place all streams into the temporary slice.
 	for idx, item := range lp.state {
 		tmp[idx].work = item
@@ -143,7 +142,7 @@ func (lp *bestOfNPrioritizer) streamFor(_ writeItem, rnd *rand.Rand, tmp []strea
 	// Select numChoices at random by shifting the selection into the start
 	// of the temporary slice.
 	for i := 0; i < lp.numChoices; i++ {
-		pick := rnd.Intn(lp.numChoices - i)
+		pick := rand.IntN(lp.numChoices - i)
 		tmp[i], tmp[i+pick] = tmp[i+pick], tmp[i]
 	}
 	for i := 0; i < lp.numChoices; i++ {

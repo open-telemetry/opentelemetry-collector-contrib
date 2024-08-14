@@ -9,7 +9,6 @@ package clickhouseexporter
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"golang.org/x/exp/rand"
 )
 
 func TestIntegration(t *testing.T) {
@@ -608,7 +608,5 @@ func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
 }
 
 func randPort() string {
-	rs := rand.NewSource(time.Now().Unix())
-	r := rand.New(rs)
-	return strconv.Itoa(r.Intn(999) + 9000)
+	return strconv.Itoa(rand.Intn(999) + 9000)
 }

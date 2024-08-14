@@ -6,7 +6,7 @@ package batchperresourceattr
 import (
 	"context"
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 	"sort"
 	"strconv"
 	"testing"
@@ -450,9 +450,9 @@ func fillResourceLogs(rs plog.ResourceLogs, kv ...string) {
 	rs.Resource().Attributes().PutInt("__other_key__", 123)
 	ils := rs.ScopeLogs().AppendEmpty()
 	firstLogRecord := ils.LogRecords().AppendEmpty()
-	firstLogRecord.SetFlags(plog.LogRecordFlags(rand.Int31()))
+	firstLogRecord.SetFlags(plog.LogRecordFlags(rand.Int32()))
 	secondLogRecord := ils.LogRecords().AppendEmpty()
-	secondLogRecord.SetFlags(plog.LogRecordFlags(rand.Int31()))
+	secondLogRecord.SetFlags(plog.LogRecordFlags(rand.Int32()))
 }
 
 func BenchmarkBatchPerResourceTraces(b *testing.B) {
