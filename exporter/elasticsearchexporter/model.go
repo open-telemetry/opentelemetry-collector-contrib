@@ -304,6 +304,7 @@ func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error)
 	return buf.Bytes(), nil
 }
 
+// upsertMetricDataPointValue upserts a datapoint value to documents which is already hashed by resource and index
 func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
 	switch m.mode {
 	case MappingOTel:
@@ -317,7 +318,7 @@ func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.D
 }
 
 func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
-	hash := metricHash(dp.Timestamp(), dp.Attributes())
+	hash := metricECSHash(dp.Timestamp(), dp.Attributes())
 	var (
 		document objmodel.Document
 		ok       bool
@@ -728,14 +729,14 @@ func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecor
 }
 
 // TODO use https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/exp/metrics/identity
-func metricHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
+func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
 	hasher.Write(timestampBuf)
 
-	mapHash(hasher, attributes)
+	mapHashExcludeDataStreamAttr(hasher, attributes)
 
 	return hasher.Sum32()
 }
@@ -758,6 +759,8 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 	return hasher.Sum32()
 }
 
+// mapHashExcludeDataStreamAttr is mapHash but ignoring DS attributes.
+// It is useful for cases where index is already considered during routing and no need to be considered in hashing.
 func mapHashExcludeDataStreamAttr(hasher hash.Hash, m pcommon.Map) {
 	m.Range(func(k string, v pcommon.Value) bool {
 		switch k {
