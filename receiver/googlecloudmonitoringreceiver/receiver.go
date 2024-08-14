@@ -5,6 +5,7 @@ package googlecloudmonitoringreceiver // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -46,7 +47,7 @@ func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error
 	mr.startOnce.Do(func() {
 		client, err := monitoring.NewMetricClient(ctx)
 		if err != nil {
-			startErr = fmt.Errorf("failed to create a monitoring client: %v", err)
+			startErr = fmt.Errorf("failed to create a monitoring client: %w", err)
 			return
 		}
 
@@ -56,8 +57,8 @@ func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error
 	return startErr
 }
 
-func (m *monitoringReceiver) Shutdown(context.Context) error {
-	m.logger.Debug("shutting down googlecloudmonitoringreceiver receiver")
+func (mr *monitoringReceiver) Shutdown(context.Context) error {
+	mr.logger.Debug("shutting down googlecloudmonitoringreceiver receiver")
 	return nil
 }
 
@@ -107,7 +108,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		for {
 			timeSeriesMetrics, err := it.Next()
 			if timeSeriesMetrics == nil && err != nil {
-				if err == iterator.Done {
+				if errors.Is(err, iterator.Done) {
 					mr.logger.Info(iterator.Done.Error())
 					break
 				}
@@ -115,7 +116,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 
 			// Handle errors and break conditions for the iterator
 			if err != nil {
-				err := fmt.Errorf("failed to retrieve time series data: %v", err)
+				err := fmt.Errorf("failed to retrieve time series data: %w", err)
 				gErr = multierr.Append(gErr, err)
 				return metrics, gErr
 			}
