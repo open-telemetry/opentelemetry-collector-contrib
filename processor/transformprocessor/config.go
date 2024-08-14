@@ -50,7 +50,7 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if c.logger != nil && metrics.UseConvertBetweenSumAndGaugeMetricContext.IsEnabled() {
-		c.logger.Sugar().Infof("Metric conversion functions use metric context since %s is enabled", metrics.UseConvertBetweenSumAndGaugeMetricContext.ID())
+		c.logger.Sugar().Infof("Metric conversion functions use metric context since %s is enabled. If your statements are not parsing, check if you're using the metrics conversion functions via the datapoint context.", metrics.UseConvertBetweenSumAndGaugeMetricContext.ID())
 	}
 
 	if len(c.TraceStatements) > 0 {
