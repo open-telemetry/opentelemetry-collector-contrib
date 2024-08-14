@@ -20,21 +20,15 @@ The `cfgarden_observer` looks at the current host to discover Garden containers.
 ```yaml
 extensions:
   cfgarden_observer:
-    # determines how often to look for changes in endpoints.
     refresh_interval: 30s
-    # determines how often app metadata cache is refreshed
     cache_sync_interval: 10m
+    include_app_labels: true
     garden:
-      # path of the Garden socket, defaults to /var/vcap/data/garden/garden.sock 
       endpoint: my/path/to/garden.sock
     cloud_foundry:
-      # CloudFoundry API endpoint, required
       endpoint: https://api.cf.mydomain.com
-      # Authentication type, required
       auth_type: client_credentials
-      # Client ID
       client_id: myclientid
-      # Client Secret
       client_secret: myclientsecret
 
 receivers:
@@ -49,21 +43,20 @@ receivers:
 ```
 
 ### Configuration
-
-| Name                        | Type   | Default                           | Description                                                       |
-| --------------------------- | ------ | --------------------------------- | ----------------------------------------------------------------- |
-| refresh_interval            | string | 60s                               | Determines how often to look for changes in endpoints.            |
-| cache_sync_interval         | string | 5m                                | Determines how often app metadata cache is refreshed              |
-| include_app_labels          | bool   | false                             | Determines whether or not app labels get added to container labels|
-| garden.endpoint             | string | /var/vcap/data/garden/garden.sock | Path to garden socket.                                            |
-| cloud_foundry.endpoint      | string | none. parameter is required       | CloudFoundry API endpoint                                         |
-| cloud_foundry.auth_type     | string | none. parameter is required       | Authentication type, one of: user_pass, client_credentials, token |
-| cloud_foundry.username      | string | none                              | Username (auth_type: user_pass)                                   |
-| cloud_foundry.password      | string | none                              | Password (auth_type: user_pass)                                   |
-| cloud_foundry.client_id     | string | none                              | Client ID (auth_type: client_credentials)                         |
-| cloud_foundry.client_secret | string | none                              | Client Secret (auth_type: client_credentials)                     |
-| cloud_foundry.access_token  | string | none                              | Access Token (auth_type: token)                                   |
-| cloud_foundry.refresh_token | string | none                              | Refresh Token (auth_type: token)                                  |
+| Name                        | Type   | Default                                                                | Description                                                        |
+| --------------------------- | ------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| refresh_interval            | string | 1m                                                                     | Determines how often to look for changes in endpoints.             |
+| cache_sync_interval         | string | 5m                                                                     | Determines how often app metadata cache is refreshed               |
+| include_app_labels          | bool   | false                                                                  | Determines whether or not app labels get added to container labels |
+| garden.endpoint             | string | /var/vcap/data/garden/garden.sock                                      | Path to garden socket.                                             |
+| cloud_foundry.endpoint      | string | none. required when `include_app_labels` is set to `true` | CloudFoundry API endpoint                                          |
+| cloud_foundry.auth_type     | string | none. required when `include_app_labels` is set to `true` | Authentication type, one of: user_pass, client_credentials, token  |
+| cloud_foundry.username      | string | none.                                                                   | Username (auth_type: user_pass)                                    |
+| cloud_foundry.password      | string | none                                                                   | Password (auth_type: user_pass)                                    |
+| cloud_foundry.client_id     | string | none                                                                   | Client ID (auth_type: client_credentials)                          |
+| cloud_foundry.client_secret | string | none                                                                   | Client Secret (auth_type: client_credentials)                      |
+| cloud_foundry.access_token  | string | none                                                                   | Access Token (auth_type: token)                                    |
+| cloud_foundry.refresh_token | string | none                                                                   | Refresh Token (auth_type: token)                                   |
 
 ### Endpoint Variables
 

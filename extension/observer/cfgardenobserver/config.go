@@ -45,33 +45,33 @@ func (config *Config) Validate() error {
 		return errors.New("config.Endpoint must be specified when include_app_labels is set to true")
 	}
 	if c.AuthType == "" {
-		return errors.New("config.AuthType must be specified when include_app_labels is set to true")
+		return errors.New("config.authType must be specified when include_app_labels is set to true")
 	}
 
 	switch c.AuthType {
-	case AuthTypeUserPass:
+	case authTypeUserPass:
 		if c.Username == "" {
-			return fieldError(AuthTypeUserPass, "username")
+			return fieldError(authTypeUserPass, "username")
 		}
 		if c.Password == "" {
-			return fieldError(AuthTypeUserPass, "password")
+			return fieldError(authTypeUserPass, "password")
 		}
-	case AuthTypeClientCredentials:
+	case authTypeClientCredentials:
 		if c.ClientID == "" {
-			return fieldError(AuthTypeClientCredentials, "client_id")
+			return fieldError(authTypeClientCredentials, "client_id")
 		}
 		if c.ClientSecret == "" {
-			return fieldError(AuthTypeClientCredentials, "client_secret")
+			return fieldError(authTypeClientCredentials, "client_secret")
 		}
-	case AuthTypeToken:
+	case authTypeToken:
 		if c.AccessToken == "" {
-			return fieldError(AuthTypeToken, "access_token")
+			return fieldError(authTypeToken, "access_token")
 		}
 		if c.RefreshToken == "" {
-			return fieldError(AuthTypeToken, "refresh_token")
+			return fieldError(authTypeToken, "refresh_token")
 		}
 	default:
-		return fmt.Errorf("unknown auth_type: %s", c.AuthType)
+		return fmt.Errorf("configuration option `auth_type` must be set to one of the following values: [user_pass, client_credentials, token]. Specified value: %s", c.AuthType)
 	}
 
 	return nil
@@ -106,14 +106,14 @@ type CfConfig struct {
 	ClientSecret string `mapstructure:"client_secret"`
 }
 
-// AuthType describes the type of authentication to use for the CloudFoundry API
+// authType describes the type of authentication to use for the CloudFoundry API
 type AuthType string
 
 const (
-	// AuthTypeClientCredentials uses a client ID and client secret to authenticate
-	AuthTypeClientCredentials AuthType = "client_credentials"
-	// AuthTypeUserPass uses username and password to authenticate
-	AuthTypeUserPass AuthType = "user_pass"
-	// AuthTypeToken uses access token and refresh token to authenticate
-	AuthTypeToken AuthType = "token"
+	// authTypeClientCredentials uses a client ID and client secret to authenticate
+	authTypeClientCredentials AuthType = "client_credentials"
+	// authTypeUserPass uses username and password to authenticate
+	authTypeUserPass AuthType = "user_pass"
+	// authTypeToken uses access token and refresh token to authenticate
+	authTypeToken AuthType = "token"
 )

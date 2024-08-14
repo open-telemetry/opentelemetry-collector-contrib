@@ -6,7 +6,6 @@ package cfgardenobserver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,6 +23,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+)
+
+const (
+	propertiesAppIDKey     = "network.app_id"
+	propertiesPortsKey     = "network.ports"
+	propertiesLogConfigKey = "log_config"
+	logConfigTagsKey       = "tags"
+	containerStateActive   = "active"
 )
 
 type cfGardenObserver struct {
@@ -70,9 +77,9 @@ func (g *cfGardenObserver) SyncApps() error {
 	defer g.appMu.Unlock()
 	g.apps = make(map[string]*resource.App)
 	for _, info := range containers {
-		appID, err := infoToAppID(info)
-		if err != nil {
-			return err
+		appID, ok := info.Properties[propertiesAppIDKey]
+		if !ok {
+			return fmt.Errorf("container properties do not have a `%s` field, required to fetch application labels", propertiesAppIDKey)
 		}
 
 		if _, ok := g.apps[appID]; ok {
@@ -90,9 +97,9 @@ func (g *cfGardenObserver) SyncApps() error {
 }
 
 func (g *cfGardenObserver) App(info garden.ContainerInfo) (*resource.App, error) {
-	appID, err := infoToAppID(info)
-	if err != nil {
-		return nil, err
+	appID, ok := info.Properties[propertiesAppIDKey]
+	if !ok {
+		return nil, fmt.Errorf("container properties do not have a `%s` field, required to fetch application labels", propertiesAppIDKey)
 	}
 
 	g.appMu.Lock()
@@ -102,7 +109,7 @@ func (g *cfGardenObserver) App(info garden.ContainerInfo) (*resource.App, error)
 		return app, nil
 	}
 
-	app, err = g.cf.Applications.Get(g.ctx, appID)
+	app, err := g.cf.Applications.Get(g.ctx, appID)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +179,7 @@ func (g *cfGardenObserver) ListEndpoints() []observer.Endpoint {
 			continue
 		}
 
-		if info.State != "active" {
+		if info.State != containerStateActive {
 			continue
 		}
 
@@ -187,7 +194,7 @@ func (g *cfGardenObserver) ListEndpoints() []observer.Endpoint {
 // containerEndpoints generates a list of observer.Endpoint for a container,
 // this is because a container might have more than one exposed ports
 func (g *cfGardenObserver) containerEndpoints(handle string, info garden.ContainerInfo) []observer.Endpoint {
-	portsProp, ok := info.Properties["network.ports"]
+	portsProp, ok := info.Properties[propertiesPortsKey]
 	if !ok {
 		g.logger.Error("could not discover container ports")
 		return nil
@@ -199,14 +206,15 @@ func (g *cfGardenObserver) containerEndpoints(handle string, info garden.Contain
 	if g.config.IncludeAppLabels {
 		app, err = g.App(info)
 		if err != nil {
-			g.logger.Error("error fetching Application", zap.Error(err))
+			g.logger.Error("error fetching application", zap.Error(err))
 			return nil
 		}
 	}
 
 	endpoints := []observer.Endpoint{}
-	for _, port := range ports {
-		port, err := strconv.ParseUint(port, 10, 16)
+	for _, portString := range ports {
+		var port uint64
+		port, err = strconv.ParseUint(portString, 10, 16)
 		if err != nil {
 			g.logger.Error("container port is not valid", zap.Error(err))
 			continue
@@ -252,7 +260,7 @@ func (g *cfGardenObserver) containerLabels(info garden.ContainerInfo, app *resou
 }
 
 // The info.Properties contains a key called "log_config", which
-// has contents that look like the following JSON endoded string:
+// has contents that look like the following JSON encoded string:
 //
 //	{
 //	  "guid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -275,9 +283,9 @@ func (g *cfGardenObserver) containerLabels(info garden.ContainerInfo, app *resou
 //
 // We parse only the tags into a map, to be used as labels
 func parseTags(info garden.ContainerInfo) (map[string]string, error) {
-	logConfig, ok := info.Properties["log_config"]
+	logConfig, ok := info.Properties[propertiesLogConfigKey]
 	if !ok {
-		return nil, errors.New("container properties do not have log_config field")
+		return nil, fmt.Errorf("container properties do not have a `%s` field", propertiesLogConfigKey)
 	}
 
 	var data map[string]any
@@ -286,9 +294,9 @@ func parseTags(info garden.ContainerInfo) (map[string]string, error) {
 		return nil, fmt.Errorf("error unmarshaling logConfig: %w", err)
 	}
 
-	tags, ok := data["tags"].(map[string]any)
+	tags, ok := data[logConfigTagsKey].(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("expected tags field to be a map. got=%T", data["tags"])
+		return nil, fmt.Errorf("expected tags field to be a map. got=%T", data[logConfigTagsKey])
 	}
 
 	result := make(map[string]string)
@@ -306,11 +314,11 @@ func newCfClient(cfConfig CfConfig) (*client.Client, error) {
 	var err error
 
 	switch cfConfig.AuthType {
-	case AuthTypeUserPass:
+	case authTypeUserPass:
 		cfg, err = config.New(cfConfig.Endpoint, config.UserPassword(cfConfig.Username, cfConfig.Password))
-	case AuthTypeClientCredentials:
+	case authTypeClientCredentials:
 		cfg, err = config.New(cfConfig.Endpoint, config.ClientCredentials(cfConfig.ClientID, cfConfig.ClientSecret))
-	case AuthTypeToken:
+	case authTypeToken:
 		cfg, err = config.New(cfConfig.Endpoint, config.Token(cfConfig.AccessToken, cfConfig.RefreshToken))
 	}
 
@@ -329,12 +337,4 @@ func (g *cfGardenObserver) updateContainerCache(infos map[string]garden.Containe
 	g.containerMu.Lock()
 	defer g.containerMu.Unlock()
 	g.containers = infos
-}
-
-func infoToAppID(info garden.ContainerInfo) (string, error) {
-	id, ok := info.Properties["network.app_id"]
-	if !ok {
-		return "", errors.New("could not find app_id")
-	}
-	return id, nil
 }

@@ -134,7 +134,7 @@ func TestConfigValidate(t *testing.T) {
 					Endpoint: "https://api.cf.mydomain.com",
 				},
 			},
-			msg: "config.AuthType must be specified when include_app_labels is set to true",
+			msg: "config.authType must be specified when include_app_labels is set to true",
 		},
 		{
 			reason: "unknown auth_type",
@@ -145,7 +145,7 @@ func TestConfigValidate(t *testing.T) {
 					AuthType: "unknown",
 				},
 			},
-			msg: "unknown auth_type: unknown",
+			msg: "configuration option `auth_type` must be set to one of the following values: [user_pass, client_credentials, token]. Specified value: unknown",
 		},
 		{
 			reason: "missing username",
@@ -153,10 +153,10 @@ func TestConfigValidate(t *testing.T) {
 				IncludeAppLabels: true,
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
-					AuthType: AuthTypeUserPass,
+					AuthType: authTypeUserPass,
 				},
 			},
-			msg: fieldError(AuthTypeUserPass, "username").Error(),
+			msg: fieldError(authTypeUserPass, "username").Error(),
 		},
 		{
 			reason: "missing clientID",
@@ -164,10 +164,10 @@ func TestConfigValidate(t *testing.T) {
 				IncludeAppLabels: true,
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
-					AuthType: AuthTypeClientCredentials,
+					AuthType: authTypeClientCredentials,
 				},
 			},
-			msg: fieldError(AuthTypeClientCredentials, "client_id").Error(),
+			msg: fieldError(authTypeClientCredentials, "client_id").Error(),
 		},
 		{
 			reason: "missing AccessToken",
@@ -175,10 +175,10 @@ func TestConfigValidate(t *testing.T) {
 				IncludeAppLabels: true,
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
-					AuthType: AuthTypeToken,
+					AuthType: authTypeToken,
 				},
 			},
-			msg: fieldError(AuthTypeToken, "access_token").Error(),
+			msg: fieldError(authTypeToken, "access_token").Error(),
 		},
 	}
 
