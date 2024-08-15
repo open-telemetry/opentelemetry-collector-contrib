@@ -27,15 +27,10 @@ func Samples[D data.Point[D]](m metrics.Data[D]) Seq[D] {
 	}
 }
 
-type filterable[D data.Point[D]] interface {
-	metrics.Data[D]
-	Filter(func(D) bool)
-}
-
 // Apply does dps[i] = fn(dps[i]) for each item in dps.
 // If fn returns [streams.Drop], the datapoint is removed from dps instead.
 // If fn returns another error, the datapoint is also removed and the error returned eventually
-func Apply[P data.Point[P], List filterable[P]](dps List, fn func(Ident, P) (P, error)) error {
+func Apply[P data.Point[P], List metrics.Filterable[P]](dps List, fn func(Ident, P) (P, error)) error {
 	var errs error
 
 	mid := dps.Ident()

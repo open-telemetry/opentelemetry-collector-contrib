@@ -33,5 +33,5 @@ func createMetricsProcessor(_ context.Context, set processor.Settings, cfg compo
 		return nil, err
 	}
 
-	return newProcessor(pcfg, set.Logger, telb, next), nil
+	return newProcessor(pcfg, telb, next), nil
 }

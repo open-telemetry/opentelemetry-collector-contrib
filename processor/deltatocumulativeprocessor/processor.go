@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package deltatocumulativeprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
+package deltatocumulativeprocessor
 
 import (
 	"context"
@@ -13,108 +13,154 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
-	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
+	exp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/maybe"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 )
 
 var _ processor.Metrics = (*Processor)(nil)
 
 type Processor struct {
 	next consumer.Metrics
+	cfg  Config
 
-	log    *zap.Logger
+	state Map
+	mtx   sync.Mutex
+
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	sums Pipeline[data.Number]
-	expo Pipeline[data.ExpHistogram]
-	hist Pipeline[data.Histogram]
-
-	mtx sync.Mutex
+	stale staleness.Tracker
+	tel   metadata.TelemetryBuilder
 }
 
-func newProcessor(cfg *Config, log *zap.Logger, telb *metadata.TelemetryBuilder, next consumer.Metrics) *Processor {
+func newProcessor(cfg *Config, tel *metadata.TelemetryBuilder, next consumer.Metrics) *Processor {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	tel := telemetry.New(telb)
 	proc := Processor{
-		log:    log,
+		next: next,
+		cfg:  *cfg,
+		state: Map{
+			nums: make(exp.HashMap[data.Number]),
+			hist: make(exp.HashMap[data.Histogram]),
+			expo: make(exp.HashMap[data.ExpHistogram]),
+		},
 		ctx:    ctx,
 		cancel: cancel,
-		next:   next,
 
-		sums: pipeline[data.Number](cfg, &tel),
-		expo: pipeline[data.ExpHistogram](cfg, &tel),
-		hist: pipeline[data.Histogram](cfg, &tel),
+		stale: staleness.NewTracker(),
+		tel:   *tel,
 	}
-
 	return &proc
 }
 
-type Pipeline[D data.Point[D]] struct {
-	aggr  streams.Aggregator[D]
-	stale maybe.Ptr[staleness.Staleness[D]]
+func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+
+	now := time.Now()
+
+	var errs error
+	metrics.All(md)(func(m metrics.Metric) bool {
+		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta {
+			return true
+		}
+
+		var each AggrFunc
+		switch m := m.Typed().(type) {
+		case metrics.Sum:
+			each = use(m, p.state.nums)
+		case metrics.Histogram:
+			each = use(m, p.state.hist)
+		case metrics.ExpHistogram:
+			each = use(m, p.state.expo)
+		}
+
+		err := each(func(id identity.Stream, aggr func() error) error {
+			// if stream not seen before and stream limit is reached, reject
+			if !p.state.Has(id) && p.state.Len() >= p.cfg.MaxStreams {
+				// TODO: record metric
+				return streams.Drop
+			}
+
+			// stream is alive, refresh it
+			p.stale.Refresh(now, id)
+
+			// accumulate current dp into state
+			return aggr()
+		})
+		errs = errors.Join(errs, err)
+
+		return true
+	})
+
+	if errs != nil {
+		return errs
+	}
+	return p.next.ConsumeMetrics(ctx, md)
 }
 
-func pipeline[D data.Point[D]](cfg *Config, tel *telemetry.Telemetry) Pipeline[D] {
-	var pipe Pipeline[D]
+// AggrFunc calls `do` for datapoint of a metric, giving the caller the
+// opportunity to decide whether to perform aggregation in a type-agnostic way,
+// while keeping underlying strong typing.
+//
+// if `aggr` is called, the current datapoint is accumulated into the streams
+// cumulative state.
+//
+// if any error is returned, the current datapoint is dropped, the error
+// collected and eventually returned. [streams.Drop] silently drops a datapoint
+type AggrFunc func(do func(id identity.Stream, aggr func() error) error) error
 
-	var dps streams.Map[D]
-	dps = delta.New[D]()
-	dps = telemetry.ObserveItems(dps, &tel.Metrics)
+// use returns a AggrFn for the given metric, accumulating into the given state,
+// given `do` calls its `aggr`
+func use[T data.Typed[T], M Metric[T]](m M, state streams.Map[T]) AggrFunc {
+	return func(do func(id identity.Stream, aggr func() error) error) error {
+		return streams.Apply(m, func(id identity.Stream, dp T) (T, error) {
+			acc, ok := state.Load(id)
+			aggr := func() error {
+				m.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
-	if cfg.MaxStale > 0 {
-		tel.WithStale(cfg.MaxStale)
-		stale := maybe.Some(staleness.NewStaleness(cfg.MaxStale, dps))
-		pipe.stale = stale
-		dps, _ = stale.Try()
+				// no previous state: take dp as-is
+				if !ok {
+					acc = dp
+					return nil
+				}
+
+				// accumulate into previous state
+				return delta.AccumulateInto(acc, dp)
+			}
+
+			err := do(id, aggr)
+			return acc, err
+		})
 	}
-	if cfg.MaxStreams > 0 {
-		tel.WithLimit(int64(cfg.MaxStreams))
-		lim := streams.Limit(dps, cfg.MaxStreams)
-		if stale, ok := pipe.stale.Try(); ok {
-			lim.Evictor = stale
-		}
-		dps = lim
-	}
-
-	dps = telemetry.ObserveNonFatal(dps, &tel.Metrics)
-
-	pipe.aggr = streams.IntoAggregator(dps)
-	return pipe
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	sums, sok := p.sums.stale.Try()
-	expo, eok := p.expo.stale.Try()
-	hist, hok := p.hist.stale.Try()
-	if !(sok && eok && hok) {
-		return nil
-	}
-
 	go func() {
 		tick := time.NewTicker(time.Minute)
+		defer tick.Stop()
 		for {
 			select {
 			case <-p.ctx.Done():
 				return
 			case <-tick.C:
 				p.mtx.Lock()
-				sums.ExpireOldEntries()
-				expo.ExpireOldEntries()
-				hist.ExpireOldEntries()
+				stale := p.stale.Collect(p.cfg.MaxStale)
+				for _, id := range stale {
+					p.state.Delete(id)
+				}
 				p.mtx.Unlock()
 			}
 		}
 	}()
+
 	return nil
 }
 
@@ -127,43 +173,30 @@ func (p *Processor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	if err := context.Cause(p.ctx); err != nil {
-		return err
-	}
+type Metric[T data.Point[T]] interface {
+	metrics.Filterable[T]
+	SetAggregationTemporality(pmetric.AggregationTemporality)
+}
 
-	p.mtx.Lock()
-	defer p.mtx.Unlock()
+type Map struct {
+	nums streams.Map[data.Number]
+	hist streams.Map[data.Histogram]
+	expo streams.Map[data.ExpHistogram]
+}
 
-	var errs error
-	metrics.Each(md, func(m metrics.Metric) {
-		switch m.Type() {
-		case pmetric.MetricTypeSum:
-			sum := m.Sum()
-			if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Apply(metrics.Sum(m), p.sums.aggr.Aggregate)
-				errs = errors.Join(errs, err)
-				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-			}
-		case pmetric.MetricTypeHistogram:
-			hist := m.Histogram()
-			if hist.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Apply(metrics.Histogram(m), p.hist.aggr.Aggregate)
-				errs = errors.Join(errs, err)
-				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-			}
-		case pmetric.MetricTypeExponentialHistogram:
-			expo := m.ExponentialHistogram()
-			if expo.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Apply(metrics.ExpHistogram(m), p.expo.aggr.Aggregate)
-				errs = errors.Join(errs, err)
-				expo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-			}
-		}
-	})
-	if errs != nil {
-		return errs
-	}
+func (m Map) Len() int {
+	return m.nums.Len() + m.hist.Len() + m.expo.Len()
+}
 
-	return p.next.ConsumeMetrics(ctx, md)
+func (m Map) Has(id identity.Stream) bool {
+	_, nok := m.nums.Load(id)
+	_, hok := m.hist.Load(id)
+	_, eok := m.expo.Load(id)
+	return nok || hok || eok
+}
+
+func (m Map) Delete(id identity.Stream) {
+	m.nums.Delete(id)
+	m.hist.Delete(id)
+	m.expo.Delete(id)
 }
