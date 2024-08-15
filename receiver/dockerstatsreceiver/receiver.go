@@ -52,11 +52,9 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages, r.config.DockerAPIVersion)
-	if err != nil {
-		return err
-	}
+	dConfig := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages, r.config.DockerAPIVersion)
 
+	var err error
 	r.client, err = docker.NewDockerClient(dConfig, r.settings.Logger)
 	if err != nil {
 		return err
@@ -98,7 +96,8 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 			results <- resultV2{
 				stats:     statsJSON,
 				container: &c,
-				err:       nil}
+				err:       nil,
+			}
 		}(container)
 	}
 

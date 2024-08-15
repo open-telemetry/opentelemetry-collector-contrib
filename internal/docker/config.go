@@ -31,14 +31,14 @@ type Config struct {
 
 // NewConfig creates a new config to be used when creating
 // a docker client
-func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, apiVersion string) (*Config, error) {
+func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, apiVersion string) *Config {
 	cfg := &Config{
 		Endpoint:         endpoint,
 		Timeout:          timeout,
 		ExcludedImages:   excludedImages,
 		DockerAPIVersion: apiVersion,
 	}
-	return cfg, cfg.validate()
+	return cfg
 }
 
 // NewDefaultConfig creates a new config with default values
@@ -55,7 +55,7 @@ func NewDefaultConfig() *Config {
 
 // validate asserts that an endpoint field is set
 // on the config struct
-func (config Config) validate() error {
+func (config Config) Validate() error {
 	if config.Endpoint == "" {
 		return errors.New("config.Endpoint must be specified")
 	}
