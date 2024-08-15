@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/basgys/goxml2json v1.1.0
@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.107.0
 	github.com/stretchr/testify v1.9.0
-	github.com/vmware/govmomi v0.39.0
+	github.com/vmware/govmomi v0.40.0
 	go.opentelemetry.io/collector/component v0.107.0
 	go.opentelemetry.io/collector/config/configopaque v1.13.0
 	go.opentelemetry.io/collector/config/configtls v1.13.0

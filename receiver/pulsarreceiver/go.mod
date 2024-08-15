@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/apache/pulsar-client-go v0.8.1
