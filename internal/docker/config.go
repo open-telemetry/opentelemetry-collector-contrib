@@ -4,7 +4,6 @@
 package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -51,18 +50,6 @@ func NewDefaultConfig() *Config {
 	}
 
 	return cfg
-}
-
-// validate asserts that an endpoint field is set
-// on the config struct
-func (config Config) Validate() error {
-	if config.Endpoint == "" {
-		return errors.New("config.Endpoint must be specified")
-	}
-	if err := VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
-		return err
-	}
-	return nil
 }
 
 type apiVersion struct {
