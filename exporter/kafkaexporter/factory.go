@@ -40,45 +40,16 @@ const (
 	defaultFluxMaxMessages = 0
 	// partitioning metrics by resource attributes is disabled by default
 	defaultPartitionMetricsByResourceAttributesEnabled = false
+	// partitioning logs by resource attributes is disabled by default
+	defaultPartitionLogsByResourceAttributesEnabled = false
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaExporterFactory)
 
-// withTracesMarshalers adds tracesMarshalers.
-func withTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
-	return func(factory *kafkaExporterFactory) {
-		for _, marshaler := range tracesMarshalers {
-			factory.tracesMarshalers[marshaler.Encoding()] = marshaler
-		}
-	}
-}
-
-// withMetricsMarshalers adds additional metric marshalers to the exporter factory.
-func withMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
-	return func(factory *kafkaExporterFactory) {
-		for _, marshaler := range metricMarshalers {
-			factory.metricsMarshalers[marshaler.Encoding()] = marshaler
-		}
-	}
-}
-
-// withLogsMarshalers adds additional log marshalers to the exporter factory.
-func withLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
-	return func(factory *kafkaExporterFactory) {
-		for _, marshaler := range logsMarshalers {
-			factory.logsMarshalers[marshaler.Encoding()] = marshaler
-		}
-	}
-}
-
 // NewFactory creates Kafka exporter factory.
 func NewFactory(options ...FactoryOption) exporter.Factory {
-	f := &kafkaExporterFactory{
-		tracesMarshalers:  tracesMarshalers(),
-		metricsMarshalers: metricsMarshalers(),
-		logsMarshalers:    logsMarshalers(),
-	}
+	f := &kafkaExporterFactory{}
 	for _, o := range options {
 		o(f)
 	}
@@ -102,6 +73,7 @@ func createDefaultConfig() component.Config {
 		Topic:                                "",
 		Encoding:                             defaultEncoding,
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
+		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
@@ -119,9 +91,6 @@ func createDefaultConfig() component.Config {
 }
 
 type kafkaExporterFactory struct {
-	tracesMarshalers  map[string]TracesMarshaler
-	metricsMarshalers map[string]MetricsMarshaler
-	logsMarshalers    map[string]LogsMarshaler
 }
 
 func (f *kafkaExporterFactory) createTracesExporter(
@@ -136,7 +105,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
-	exp, err := newTracesExporter(oCfg, set, f.tracesMarshalers)
+	exp, err := newTracesExporter(oCfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +136,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
-	exp, err := newMetricsExporter(oCfg, set, f.metricsMarshalers)
+	exp, err := newMetricsExporter(oCfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +167,7 @@ func (f *kafkaExporterFactory) createLogsExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
-	exp, err := newLogsExporter(oCfg, set, f.logsMarshalers)
+	exp, err := newLogsExporter(oCfg, set)
 	if err != nil {
 		return nil, err
 	}

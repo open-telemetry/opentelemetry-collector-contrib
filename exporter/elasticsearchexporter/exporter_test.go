@@ -285,6 +285,40 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish otel mapping mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
+		})
+		mustSendLogs(t, exporter, newLogsWithAttributeAndResourceMap(
+			map[string]string{
+				"data_stream.dataset": "attr.dataset",
+				"attr.foo":            "attr.foo.value",
+			},
+			map[string]string{
+				"data_stream.dataset":   "resource.attribute.dataset",
+				"data_stream.namespace": "resource.attribute.namespace",
+				"resource.attr.foo":     "resource.attr.foo.value",
+			},
+		))
+		rec.WaitItems(1)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0,"schema_url":""},"severity_number":0,"trace_flags":0}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
 	t.Run("retry http request", func(t *testing.T) {
 		failures := 0
 		rec := newBulkRecorder()
@@ -732,6 +766,50 @@ func TestExporterMetrics(t *testing.T) {
 
 		assertItemsEqual(t, expected, rec.Items(), false)
 	})
+
+	t.Run("publish summary", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooDps := fooMetric.SetEmptySummary().DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.SetSum(1.5)
+		fooDp.SetCount(1)
+		fooOtherDp := fooDps.AppendEmpty()
+		fooOtherDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		fooOtherDp.SetSum(2)
+		fooOtherDp.SetCount(3)
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(2)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":1.5,"value_count":1}}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":2,"value_count":3}}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
 }
 
 func TestExporterTraces(t *testing.T) {
@@ -910,6 +988,43 @@ func TestExporterAuth(t *testing.T) {
 
 	mustSendLogRecords(t, exporter, plog.NewLogRecord())
 	<-done
+}
+
+func TestExporterBatcher(t *testing.T) {
+	var requests []*http.Request
+	testauthID := component.NewID(component.MustNewType("authtest"))
+	batcherEnabled := false // sync bulk indexer is used without batching
+	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		cfg.Batcher = BatcherConfig{Enabled: &batcherEnabled}
+		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+	})
+	err := exporter.Start(context.Background(), &mockHost{
+		extensions: map[component.ID]component.Component{
+			testauthID: &authtest.MockClient{
+				ResultRoundTripper: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+					requests = append(requests, req)
+					return nil, errors.New("nope")
+				}),
+			},
+		},
+	})
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, exporter.Shutdown(context.Background()))
+	}()
+
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty().Body().SetStr("log record body")
+
+	type key struct{}
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value1"), logs)
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value2"), logs)
+	require.Len(t, requests, 2) // flushed immediately by Consume
+
+	assert.Equal(t, "value1", requests[0].Context().Value(key{}))
+	assert.Equal(t, "value2", requests[1].Context().Value(key{}))
 }
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Traces {

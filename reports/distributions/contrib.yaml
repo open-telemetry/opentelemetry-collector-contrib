@@ -8,6 +8,7 @@ components:
         - exceptions
         - failover
         - grafanacloud
+        - otlpjson
         - roundrobin
         - routing
         - servicegraph
@@ -124,6 +125,7 @@ components:
         - filestats
         - flinkmetrics
         - fluentforward
+        - googlecloudmonitoring
         - googlecloudspanner
         - haproxy
         - hostmetrics

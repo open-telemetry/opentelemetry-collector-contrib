@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -24,9 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -425,14 +422,6 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
-func setupTelemetry(reader *sdkmetric.ManualReader) component.TelemetrySettings {
-	settings := componenttest.NewNopTelemetrySettings()
-	settings.MetricsLevel = configtelemetry.LevelNormal
-
-	settings.MeterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	return settings
-}
-
 func TestValidateOwnTelemetry(t *testing.T) {
 	cfg := &Config{
 		Dimensions: []string{"some-attribute", "non-existing-attribute"},
@@ -443,10 +432,8 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	}
 
 	mockMetricsExporter := newMockMetricsExporter()
-
-	reader := sdkmetric.NewManualReader()
-	set := setupTelemetry(reader)
-	p, err := newConnector(set, cfg, mockMetricsExporter)
+	set := setupTestTelemetry()
+	p, err := newConnector(set.NewSettings().TelemetrySettings, cfg, mockMetricsExporter)
 	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -468,26 +455,20 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	// Shutdown the connector
 	assert.NoError(t, p.Shutdown(context.Background()))
-
-	rm := metricdata.ResourceMetrics{}
-	assert.NoError(t, reader.Collect(context.Background(), &rm))
-	require.Len(t, rm.ScopeMetrics, 1)
-	sm := rm.ScopeMetrics[0]
-	require.Len(t, sm.Metrics, 1)
-	got := sm.Metrics[0]
-	want := metricdata.Metrics{
-		Name:        "otelcol_connector_servicegraph_total_edges",
-		Description: "Total number of unique edges",
-		Unit:        "1",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints: []metricdata.DataPoint[int64]{
-				{Value: 2},
+	set.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_connector_servicegraph_total_edges",
+			Description: "Total number of unique edges",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{Value: 2},
+				},
 			},
 		},
-	}
-	metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+	})
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {
