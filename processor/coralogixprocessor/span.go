@@ -5,15 +5,11 @@ package coralogixprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"regexp"
-	"strconv"
-	"strings"
-
 	postgresqlparser "github.com/auxten/postgresql-parser/pkg/sql/parser"
 	"github.com/auxten/postgresql-parser/pkg/sql/sem/tree"
 	postgresqlwalk "github.com/auxten/postgresql-parser/pkg/walk"
 	"github.com/cespare/xxhash/v2"
-	"github.com/dgraph-io/ristretto"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/cache"
 	mysqlparser "github.com/xwb1989/sqlparser"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -21,6 +17,9 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 var DBTypes = []string{MySQL, PostgreSQL}
@@ -34,7 +33,7 @@ type coralogixProcessor struct {
 	config *Config
 	component.StartFunc
 	component.ShutdownFunc
-	cache  *ristretto.Cache
+	cache  cache.Cache[string]
 	logger *zap.Logger
 }
 
@@ -184,7 +183,7 @@ func (sp *coralogixProcessor) processTraces(_ context.Context, td ptrace.Traces)
 					_, found := sp.cache.Get(hash)
 					if !found {
 						attributes.PutInt("sampling.priority", 100)
-						sp.cache.Set(hash, "", 8)
+						sp.cache.Add(hash, "")
 					}
 				}
 				attributes.PutStr("db.statement.blueprint", blueprintStr)
@@ -202,17 +201,10 @@ func newCoralogixProcessor(ctx context.Context, set processor.Settings, cfg *Con
 
 	if cfg.databaseBlueprintsConfig.sampling.enabled {
 
-		var cacheSize = fromConfigOrDefault(cfg.databaseBlueprintsConfig.sampling.maxCacheSizeMib*1024*1024, 1<<30) // Default to 1GB
 		// 8 bytes per entry, 1GB / 8 Bytes = 134,217,728 entries by default
-		// Num Counters recommended to be 10x the number of keys to track frequency of
-		var numCounters = fromConfigOrDefault(cfg.databaseBlueprintsConfig.sampling.maxCacheSizeMib/8, 1.5e6) // number of keys to track frequency of (1.5M).
-
+		var cacheSize = fromConfigOrDefault(cfg.databaseBlueprintsConfig.sampling.maxCacheSizeMib*1024*1024, 1<<30) / 8 // Default to 1GB
 		var err error
-		sp.cache, err = ristretto.NewCache(&ristretto.Config{
-			NumCounters: numCounters, // number of keys to track frequency of.
-			MaxCost:     cacheSize,   // maximum cost of cache.
-			BufferItems: 64,          // number of keys per Get buffer.
-		})
+		sp.cache, err = cache.NewLRUBlueprintCache[string](int(cacheSize))
 		if err != nil {
 			return nil, err
 		}
