@@ -1,5 +1,4 @@
 type: syslog
-scope_name: otelcol/syslog
 
 status:
   class: exporter
