@@ -93,7 +93,7 @@ func (r *receiver) emitterLoop() {
 		}
 	}
 
-	r.set.Logger.Debug("Receive loop stopped")
+	r.set.Logger.Debug("Emitter loop stopped")
 }
 
 // consumerLoop reads converter log entries and calls the consumer to consumer them.
