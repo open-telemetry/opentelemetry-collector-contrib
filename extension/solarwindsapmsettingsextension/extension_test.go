@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solarwinds/apm-proto/go/collectorpb"
-	"github.com/solarwinds/apm-proto/go/collectorpb/mocks"
+	"github.com/solarwindscloud/apm-proto/go/collectorpb"
+	"github.com/solarwindscloud/apm-proto/go/collectorpb/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/extension"
@@ -105,7 +105,7 @@ func TestRefresh(t *testing.T) {
 			expectedLogMessages: []string{
 				"time to refresh",
 				"testdata/refresh_ok.json is refreshed",
-				"[{\"arguments\":{\"BucketCapacity\":2.0000000000000004,\"BucketRate\":1.0000000000000004,\"EventsFlushInterval\":3,\"MaxCustomMetrics\":2,\"MaxTransactions\":1,\"MetricsFlushInterval\":60,\"ProfilingInterval\":4,\"TriggerRelaxedBucketCapacity\":20.00000000000001,\"TriggerRelaxedBucketRate\":1.0000000000000009,\"TriggerStrictBucketCapacity\":6,\"TriggerStrictBucketRate\":0.1},\"flags\":\"flag1,flag2,flag3\",\"layer\":\"layer1\",\"timestamp\":123,\"ttl\":789,\"type\":0,\"value\":456}]",
+				"[{\"arguments\":{\"BucketCapacity\":2.0000000000000004,\"BucketRate\":1.0000000000000004,\"EventsFlushInterval\":3,\"MaxCustomMetrics\":2,\"MaxTransactions\":1,\"MetricsFlushInterval\":60,\"ProfilingInterval\":4,\"TriggerRelaxedBucketCapacity\":20.00000000000001,\"TriggerRelaxedBucketRate\":1.0000000000000009,\"TriggerStrictBucketCapacity\":6,\"TriggerStrictBucketRate\":0.1},\"flags\":\"flag1,flag2,flag3\",\"timestamp\":123,\"ttl\":789,\"value\":456}]",
 			},
 			fileExist: true,
 		},
@@ -147,7 +147,7 @@ func TestRefresh(t *testing.T) {
 				"time to refresh",
 				"GetSettings succeed",
 				"testdata/refresh_warning.json is refreshed (soft disabled)",
-				"[{\"arguments\":{\"BucketCapacity\":0,\"BucketRate\":1e-323,\"EventsFlushInterval\":0,\"MaxCustomMetrics\":0,\"MaxTransactions\":0,\"MetricsFlushInterval\":0,\"ProfilingInterval\":0,\"TriggerRelaxedBucketCapacity\":0,\"TriggerRelaxedBucketRate\":0,\"TriggerStrictBucketCapacity\":0,\"TriggerStrictBucketRate\":0},\"flags\":\"flags\",\"layer\":\"\",\"timestamp\":0,\"ttl\":10,\"type\":0,\"value\":0}]",
+				"[{\"arguments\":{\"BucketCapacity\":0,\"BucketRate\":1e-323,\"EventsFlushInterval\":0,\"MaxCustomMetrics\":0,\"MaxTransactions\":0,\"MetricsFlushInterval\":0,\"ProfilingInterval\":0,\"TriggerRelaxedBucketCapacity\":0,\"TriggerRelaxedBucketRate\":0,\"TriggerStrictBucketCapacity\":0,\"TriggerStrictBucketRate\":0},\"flags\":\"flags\",\"timestamp\":0,\"ttl\":10,\"value\":0}]",
 			},
 			fileExist: true,
 		},

@@ -14,7 +14,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/solarwinds/apm-proto/go/collectorpb"
+	"github.com/solarwindscloud/apm-proto/go/collectorpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
@@ -118,11 +118,9 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 			var settings []map[string]any
 			for _, item := range response.GetSettings() {
 				setting := make(map[string]any)
-				setting["type"] = item.GetType().Number()
 				setting["flags"] = string(item.GetFlags())
 				setting["timestamp"] = item.GetTimestamp()
 				setting["value"] = item.GetValue()
-				setting["layer"] = string(item.GetLayer())
 				arguments := make(map[string]any)
 				if value, ok := item.Arguments["BucketCapacity"]; ok {
 					arguments["BucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
