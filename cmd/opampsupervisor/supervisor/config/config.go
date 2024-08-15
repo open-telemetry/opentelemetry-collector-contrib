@@ -129,7 +129,7 @@ func (a Agent) Validate() error {
 		return errors.New("agent::orphan_detection_interval must be positive")
 	}
 
-	if a.HealthCheckPort > 65535 {
+	if a.HealthCheckPort < 0 || a.HealthCheckPort > 65535 {
 		return errors.New("agent::health_check_port must be a valid port number")
 	}
 
