@@ -149,11 +149,7 @@ func (e *LogEmitter) flusher(ctx context.Context) {
 			}
 		case <-ctx.Done():
 			// flush currently batched entries
-			for {
-				oldBatch := e.makeNewBatch()
-				if len(oldBatch) == 0 {
-					break
-				}
+			for oldBatch := e.makeNewBatch(); len(oldBatch) > 0; oldBatch = e.makeNewBatch() {
 				e.flush(context.Background(), oldBatch)
 			}
 			return
