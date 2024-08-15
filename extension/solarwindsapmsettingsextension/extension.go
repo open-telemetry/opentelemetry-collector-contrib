@@ -51,11 +51,11 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 	if err != nil {
 		return err
 	}
-	extension.conn, err = grpc.NewClient(extension.config.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool})))
+	extension.conn, err = grpc.NewClient(extension.config.ClientConfig.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool})))
 	if err != nil {
 		return err
 	}
-	extension.logger.Info("created a gRPC client", zap.String("endpoint", extension.config.Endpoint))
+	extension.logger.Info("created a gRPC client", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
 	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
 
 	outputFile := path.Join(os.TempDir(), jsonOutputFile)
@@ -91,7 +91,7 @@ func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) err
 }
 
 func refresh(extension *solarwindsapmSettingsExtension, filename string) {
-	extension.logger.Info("time to refresh", zap.String("endpoint", extension.config.Endpoint))
+	extension.logger.Info("time to refresh", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
 	if hostname, err := os.Hostname(); err != nil {
 		extension.logger.Error("unable to call os.Hostname()", zap.Error(err))
 	} else {
@@ -107,7 +107,7 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 		}
 		response, err := extension.client.GetSettings(ctx, request)
 		if err != nil {
-			extension.logger.Error("unable to get settings", zap.String("endpoint", extension.config.Endpoint), zap.Error(err))
+			extension.logger.Error("unable to get settings", zap.String("endpoint", extension.config.ClientConfig.Endpoint), zap.Error(err))
 			return
 		}
 		switch result := response.GetResult(); result {

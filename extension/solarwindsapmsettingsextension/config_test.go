@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension/internal/metadata"
@@ -31,7 +32,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				Endpoint: "apm.collector.apj-01.cloud.solarwinds.com:443",
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: "apm.collector.apj-01.cloud.solarwinds.com:443",
+				},
 				Key:      "something:name",
 				Interval: time.Duration(10) * time.Second,
 			},
@@ -39,7 +42,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				Endpoint: "apm.collector.na-01.cloud.solarwinds.com:443",
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: "apm.collector.na-01.cloud.solarwinds.com:443",
+				},
 				Key:      "something",
 				Interval: time.Duration(5) * time.Second,
 			},
@@ -47,7 +52,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "3"),
 			expected: &Config{
-				Endpoint: "apm.collector.na-01.cloud.solarwinds.com:443",
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: "apm.collector.na-01.cloud.solarwinds.com:443",
+				},
 				Key:      "something:name",
 				Interval: time.Duration(60) * time.Second,
 			},

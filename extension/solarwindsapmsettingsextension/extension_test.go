@@ -13,6 +13,7 @@ import (
 	"github.com/solarwindscloud/apm-proto/go/collectorpb/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -28,14 +29,18 @@ func TestCreateExtension(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				Endpoint: DefaultEndpoint,
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: DefaultEndpoint,
+				},
 				Interval: DefaultInterval,
 			},
 		},
 		{
 			name: "anything",
 			cfg: &Config{
-				Endpoint: "apm.collector.na-02.cloud.solarwinds.com:443",
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: "apm.collector.na-02.cloud.solarwinds.com:443",
+				},
 				Key:      "something:name",
 				Interval: time.Duration(10) * time.Second,
 			},
@@ -72,7 +77,9 @@ func TestRefresh(t *testing.T) {
 		{
 			name: "ok",
 			cfg: &Config{
-				Endpoint: DefaultEndpoint,
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: DefaultEndpoint,
+				},
 			},
 			reply: &collectorpb.SettingsResult{
 				Result: collectorpb.ResultCode_OK,
@@ -112,7 +119,9 @@ func TestRefresh(t *testing.T) {
 		{
 			name: "ok with warning",
 			cfg: &Config{
-				Endpoint: DefaultEndpoint,
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: DefaultEndpoint,
+				},
 			},
 			reply: &collectorpb.SettingsResult{
 				Result: collectorpb.ResultCode_OK,
@@ -154,7 +163,9 @@ func TestRefresh(t *testing.T) {
 		{
 			name: "try later",
 			cfg: &Config{
-				Endpoint: DefaultEndpoint,
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: DefaultEndpoint,
+				},
 			},
 			reply: &collectorpb.SettingsResult{
 				Result:  collectorpb.ResultCode_TRY_LATER,
@@ -170,7 +181,9 @@ func TestRefresh(t *testing.T) {
 		{
 			name: "invalid api key",
 			cfg: &Config{
-				Endpoint: DefaultEndpoint,
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: DefaultEndpoint,
+				},
 			},
 			reply: &collectorpb.SettingsResult{
 				Result:  collectorpb.ResultCode_INVALID_API_KEY,
@@ -186,7 +199,9 @@ func TestRefresh(t *testing.T) {
 		{
 			name: "limit exceeded",
 			cfg: &Config{
-				Endpoint: DefaultEndpoint,
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: DefaultEndpoint,
+				},
 			},
 			reply: &collectorpb.SettingsResult{
 				Result:  collectorpb.ResultCode_LIMIT_EXCEEDED,
@@ -202,7 +217,9 @@ func TestRefresh(t *testing.T) {
 		{
 			name: "redirect",
 			cfg: &Config{
-				Endpoint: DefaultEndpoint,
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: DefaultEndpoint,
+				},
 			},
 			reply: &collectorpb.SettingsResult{
 				Result:  collectorpb.ResultCode_REDIRECT,
