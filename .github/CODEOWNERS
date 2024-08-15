@@ -137,6 +137,7 @@ internal/kubelet/                                                   @open-teleme
 internal/metadataproviders/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 internal/otelarrow/                                                 @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3
 internal/pdatautil/                                                 @open-telemetry/collector-contrib-approvers @djaglowski
+internal/rabbitmq/                                                  @open-telemetry/collector-contrib-approvers @swar8080 @atoulme
 internal/sharedcomponent/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/splunk/                                                    @open-telemetry/collector-contrib-approvers @dmitryax
 internal/sqlquery/                                                  @open-telemetry/collector-contrib-approvers @crobert-1 @dmitryax
@@ -165,8 +166,8 @@ pkg/translator/zipkin/                                              @open-teleme
 pkg/winperfcounters/                                                @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @BinaryFissionGames @alxbl @pjanotti
 
 processor/attributesprocessor/                                      @open-telemetry/collector-contrib-approvers @boostchicken
+processor/coralogixprocessor/                                       @open-telemetry/collector-contrib-approvers @crobert-1 @galrose
 processor/cumulativetodeltaprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth
-processor/coralogixprocessor/                                       @open-telemetry/collector-contrib-approvers @galrose @crobert-1 @eyalatz @roycald245
 processor/deltatocumulativeprocessor/                               @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams @jpkrohling
 processor/deltatorateprocessor/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                                          @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
@@ -175,7 +176,7 @@ processor/groupbyattrsprocessor/                                    @open-teleme
 processor/groupbytraceprocessor/                                    @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/intervalprocessor/                                        @open-telemetry/collector-contrib-approvers @RichieSams @sh0rez @djaglowski
 processor/k8sattributesprocessor/                                   @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick @fatsheep9146 @TylerHelmuth
-processor/logdedupprocessor/                                @open-telemetry/collector-contrib-approvers @BinaryFissionGames @MikeGoldsmith @djaglowski
+processor/logdedupprocessor/                                        @open-telemetry/collector-contrib-approvers @BinaryFissionGames @MikeGoldsmith @djaglowski
 processor/logstransformprocessor/                                   @open-telemetry/collector-contrib-approvers @djaglowski @dehaansa
 processor/metricsgenerationprocessor/                               @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/metricstransformprocessor/                                @open-telemetry/collector-contrib-approvers @dmitryax
@@ -235,6 +236,7 @@ receiver/filestatsreceiver/                                         @open-teleme
 receiver/flinkmetricsreceiver/                                      @open-telemetry/collector-contrib-approvers @JonathanWamsley @djaglowski
 receiver/fluentforwardreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/gitproviderreceiver/                                       @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel
+receiver/googlecloudmonitoringreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth @abhishek-at-cloudwerx
 receiver/googlecloudpubsubreceiver/                                 @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/haproxyreceiver/                                           @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
 receiver/hostmetricsreceiver/                                       @open-telemetry/collector-contrib-approvers @dmitryax @braydonk

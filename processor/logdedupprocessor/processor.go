@@ -12,9 +12,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
@@ -22,14 +23,19 @@ type logDedupProcessor struct {
 	emitInterval time.Duration
 	aggregator   *logAggregator
 	remover      *fieldRemover
-	consumer     consumer.Logs
+	nextConsumer consumer.Logs
 	logger       *zap.Logger
 	cancel       context.CancelFunc
 	wg           sync.WaitGroup
 	mux          sync.Mutex
 }
 
-func newProcessor(cfg *Config, consumer consumer.Logs, logger *zap.Logger) (*logDedupProcessor, error) {
+func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
+	}
+
 	// This should not happen due to config validation but we check anyways.
 	timezone, err := time.LoadLocation(cfg.Timezone)
 	if err != nil {
@@ -38,10 +44,10 @@ func newProcessor(cfg *Config, consumer consumer.Logs, logger *zap.Logger) (*log
 
 	return &logDedupProcessor{
 		emitInterval: cfg.Interval,
-		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone),
+		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder),
 		remover:      newFieldRemover(cfg.ExcludeFields),
-		consumer:     consumer,
-		logger:       logger,
+		nextConsumer: nextConsumer,
+		logger:       settings.Logger,
 	}, nil
 }
 
@@ -77,19 +83,20 @@ func (p *logDedupProcessor) ConsumeLogs(_ context.Context, pl plog.Logs) error {
 	defer p.mux.Unlock()
 
 	for i := 0; i < pl.ResourceLogs().Len(); i++ {
-		resourceLogs := pl.ResourceLogs().At(i)
-		resourceAttrs := resourceLogs.Resource().Attributes()
-		resourceKey := pdatautil.MapHash(resourceAttrs)
-		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
-			scope := resourceLogs.ScopeLogs().At(j)
-			logs := scope.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				logRecord := logs.At(k)
+		rl := pl.ResourceLogs().At(i)
+		resource := rl.Resource()
+
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
+			scope := sl.Scope()
+
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				logRecord := sl.LogRecords().At(k)
 				// Remove excluded fields if any
 				p.remover.RemoveFields(logRecord)
 
 				// Add the log to the aggregator
-				p.aggregator.Add(resourceKey, resourceAttrs, logRecord)
+				p.aggregator.Add(resource, scope, logRecord)
 			}
 		}
 	}
@@ -107,23 +114,30 @@ func (p *logDedupProcessor) handleExportInterval(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			// Export any remaining logs
+			p.exportLogs(ctx)
 			if err := ctx.Err(); err != context.Canceled {
 				p.logger.Error("context error", zap.Error(err))
 			}
 			return
 		case <-ticker.C:
-			p.mux.Lock()
-
-			logs := p.aggregator.Export()
-			// Only send logs if we have some
-			if logs.LogRecordCount() > 0 {
-				err := p.consumer.ConsumeLogs(ctx, logs)
-				if err != nil {
-					p.logger.Error("failed to consume logs", zap.Error(err))
-				}
-			}
-			p.aggregator.Reset()
-			p.mux.Unlock()
+			p.exportLogs(ctx)
 		}
 	}
+}
+
+// exportLogs exports the logs to the next consumer.
+func (p *logDedupProcessor) exportLogs(ctx context.Context) {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	logs := p.aggregator.Export(ctx)
+	// Only send logs if we have some
+	if logs.LogRecordCount() > 0 {
+		err := p.nextConsumer.ConsumeLogs(ctx, logs)
+		if err != nil {
+			p.logger.Error("failed to consume logs", zap.Error(err))
+		}
+	}
+	p.aggregator.Reset()
 }
