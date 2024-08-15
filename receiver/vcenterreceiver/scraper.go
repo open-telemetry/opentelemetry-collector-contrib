@@ -270,7 +270,7 @@ func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacente
 	}
 
 	spec := types.PerfQuerySpec{
-		MaxSample: 5,
+		MaxSample: 1,
 		Format:    string(types.PerfFormatNormal),
 		// Just grabbing real time performance metrics of the current
 		// supported metrics by this receiver. If more are added we may need
