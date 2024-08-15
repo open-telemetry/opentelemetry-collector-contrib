@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"math"
 	"os"
+	"path"
 	"time"
 
 	"github.com/solarwinds/apm-proto/go/collectorpb"
@@ -22,7 +23,7 @@ import (
 )
 
 const (
-	jsonOutputFile      = "/tmp/solarwinds-apm-settings.json"
+	jsonOutputFile      = "solarwinds-apm-settings.json"
 	grpcContextDeadline = 1 * time.Second
 )
 
@@ -57,8 +58,9 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 	extension.logger.Info("created a gRPC client", zap.String("endpoint", extension.config.Endpoint))
 	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
 
+	outputFile := path.Join(os.TempDir(), jsonOutputFile)
 	// initial refresh
-	refresh(extension, jsonOutputFile)
+	refresh(extension, outputFile)
 
 	go func() {
 		ticker := time.NewTicker(extension.config.Interval)
@@ -66,7 +68,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 		for {
 			select {
 			case <-ticker.C:
-				refresh(extension, jsonOutputFile)
+				refresh(extension, outputFile)
 			case <-ctx.Done():
 				extension.logger.Info("received ctx.Done() from ticker")
 				return
