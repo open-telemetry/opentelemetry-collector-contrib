@@ -5,6 +5,7 @@ package deltatocumulativeprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,6 +34,6 @@ func createDefaultConfig() component.Config {
 
 		// disable. TODO: find good default
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31603
-		MaxStreams: 0,
+		MaxStreams: math.MaxInt,
 	}
 }

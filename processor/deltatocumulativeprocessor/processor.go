@@ -67,7 +67,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 	now := time.Now()
 
 	var errs error
-	metrics.All(md)(func(m metrics.Metric) bool {
+	metrics.Filter(md, func(m metrics.Metric) bool {
 		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta {
 			return true
 		}
@@ -82,12 +82,14 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 			each = use(m, p.state.expo)
 		}
 
+		var ok bool
 		err := each(func(id identity.Stream, aggr func() error) error {
 			// if stream not seen before and stream limit is reached, reject
 			if !p.state.Has(id) && p.state.Len() >= p.cfg.MaxStreams {
 				// TODO: record metric
 				return streams.Drop
 			}
+			ok = true
 
 			// stream is alive, refresh it
 			p.stale.Refresh(now, id)
@@ -97,11 +99,16 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		})
 		errs = errors.Join(errs, err)
 
-		return true
+		return ok
 	})
 
 	if errs != nil {
 		return errs
+	}
+
+	// no need to continue pipeline if we dropped all data
+	if md.MetricCount() == 0 {
+		return nil
 	}
 	return p.next.ConsumeMetrics(ctx, md)
 }
@@ -117,7 +124,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 // collected and eventually returned. [streams.Drop] silently drops a datapoint
 type AggrFunc func(do func(id identity.Stream, aggr func() error) error) error
 
-// use returns a AggrFn for the given metric, accumulating into the given state,
+// use returns an AggrFunc for the given metric, accumulating into the given state,
 // given `do` calls its `aggr`
 func use[T data.Typed[T], M Metric[T]](m M, state streams.Map[T]) AggrFunc {
 	return func(do func(id identity.Stream, aggr func() error) error) error {
@@ -135,31 +142,33 @@ func use[T data.Typed[T], M Metric[T]](m M, state streams.Map[T]) AggrFunc {
 				// accumulate into previous state
 				return delta.AccumulateInto(acc, dp)
 			}
-
 			err := do(id, aggr)
+			state.Store(id, acc)
 			return acc, err
 		})
 	}
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	go func() {
-		tick := time.NewTicker(time.Minute)
-		defer tick.Stop()
-		for {
-			select {
-			case <-p.ctx.Done():
-				return
-			case <-tick.C:
-				p.mtx.Lock()
-				stale := p.stale.Collect(p.cfg.MaxStale)
-				for _, id := range stale {
-					p.state.Delete(id)
+	if p.cfg.MaxStale != 0 {
+		go func() {
+			tick := time.NewTicker(time.Minute)
+			defer tick.Stop()
+			for {
+				select {
+				case <-p.ctx.Done():
+					return
+				case <-tick.C:
+					p.mtx.Lock()
+					stale := p.stale.Collect(p.cfg.MaxStale)
+					for _, id := range stale {
+						p.state.Delete(id)
+					}
+					p.mtx.Unlock()
 				}
-				p.mtx.Unlock()
 			}
-		}
-	}()
+		}()
+	}
 
 	return nil
 }

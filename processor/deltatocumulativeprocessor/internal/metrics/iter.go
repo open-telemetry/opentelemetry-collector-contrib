@@ -9,25 +9,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/putil/pslice"
 )
 
-func Filter(metrics pmetric.Metrics, fn func(m Metric) bool) {
-	metrics.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
-		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
-			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
-				return !fn(From(rm.Resource(), sm.Scope(), m))
-			})
-			return false
-		})
-		return false
-	})
-}
-
-func Each(metrics pmetric.Metrics, fn func(m Metric)) {
-	Filter(metrics, func(m Metric) bool {
-		fn(m)
-		return true
-	})
-}
-
 func All(md pmetric.Metrics) func(func(Metric) bool) {
 	return func(yield func(Metric) bool) {
 		var ok bool
@@ -42,4 +23,16 @@ func All(md pmetric.Metrics) func(func(Metric) bool) {
 			return ok
 		})
 	}
+}
+
+func Filter(md pmetric.Metrics, keep func(Metric) bool) {
+	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
+			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
+				return !keep(From(rm.Resource(), sm.Scope(), m))
+			})
+			return sm.Metrics().Len() == 0
+		})
+		return rm.ScopeMetrics().Len() == 0
+	})
 }
