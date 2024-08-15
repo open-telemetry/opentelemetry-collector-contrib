@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
 
-go 1.22.1
+go 1.22.0
 
 require (
 	github.com/auxten/postgresql-parser v1.0.1
