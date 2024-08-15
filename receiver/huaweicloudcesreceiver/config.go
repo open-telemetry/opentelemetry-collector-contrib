@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
@@ -60,6 +60,9 @@ type Config struct {
 }
 
 type HuaweiSessionConfig struct {
+	AccessKey configopaque.String `mapstructure:"access_key"`
+
+	SecretKey configopaque.String `mapstructure:"secret_key"`
 	// RegionName is the full name of the CES region exporter should send metrics to
 	RegionName string `mapstructure:"region_name"`
 	// Number of seconds before timing out a request.
@@ -103,12 +106,4 @@ func (config *Config) Validate() error {
 	}
 
 	return err
-}
-
-func KeysString(m map[string]any) string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return "[" + strings.Join(keys, ", ") + "]"
 }

@@ -1,13 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package huaweicloudcesreceiver
+package huaweicloudcesreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver"
 
 import (
 	"context"
 	"errors"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 
@@ -26,7 +25,7 @@ import (
 
 type cesReceiver struct {
 	logger *zap.Logger
-	client *ces.CesClient
+	client CesClient
 	cancel context.CancelFunc
 
 	host             component.Host
@@ -44,16 +43,17 @@ func newHuaweiCloudCesReceiver(settings receiver.Settings, cfg *Config, next con
 	return rcvr
 }
 
-func (rcvr *cesReceiver) Start(ctx context.Context, host component.Host) (err error) {
+func (rcvr *cesReceiver) Start(ctx context.Context, host component.Host) error {
 	rcvr.host = host
 	ctx, rcvr.cancel = context.WithCancel(ctx)
 
 	if rcvr.client == nil {
-		rcvr.client, err = rcvr.createClient()
+		client, err := rcvr.createClient()
 		if err != nil {
 			rcvr.logger.Error(err.Error())
-			return
+			return nil
 		}
+		rcvr.client = client
 	}
 
 	go func() {
@@ -102,10 +102,8 @@ func (rcvr *cesReceiver) createHTTPConfig() (*config.HttpConfig, error) {
 
 func (rcvr *cesReceiver) createClient() (*ces.CesClient, error) {
 	auth, err := basic.NewCredentialsBuilder().
-		// Authentication can be configured through environment variables and other methods.
-		// Please refer to Chapter 2.4 Authentication Management
-		WithAk(os.Getenv("HUAWEICLOUD_SDK_AK")).
-		WithSk(os.Getenv("HUAWEICLOUD_SDK_SK")).
+		WithAk(string(rcvr.config.AccessKey)).
+		WithSk(string(rcvr.config.SecretKey)).
 		WithProjectId(rcvr.config.ProjectID).
 		SafeBuild()
 
@@ -138,6 +136,9 @@ func (rcvr *cesReceiver) createClient() (*ces.CesClient, error) {
 }
 
 func (rcvr *cesReceiver) pollMetricsAndConsume(ctx context.Context) error {
+	if rcvr.client == nil {
+		return errors.New("invalid client")
+	}
 	metricDefinitions, err := rcvr.listMetricDefinitions()
 	if err != nil {
 		return err

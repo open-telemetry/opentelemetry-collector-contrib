@@ -52,6 +52,8 @@ receivers:
     collection_interval: 3h
     initial_delay: 5s
     region_name: eu-west-101
+    access_key: ${env:HUAWEICLOUD_SDK_AK}
+    secret_key: ${env:HUAWEICLOUD_SDK_SK}
     project_id: "project_1"
     period: 300
     filter: average
