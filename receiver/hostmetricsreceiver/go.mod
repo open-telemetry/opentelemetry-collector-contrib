@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/google/go-cmp v0.6.0
@@ -26,7 +26,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.23.0
+	golang.org/x/sys v0.24.0
 )
 
 require (

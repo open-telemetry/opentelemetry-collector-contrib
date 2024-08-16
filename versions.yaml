@@ -132,6 +132,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk

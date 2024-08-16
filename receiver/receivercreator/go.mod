@@ -1,13 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/expr-lang/expr v1.16.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.107.0
-	github.com/spf13/cast v1.6.0
+	github.com/spf13/cast v1.7.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.0
 	go.opentelemetry.io/collector/confmap v0.107.0
