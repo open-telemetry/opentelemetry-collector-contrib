@@ -6,6 +6,7 @@ package rabbitmq
 import (
 	"context"
 	"crypto/tls"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -98,7 +99,11 @@ func TestDialConfig(t *testing.T) {
 	}
 
 	conn, err := client.DialConfig(config)
-	assert.ErrorContains(t, err, "connect: connection refused")
+	if runtime.GOOS == "windows" {
+		assert.ErrorContains(t, err, "No connection could be made")
+	} else {
+		assert.ErrorContains(t, err, "connect: connection refused")
+	}
 	assert.NotNil(t, conn)
 }
 
@@ -121,7 +126,11 @@ func TestReconnectIfUnhealthy(t *testing.T) {
 	}
 
 	err := connection.ReconnectIfUnhealthy()
-	assert.ErrorContains(t, err, "connect: connection refused")
+	if runtime.GOOS == "windows" {
+		assert.ErrorContains(t, err, "No connection could be made")
+	} else {
+		assert.ErrorContains(t, err, "connect: connection refused")
+	}
 }
 
 func TestIsConnected(t *testing.T) {
