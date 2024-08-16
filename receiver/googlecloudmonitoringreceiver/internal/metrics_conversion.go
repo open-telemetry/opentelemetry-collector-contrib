@@ -31,7 +31,7 @@ func (mb *MetricsBuilder) ConvertGaugeToMetrics(ts *monitoringpb.TimeSeries, m p
 
 	for _, point := range ts.GetPoints() {
 		dp := gauge.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(pcommon.Timestamp(point.Interval.StartTime.Seconds))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
 		dp.SetTimestamp(pcommon.Timestamp(point.Interval.EndTime.Seconds * 1e9)) // Convert to nanoseconds)
 
 		switch v := point.Value.Value.(type) {
@@ -55,9 +55,17 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 
 	for _, point := range ts.GetPoints() {
 		dp := sum.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(pcommon.Timestamp(point.Interval.StartTime.Seconds))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
 		dp.SetTimestamp(pcommon.Timestamp(point.Interval.EndTime.Seconds * 1e9)) // Convert to nanoseconds)
-		dp.SetDoubleValue(point.GetValue().GetDoubleValue())
+
+		switch v := point.Value.Value.(type) {
+		case *monitoringpb.TypedValue_DoubleValue:
+			dp.SetDoubleValue(v.DoubleValue)
+		case *monitoringpb.TypedValue_Int64Value:
+			dp.SetIntValue(v.Int64Value)
+		default:
+			log.Printf("Unhandled metric value type: %T", v)
+		}
 	}
 
 	return m
@@ -71,9 +79,17 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 
 	for _, point := range ts.GetPoints() {
 		dp := sum.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(pcommon.Timestamp(point.Interval.StartTime.Seconds))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
 		dp.SetTimestamp(pcommon.Timestamp(point.Interval.EndTime.Seconds * 1e9)) // Convert to nanoseconds
-		dp.SetDoubleValue(point.GetValue().GetDoubleValue())
+
+		switch v := point.Value.Value.(type) {
+		case *monitoringpb.TypedValue_DoubleValue:
+			dp.SetDoubleValue(v.DoubleValue)
+		case *monitoringpb.TypedValue_Int64Value:
+			dp.SetIntValue(v.Int64Value)
+		default:
+			log.Printf("Unhandled metric value type: %T", v)
+		}
 	}
 
 	return m
