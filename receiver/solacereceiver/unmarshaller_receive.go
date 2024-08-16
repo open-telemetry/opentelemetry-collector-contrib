@@ -12,7 +12,9 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -23,6 +25,7 @@ import (
 type brokerTraceReceiveUnmarshallerV1 struct {
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
+	metricAttrs      attribute.Set // othere Otel attributes (to add to the metrics)
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal
@@ -146,7 +149,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 	default:
 		deliveryMode = fmt.Sprintf("Unknown Delivery Mode (%s)", spanData.DeliveryMode.String())
 		u.logger.Warn(fmt.Sprintf("Received span with unknown delivery mode %s", spanData.DeliveryMode))
-		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 	}
 	attrMap.PutStr(deliveryModeAttrKey, deliveryMode)
 
@@ -189,7 +192,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 		err := u.unmarshalBaggage(attrMap, *spanData.Baggage)
 		if err != nil {
 			u.logger.Warn("Received malformed baggage string in span data")
-			u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+			u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 		}
 	}
 
@@ -234,7 +237,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *receive
 		destinationType = queueKind
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown destination type %T", casted))
-		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 		return
 	}
 	clientEvent := clientSpanEvents.AppendEmpty()
@@ -272,7 +275,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent 
 		// Set the name to the unknown transaction event type to ensure forward compat.
 		name = fmt.Sprintf("Unknown Transaction Event (%s)", transactionEvent.GetType().String())
 		u.logger.Warn(fmt.Sprintf("Received span with unknown transaction event %s", transactionEvent.GetType()))
-		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 	}
 	clientEvent.SetName(name)
 	clientEvent.SetTimestamp(pcommon.Timestamp(transactionEvent.TimeUnixNano))
@@ -288,7 +291,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent 
 	default:
 		initiator = fmt.Sprintf("Unknown Transaction Initiator (%s)", transactionEvent.GetInitiator().String())
 		u.logger.Warn(fmt.Sprintf("Received span with unknown transaction initiator %s", transactionEvent.GetInitiator()))
-		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 	}
 	clientEvent.Attributes().PutStr(transactionInitiatorEventKey, initiator)
 	// conditionally set the error description if one occurred, otherwise omit
@@ -309,7 +312,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent 
 		clientEvent.Attributes().PutStr(transactionXIDEventKey, xidString)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction ID type %T", transactionID))
-		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 	}
 }
 
@@ -319,7 +322,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) rgmidToString(rgmid []byte) string {
 		// may be cases where the rgmid is empty or nil, len(rgmid) will return 0 if nil
 		if len(rgmid) > 0 {
 			u.logger.Warn("Received invalid length or version for rgmid", zap.Int8("version", int8(rgmid[0])), zap.Int("length", len(rgmid)))
-			u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+			u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 		}
 		return hex.EncodeToString(rgmid)
 	}
@@ -403,6 +406,6 @@ func (u *brokerTraceReceiveUnmarshallerV1) insertUserProperty(toMap pcommon.Map,
 		toMap.PutStr(k, string(rune(v.CharacterValue)))
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown user property type: %T", v))
-		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 	}
 }

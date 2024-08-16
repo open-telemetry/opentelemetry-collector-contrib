@@ -47,12 +47,16 @@ func newDimensions(cfgDims []Dimension) []dimension {
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d dimension, spanAttrs pcommon.Map, eventAttrs pcommon.Map) (v pcommon.Value, ok bool) {
+func getDimensionValue(d dimension, spanAttrs pcommon.Map, eventAttrs pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
 	// The more specific span attribute should take precedence.
 	if attr, exists := spanAttrs.Get(d.name); exists {
 		return attr, true
 	}
 	if attr, exists := eventAttrs.Get(d.name); exists {
+		return attr, true
+	}
+	// falling back to searching in resource attributes
+	if attr, exists := resourceAttr.Get(d.name); exists {
 		return attr, true
 	}
 	// Set the default if configured, otherwise this metric will have no value set for the dimension.
