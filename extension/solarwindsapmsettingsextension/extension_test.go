@@ -248,12 +248,12 @@ func TestRefresh(t *testing.T) {
 			mockTraceCollectorClient := &mocks.TraceCollectorClient{}
 			mockTraceCollectorClient.On("GetSettings", mock.Anything, mock.Anything).Return(tt.reply, nil)
 			observedZapCore, observedLogs := observer.New(zap.InfoLevel)
-			logger := zap.New(observedZapCore)
-
+			settings := newNopSettings()
+			settings.TelemetrySettings.Logger = zap.New(observedZapCore)
 			settingsExtension := &solarwindsapmSettingsExtension{
-				config: tt.cfg,
-				logger: logger,
-				client: mockTraceCollectorClient,
+				config:            tt.cfg,
+				telemetrySettings: settings.TelemetrySettings,
+				client:            mockTraceCollectorClient,
 			}
 			refresh(settingsExtension, tt.filename)
 			require.Equal(t, len(tt.expectedLogMessages), observedLogs.Len())

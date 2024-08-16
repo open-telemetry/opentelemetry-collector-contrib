@@ -28,7 +28,6 @@ const (
 )
 
 type solarwindsapmSettingsExtension struct {
-	logger            *zap.Logger
 	config            *Config
 	cancel            context.CancelFunc
 	conn              *grpc.ClientConn
@@ -39,14 +38,13 @@ type solarwindsapmSettingsExtension struct {
 func newSolarwindsApmSettingsExtension(extensionCfg *Config, settings extension.Settings) (extension.Extension, error) {
 	settingsExtension := &solarwindsapmSettingsExtension{
 		config:            extensionCfg,
-		logger:            settings.TelemetrySettings.Logger,
 		telemetrySettings: settings.TelemetrySettings,
 	}
 	return settingsExtension, nil
 }
 
 func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host component.Host) error {
-	extension.logger.Info("starting up solarwinds apm settings extension")
+	extension.telemetrySettings.Logger.Info("starting up solarwinds apm settings extension")
 	ctx := context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
 	systemCertPool, err := x509.SystemCertPool()
@@ -55,10 +53,10 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	}
 	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool})))
 	if err != nil {
-		extension.logger.Error("grpc.NewClient creation failed: ", zap.Error(err))
+		extension.telemetrySettings.Logger.Error("grpc.NewClient creation failed: ", zap.Error(err))
 		return err
 	}
-	extension.logger.Info("created a gRPC client", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
+	extension.telemetrySettings.Logger.Info("created a gRPC client", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
 	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
 
 	outputFile := path.Join(os.TempDir(), jsonOutputFile)
@@ -73,7 +71,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 			case <-ticker.C:
 				refresh(extension, outputFile)
 			case <-ctx.Done():
-				extension.logger.Info("received ctx.Done() from ticker")
+				extension.telemetrySettings.Logger.Info("received ctx.Done() from ticker")
 				return
 			}
 		}
@@ -83,7 +81,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 }
 
 func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) error {
-	extension.logger.Info("shutting down solarwinds apm settings extension")
+	extension.telemetrySettings.Logger.Info("shutting down solarwinds apm settings extension")
 	if extension.cancel != nil {
 		extension.cancel()
 	}
@@ -94,9 +92,9 @@ func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) err
 }
 
 func refresh(extension *solarwindsapmSettingsExtension, filename string) {
-	extension.logger.Info("time to refresh", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
+	extension.telemetrySettings.Logger.Info("time to refresh", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
 	if hostname, err := os.Hostname(); err != nil {
-		extension.logger.Error("unable to call os.Hostname()", zap.Error(err))
+		extension.telemetrySettings.Logger.Error("unable to call os.Hostname()", zap.Error(err))
 	} else {
 		ctx, cancel := context.WithTimeout(context.Background(), grpcContextDeadline)
 		defer cancel()
@@ -110,13 +108,13 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 		}
 		response, err := extension.client.GetSettings(ctx, request)
 		if err != nil {
-			extension.logger.Error("unable to get settings", zap.String("endpoint", extension.config.ClientConfig.Endpoint), zap.Error(err))
+			extension.telemetrySettings.Logger.Error("unable to get settings", zap.String("endpoint", extension.config.ClientConfig.Endpoint), zap.Error(err))
 			return
 		}
 		switch result := response.GetResult(); result {
 		case collectorpb.ResultCode_OK:
 			if len(response.GetWarning()) > 0 {
-				extension.logger.Warn("GetSettings succeed", zap.String("result", result.String()), zap.String("warning", response.GetWarning()))
+				extension.telemetrySettings.Logger.Warn("GetSettings succeed", zap.String("result", result.String()), zap.String("warning", response.GetWarning()))
 			}
 			var settings []map[string]any
 			for _, item := range response.GetSettings() {
@@ -163,21 +161,21 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 				settings = append(settings, setting)
 			}
 			if content, err := json.Marshal(settings); err != nil {
-				extension.logger.Warn("error to marshal setting JSON[] byte from settings", zap.Error(err))
+				extension.telemetrySettings.Logger.Warn("error to marshal setting JSON[] byte from settings", zap.Error(err))
 			} else {
 				if err := os.WriteFile(filename, content, 0600); err != nil {
-					extension.logger.Error("unable to write "+filename, zap.Error(err))
+					extension.telemetrySettings.Logger.Error("unable to write "+filename, zap.Error(err))
 				} else {
 					if len(response.GetWarning()) > 0 {
-						extension.logger.Warn(filename + " is refreshed (soft disabled)")
+						extension.telemetrySettings.Logger.Warn(filename + " is refreshed (soft disabled)")
 					} else {
-						extension.logger.Info(filename + " is refreshed")
+						extension.telemetrySettings.Logger.Info(filename + " is refreshed")
 					}
-					extension.logger.Info(string(content))
+					extension.telemetrySettings.Logger.Info(string(content))
 				}
 			}
 		default:
-			extension.logger.Warn("GetSettings failed", zap.String("result", result.String()), zap.String("warning", response.GetWarning()))
+			extension.telemetrySettings.Logger.Warn("GetSettings failed", zap.String("result", result.String()), zap.String("warning", response.GetWarning()))
 		}
 	}
 }
