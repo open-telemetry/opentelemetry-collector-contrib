@@ -41,7 +41,7 @@ func ValidateRetentionValue(input int64) error {
 
 // Check if the tags input is valid
 func ValidateTagsInput(input map[string]*string) error {
-	if input != nil && len(input) < 1 {
+	if len(input) < 1 {
 		return errors.New("invalid amount of items. Please input at least 1 tag or remove the tag field")
 	}
 	if len(input) > 50 {
