@@ -13,6 +13,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/atlas v0.36.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/component/componentstatus v0.107.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/config/configretry v1.13.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240816132030-9fd84668bb02
@@ -40,7 +41,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
