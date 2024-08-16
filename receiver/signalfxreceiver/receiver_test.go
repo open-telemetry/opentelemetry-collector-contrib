@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -624,9 +625,6 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	}
 	sink := new(consumertest.MetricsSink)
 	cs := receivertest.NewNopSettings()
-	cs.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
-		require.NoError(t, event.Err())
-	}
 	r, err := newReceiver(cs, *cfg)
 	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
@@ -634,7 +632,11 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
 
-	mh := componenttest.NewNopHost()
+	mh := &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			require.NoError(t, event.Err())
+		},
+	}
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start metric reception")
 
 	t.Log("Metric Reception Started")
@@ -1053,4 +1055,26 @@ func compressGzip(t *testing.T, msgBytes []byte) []byte {
 	require.NoError(t, err)
 	require.NoError(t, gzipWriter.Close())
 	return buf.Bytes()
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return nil
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

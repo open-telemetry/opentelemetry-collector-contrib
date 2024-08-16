@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
 // Extensions are treated as a pseudo pipeline and extsID is used as a map key
@@ -23,7 +24,7 @@ var (
 // timestamps of some events during aggregation. The implementation in core doesn't currently
 // allow this, but this interface provides a workaround.
 type Event interface {
-	Status() component.Status
+	Status() componentstatus.Status
 	Err() error
 	Timestamp() time.Time
 }
@@ -99,7 +100,7 @@ type Aggregator struct {
 func NewAggregator(errPriority ErrorPriority) *Aggregator {
 	return &Aggregator{
 		aggregateStatus: &AggregateStatus{
-			Event:              &component.StatusEvent{},
+			Event:              &componentstatus.Event{},
 			ComponentStatusMap: make(map[string]*AggregateStatus),
 		},
 		subscriptions:   make(map[string]*list.List),
@@ -128,7 +129,7 @@ func (a *Aggregator) AggregateStatus(scope Scope, verbosity Verbosity) (*Aggrega
 }
 
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
-func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component.StatusEvent) {
+func (a *Aggregator) RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	compIDs := source.PipelineIDs
 	// extensions are treated as a pseudo-pipeline
 	if source.Kind == component.KindExtension {

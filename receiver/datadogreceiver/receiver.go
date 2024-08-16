@@ -13,6 +13,7 @@ import (
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -97,7 +98,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 
 	go func() {
 		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			ddr.params.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
 		}
 	}()
 	return nil
