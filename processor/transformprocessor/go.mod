@@ -14,8 +14,8 @@ require (
 	go.opentelemetry.io/collector/component v0.107.0
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.opentelemetry.io/collector/consumer v0.107.0
-	go.opentelemetry.io/collector/featuregate v1.13.0
-	go.opentelemetry.io/collector/pdata v1.13.0
+	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/processor v0.107.0
 	go.opentelemetry.io/collector/semconv v0.107.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect

@@ -9,12 +9,12 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.31.0
 	go.opentelemetry.io/collector/component v0.107.0
-	go.opentelemetry.io/collector/config/configopaque v1.13.0
+	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.opentelemetry.io/collector/consumer v0.107.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.0
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.107.0
-	go.opentelemetry.io/collector/pdata v1.13.0
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/receiver v0.107.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -95,7 +95,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.107.0 // indirect
 	go.opentelemetry.io/collector/extension v0.107.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.0 // indirect
 	go.opentelemetry.io/collector/otelcol v0.107.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.0 // indirect

@@ -16,15 +16,15 @@ require (
 	github.com/tidwall/wal v1.1.7
 	go.opentelemetry.io/collector/component v0.107.0
 	go.opentelemetry.io/collector/config/confighttp v0.107.0
-	go.opentelemetry.io/collector/config/configopaque v1.13.0
-	go.opentelemetry.io/collector/config/configretry v1.13.0
+	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/config/configretry v1.13.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.0
-	go.opentelemetry.io/collector/config/configtls v1.13.0
+	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/confmap v0.107.0
 	go.opentelemetry.io/collector/consumer v0.107.0
 	go.opentelemetry.io/collector/exporter v0.107.0
-	go.opentelemetry.io/collector/featuregate v1.13.0
-	go.opentelemetry.io/collector/pdata v1.13.0
+	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/sdk/metric v1.28.0
@@ -66,9 +66,9 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	go.opentelemetry.io/collector v0.107.0 // indirect
-	go.opentelemetry.io/collector/client v1.13.0 // indirect
+	go.opentelemetry.io/collector/client v1.13.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.107.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.13.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/collector/config/internal v0.107.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.0 // indirect
