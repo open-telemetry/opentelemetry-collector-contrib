@@ -9,10 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/solarwindscloud/apm-proto/go/collectorpb"
 	"github.com/solarwindscloud/apm-proto/go/collectorpb/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
@@ -54,11 +57,18 @@ func TestCreateExtension(t *testing.T) {
 	}
 }
 
+// NewNopSettings returns a new nop settings for extension.Factory Create* functions.
+func NewNopSettings() extension.Settings {
+	return extension.Settings{
+		ID:                component.NewIDWithName(component.MustNewType("nop"), uuid.NewString()),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
+}
+
 // create extension
 func createAnExtension(c *Config, t *testing.T) extension.Extension {
-	logger, err := zap.NewProduction()
-	require.NoError(t, err)
-	ex, err := newSolarwindsApmSettingsExtension(c, logger)
+	ex, err := newSolarwindsApmSettingsExtension(c, NewNopSettings())
 	require.NoError(t, err)
 	require.NoError(t, ex.Start(context.TODO(), nil))
 	return ex

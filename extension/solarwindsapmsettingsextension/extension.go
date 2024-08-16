@@ -5,8 +5,6 @@ package solarwindsapmsettingsextension // import "github.com/open-telemetry/open
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/binary"
 	"encoding/json"
 	"math"
@@ -19,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -28,30 +25,29 @@ const (
 )
 
 type solarwindsapmSettingsExtension struct {
-	logger *zap.Logger
-	config *Config
-	cancel context.CancelFunc
-	conn   *grpc.ClientConn
-	client collectorpb.TraceCollectorClient
+	logger            *zap.Logger
+	config            *Config
+	cancel            context.CancelFunc
+	conn              *grpc.ClientConn
+	client            collectorpb.TraceCollectorClient
+	telemetrySettings component.TelemetrySettings
 }
 
-func newSolarwindsApmSettingsExtension(extensionCfg *Config, logger *zap.Logger) (extension.Extension, error) {
+func newSolarwindsApmSettingsExtension(extensionCfg *Config, settings extension.Settings) (extension.Extension, error) {
 	settingsExtension := &solarwindsapmSettingsExtension{
-		config: extensionCfg,
-		logger: logger,
+		config:            extensionCfg,
+		logger:            settings.TelemetrySettings.Logger,
+		telemetrySettings: settings.TelemetrySettings,
 	}
 	return settingsExtension, nil
 }
 
-func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ component.Host) error {
+func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host component.Host) error {
 	extension.logger.Info("starting up solarwinds apm settings extension")
 	ctx := context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
-	systemCertPool, err := x509.SystemCertPool()
-	if err != nil {
-		return err
-	}
-	extension.conn, err = grpc.NewClient(extension.config.ClientConfig.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool})))
+	var err error
+	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings)
 	if err != nil {
 		return err
 	}
