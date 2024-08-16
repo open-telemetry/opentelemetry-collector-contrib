@@ -58,7 +58,7 @@ func TestCreateExtension(t *testing.T) {
 }
 
 // NewNopSettings returns a new nop settings for extension.Factory Create* functions.
-func NewNopSettings() extension.Settings {
+func newNopSettings() extension.Settings {
 	return extension.Settings{
 		ID:                component.NewIDWithName(component.MustNewType("nop"), uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
@@ -68,7 +68,7 @@ func NewNopSettings() extension.Settings {
 
 // create extension
 func createAnExtension(c *Config, t *testing.T) extension.Extension {
-	ex, err := newSolarwindsApmSettingsExtension(c, NewNopSettings())
+	ex, err := newSolarwindsApmSettingsExtension(c, newNopSettings())
 	require.NoError(t, err)
 	require.NoError(t, ex.Start(context.TODO(), nil))
 	return ex
