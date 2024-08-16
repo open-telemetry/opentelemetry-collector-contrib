@@ -128,6 +128,7 @@ body:
       - internal/metadataproviders
       - internal/otelarrow
       - internal/pdatautil
+      - internal/rabbitmq
       - internal/sharedcomponent
       - internal/splunk
       - internal/sqlquery
@@ -223,6 +224,7 @@ body:
       - receiver/flinkmetrics
       - receiver/fluentforward
       - receiver/gitprovider
+      - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy
