@@ -57,7 +57,7 @@ func TestCreateExtension(t *testing.T) {
 	}
 }
 
-// NewNopSettings returns a new nop settings for extension.Factory Create* functions.
+// newNopSettings returns a new nop settings for extension.Factory Create* functions.
 func newNopSettings() extension.Settings {
 	return extension.Settings{
 		ID:                component.NewIDWithName(component.MustNewType("nop"), uuid.NewString()),
