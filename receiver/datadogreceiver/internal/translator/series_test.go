@@ -414,7 +414,7 @@ func TestTranslateSeriesV2(t *testing.T) {
 				require.Equal(t, 1, result.ResourceMetrics().At(0).ScopeMetrics().Len())
 				require.Equal(t, 1, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 
-				require.Equal(t, "otelcol/datadogreceiver", result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
+				require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator", result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
 				require.Equal(t, component.NewDefaultBuildInfo().Version, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Version())
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)

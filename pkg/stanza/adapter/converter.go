@@ -322,6 +322,7 @@ func upsertToAttributeVal(value any, dest pcommon.Value) {
 		upsertToMap(t, dest.SetEmptyMap())
 	case []any:
 		upsertToSlice(t, dest.SetEmptySlice())
+	case nil:
 	default:
 		dest.SetStr(fmt.Sprintf("%v", t))
 	}
