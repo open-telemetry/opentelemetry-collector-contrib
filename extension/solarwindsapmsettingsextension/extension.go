@@ -53,7 +53,6 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	}
 	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool})))
 	if err != nil {
-		extension.telemetrySettings.Logger.Error("grpc.NewClient creation failed: ", zap.Error(err))
 		return err
 	}
 	extension.telemetrySettings.Logger.Info("created a gRPC client", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
@@ -161,7 +160,7 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 				settings = append(settings, setting)
 			}
 			if content, err := json.Marshal(settings); err != nil {
-				extension.telemetrySettings.Logger.Warn("error to marshal setting JSON[] byte from settings", zap.Error(err))
+				extension.telemetrySettings.Logger.Error("unable to marshal setting JSON[] byte from settings", zap.Error(err))
 			} else {
 				if err := os.WriteFile(filename, content, 0600); err != nil {
 					extension.telemetrySettings.Logger.Error("unable to write "+filename, zap.Error(err))
