@@ -5,6 +5,8 @@ package solarwindsapmsettingsextension // import "github.com/open-telemetry/open
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/binary"
 	"encoding/json"
 	"math"
@@ -17,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -46,9 +49,13 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	extension.logger.Info("starting up solarwinds apm settings extension")
 	ctx := context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
-	var err error
-	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings)
+	systemCertPool, err := x509.SystemCertPool()
 	if err != nil {
+		return err
+	}
+	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool})))
+	if err != nil {
+		extension.logger.Error("grpc.NewClient creation failed: ", zap.Error(err))
 		return err
 	}
 	extension.logger.Info("created a gRPC client", zap.String("endpoint", extension.config.ClientConfig.Endpoint))
