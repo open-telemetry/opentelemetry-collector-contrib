@@ -33,7 +33,7 @@ The following exporter configuration parameters are supported.
 | `extension`             | Extension to use for decoding a key with a matching suffix.                                                                                |             | Required |
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
 | `notifications:`        |                                                                                                                                            |             |          |
-| `opamp`                 | Name of the OpAMP Extension to use to send ingest progress notifications.                                                               |             |          |
+| `opampextension`        | Name of the OpAMP Extension to use to send ingest progress notifications.                                                               |             |          |
 
 ### Time format for `starttime` and `endtime`
 The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data. 
@@ -82,7 +82,7 @@ record is set to `status` and has the following attributes:
 | `telemetry_type`  | The type of telemetry being ingested. One of "traces", "metrics", or "logs".    |
 | `ingest_status`   | The status of the data ingestion. One of "ingesting", "failed", or "completed". |
 | `start_time`      | The time to start retrieving data in RFC3339 format.                            |
-| `stop_time`       | The time to stop retrieving data in RFC3339 format.                             |
+| `end_time`        | The time to stop retrieving data in RFC3339 format.                             |
 | `ingest_time`     | The time of the data currently being ingested in RFC3339 format.                |
 | `failure_message` | Error message if `ingest_status` is "failed".                                   |
 
