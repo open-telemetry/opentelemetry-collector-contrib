@@ -68,7 +68,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					if event.Name() == eventNameExc {
-						c.attrToLogRecord(sl, serviceName, span, event)
+						c.attrToLogRecord(sl, serviceName, span, event, resourceAttr)
 					}
 				}
 			}
@@ -91,7 +91,7 @@ func (c *logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
 	return sl
 }
 
-func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, span ptrace.Span, event ptrace.SpanEvent) plog.LogRecord {
+func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, span ptrace.Span, event ptrace.SpanEvent, resourceAttrs pcommon.Map) plog.LogRecord {
 	logRecord := sl.LogRecords().AppendEmpty()
 
 	logRecord.SetTimestamp(event.Timestamp())
@@ -113,7 +113,7 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 
 	// Add configured dimension attributes to the log record.
 	for _, d := range c.dimensions {
-		if v, ok := getDimensionValue(d, spanAttrs, eventAttrs); ok {
+		if v, ok := getDimensionValue(d, spanAttrs, eventAttrs, resourceAttrs); ok {
 			logRecord.Attributes().PutStr(d.name, v.Str())
 		}
 	}

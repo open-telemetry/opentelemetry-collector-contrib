@@ -151,7 +151,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -311,7 +311,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -471,7 +471,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -631,7 +631,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -791,7 +791,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -951,7 +951,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -1111,7 +1111,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -1271,7 +1271,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -1431,7 +1431,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -1591,7 +1591,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -1700,7 +1700,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -1809,7 +1809,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -1918,7 +1918,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2027,7 +2027,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2136,7 +2136,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2245,7 +2245,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2354,7 +2354,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2463,7 +2463,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2572,7 +2572,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2631,7 +2631,7 @@ resourceMetrics:
             name: k8s.volume.inodes.used
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2690,7 +2690,7 @@ resourceMetrics:
             name: k8s.volume.inodes.used
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2749,7 +2749,7 @@ resourceMetrics:
             name: k8s.volume.inodes.used
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2808,7 +2808,7 @@ resourceMetrics:
             name: k8s.volume.inodes.used
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2867,7 +2867,7 @@ resourceMetrics:
             name: k8s.volume.inodes.used
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2926,7 +2926,7 @@ resourceMetrics:
             name: k8s.volume.inodes.used
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -2985,7 +2985,7 @@ resourceMetrics:
             name: k8s.volume.inodes.used
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -3044,5 +3044,5 @@ resourceMetrics:
             name: k8s.volume.inodes.used
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest

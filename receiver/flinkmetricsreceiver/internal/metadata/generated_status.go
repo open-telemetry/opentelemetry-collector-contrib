@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("flinkmetrics")
+	Type      = component.MustNewType("flinkmetrics")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 )
 
 const (
