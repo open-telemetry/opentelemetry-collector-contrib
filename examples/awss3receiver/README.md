@@ -1,2 +1,0 @@
-# Example OPAMP server with AWS S3 Receiver Notifications Support
-This example demonstrates how to receive notifications from the AWS S3 receiver, via OPAMP, on the progress of the ingestion of data from an S3 bucket. 
