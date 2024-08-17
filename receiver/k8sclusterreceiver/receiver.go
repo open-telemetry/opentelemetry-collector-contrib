@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -76,7 +77,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
 				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
-				kr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errors.New("failed to start receiver")))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errors.New("failed to start receiver")))
 				return
 			}
 		}
