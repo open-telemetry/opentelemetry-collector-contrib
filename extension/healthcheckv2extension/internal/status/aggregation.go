@@ -6,14 +6,14 @@ package status // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
 // statusEvent contains a status and timestamp, and can contain an error. Note:
 // this is duplicated from core because we need to be able to "rewrite" the
 // timestamps of some events during aggregation.
 type statusEvent struct {
-	status    component.Status
+	status    componentstatus.Status
 	err       error
 	timestamp time.Time
 }
@@ -21,7 +21,7 @@ type statusEvent struct {
 var _ Event = (*statusEvent)(nil)
 
 // Status returns the Status (enum) associated with the StatusEvent
-func (ev *statusEvent) Status() component.Status {
+func (ev *statusEvent) Status() componentstatus.Status {
 	return ev.status
 }
 
@@ -61,8 +61,8 @@ type aggregationFunc func(*AggregateStatus) Event
 // we use the latest event as it represents the last time a successful status was
 // reported.
 func newAggregationFunc(priority ErrorPriority) aggregationFunc {
-	statusFunc := func(st *AggregateStatus) component.Status {
-		seen := make(map[component.Status]struct{})
+	statusFunc := func(st *AggregateStatus) componentstatus.Status {
+		seen := make(map[componentstatus.Status]struct{})
 		for _, cs := range st.ComponentStatusMap {
 			seen[cs.Status()] = struct{}{}
 		}
@@ -76,45 +76,45 @@ func newAggregationFunc(priority ErrorPriority) aggregationFunc {
 		}
 
 		// Handle mixed status cases
-		if _, isFatal := seen[component.StatusFatalError]; isFatal {
-			return component.StatusFatalError
+		if _, isFatal := seen[componentstatus.StatusFatalError]; isFatal {
+			return componentstatus.StatusFatalError
 		}
 
-		if _, isStarting := seen[component.StatusStarting]; isStarting {
-			return component.StatusStarting
+		if _, isStarting := seen[componentstatus.StatusStarting]; isStarting {
+			return componentstatus.StatusStarting
 		}
 
-		if _, isStopping := seen[component.StatusStopping]; isStopping {
-			return component.StatusStopping
+		if _, isStopping := seen[componentstatus.StatusStopping]; isStopping {
+			return componentstatus.StatusStopping
 		}
 
-		if _, isStopped := seen[component.StatusStopped]; isStopped {
-			return component.StatusStopping
+		if _, isStopped := seen[componentstatus.StatusStopped]; isStopped {
+			return componentstatus.StatusStopping
 		}
 
 		if priority == PriorityPermanent {
-			if _, isPermanent := seen[component.StatusPermanentError]; isPermanent {
-				return component.StatusPermanentError
+			if _, isPermanent := seen[componentstatus.StatusPermanentError]; isPermanent {
+				return componentstatus.StatusPermanentError
 			}
-			if _, isRecoverable := seen[component.StatusRecoverableError]; isRecoverable {
-				return component.StatusRecoverableError
+			if _, isRecoverable := seen[componentstatus.StatusRecoverableError]; isRecoverable {
+				return componentstatus.StatusRecoverableError
 			}
 		} else {
-			if _, isRecoverable := seen[component.StatusRecoverableError]; isRecoverable {
-				return component.StatusRecoverableError
+			if _, isRecoverable := seen[componentstatus.StatusRecoverableError]; isRecoverable {
+				return componentstatus.StatusRecoverableError
 			}
-			if _, isPermanent := seen[component.StatusPermanentError]; isPermanent {
-				return component.StatusPermanentError
+			if _, isPermanent := seen[componentstatus.StatusPermanentError]; isPermanent {
+				return componentstatus.StatusPermanentError
 			}
 		}
 
-		return component.StatusNone
+		return componentstatus.StatusNone
 	}
 
 	return func(st *AggregateStatus) Event {
 		var ev, lastEvent, matchingEvent Event
 		status := statusFunc(st)
-		isError := component.StatusIsError(status)
+		isError := componentstatus.StatusIsError(status)
 
 		for _, cs := range st.ComponentStatusMap {
 			ev = cs.Event
