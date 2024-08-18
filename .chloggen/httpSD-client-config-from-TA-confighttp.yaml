@@ -7,7 +7,7 @@ change_type: enhancement
 component: prometheusreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use confighttp for httpSD client config
+note: Ensure Target Allocator's confighttp is used in the receiver's service discovery
 
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
