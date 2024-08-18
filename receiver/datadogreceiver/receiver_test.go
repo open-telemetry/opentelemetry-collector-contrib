@@ -13,6 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"net/http/httptest"
+
 	"github.com/DataDog/agent-payload/v5/gogen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -169,7 +171,25 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 	expectedEnvironment, _ := metric.Sum().DataPoints().At(0).Attributes().Get("environment")
 	assert.Equal(t, "test", expectedEnvironment.AsString())
 }
+func TestDatadogFakeFeatureDiscovery(t *testing.T) {
 
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+
+	dd, err := newDataDogReceiver(
+		cfg,
+		receivertest.NewNopSettings(),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	req := httptest.NewRequest("POST", "http://example.com/foo", nil) // Create a request with content-length :0
+
+	w := httptest.NewRecorder()
+	dd.(*datadogReceiver).handleTraces(w, req)
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+	require.Equal(t, string(body), "Fake featuresdiscovery\n", "Expected response to be 'Fake featuresdiscovery', got %s", string(body))
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
 func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
