@@ -632,7 +632,9 @@ func TestArrowExporterHeaders(t *testing.T) {
 
 				sendCtx := ctx
 				if withDeadline {
-					sendCtx, _ = context.WithTimeout(sendCtx, time.Second)
+					var sendCancel context.CancelFunc
+					sendCtx, sendCancel = context.WithTimeout(sendCtx, time.Second)
+					defer sendCancel()
 				}
 
 				sent, err := tc.exporter.SendAndWait(sendCtx, input)
