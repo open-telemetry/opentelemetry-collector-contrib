@@ -5,6 +5,7 @@ package datadogconnector
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -19,6 +20,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Traces: TracesConfig{
 				IgnoreResources: []string{},
 				TraceBuffer:     1000,
+				BucketInterval:  10 * time.Second,
 			},
 		},
 		cfg, "failed to create default config")
