@@ -78,6 +78,22 @@ Number of times the background writer stopped a cleaning scan because it had wri
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | 1 | Sum | Int | Cumulative | true |
 
+### postgresql.blks_hit
+
+Number of times disk blocks were found already in the buffer cache
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {blks_hit} | Sum | Int | Cumulative | true |
+
+### postgresql.blks_read
+
+Number of disk blocks read in this database
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {blks_read} | Sum | Int | Cumulative | true |
+
 ### postgresql.blocks_read
 
 The number of blocks read.
@@ -116,6 +132,22 @@ Number of user databases.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {databases} | Sum | Int | Cumulative | false |
 
+### postgresql.database.locks
+
+The number of database locks.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str |
+| mode | Name of the lock mode held or desired by the process. | Any Str |
+| lock_type | Type of the lockable object. | Any Str |
+
 ### postgresql.db_size
 
 The database disk usage.
@@ -123,6 +155,14 @@ The database disk usage.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
+
+### postgresql.deadlocks
+
+The number of deadlocks.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {deadlock} | Sum | Int | Cumulative | true |
 
 ### postgresql.index.scans
 
@@ -190,6 +230,14 @@ The number of rows in the database.
 | ---- | ----------- | ------ |
 | state | The tuple (row) state. | Str: ``dead``, ``live`` |
 
+### postgresql.sequential_scans
+
+The number of sequential scans.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {sequential_scan} | Sum | Int | Cumulative | true |
+
 ### postgresql.table.count
 
 Number of user tables in a database.
@@ -213,6 +261,46 @@ Number of times a table has manually been vacuumed.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {vacuums} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_deleted
+
+Number of rows deleted by queries in this database
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_deleted} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_fetched
+
+Number of rows fetched by queries in this database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_fetched} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_inserted
+
+Number of rows inserted by queries in this database
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_inserted} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_returned
+
+Number of rows returned by queries in this database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_returned} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_updated
+
+Number of rows updated by queries in the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_updated} | Sum | Int | Cumulative | true |
 
 ### postgresql.wal.age
 
@@ -252,38 +340,6 @@ metrics:
   <metric_name>:
     enabled: true
 ```
-
-### postgresql.database.locks
-
-The number of database locks.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {lock} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str |
-| mode | Name of the lock mode held or desired by the process. | Any Str |
-| lock_type | Type of the lockable object. | Any Str |
-
-### postgresql.deadlocks
-
-The number of deadlocks.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {deadlock} | Sum | Int | Cumulative | true |
-
-### postgresql.sequential_scans
-
-The number of sequential scans.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {sequential_scan} | Sum | Int | Cumulative | true |
 
 ### postgresql.temp_files
 

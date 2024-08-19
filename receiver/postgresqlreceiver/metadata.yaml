@@ -161,7 +161,7 @@ metrics:
       value_type: int
     unit: "{databases}"
   postgresql.database.locks:
-    enabled: false
+    enabled: true
     description: The number of database locks.
     unit: "{lock}"
     gauge:
@@ -237,7 +237,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   postgresql.deadlocks:
-    enabled: false
+    enabled: true
     description: The number of deadlocks.
     unit: "{deadlock}"
     sum:
@@ -245,7 +245,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   postgresql.sequential_scans:
-    enabled: false
+    enabled: true
     description: The number of sequential scans.
     unit: "{sequential_scan}"
     sum:
@@ -284,6 +284,62 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative   
+  postgresql.tup_updated:
+    enabled: true
+    description: Number of rows updated by queries in the database.
+    unit: "{tup_updated}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.tup_returned:
+    enabled: true
+    description: Number of rows returned by queries in this database.
+    unit: "{tup_returned}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.tup_fetched:
+    enabled: true
+    description: Number of rows fetched by queries in this database.
+    unit: "{tup_fetched}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.tup_inserted:
+    enabled: true
+    description: Number of rows inserted by queries in this database
+    unit: "{tup_inserted}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.tup_deleted:
+    enabled: true
+    description: Number of rows deleted by queries in this database
+    unit: "{tup_deleted}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.blks_hit:
+    enabled: true
+    description: Number of times disk blocks were found already in the buffer cache
+    unit: "{blks_hit}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.blks_read:
+    enabled: true
+    description: Number of disk blocks read in this database
+    unit: "{blks_read}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
   postgresql.wal.age:
     description: Age of the oldest WAL file.
     extended_documentation: |

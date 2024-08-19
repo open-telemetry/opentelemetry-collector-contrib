@@ -13,6 +13,10 @@ all_set:
       enabled: true
     postgresql.bgwriter.maxwritten:
       enabled: true
+    postgresql.blks_hit:
+      enabled: true
+    postgresql.blks_read:
+      enabled: true
     postgresql.blocks_read:
       enabled: true
     postgresql.commits:
@@ -48,6 +52,16 @@ all_set:
     postgresql.table.vacuum.count:
       enabled: true
     postgresql.temp_files:
+      enabled: true
+    postgresql.tup_deleted:
+      enabled: true
+    postgresql.tup_fetched:
+      enabled: true
+    postgresql.tup_inserted:
+      enabled: true
+    postgresql.tup_returned:
+      enabled: true
+    postgresql.tup_updated:
       enabled: true
     postgresql.wal.age:
       enabled: true
@@ -78,6 +92,10 @@ none_set:
       enabled: false
     postgresql.bgwriter.maxwritten:
       enabled: false
+    postgresql.blks_hit:
+      enabled: false
+    postgresql.blks_read:
+      enabled: false
     postgresql.blocks_read:
       enabled: false
     postgresql.commits:
@@ -113,6 +131,16 @@ none_set:
     postgresql.table.vacuum.count:
       enabled: false
     postgresql.temp_files:
+      enabled: false
+    postgresql.tup_deleted:
+      enabled: false
+    postgresql.tup_fetched:
+      enabled: false
+    postgresql.tup_inserted:
+      enabled: false
+    postgresql.tup_returned:
+      enabled: false
+    postgresql.tup_updated:
       enabled: false
     postgresql.wal.age:
       enabled: false
