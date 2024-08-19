@@ -81,7 +81,7 @@ func (g *geoIPProcessor) geoLocation(ctx context.Context, ip net.IP) (attribute.
 	return *allAttributes, nil
 }
 
-// processMetadata processes a pcommon.Map by adding geolocation attributes based on the found IP address.
+// processAttributes processes a pcommon.Map by adding geolocation attributes based on the found IP address.
 func (g *geoIPProcessor) processAttributes(ctx context.Context, metadata pcommon.Map) error {
 	ipAddr, err := ipFromAttributes(g.resourceAttributes, metadata)
 	if err != nil {
