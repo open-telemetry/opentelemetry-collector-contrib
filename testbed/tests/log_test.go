@@ -8,7 +8,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"path"
 	"path/filepath"
 	"sync/atomic"
@@ -20,7 +19,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestLog10kDPS(t *testing.T) {
@@ -325,7 +323,6 @@ func TestLargeFileOnce(t *testing.T) {
 	dataProvider.SetLoadGeneratorCounters(&dataItemsGenerated)
 	ld, _ := dataProvider.GenerateLogs()
 
-	m := &plog.ProtoMarshaler{}
 	require.NoError(t, sender.ConsumeLogs(context.Background(), ld))
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
