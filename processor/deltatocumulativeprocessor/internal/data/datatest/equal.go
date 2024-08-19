@@ -1,17 +1,17 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package expotest // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
+package datatest // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
 
 import (
 	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest/compare"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 )
 
@@ -20,7 +20,7 @@ type T struct {
 	testing.TB
 }
 
-func Is(t testing.TB) T {
+func New(t testing.TB) T {
 	return T{TB: t}
 }
 
@@ -58,7 +58,7 @@ func equal(t testing.TB, want, got any, name string) bool {
 	vg := reflect.ValueOf(got)
 
 	if vw.Kind() != reflect.Struct {
-		ok := reflect.DeepEqual(want, got)
+		ok := compare.Equal(want, got)
 		if !ok {
 			t.Errorf("%s: %+v != %+v", name, want, got)
 		}
@@ -79,7 +79,7 @@ func equal(t testing.TB, want, got any, name string) bool {
 			continue
 		}
 		// Append(Empty) fails above heuristic, exclude it
-		if strings.HasPrefix(mname, "Append") {
+		if strings.HasPrefix(mname, "Append") || strings.HasPrefix(mname, "Clone") {
 			continue
 		}
 
@@ -111,5 +111,10 @@ func equal(t testing.TB, want, got any, name string) bool {
 	}
 
 	// fallback to a full deep-equal for rare cases (unexported fields, etc)
-	return assert.Equal(t, want, got)
+	if diff := compare.Diff(want, got); diff != "" {
+		t.Error(diff)
+		return false
+	}
+
+	return true
 }
