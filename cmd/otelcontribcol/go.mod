@@ -634,6 +634,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.107.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.107.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.107.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.107.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.107.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.107.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.107.0 // indirect
