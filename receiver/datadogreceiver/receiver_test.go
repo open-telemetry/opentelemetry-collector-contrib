@@ -84,6 +84,12 @@ func TestDatadogServer(t *testing.T) {
 			expectCode:    http.StatusBadRequest,
 			expectContent: "Unable to unmarshal reqs\n",
 		},
+		{
+			name:          "Fake featuresdiscovery",
+			op:            nil, // Content-length: 0.
+			expectCode:    http.StatusBadRequest,
+			expectContent: "Fake featuresdiscovery\n",
+		},
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
