@@ -67,7 +67,7 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 |--------------------------------|----------------------------------------------------------------------------------|
 | AcceptsRemoteConfig            | ✅                                                                               |
 | ReportsEffectiveConfig         | ⚠️                                                                               |
-| AcceptsPackages                | 📅                                                                               |
+| AcceptsPackages                | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34734> |
 | ReportsPackageStatuses         | 📅                                                                               |
 | ReportsOwnTraces               | 📅                                                                               |
 | ReportsOwnMetrics              | ⚠️                                                                               |
