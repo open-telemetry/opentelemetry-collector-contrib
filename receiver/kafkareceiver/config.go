@@ -53,7 +53,7 @@ type Config struct {
 	SessionTimeout time.Duration `mapstructure:"session_timeout"`
 	// Heartbeat interval for the Kafka consumer
 	HeartbeatInterval time.Duration `mapstructure:"heartbeat_interval"`
-	// The name of the kafka topic to consume from (default "otlp_spans" for traces, "otlp_metrics" for metrics, "otlp_logs" for logs)
+	// The name of the kafka topic to consume from.
 	// Deprecated: use instead "traces_topic", "metrics_topic" and "logs_topic".
 	Topic string `mapstructure:"topic"`
 	// The name of the kafka topic to consume traces from (default "otlp_spans")
