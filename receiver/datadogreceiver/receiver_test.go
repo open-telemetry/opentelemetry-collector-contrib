@@ -175,6 +175,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 	expectedEnvironment, _ := metric.Sum().DataPoints().At(0).Attributes().Get("environment")
 	assert.Equal(t, "test", expectedEnvironment.AsString())
 }
+
 func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
