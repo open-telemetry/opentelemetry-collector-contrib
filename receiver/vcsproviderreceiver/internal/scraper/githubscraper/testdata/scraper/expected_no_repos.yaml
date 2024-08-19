@@ -7,7 +7,7 @@ resourceMetrics:
         - key: vcs.vendor.name
           value:
             stringValue: github
-    schemaUrl: https://opentelemetry.io/schemas/1.25.0
+    schemaUrl: https://opentelemetry.io/schemas/1.27.0
     scopeMetrics:
       - metrics:
           - description: The number of repositories in an organization.

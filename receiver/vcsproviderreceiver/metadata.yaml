@@ -1,6 +1,6 @@
 type: vcsprovider
 
-sem_conv_version: 1.25.0
+sem_conv_version: 1.27.0
 
 status:
   class: receiver
