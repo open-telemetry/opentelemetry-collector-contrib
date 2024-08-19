@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -216,6 +217,9 @@ func TestTranslationSpanChanges(t *testing.T) {
 				}
 			}
 			expect := NewExampleSpans(t, tc.target)
+			if diff := cmp.Diff(expect, spans, cmp.AllowUnexported(ptrace.Traces{})); diff != "" {
+				t.Errorf("Span mismatch (-want +got):\n%s", diff)
+			}
 			assert.EqualValues(t, expect, spans, "Must match the expected values")
 		})
 	}

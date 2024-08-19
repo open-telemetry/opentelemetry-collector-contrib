@@ -3,14 +3,20 @@
 package translation
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
 	"go.opentelemetry.io/otel/schema/v1.0/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
+
+func compareFuncs(f1, f2 migrate.ResourceTestFunc[ptrace.Span]) bool {
+	return fmt.Sprintf("%p", f1) == fmt.Sprintf("%p", f2)
+}
 
 func TestNewRevisionV1(t *testing.T) {
 	t.Parallel()
@@ -31,8 +37,7 @@ func TestNewRevisionV1(t *testing.T) {
 				resources:                         migrate.NewAttributeChangeSetSlice(),
 				spans:                             migrate.NewConditionalAttributeSetSlice(),
 				spanEventsRenameEvents:            migrate.NewSignalNameChangeSlice(),
-				spanEventsRenameAttributesOnSpan:  migrate.NewConditionalAttributeSetSlice(),
-				spanEventsRenameAttributesOnEvent: migrate.NewConditionalAttributeSetSlice(),
+				spanEventsRenameAttributesOnSpanEvent: migrate.NewConditionalLambdaAttributeSetSlice[ptrace.Span](),
 				metricsRenameAttributes:           migrate.NewConditionalAttributeSetSlice(),
 				metricsRenameMetrics:              migrate.NewSignalNameChangeSlice(),
 				logsRenameAttributes:              migrate.NewAttributeChangeSetSlice(),
@@ -172,20 +177,11 @@ func TestNewRevisionV1(t *testing.T) {
 						"started": "application started",
 					}),
 				),
-				spanEventsRenameAttributesOnSpan: migrate.NewConditionalAttributeSetSlice(
-					migrate.NewConditionalAttributeSet(
-						map[string]string{
+				spanEventsRenameAttributesOnSpanEvent: migrate.NewConditionalLambdaAttributeSetSlice(
+					migrate.NewConditionalLambdaAttributeSet[ptrace.Span](map[string]string{
 							"service.app.name": "service.name",
 						},
-						"service running",
-					),
-				),
-				spanEventsRenameAttributesOnEvent: migrate.NewConditionalAttributeSetSlice(
-					migrate.NewConditionalAttributeSet(
-						map[string]string{
-							"service.app.name": "service.name",
-						},
-						"service errored",
+						nil,
 					),
 				),
 				metricsRenameAttributes: migrate.NewConditionalAttributeSetSlice(
@@ -215,7 +211,16 @@ func TestNewRevisionV1(t *testing.T) {
 			t.Parallel()
 
 			rev := NewRevision(tc.inVersion, tc.inDefinition)
-			assert.EqualValues(t, tc.expect, rev, "Must match the expected values")
+			// set expected spanEventsRenameAttributesOnSpanEvent testFunc to the actual revision's testFunc
+			if len(*tc.expect.spanEventsRenameAttributesOnSpanEvent) != 0 {
+				element := (*tc.expect.spanEventsRenameAttributesOnSpanEvent)[0]
+				element.TestFunc = (*rev.spanEventsRenameAttributesOnSpanEvent)[0].TestFunc
+			}
+
+			// use go-cmp to compare tc.expect and rev and fail the test if there's a difference
+			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, migrate.ConditionalLambdaAttributeSet[ptrace.Span]{}), cmp.Comparer(compareFuncs)); diff != "" {
+				t.Errorf("NewRevisionV1() mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }

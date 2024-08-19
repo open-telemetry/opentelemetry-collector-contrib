@@ -12,8 +12,8 @@ import (
 type ResourceTestFunc[T any] func(resource T) bool
 
 type ConditionalLambdaAttributeSet[T any] struct {
-	testFunc ResourceTestFunc[T]
-	attrs *AttributeChangeSet
+	TestFunc ResourceTestFunc[T]
+	attrs    *AttributeChangeSet
 }
 
 type ConditionalLambdaAttributeSetSlice[T any] []*ConditionalLambdaAttributeSet[T]
@@ -21,7 +21,7 @@ type ConditionalLambdaAttributeSetSlice[T any] []*ConditionalLambdaAttributeSet[
 func NewConditionalLambdaAttributeSet[T any](mappings ast.AttributeMap, testFunc ResourceTestFunc[T]) *ConditionalLambdaAttributeSet[T] {
 
 	return &ConditionalLambdaAttributeSet[T]{
-		testFunc:    testFunc,
+		TestFunc:    testFunc,
 		attrs: NewAttributeChangeSet(mappings),
 	}
 }
@@ -44,7 +44,7 @@ func (ca *ConditionalLambdaAttributeSet[T]) check(resource T) bool {
 	if &resource == nil {
 		return true
 	}
-	return ca.testFunc(resource)
+	return ca.TestFunc(resource)
 }
 
 func NewConditionalLambdaAttributeSetSlice[T any](conditions ...*ConditionalLambdaAttributeSet[T]) *ConditionalLambdaAttributeSetSlice[T] {

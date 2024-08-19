@@ -207,40 +207,19 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					if err != nil {
 						return err
 					}
-					if err := rev.spanEventsRenameAttributesOnSpan.Apply(event.Attributes(), span.Name()); err != nil {
+					if err := rev.spanEventsRenameAttributesOnSpanEvent.Apply(event.Attributes(), span); err != nil {
 						return err
 					}
-					if err := rev.spanEventsRenameAttributesOnEvent.Apply(event.Attributes(), event.Name()); err != nil {
-						return err
-					}
-					//err = rev.spanEventsRenameAttributesOnSpan.Apply(span.Attributes(), span.Name())
-					//if err != nil {
-					//	return err
-					//}
 
-
-					// todo(ankit) write a migrator for conditional AND - the old code did or
-					//rev.SpanEvents().UpdateAttrsIf(span.Name(), event.Attributes())
-					//rev.SpanEvents().UpdateAttrsIf(event.Name(), event.Attributes())
 					rev.spanEventsRenameEvents.Apply(event)
 				}
 			case Revert:
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
 					rev.spanEventsRenameEvents.Rollback(event)
-					// todo(ankit) write a migrator for conditional AND - the old code did or
-					if err := rev.spanEventsRenameAttributesOnEvent.Rollback(event.Attributes(), event.Name()); err != nil {
+					if err := rev.spanEventsRenameAttributesOnSpanEvent.Rollback(event.Attributes(), span); err != nil {
 						return err
 					}
-					if err := rev.spanEventsRenameAttributesOnSpan.Rollback(event.Attributes(), span.Name()); err != nil {
-						return err
-					}
-
-
-					//err = rev.spanEventsRenameAttributesOnSpan.Rollback(span.Attributes(), span.Name())
-					//if err != nil {
-					//	return err
-					//}
 					err = rev.all.Rollback(event.Attributes())
 					if err != nil {
 						return err

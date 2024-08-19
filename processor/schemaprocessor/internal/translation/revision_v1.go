@@ -20,8 +20,6 @@ type RevisionV1 struct {
 	spans                             *migrate.ConditionalAttributeSetSlice
 	spanEventsRenameEvents            *migrate.SignalNameChangeSlice
 	spanEventsRenameAttributesOnSpanEvent *migrate.ConditionalLambdaAttributeSetSlice[ptrace.Span]
-	spanEventsRenameAttributesOnSpan  *migrate.ConditionalAttributeSetSlice
-	spanEventsRenameAttributesOnEvent *migrate.ConditionalAttributeSetSlice
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
 	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
 	logsRenameAttributes              *migrate.AttributeChangeSetSlice
@@ -46,8 +44,6 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		spans:                             newSpanConditionalAttributeSlice(def.Spans),
 		spanEventsRenameEvents:            newSpanEventSignalSlice(def.SpanEvents),
 		spanEventsRenameAttributesOnSpanEvent: newSpanEventsRenameAttributesOnSpanEventEvent(def.SpanEvents),
-		spanEventsRenameAttributesOnSpan:  newSpanEventConditionalSpans(def.SpanEvents),
-		spanEventsRenameAttributesOnEvent: newSpanEventConditionalNames(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
 		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
 		logsRenameAttributes:              newAttributeChangeSetSliceFromChanges(logChanges),
@@ -129,39 +125,43 @@ func newMetricNameSignalSlice(metrics ast.Metrics) *migrate.SignalNameChangeSlic
 	return migrate.NewSignalNameChangeSlice(values...)
 }
 
+func generateSpanEventsRenameAttributes(ch ast.SpanEventsChange) func(span ptrace.Span) bool{
+	return func(span ptrace.Span) bool {
+		var spanNameMatches, spanEventMatches bool
+		if ch.RenameAttributes.ApplyToSpans == nil || len(ch.RenameAttributes.ApplyToSpans) == 0 {
+			spanNameMatches = true
+		} else {
+			for _, spanName := range ch.RenameAttributes.ApplyToSpans {
+				if span.Name() == string(spanName) {
+					spanNameMatches = true
+					break
+				}
+			}
+		}
+		if ch.RenameAttributes.ApplyToEvents == nil || len(ch.RenameAttributes.ApplyToEvents) == 0 {
+			spanEventMatches = true
+		} else {
+			for _, eventName := range ch.RenameAttributes.ApplyToEvents {
+				for i := 0; i < span.Events().Len(); i++  {
+					spanEvent := span.Events().At(i)
+					if spanEvent.Name() == string(eventName) {
+						spanEventMatches = true
+						break
+					}
+				}
+			}
+		}
+		return spanNameMatches && spanEventMatches
+	}
+}
+
 func newSpanEventsRenameAttributesOnSpanEventEvent(spanEvents ast.SpanEvents) *migrate.ConditionalLambdaAttributeSetSlice[ptrace.Span]{
 	var conditions []*migrate.ConditionalLambdaAttributeSet[ptrace.Span]
 	for _, ch := range spanEvents.Changes {
 		if rename := ch.RenameAttributes; rename != nil {
 			conditions = append(conditions, migrate.NewConditionalLambdaAttributeSet(
 				ch.RenameAttributes.AttributeMap,
-				func(span ptrace.Span) bool {
-					var spanNameMatches, spanEventMatches bool
-					if ch.RenameAttributes.ApplyToSpans == nil || len(ch.RenameAttributes.ApplyToSpans) == 0 {
-						spanNameMatches = true
-					} else {
-						for _, spanName := range ch.RenameAttributes.ApplyToSpans {
-							if span.Name() == string(spanName) {
-								spanNameMatches = true
-								break
-							}
-						}
-					}
-					if ch.RenameAttributes.ApplyToEvents == nil || len(ch.RenameAttributes.ApplyToEvents) == 0 {
-						spanEventMatches = true
-					} else {
-						for _, eventName := range ch.RenameAttributes.ApplyToEvents {
-							for i := 0; i < span.Events().Len(); i++  {
-								spanEvent := span.Events().At(i)
-								if spanEvent.Name() == string(eventName) {
-									spanNameMatches = true
-									break
-								}
-							}
-						}
-					}
-					return spanNameMatches && spanEventMatches
-				},
+				generateSpanEventsRenameAttributes(ch),
 			))
 		}
 	}
