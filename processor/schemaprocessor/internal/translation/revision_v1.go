@@ -87,26 +87,6 @@ func newSpanEventSignalSlice(events ast.SpanEvents) *migrate.SignalNameChangeSli
 	return migrate.NewSignalNameChangeSlice(values...)
 }
 
-func newSpanEventConditionalSpans(events ast.SpanEvents) *migrate.ConditionalAttributeSetSlice {
-	values := make([]*migrate.ConditionalAttributeSet, 0, 10)
-	for _, ch := range events.Changes {
-		if rename := ch.RenameAttributes; rename != nil {
-			values = append(values, migrate.NewConditionalAttributeSet(rename.AttributeMap, rename.ApplyToSpans...))
-		}
-	}
-	return migrate.NewConditionalAttributeSetSlice(values...)
-}
-
-func newSpanEventConditionalNames(events ast.SpanEvents) *migrate.ConditionalAttributeSetSlice {
-	values := make([]*migrate.ConditionalAttributeSet, 0, 10)
-	for _, ch := range events.Changes {
-		if rename := ch.RenameAttributes; rename != nil {
-			values = append(values, migrate.NewConditionalAttributeSet(rename.AttributeMap, rename.ApplyToEvents...))
-		}
-	}
-	return migrate.NewConditionalAttributeSetSlice(values...)
-}
-
 func newMetricConditionalSlice(metrics ast.Metrics) *migrate.ConditionalAttributeSetSlice {
 	values := make([]*migrate.ConditionalAttributeSet, 0, 10)
 	for _, ch := range metrics.Changes {
