@@ -50,7 +50,7 @@ func TestNumericTagFilter(t *testing.T) {
 		},
 		{
 			Desc:     "resource attribute at the upper limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MinInt32),
+			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt),
 			Decision: Sampled,
 		},
 		{
@@ -119,8 +119,8 @@ func TestNumericTagFilterInverted(t *testing.T) {
 			Decision: InvertNotSampled,
 		},
 		{
-			Desc:     "resource attribute at the lower limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MinInt32),
+			Desc:     "resource attribute at the upper limit",
+			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt32),
 			Decision: InvertNotSampled,
 		},
 		{
