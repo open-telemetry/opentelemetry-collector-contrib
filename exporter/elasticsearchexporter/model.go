@@ -284,71 +284,9 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		}
 		document.AddString("unit", metric.Unit())
 
-		// At this point the data_stream attributes are expected to be in the record attributes,
-		// updated by the router.
-		// Move them to the top of the document and remove them from the record
-		attributeMap := dp.Attributes()
-
-		forEachDataStreamKey := func(fn func(key string)) {
-			for _, key := range datastreamKeys {
-				fn(key)
-			}
-		}
-
-		forEachDataStreamKey(func(key string) {
-			if val, exists := attributeMap.Get(key); exists {
-				document.AddAttribute(key, val)
-				attributeMap.Remove(key)
-			}
-		})
-
-		document.AddAttributes("attributes", attributeMap)
-
-		// Resource
-		resourceMapVal := pcommon.NewValueMap()
-		resourceMap := resourceMapVal.Map()
-		resourceMap.PutStr("schema_url", resourceSchemaURL)
-		resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
-		resourceAttrMap := resourceMap.PutEmptyMap("attributes")
-
-		resource.Attributes().CopyTo(resourceAttrMap)
-
-		// Remove data_stream attributes from the resources attributes if present
-		forEachDataStreamKey(func(key string) {
-			resourceAttrMap.Remove(key)
-		})
-
-		document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
-
-		// Scope
-		scopeMapVal := pcommon.NewValueMap()
-		scopeMap := scopeMapVal.Map()
-		if scope.Name() != "" {
-			scopeMap.PutStr("name", scope.Name())
-		}
-		if scope.Version() != "" {
-			scopeMap.PutStr("version", scope.Version())
-		}
-		if scopeSchemaURL != "" {
-			scopeMap.PutStr("schema_url", scopeSchemaURL)
-		}
-		if scope.DroppedAttributesCount() > 0 {
-			scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
-		}
-		scopeAttributes := scope.Attributes()
-		if scopeAttributes.Len() > 0 {
-			scopeAttrMap := scopeMap.PutEmptyMap("attributes")
-			scopeAttributes.CopyTo(scopeAttrMap)
-
-			// Remove data_stream attributes from the scope attributes if present
-			forEachDataStreamKey(func(key string) {
-				scopeAttrMap.Remove(key)
-			})
-		}
-
-		if scopeMap.Len() > 0 {
-			document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
-		}
+		m.encodeAttributesOTelMode(&document, dp.Attributes())
+		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
+		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 	}
 
 	switch value.Type() {
