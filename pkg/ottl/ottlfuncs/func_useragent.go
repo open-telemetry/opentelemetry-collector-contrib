@@ -6,9 +6,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/ua-parser/uap-go/uaparser"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type UserAgentArguments[K any] struct {
