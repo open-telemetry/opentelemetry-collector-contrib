@@ -31,6 +31,69 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
+			id: component.NewIDWithName(metadata.Type, "deprecated"),
+			expected: &Config{
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ResolveCanonicalBootstrapServersOnly: true,
+				ClientID:                             "otel-collector",
+				GroupID:                              "otel-collector",
+				InitialOffset:                        "latest",
+				Authentication: kafka.Authentication{
+					TLS: &configtls.ClientConfig{
+						Config: configtls.Config{
+							CAFile:   "ca.pem",
+							CertFile: "cert.pem",
+							KeyFile:  "key.pem",
+						},
+					},
+				},
+				Metadata: kafkaexporter.Metadata{
+					Full: true,
+					Retry: kafkaexporter.MetadataRetry{
+						Max:     10,
+						Backoff: time.Second * 5,
+					},
+				},
+				AutoCommit: AutoCommit{
+					Enable:   true,
+					Interval: 1 * time.Second,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "deprecated_logs"),
+			expected: &Config{
+				Topic:         "logs",
+				Encoding:      "direct",
+				Brokers:       []string{"coffee:123", "foobar:456"},
+				ClientID:      "otel-collector",
+				GroupID:       "otel-collector",
+				InitialOffset: "earliest",
+				Authentication: kafka.Authentication{
+					TLS: &configtls.ClientConfig{
+						Config: configtls.Config{
+							CAFile:   "ca.pem",
+							CertFile: "cert.pem",
+							KeyFile:  "key.pem",
+						},
+					},
+				},
+				Metadata: kafkaexporter.Metadata{
+					Full: true,
+					Retry: kafkaexporter.MetadataRetry{
+						Max:     10,
+						Backoff: time.Second * 5,
+					},
+				},
+				AutoCommit: AutoCommit{
+					Enable:   true,
+					Interval: 1 * time.Second,
+				},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				TracesTopic:                          "spans",
@@ -114,4 +177,12 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestLoadConfigError(t *testing.T) {
+	config := &Config{
+		Topic:       "spans",
+		TracesTopic: "spans1",
+	}
+	assert.ErrorContains(t, component.ValidateConfig(config), "setting 'topic' and 'logs_topic'|'metrics_topic'|'traces_topic' is not allowed")
 }

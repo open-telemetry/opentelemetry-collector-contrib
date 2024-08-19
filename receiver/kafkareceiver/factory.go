@@ -140,7 +140,10 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	}
 
 	oCfg := *(cfg.(*Config))
-	if oCfg.TracesTopic == "" {
+	if oCfg.Topic != "" {
+		set.Logger.Warn("'topic' is deprecated and will be removed in a future release. Please remove it from the configuration.")
+		oCfg.TracesTopic = oCfg.Topic
+	} else if oCfg.TracesTopic == "" {
 		oCfg.TracesTopic = defaultTracesTopic
 	}
 	unmarshaler := f.tracesUnmarshalers[oCfg.Encoding]
@@ -166,7 +169,10 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 	}
 
 	oCfg := *(cfg.(*Config))
-	if oCfg.MetricsTopic == "" {
+	if oCfg.Topic != "" {
+		set.Logger.Warn("'topic' is deprecated and will be removed in a future release. Please remove it from the configuration.")
+		oCfg.MetricsTopic = oCfg.Topic
+	} else if oCfg.MetricsTopic == "" {
 		oCfg.MetricsTopic = defaultMetricsTopic
 	}
 	unmarshaler := f.metricsUnmarshalers[oCfg.Encoding]
@@ -192,7 +198,10 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	}
 
 	oCfg := *(cfg.(*Config))
-	if oCfg.LogsTopic == "" {
+	if oCfg.Topic != "" {
+		set.Logger.Warn("'topic' is deprecated and will be removed in a future release. Please remove it from the configuration.")
+		oCfg.LogsTopic = oCfg.Topic
+	} else if oCfg.LogsTopic == "" {
 		oCfg.LogsTopic = defaultLogsTopic
 	}
 	unmarshaler, err := getLogsUnmarshaler(oCfg.Encoding, f.logsUnmarshalers)

@@ -4,6 +4,7 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -53,6 +54,7 @@ type Config struct {
 	// Heartbeat interval for the Kafka consumer
 	HeartbeatInterval time.Duration `mapstructure:"heartbeat_interval"`
 	// The name of the kafka topic to consume from (default "otlp_spans" for traces, "otlp_metrics" for metrics, "otlp_logs" for logs)
+	// Deprecated: use instead "traces_topic", "metrics_topic" and "logs_topic".
 	Topic string `mapstructure:"topic"`
 	// The name of the kafka topic to consume traces from (default "otlp_spans")
 	TracesTopic string `mapstructure:"traces_topic"`
@@ -95,5 +97,8 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.Topic != "" && (cfg.LogsTopic != "" || cfg.MetricsTopic != "" || cfg.TracesTopic != "") {
+		return fmt.Errorf("setting 'topic' and 'logs_topic'|'metrics_topic'|'traces_topic' is not allowed")
+	}
 	return nil
 }
