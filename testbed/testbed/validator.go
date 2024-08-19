@@ -592,12 +592,12 @@ func (c *CorrectnessLogTestValidator) Validate(tc *TestCase) {
 					s := log.ResourceLogs().At(i).ScopeLogs().At(j)
 					for k := 0; k < s.LogRecords().Len(); k++ {
 						logRecord := s.LogRecords().At(k)
-						batch_index, ok := logRecord.Attributes().Get("batch_index")
+						batchIndex, ok := logRecord.Attributes().Get("batch_index")
 						require.True(tc.t, ok, "batch_index missing from attributes; use perfDataProvider")
-						item_index, ok := logRecord.Attributes().Get("item_index")
+						itemIndex, ok := logRecord.Attributes().Get("item_index")
 						require.True(tc.t, ok, "item_index missing from attributes; use perfDataProvider")
 
-						idsReceived = append(idsReceived, [2]string{batch_index.Str(), item_index.Str()})
+						idsReceived = append(idsReceived, [2]string{batchIndex.Str(), itemIndex.Str()})
 					}
 				}
 			}
