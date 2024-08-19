@@ -228,7 +228,6 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
-      - receiver/gitprovider
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
@@ -287,6 +286,7 @@ body:
       - receiver/tcplog
       - receiver/udplog
       - receiver/vcenter
+      - receiver/vcsprovider
       - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog
