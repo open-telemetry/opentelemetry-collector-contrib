@@ -1,0 +1,16 @@
+receivers:
+  vcsmetrics:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [vcsmetrics]
+      processors: [nop]
+      exporters: [nop]
+

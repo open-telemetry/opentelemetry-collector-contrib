@@ -1,0 +1,26 @@
+receivers:
+  vcsmetrics:
+    initial_delay: 1s
+    collection_interval: 60s
+    scrapers:
+      github:
+
+  vcsmetrics/customname:
+    initial_delay: 1s
+    collection_interval: 30s
+    scrapers:
+      github:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [vcsmetrics, vcsmetrics/customname]
+      processors: [nop]
+      exporters: [nop]
+

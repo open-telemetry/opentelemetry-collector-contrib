@@ -286,7 +286,7 @@ body:
       - receiver/tcplog
       - receiver/udplog
       - receiver/vcenter
-      - receiver/vcsprovider
+      - receiver/vcsmetrics
       - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog
