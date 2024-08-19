@@ -583,7 +583,7 @@ func (c *CorrectnessLogTestValidator) Validate(tc *TestCase) {
 
 		for batch := 0; batch < int(dataProvider.traceIDSequence.Load()); batch++ {
 			for idx := 0; idx < dataProvider.options.ItemsPerBatch; idx++ {
-				idsSent = append(idsSent, [2]string{"batch_" + strconv.Itoa(int(batch)), "item_" + strconv.Itoa(int(idx))})
+				idsSent = append(idsSent, [2]string{"batch_" + strconv.Itoa(batch), "item_" + strconv.Itoa(idx)})
 			}
 		}
 		for _, log := range logsReceived {
