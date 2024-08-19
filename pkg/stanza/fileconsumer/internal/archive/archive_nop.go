@@ -18,6 +18,10 @@ func NewNopArchive() Archive {
 func (a *nopArchive) SetStorageClient(_ operator.Persister) {
 }
 
-func (a *nopArchive) Match(_ *fingerprint.Fingerprint) *reader.Metadata {
+func (a *nopArchive) Match(_ *fingerprint.Fingerprint) (*reader.Metadata, error) {
+	return nil, nil
+}
+
+func (a *nopArchive) Write(_ []*reader.Metadata) error {
 	return nil
 }
