@@ -529,7 +529,7 @@ func ScenarioLong(
 		&testbed.CorrectnessLogTestValidator{},
 		resultsSummary,
 	)
-	defer tc.Stop()
+	t.Cleanup(tc.Stop)
 
 	tc.StartBackend()
 	tc.StartAgent()
@@ -542,7 +542,7 @@ func ScenarioLong(
 
 	tc.StopLoad()
 
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, "all spans received")
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, "all logs received")
 
 	tc.StopAgent()
 	tc.ValidateData()

@@ -344,7 +344,7 @@ func TestLargeFileOnce(t *testing.T) {
 		&testbed.CorrectnessLogTestValidator{},
 		performanceResultsSummary,
 	)
-	defer tc.Stop()
+	t.Cleanup(tc.Stop)
 
 	tc.StartBackend()
 	tc.StartAgent()
