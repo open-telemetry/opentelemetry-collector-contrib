@@ -41,7 +41,7 @@ type Config struct {
 	// Providers specifies the sources to extract geographical information about a given IP.
 	Providers map[string]provider.Config `mapstructure:"-"`
 
-	// Context section allows specifying the source type to look for the IP. Available options: resource_attribute or attribute.
+	// Context section allows specifying the source type to look for the IP. Available options: resource or record.
 	Context ContextID `mapstructure:"context"`
 }
 
