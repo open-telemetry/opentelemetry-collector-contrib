@@ -22,3 +22,34 @@ func CreateContainerKey(namespace, podName, containerName string) string {
 	}
 	return fmt.Sprintf("namespace:%s,podName:%s,containerName:%s", namespace, podName, containerName)
 }
+
+type HyperPodConditionType int8
+
+const (
+	Schedulable HyperPodConditionType = iota
+	UnschedulablePendingReplacement
+	UnschedulablePendingReboot
+	Unschedulable
+)
+
+func (ct HyperPodConditionType) String() string {
+	return [...]string{"Schedulable", "UnschedulablePendingReplacement", "UnschedulablePendingReboot", "Unschedulable"}[ct]
+}
+
+func (ct HyperPodConditionType) EnumIndex() int {
+	return int(ct)
+}
+
+var (
+	HyperPodConditionTypeMap = map[string]HyperPodConditionType{
+		"Schedulable":                     Schedulable,
+		"UnschedulablePendingReplacement": UnschedulablePendingReplacement,
+		"UnschedulablePendingReboot":      UnschedulablePendingReboot,
+		"Unschedulable":                   Unschedulable,
+	}
+)
+
+func ParseString(str string) (int8, bool) {
+	c, ok := HyperPodConditionTypeMap[str]
+	return int8(c), ok
+}

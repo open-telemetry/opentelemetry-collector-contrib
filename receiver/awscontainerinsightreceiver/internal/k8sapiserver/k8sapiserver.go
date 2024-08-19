@@ -26,6 +26,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sutil"
 )
 
+var HyperPodConditions = []k8sutil.HyperPodConditionType{
+	k8sutil.UnschedulablePendingReplacement,
+	k8sutil.UnschedulablePendingReboot,
+	k8sutil.Unschedulable,
+	k8sutil.Schedulable,
+}
+
+const HyperPodNodePrefix = "hyperpod-"
+
 // eventBroadcaster is adpated from record.EventBroadcaster
 type eventBroadcaster interface {
 	// StartRecordingToSink starts sending events received from this EventBroadcaster to the given
@@ -71,7 +80,6 @@ type Option func(*K8sAPIServer)
 
 // NewK8sAPIServer creates a k8sApiServer which can generate cluster-level metrics
 func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection *LeaderElection, addFullPodNameMetricLabel bool, includeEnhancedMetrics bool, options ...Option) (*K8sAPIServer, error) {
-
 	k := &K8sAPIServer{
 		logger:                    logger,
 		clusterNameProvider:       cnp,
@@ -125,6 +133,10 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	result = append(result, k.getStatefulSetMetrics(clusterName, timestampNs)...)
 	result = append(result, k.getReplicaSetMetrics(clusterName, timestampNs)...)
 	result = append(result, k.getPendingPodStatusMetrics(clusterName, timestampNs)...)
+
+	if k.includeEnhancedMetrics {
+		result = append(result, k.getHyperPodResiliencyMetrics(clusterName, timestampNs)...)
+	}
 
 	return result
 }
@@ -440,6 +452,35 @@ func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob 
 		attributes[ci.AttributeFullPodName] = pod.Name
 		kubernetesBlob["pod_name"] = pod.Name
 	}
+}
+
+func (k *K8sAPIServer) getHyperPodResiliencyMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
+	nodeInfos := k.leaderElection.nodeClient.NodeInfos()
+	for nodeName, labels := range k.leaderElection.nodeClient.NodeToLabelsMap() {
+		if nodeInfo, ok := nodeInfos[nodeName]; ok {
+			if isHyperPodNode(nodeInfo.InstanceType) {
+				fields := map[string]any{}
+				attributes := map[string]string{
+					ci.ClusterNameKey: clusterName,
+					ci.MetricType:     ci.TypeHyperPodNode,
+					ci.Timestamp:      timestampNs,
+					ci.Version:        "0",
+				}
+
+				for _, condition := range HyperPodConditions {
+					if count, ok := isLabelSet(int8(condition), labels, k8sclient.SageMakerNodeHealthStatus); ok {
+						fields[ci.MetricName(ci.TypeHyperPodNode, ci.HyperPodConditionToMetric[condition.String()])] = count
+					}
+				}
+				attributes[ci.InstanceID] = strings.TrimPrefix(nodeName, HyperPodNodePrefix)
+				attributes[ci.NodeNameKey] = nodeName
+				md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+				metrics = append(metrics, md)
+			}
+		}
+	}
+	return metrics
 }
 
 // Shutdown stops the k8sApiServer

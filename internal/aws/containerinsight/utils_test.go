@@ -79,6 +79,7 @@ func TestIsNode(t *testing.T) {
 	assert.Equal(t, true, IsNode(TypeNodeGPU))
 	assert.Equal(t, true, IsNode(TypeNodeNet))
 	assert.Equal(t, false, IsNode(TypePod))
+	assert.Equal(t, true, IsNode(TypeHyperPodNode))
 }
 
 func TestIsInstance(t *testing.T) {
@@ -923,6 +924,42 @@ func TestConvertToOTLPMetricsForPodEfaMetrics(t *testing.T) {
 		"PodName":       "cloudwatch-agent",
 		"ContainerName": "cloudwatch-agent",
 		"Type":          "PodEFA",
+		"Version":       "0",
+		"Timestamp":     timestamp,
+	}
+	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
+	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
+}
+
+func TestConvertToOTLPMetricsForHyperPodNodeMetrics(t *testing.T) {
+	var fields map[string]any
+	var expectedUnits map[string]string
+	var tags map[string]string
+	var md pmetric.Metrics
+	now := time.Now()
+	timestamp := strconv.FormatInt(now.UnixNano(), 10)
+
+	fields = map[string]any{
+		"unschedulable_pending_replacement": 0,
+		"unschedulable_pending_reboot":      0,
+		"schedulable":                       1,
+		"unschedulable":                     0,
+	}
+	expectedUnits = map[string]string{
+		"unschedulable_pending_replacement": UnitCount,
+		"unschedulable_pending_reboot":      UnitCount,
+		"schedulable":                       UnitCount,
+		"unschedulable":                     UnitCount,
+	}
+	tags = map[string]string{
+		"ClusterName":   "eks-aoc",
+		"InstanceId":    "i-01bf9fb097cbf3205",
+		"InstanceType":  "t2.xlarge",
+		"Namespace":     "amazon-cloudwatch",
+		"NodeName":      "hyperpod-ip-192-168-12-170.ec2.internal",
+		"PodName":       "cloudwatch-agent",
+		"ContainerName": "cloudwatch-agent",
+		"Type":          "HyperPodNode",
 		"Version":       "0",
 		"Timestamp":     timestamp,
 	}

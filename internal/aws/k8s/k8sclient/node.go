@@ -16,6 +16,13 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sutil"
+)
+
+const (
+	instanceTypeLabelKey     = "node.kubernetes.io/instance-type"
+	instanceTypeLabelKeyBeta = "beta.kubernetes.io/instance-type"
 )
 
 // This needs to be reviewed for newer versions of k8s.
@@ -27,6 +34,7 @@ var failedNodeConditions = map[v1.NodeConditionType]bool{
 }
 
 type NodeClient interface {
+	NodeInfos() map[string]*NodeInfo
 	// Get the number of failed nodes for current cluster
 	ClusterFailedNodeCount() int
 	// Get the number of nodes for current cluster
@@ -34,6 +42,7 @@ type NodeClient interface {
 	NodeToCapacityMap() map[string]v1.ResourceList
 	NodeToAllocatableMap() map[string]v1.ResourceList
 	NodeToConditionsMap() map[string]map[v1.NodeConditionType]v1.ConditionStatus
+	NodeToLabelsMap() map[string]map[Label]int8
 }
 
 type nodeClientOption func(*nodeClient)
@@ -56,6 +65,12 @@ func captureNodeLevelInfoOption(captureNodeLevelInfo bool) nodeClientOption {
 	}
 }
 
+func captureOnlyNodeLabelInfoOption(captureOnlyNodeLabelInfo bool) nodeClientOption {
+	return func(n *nodeClient) {
+		n.captureOnlyNodeLabelInfo = captureOnlyNodeLabelInfo
+	}
+}
+
 type nodeClient struct {
 	stopChan chan struct{}
 	store    *ObjStore
@@ -69,14 +84,26 @@ type nodeClient struct {
 	// The node client can be used in several places, including code paths that execute on both leader and non-leader nodes.
 	// But for logic on the leader node (for ex in k8sapiserver.go), there is no need to obtain node level info since only cluster
 	// level info is needed there. Hence, this optimization allows us to save on memory by not capturing node level info when not needed.
-	captureNodeLevelInfo bool
+	captureNodeLevelInfo     bool
+	captureOnlyNodeLabelInfo bool
 
 	mu                     sync.RWMutex
+	nodeInfos              map[string]*NodeInfo
 	clusterFailedNodeCount int
 	clusterNodeCount       int
 	nodeToCapacityMap      map[string]v1.ResourceList
 	nodeToAllocatableMap   map[string]v1.ResourceList
 	nodeToConditionsMap    map[string]map[v1.NodeConditionType]v1.ConditionStatus
+	nodeToLabelsMap        map[string]map[Label]int8
+}
+
+func (c *nodeClient) NodeInfos() map[string]*NodeInfo {
+	if c.store.GetResetRefreshStatus() {
+		c.refresh()
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.nodeInfos
 }
 
 func (c *nodeClient) ClusterFailedNodeCount() int {
@@ -95,6 +122,18 @@ func (c *nodeClient) ClusterNodeCount() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.clusterNodeCount
+}
+
+func (c *nodeClient) NodeToLabelsMap() map[string]map[Label]int8 {
+	if !c.captureOnlyNodeLabelInfo {
+		c.logger.Warn("trying to access node label info when captureOnlyNodeLabelInfo is not set, will return empty data")
+	}
+	if c.store.GetResetRefreshStatus() {
+		c.refresh()
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.nodeToLabelsMap
 }
 
 func (c *nodeClient) NodeToCapacityMap() map[string]v1.ResourceList {
@@ -144,25 +183,37 @@ func (c *nodeClient) refresh() {
 	nodeToCapacityMap := make(map[string]v1.ResourceList)
 	nodeToAllocatableMap := make(map[string]v1.ResourceList)
 	nodeToConditionsMap := make(map[string]map[v1.NodeConditionType]v1.ConditionStatus)
+	nodeToLabelsMap := make(map[string]map[Label]int8)
+
+	nodeInfos := map[string]*NodeInfo{}
 
 	for _, obj := range objsList {
-		node := obj.(*nodeInfo)
+		node := obj.(*NodeInfo)
+		nodeInfos[node.Name] = node
 
 		if c.captureNodeLevelInfo {
-			nodeToCapacityMap[node.name] = node.capacity
-			nodeToAllocatableMap[node.name] = node.allocatable
+			nodeToCapacityMap[node.Name] = node.Capacity
+			nodeToAllocatableMap[node.Name] = node.Allocatable
 			conditionsMap := make(map[v1.NodeConditionType]v1.ConditionStatus)
-			for _, condition := range node.conditions {
+			for _, condition := range node.Conditions {
 				conditionsMap[condition.Type] = condition.Status
 			}
-			nodeToConditionsMap[node.name] = conditionsMap
+			nodeToConditionsMap[node.Name] = conditionsMap
+		}
+
+		if c.captureOnlyNodeLabelInfo {
+			labelsMap := make(map[Label]int8)
+			if HyperPodLabel, ok := node.Labels[SageMakerNodeHealthStatus]; ok {
+				labelsMap[SageMakerNodeHealthStatus] = HyperPodLabel
+				nodeToLabelsMap[node.Name] = labelsMap
+			}
 		}
 		clusterNodeCountNew++
 
 		failed := false
 
 	Loop:
-		for _, condition := range node.conditions {
+		for _, condition := range node.Conditions {
 			if _, ok := failedNodeConditions[condition.Type]; ok {
 				// match the failedNodeConditions type we care about
 				if condition.Status != v1.ConditionFalse {
@@ -178,11 +229,13 @@ func (c *nodeClient) refresh() {
 		}
 	}
 
+	c.nodeInfos = nodeInfos
 	c.clusterFailedNodeCount = clusterFailedNodeCountNew
 	c.clusterNodeCount = clusterNodeCountNew
 	c.nodeToCapacityMap = nodeToCapacityMap
 	c.nodeToAllocatableMap = nodeToAllocatableMap
 	c.nodeToConditionsMap = nodeToConditionsMap
+	c.nodeToLabelsMap = nodeToLabelsMap
 }
 
 func newNodeClient(clientSet kubernetes.Interface, logger *zap.Logger, options ...nodeClientOption) *nodeClient {
@@ -222,16 +275,32 @@ func transformFuncNode(obj any) (any, error) {
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Node type", obj)
 	}
-	info := new(nodeInfo)
-	info.name = node.Name
-	info.capacity = node.Status.Capacity
-	info.allocatable = node.Status.Allocatable
-	info.conditions = []*NodeCondition{}
+	info := new(NodeInfo)
+	info.Name = node.Name
+	info.Capacity = node.Status.Capacity
+	info.Allocatable = node.Status.Allocatable
+	if instanceType, ok := node.Labels[instanceTypeLabelKey]; ok {
+		info.InstanceType = instanceType
+	} else {
+		// fallback for compatibility with k8s versions older than v1.17
+		// https://kubernetes.io/docs/reference/labels-annotations-taints/#beta-kubernetes-io-instance-type-deprecated
+		if instanceType, ok := node.Labels[instanceTypeLabelKeyBeta]; ok {
+			info.InstanceType = instanceType
+		}
+	}
+	info.Conditions = []*NodeCondition{}
 	for _, condition := range node.Status.Conditions {
-		info.conditions = append(info.conditions, &NodeCondition{
+		info.Conditions = append(info.Conditions, &NodeCondition{
 			Type:   condition.Type,
 			Status: condition.Status,
 		})
+	}
+
+	if sageMakerHealthStatus, ok := node.Labels[SageMakerNodeHealthStatus.String()]; ok {
+		info.Labels = make(map[Label]int8)
+		if condition, ok := k8sutil.ParseString(sageMakerHealthStatus); ok {
+			info.Labels[SageMakerNodeHealthStatus] = condition
+		}
 	}
 	return info, nil
 }

@@ -127,3 +127,16 @@ func parseDeploymentFromReplicaSet(name string) string {
 	}
 	return name[:lastDash]
 }
+
+func isHyperPodNode(instanceType string) bool {
+	return strings.HasPrefix(instanceType, "ml.")
+}
+
+func isLabelSet(conditionType int8, nodeLabels map[k8sclient.Label]int8, labelKey k8sclient.Label) (int, bool) {
+	var count = 0
+	nodeConditions, labelExists := nodeLabels[labelKey]
+	if labelExists && nodeConditions == conditionType {
+		count = 1
+	}
+	return count, labelExists
+}

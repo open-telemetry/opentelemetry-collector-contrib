@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -22,6 +23,7 @@ import (
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sutil"
 )
 
 func NewService(name, namespace string) k8sclient.Service {
@@ -144,9 +146,19 @@ func (client *MockClient) ClusterFailedNodeCount() int {
 	return args.Get(0).(int)
 }
 
+func (client *MockClient) NodeInfos() map[string]*k8sclient.NodeInfo {
+	args := client.Called()
+	return args.Get(0).(map[string]*k8sclient.NodeInfo)
+}
+
 func (client *MockClient) ClusterNodeCount() int {
 	args := client.Called()
 	return args.Get(0).(int)
+}
+
+func (client *MockClient) NodeToLabelsMap() map[string]map[k8sclient.Label]int8 {
+	args := client.Called()
+	return args.Get(0).(map[string]map[k8sclient.Label]int8)
 }
 
 // k8sclient.EpClient
@@ -310,6 +322,30 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		"namespace:kube-system,podName:coredns-7554568866-shwn6": {"kube-dns"},
 	})
 
+	mockClient.On("NodeInfos").Return(map[string]*k8sclient.NodeInfo{
+		"ip-192-168-57-23.us-west-2.compute.internal": {
+			Name: "ip-192-168-57-23.us-west-2.compute.internal",
+			Conditions: []*k8sclient.NodeCondition{
+				{
+					Type:   v1.NodeReady,
+					Status: v1.ConditionTrue,
+				},
+			},
+			Capacity:     map[v1.ResourceName]resource.Quantity{},
+			Allocatable:  map[v1.ResourceName]resource.Quantity{},
+			InstanceType: "ml.g4dn-12xl",
+			Labels: map[k8sclient.Label]int8{
+				k8sclient.SageMakerNodeHealthStatus: int8(k8sutil.Schedulable),
+			},
+		},
+	})
+
+	mockClient.On("NodeToLabelsMap").Return(map[string]map[k8sclient.Label]int8{
+		"ip-192-168-57-23.us-west-2.compute.internal": {
+			k8sclient.SageMakerNodeHealthStatus: int8(k8sutil.Schedulable),
+		},
+	})
+
 	leaderElection := &LeaderElection{
 		k8sClient:         &mockK8sClient{},
 		nodeClient:        mockClient,
@@ -401,6 +437,14 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.AttributeK8sNamespace))
 			assert.Equal(t, "Pending", getStringAttrVal(metric, "pod_status"))
 			assert.Equal(t, "Pod", getStringAttrVal(metric, ci.MetricType))
+		case ci.TypeHyperPodNode:
+			assert.Equal(t, "HyperPodNode", getStringAttrVal(metric, ci.MetricType))
+			assert.Equal(t, "ip-192-168-57-23.us-west-2.compute.internal", getStringAttrVal(metric, ci.NodeNameKey))
+			assert.Equal(t, "ip-192-168-57-23.us-west-2.compute.internal", getStringAttrVal(metric, ci.InstanceID))
+			assertMetricValueEqual(t, metric, "hyper_pod_node_health_status_unschedulable_pending_reboot", int64(0))
+			assertMetricValueEqual(t, metric, "hyper_pod_node_health_status_schedulable", int64(1))
+			assertMetricValueEqual(t, metric, "hyper_pod_node_health_status_unschedulable", int64(0))
+			assertMetricValueEqual(t, metric, "hyper_pod_node_health_status_unschedulable_pending_replacement", int64(0))
 		default:
 			assert.Fail(t, "Unexpected metric type: "+metricType)
 		}

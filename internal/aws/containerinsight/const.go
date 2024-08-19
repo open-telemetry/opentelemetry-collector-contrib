@@ -146,6 +146,11 @@ const (
 	GpuRequest          = "gpu_request"
 	GpuReservedCapacity = "gpu_reserved_capacity"
 
+	HyperPodUnschedulablePendingReplacement = "unschedulable_pending_replacement"
+	HyperPodUnschedulablePendingReboot      = "unschedulable_pending_reboot"
+	HyperPodSchedulable                     = "schedulable"
+	HyperPodUnschedulable                   = "unschedulable"
+
 	// Define the metric types
 	TypeCluster            = "Cluster"
 	TypeClusterService     = "ClusterService"
@@ -179,6 +184,7 @@ const (
 	TypeContainerEFA    = "ContainerEFA"
 	TypePodEFA          = "PodEFA"
 	TypeNodeEFA         = "NodeEFA"
+	TypeHyperPodNode    = "HyperPodNode"
 
 	// unit
 	UnitBytes       = "Bytes"
@@ -200,6 +206,13 @@ var WaitingReasonLookup = map[string]string{
 	"CreateContainerError":       StatusContainerWaitingReasonCreateContainerError,
 	"CreateContainerConfigError": StatusContainerWaitingReasonCreateContainerConfigError,
 	"StartError":                 StatusContainerWaitingReasonStartError,
+}
+
+var HyperPodConditionToMetric = map[string]string{
+	"UnschedulablePendingReplacement": HyperPodUnschedulablePendingReplacement,
+	"UnschedulablePendingReboot":      HyperPodUnschedulablePendingReboot,
+	"Schedulable":                     HyperPodSchedulable,
+	"Unschedulable":                   HyperPodUnschedulable,
 }
 
 var metricToUnitMap map[string]string
@@ -330,5 +343,10 @@ func init() {
 		GpuUsageTotal:       UnitCount,
 		GpuRequest:          UnitCount,
 		GpuReservedCapacity: UnitPercent,
+
+		HyperPodUnschedulablePendingReplacement: UnitCount,
+		HyperPodUnschedulablePendingReboot:      UnitCount,
+		HyperPodSchedulable:                     UnitCount,
+		HyperPodUnschedulable:                   UnitCount,
 	}
 }

@@ -10,6 +10,8 @@ import (
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 )
 
 type nodeStats struct {
@@ -41,6 +43,7 @@ type nodeInfoProvider interface {
 	NodeToCapacityMap() map[string]v1.ResourceList
 	NodeToAllocatableMap() map[string]v1.ResourceList
 	NodeToConditionsMap() map[string]map[v1.NodeConditionType]v1.ConditionStatus
+	NodeToLabelsMap() map[string]map[k8sclient.Label]int8
 }
 
 func newNodeInfo(nodeName string, provider nodeInfoProvider, logger *zap.Logger) *nodeInfo {

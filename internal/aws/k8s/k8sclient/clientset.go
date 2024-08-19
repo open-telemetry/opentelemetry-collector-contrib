@@ -138,6 +138,17 @@ func CaptureNodeLevelInfo(captureNodeLevelInfo bool) Option {
 	}
 }
 
+// CaptureOnlyNodeLabelsInfo allows one to specify whether node label
+// should be captured and retained in memory
+func CaptureOnlyNodeLabelsInfo(captureOnlyNodeLabelInfo bool) Option {
+	return Option{
+		name: "captureOnlyNodeLabelInfo:" + strconv.FormatBool(captureOnlyNodeLabelInfo),
+		set: func(kc *K8sClient) {
+			kc.captureOnlyNodeLabelInfo = captureOnlyNodeLabelInfo
+		},
+	}
+}
+
 func getStringifiedOptions(options ...Option) string {
 	opts := make([]string, len(options))
 	for i, option := range options {
@@ -225,8 +236,9 @@ type K8sClient struct {
 	nodeMu sync.Mutex
 	node   nodeClientWithStopper
 
-	nodeSelector         fields.Selector
-	captureNodeLevelInfo bool
+	nodeSelector             fields.Selector
+	captureNodeLevelInfo     bool
+	captureOnlyNodeLabelInfo bool
 
 	jobMu sync.Mutex
 	job   jobClientWithStopper
@@ -326,7 +338,8 @@ func (c *K8sClient) ShutdownPodClient() {
 func (c *K8sClient) GetNodeClient() NodeClient {
 	c.nodeMu.Lock()
 	if c.node == nil {
-		opts := []nodeClientOption{nodeSyncCheckerOption(c.syncChecker), captureNodeLevelInfoOption(c.captureNodeLevelInfo)}
+		opts := []nodeClientOption{nodeSyncCheckerOption(c.syncChecker), captureNodeLevelInfoOption(c.captureNodeLevelInfo),
+			captureOnlyNodeLabelInfoOption(c.captureOnlyNodeLabelInfo)}
 		if c.nodeSelector != nil {
 			opts = append(opts, nodeSelectorOption(c.nodeSelector))
 		}

@@ -7,14 +7,26 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type nodeInfo struct {
-	name        string
-	conditions  []*NodeCondition
-	capacity    v1.ResourceList
-	allocatable v1.ResourceList
+type NodeInfo struct {
+	Name         string
+	Conditions   []*NodeCondition
+	Capacity     v1.ResourceList
+	Allocatable  v1.ResourceList
+	InstanceType string
+	Labels       map[Label]int8
 }
 
 type NodeCondition struct {
 	Type   v1.NodeConditionType
 	Status v1.ConditionStatus
+}
+
+type Label int8
+
+const (
+	SageMakerNodeHealthStatus Label = iota
+)
+
+func (ct Label) String() string {
+	return [...]string{"sagemaker.amazonaws.com/node-health-status"}[ct]
 }

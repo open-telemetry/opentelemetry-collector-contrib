@@ -10,6 +10,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sutil"
 )
 
 func TestUtils_parseDeploymentFromReplicaSet(t *testing.T) {
@@ -60,4 +61,22 @@ func TestPodStore_addPodConditionMetrics(t *testing.T) {
 		"pod_status_unknown":   0,
 	}
 	assert.Equal(t, expectedFieldsArray, fields)
+}
+
+func TestUtils_isHyperPodNode(t *testing.T) {
+	assert.True(t, isHyperPodNode("ml.t3.medium"))
+	assert.False(t, isHyperPodNode("t3.medium"))
+}
+
+func TestUtils_LabelsUtils(t *testing.T) {
+	nodelabels := map[k8sclient.Label]int8{
+		k8sclient.SageMakerNodeHealthStatus: int8(k8sutil.Schedulable),
+	}
+	status, ok := isLabelSet(int8(k8sutil.Schedulable), nodelabels, k8sclient.SageMakerNodeHealthStatus)
+	assert.Equal(t, 1, status)
+	assert.True(t, ok)
+
+	status, ok = isLabelSet(int8(k8sutil.UnschedulablePendingReboot), nodelabels, k8sclient.SageMakerNodeHealthStatus)
+	assert.Equal(t, 0, status)
+	assert.True(t, ok)
 }
