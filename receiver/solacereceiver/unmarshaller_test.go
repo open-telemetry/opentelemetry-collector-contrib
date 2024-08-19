@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -322,7 +323,8 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			tel := setupTestTelemetry()
 			telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
 			require.NoError(t, err)
-			u := newTracesUnmarshaller(zap.NewNop(), telemetryBuilder)
+			metricAttr := attribute.NewSet(attribute.String("receiver_name", tel.NewSettings().ID.Name()))
+			u := newTracesUnmarshaller(zap.NewNop(), telemetryBuilder, metricAttr)
 			traces, err := u.unmarshal(tt.message)
 			if tt.err != nil {
 				require.Error(t, err)
