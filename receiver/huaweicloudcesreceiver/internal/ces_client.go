@@ -1,11 +1,14 @@
-package huaweicloudcesreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver/internal"
 
 import (
 	ces "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/model"
 )
 
-//go:generate mockery --name CesClient
+//go:generate mockery --name CesClient --case=underscore --output=../mocks
 type CesClient interface {
 	BatchListMetricData(request *model.BatchListMetricDataRequest) (*model.BatchListMetricDataResponse, error)
 	BatchListMetricDataInvoker(request *model.BatchListMetricDataRequest) *ces.BatchListMetricDataInvoker

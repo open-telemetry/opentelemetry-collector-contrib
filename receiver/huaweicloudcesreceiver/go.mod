@@ -1,16 +1,21 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver
 
-go 1.21.0
+go 1.22.0
+
+toolchain go1.22.3
 
 require (
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.104
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.107.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.107.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.106.1
 	go.opentelemetry.io/collector/config/confighttp v0.106.1
+	go.opentelemetry.io/collector/config/configopaque v1.12.0
 	go.opentelemetry.io/collector/confmap v0.106.1
 	go.opentelemetry.io/collector/consumer v0.106.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.106.1
-	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/pdata v1.13.0
 	go.opentelemetry.io/collector/receiver v0.106.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -40,6 +45,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.107.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
@@ -53,7 +59,6 @@ require (
 	go.opentelemetry.io/collector/client v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.106.1 // indirect
@@ -80,3 +85,9 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden

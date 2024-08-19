@@ -25,7 +25,7 @@ import (
 
 type cesReceiver struct {
 	logger *zap.Logger
-	client CesClient
+	client internal.CesClient
 	cancel context.CancelFunc
 
 	host             component.Host
@@ -56,48 +56,39 @@ func (rcvr *cesReceiver) Start(ctx context.Context, host component.Host) error {
 		rcvr.client = client
 	}
 
-	go func() {
-		if rcvr.config.InitialDelay > 0 {
-			<-time.After(rcvr.config.InitialDelay)
-		}
-		if err := rcvr.pollMetricsAndConsume(ctx); err != nil {
-			rcvr.logger.Error(err.Error())
-		}
-		ticker := time.NewTicker(rcvr.config.CollectionInterval)
-
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				//  TODO: Improve error handling for client-server interactions
-				//  The current implementation lacks robust error handling, especially for
-				//  scenarios such as service unavailability, timeouts, and request errors.
-				//  - Investigate how to handle service unavailability or timeouts gracefully.
-				//  - Implement appropriate actions or retries for different types of request errors.
-				//  - Refer to the Huawei SDK documentation to identify
-				//    all possible client/request errors and determine how to manage them.
-				//  - Consider implementing custom error messages or fallback mechanisms for critical failures.
-
-				if err := rcvr.pollMetricsAndConsume(ctx); err != nil {
-					rcvr.logger.Error(err.Error())
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
+	go rcvr.startReadingMetrics(ctx)
 	return nil
 }
 
-func (rcvr *cesReceiver) createHTTPConfig() (*config.HttpConfig, error) {
-	if rcvr.config.ProxyAddress == "" {
-		return config.DefaultHttpConfig().WithIgnoreSSLVerification(rcvr.config.NoVerifySSL), nil
+func (rcvr *cesReceiver) startReadingMetrics(ctx context.Context) {
+	if rcvr.config.InitialDelay > 0 {
+		<-time.After(rcvr.config.InitialDelay)
 	}
-	proxy, err := rcvr.configureHTTPProxy()
-	if err != nil {
-		return nil, err
+	if err := rcvr.pollMetricsAndConsume(ctx); err != nil {
+		rcvr.logger.Error(err.Error())
 	}
-	return config.DefaultHttpConfig().WithProxy(proxy), nil
+	ticker := time.NewTicker(rcvr.config.CollectionInterval)
+
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			//  TODO: Improve error handling for client-server interactions
+			//  The current implementation lacks robust error handling, especially for
+			//  scenarios such as service unavailability, timeouts, and request errors.
+			//  - Investigate how to handle service unavailability or timeouts gracefully.
+			//  - Implement appropriate actions or retries for different types of request errors.
+			//  - Refer to the Huawei SDK documentation to identify
+			//    all possible client/request errors and determine how to manage them.
+			//  - Consider implementing custom error messages or fallback mechanisms for critical failures.
+
+			if err := rcvr.pollMetricsAndConsume(ctx); err != nil {
+				rcvr.logger.Error(err.Error())
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func (rcvr *cesReceiver) createClient() (*ces.CesClient, error) {
@@ -111,7 +102,7 @@ func (rcvr *cesReceiver) createClient() (*ces.CesClient, error) {
 		return nil, err
 	}
 
-	httpConfig, err := rcvr.createHTTPConfig()
+	httpConfig, err := createHTTPConfig(rcvr.config.HuaweiSessionConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -192,11 +183,10 @@ func (rcvr *cesReceiver) listDataPoints(metricDefinitions []model.MetricInfoList
 		from = rcvr.lastUsedFinishTs
 	}
 	rcvr.lastUsedFinishTs = to
-	metrics := convertMetricInfoListArrayToMetricInfoArray(metricDefinitions)
 
 	response, err := rcvr.client.BatchListMetricData(&model.BatchListMetricDataRequest{
 		Body: &model.BatchListMetricDataRequestBody{
-			Metrics: metrics,
+			Metrics: convertMetricInfoListArrayToMetricInfoArray(metricDefinitions),
 			Period:  strconv.Itoa(rcvr.config.Period),
 			Filter:  rcvr.config.Filter,
 			From:    from.UnixMilli(),
@@ -212,8 +202,19 @@ func (rcvr *cesReceiver) listDataPoints(metricDefinitions []model.MetricInfoList
 	return *response.Metrics, nil
 }
 
-func (rcvr *cesReceiver) configureHTTPProxy() (*config.Proxy, error) {
-	proxyURL, err := url.Parse(rcvr.config.ProxyAddress)
+func createHTTPConfig(cfg HuaweiSessionConfig) (*config.HttpConfig, error) {
+	if cfg.ProxyAddress == "" {
+		return config.DefaultHttpConfig().WithIgnoreSSLVerification(cfg.NoVerifySSL), nil
+	}
+	proxy, err := configureHTTPProxy(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return config.DefaultHttpConfig().WithProxy(proxy), nil
+}
+
+func configureHTTPProxy(cfg HuaweiSessionConfig) (*config.Proxy, error) {
+	proxyURL, err := url.Parse(cfg.ProxyAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -228,10 +229,8 @@ func (rcvr *cesReceiver) configureHTTPProxy() (*config.Proxy, error) {
 	}
 
 	// Configure the username and password if the proxy requires authentication
-	if len(rcvr.config.ProxyUser) > 0 {
-		proxy = proxy.
-			WithUsername(rcvr.config.ProxyUser).
-			WithPassword(rcvr.config.ProxyPassword)
+	if len(cfg.ProxyUser) > 0 {
+		proxy = proxy.WithUsername(cfg.ProxyUser).WithPassword(cfg.ProxyPassword)
 	}
 	return proxy, nil
 }

@@ -44,6 +44,10 @@ type Config struct {
 	// ProjectID is a string to reference project where metrics should be associated with.
 	// If ProjectID is not filled in, the SDK will automatically call the IAM service to query the project id corresponding to the region.
 	ProjectID string `mapstructure:"project_id"`
+
+	// RegionName is the full name of the CES region exporter should send metrics to
+	RegionName string `mapstructure:"region_name"`
+
 	// How retrieved data from Cloud Eye is aggregated.
 	// Possible values are 1, 300, 1200, 3600, 14400, and 86400.
 	// 1: Cloud Eye performs no aggregation and displays raw data.
@@ -63,8 +67,6 @@ type HuaweiSessionConfig struct {
 	AccessKey configopaque.String `mapstructure:"access_key"`
 
 	SecretKey configopaque.String `mapstructure:"secret_key"`
-	// RegionName is the full name of the CES region exporter should send metrics to
-	RegionName string `mapstructure:"region_name"`
 	// Number of seconds before timing out a request.
 	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
 	// Upload segments to AWS X-Ray through a proxy.

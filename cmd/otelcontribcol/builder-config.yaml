@@ -161,6 +161,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.107.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.107.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.107.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver v0.107.0  
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.107.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.107.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.107.0

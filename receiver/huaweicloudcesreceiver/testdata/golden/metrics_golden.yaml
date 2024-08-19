@@ -1,0 +1,25 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: huawei_cloud
+        - key: project.id
+          value:
+            stringValue: my-project
+        - key: region
+          value:
+            stringValue: us-east-2
+    scopeMetrics:
+      - metrics:
+          - name: cpu_util
+            gauge:
+              dataPoints:
+                - asDouble: 45.67
+                  timeUnixNano: "1556625610000000000"
+                - asDouble: 89.01
+                  timeUnixNano: "1556625715000000000"                  
+            unit: "%"
+        scope:
+          name: huawei_cloud_ces
+          version: v1

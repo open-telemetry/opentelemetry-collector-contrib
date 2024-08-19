@@ -23,12 +23,10 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				HuaweiSessionConfig: HuaweiSessionConfig{
-					RegionName: "cn-north-1",
-				},
-				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "min",
+				RegionName: "cn-north-1",
+				ProjectID:  "my_project",
+				Period:     300,
+				Filter:     "min",
 			},
 			expectedError: "",
 		},
@@ -38,24 +36,20 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				HuaweiSessionConfig: HuaweiSessionConfig{
-					RegionName: "cn-north-1",
-				},
-				ProjectID: "my_project",
-				Period:    100,
-				Filter:    "min",
+				RegionName: "cn-north-1",
+				ProjectID:  "my_project",
+				Period:     100,
+				Filter:     "min",
 			},
 			expectedError: "invalid period",
 		},
 		{
 			name: "Invalid Filter",
 			config: Config{
-				HuaweiSessionConfig: HuaweiSessionConfig{
-					RegionName: "cn-north-1",
-				},
-				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "invalid",
+				RegionName: "cn-north-1",
+				ProjectID:  "my_project",
+				Period:     300,
+				Filter:     "invalid",
 			},
 			expectedError: "invalid filter",
 		},
@@ -77,11 +71,9 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				HuaweiSessionConfig: HuaweiSessionConfig{
-					RegionName: "cn-north-1",
-				},
-				Period: 300,
-				Filter: "min",
+				RegionName: "cn-north-1",
+				Period:     300,
+				Filter:     "min",
 			},
 			expectedError: errMissingProjectID.Error(),
 		},
@@ -89,15 +81,15 @@ func TestConfig_Validate(t *testing.T) {
 			name: "Proxy user without proxy address",
 			config: Config{
 				HuaweiSessionConfig: HuaweiSessionConfig{
-					RegionName: "cn-north-1",
-					ProxyUser:  "user",
+					ProxyUser: "user",
 				},
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "min",
+				RegionName: "cn-north-1",
+				ProjectID:  "my_project",
+				Period:     300,
+				Filter:     "min",
 			},
 			expectedError: errInvalidProxy.Error(),
 		},
@@ -105,15 +97,15 @@ func TestConfig_Validate(t *testing.T) {
 			name: "Proxy password without proxy address",
 			config: Config{
 				HuaweiSessionConfig: HuaweiSessionConfig{
-					RegionName:    "cn-north-1",
 					ProxyPassword: "password",
 				},
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "min",
+				RegionName: "cn-north-1",
+				ProjectID:  "my_project",
+				Period:     300,
+				Filter:     "min",
 			},
 			expectedError: errInvalidProxy.Error(),
 		},
@@ -121,7 +113,6 @@ func TestConfig_Validate(t *testing.T) {
 			name: "Proxy address with proxy user and password",
 			config: Config{
 				HuaweiSessionConfig: HuaweiSessionConfig{
-					RegionName:    "cn-north-1",
 					ProxyAddress:  "http://proxy.example.com",
 					ProxyUser:     "user",
 					ProxyPassword: "password",
@@ -129,9 +120,10 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "min",
+				RegionName: "cn-north-1",
+				ProjectID:  "my_project",
+				Period:     300,
+				Filter:     "min",
 			},
 			expectedError: "",
 		},
