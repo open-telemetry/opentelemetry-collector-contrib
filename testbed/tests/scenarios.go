@@ -544,7 +544,6 @@ func ScenarioLong(
 
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, "all logs received")
 
-	tc.StopAgent()
 	tc.ValidateData()
 }
 
