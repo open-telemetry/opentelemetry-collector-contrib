@@ -29,7 +29,7 @@ var data = [2]any{
 		5:  "X",
 		6:  "my-service",
 		7:  "my-resource",
-		8:  "_dd.sampling_rate_whatever",
+		8:  "_sampling_priority_v1",
 		9:  "value whatever",
 		10: "sql",
 		11: "service.name",
@@ -57,6 +57,7 @@ var data = [2]any{
 				},
 				map[any]float64{
 					5: 1.2,
+					8: 1,
 				},
 				10,
 			},
@@ -92,7 +93,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
-	assert.Equal(t, 8, span.Attributes().Len(), "missing attributes")
+	assert.Equal(t, 9, span.Attributes().Len(), "missing attributes")
 	value, exists := span.Attributes().Get("service.name")
 	serviceVersionValue, _ := span.Attributes().Get("service.version")
 	assert.True(t, exists, "service.name missing")
@@ -101,6 +102,8 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	assert.Equal(t, "1.0.1", serviceVersionValue.AsString())
 	spanResource, _ := span.Attributes().Get("dd.span.Resource")
 	assert.Equal(t, "my-resource", spanResource.Str())
+	spanResource1, _ := span.Attributes().Get("sampling.priority")
+	assert.Equal(t, fmt.Sprintf("%f", 1.0), spanResource1.Str())
 }
 
 func TestTracePayloadV07Unmarshalling(t *testing.T) {

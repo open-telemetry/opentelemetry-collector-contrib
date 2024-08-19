@@ -1,7 +1,6 @@
 type: gitprovider
-scope_name: otelcol/gitproviderreceiver
 
-sem_conv_version: 1.9.0
+sem_conv_version: 1.25.0
 
 status:
   class: receiver
@@ -11,119 +10,121 @@ status:
   codeowners:
     active: [adrielp, andrzej-stencel]
 
-# this might need to be unique per sub receiver implementation
 resource_attributes:
   organization.name:
     enabled: true
-    description: Git Organization or Project Name
+    description: VCS Organization
     type: string
-  git.vendor.name:
+  vcs.vendor.name:
     enabled: true
-    # github, gitlab, bitbucket, gittea
-    description: The name of the Git vendor/provider (ie. GitHub / GitLab)
+    description: The name of the VCS vendor/provider (ie. GitHub)
     type: string
 
-## Attributes that will be uncommented when the rest of the metrics are added
 attributes:
   repository.name:
-    description: The name of a Git repository
+    description: The name of a VCS repository
     type: string
-  branch.name:
-    description: The name of a Git branch
+  ref.name:
+    description: The name of a VCS branch
     type: string
-  pull_request.state:
-    description: The state of a pull request
+  ref.type:
+    description: The type of ref (branch, tag).
+    type: string
+    enum:
+      - branch
+      - tag
+  change.state:
+    description: The state of a change (pull request)
     type: string
     enum:
       - open
       - merged
 
 metrics:
-  git.repository.count:
+  vcs.repository.count:
     enabled: true
     description: The number of repositories in an organization.
-    unit: '{repository}'
+    unit: "{repository}"
     gauge:
       value_type: int
     attributes: []
-  git.repository.branch.count:
+  vcs.repository.ref.count:
     enabled: true
-    description: The number of branches in a repository.
-    unit: '{branch}'
+    description: The number of refs of type branch in a repository.
+    unit: "{ref}"
     gauge:
       value_type: int
-    attributes: [repository.name]
-  git.repository.branch.time:
+    attributes: [repository.name, ref.type]
+  vcs.repository.ref.time:
     enabled: true
-    description: Time a branch created from the default branch (trunk) has existed.
+    description: Time a ref (branch) created from the default branch (trunk) has existed. The `ref.type` attribute will always be `branch`.
     unit: s
     gauge:
       value_type: int
-    attributes: [repository.name, branch.name]
-  git.repository.branch.commit.aheadby.count:
+    attributes: [repository.name, ref.name, ref.type]
+  vcs.repository.ref.revisions_ahead:
     enabled: true
-    description: The number of commits a branch is ahead of the default branch (trunk).
-    unit: '{commit}'
+    description: The number of revisions (commits) a ref (branch) is ahead of the default branch (trunk).
+    unit: "{revision}"
     gauge:
       value_type: int
-    attributes: [repository.name, branch.name]
-  git.repository.branch.commit.behindby.count:
+    attributes: [repository.name, ref.name, ref.type]
+  vcs.repository.ref.revisions_behind:
     enabled: true
-    description: The number of commits a branch is behind the default branch (trunk).
-    unit: '{commit}'
+    description: The number of revisions (commits) a ref (branch) is behind the default branch (trunk).
+    unit: "{revision}"
     gauge:
       value_type: int
-    attributes: [repository.name, branch.name]
-  git.repository.branch.line.addition.count:
+    attributes: [repository.name, ref.name, ref.type]
+  vcs.repository.ref.lines_added:
     enabled: true
-    description: The number of lines added in a branch relative to the default branch (trunk).
-    unit: '{line}'
+    description: The number of lines added in a ref (branch) relative to the default branch (trunk).
+    unit: "{line}"
     gauge:
       value_type: int
-    attributes: [repository.name, branch.name]
-  git.repository.branch.line.deletion.count:
+    attributes: [repository.name, ref.name, ref.type]
+  vcs.repository.ref.lines_deleted:
     enabled: true
-    description: The number of lines deleted in a branch relative to the default branch (trunk).
-    unit: '{line}'
+    description: The number of lines deleted in a ref (branch) relative to the default branch (trunk).
+    unit: "{line}"
     gauge:
       value_type: int
-    attributes: [repository.name, branch.name]
-  git.repository.contributor.count:
+    attributes: [repository.name, ref.name, ref.type]
+  vcs.repository.contributor.count:
     enabled: false
     description: The number of unique contributors to a repository.
-    unit: '{contributor}'
+    unit: "{contributor}"
     gauge:
       value_type: int
     attributes: [repository.name]
-  git.repository.pull_request.time_open:
+  vcs.repository.change.time_open:
     enabled: true
-    description: The amount of time a pull request has been open.
+    description: The amount of time a change (pull request) has been open.
     unit: s
     gauge:
       value_type: int
-    attributes: [repository.name, branch.name]
-  git.repository.pull_request.time_to_merge:
+    attributes: [repository.name, ref.name]
+  vcs.repository.change.time_to_merge:
     enabled: true
-    description: The amount of time it took a pull request to go from open to merged.
+    description: The amount of time it took a change (pull request) to go from open to merged.
     unit: s
     gauge:
       value_type: int
-    attributes: [repository.name, branch.name]
-  git.repository.pull_request.time_to_approval:
+    attributes: [repository.name, ref.name]
+  vcs.repository.change.time_to_approval:
     enabled: true
-    description: The amount of time it took a pull request to go from open to approved.
+    description: The amount of time it took a change (pull request) to go from open to approved.
     unit: s
     gauge:
       value_type: int
-    attributes: [repository.name, branch.name]
-  git.repository.pull_request.count:
-    description: The number of pull requests in a repository, categorized by their state (either open or merged).
+    attributes: [repository.name, ref.name]
+  vcs.repository.change.count:
+    description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
     enabled: true
     gauge:
       value_type: int
-    unit: '{pull_request}'
-    attributes: [pull_request.state, repository.name]
+    unit: "{change}"
+    attributes: [change.state, repository.name]
 
 tests:
   config:
-
