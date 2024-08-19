@@ -449,24 +449,17 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 	if scopeSchemaURL != "" {
 		scopeMap.PutStr("schema_url", scopeSchemaURL)
 	}
-	if scope.DroppedAttributesCount() > 0 {
-		scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
-	}
-	scopeAttributes := scope.Attributes()
-	if scopeAttributes.Len() > 0 {
-		scopeAttrMap := scopeMap.PutEmptyMap("attributes")
-		scopeAttributes.CopyTo(scopeAttrMap)
-		scopeAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
-			switch key {
-			case dataStreamType, dataStreamDataset, dataStreamNamespace:
-				return true
-			}
-			return false
-		})
-	}
-	if scopeMap.Len() > 0 {
-		document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
-	}
+	scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
+	scopeAttrMap := scopeMap.PutEmptyMap("attributes")
+	scope.Attributes().CopyTo(scopeAttrMap)
+	scopeAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
+		switch key {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		return false
+	})
+	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
 }
 
 func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
