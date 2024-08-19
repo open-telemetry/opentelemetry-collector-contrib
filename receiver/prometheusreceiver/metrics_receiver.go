@@ -6,6 +6,7 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -16,6 +17,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -29,6 +31,7 @@ import (
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -86,7 +89,7 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	// add scrape configs defined by the collector configs
 	baseCfg := r.cfg.PrometheusConfig
 
-	err := r.initPrometheusComponents(discoveryCtx, logger)
+	err := r.initPrometheusComponents(discoveryCtx, logger, host)
 	if err != nil {
 		r.settings.Logger.Error("Failed to initPrometheusComponents Prometheus components", zap.Error(err))
 		return err
@@ -173,6 +176,80 @@ func getScrapeConfigHash(jobToScrapeConfig map[string]*config.ScrapeConfig) (uin
 	return hash.Sum64(), err
 }
 
+// ConvertTLSVersion converts a string TLS version to the corresponding config.TLSVersion value in prometheus common.
+func convertTLSVersion(version string) (commonconfig.TLSVersion, error) {
+	normalizedVersion := "TLS" + strings.ReplaceAll(version, ".", "")
+
+	if tlsVersion, exists := commonconfig.TLSVersions[normalizedVersion]; exists {
+		return tlsVersion, nil
+	}
+	return 0, fmt.Errorf("unsupported TLS version: %s", version)
+}
+
+// configureSDHTTPClientConfig configures the http client for the service discovery manager
+// based on the provided TargetAllocator configuration.
+func configureSDHTTPClientConfigFromTA(httpSD *promHTTP.SDConfig, allocConf *TargetAllocator) error {
+	httpSD.HTTPClientConfig.FollowRedirects = false
+
+	httpSD.HTTPClientConfig.TLSConfig = commonconfig.TLSConfig{
+		InsecureSkipVerify: allocConf.TLSSetting.InsecureSkipVerify,
+		ServerName:         allocConf.TLSSetting.ServerName,
+		CAFile:             allocConf.TLSSetting.CAFile,
+		CertFile:           allocConf.TLSSetting.CertFile,
+		KeyFile:            allocConf.TLSSetting.KeyFile,
+	}
+
+	if allocConf.TLSSetting.CAPem != "" {
+		decodedCA, err := base64.StdEncoding.DecodeString(string(allocConf.TLSSetting.CAPem))
+		if err != nil {
+			return fmt.Errorf("failed to decode CA: %w", err)
+		}
+		httpSD.HTTPClientConfig.TLSConfig.CA = string(decodedCA)
+	}
+
+	if allocConf.TLSSetting.CertPem != "" {
+		decodedCert, err := base64.StdEncoding.DecodeString(string(allocConf.TLSSetting.CertPem))
+		if err != nil {
+			return fmt.Errorf("failed to decode Cert: %w", err)
+		}
+		httpSD.HTTPClientConfig.TLSConfig.Cert = string(decodedCert)
+	}
+
+	if allocConf.TLSSetting.KeyPem != "" {
+		decodedKey, err := base64.StdEncoding.DecodeString(string(allocConf.TLSSetting.KeyPem))
+		if err != nil {
+			return fmt.Errorf("failed to decode Key: %w", err)
+		}
+		httpSD.HTTPClientConfig.TLSConfig.Key = commonconfig.Secret(decodedKey)
+	}
+
+	if allocConf.TLSSetting.MinVersion != "" {
+		minVersion, err := convertTLSVersion(allocConf.TLSSetting.MinVersion)
+		if err != nil {
+			return err
+		}
+		httpSD.HTTPClientConfig.TLSConfig.MinVersion = minVersion
+	}
+
+	if allocConf.TLSSetting.MaxVersion != "" {
+		maxVersion, err := convertTLSVersion(allocConf.TLSSetting.MaxVersion)
+		if err != nil {
+			return err
+		}
+		httpSD.HTTPClientConfig.TLSConfig.MaxVersion = maxVersion
+	}
+
+	if allocConf.ProxyURL != "" {
+		proxyURL, err := url.Parse(allocConf.ProxyURL)
+		if err != nil {
+			return err
+		}
+		httpSD.HTTPClientConfig.ProxyURL = commonconfig.URL{URL: proxyURL}
+	}
+
+	return nil
+}
+
 // syncTargetAllocator request jobs from targetAllocator and update underlying receiver, if the response does not match the provided compareHash.
 // baseDiscoveryCfg can be used to provide additional ScrapeConfigs which will be added to the retrieved jobs.
 func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAllocator, baseCfg *PromConfig) (uint64, error) {
@@ -207,7 +284,13 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 		}
 		escapedJob := url.QueryEscape(jobName)
 		httpSD.URL = fmt.Sprintf("%s/jobs/%s/targets?collector_id=%s", allocConf.Endpoint, escapedJob, allocConf.CollectorID)
-		httpSD.HTTPClientConfig.FollowRedirects = false
+
+		err = configureSDHTTPClientConfigFromTA(&httpSD, allocConf)
+		if err != nil {
+			r.settings.Logger.Error("Failed to configure http client config", zap.Error(err))
+			return 0, err
+		}
+
 		scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
 			&httpSD,
 		}
@@ -287,7 +370,7 @@ func (r *pReceiver) applyCfg(cfg *PromConfig) error {
 	return r.discoveryManager.ApplyConfig(discoveryCfg)
 }
 
-func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Logger) error {
+func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Logger, host component.Host) error {
 	// Some SD mechanisms use the "refresh" package, which has its own metrics.
 	refreshSdMetrics := discovery.NewRefreshMetrics(r.registerer)
 
@@ -307,7 +390,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		r.settings.Logger.Info("Starting discovery manager")
 		if err = r.discoveryManager.Run(); err != nil && !errors.Is(err, context.Canceled) {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
-			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 
@@ -376,7 +459,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		r.settings.Logger.Info("Starting scrape manager")
 		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
 			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
-			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
