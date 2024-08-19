@@ -326,7 +326,6 @@ func TestLargeFileOnce(t *testing.T) {
 	ld, _ := dataProvider.GenerateLogs()
 
 	m := &plog.ProtoMarshaler{}
-	fmt.Println(m.LogsSize(ld))
 	require.NoError(t, sender.ConsumeLogs(context.Background(), ld))
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
