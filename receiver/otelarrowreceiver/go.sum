@@ -91,6 +91,8 @@ github.com/mostynb/go-grpc-compression v1.2.3/go.mod h1:AghIxF3P57umzqM9yz795+y1
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.107.0 h1:lbJCTRmXTm6LihA7HBqS57kADZQYqFaYmtb4t3IVo8k=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.107.0/go.mod h1:w0X1c3MP2PZHkQ1J/vJ+onH/cjTxKNwdDwK2OYHRrvI=
 github.com/open-telemetry/otel-arrow v0.24.0 h1:hNUEbwHW/1gEOUiN+HoI+ITiXe2vSBaPWlE9FRwJwDE=
 github.com/open-telemetry/otel-arrow v0.24.0/go.mod h1:uzoHixEh6CUBZkP+vkRvyiHYUnYsAOUwCcfByQkSMM0=
 github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ=

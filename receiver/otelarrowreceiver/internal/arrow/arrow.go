@@ -41,6 +41,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
@@ -420,8 +421,8 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	}
 }
 
-func (r *receiverStream) newInFlightData(ctx context.Context, method string, batchID int64, pendingCh chan<- batchResp) (context.Context, *inFlightData) {
-	ctx, span := r.tracer.Start(ctx, "otel_arrow_stream_inflight")
+func (r *receiverStream) newInFlightData(ctx context.Context, method string, batchID int64, pendingCh chan<- batchResp) *inFlightData {
+	_, span := r.tracer.Start(ctx, "otel_arrow_stream_inflight")
 
 	r.inFlightWG.Add(1)
 	r.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, 1)
@@ -433,7 +434,7 @@ func (r *receiverStream) newInFlightData(ctx context.Context, method string, bat
 		span:           span,
 	}
 	id.refs.Add(1)
-	return ctx, id
+	return id
 }
 
 // inFlightData is responsible for storing the resources held by one request.
@@ -551,8 +552,14 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// or plog.Logs item.
 	req, err := serverStream.Recv()
 
+	// the incoming stream context is the parent of the in-flight context, which
+	// carries a span covering sequential stream-processing work.  the context
+	// is severed at this point, with flight.span a contextless child that will be
+	// finished in recvDone().
+	flight := r.newInFlightData(streamCtx, method, req.GetBatchId(), pendingCh)
+
 	// inflightCtx is carried through into consumeAndProcess on the success path.
-	inflightCtx, flight := r.newInFlightData(streamCtx, method, req.GetBatchId(), pendingCh)
+	inflightCtx := context.Background()
 	defer flight.recvDone(inflightCtx, &retErr)
 
 	if err != nil {
@@ -607,6 +614,25 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		}
 	}
 
+	var callerCancel context.CancelFunc
+	if encodedTimeout, has := authHdrs["grpc-timeout"]; has && len(encodedTimeout) == 1 {
+		if timeout, err := grpcutil.DecodeTimeout(encodedTimeout[0]); err != nil {
+			r.telemetry.Logger.Debug("grpc-timeout parse error", zap.Error(err))
+		} else {
+			// timeout parsed successfully
+			inflightCtx, callerCancel = context.WithTimeout(inflightCtx, timeout)
+
+			// if we return before the new goroutine is started below
+			// cancel the context.  callerCancel will be non-nil until
+			// the new goroutine is created at the end of this function.
+			defer func() {
+				if callerCancel != nil {
+					callerCancel()
+				}
+			}()
+		}
+	}
+
 	// Use the bounded queue to memory limit based on incoming
 	// uncompressed request size and waiters.  Acquire will fail
 	// immediately if there are too many waiters, or will
@@ -644,16 +670,24 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	flight.refs.Add(1)
 
 	// consumeAndRespond consumes the data and returns control to the sender loop.
-	go r.consumeAndRespond(inflightCtx, data, flight)
+	go func(callerCancel context.CancelFunc) {
+		if callerCancel != nil {
+			defer callerCancel()
+		}
+		r.consumeAndRespond(inflightCtx, streamCtx, data, flight)
+	}(callerCancel)
+
+	// Reset callerCancel so the deferred function above does not call it here.
+	callerCancel = nil
 
 	return nil
 }
 
 // consumeAndRespond finishes the span started in recvOne and logs the
 // result after invoking the pipeline to consume the data.
-func (r *Receiver) consumeAndRespond(ctx context.Context, data any, flight *inFlightData) {
+func (r *Receiver) consumeAndRespond(ctx, streamCtx context.Context, data any, flight *inFlightData) {
 	var err error
-	defer flight.consumeDone(ctx, &err)
+	defer flight.consumeDone(streamCtx, &err)
 
 	// recoverErr is a special function because it recovers panics, so we
 	// keep it in a separate defer than the processing above, which will
