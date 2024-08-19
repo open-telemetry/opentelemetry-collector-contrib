@@ -29,7 +29,7 @@ func init() {
 	// TODO: Remove this feature gate when the legacy metric names are removed.
 	legacyMetricNamesFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		legacyMetricNamesFeatureGateID,
-		featuregate.StageBeta,
+		featuregate.StageAlpha, // Alpha because we want it disabled by default.
 		featuregate.WithRegisterDescription("When enabled, connector uses legacy metric names."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227"),
 	)
