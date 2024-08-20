@@ -31,7 +31,7 @@ import (
 func TestTranslationSupportedVersion(t *testing.T) {
 	t.Parallel()
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zaptest.NewLogger(t),
 		"https://opentelemetry.io/schemas/1.9.0",
 		LoadTranslationVersion(t, TranslationVersion190),
@@ -107,7 +107,7 @@ func TestTranslationIterator(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			tn, err := newTranslater(zaptest.NewLogger(t), tc.target, LoadTranslationVersion(t, TranslationVersion190))
+			tn, err := newTranslatorFromReader(zaptest.NewLogger(t), tc.target, LoadTranslationVersion(t, TranslationVersion190))
 			require.NoError(t, err, "Must have no error when creating translator")
 
 			_, version, err := GetFamilyAndVersion(tc.income)
@@ -130,7 +130,7 @@ func TestTranslationIterator(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	tn, err := newTranslater(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0", LoadTranslationVersion(t, TranslationVersion190))
+	tn, err := newTranslatorFromReader(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0", LoadTranslationVersion(t, TranslationVersion190))
 	require.NoError(t, err, "Must have no error when creating translator")
 
 	ver := &Version{1, 0, 0}
@@ -198,7 +198,7 @@ func TestTranslationSpanChanges(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			tn, err := newTranslater(
+			tn, err := newTranslatorFromReader(
 				zaptest.NewLogger(t),
 				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
 				LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -275,7 +275,7 @@ func TestTranslationLogChanges(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			tn, err := newTranslater(
+			tn, err := newTranslatorFromReader(
 				zaptest.NewLogger(t),
 				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
 				LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -349,7 +349,7 @@ func TestTranslationMetricChanges(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			tn, err := newTranslater(
+			tn, err := newTranslatorFromReader(
 				zaptest.NewLogger(t),
 				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
 				LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -381,7 +381,7 @@ func TestTranslationEquvialance_Logs(t *testing.T) {
 
 	a, b := NewExampleLogs(t, Version{1, 0, 0}), NewExampleLogs(t, Version{1, 7, 0})
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zaptest.NewLogger(t),
 		"https://example.com/1.4.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -413,7 +413,7 @@ func TestTranslationEquvialance_Metrics(t *testing.T) {
 
 	a, b := NewExampleMetrics(t, Version{1, 0, 0}), NewExampleMetrics(t, Version{1, 7, 0})
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zaptest.NewLogger(t),
 		"https://example.com/1.4.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -445,7 +445,7 @@ func TestTranslationEquvialance_Traces(t *testing.T) {
 
 	a, b := NewExampleSpans(t, Version{1, 0, 0}), NewExampleSpans(t, Version{1, 7, 0})
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zaptest.NewLogger(t),
 		"https://example.com/1.4.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -476,7 +476,7 @@ func BenchmarkCreatingTranslation(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		tn, err := newTranslater(
+		tn, err := newTranslatorFromReader(
 			log,
 			"https://opentelemetry.io/schemas/1.9.0",
 			LoadTranslationVersion(b, TranslationVersion190),
@@ -489,7 +489,7 @@ func BenchmarkCreatingTranslation(b *testing.B) {
 func BenchmarkUpgradingMetrics(b *testing.B) {
 	ctx := context.Background()
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(b, "complex_changeset.yml"),
@@ -522,7 +522,7 @@ func BenchmarkUpgradingMetrics(b *testing.B) {
 func BenchmarkUpgradingTraces(b *testing.B) {
 	ctx := context.Background()
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(b, "complex_changeset.yml"),
@@ -555,7 +555,7 @@ func BenchmarkUpgradingTraces(b *testing.B) {
 func BenchmarkUpgradingLogs(b *testing.B) {
 	ctx := context.Background()
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(b, "complex_changeset.yml"),

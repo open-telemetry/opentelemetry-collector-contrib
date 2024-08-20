@@ -113,7 +113,7 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Tran
 				zap.String("schemaURL", schemaURL),
 			)
 		}
-		t, err := newTranslater(
+		t, err := newTranslatorFromReader(
 			m.log.Named("translator").With(
 				zap.String("family", family),
 				zap.Stringer("target", target),

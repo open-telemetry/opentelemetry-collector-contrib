@@ -27,7 +27,7 @@ import (
 func TestRaceTranslationSpanChanges(t *testing.T) {
 	t.Parallel()
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -57,7 +57,7 @@ func TestRaceTranslationSpanChanges(t *testing.T) {
 func TestRaceTranslationMetricChanges(t *testing.T) {
 	t.Parallel()
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
@@ -86,7 +86,7 @@ func TestRaceTranslationMetricChanges(t *testing.T) {
 func TestRaceTranslationLogChanges(t *testing.T) {
 	t.Parallel()
 
-	tn, err := newTranslater(
+	tn, err := newTranslatorFromReader(
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),

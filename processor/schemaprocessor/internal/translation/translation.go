@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	encoder "go.opentelemetry.io/otel/schema/v1.0"
+	"go.opentelemetry.io/otel/schema/v1.0/ast"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -73,7 +74,33 @@ var (
 	_ Translation    = (*translator)(nil)
 )
 
-func newTranslater(log *zap.Logger, schemaURL string, content io.Reader) (*translator, error) {
+func (t *translator) loadTranslation(content *ast.Schema) error {
+	var errs error
+	t.log.Debug("Updating translation")
+	for v, def := range content.Versions {
+		version, err := NewVersion(string(v))
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		_, exist := t.indexes[*version]
+		if exist {
+			continue
+		}
+		t.log.Debug("Creating new entry",
+			zap.Stringer("version", version),
+		)
+		t.indexes[*version], t.revisions = len(t.revisions), append(t.revisions,
+			*NewRevision(version, def),
+		)
+	}
+	sort.Sort(t)
+
+	t.log.Debug("Finished update")
+	return errs
+}
+
+func newTranslatorFromSchema(log *zap.Logger, schemaURL string, schemaFileSchema *ast.Schema) (*translator, error) {
 	_, target, err := GetFamilyAndVersion(schemaURL)
 	if err != nil {
 		return nil, err
@@ -84,11 +111,25 @@ func newTranslater(log *zap.Logger, schemaURL string, content io.Reader) (*trans
 		log:       log,
 		indexes:   map[Version]int{},
 	}
-	if err := t.parseContent(content); err != nil {
+
+	if err := t.loadTranslation(schemaFileSchema); err != nil {
 		return nil, err
 	}
 	return t, nil
 }
+
+func newTranslatorFromReader(log *zap.Logger, schemaURL string, content io.Reader) (*translator, error) {
+	schemaFileSchema, err := encoder.Parse(content)
+	if err != nil {
+		return nil, err
+	}
+	var t *translator
+	if t, err = newTranslatorFromSchema(log, schemaURL, schemaFileSchema); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
 
 func (t *translator) Len() int {
 	return len(t.revisions)
@@ -386,35 +427,6 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 	}
 	in.SetSchemaUrl(t.schemaURL)
 	return nil
-}
-
-func (t *translator) parseContent(r io.Reader) (errs error) {
-	content, err := encoder.Parse(r)
-	if err != nil {
-		return err
-	}
-	t.log.Debug("Updating translation")
-	for v, def := range content.Versions {
-		version, err := NewVersion(string(v))
-		if err != nil {
-			errs = multierr.Append(errs, err)
-			continue
-		}
-		_, exist := t.indexes[*version]
-		if exist {
-			continue
-		}
-		t.log.Debug("Creating new entry",
-			zap.Stringer("version", version),
-		)
-		t.indexes[*version], t.revisions = len(t.revisions), append(t.revisions,
-			*NewRevision(version, def),
-		)
-	}
-	sort.Sort(t)
-
-	t.log.Debug("Finished update")
-	return errs
 }
 
 // iterator abstractions the logic to perform an the migrations of, "From Version to Version".
