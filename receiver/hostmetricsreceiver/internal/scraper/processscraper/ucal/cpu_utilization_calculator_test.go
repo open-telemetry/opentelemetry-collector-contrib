@@ -4,7 +4,6 @@
 package ucal
 
 import (
-	"math"
 	"testing"
 	"time"
 
@@ -31,6 +30,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 		previousReadTime    pcommon.Timestamp
 		previousCPUStat     *cpu.TimesStat
 		expectedUtilization *CPUUtilization
+		shouldError         bool
 	}{
 		{
 			name:         "no previous times",
@@ -110,11 +110,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 				System: 6193.6,
 				Iowait: 34.202,
 			},
-			expectedUtilization: &CPUUtilization{
-				User:   math.Inf(1),
-				System: math.Inf(1),
-				Iowait: math.Inf(1),
-			},
+			shouldError: true,
 		},
 	}
 	for _, test := range testCases {
@@ -126,10 +122,15 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 				previousCPUStats: test.previousCPUStat,
 			}
 			err := calculator.CalculateAndRecord(test.currentReadTime, test.logicalCores, test.currentCPUStat, recorder.record)
-			assert.NoError(t, err)
-			assert.InDelta(t, test.expectedUtilization.System, recorder.cpuUtilization.System, 0.00001)
-			assert.InDelta(t, test.expectedUtilization.User, recorder.cpuUtilization.User, 0.00001)
-			assert.InDelta(t, test.expectedUtilization.Iowait, recorder.cpuUtilization.Iowait, 0.00001)
+			if test.shouldError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.InDelta(t, test.expectedUtilization.System, recorder.cpuUtilization.System, 0.00001)
+				assert.InDelta(t, test.expectedUtilization.User, recorder.cpuUtilization.User, 0.00001)
+				assert.InDelta(t, test.expectedUtilization.Iowait, recorder.cpuUtilization.Iowait, 0.00001)
+			}
+
 		})
 	}
 }

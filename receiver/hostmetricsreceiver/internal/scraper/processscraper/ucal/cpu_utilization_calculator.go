@@ -4,6 +4,7 @@
 package ucal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -28,6 +29,10 @@ type CPUUtilizationCalculator struct {
 // stored []cpu.TimesStat and time.Time and current []cpu.TimesStat and current time.Time
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
 func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, logicalCores int, currentCPUStats *cpu.TimesStat, recorder func(pcommon.Timestamp, CPUUtilization)) error {
+	if logicalCores < 1 {
+		return fmt.Errorf("number of logical cores is 0")
+	}
+
 	if c.previousCPUStats != nil {
 		recorder(now, cpuUtilization(logicalCores, c.previousCPUStats, c.previousReadTime, currentCPUStats, now))
 	}
