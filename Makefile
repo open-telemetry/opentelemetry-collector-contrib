@@ -274,12 +274,6 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
-.PHONY: docker-build-release
-docker-build-release:
-	GOOS=linux GOARCH=amd64 $(MAKE) otelcontribcol
-	cp ./bin/otelcontribcol_linux_amd64 ./cmd/otelcontribcol/otelcol-contrib
-	docker build -t otelcontribcol ./cmd/otelcontribcol/
-
 .PHONY: docker-telemetrygen
 docker-telemetrygen:
 	GOOS=linux GOARCH=$(GOARCH) $(MAKE) telemetrygen
