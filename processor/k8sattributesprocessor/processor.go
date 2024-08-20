@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -52,12 +53,12 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 	return nil
 }
 
-func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
+func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
 
 	for _, opt := range allOptions {
 		if err := opt(kp); err != nil {
-			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			return nil
 		}
 	}
@@ -66,7 +67,7 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 	if kp.kc == nil {
 		err := kp.initKubeClient(kp.telemetrySettings, kubeClientProvider)
 		if err != nil {
-			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			return nil
 		}
 	}
