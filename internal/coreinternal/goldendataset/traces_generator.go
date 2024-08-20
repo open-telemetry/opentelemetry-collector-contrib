@@ -6,7 +6,7 @@ package goldendataset // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 	"io"
-	"math/rand"
+	"math/rand" //nolint TODO: Migrate to math/rand once Go 1.23 is supported.
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
