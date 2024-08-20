@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-telemetry/opamp-go/client/types"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -84,9 +85,10 @@ func (n *opampNotifier) SendStatus(_ context.Context, message statusNotification
 	attributes := log.Attributes()
 	attributes.PutStr("telemetry_type", message.TelemetryType)
 	attributes.PutStr("ingest_status", message.IngestStatus)
-	attributes.PutStr("start_time", message.StartTime.Format(time.RFC3339))
-	attributes.PutStr("end_time", message.EndTime.Format(time.RFC3339))
-	attributes.PutStr("ingest_time", message.IngestTime.Format(time.RFC3339))
+	attributes.PutInt("start_time", int64(pcommon.NewTimestampFromTime(message.StartTime)))
+	attributes.PutInt("end_time", int64(pcommon.NewTimestampFromTime(message.EndTime)))
+	log.SetTimestamp(pcommon.NewTimestampFromTime(message.IngestTime))
+
 	if message.FailureMessage != "" {
 		attributes.PutStr("failure_message", message.FailureMessage)
 	}
