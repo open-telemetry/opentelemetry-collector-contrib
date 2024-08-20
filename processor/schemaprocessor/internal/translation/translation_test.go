@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 )
 
 func TestTranslationSupportedVersion(t *testing.T) {
@@ -146,6 +148,49 @@ func TestTranslationIterator(t *testing.T) {
 		count++
 	}
 	assert.EqualValues(t, &Version{1, 7, 0}, ver, "Must match the expected version number")
+}
+
+type ResourceIterable[T alias.Resource] interface {
+	At(int) T
+	Len() int
+}
+
+func setSchemaForAllItems[T alias.Resource](iterable ResourceIterable[T], schemaURL string) {
+	for i := 0; i < iterable.Len(); i++ {
+		item := iterable.At(i)
+		item.SetSchemaUrl(schemaURL)
+	}
+}
+
+
+
+func TestTranslationSchemaAll(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	tn, err := newTranslatorFromReader(
+		zaptest.NewLogger(t),
+		"https://example.com/1.1.0",
+		LoadTranslationVersion(t, "section_all.yaml"),
+	)
+	require.NoError(t, err)
+	inLogs := plog.NewLogs()
+	inLogs.ResourceLogs().AppendEmpty().Resource().Attributes().PutStr("asdf", "1")
+	inLogs.ResourceLogs().AppendEmpty().Resource().Attributes().PutStr("k8s.cluster.name", "tevanne")
+	setSchemaForAllItems[plog.ResourceLogs](inLogs.ResourceLogs(), "https://example.com/1.0.0")
+	expectedLogs := plog.NewLogs()
+	inLogs.CopyTo(expectedLogs)
+	attrs := expectedLogs.ResourceLogs().At(1).Resource().Attributes()
+	assert.True(t, attrs.Remove("k8s.cluster.name"))
+	attrs.PutStr("kubernetes.cluster.name", "tevanne")
+	setSchemaForAllItems[plog.ResourceLogs](expectedLogs.ResourceLogs(), "https://example.com/1.1.0")
+	for i := 0; i < inLogs.ResourceLogs().Len(); i++ {
+		rLogs := inLogs.ResourceLogs().At(i)
+		err = tn.ApplyAllResourceChanges(ctx, rLogs)
+		require.NoError(t, err, "Must not error when applying resource changes")
+	}
+	assert.EqualValues(t, expectedLogs, inLogs, "Must match the expected values")
+
 }
 
 func TestTranslationSpanChanges(t *testing.T) {
