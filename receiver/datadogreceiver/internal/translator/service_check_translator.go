@@ -32,7 +32,7 @@ func (mt *MetricsTranslator) TranslateServices(services []ServiceCheck) pmetric.
 		dps.EnsureCapacity(1)
 
 		dp := dps.AppendEmpty()
-		dp.SetTimestamp(pcommon.Timestamp(service.Timestamp * 1_000_000_000)) // OTel uses nanoseconds, while Datadog uses seconds
+		dp.SetTimestamp(pcommon.Timestamp(ts * time.Second.Nanoseconds())) // OTel uses nanoseconds, while Datadog uses seconds
 		metricProperties.dpAttrs.CopyTo(dp.Attributes())
 		dp.SetIntValue(int64(service.Status))
 
