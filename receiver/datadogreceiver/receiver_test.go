@@ -183,7 +183,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 }`,
 		},
 		{
-			name:            "Both consumers only",
+			name:            "Both consumers",
 			tracesConsumer:  consumertest.NewNop(),
 			metricsConsumer: consumertest.NewNop(),
 			expectContent: `{

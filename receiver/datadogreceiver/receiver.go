@@ -192,7 +192,7 @@ func (ddr *datadogReceiver) buildInfoResponse(endpoints []Endpoint) ([]byte, err
 	}, "", "\t")
 }
 
-// handleStats handles incoming stats payloads.
+// handleInfo handles incoming /info payloads.
 func (ddr *datadogReceiver) handleInfo(w http.ResponseWriter, _ *http.Request, infoResponse []byte) {
 	_, err := fmt.Fprintf(w, "%s", infoResponse)
 
