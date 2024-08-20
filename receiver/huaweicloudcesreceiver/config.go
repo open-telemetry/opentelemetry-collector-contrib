@@ -77,8 +77,10 @@ type HuaweiSessionConfig struct {
 
 var _ component.Config = (*Config)(nil)
 
+// These valid periods are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
 var validPeriods = []int{1, 300, 1200, 3600, 14400, 86400}
 
+// These valid filters are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
 var validFilters = []string{"max", "min", "average", "sum", "variance"}
 
 // Validate config

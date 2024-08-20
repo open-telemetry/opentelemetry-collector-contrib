@@ -8,7 +8,10 @@ import (
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/model"
 )
 
-//go:generate mockery --name CesClient --case=underscore --output=../mocks
+// This interface should have all the function defined inside https://github.com/huaweicloud/huaweicloud-sdk-go-v3/blob/v0.1.110/services/ces/v1/ces_client.go
+// Check https://github.com/vektra/mockery on how to install it on your machine.
+//
+//go:generate mockery --name CesClient --case=underscore --output=./mocks
 type CesClient interface {
 	BatchListMetricData(request *model.BatchListMetricDataRequest) (*model.BatchListMetricDataResponse, error)
 	BatchListMetricDataInvoker(request *model.BatchListMetricDataRequest) *ces.BatchListMetricDataInvoker
