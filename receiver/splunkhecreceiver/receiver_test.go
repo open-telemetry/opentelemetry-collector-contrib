@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -457,17 +458,22 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	}
 	sink := new(consumertest.LogsSink)
 	set := receivertest.NewNopSettings()
-	set.ReportStatus = func(event *component.StatusEvent) {
-		assert.NoError(t, event.Err())
-	}
 	r, err := newLogsReceiver(set, *cfg, sink)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
 
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start log reception")
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "should not fail to start log on second Start call")
+	require.NoError(t, r.Start(context.Background(), &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			assert.NoError(t, event.Err())
+		},
+	}), "should not have failed to start log reception")
+	require.NoError(t, r.Start(context.Background(), &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			assert.NoError(t, event.Err())
+		},
+	}), "should not fail to start log on second Start call")
 	defer func() {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
@@ -2094,4 +2100,26 @@ func (ae *mockAckExtension) Ack(partitionID string, ackID uint64) {
 
 func (ae *mockAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
 	return ae.processEvent(partitionID)
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return nil
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

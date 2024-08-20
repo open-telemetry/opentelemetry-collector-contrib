@@ -13,6 +13,7 @@ import (
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -97,7 +98,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 
 	go func() {
 		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			ddr.params.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
 		}
 	}()
 	return nil
@@ -108,6 +109,10 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
+	if req.ContentLength == 0 { // Ping mecanism of Datadog SDK perform http request with empty body when GET /info not implemented.
+		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
+		return
+	}
 	obsCtx := ddr.tReceiver.StartTracesOp(req.Context())
 	var err error
 	var spanCount int

@@ -73,7 +73,7 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, points)
 
 		default:
-			t.Errorf(fmt.Sprintf("unexpected metric: %s", m.Name()))
+			t.Errorf("unexpected metric: %s", m.Name())
 		}
 	}
 }
