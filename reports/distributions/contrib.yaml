@@ -80,6 +80,7 @@ components:
     processor:
         - attributes
         - cumulativetodelta
+        - deltatocumulative
         - deltatorate
         - experimental_metricsgeneration
         - filter
