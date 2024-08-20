@@ -136,7 +136,8 @@ func newDataDogReceiver(config *Config, params receiver.Settings) (component.Com
 		server: &http.Server{
 			ReadTimeout: config.ReadTimeout,
 		},
-		tReceiver: instance,
+		tReceiver:         instance,
+		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
 	}, nil
 }
 
