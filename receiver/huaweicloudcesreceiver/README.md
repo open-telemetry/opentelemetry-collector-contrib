@@ -46,7 +46,15 @@ The following settings are optional:
 
 - `initial_delay`: The delay before the first collection of metrics begins. This is a duration field, such as 5s for 5 seconds.
 
-- `collection_interval` (default = `60s`): This is the interval at which this receiver collects metrics. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `collection_interval` (default = `60s`): This is the interval at which this receiver collects metrics. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`. We recommend a polling interval of at least one minute.
+
+- `retry_on_failure`: The following configurations can be used to control the retry policy of the CES client. The default values are suitable for most deployment scenarios.
+  - `enabled` (default true)
+  - `initial_interval` (default 100ms)
+  - `max_interval` (default 1s)
+  - `max_elapsed_time` (default 15s)
+  - `randomization_factor` (default 0.5)
+  - `multiplier` (default 1.5)
 
 ### Example Configuration
 
@@ -87,6 +95,9 @@ Before running the application, you need to set the environment variables `HUAWE
     echo $HUAWEICLOUD_SDK_AK
     echo $HUAWEICLOUD_SDK_SK
     ```
+
+## Error handling
+If you encounter any CES errors, please refer to the [Huawei Cloud Error Codes](https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-errorcode.html).
 
 ## Converting CES metric representation to Open Telementery metric representation
 

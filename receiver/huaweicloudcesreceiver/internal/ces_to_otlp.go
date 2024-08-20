@@ -4,6 +4,8 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver/internal"
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/model"
@@ -11,7 +13,31 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func ConvertCESMetricsToOTLP(projectID, region, filter string, cesMetrics []model.BatchMetricData) pmetric.Metrics {
+type MetricData struct {
+	MetricName string
+	Dimensions []model.MetricsDimension
+	Namespace  string
+	Unit       string
+	Datapoints []model.Datapoint
+}
+
+func GetMetricKey(m model.MetricInfoList) string {
+	strArray := make([]string, len(m.Dimensions))
+	for i, ms := range m.Dimensions {
+		strArray[i] = ms.String()
+	}
+	return fmt.Sprintf("metric_name=%s,dimensions=%s", m.MetricName, strings.Join(strArray, " "))
+}
+
+func GetDimension(dimensions []model.MetricsDimension, index int) *string {
+	if len(dimensions) > index {
+		dimValue := dimensions[index].Name + "," + dimensions[index].Value
+		return &dimValue
+	}
+	return nil
+}
+
+func ConvertCESMetricsToOTLP(projectID, region, filter string, cesMetrics map[string]MetricData) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	if len(cesMetrics) == 0 {
 		return metrics
@@ -30,17 +56,13 @@ func ConvertCESMetricsToOTLP(projectID, region, filter string, cesMetrics []mode
 
 		metric := scopedMetric.Metrics().AppendEmpty()
 		metric.SetName(cesMetric.MetricName)
-		if cesMetric.Unit != nil {
-			metric.SetUnit(*cesMetric.Unit)
+		metric.SetUnit(cesMetric.Unit)
+		for _, dimension := range cesMetric.Dimensions {
+			metric.Metadata().PutStr(dimension.Name, dimension.Value)
 		}
-		if cesMetric.Dimensions != nil {
-			for _, dimension := range *cesMetric.Dimensions {
-				metric.Metadata().PutStr(dimension.Name, dimension.Value)
-			}
-		}
-		if cesMetric.Namespace != nil {
-			metric.Metadata().PutStr("service.namespace", *cesMetric.Namespace)
-		}
+
+		metric.Metadata().PutStr("service.namespace", cesMetric.Namespace)
+
 		dataPoints := metric.SetEmptyGauge().DataPoints()
 		for _, dataPoint := range cesMetric.Datapoints {
 			dp := dataPoints.AppendEmpty()

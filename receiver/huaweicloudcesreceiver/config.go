@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
@@ -57,10 +59,12 @@ type Config struct {
 	// 14400: Cloud Eye aggregates data every 4 hours.
 	// 86400: Cloud Eye aggregates data every 24 hours.
 	// For details about the aggregation, see https://support.huaweicloud.com/intl/en-us/ces_faq/ces_faq_0009.html
-	Period int `mapstructure:"period"`
+	Period int32 `mapstructure:"period"`
 
 	// Data aggregation method. The supported values ​​are max, min, average, sum, variance.
 	Filter string `mapstructure:"filter"`
+
+	BackOffConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
 type HuaweiSessionConfig struct {
@@ -78,10 +82,16 @@ type HuaweiSessionConfig struct {
 var _ component.Config = (*Config)(nil)
 
 // These valid periods are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
-var validPeriods = []int{1, 300, 1200, 3600, 14400, 86400}
+var validPeriods = []int32{1, 300, 1200, 3600, 14400, 86400}
 
 // These valid filters are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
-var validFilters = []string{"max", "min", "average", "sum", "variance"}
+var validFilters = map[string]model.ShowMetricDataRequestFilter{
+	"max":      model.GetShowMetricDataRequestFilterEnum().MAX,
+	"min":      model.GetShowMetricDataRequestFilterEnum().MIN,
+	"average":  model.GetShowMetricDataRequestFilterEnum().AVERAGE,
+	"sum":      model.GetShowMetricDataRequestFilterEnum().SUM,
+	"variance": model.GetShowMetricDataRequestFilterEnum().VARIANCE,
+}
 
 // Validate config
 func (config *Config) Validate() error {
@@ -96,11 +106,14 @@ func (config *Config) Validate() error {
 	if index := slices.Index(validPeriods, config.Period); index == -1 {
 		err = multierr.Append(err, fmt.Errorf("invalid period: got %d; must be one of %v", config.Period, validPeriods))
 	}
-
-	if index := slices.Index(validFilters, config.Filter); index == -1 {
-		err = multierr.Append(err, fmt.Errorf("invalid filter: got %s; must be one of %v", config.Filter, validFilters))
+	if _, ok := validFilters[config.Filter]; !ok {
+		var validFiltersSlice []string
+		for key := range validFilters {
+			validFiltersSlice = append(validFiltersSlice, key)
+		}
+		err = multierr.Append(err, fmt.Errorf("invalid filter: got %s; must be one of %v", config.Filter, validFiltersSlice))
 	}
-	if config.Period >= int(config.CollectionInterval.Seconds()) {
+	if config.Period >= int32(config.CollectionInterval.Seconds()) {
 		err = multierr.Append(err, errInvalidCollectionInterval)
 	}
 

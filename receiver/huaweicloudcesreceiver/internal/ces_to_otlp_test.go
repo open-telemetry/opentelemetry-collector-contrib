@@ -16,22 +16,22 @@ import (
 func TestConvertCESMetricsToOTLP(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    []model.BatchMetricData
+		input    map[string]MetricData
 		expected pmetric.Metrics
 	}{
 		{
 			name: "Valid Metric Conversion",
-			input: []model.BatchMetricData{
-				{
-					Namespace:  stringPtr("SYS.ECS"),
+			input: map[string]MetricData{
+				"cpu_util": {
 					MetricName: "cpu_util",
-					Dimensions: &[]model.MetricsDimension{
+					Namespace:  "SYS.ECS",
+					Dimensions: []model.MetricsDimension{
 						{
 							Name:  "instance_id",
 							Value: "faea5b75-e390-4e2b-8733-9226a9026070",
 						},
 					},
-					Datapoints: []model.DatapointForBatchMetric{
+					Datapoints: []model.Datapoint{
 						{
 							Average:   float64Ptr(0.5),
 							Timestamp: 1556625610000,
@@ -41,18 +41,18 @@ func TestConvertCESMetricsToOTLP(t *testing.T) {
 							Timestamp: 1556625715000,
 						},
 					},
-					Unit: stringPtr("%"),
+					Unit: "%",
 				},
-				{
-					Namespace:  stringPtr("SYS.ECS"),
+				"network_vm_connections": {
 					MetricName: "network_vm_connections",
-					Dimensions: &[]model.MetricsDimension{
+					Namespace:  "SYS.ECS",
+					Dimensions: []model.MetricsDimension{
 						{
 							Name:  "instance_id",
 							Value: "06b4020f-461a-4a52-84da-53fa71c2f42b",
 						},
 					},
-					Datapoints: []model.DatapointForBatchMetric{
+					Datapoints: []model.Datapoint{
 						{
 							Average:   float64Ptr(1),
 							Timestamp: 1556625612000,
@@ -62,14 +62,14 @@ func TestConvertCESMetricsToOTLP(t *testing.T) {
 							Timestamp: 1556625717000,
 						},
 					},
-					Unit: stringPtr("count"),
+					Unit: "count",
 				},
 			},
 			expected: expectedMetrics(),
 		},
 		{
 			name:     "Empty Metric Data",
-			input:    []model.BatchMetricData{},
+			input:    map[string]MetricData{},
 			expected: pmetric.NewMetrics(),
 		},
 	}
@@ -79,10 +79,6 @@ func TestConvertCESMetricsToOTLP(t *testing.T) {
 			assert.Equal(t, tt.expected, ConvertCESMetricsToOTLP("project_1", "eu-west-101", "average", tt.input))
 		})
 	}
-}
-
-func stringPtr(s string) *string {
-	return &s
 }
 
 func float64Ptr(f float64) *float64 {

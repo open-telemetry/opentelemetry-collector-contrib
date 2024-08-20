@@ -34,35 +34,24 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 				Dimensions: []model.MetricsDimension{
 					{
 						Name:  "instance_id",
-						Value: "12345",
+						Value: "faea5b75-e390-4e2b-8733-9226a9026070",
 					},
 				},
+				Unit: "%",
 			},
 		},
 	}, nil)
 
-	mc.On("BatchListMetricData", mock.Anything).Return(&model.BatchListMetricDataResponse{
-		Metrics: &[]model.BatchMetricData{
+	mc.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
+		MetricName: stringPtr("cpu_util"),
+		Datapoints: &[]model.Datapoint{
 			{
-				Namespace:  stringPtr("SYS.ECS"),
-				MetricName: "cpu_util",
-				Dimensions: &[]model.MetricsDimension{
-					{
-						Name:  "instance_id",
-						Value: "faea5b75-e390-4e2b-8733-9226a9026070",
-					},
-				},
-				Datapoints: []model.DatapointForBatchMetric{
-					{
-						Average:   float64Ptr(45.67),
-						Timestamp: 1556625610000,
-					},
-					{
-						Average:   float64Ptr(89.01),
-						Timestamp: 1556625715000,
-					},
-				},
-				Unit: stringPtr("%"),
+				Average:   float64Ptr(45.67),
+				Timestamp: 1556625610000,
+			},
+			{
+				Average:   float64Ptr(89.01),
+				Timestamp: 1556625715000,
 			},
 		},
 	}, nil)
