@@ -47,6 +47,7 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/tedsuo/rata v1.0.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.0.0-20240731165531-6d32c09daf9f // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.0 // indirect
