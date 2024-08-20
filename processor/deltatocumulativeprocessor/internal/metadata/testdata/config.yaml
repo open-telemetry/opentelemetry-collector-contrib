@@ -1,9 +1,0 @@
-default:
-all_set:
-  metrics:
-    fixme:
-      enabled: true
-none_set:
-  metrics:
-    fixme:
-      enabled: false

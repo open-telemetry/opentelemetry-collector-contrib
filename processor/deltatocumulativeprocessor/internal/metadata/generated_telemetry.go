@@ -69,7 +69,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	}
 	builder.DeltatocumulativeDatapoints, err = builder.meter.Int64Counter(
 		"otelcol_deltatocumulative.datapoints",
-		metric.WithDescription("total number of datapoints processed"),
+		metric.WithDescription("total number of datapoints processed. may have 'error' attribute, if processing failed"),
 		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)

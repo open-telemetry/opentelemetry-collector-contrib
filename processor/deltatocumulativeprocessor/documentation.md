@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_deltatocumulative.datapoints
 
-total number of datapoints processed
+total number of datapoints processed. may have 'error' attribute, if processing failed
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
