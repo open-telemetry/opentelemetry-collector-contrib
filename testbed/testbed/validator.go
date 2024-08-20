@@ -607,7 +607,7 @@ func (c *CorrectnessLogTestValidator) Validate(tc *TestCase) {
 	}
 }
 
-func (v *CorrectnessLogTestValidator) RecordResults(tc *TestCase) {
+func (c *CorrectnessLogTestValidator) RecordResults(tc *TestCase) {
 	rc := tc.agentProc.GetTotalConsumption()
 
 	var result string
