@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.106.2-0.20240809191011-ef07ea073562
-	go.opentelemetry.io/collector/receiver v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/component v0.107.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/receiver v0.107.1-0.20240816132030-9fd84668bb02
 	go.uber.org/goleak v1.3.0
 )
 
@@ -26,12 +26,12 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector v0.106.2-0.20240809191011-ef07ea073562 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.106.2-0.20240809191011-ef07ea073562 // indirect
-	go.opentelemetry.io/collector/consumer v0.106.2-0.20240809191011-ef07ea073562 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.106.2-0.20240809191011-ef07ea073562 // indirect
-	go.opentelemetry.io/collector/pdata v1.12.1-0.20240809191011-ef07ea073562 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector v0.107.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/consumer v0.107.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect

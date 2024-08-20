@@ -175,7 +175,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document))
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
@@ -215,7 +215,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
 					}
 
-					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource, scope, metric, dp, dpValue); err != nil {
+					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource,
+						resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), metric, dp, dpValue); err != nil {
 						return err
 					}
 					return nil
@@ -265,6 +266,16 @@ func (e *elasticsearchExporter) pushMetricsData(
 							continue
 						}
 					}
+				case pmetric.MetricTypeSummary:
+					dps := metric.Summary().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val := summaryToValue(dp)
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
+					}
 				}
 			}
 		}
@@ -280,7 +291,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					errs = append(errs, err)
 					continue
 				}
-				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes)); err != nil {
+				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes), doc.DynamicTemplates()); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -387,5 +398,5 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document))
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
 }

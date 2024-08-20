@@ -1,16 +1,16 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/aws/aws-sdk-go v1.53.11
 	github.com/docker/docker v26.1.5+incompatible
 	github.com/hashicorp/consul/api v1.29.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.106.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.107.0
 	github.com/shirou/gopsutil/v4 v4.24.7
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/semconv v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/semconv v0.107.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/sdk v1.28.0
 	go.uber.org/goleak v1.3.0

@@ -13,6 +13,7 @@ import (
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -97,7 +98,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 
 	go func() {
 		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			ddr.params.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
 		}
 	}()
 	return nil
@@ -108,6 +109,10 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
+	if req.ContentLength == 0 { // Ping mecanism of Datadog SDK perform http request with empty body when GET /info not implemented.
+		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
+		return
+	}
 	obsCtx := ddr.tReceiver.StartTracesOp(req.Context())
 	var err error
 	var spanCount int
@@ -119,7 +124,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	ddTraces, err = translator.HandleTracesPayload(req)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusBadRequest)
-		ddr.params.Logger.Error("Unable to unmarshal reqs")
+		ddr.params.Logger.Error("Unable to unmarshal reqs", zap.Error(err))
 		return
 	}
 	for _, ddTrace := range ddTraces {
@@ -128,7 +133,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
 			http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
-			ddr.params.Logger.Error("Trace consumer errored out")
+			ddr.params.Logger.Error("Trace consumer errored out", zap.Error(err))
 			return
 		}
 	}
@@ -185,9 +190,25 @@ func (ddr *datadogReceiver) handleV2Series(w http.ResponseWriter, req *http.Requ
 		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
 	}(&metricsCount)
 
-	err = fmt.Errorf("series v2 endpoint not implemented")
-	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
-	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+	series, err := ddr.metricsTranslator.HandleSeriesV2Payload(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.TranslateSeriesV2(series)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	_, _ = w.Write([]byte("OK"))
 }
 
 // handleCheckRun handles the service checks endpoint https://docs.datadoghq.com/api/latest/service-checks/

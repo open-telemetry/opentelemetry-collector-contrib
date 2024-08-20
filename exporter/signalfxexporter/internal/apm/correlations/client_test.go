@@ -63,7 +63,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		switch r.Method {
 		case http.MethodGet:
 			match := getPathRegexp.FindStringSubmatch(r.URL.Path)
-			if match == nil || len(match) < 3 {
+			if len(match) < 3 {
 				rw.WriteHeader(404)
 				return
 			}
@@ -78,7 +78,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 			return
 		case http.MethodPut:
 			match := putPathRegexp.FindStringSubmatch(r.URL.Path)
-			if match == nil || len(match) < 4 {
+			if len(match) < 4 {
 				rw.WriteHeader(404)
 				return
 			}
@@ -100,7 +100,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 
 		case http.MethodDelete:
 			match := deletePathRegexp.FindStringSubmatch(r.URL.Path)
-			if match == nil || len(match) < 5 {
+			if len(match) < 5 {
 				rw.WriteHeader(404)
 				return
 			}
