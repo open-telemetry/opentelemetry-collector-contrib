@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 
 }
 
-func createLogsReceiver(_ context.Context, params receiver.CreateSettings, cfg component.Config, consumer consumer.Logs) (receiver.Logs, error) {
+func createLogsReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Logs) (receiver.Logs, error) {
 	logger := params.Logger
 	conf := cfg.(*Config)
 
