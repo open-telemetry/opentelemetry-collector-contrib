@@ -12,10 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-const (
-	scopeName              string = "otelcol/datadogreceiver"
-	aggregationTemporality        = pmetric.AggregationTemporalityDelta
-)
+const aggregationTemporality = pmetric.AggregationTemporalityDelta
 
 func createMetricsTranslator() *MetricsTranslator {
 	mt := NewMetricsTranslator(component.BuildInfo{
@@ -43,7 +40,7 @@ func requireScopeMetrics(t *testing.T, result pmetric.Metrics, expectedScopeMetr
 }
 
 func requireScope(t *testing.T, result pmetric.Metrics, expectedAttrs pcommon.Map, expectedVersion string) {
-	require.Equal(t, scopeName, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator", result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
 	require.Equal(t, expectedVersion, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Version())
 	require.Equal(t, expectedAttrs, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes())
 }
