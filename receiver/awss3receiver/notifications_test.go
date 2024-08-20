@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -179,17 +180,15 @@ func Test_opampNotifier_SendStatus(t *testing.T) {
 	require.True(t, b)
 	require.Equal(t, v.Str(), IngestStatusIngesting)
 
-	v, b = attr.Get("ingest_time")
-	require.True(t, b)
-	require.Equal(t, v.Str(), ingestTime.Format(time.RFC3339))
+	require.Equal(t, log.Timestamp(), pcommon.NewTimestampFromTime(ingestTime))
 
 	v, b = attr.Get("start_time")
 	require.True(t, b)
-	require.Equal(t, v.Str(), ingestTime.Format(time.RFC3339))
+	require.Equal(t, v.Int(), int64(pcommon.NewTimestampFromTime(ingestTime)))
 
 	v, b = attr.Get("end_time")
 	require.True(t, b)
-	require.Equal(t, v.Str(), ingestTime.Format(time.RFC3339))
+	require.Equal(t, v.Int(), int64(pcommon.NewTimestampFromTime(ingestTime)))
 
 	_, b = attr.Get("failure_message")
 	require.False(t, b)
