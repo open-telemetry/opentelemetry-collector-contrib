@@ -16,7 +16,6 @@ issues: [33227, 32818]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: "Default namespace for the generated metrics is traces.span.metrics now. |
-  We continue generating the metrics without namespace but marked them as deprecated. |
   The deprecated metrics are: calls, duration and events. |
   The feature flag connector.spanmetrics.legacyLatencyMetricNames was added to revert the behavior."
 
