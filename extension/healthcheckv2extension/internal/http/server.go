@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
@@ -96,7 +97,7 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 	go func() {
 		defer close(s.doneCh)
 		if err = s.httpServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			s.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
 		}
 	}()
 
