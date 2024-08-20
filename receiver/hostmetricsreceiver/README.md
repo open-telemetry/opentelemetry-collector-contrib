@@ -201,19 +201,3 @@ export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service
 ## Entity Events
 
 **Entity Events as logs are experimental** and might eventually be replaced by the result of [the OTEP](https://github.com/open-telemetry/oteps/blob/main/text/entities/0256-entities-data-model.md#entity-events). For now, the hostmetrics receiver can send the host entity event as a log records. By default, the hostmetrics receiver sends periodic EntityState events every 5 minutes. You can change that by setting `metadata_collection_interval`. Entity Events as logs are experimental. The result of the OTEP might eventually replace that.
-
-## Feature Gates
-
-See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
-
-### `receiver.hostmetrics.normalizeProcessCPUUtilization`
-
-When enabled, normalizes the `process.cpu.utilization` metric onto the interval [0-1] by dividing the value by the number of logical processors. With this feature gate disabled, the value of the `process.cpu.utilization` metric may exceed 1.
-
-For example, if you have 4 logical cores on your system, and a process is occupying 2 logical cores for an entire scrape interval, with this feature gate disabled a `process.cpu.utilization` metric will be emitted with a value of 2.  if this feature gate is enabled in the same scenario, the value of the emitted metric will be 0.5.
-
-The schedule for this feature gate is:
-- Introduced in v0.97.0 (March 2024) as `alpha` - disabled by default.
-- Moved to `beta` in v0.100.0 (May 2024) - enabled by default.
-- Moved to `stable` in v0.102.0 (June 2024) - cannot be disabled.
-- Removed three releases after `stable`.

@@ -7,16 +7,7 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v4/cpu"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-)
-
-var normalizeProcessCPUUtilizationFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.hostmetrics.normalizeProcessCPUUtilization",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, normalizes the process.cpu.utilization metric onto the interval [0-1] by dividing the value by the number of logical processors."),
-	featuregate.WithRegisterFromVersion("v0.97.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31368"),
 )
 
 // CPUUtilization stores the utilization percents [0-1] for the different cpu states
@@ -57,12 +48,9 @@ func cpuUtilization(logicalCores int, startStats *cpu.TimesStat, startTime pcomm
 	systemUtilization := (endStats.System - startStats.System) / elapsedTime
 	ioWaitUtilization := (endStats.Iowait - startStats.Iowait) / elapsedTime
 
-	if normalizeProcessCPUUtilizationFeatureGate.IsEnabled() && logicalCores > 0 {
-		// Normalize onto the [0-1] interval by dividing by the number of logical cores
-		userUtilization /= float64(logicalCores)
-		systemUtilization /= float64(logicalCores)
-		ioWaitUtilization /= float64(logicalCores)
-	}
+	userUtilization /= float64(logicalCores)
+	systemUtilization /= float64(logicalCores)
+	ioWaitUtilization /= float64(logicalCores)
 
 	return CPUUtilization{
 		User:   userUtilization,
