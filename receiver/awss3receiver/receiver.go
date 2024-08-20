@@ -46,7 +46,7 @@ type awss3Receiver struct {
 
 func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, settings receiver.Settings, processor receiverProcessor) (*awss3Receiver, error) {
 	notifier := newNotifier(cfg, settings.Logger)
-	reader, err := newS3Reader(ctx, notifier, cfg)
+	reader, err := newS3Reader(ctx, notifier, settings.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -151,6 +151,7 @@ func (r *traceReceiver) processReceivedData(ctx context.Context, rcvr *awss3Rece
 		rcvr.logger.Warn("Unsupported file format", zap.String("key", key))
 		return nil
 	}
+	rcvr.logger.Debug("Processing trace file", zap.String("key", key), zap.String("format", format))
 	traces, err := unmarshaler.UnmarshalTraces(data)
 	if err != nil {
 		return err
@@ -192,6 +193,7 @@ func (r *metricsReceiver) processReceivedData(ctx context.Context, rcvr *awss3Re
 		rcvr.logger.Warn("Unsupported file format", zap.String("key", key))
 		return nil
 	}
+	rcvr.logger.Debug("Processing metric file", zap.String("key", key), zap.String("format", format))
 	metrics, err := unmarshaler.UnmarshalMetrics(data)
 	if err != nil {
 		return err
@@ -233,6 +235,7 @@ func (r *logsReceiver) processReceivedData(ctx context.Context, rcvr *awss3Recei
 		rcvr.logger.Warn("Unsupported file format", zap.String("key", key))
 		return nil
 	}
+	rcvr.logger.Debug("Processing log file", zap.String("key", key), zap.String("format", format))
 	logs, err := unmarshaler.UnmarshalLogs(data)
 	if err != nil {
 		return err
