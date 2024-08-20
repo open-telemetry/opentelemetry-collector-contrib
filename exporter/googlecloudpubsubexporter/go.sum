@@ -9,8 +9,8 @@ cloud.google.com/go/compute/metadata v0.5.0 h1:Zr0eK8JbFv6+Wi4ilXAR8FJ3wyNdpxHKJ
 cloud.google.com/go/compute/metadata v0.5.0/go.mod h1:aHnloV2TPI38yx4s9+wAZhHykWvVCfu7hQbF+9CWoiY=
 cloud.google.com/go/iam v1.1.12 h1:JixGLimRrNGcxvJEQ8+clfLxPlbeZA6MuRJ+qJNQ5Xw=
 cloud.google.com/go/iam v1.1.12/go.mod h1:9LDX8J7dN5YRyzVHxwQzrQs9opFFqn0Mxs9nAeB+Hhg=
-cloud.google.com/go/pubsub v1.41.0 h1:ZPaM/CvTO6T+1tQOs/jJ4OEMpjtel0PTLV7j1JK+ZrI=
-cloud.google.com/go/pubsub v1.41.0/go.mod h1:g+YzC6w/3N91tzG66e2BZtp7WrpBBMXVa3Y9zVoOGpk=
+cloud.google.com/go/pubsub v1.42.0 h1:PVTbzorLryFL5ue8esTS2BfehUs0ahyNOY9qcd+HMOs=
+cloud.google.com/go/pubsub v1.42.0/go.mod h1:KADJ6s4MbTwhXmse/50SebEhE4SmUwHi48z3/dHar1Y=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
