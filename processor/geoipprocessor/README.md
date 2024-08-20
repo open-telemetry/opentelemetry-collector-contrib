@@ -13,7 +13,7 @@
 
 ## Description
 
-The geoIP processor `geoipprocessor` enhances resource attributes by appending information about the geographical location of an IP address. To add geographical information, the IP address must be included in the resource attributes using the [`source.address` semantic conventions key attribute](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/general/attributes.md#source).
+The geoIP processor `geoipprocessor` enhances the attributes of a span, log, or metric by appending information about the geographical location of an IP address. To add geographical information, the IP address must be included in the attributes using the [`source.address` semantic conventions key attribute](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/general/attributes.md#source). By default, only the resource attributes will be modified. Please refer to [config.go](./config.go) for the config spec.
 
 ### Geographical location metadata
 
@@ -39,6 +39,9 @@ The following settings must be configured:
 
 - `providers`: A map containing geographical location information providers. These providers are used to search for the geographical location attributes associated with an IP. Supported providers:
   - [maxmind](./internal/provider/maxmindprovider/README.md)
+- `context`: Allows specifying the underlying telemetry context the processor will work with. Available values:
+  - `resource`(default): Resource attributes.
+  - `record`: Attributes within a data point, log record or a span.
 
 ## Examples
 
@@ -46,6 +49,7 @@ The following settings must be configured:
 processors:
     # processor name: geoip
     geoip:
+      context: resource
       providers:
         maxmind:
           database_path: /tmp/mygeodb

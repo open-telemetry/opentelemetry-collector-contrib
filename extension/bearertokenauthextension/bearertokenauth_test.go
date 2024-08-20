@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -91,7 +92,7 @@ func TestBearerAuthenticator(t *testing.T) {
 	}
 	expectedHeaders := http.Header{
 		"Foo":           {"bar"},
-		"Authorization": {bauth.bearerToken()},
+		"Authorization": {"Bearer " + string(cfg.BearerToken)},
 	}
 
 	resp, err := roundTripper.RoundTrip(&http.Request{Header: orgHeaders})
@@ -102,7 +103,7 @@ func TestBearerAuthenticator(t *testing.T) {
 
 func TestBearerStartWatchStop(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Filename = "test.token"
+	cfg.Filename = filepath.Join("testdata", t.Name()+".token")
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
 	assert.NotNil(t, bauth)
@@ -152,7 +153,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 func TestBearerTokenFileContentUpdate(t *testing.T) {
 	scheme := "TestScheme"
 	cfg := createDefaultConfig().(*Config)
-	cfg.Filename = "test.token"
+	cfg.Filename = filepath.Join("testdata", t.Name()+".token")
 	cfg.Scheme = scheme
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
