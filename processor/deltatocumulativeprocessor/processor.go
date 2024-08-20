@@ -19,9 +19,9 @@ import (
 	exp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 )
 
 var _ processor.Metrics = (*Processor)(nil)
@@ -37,10 +37,10 @@ type Processor struct {
 	cancel context.CancelFunc
 
 	stale staleness.Tracker
-	tel   metadata.TelemetryBuilder
+	tel   telemetry.Metrics
 }
 
-func newProcessor(cfg *Config, tel *metadata.TelemetryBuilder, next consumer.Metrics) *Processor {
+func newProcessor(cfg *Config, tel telemetry.Metrics, next consumer.Metrics) *Processor {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	proc := Processor{
@@ -55,8 +55,12 @@ func newProcessor(cfg *Config, tel *metadata.TelemetryBuilder, next consumer.Met
 		cancel: cancel,
 
 		stale: staleness.NewTracker(),
-		tel:   *tel,
+		tel:   tel,
 	}
+
+	tel.WithTracked(proc.state.Len)
+	cfg.Metrics(tel)
+
 	return &proc
 }
 
@@ -87,20 +91,29 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 			each = use(m, p.state.expo)
 		}
 
+		// do signals whether to drop or keep the entire metric.
+		// if any single dp is accumulated, it must be kept. if not, it no
+		// longer has datapoints and can be dropped
 		var do = drop
 		err := each(func(id identity.Stream, aggr func() error) error {
 			// if stream not seen before and stream limit is reached, reject
 			if !p.state.Has(id) && p.state.Len() >= p.cfg.MaxStreams {
-				// TODO: record metric
+				p.tel.Datapoints().Inc(ctx, telemetry.Error("limit"))
 				return streams.Drop
 			}
-			do = keep
 
 			// stream is alive, refresh it
 			p.stale.Refresh(now, id)
 
 			// accumulate current dp into state
-			return aggr()
+			if err := aggr(); err != nil {
+				p.tel.Datapoints().Inc(ctx, telemetry.Cause(err))
+				return err
+			}
+
+			do = keep
+			p.tel.Datapoints().Inc(ctx)
+			return nil
 		})
 		errs = errors.Join(errs, err)
 		return do

@@ -9,7 +9,6 @@ status:
   codeowners:
     active: [sh0rez, RichieSams, jpkrohling]
 
-
 telemetry:
   metrics:
     # streams
@@ -19,19 +18,14 @@ telemetry:
       sum:
         value_type: int
         monotonic: false
+        async: true
       enabled: true
     deltatocumulative.streams.limit:
+      attributes: [foo]
       description: upper limit of tracked streams
       unit: "{stream}"
       gauge:
         value_type: int
-      enabled: true
-    deltatocumulative.streams.evicted:
-      description: number of streams evicted
-      unit: "{stream}"
-      sum:
-        value_type: int
-        monotonic: true
       enabled: true
     deltatocumulative.streams.max_stale:
       description: duration after which streams inactive streams are dropped
@@ -40,23 +34,9 @@ telemetry:
         value_type: int
       enabled: true
     # datapoints
-    deltatocumulative.datapoints.processed:
-      description: number of datapoints processed
+    deltatocumulative.datapoints:
+      description: total number of datapoints processed. may have 'error' attribute, if processing failed
       unit: "{datapoint}"
-      sum:
-        value_type: int
-        monotonic: true
-      enabled: true
-    deltatocumulative.datapoints.dropped:
-      description: number of datapoints dropped due to given 'reason'
-      unit: "{datapoint}"
-      sum:
-        value_type: int
-        monotonic: true
-      enabled: true
-    deltatocumulative.gaps.length:
-      description: total duration where data was expected but not received
-      unit: "s"
       sum:
         value_type: int
         monotonic: true

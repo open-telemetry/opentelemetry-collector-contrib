@@ -4,10 +4,12 @@
 package deltatocumulativeprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -36,4 +38,10 @@ func createDefaultConfig() component.Config {
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31603
 		MaxStreams: math.MaxInt,
 	}
+}
+
+func (c Config) Metrics(tel telemetry.Metrics) {
+	ctx := context.Background()
+	tel.DeltatocumulativeStreamsMaxStale.Record(ctx, int64(c.MaxStale.Seconds()))
+	tel.DeltatocumulativeStreamsLimit.Record(ctx, int64(c.MaxStreams))
 }
