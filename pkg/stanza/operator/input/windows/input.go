@@ -263,10 +263,10 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 			"Failed to open event source, respective log entries cannot be formatted",
 			zap.String("provider", providerName), zap.Error(openPublisherErr))
 	} else if publisher.Valid() {
-		deepEvent, err := event.RenderDeep(i.buffer, publisher)
-		if err != nil {
+		deepEvent, deepErr := event.RenderDeep(i.buffer, publisher)
+		if deepErr != nil {
 			// Do not return. Log error here and try to send as simple event later.
-			i.Logger().Error("Failed to render formatted event", zap.Error(err))
+			i.Logger().Error("Failed to render formatted event", zap.Error(deepErr))
 		} else {
 			i.sendEvent(ctx, deepEvent)
 			return
@@ -280,7 +280,6 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 		return
 	}
 	i.sendEvent(ctx, simpleEvent)
-	return
 }
 
 // sendEvent will send EventXML as an entry to the operator's output.
@@ -301,7 +300,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) {
 	e.Severity = parseSeverity(eventXML.RenderedLevel, eventXML.Level)
 
 	if i.remote.Server != "" {
-		e.Attributes["remote_server"] = i.remote.Server
+		e.Attributes["server.address"] = i.remote.Server
 	}
 
 	_ = i.Write(ctx, e)

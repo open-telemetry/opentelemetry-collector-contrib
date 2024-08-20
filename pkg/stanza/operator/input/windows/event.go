@@ -12,9 +12,6 @@ import (
 	"unsafe"
 )
 
-// errUnknownNextFrame is an error returned when a systemcall indicates the next frame is 0 bytes.
-var errUnknownNextFrame = errors.New("the buffer size needed by the next frame of a render syscall was 0, unable to determine size of next frame")
-
 // systemPropertiesRenderContext stores a custom rendering context to get only the event properties.
 var systemPropertiesRenderContext = uintptr(0)
 var systemPropertiesRenderContextErr error
@@ -88,10 +85,6 @@ func (e *Event) RenderSimple(buffer Buffer) (*EventXML, error) {
 	bufferUsed, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
 	if err != nil {
 		if errors.Is(err, ErrorInsufficientBuffer) {
-			// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
-			if *bufferUsed == 0 {
-				return nil, errUnknownNextFrame
-			}
 			buffer.UpdateSizeBytes(*bufferUsed)
 			return e.RenderSimple(buffer)
 		}
@@ -115,11 +108,6 @@ func (e *Event) RenderDeep(buffer Buffer, publisher Publisher) (*EventXML, error
 	bufferUsed, err := evtFormatMessage(publisher.handle, e.handle, 0, 0, 0, EvtFormatMessageXML, buffer.SizeWide(), buffer.FirstByte())
 	if err != nil {
 		if errors.Is(err, ErrorInsufficientBuffer) {
-			// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
-			if *bufferUsed == 0 {
-				return nil, errUnknownNextFrame
-			}
-
 			buffer.UpdateSizeWide(*bufferUsed)
 			return e.RenderDeep(buffer, publisher)
 		}
