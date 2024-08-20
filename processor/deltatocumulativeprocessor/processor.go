@@ -30,7 +30,7 @@ type Processor struct {
 	next consumer.Metrics
 	cfg  Config
 
-	state Map
+	state state
 	mtx   sync.Mutex
 
 	ctx    context.Context
@@ -46,7 +46,7 @@ func newProcessor(cfg *Config, tel *metadata.TelemetryBuilder, next consumer.Met
 	proc := Processor{
 		next: next,
 		cfg:  *cfg,
-		state: Map{
+		state: state{
 			nums: make(exp.HashMap[data.Number]),
 			hist: make(exp.HashMap[data.Histogram]),
 			expo: make(exp.HashMap[data.ExpHistogram]),
@@ -66,13 +66,18 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 
 	now := time.Now()
 
+	const (
+		keep = true
+		drop = false
+	)
+
 	var errs error
 	metrics.Filter(md, func(m metrics.Metric) bool {
 		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta {
-			return true
+			return keep
 		}
 
-		var each AggrFunc
+		var each aggrFunc
 		switch m := m.Typed().(type) {
 		case metrics.Sum:
 			each = use(m, p.state.nums)
@@ -82,14 +87,14 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 			each = use(m, p.state.expo)
 		}
 
-		var ok bool
+		var do = drop
 		err := each(func(id identity.Stream, aggr func() error) error {
 			// if stream not seen before and stream limit is reached, reject
 			if !p.state.Has(id) && p.state.Len() >= p.cfg.MaxStreams {
 				// TODO: record metric
 				return streams.Drop
 			}
-			ok = true
+			do = keep
 
 			// stream is alive, refresh it
 			p.stale.Refresh(now, id)
@@ -98,10 +103,8 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 			return aggr()
 		})
 		errs = errors.Join(errs, err)
-
-		return ok
+		return do
 	})
-
 	if errs != nil {
 		return errs
 	}
@@ -113,7 +116,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 	return p.next.ConsumeMetrics(ctx, md)
 }
 
-// AggrFunc calls `do` for datapoint of a metric, giving the caller the
+// aggrFunc calls `do` for datapoint of a metric, giving the caller the
 // opportunity to decide whether to perform aggregation in a type-agnostic way,
 // while keeping underlying strong typing.
 //
@@ -122,14 +125,17 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 //
 // if any error is returned, the current datapoint is dropped, the error
 // collected and eventually returned. [streams.Drop] silently drops a datapoint
-type AggrFunc func(do func(id identity.Stream, aggr func() error) error) error
+type aggrFunc func(do func(id identity.Stream, aggr func() error) error) error
 
 // use returns an AggrFunc for the given metric, accumulating into the given state,
 // given `do` calls its `aggr`
-func use[T data.Typed[T], M Metric[T]](m M, state streams.Map[T]) AggrFunc {
+func use[T data.Typed[T], M metric[T]](m M, state streams.Map[T]) aggrFunc {
 	return func(do func(id identity.Stream, aggr func() error) error) error {
 		return streams.Apply(m, func(id identity.Stream, dp T) (T, error) {
+			// load previously aggregated state for this stream
 			acc, ok := state.Load(id)
+
+			// to be invoked by caller if accumulation is desired
 			aggr := func() error {
 				m.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -143,7 +149,11 @@ func use[T data.Typed[T], M Metric[T]](m M, state streams.Map[T]) AggrFunc {
 				return delta.AccumulateInto(acc, dp)
 			}
 			err := do(id, aggr)
+
+			// update state to possibly changed value
 			state.Store(id, acc)
+
+			// store new value in output metrics slice
 			return acc, err
 		})
 	}
@@ -151,6 +161,7 @@ func use[T data.Typed[T], M Metric[T]](m M, state streams.Map[T]) AggrFunc {
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
 	if p.cfg.MaxStale != 0 {
+		// delete stale streams once per minute
 		go func() {
 			tick := time.NewTicker(time.Minute)
 			defer tick.Stop()
@@ -182,29 +193,30 @@ func (p *Processor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-type Metric[T data.Point[T]] interface {
+type metric[T data.Point[T]] interface {
 	metrics.Filterable[T]
 	SetAggregationTemporality(pmetric.AggregationTemporality)
 }
 
-type Map struct {
+// state keeps a cumulative value, aggregated over time, per stream
+type state struct {
 	nums streams.Map[data.Number]
 	hist streams.Map[data.Histogram]
 	expo streams.Map[data.ExpHistogram]
 }
 
-func (m Map) Len() int {
+func (m state) Len() int {
 	return m.nums.Len() + m.hist.Len() + m.expo.Len()
 }
 
-func (m Map) Has(id identity.Stream) bool {
+func (m state) Has(id identity.Stream) bool {
 	_, nok := m.nums.Load(id)
 	_, hok := m.hist.Load(id)
 	_, eok := m.expo.Load(id)
 	return nok || hok || eok
 }
 
-func (m Map) Delete(id identity.Stream) {
+func (m state) Delete(id identity.Stream) {
 	m.nums.Delete(id)
 	m.hist.Delete(id)
 	m.expo.Delete(id)
