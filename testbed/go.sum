@@ -61,8 +61,8 @@ github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
 github.com/DataDog/agent-payload/v5 v5.0.130 h1:pVMRVKkUMmw2vOpmP92TO9jrS0om3K0uKteXHcy/6v0=
 github.com/DataDog/agent-payload/v5 v5.0.130/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
-github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.11 h1:En7K6otX0AAWir4Xi2wqrxCCLQIpzlcaG/ttwvQFd+U=
-github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.11/go.mod h1:gHkSUTn6H6UEZQHY3XWBIGNjfI3Tdi0IxlrxIFBWDwU=
+github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.12 h1:1ZBeAW/Cq6QSkRVQ8Hxz71tqaH3irzboGKemx5HX+o0=
+github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.12/go.mod h1:HG4/o+jZ2T6+bhTOKQj+3ikKGhFLWTp5Kib9swNxTeY=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=
