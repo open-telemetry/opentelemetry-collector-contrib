@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("coralogix")
+	Type      = component.MustNewType("coralogix")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 )
 
 const (

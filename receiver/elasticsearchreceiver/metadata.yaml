@@ -1,5 +1,4 @@
 type: elasticsearch
-scope_name: otelcol/elasticsearchreceiver
 
 status:
   class: receiver
@@ -890,6 +889,13 @@ metrics:
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
+  elasticsearch.index.operations.merge.current:
+    description: The number of currently active segment merges
+    unit: "{merges}"
+    gauge:
+      value_type: int
+    attributes: [ index_aggregation_type ]
+    enabled: true
   elasticsearch.index.segments.count:
     description: Number of segments of an index.
     unit: "{segments}"
@@ -898,7 +904,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
-    enabled: false
+    enabled: true
   elasticsearch.index.segments.size:
     description: Size of segments of an index.
     unit: By
@@ -970,7 +976,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [document_state, index_aggregation_type]
-    enabled: false
+    enabled: true
   elasticsearch.process.cpu.usage:
     description: CPU usage in percent.
     unit: "1"

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +33,7 @@ type elasticsearchExporter struct {
 	model          mappingModel
 	otel           bool
 
+	wg          sync.WaitGroup // active sessions
 	bulkIndexer bulkIndexer
 }
 
@@ -88,12 +90,28 @@ func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) 
 
 func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	if e.bulkIndexer != nil {
-		return e.bulkIndexer.Close(ctx)
+		if err := e.bulkIndexer.Close(ctx); err != nil {
+			return err
+		}
 	}
-	return nil
+
+	doneCh := make(chan struct{})
+	go func() {
+		e.wg.Wait()
+		close(doneCh)
+	}()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-doneCh:
+		return nil
+	}
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
+
 	session, err := e.bulkIndexer.StartSession(ctx)
 	if err != nil {
 		return err
@@ -157,13 +175,16 @@ func (e *elasticsearchExporter) pushLogRecord(
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document))
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
 	ctx context.Context,
 	metrics pmetric.Metrics,
 ) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
+
 	session, err := e.bulkIndexer.StartSession(ctx)
 	if err != nil {
 		return err
@@ -194,7 +215,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
 					}
 
-					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource, scope, metric, dp, dpValue); err != nil {
+					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource,
+						resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), metric, dp, dpValue); err != nil {
 						return err
 					}
 					return nil
@@ -244,6 +266,16 @@ func (e *elasticsearchExporter) pushMetricsData(
 							continue
 						}
 					}
+				case pmetric.MetricTypeSummary:
+					dps := metric.Summary().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val := summaryToValue(dp)
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
+					}
 				}
 			}
 		}
@@ -259,7 +291,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					errs = append(errs, err)
 					continue
 				}
-				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes)); err != nil {
+				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes), doc.DynamicTemplates()); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -302,6 +334,9 @@ func (e *elasticsearchExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
+
 	session, err := e.bulkIndexer.StartSession(ctx)
 	if err != nil {
 		return err
@@ -363,5 +398,5 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document))
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
 }

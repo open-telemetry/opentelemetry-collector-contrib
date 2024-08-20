@@ -1635,6 +1635,151 @@ var (
 			},
 		},
 		{
+			name: "metric_experimental_scale_value_exp_histogram",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: scaleValue,
+								Scale:  1000,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: scaleValue,
+								Scale:  .1,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric3"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: scaleValue,
+								Scale:  100000,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric4"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: scaleValue,
+								Scale:  42.123,
+							},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric1").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          5,
+						sum:            1359,
+						scale:          4,
+						min:            10,
+						max:            500,
+						zeroThreshold:  5,
+						zeroCount:      1,
+						positiveOffset: 53,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 53: 1, 74: 1, 90: 2}), // 10, 100, 250, 499, 500
+						exemplarValues: []float64{100, 300},
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric2").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            10100.000123,
+						scale:          2,
+						min:            0.000123,
+						max:            10000,
+						positiveOffset: -52,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 78: 1, 105: 1}), // 0.000123, 100, 10000
+						exemplarValues: []float64{100, 300},
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric3").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            4.3678,
+						scale:          7,
+						min:            1.123,
+						max:            1.789,
+						positiveOffset: 21,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 48: 1, 86: 1}), // 1.123, 1.456, 1.789
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric4").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            6.00003,
+						scale:          20,
+						min:            2,
+						max:            2.00002,
+						negativeOffset: 1048575,
+						negativeCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 8: 1, 16: 1}), // 2, 2.00001, 2.00002
+					}).build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric1").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          5,
+						sum:            1359000,
+						scale:          4,
+						min:            10000,
+						max:            500000,
+						zeroThreshold:  5000,
+						zeroCount:      1,
+						positiveOffset: 212,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 53: 1, 74: 1, 90: 2}),
+						exemplarValues: []float64{100000, 300000},
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric2").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            1010.0000123,
+						scale:          2,
+						min:            0.0000123,
+						max:            1000,
+						positiveOffset: -65,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 78: 1, 105: 1}),
+						exemplarValues: []float64{10, 30},
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric3").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            436780,
+						scale:          7,
+						min:            112300,
+						max:            178900,
+						positiveOffset: 2147,
+						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 48: 1, 86: 1}),
+					}).build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric4").
+					addExpHistogramDatapoint(expHistogramConfig{
+						count:          3,
+						sum:            252.73926368999997,
+						scale:          20,
+						min:            84.246,
+						max:            84.24684246,
+						negativeOffset: 6707253,
+						negativeCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 8: 1, 16: 1}),
+					}).build(),
+			},
+		},
+		{
 			name: "metric_experimental_scale_with_attr_filtering",
 			transforms: []internalTransform{
 				{
