@@ -256,6 +256,7 @@ receiver/mongodbatlasreceiver/                                      @open-teleme
 receiver/mongodbreceiver/                                           @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/mysqlreceiver/                                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/namedpipereceiver/                                         @open-telemetry/collector-contrib-approvers @sinkingpoint @djaglowski
+receiver/netflowreceiver/                                           @open-telemetry/collector-contrib-approvers @evan-bradley @dlopes7
 receiver/nginxreceiver/                                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nsxtreceiver/                                              @open-telemetry/collector-contrib-approvers @dashpole @schmikei
 receiver/opencensusreceiver/                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
