@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/solar
 go 1.22.0
 
 require (
-	github.com/solarwindscloud/apm-proto v1.0.6
+	github.com/solarwindscloud/apm-proto v1.0.7
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/confmap v0.107.1-0.20240816132030-9fd84668bb02
