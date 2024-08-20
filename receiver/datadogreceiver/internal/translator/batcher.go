@@ -98,7 +98,7 @@ func (d dimensions) Resource() pcommon.Resource {
 
 func (d dimensions) Scope() pcommon.InstrumentationScope {
 	scope := pcommon.NewInstrumentationScope()
-	scope.SetName("otelcol/datadogreceiver")
+	scope.SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator")
 	scope.SetVersion(d.buildInfo)
 	d.scopeAttrs.CopyTo(scope.Attributes())
 	return scope

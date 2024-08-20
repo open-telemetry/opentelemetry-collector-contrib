@@ -12,6 +12,7 @@ import (
 
 	"code.cloudfoundry.org/go-loggregator"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -119,17 +120,18 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		cfr.settings.Logger.Debug("cloudfoundry receiver starting")
 		_, tokenErr = tokenProvider.ProvideToken()
 		if tokenErr != nil {
-			cfr.settings.ReportStatus(
-				component.NewFatalErrorEvent(
+			componentstatus.ReportStatus(
+				host,
+				componentstatus.NewFatalErrorEvent(
 					fmt.Errorf("cloudfoundry receiver failed to fetch initial token from UAA: %w", tokenErr),
 				),
 			)
 			return
 		}
 		if cfr.nextLogs != nil {
-			cfr.streamLogs(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID))
+			cfr.streamLogs(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
 		} else if cfr.nextMetrics != nil {
-			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID))
+			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
 		}
 		cfr.settings.Logger.Debug("cloudfoundry receiver stopped")
 	}()
@@ -147,7 +149,8 @@ func (cfr *cloudFoundryReceiver) Shutdown(_ context.Context) error {
 
 func (cfr *cloudFoundryReceiver) streamMetrics(
 	ctx context.Context,
-	stream loggregator.EnvelopeStream) {
+	stream loggregator.EnvelopeStream,
+	host component.Host) {
 
 	for {
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
@@ -155,8 +158,9 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 		if envelopes == nil {
 			// If context has not been cancelled, then nil means the shutdown was due to an error within stream
 			if ctx.Err() == nil {
-				cfr.settings.ReportStatus(
-					component.NewFatalErrorEvent(
+				componentstatus.ReportStatus(
+					host,
+					componentstatus.NewFatalErrorEvent(
 						errors.New("RLP gateway metrics streamer shut down due to an error"),
 					),
 				)
@@ -182,14 +186,16 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 
 func (cfr *cloudFoundryReceiver) streamLogs(
 	ctx context.Context,
-	stream loggregator.EnvelopeStream) {
+	stream loggregator.EnvelopeStream,
+	host component.Host) {
 
 	for {
 		envelopes := stream()
 		if envelopes == nil {
 			if ctx.Err() == nil {
-				cfr.settings.ReportStatus(
-					component.NewFatalErrorEvent(
+				componentstatus.ReportStatus(
+					host,
+					componentstatus.NewFatalErrorEvent(
 						errors.New("RLP gateway log streamer shut down due to an error"),
 					),
 				)

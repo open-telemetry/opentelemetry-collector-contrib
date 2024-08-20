@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -103,7 +104,9 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
-
+			if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {
+				newSpan.Attributes().PutStr("sampling.priority", fmt.Sprintf("%f", samplingPriority))
+			}
 			if span.Error > 0 {
 				newSpan.Status().SetCode(ptrace.StatusCodeError)
 			}

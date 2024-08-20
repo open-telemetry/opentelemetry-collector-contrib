@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
 func TestAggregationFuncs(t *testing.T) {
@@ -15,8 +15,8 @@ func TestAggregationFuncs(t *testing.T) {
 	aggPermanent := newAggregationFunc(PriorityPermanent)
 
 	type statusExpectation struct {
-		priorityPermanent   component.Status
-		priorityRecoverable component.Status
+		priorityPermanent   componentstatus.Status
+		priorityRecoverable componentstatus.Status
 	}
 
 	for _, tc := range []struct {
@@ -29,31 +29,31 @@ func TestAggregationFuncs(t *testing.T) {
 			aggregateStatus: &AggregateStatus{
 				ComponentStatusMap: map[string]*AggregateStatus{
 					"c1": {
-						Event: component.NewStatusEvent(component.StatusFatalError),
+						Event: componentstatus.NewEvent(componentstatus.StatusFatalError),
 					},
 					"c2": {
-						Event: component.NewStatusEvent(component.StatusStarting),
+						Event: componentstatus.NewEvent(componentstatus.StatusStarting),
 					},
 					"c3": {
-						Event: component.NewStatusEvent(component.StatusOK),
+						Event: componentstatus.NewEvent(componentstatus.StatusOK),
 					},
 					"c4": {
-						Event: component.NewStatusEvent(component.StatusRecoverableError),
+						Event: componentstatus.NewEvent(componentstatus.StatusRecoverableError),
 					},
 					"c5": {
-						Event: component.NewStatusEvent(component.StatusPermanentError),
+						Event: componentstatus.NewEvent(componentstatus.StatusPermanentError),
 					},
 					"c6": {
-						Event: component.NewStatusEvent(component.StatusStopping),
+						Event: componentstatus.NewEvent(componentstatus.StatusStopping),
 					},
 					"c7": {
-						Event: component.NewStatusEvent(component.StatusStopped),
+						Event: componentstatus.NewEvent(componentstatus.StatusStopped),
 					},
 				},
 			},
 			expectedStatus: &statusExpectation{
-				priorityPermanent:   component.StatusFatalError,
-				priorityRecoverable: component.StatusFatalError,
+				priorityPermanent:   componentstatus.StatusFatalError,
+				priorityRecoverable: componentstatus.StatusFatalError,
 			},
 		},
 		{
@@ -61,19 +61,19 @@ func TestAggregationFuncs(t *testing.T) {
 			aggregateStatus: &AggregateStatus{
 				ComponentStatusMap: map[string]*AggregateStatus{
 					"c1": {
-						Event: component.NewStatusEvent(component.StatusStarting),
+						Event: componentstatus.NewEvent(componentstatus.StatusStarting),
 					},
 					"c2": {
-						Event: component.NewStatusEvent(component.StatusRecoverableError),
+						Event: componentstatus.NewEvent(componentstatus.StatusRecoverableError),
 					},
 					"c3": {
-						Event: component.NewStatusEvent(component.StatusPermanentError),
+						Event: componentstatus.NewEvent(componentstatus.StatusPermanentError),
 					},
 				},
 			},
 			expectedStatus: &statusExpectation{
-				priorityPermanent:   component.StatusStarting,
-				priorityRecoverable: component.StatusStarting,
+				priorityPermanent:   componentstatus.StatusStarting,
+				priorityRecoverable: componentstatus.StatusStarting,
 			},
 		},
 		{
@@ -81,19 +81,19 @@ func TestAggregationFuncs(t *testing.T) {
 			aggregateStatus: &AggregateStatus{
 				ComponentStatusMap: map[string]*AggregateStatus{
 					"c1": {
-						Event: component.NewStatusEvent(component.StatusStopping),
+						Event: componentstatus.NewEvent(componentstatus.StatusStopping),
 					},
 					"c2": {
-						Event: component.NewStatusEvent(component.StatusRecoverableError),
+						Event: componentstatus.NewEvent(componentstatus.StatusRecoverableError),
 					},
 					"c3": {
-						Event: component.NewStatusEvent(component.StatusPermanentError),
+						Event: componentstatus.NewEvent(componentstatus.StatusPermanentError),
 					},
 				},
 			},
 			expectedStatus: &statusExpectation{
-				priorityPermanent:   component.StatusStopping,
-				priorityRecoverable: component.StatusStopping,
+				priorityPermanent:   componentstatus.StatusStopping,
+				priorityRecoverable: componentstatus.StatusStopping,
 			},
 		},
 		{
@@ -101,19 +101,19 @@ func TestAggregationFuncs(t *testing.T) {
 			aggregateStatus: &AggregateStatus{
 				ComponentStatusMap: map[string]*AggregateStatus{
 					"c1": {
-						Event: component.NewStatusEvent(component.StatusOK),
+						Event: componentstatus.NewEvent(componentstatus.StatusOK),
 					},
 					"c2": {
-						Event: component.NewStatusEvent(component.StatusRecoverableError),
+						Event: componentstatus.NewEvent(componentstatus.StatusRecoverableError),
 					},
 					"c3": {
-						Event: component.NewStatusEvent(component.StatusPermanentError),
+						Event: componentstatus.NewEvent(componentstatus.StatusPermanentError),
 					},
 				},
 			},
 			expectedStatus: &statusExpectation{
-				priorityPermanent:   component.StatusPermanentError,
-				priorityRecoverable: component.StatusRecoverableError,
+				priorityPermanent:   componentstatus.StatusPermanentError,
+				priorityRecoverable: componentstatus.StatusRecoverableError,
 			},
 		},
 	} {
@@ -132,7 +132,7 @@ func TestEventTemporalOrder(t *testing.T) {
 	st := &AggregateStatus{
 		ComponentStatusMap: map[string]*AggregateStatus{
 			"c1": {
-				Event: component.NewStatusEvent(component.StatusOK),
+				Event: componentstatus.NewEvent(componentstatus.StatusOK),
 			},
 		},
 	}
@@ -140,7 +140,7 @@ func TestEventTemporalOrder(t *testing.T) {
 
 	// Record first error
 	st.ComponentStatusMap["c2"] = &AggregateStatus{
-		Event: component.NewRecoverableErrorEvent(assert.AnError),
+		Event: componentstatus.NewRecoverableErrorEvent(assert.AnError),
 	}
 
 	// Returns first error
@@ -148,7 +148,7 @@ func TestEventTemporalOrder(t *testing.T) {
 
 	// Record second error
 	st.ComponentStatusMap["c3"] = &AggregateStatus{
-		Event: component.NewRecoverableErrorEvent(assert.AnError),
+		Event: componentstatus.NewRecoverableErrorEvent(assert.AnError),
 	}
 
 	// Still returns first error
@@ -156,7 +156,7 @@ func TestEventTemporalOrder(t *testing.T) {
 
 	// Replace first error with later error
 	st.ComponentStatusMap["c2"] = &AggregateStatus{
-		Event: component.NewRecoverableErrorEvent(assert.AnError),
+		Event: componentstatus.NewRecoverableErrorEvent(assert.AnError),
 	}
 
 	// Returns second error now
@@ -164,10 +164,10 @@ func TestEventTemporalOrder(t *testing.T) {
 
 	// Clear errors
 	st.ComponentStatusMap["c2"] = &AggregateStatus{
-		Event: component.NewStatusEvent(component.StatusOK),
+		Event: componentstatus.NewEvent(componentstatus.StatusOK),
 	}
 	st.ComponentStatusMap["c3"] = &AggregateStatus{
-		Event: component.NewStatusEvent(component.StatusOK),
+		Event: componentstatus.NewEvent(componentstatus.StatusOK),
 	}
 
 	// Returns latest event
