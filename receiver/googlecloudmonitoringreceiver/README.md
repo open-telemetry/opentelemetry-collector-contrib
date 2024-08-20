@@ -30,9 +30,9 @@ receivers:
     project_id: my-project-id
     metrics_list:
       - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
-        delay: 1m # Can be specified in seconds (s), minutes (m), or hours (h)
+        fetch_delay: 1m # Can be specified in seconds (s), minutes (m), or hours (h)
       - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
-        delay: 60s # Can be specified in seconds (s), minutes (m), or hours (h)
+        fetch_delay: 60s # Can be specified in seconds (s), minutes (m), or hours (h)
 ```
 
 - `collection_interval` (Optional): The interval at which metrics are collected. Default is 60s.
@@ -44,7 +44,7 @@ receivers:
 Each single metric can have the following configuration:
 
 - `metric_name` (Required): The specific metric name to collect.
-- `delay` (Optional): The delay before starting the collection of metrics for this service. Default is 0s.
+- `fetch_delay` (Optional): The delay before starting the collection of metrics for this service. Default is 60s.
 
 
 ## Authentication with Google Cloud

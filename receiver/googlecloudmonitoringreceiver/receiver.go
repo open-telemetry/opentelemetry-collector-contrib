@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"google.golang.org/api/iterator"
@@ -22,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver/internal"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
-	
+
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 )
 
@@ -31,7 +30,8 @@ type monitoringReceiver struct {
 	logger         *zap.Logger
 	client         *monitoring.MetricClient
 	metricsBuilder *internal.MetricsBuilder
-	startOnce      sync.Once
+	wg             sync.WaitGroup
+	mutex          sync.Mutex
 }
 
 func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitoringReceiver {
@@ -43,27 +43,59 @@ func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitori
 }
 
 func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error {
-	var startErr error
-	mr.startOnce.Do(func() {
-		client, err := monitoring.NewMetricClient(ctx)
-		if err != nil {
-			startErr = fmt.Errorf("failed to create a monitoring client: %w", err)
-			return
+	// Initialize a wait group
+	var wg sync.WaitGroup
+	wg.Add(1) // Add a count to the wait group
+
+	// Lock to ensure thread-safe access to mr.client
+	mr.mutex.Lock()
+	defer mr.mutex.Unlock()
+
+	// If the client is already initialized, return nil
+	if mr.client != nil {
+		return nil
+	}
+
+	// Start a goroutine to create the client
+	go func() {
+		defer wg.Done() // Mark this goroutine as done when it finishes
+		for {
+			client, err := monitoring.NewMetricClient(ctx)
+			if err != nil {
+				// Log the error and retry after a delay
+				errMsg := fmt.Sprintf("failed to create a monitoring client, %+v\n", err)
+				mr.logger.Error(errMsg)
+				time.Sleep(5 * time.Second) // Retry delay
+				continue
+			}
+
+			// Lock again to safely set the client
+			mr.client = client
+			mr.logger.Info("Monitoring client successfully created.")
+			break
 		}
+	}()
 
-		mr.client = client
-	})
+	// Wait until the client is created
+	wg.Wait()
 
-	return startErr
+	// Return nil after client creation
+	return nil
 }
 
 func (mr *monitoringReceiver) Shutdown(context.Context) error {
-	mr.logger.Debug("shutting down googlecloudmonitoringreceiver receiver")
-	return nil
+	var err error
+	if mr.client != nil {
+		err = mr.client.Close()
+	}
+	mr.wg.Wait()
+	return err
 }
 
 func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var (
+		gInternal            time.Duration
+		gDelay               time.Duration
 		calStartTime         time.Time
 		calEndTime           time.Time
 		filterQuery          string
@@ -73,20 +105,22 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 
 	// Iterate over each metric in the configuration to calculate start/end times and construct the filter query.
 	for _, metric := range mr.config.MetricsList {
-		// Define the interval and delay times
-		interval := mr.config.CollectionInterval
-		delay := metric.Delay
+		// Set interval and delay times, using defaults if not provided
+		gInternal = mr.config.CollectionInterval
+		if gInternal <= 0 {
+			gInternal = defaultCollectionInterval
+		}
+
+		gDelay = metric.FetchDelay
+		if gDelay <= 0 {
+			gDelay = defaultFetchDelay
+		}
 
 		// Calculate the start and end times
-		calStartTime, calEndTime = calculateStartEndTime(interval, delay)
+		calStartTime, calEndTime = calculateStartEndTime(gInternal, gDelay)
 
 		// Get the filter query for the metric
 		filterQuery = getFilterQuery(metric)
-
-		// Log an error if the filter query is empty
-		if filterQuery == "" {
-			mr.logger.Error("Internal Server Error")
-		}
 
 		// Define the request to list time series data
 		req := &monitoringpb.ListTimeSeriesRequest{
@@ -101,23 +135,19 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 
 		// Create an iterator for the time series data
 		it := mr.client.ListTimeSeries(ctx, req)
-		mr.logger.Info("Time series data:")
+		mr.logger.Debug("Retrieving time series data")
 
 		var metrics pmetric.Metrics
 		// Iterate over the time series data
 		for {
 			timeSeriesMetrics, err := it.Next()
-			if timeSeriesMetrics == nil && err != nil {
-				if errors.Is(err, iterator.Done) {
-					mr.logger.Info(iterator.Done.Error())
-					break
-				}
+			if errors.Is(err, iterator.Done) {
+				break
 			}
 
 			// Handle errors and break conditions for the iterator
 			if err != nil {
-				err := fmt.Errorf("failed to retrieve time series data: %w", err)
-				gErr = multierr.Append(gErr, err)
+				gErr = fmt.Errorf("failed to retrieve time series data: %w", err)
 				return metrics, gErr
 			}
 
@@ -136,14 +166,15 @@ func calculateStartEndTime(interval, delay time.Duration) (time.Time, time.Time)
 	// Get the current time
 	now := time.Now()
 
-	// Calculate the start time (current time - delay)
-	startTime := now.Add(-delay - interval)
+	// Calculate end time by subtracting delay
+	endTime := now.Add(-delay)
 
-	// Calculate the end time (start time + interval)
-	endTime := startTime.Add(interval)
+	// Calculate start time by subtracting interval from end time
+	startTime := endTime.Add(-interval)
 
+	// Return start and end times
 	return startTime, endTime
-}	
+}
 
 // getFilterQuery constructs a filter query string based on the provided metric.
 func getFilterQuery(metric MetricConfig) string {
@@ -167,7 +198,7 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(timeSeriesMetrics []
 		m.SetName(resp.Metric.Type)
 		m.SetUnit(resp.Unit)
 
-		// Assuming MetricDescriptor and description are set
+		// TODO: Retrieve and cache MetricDescriptor to set the correct description
 		m.SetDescription("Converted from GCP Monitoring TimeSeries")
 
 		// Set resource labels
@@ -196,7 +227,8 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(timeSeriesMetrics []
 			mr.metricsBuilder.ConvertSumToMetrics(resp, m)
 		case metric.MetricDescriptor_DELTA:
 			mr.metricsBuilder.ConvertDeltaToMetrics(resp, m)
-		// Add cases for SUMMARY, HISTOGRAM, EXPONENTIAL_HISTOGRAM if needed
+		// TODO: Add support for HISTOGRAM
+		// TODO: Add support for EXPONENTIAL_HISTOGRAM
 		default:
 			metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", resp.GetMetricKind())
 			mr.logger.Info(metricError)

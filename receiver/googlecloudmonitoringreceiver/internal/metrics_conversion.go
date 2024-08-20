@@ -31,7 +31,12 @@ func (mb *MetricsBuilder) ConvertGaugeToMetrics(ts *monitoringpb.TimeSeries, m p
 
 	for _, point := range ts.GetPoints() {
 		dp := gauge.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
+
+		// Directly check and set the StartTimestamp if valid
+		if point.Interval.StartTime != nil && point.Interval.StartTime.IsValid() {
+			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
+		}
+
 		dp.SetTimestamp(pcommon.Timestamp(point.Interval.EndTime.Seconds * 1e9)) // Convert to nanoseconds)
 
 		switch v := point.Value.Value.(type) {
@@ -55,7 +60,12 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 
 	for _, point := range ts.GetPoints() {
 		dp := sum.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
+
+		// Directly check and set the StartTimestamp if valid
+		if point.Interval.StartTime != nil && point.Interval.StartTime.IsValid() {
+			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
+		}
+
 		dp.SetTimestamp(pcommon.Timestamp(point.Interval.EndTime.Seconds * 1e9)) // Convert to nanoseconds)
 
 		switch v := point.Value.Value.(type) {
@@ -79,7 +89,12 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 
 	for _, point := range ts.GetPoints() {
 		dp := sum.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
+
+		// Directly check and set the StartTimestamp if valid
+		if point.Interval.StartTime != nil && point.Interval.StartTime.IsValid() {
+			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
+		}
+
 		dp.SetTimestamp(pcommon.Timestamp(point.Interval.EndTime.Seconds * 1e9)) // Convert to nanoseconds
 
 		switch v := point.Value.Value.(type) {
