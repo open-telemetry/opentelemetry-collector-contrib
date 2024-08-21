@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,59 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
+
+func TestLogsToLogs2(t *testing.T) {
+	testCases := []struct {
+		name         string
+		inputFile    string
+		expectedFile string
+		expectedLogs int
+	}{
+		{
+			name:         "correct log metric",
+			inputFile:    "input-log.yaml",
+			expectedFile: "output-log.yaml",
+			expectedLogs: 1,
+		},
+		{
+			name:         "invalid log",
+			inputFile:    "input-invalid-log.yaml",
+			expectedLogs: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			factory := NewFactory()
+			sink := &consumertest.LogsSink{}
+			conn, err := factory.CreateLogsToLogs(context.Background(),
+
+				connectortest.NewNopSettings(), createDefaultConfig(), sink)
+			require.NoError(t, err)
+			require.NotNil(t, conn)
+			assert.False(t, conn.Capabilities().MutatesData)
+
+			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, conn.Shutdown(context.Background()))
+			}()
+
+			testLogs, err := golden.ReadLogs(filepath.Join("testdata", "logsToLogs", tc.inputFile))
+			assert.NoError(t, err)
+			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
+
+			allLogs := sink.AllLogs()
+			assert.Equal(t, tc.expectedLogs, len(allLogs))
+
+			if tc.expectedLogs > 0 {
+				// golden.WriteLogs(t, filepath.Join("testdata", "logsToLogs", tc.expectedFile), allLogs[0])
+				expected, err := golden.ReadLogs(filepath.Join("testdata", "logsToLogs", tc.expectedFile))
+				assert.NoError(t, err)
+				assert.NoError(t, plogtest.CompareLogs(expected, allLogs[0]))
+			}
+		})
+	}
+}
 
 func TestLogsToMetrics(t *testing.T) {
 	testCases := []struct {
