@@ -27,6 +27,7 @@ func TestAggregation(t *testing.T) {
 		"summaries_are_passed_through",
 		"histograms_are_aggregated",
 		"exp_histograms_are_aggregated",
+		"gauges_are_aggregated",
 		"all_delta_metrics_are_passed_through",
 	}
 

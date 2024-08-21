@@ -102,8 +102,12 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
 			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
 				switch m.Type() {
-				case pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
+				case pmetric.MetricTypeSummary:
 					return false
+				case pmetric.MetricTypeGauge:
+					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
+					aggregateDataPoints(m.Gauge().DataPoints(), mClone.Gauge().DataPoints(), metricID, p.numberLookup)
+					return true
 				case pmetric.MetricTypeSum:
 					// Check if we care about this value
 					sum := m.Sum()
