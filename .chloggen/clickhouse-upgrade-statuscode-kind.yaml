@@ -7,16 +7,16 @@ change_type: breaking
 component: clickhouseexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Upgrade trace StatusCode and Kind string values
+note: Upgrade trace SpanKind and StatusCode string values
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [34799]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This change updates the output of the trace Kind and StatusCode fields to be consistent
+  This change updates the output of the trace SpanKind and StatusCode fields to be consistent
   with the specification's enum values. While this change will not break any deployments, it may affect
   queries dependent on the old enum names.
   
