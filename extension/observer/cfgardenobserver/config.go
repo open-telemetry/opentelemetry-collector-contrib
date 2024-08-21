@@ -77,7 +77,7 @@ func (config *Config) Validate() error {
 	return nil
 }
 
-func fieldError(authType AuthType, param string) error {
+func fieldError(authType authType, param string) error {
 	return fmt.Errorf("%s is required when using auth_type: %s", param, authType)
 }
 
@@ -91,7 +91,7 @@ type CfConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// Authentication method, there are 3 options
-	AuthType AuthType `mapstructure:"auth_type"`
+	AuthType authType `mapstructure:"auth_type"`
 
 	// Used for user_pass authentication method
 	Username string `mapstructure:"username"`
@@ -107,13 +107,13 @@ type CfConfig struct {
 }
 
 // authType describes the type of authentication to use for the CloudFoundry API
-type AuthType string
+type authType string
 
 const (
 	// authTypeClientCredentials uses a client ID and client secret to authenticate
-	authTypeClientCredentials AuthType = "client_credentials"
+	authTypeClientCredentials authType = "client_credentials"
 	// authTypeUserPass uses username and password to authenticate
-	authTypeUserPass AuthType = "user_pass"
+	authTypeUserPass authType = "user_pass"
 	// authTypeToken uses access token and refresh token to authenticate
-	authTypeToken AuthType = "token"
+	authTypeToken authType = "token"
 )
