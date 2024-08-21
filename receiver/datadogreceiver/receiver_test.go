@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -25,7 +26,6 @@ import (
 )
 
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
-
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
@@ -110,6 +110,141 @@ func TestDatadogServer(t *testing.T) {
 
 			assert.Equal(t, tc.expectContent, string(actual))
 			assert.Equal(t, tc.expectCode, resp.StatusCode, "Must match the expected status code")
+		})
+	}
+}
+
+func TestDatadogInfoEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+
+	for _, tc := range []struct {
+		name            string
+		tracesConsumer  consumer.Traces
+		metricsConsumer consumer.Metrics
+
+		expectContent string
+	}{
+		{
+			name:            "No consumers",
+			tracesConsumer:  nil,
+			metricsConsumer: nil,
+			expectContent: `{
+	"version": "datadogreceiver-otelcol-latest",
+	"endpoints": [
+		"/"
+	],
+	"client_drop_p0s": false,
+	"span_meta_structs": false,
+	"long_running_spans": false,
+	"config": null
+}`,
+		},
+		{
+			name:            "Traces consumer only",
+			tracesConsumer:  consumertest.NewNop(),
+			metricsConsumer: nil,
+			expectContent: `{
+	"version": "datadogreceiver-otelcol-latest",
+	"endpoints": [
+		"/",
+		"/v0.3/traces",
+		"/v0.4/traces",
+		"/v0.5/traces",
+		"/v0.7/traces",
+		"/api/v0.2/traces"
+	],
+	"client_drop_p0s": false,
+	"span_meta_structs": false,
+	"long_running_spans": false,
+	"config": null
+}`,
+		},
+		{
+			name:            "Metrics consumer only",
+			tracesConsumer:  nil,
+			metricsConsumer: consumertest.NewNop(),
+			expectContent: `{
+	"version": "datadogreceiver-otelcol-latest",
+	"endpoints": [
+		"/",
+		"/api/v1/series",
+		"/api/v2/series",
+		"/api/v1/check_run",
+		"/api/v1/sketches",
+		"/api/beta/sketches",
+		"/intake",
+		"/api/v1/distribution_points"
+	],
+	"client_drop_p0s": false,
+	"span_meta_structs": false,
+	"long_running_spans": false,
+	"config": null
+}`,
+		},
+		{
+			name:            "Both consumers",
+			tracesConsumer:  consumertest.NewNop(),
+			metricsConsumer: consumertest.NewNop(),
+			expectContent: `{
+	"version": "datadogreceiver-otelcol-latest",
+	"endpoints": [
+		"/",
+		"/v0.3/traces",
+		"/v0.4/traces",
+		"/v0.5/traces",
+		"/v0.7/traces",
+		"/api/v0.2/traces",
+		"/api/v1/series",
+		"/api/v2/series",
+		"/api/v1/check_run",
+		"/api/v1/sketches",
+		"/api/beta/sketches",
+		"/intake",
+		"/api/v1/distribution_points"
+	],
+	"client_drop_p0s": false,
+	"span_meta_structs": false,
+	"long_running_spans": false,
+	"config": null
+}`,
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			dd, err := newDataDogReceiver(
+				cfg,
+				receivertest.NewNopSettings(),
+			)
+			require.NoError(t, err, "Must not error when creating receiver")
+
+			dd.(*datadogReceiver).nextTracesConsumer = tc.tracesConsumer
+			dd.(*datadogReceiver).nextMetricsConsumer = tc.metricsConsumer
+
+			ctx, cancel := context.WithCancel(context.Background())
+			t.Cleanup(cancel)
+
+			require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
+			})
+
+			req, err := http.NewRequest(
+				http.MethodPost,
+				fmt.Sprintf("http://%s/info", dd.(*datadogReceiver).address),
+				nil,
+			)
+			require.NoError(t, err, "Must not error when creating request")
+
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err, "Must not error performing request")
+
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+			require.Equal(t, tc.expectContent, string(body), "Expected response to be '%s', got %s", tc.expectContent, string(body))
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 		})
 	}
 }

@@ -173,7 +173,7 @@ behaviours, which may be configured through the following settings:
 > [!WARNING]
 > The ECS mode mapping mode is currently undergoing changes, and its behaviour is unstable.
 
-In ECS mapping mode, the Elastisearch Exporter attempts to map fields from
+In ECS mapping mode, the Elasticsearch Exporter attempts to map fields from
 [OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS].
 This mode may be used for compatibility with existing dashboards that work with ECS.
 
@@ -229,12 +229,14 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
 ## Exporting metrics
 
 Metrics support is currently in development.
-The only metric types supported are:
+The metric types supported are:
 
 - Gauge
 - Sum
+- Histogram
+- Summary
 
-Other metric types (Histogram, Exponential Histogram, Summary) are ignored.
+Exponential Histograms are ignored.
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings
