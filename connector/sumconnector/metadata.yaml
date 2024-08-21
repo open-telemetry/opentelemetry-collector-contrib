@@ -1,4 +1,5 @@
 type: sum
+scope_name: otelcol/sumconnector
 
 status:
   class: connector
