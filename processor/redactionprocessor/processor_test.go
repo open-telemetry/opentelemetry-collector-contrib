@@ -38,12 +38,20 @@ func TestRedactUnknownAttributes(t *testing.T) {
 
 	outTraces := runTest(t, allowed, redacted, nil, ignored, config)
 	outLogs := runLogsTest(t, allowed, redacted, nil, ignored, config)
-	outMetrics := runMetricsTest(t, allowed, redacted, nil, ignored, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
-		outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
@@ -75,12 +83,20 @@ func TestAllowAllKeys(t *testing.T) {
 
 	outTraces := runTest(t, allowed, nil, nil, nil, config)
 	outLogs := runLogsTest(t, allowed, nil, nil, nil, config)
-	outMetrics := runMetricsTest(t, allowed, nil, nil, nil, config)
+	outMetricsGauge := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
-		outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
@@ -113,12 +129,20 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 
 	outTraces := runTest(t, allowed, nil, masked, nil, config)
 	outLogs := runLogsTest(t, allowed, nil, masked, nil, config)
-	outMetrics := runMetricsTest(t, allowed, nil, masked, nil, config)
+	outMetricsGauge := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
-		outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
@@ -161,12 +185,20 @@ func TestRedactSummaryDebug(t *testing.T) {
 
 	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
 	outLogs := runLogsTest(t, allowed, redacted, masked, ignored, config)
-	outMetrics := runMetricsTest(t, allowed, redacted, masked, ignored, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
-		outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
@@ -225,12 +257,20 @@ func TestRedactSummaryInfo(t *testing.T) {
 
 	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
 	outLogs := runLogsTest(t, allowed, redacted, masked, ignored, config)
-	outMetrics := runMetricsTest(t, allowed, redacted, masked, ignored, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
-		outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
@@ -280,12 +320,20 @@ func TestRedactSummarySilent(t *testing.T) {
 
 	outTraces := runTest(t, allowed, redacted, masked, nil, config)
 	outLogs := runLogsTest(t, allowed, redacted, masked, nil, config)
-	outMetrics := runMetricsTest(t, allowed, redacted, masked, nil, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
-		outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
@@ -322,12 +370,20 @@ func TestRedactSummaryDefault(t *testing.T) {
 
 	outTraces := runTest(t, allowed, nil, masked, ignored, config)
 	outLogs := runLogsTest(t, allowed, nil, masked, ignored, config)
-	outMetrics := runMetricsTest(t, allowed, nil, masked, ignored, config)
+	outMetricsGauge := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
-		outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
@@ -363,12 +419,20 @@ func TestMultipleBlockValues(t *testing.T) {
 
 	outTraces := runTest(t, allowed, redacted, masked, nil, config)
 	outLogs := runLogsTest(t, allowed, redacted, masked, nil, config)
-	outMetrics := runMetricsTest(t, allowed, redacted, masked, nil, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
-		outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
@@ -545,6 +609,7 @@ func runMetricsTest(
 	masked map[string]pcommon.Value,
 	ignored map[string]pcommon.Value,
 	config *Config,
+	metricType pmetric.MetricType,
 ) pmetric.Metrics {
 	inBatch := pmetric.NewMetrics()
 	rl := inBatch.ResourceMetrics().AppendEmpty()
@@ -556,22 +621,40 @@ func runMetricsTest(
 	metric.SetDescription("first-batch-first-metric")
 
 	length := len(allowed) + len(masked) + len(redacted) + len(ignored)
+
+	var dataPointAttrs pcommon.Map
+	switch metricType {
+	case pmetric.MetricTypeGauge:
+		dataPointAttrs = metric.SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
+	case pmetric.MetricTypeSum:
+		dataPointAttrs = metric.SetEmptySum().DataPoints().AppendEmpty().Attributes()
+	case pmetric.MetricTypeHistogram:
+		dataPointAttrs = metric.SetEmptyHistogram().DataPoints().AppendEmpty().Attributes()
+	case pmetric.MetricTypeExponentialHistogram:
+		dataPointAttrs = metric.SetEmptyExponentialHistogram().DataPoints().AppendEmpty().Attributes()
+	case pmetric.MetricTypeSummary:
+		dataPointAttrs = metric.SetEmptySummary().DataPoints().AppendEmpty().Attributes()
+	case pmetric.MetricTypeEmpty:
+	}
 	for k, v := range allowed {
-		v.CopyTo(metric.Metadata().PutEmpty(k))
+		v.CopyTo(dataPointAttrs.PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
 	}
 	for k, v := range masked {
-		v.CopyTo(metric.Metadata().PutEmpty(k))
+		v.CopyTo(dataPointAttrs.PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
 	}
 	for k, v := range redacted {
-		v.CopyTo(metric.Metadata().PutEmpty(k))
+		v.CopyTo(dataPointAttrs.PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
 	}
 	for k, v := range ignored {
-		v.CopyTo(metric.Metadata().PutEmpty(k))
+		v.CopyTo(dataPointAttrs.PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
 	}
 
-	assert.Equal(t, metric.Metadata().Len(), length)
-	assert.Equal(t, ils.Metrics().At(0).Metadata().Len(), length)
-	assert.Equal(t, inBatch.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata().Len(), length)
+	assert.Equal(t, length, dataPointAttrs.Len())
+	assert.Equal(t, length, rl.Resource().Attributes().Len())
 
 	// test
 	ctx := context.Background()
