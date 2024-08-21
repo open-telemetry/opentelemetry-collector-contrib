@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("sum")
+	Type      = component.MustNewType("sum")
+	ScopeName = "otelcol/sumconnector"
 )
 
 const (
