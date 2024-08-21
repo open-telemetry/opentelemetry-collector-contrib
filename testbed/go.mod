@@ -79,18 +79,18 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.130 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.55.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.12 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.55.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.55.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.56.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.56.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.29.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.12 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.14.0 // indirect
-	github.com/DataDog/sketches-go v1.4.2 // indirect
-	github.com/DataDog/zstd v1.5.2 // indirect
+	github.com/DataDog/sketches-go v1.4.6 // indirect
+	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20240626203959-61d1e3462e30 // indirect
