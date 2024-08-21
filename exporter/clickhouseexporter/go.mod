@@ -8,7 +8,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.107.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240821120936-6764622672bc
 	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240821120936-6764622672bc
 	go.opentelemetry.io/collector/config/configretry v1.13.1-0.20240821120936-6764622672bc
@@ -32,6 +32,7 @@ require (
 	github.com/containerd/containerd v1.7.18 // indirect
 	github.com/containerd/errdefs v0.1.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
+	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
