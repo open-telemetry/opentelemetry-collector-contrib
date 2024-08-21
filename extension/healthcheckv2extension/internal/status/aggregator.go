@@ -14,12 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
-// Extensions are treated as a pseudo pipeline and extsID is used as a map key
-var (
-	extsID    = component.MustNewID("extensions")
-	extsIDMap = map[component.ID]struct{}{extsID: {}}
-)
-
 // Note: this interface had to be introduced because we need to be able to rewrite the
 // timestamps of some events during aggregation. The implementation in core doesn't currently
 // allow this, but this interface provides a workaround.
