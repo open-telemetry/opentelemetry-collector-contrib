@@ -71,8 +71,8 @@ exporter/mezmoexporter/                                             @open-teleme
 exporter/opencensusexporter/                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 exporter/opensearchexporter/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @MitchellGale @MaxKsyunz @YANG-DB
 exporter/otelarrowexporter/                                         @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3 @lquerel
-exporter/prometheusexporter/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9
-exporter/prometheusremotewriteexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @rapphil
+exporter/prometheusexporter/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+exporter/prometheusremotewriteexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @rapphil @dashpole
 exporter/pulsarexporter/                                            @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 exporter/rabbitmqexporter/                                          @open-telemetry/collector-contrib-approvers @swar8080 @atoulme
 exporter/sapmexporter/                                              @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
@@ -159,7 +159,7 @@ pkg/translator/jaeger/                                              @open-teleme
 pkg/translator/loki/                                                @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @mar4uk
 pkg/translator/opencensus/                                          @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/prometheus/                                          @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
-pkg/translator/prometheusremotewrite/                               @open-telemetry/collector-contrib-approvers @Aneurysm9
+pkg/translator/prometheusremotewrite/                               @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 pkg/translator/signalfx/                                            @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/translator/skywalking/                                          @open-telemetry/collector-contrib-approvers @JaredTan95
 pkg/translator/zipkin/                                              @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
