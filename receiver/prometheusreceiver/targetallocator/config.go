@@ -122,7 +122,7 @@ func unmarshalYAML(in map[string]any, out any) error {
 	return nil
 }
 
-// ConvertTLSVersion converts a string TLS version to the corresponding config.TLSVersion value in prometheus common.
+// convertTLSVersion converts a string TLS version to the corresponding config.TLSVersion value in prometheus common.
 func convertTLSVersion(version string) (commonconfig.TLSVersion, error) {
 	normalizedVersion := "TLS" + strings.ReplaceAll(version, ".", "")
 
@@ -132,7 +132,7 @@ func convertTLSVersion(version string) (commonconfig.TLSVersion, error) {
 	return 0, fmt.Errorf("unsupported TLS version: %s", version)
 }
 
-// configureSDHTTPClientConfig configures the http client for the service discovery manager
+// configureSDHTTPClientConfigFromTA configures the http client for the service discovery manager
 // based on the provided TargetAllocator configuration.
 func configureSDHTTPClientConfigFromTA(httpSD *promHTTP.SDConfig, allocConf *Config) error {
 	httpSD.HTTPClientConfig.FollowRedirects = false
