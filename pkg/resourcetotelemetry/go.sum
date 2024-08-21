@@ -64,6 +64,7 @@ go.opentelemetry.io/collector/exporter v0.107.1-0.20240816132030-9fd84668bb02 h1
 go.opentelemetry.io/collector/exporter v0.107.1-0.20240816132030-9fd84668bb02/go.mod h1:XPkk88OgOT3j9SI5z/P+lJvtlSlT6oUrHLMs2auQrSQ=
 go.opentelemetry.io/collector/pdata v1.13.1-0.20240816132030-9fd84668bb02 h1:ZWKffCXPwEjYkfoDPCVLHEBdHrFyD/ZcMc4nbCmYkFU=
 go.opentelemetry.io/collector/pdata v1.13.1-0.20240816132030-9fd84668bb02/go.mod h1:z1dTjwwtcoXxZx2/nkHysjxMeaxe9pEmYTEr4SMNIx8=
+go.opentelemetry.io/collector/pdata v1.13.1-0.20240821120936-6764622672bc/go.mod h1:z1dTjwwtcoXxZx2/nkHysjxMeaxe9pEmYTEr4SMNIx8=
 go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240816132030-9fd84668bb02 h1:OeEKsEipFzOQhYwL9AVKM6An7gTatDSLUjPQa0qviNE=
 go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240816132030-9fd84668bb02/go.mod h1:L0Wur03lbrtVXbSaDWAPohktIRpN9wwWccptHepRD0w=
 go.opentelemetry.io/otel v1.28.0 h1:/SqNcYk+idO0CxKEUOtKQClMK/MimZihKYMruSMViUo=

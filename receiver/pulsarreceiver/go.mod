@@ -11,14 +11,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.107.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.107.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/component v0.107.1-0.20240821120936-6764622672bc
 	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240821120936-6764622672bc
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240816132030-9fd84668bb02
-	go.opentelemetry.io/collector/consumer v0.107.1-0.20240816132030-9fd84668bb02
-	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/confmap v0.107.1-0.20240821120936-6764622672bc
+	go.opentelemetry.io/collector/consumer v0.107.1-0.20240821120936-6764622672bc
+	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240821120936-6764622672bc
 	go.opentelemetry.io/collector/pdata v1.13.1-0.20240821120936-6764622672bc
-	go.opentelemetry.io/collector/receiver v0.107.1-0.20240816132030-9fd84668bb02
-	go.opentelemetry.io/collector/semconv v0.107.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/receiver v0.107.1-0.20240821120936-6764622672bc
+	go.opentelemetry.io/collector/semconv v0.107.1-0.20240821120936-6764622672bc
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -68,11 +68,11 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240816132030-9fd84668bb02 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240821120936-6764622672bc // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.107.1-0.20240816132030-9fd84668bb02 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.107.1-0.20240821120936-6764622672bc // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
