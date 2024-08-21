@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/component v0.107.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/confmap v0.107.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240816132030-9fd84668bb02 // indirect
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240821120936-6764622672bc
 	go.opentelemetry.io/collector/receiver v0.107.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/semconv v0.107.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
@@ -52,12 +52,12 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opentelemetry.io/collector v0.107.1-0.20240816132030-9fd84668bb02 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240816132030-9fd84668bb02 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/collector/extension v0.107.1-0.20240816132030-9fd84668bb02 // indirect
-	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240816132030-9fd84668bb02 // indirect
+	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
