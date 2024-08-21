@@ -40,6 +40,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -56,6 +57,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.107.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.1-0.20240816132030-9fd84668bb02 // indirect
@@ -71,6 +73,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

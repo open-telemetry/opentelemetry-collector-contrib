@@ -100,6 +100,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.107.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.107.0
@@ -286,7 +287,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
-	github.com/ClickHouse/clickhouse-go/v2 v2.27.1 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.27.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.130 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.56.0-rc.12 // indirect
@@ -687,7 +688,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus-community/windows_exporter v0.27.2 // indirect
-	github.com/prometheus/client_golang v1.20.0 // indirect
+	github.com/prometheus/client_golang v1.20.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
@@ -738,6 +739,7 @@ require (
 	github.com/tinylib/msgp v1.2.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
+	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
 	github.com/vishvananda/netlink v1.1.1-0.20201029203352-d40f9887b852 // indirect
@@ -1118,6 +1120,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activ
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor => ../../processor/routingprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor => ../../processor/deltatorateprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../processor/deltatocumulativeprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ../../exporter/datadogexporter
 
