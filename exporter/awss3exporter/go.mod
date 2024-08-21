@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3e
 go 1.22.0
 
 require (
-	github.com/aws/aws-sdk-go v1.53.11
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240816132030-9fd84668bb02
