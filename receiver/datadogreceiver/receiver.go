@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/tinylib/msgp/msgp"
 	"io"
 	"net/http"
 
@@ -20,6 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
 type datadogReceiver struct {
@@ -31,6 +33,7 @@ type datadogReceiver struct {
 	nextMetricsConsumer consumer.Metrics
 
 	metricsTranslator *translator.MetricsTranslator
+	statsTranslator   *translator.StatsTranslator
 
 	server    *http.Server
 	tReceiver *receiverhelper.ObsReport
@@ -111,6 +114,10 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 				Pattern: "/api/v1/distribution_points",
 				Handler: ddr.handleDistributionPoints,
 			},
+			{
+				Pattern: "/v0.6/stats",
+				Handler: ddr.handleStats,
+			},
 		}...)
 	}
 
@@ -138,6 +145,7 @@ func newDataDogReceiver(config *Config, params receiver.Settings) (component.Com
 		},
 		tReceiver:         instance,
 		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
+		statsTranslator:   translator.NewStatsTranslator(),
 	}, nil
 }
 
@@ -361,4 +369,43 @@ func (ddr *datadogReceiver) handleDistributionPoints(w http.ResponseWriter, req 
 	err = fmt.Errorf("distribution points endpoint not implemented")
 	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+}
+
+// handleStats handles incoming stats payloads.
+func (ddr *datadogReceiver) handleStats(w http.ResponseWriter, req *http.Request) {
+	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
+	var err error
+	var metricsCount = 0
+	defer func(metricsCount *int) {
+		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
+	}(&metricsCount)
+
+	req.Header.Set("Accept", "application/msgpack")
+	clientStats := &pb.ClientStatsPayload{}
+
+	err = msgp.Decode(req.Body, clientStats)
+	if err != nil {
+		ddr.params.Logger.Error("Error decoding pb.ClientStatsPayload", zap.Error(err))
+		http.Error(w, "Error decoding pb.ClientStatsPayload", http.StatusBadRequest)
+		return
+	}
+
+	metrics, err := ddr.statsTranslator.TranslateStats(clientStats, req.Header.Get(header.Lang), req.Header.Get(header.TracerVersion))
+
+	if err != nil {
+		ddr.params.Logger.Error("Error translating stats", zap.Error(err))
+		http.Error(w, "Error translating stats", http.StatusBadRequest)
+		return
+	}
+
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		ddr.params.Logger.Error("Metrics consumer errored out", zap.Error(err))
+		http.Error(w, "Metrics consumer errored out", http.StatusInternalServerError)
+		return
+	}
+
+	_, _ = w.Write([]byte("OK"))
 }
