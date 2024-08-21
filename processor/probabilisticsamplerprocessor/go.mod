@@ -78,7 +78,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/receiver v0.107.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/service v0.107.1-0.20240821084155-98fb888dfe6d // indirect
+	go.opentelemetry.io/collector/service v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/contrib/config v0.8.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.4.0 // indirect
