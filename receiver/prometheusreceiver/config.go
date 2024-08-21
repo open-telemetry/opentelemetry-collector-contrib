@@ -103,6 +103,19 @@ func (cfg *PromConfig) Validate() error {
 	return nil
 }
 
+func unmarshalYAML(in map[string]any, out any) error {
+	yamlOut, err := yaml.Marshal(in)
+	if err != nil {
+		return fmt.Errorf("prometheus receiver: failed to marshal config to yaml: %w", err)
+	}
+
+	err = yaml.UnmarshalStrict(yamlOut, out)
+	if err != nil {
+		return fmt.Errorf("prometheus receiver: failed to unmarshal yaml to prometheus config object: %w", err)
+	}
+	return nil
+}
+
 func validateHTTPClientConfig(cfg *commonconfig.HTTPClientConfig) error {
 	if cfg.Authorization != nil {
 		if err := checkFile(cfg.Authorization.CredentialsFile); err != nil {
@@ -132,19 +145,6 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 	}
 	if err := checkFile(tlsConfig.KeyFile); err != nil {
 		return fmt.Errorf("error checking client key file %q: %w", tlsConfig.KeyFile, err)
-	}
-	return nil
-}
-
-func unmarshalYAML(in map[string]any, out any) error {
-	yamlOut, err := yaml.Marshal(in)
-	if err != nil {
-		return fmt.Errorf("prometheus receiver: failed to marshal config to yaml: %w", err)
-	}
-
-	err = yaml.UnmarshalStrict(yamlOut, out)
-	if err != nil {
-		return fmt.Errorf("prometheus receiver: failed to unmarshal yaml to prometheus config object: %w", err)
 	}
 	return nil
 }

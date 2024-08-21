@@ -657,33 +657,11 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &PromConfig{
-					ScrapeConfigs: []*promconfig.ScrapeConfig{
-						{
-							JobName:         "job1",
-							HonorTimestamps: true,
-							ScrapeInterval:  model.Duration(30 * time.Second),
-							ScrapeTimeout:   model.Duration(30 * time.Second),
-							ScrapeProtocols: promconfig.DefaultScrapeProtocols,
-							MetricsPath:     "/metrics",
-							Scheme:          "http",
-							MetricRelabelConfigs: []*relabel.Config{
-								{
-									Separator: ";",
-									Regex:     relabel.MustNewRegexp("(.*)"),
-									Action:    relabel.Keep,
-								},
-							},
-						},
-					},
-				},
-				TargetAllocator: &TargetAllocator{
-					Interval:    10 * time.Second,
-					CollectorID: "collector-1",
-					HTTPSDConfig: &PromHTTPSDConfig{
-						HTTPClientConfig: commonconfig.HTTPClientConfig{},
-						RefreshInterval:  model.Duration(60 * time.Second),
-					},
+				Interval:    10 * time.Second,
+				CollectorID: "collector-1",
+				HTTPSDConfig: &PromHTTPSDConfig{
+					HTTPClientConfig: commonconfig.HTTPClientConfig{},
+					RefreshInterval:  model.Duration(60 * time.Second),
 				},
 			},
 			want: expectedTestResult{
@@ -756,7 +734,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						s.Labels["__meta_url"] = model.LabelValue(sdConfig.URL)
 						require.Equal(t, s.Labels, group.Labels)
 						if s.MetricRelabelConfig != nil {
-							for _, sc := range receiver.cfg.PrometheusConfig.ScrapeConfigs {
+							for _, sc := range manager.promCfg.ScrapeConfigs {
 								if sc.JobName == s.MetricRelabelConfig.JobName {
 									for _, mc := range sc.MetricRelabelConfigs {
 										require.Equal(t, s.MetricRelabelConfig.MetricRelabelRegex, mc.Regex)
@@ -774,7 +752,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 }
 
 func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
-	ta := &TargetAllocator{}
+	ta := &Config{}
 	ta.TLSSetting = configtls.ClientConfig{
 		InsecureSkipVerify: true,
 		ServerName:         "test.server",
@@ -813,7 +791,7 @@ func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 	assert.Equal(t, commonconfig.URL{URL: parsedProxyURL}, httpSD.HTTPClientConfig.ProxyURL)
 
 	// Test case with empty TargetAllocator
-	emptyTA := &TargetAllocator{}
+	emptyTA := &Config{}
 	emptyHTTPSD := &promHTTP.SDConfig{RefreshInterval: model.Duration(30 * time.Second)}
 
 	err = configureSDHTTPClientConfigFromTA(emptyHTTPSD, emptyTA)
