@@ -18,8 +18,6 @@ import (
 	"embed"
 	"fmt"
 	"io"
-	"net/http"
-	"net/http/httptest"
 	"path"
 	"testing"
 
@@ -39,22 +37,6 @@ const (
 //go:embed testdata
 var testdataFiles embed.FS
 
-func NewTranslationServer() *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Rewrite request path so it doesn't require
-		p := path.Join(prefix, r.URL.Path)
-		f, err := testdataFiles.Open(p)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
-		if _, err := io.Copy(w, f); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		// While strictly not needed since embed uses a NopCloser
-		// still worth keeping up with good practices
-		_ = f.Close()
-	}))
-}
 
 func LoadTranslationVersion(tb testing.TB, name string) io.Reader {
 	tb.Helper()

@@ -5,6 +5,7 @@ package schemaprocessor
 
 import (
 	"context"
+	"embed"
 	_ "embed"
 	"testing"
 
@@ -17,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
 // todo(ankit) test for all schema changes
 
@@ -35,6 +38,79 @@ func TestTransformerStart(t *testing.T) {
 
 	trans := newTestTransformer(t)
 	assert.NoError(t, trans.start(context.Background(), componenttest.NewNopHost()))
+}
+
+//go:embed testdata/testschemas
+var testdataFiles embed.FS
+
+type SchemaResource interface {
+	SetSchemaUrl(schema string)
+	SchemaUrl() string
+}
+
+type SchemaResourceIterable[T SchemaResource] interface {
+	At(int) T
+	Len() int
+}
+
+func setSchemaForAllItems[T SchemaResource](iterable SchemaResourceIterable[T], schemaURL string) {
+	for i := 0; i < iterable.Len(); i++ {
+		item := iterable.At(i)
+		item.SetSchemaUrl(schemaURL)
+	}
+}
+
+
+func TestTransformerSchemaAll(t *testing.T) {
+	defaultConfig := newDefaultConfiguration()
+	castedConfig := defaultConfig.(*Config)
+	castedConfig.Targets = []string{"https://example.com/testdata/testschemas/section_all/1.1.0"}
+	transform, err := newTransformer(context.Background(), defaultConfig, processor.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zaptest.NewLogger(t),
+		},
+	})
+	require.NoError(t, err, "Must not error when creating transformer")
+
+	err = transform.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
+	require.NoError(t, err)
+
+	inLogs := plog.NewLogs()
+	inLogs.ResourceLogs().AppendEmpty().Resource().Attributes().PutStr("asdf", "1")
+	inLogs.ResourceLogs().AppendEmpty().Resource().Attributes().PutStr("k8s.cluster.name", "tevanne")
+	inLogs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("k8s.cluster.name", "sancia")
+	inLogs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("don't", "change")
+
+	setSchemaForAllItems[plog.ResourceLogs](inLogs.ResourceLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
+
+	setSchemaForAllItems[plog.ScopeLogs](inLogs.ResourceLogs().At(0).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
+	setSchemaForAllItems[plog.ScopeLogs](inLogs.ResourceLogs().At(1).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
+
+
+	expectedLogs := plog.NewLogs()
+	inLogs.CopyTo(expectedLogs)
+
+	attrs := expectedLogs.ResourceLogs().At(1).Resource().Attributes()
+	assert.True(t, attrs.Remove("k8s.cluster.name"))
+	attrs.PutStr("kubernetes.cluster.name", "tevanne")
+	log0Attrs := expectedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	log0Attrs.Remove("k8s.cluster.name")
+	log0Attrs.PutStr("kubernetes.cluster.name", "sancia")
+
+	setSchemaForAllItems[plog.ResourceLogs](expectedLogs.ResourceLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
+	setSchemaForAllItems[plog.ScopeLogs](expectedLogs.ResourceLogs().At(0).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
+	setSchemaForAllItems[plog.ScopeLogs](expectedLogs.ResourceLogs().At(1).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
+
+	marshaler := plog.JSONMarshaler{}
+	jsonLogs, err := marshaler.MarshalLogs(inLogs)
+	println(string(jsonLogs[:]))
+
+	logs, err := transform.processLogs(context.Background(), inLogs)
+	jsonLogs, err = marshaler.MarshalLogs(logs)
+	println(string(jsonLogs[:]))
+	assert.NoError(t, err)
+	assert.EqualValues(t, expectedLogs, logs, "Must match the expected values")
+
 }
 
 func TestTransformerProcessing(t *testing.T) {

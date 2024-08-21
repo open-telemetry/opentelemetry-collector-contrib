@@ -17,9 +17,11 @@ package translation // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"bytes"
 	"context"
+	"embed"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 // Provider allows for collector extensions to be used to look up schemaURLs
@@ -61,4 +63,24 @@ func (hp *httpProvider) Lookup(ctx context.Context, schemaURL string) (io.Reader
 		return nil, fmt.Errorf("invalid status code returned: %d", resp.StatusCode)
 	}
 	return content, nil
+}
+
+type testProvider struct {
+	fs *embed.FS
+}
+
+func NewTestProvider(fs *embed.FS) Provider {
+	return &testProvider{fs: fs}
+}
+
+func (tp testProvider) Lookup(_ context.Context, schemaURL string) (io.Reader, error)  {
+	parsedPath, err := url.Parse(schemaURL)
+	if err != nil {
+		return nil, err
+	}
+	f, err := tp.fs.Open(parsedPath.Path[1:]);
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }

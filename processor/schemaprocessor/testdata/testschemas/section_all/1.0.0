@@ -1,0 +1,8 @@
+file_format: 1.0.0
+
+schema_url: https://example.com/testschemas/section_all/1.0.0
+
+versions:
+
+#  this has to be here
+  1.0.0:
