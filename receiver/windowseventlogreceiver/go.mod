@@ -17,7 +17,10 @@ require (
 	golang.org/x/sys v0.24.0
 )
 
-require go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240821120936-6764622672bc
+require (
+	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240821120936-6764622672bc
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240821120936-6764622672bc
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -55,7 +58,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/extension v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
