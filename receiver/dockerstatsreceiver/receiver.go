@@ -52,10 +52,8 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	dConfig := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages, r.config.DockerAPIVersion)
-
 	var err error
-	r.client, err = docker.NewDockerClient(dConfig, r.settings.Logger)
+	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
 	if err != nil {
 		return err
 	}

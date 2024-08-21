@@ -4,6 +4,7 @@
 package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/docker/docker/api/types/versions"
 	"github.com/docker/docker/client"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 type Config struct {
@@ -26,6 +28,29 @@ type Config struct {
 
 	// Docker client API version.
 	DockerAPIVersion string `mapstructure:"api_version"`
+}
+
+func (config *Config) Unmarshal(conf *confmap.Conf) error {
+	// WithIgonreUnused needed because this configuration is embedded inside other configurations
+	err := conf.Unmarshal(config, confmap.WithIgnoreUnused())
+	if err != nil {
+		if floatAPIVersion, ok := conf.Get("api_version").(float64); ok {
+			return fmt.Errorf(
+				"%w.\n\nHint: You may want to wrap the 'api_version' value in quotes (api_version: \"%1.2f\")",
+				err,
+				floatAPIVersion,
+			)
+		}
+		return err
+	}
+	return nil
+}
+
+func (config Config) Validate() error {
+	if config.Endpoint == "" {
+		return errors.New("endpoint must be specified")
+	}
+	return nil
 }
 
 // NewConfig creates a new config to be used when creating
