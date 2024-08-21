@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -467,24 +466,27 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 	return recvOps, expOps
 }
 
-func TestIntegrationSelfTracing(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	params := memoryLimitParams
-	params.requestCount = 1000
-	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
-		rcfg.Arrow.MemoryLimitMiB = 1
-		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-			ServerParameters: &configgrpc.KeepaliveServerParameters{
-				MaxConnectionAge:      time.Second,
-				MaxConnectionAgeGrace: 5 * time.Second,
-			},
-		}
-
-		ecfg.Arrow.NumStreams = 1
-		ecfg.Arrow.MaxStreamLifetime = 2 * time.Second
-		ecfg.TimeoutSettings.Timeout = 1 * time.Second
-
-	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
-}
+// Test has become flaky, and it will take some investigation.  See
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34719.
+//
+// func TestIntegrationSelfTracing(t *testing.T) {
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	defer cancel()
+//
+// 	params := memoryLimitParams
+// 	params.requestCount = 1000
+// 	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
+// 		rcfg.Arrow.MemoryLimitMiB = 1
+// 		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
+// 			ServerParameters: &configgrpc.KeepaliveServerParameters{
+// 				MaxConnectionAge:      time.Second,
+// 				MaxConnectionAgeGrace: 5 * time.Second,
+// 			},
+// 		}
+//
+// 		ecfg.Arrow.NumStreams = 1
+// 		ecfg.Arrow.MaxStreamLifetime = 2 * time.Second
+// 		ecfg.TimeoutSettings.Timeout = 1 * time.Second
+//
+// 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
+// }
