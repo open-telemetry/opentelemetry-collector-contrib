@@ -24,5 +24,7 @@ func (r *Reader) tryLockFile() bool {
 }
 
 func (r *Reader) unlockFile() {
-	unix.Flock(int(r.file.Fd()), unix.LOCK_UN)
+	if err := unix.Flock(int(r.file.Fd()), unix.LOCK_UN); err != nil {
+		r.set.Logger.Error("Failed to unlock", zap.Error(err))
+	}
 }
