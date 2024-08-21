@@ -171,6 +171,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		DeleteAtEOF:             c.DeleteAfterRead,
 		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
 		Compression:             c.Compression,
+		AcquireFSLock:           c.AcquireFSLock,
 	}
 
 	var t tracker.Tracker

@@ -13,7 +13,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
-	"golang.org/x/sys/unix"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -59,13 +58,10 @@ type Reader struct {
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
 	if r.acquireFSLock {
-		if err := unix.Flock(int(r.file.Fd()), unix.LOCK_SH|unix.LOCK_NB); err != nil {
-			if errors.Is(err, unix.EWOULDBLOCK) {
-				r.set.Logger.Error("Failed to lock", zap.Error(err))
-			}
+		if !r.tryLockFile() {
 			return
 		}
-		defer unix.Flock(int(r.file.Fd()), unix.LOCK_UN)
+		defer r.unlockFile()
 	}
 
 	switch r.compression {
