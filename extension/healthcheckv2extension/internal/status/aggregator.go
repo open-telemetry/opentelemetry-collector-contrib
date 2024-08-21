@@ -130,16 +130,10 @@ func (a *Aggregator) AggregateStatus(scope Scope, verbosity Verbosity) (*Aggrega
 
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
 func (a *Aggregator) RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event) {
-	compIDs := source.PipelineIDs
-	// extensions are treated as a pseudo-pipeline
-	if source.Kind == component.KindExtension {
-		compIDs = extsIDMap
-	}
-
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	for compID := range compIDs {
+	source.AllPipelineIDs(func(compID component.ID) bool {
 		var pipelineStatus *AggregateStatus
 		pipelineScope := Scope(compID.String())
 		pipelineKey := pipelineScope.toKey()
@@ -151,14 +145,16 @@ func (a *Aggregator) RecordStatus(source *componentstatus.InstanceID, event *com
 			}
 		}
 
-		componentKey := fmt.Sprintf("%s:%s", strings.ToLower(source.Kind.String()), source.ID)
+		componentKey := fmt.Sprintf("%s:%s", strings.ToLower(source.Kind().String()), source.ComponentID())
 		pipelineStatus.ComponentStatusMap[componentKey] = &AggregateStatus{
 			Event: event,
 		}
 		a.aggregateStatus.ComponentStatusMap[pipelineKey] = pipelineStatus
 		pipelineStatus.Event = a.aggregationFunc(pipelineStatus)
 		a.notifySubscribers(pipelineScope, pipelineStatus)
-	}
+
+		return true
+	})
 
 	a.aggregateStatus.Event = a.aggregationFunc(a.aggregateStatus)
 	a.notifySubscribers(ScopeAll, a.aggregateStatus)

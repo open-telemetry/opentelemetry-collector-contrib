@@ -74,7 +74,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/prometheus/client_golang v1.19.1 // indirect
+	github.com/prometheus/client_golang v1.20.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -100,7 +100,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/extension/auth v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/pdata v1.13.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0 // indirect
@@ -116,7 +115,7 @@ require (
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
