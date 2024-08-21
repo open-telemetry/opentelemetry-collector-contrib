@@ -1,3 +1,4 @@
+# Error: readSpan.traceId: parse trace_id:invalid length for ID, error found in #10 byte
 resourceLogs:
   - resource:
     scopeLogs:
@@ -8,4 +9,3 @@ resourceLogs:
             spanId: ""
             traceId: ""
         scope: {}
-
