@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/maxmind/MaxMind-DB v0.0.0-20240605211347-880f6b4b5eb6
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.107.0
 	github.com/oschwald/geoip2-golang v1.11.0
 	github.com/stretchr/testify v1.9.0
