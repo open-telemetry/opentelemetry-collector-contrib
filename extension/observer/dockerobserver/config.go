@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"go.opentelemetry.io/collector/confmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 // Config defines configuration for docker observer
