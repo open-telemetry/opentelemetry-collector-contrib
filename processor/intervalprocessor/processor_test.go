@@ -23,12 +23,12 @@ func TestAggregation(t *testing.T) {
 
 	testCases := []string{
 		"basic_aggregation",
-		"non_monotonic_sums_are_passed_through",
-		"summaries_are_passed_through",
 		"histograms_are_aggregated",
 		"exp_histograms_are_aggregated",
 		"gauges_are_aggregated",
+		"summaries_are_aggregated",
 		"all_delta_metrics_are_passed_through",
+		"non_monotonic_sums_are_passed_through",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -76,6 +76,7 @@ func TestAggregation(t *testing.T) {
 			require.Empty(t, processor.numberLookup)
 			require.Empty(t, processor.histogramLookup)
 			require.Empty(t, processor.expHistogramLookup)
+			require.Empty(t, processor.summaryLookup)
 
 			// Exporting again should return nothing
 			processor.exportMetrics()

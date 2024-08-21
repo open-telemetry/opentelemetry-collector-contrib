@@ -36,6 +36,7 @@ type Processor struct {
 	numberLookup       map[identity.Stream]pmetric.NumberDataPoint
 	histogramLookup    map[identity.Stream]pmetric.HistogramDataPoint
 	expHistogramLookup map[identity.Stream]pmetric.ExponentialHistogramDataPoint
+	summaryLookup      map[identity.Stream]pmetric.SummaryDataPoint
 
 	exportInterval time.Duration
 
@@ -59,6 +60,7 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 		numberLookup:       map[identity.Stream]pmetric.NumberDataPoint{},
 		histogramLookup:    map[identity.Stream]pmetric.HistogramDataPoint{},
 		expHistogramLookup: map[identity.Stream]pmetric.ExponentialHistogramDataPoint{},
+		summaryLookup:      map[identity.Stream]pmetric.SummaryDataPoint{},
 
 		exportInterval: config.Interval,
 
@@ -103,7 +105,29 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
 				switch m.Type() {
 				case pmetric.MetricTypeSummary:
-					return false
+					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
+
+					// The ideal scenario is that we would re-use `aggregateDataPoints()` here, but we can't
+					// because the SummaryDataPoint does not fufill the DataPoint interface.
+					datapoints := m.Summary().DataPoints()
+					for i := 0; i < datapoints.Len(); i++ {
+						dp := datapoints.At(i)
+
+						streamID := identity.OfStream(metricID, dp)
+						existingDP, ok := p.summaryLookup[streamID]
+						if !ok {
+							dpClone := mClone.Summary().DataPoints().AppendEmpty()
+							dp.CopyTo(dpClone)
+							p.summaryLookup[streamID] = dpClone
+							continue
+						}
+
+						// Check if the datapoint is newer and replace it
+						if dp.Timestamp() > existingDP.Timestamp() {
+							dp.CopyTo(existingDP)
+						}
+					}
+					return true
 				case pmetric.MetricTypeGauge:
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					aggregateDataPoints(m.Gauge().DataPoints(), mClone.Gauge().DataPoints(), metricID, p.numberLookup)
@@ -206,6 +230,7 @@ func (p *Processor) exportMetrics() {
 		clear(p.numberLookup)
 		clear(p.histogramLookup)
 		clear(p.expHistogramLookup)
+		clear(p.summaryLookup)
 
 		return out
 	}()
