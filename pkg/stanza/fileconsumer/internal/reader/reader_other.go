@@ -9,6 +9,6 @@ func (r *Reader) tryLockFile() bool {
 	return true
 }
 
-func (r *Reader) unlockFile() error {
-	return nil
+func (r *Reader) unlockFile() {
+	return
 }

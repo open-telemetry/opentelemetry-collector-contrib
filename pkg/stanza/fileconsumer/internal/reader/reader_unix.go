@@ -23,6 +23,6 @@ func (r *Reader) tryLockFile() bool {
 	return true
 }
 
-func (r *Reader) unlockFile() error {
-	return unix.Flock(int(r.file.Fd()), unix.LOCK_UN)
+func (r *Reader) unlockFile() {
+	unix.Flock(int(r.file.Fd()), unix.LOCK_UN)
 }
