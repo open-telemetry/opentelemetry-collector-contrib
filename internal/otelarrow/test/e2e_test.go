@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -57,7 +58,11 @@ var memoryLimitParams = testParams{
 }
 
 type testConsumer struct {
-	sink     consumertest.TracesSink
+	sink consumertest.TracesSink
+
+	recvCfg *otelarrowreceiver.Config
+	expCfg  *otelarrowexporter.Config
+
 	recvLogs *observer.ObservedLogs
 	expLogs  *observer.ObservedLogs
 
@@ -121,8 +126,9 @@ func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces
 	exporterCfg.ClientConfig.TLSSetting.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
 	exporterCfg.QueueSettings.Enabled = false
-	exporterCfg.RetryConfig.Enabled = false
+	exporterCfg.RetryConfig.Enabled = true
 	exporterCfg.Arrow.NumStreams = 1
+	exporterCfg.Arrow.MaxStreamLifetime = 5 * time.Second
 
 	if cfgF != nil {
 		cfgF(exporterCfg, receiverCfg)
@@ -132,6 +138,9 @@ func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces
 	recvTset, recvLogs, recvSpans := testLoggerSettings(t)
 
 	testCon := &testConsumer{
+		recvCfg: receiverCfg,
+		expCfg:  exporterCfg,
+
 		recvLogs: recvLogs,
 		expLogs:  expLogs,
 
@@ -193,12 +202,16 @@ func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfg
 
 	expect := make([][]ptrace.Traces, tp.threadCount)
 
+	slp := time.Duration(float64(testCon.expCfg.Arrow.MaxStreamLifetime) * 3 / 2 / float64(tp.requestCount))
 	for num := 0; num < tp.threadCount; num++ {
 		clientDoneWG.Add(1)
 		go func(num int) {
 			defer clientDoneWG.Done()
 			generator := mkgen()
 			for i := 0; i < tp.requestCount; i++ {
+				// Make this process take 1.5x the stream lifetime
+				time.Sleep(slp)
+
 				td := generator(i)
 
 				errf(t, exporter.ConsumeTraces(ctx, td))
@@ -466,27 +479,24 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 	return recvOps, expOps
 }
 
-// Test has become flaky, and it will take some investigation.  See
-// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34719.
-//
-// func TestIntegrationSelfTracing(t *testing.T) {
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	defer cancel()
-//
-// 	params := memoryLimitParams
-// 	params.requestCount = 1000
-// 	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
-// 		rcfg.Arrow.MemoryLimitMiB = 1
-// 		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-// 			ServerParameters: &configgrpc.KeepaliveServerParameters{
-// 				MaxConnectionAge:      time.Second,
-// 				MaxConnectionAgeGrace: 5 * time.Second,
-// 			},
-// 		}
-//
-// 		ecfg.Arrow.NumStreams = 1
-// 		ecfg.Arrow.MaxStreamLifetime = 2 * time.Second
-// 		ecfg.TimeoutSettings.Timeout = 1 * time.Second
-//
-// 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
-// }
+func TestIntegrationSelfTracing(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	params := memoryLimitParams
+	params.requestCount = 1000
+	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
+		rcfg.Arrow.MemoryLimitMiB = 1
+		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
+			ServerParameters: &configgrpc.KeepaliveServerParameters{
+				MaxConnectionAge:      time.Second,
+				MaxConnectionAgeGrace: 5 * time.Second,
+			},
+		}
+
+		ecfg.Arrow.NumStreams = 1
+		ecfg.Arrow.MaxStreamLifetime = 2 * time.Second
+		ecfg.TimeoutSettings.Timeout = 1 * time.Second
+
+	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
+}
