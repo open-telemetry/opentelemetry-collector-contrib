@@ -7,6 +7,185 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.107.0
+
+This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
+
+### 🛑 Breaking changes 🛑
+
+- `clickhouseexporter`: Add `compress` option to ClickHouse exporter, with default value of `lz4` (#34365)
+  This change adds a new `compress` option to the config field and enables it by default.
+  Prior to this change, compression was not enabled by default.
+  The only way to enable compression prior to this change was via the DSN URL.
+  With this change, `lz4` compression will be enabled by default.
+  The list of valid options is provided by the underlying `clickhouse-go` driver.
+  While this change is marked as breaking, there should be no effect to existing deployments by enabling compression.
+  Compression should improve network performance on most deployments that have a remote ClickHouse server.
+  
+- Update the scope name for telemetry produce by components. The following table summarizes the changes:
+
+| Component name | Previous scope | New scope |  PR number |
+|----------------|----------------|-----------|------------|
+| `azureeventhubreceiver` | `otelcol/azureeventhubreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver` |  #34611 |
+| `cloudfoundryreceiver` | `otelcol/cloudfoundry` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver` |  #34612 |
+| `cloudflarereceiver` | `otelcol/cloudflare` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver` |  #34613 |
+| `azuremonitorreceiver` | `otelcol/azuremonitorreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver` |  #34618 |
+| `fileconsumer` | `otelcol/fileconsumer` | `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer` |  #34619 |
+| `loadbalancingexporter` | `otelcol/loadbalancing` | `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter` |  #34429 |
+| `sumologicexporter` | `otelcol/sumologic` | `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter` |  #34438 |
+| `prometheusremotewriteexporter` | `otelcol/prometheusremotewrite` | `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter` |  #34440 |
+| `activedirectorydsreceiver` | `otelcol/activedirectorydsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver` |  #34492 |
+| `aerospikereceiver` | `otelcol/aerospikereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver` |  #34518 |
+| `apachereceiver` | `otelcol/apachereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver` |  #34517 |
+| `apachesparkreceiver` | `otelcol/apachesparkreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver` |  #34519 |
+| `bigipreceiver` | `otelcol/bigipreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver` |  #34520 |
+| `chronyreceiver` | `otelcol/chronyreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver` |  #34524 |
+| `couchdbreceiver` | `otelcol/couchdbreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver` |  #34525 |
+| `countconnector` | `otelcol/countconnector` | `github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector` |  #34583 |
+| `deltatocumulativeprocessor` | `otelcol/deltatocumulative` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor` |  #34550 |
+| `dockerstatsreceiver` | `otelcol/dockerstatsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver` |  #34528 |
+| `elasticsearchreceiver` | `otelcol/elasticsearchreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver` |  #34529 |
+| `expvarreceiver` | `otelcol/expvarreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver` |  #34530 |
+| `filestatsreceiver` | `otelcol/filestatsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver` |  #34429 |
+| `filterprocessor` | `otelcol/filter` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor` |  #34550 |
+| `flinkmetricsreceiver` | `otelcol/flinkmetricsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver` |  #34533 |
+| `fluentforwardreceiver` | `otelcol/fluentforwardreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver` |  #34534 |
+| `gitproviderreceiver` | `otelcol/gitproviderreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver` |  #34496 |
+| `googlespannerreceiver` | `otelcol/googlecloudspannermetrics` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlespannerreceiver` |  #34593 |
+| `grafanacloudconnector` | `otelcol/grafanacloud` | `github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector` |  #34552 |
+| `groupbyattrsprocessor` | `otelcol/groupbyattrs` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor` |  #34550 |
+| `groupbytraceprocessor` | `otelcol/groupbytrace` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor` |  #34550 |
+| `haproxyreceiver` | `otelcol/haproxyreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver` |  #34498 |
+| `hostmetricsreceiver` receiver's scrapers | `otelcol/hostmetricsreceiver/*` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/*` |  #34526 |
+| `httpcheckreceiver` | `otelcol/httpcheckreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver` |  #34497 |
+| `iisreceiver` | `otelcol/iisreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver` |  #34535 |
+| `k8sattributesprocessor` | `otelcol/k8sattributes` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor` |  #34550 |
+| `k8sclusterreceiver` | `otelcol/k8sclusterreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver` |  #34536 |
+| `kafkametricsreceiver` | `otelcol/kafkametricsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver` |  #34538 |
+| `kafkareceiver` | `otelcol/kafkareceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver` |  #34539 |
+| `kubeletstatsreceiver` | `otelcol/kubeletstatsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver` |  #34537 |
+| `memcachedreceiver` | `otelcol/memcachedreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver` |  #34542 |
+| `mongodbatlasreceiver` | `otelcol/mongodbatlasreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver` |  #34543 |
+| `mongodbreceiver` | `otelcol/mongodbreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver` |  #34544 |
+| `mysqlreceiver` | `otelcol/mysqlreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver` |  #34545 |
+| `nginxreceiver` | `otelcol/nginxreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver` |  #34493 |
+| `nsxtreceiver` | `otelcol/nsxtreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver` |  #34429 |
+| `oracledbreceiver` | `otelcol/oracledbreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver` |  #34491 |
+| `otelarrowreceiver` | `otelcol/otelarrowreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver` |  #34546 |
+| `podmanreceiver` | `otelcol/podmanreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver` |  #34429 |
+| `postgresqlreceiver` | `otelcol/postgresqlreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver` |  #34476 |
+| `probabilisticsamplerprocessor` | `otelcol/probabilisticsampler` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor` |  #34550 |
+| `prometheusreceiver` | `otelcol/prometheusreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver` |  #34589 |
+| `rabbitmqreceiver` | `otelcol/rabbitmqreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver` |  #34475 |
+| `sshcheckreceiver` | `otelcol/sshcheckreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver` |  #34448 |
+| `vcenterreceiver` | `otelcol/vcenter` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver` |  #34449 |
+| `zookeeperreceiver` | `otelcol/zookeeper` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver` |  #34450 |
+| `redisreceiver` | `otelcol/redisreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver` |  #34470 |
+| `riakreceiver` | `otelcol/riakreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver` |  #34469 |
+| `routingprocessor` | `otelcol/routing` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor` |  #34550 |
+| `saphanareceiver` | `otelcol/saphanareceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver` |  #34468 |
+| `servicegraphconnector` | `otelcol/servicegraph` | `github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector` |  #34552 |
+| `snmpreceiver` | `otelcol/snmpreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver` |  #34592 |
+| `snowflakereceiver` | `otelcol/snowflakereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver` |  #34467 |
+| `solacereceiver` | `otelcol/solacereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver` |  #34466 |
+| `splunkenterprisereceiver` | `otelcol/splunkenterprisereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver` |  #34452 |
+| `statsdreceiver` | `otelcol/statsdreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver` |  #34547 |
+| `tailsamplingprocessor` | `otelcol/tailsampling` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor` |  #34550 |
+| `sqlserverreceiver` | `otelcol/sqlserverreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver` |  #34451 |
+
+- `elasticsearchreceiver`: Enable more index metrics by default (#34396)
+  This enables the following metrics by default: 
+  `elasticsearch.index.documents`
+  `elasticsearch.index.operations.merge.current`
+  `elasticsearch.index.segments.count`
+  To preserve previous behavior, update your Elasticsearch receiver configuration to disable these metrics.
+- `vcenterreceiver`: Enables all of the vSAN metrics by default. (#34409)
+  The following metrics will be enabled by default now:
+    - vcenter.cluster.vsan.throughput
+    - vcenter.cluster.vsan.operations
+    - vcenter.cluster.vsan.latency.avg
+    - vcenter.cluster.vsan.congestions
+    - vcenter.host.vsan.throughput
+    - vcenter.host.vsan.operations
+    - vcenter.host.vsan.latency.avg
+    - vcenter.host.vsan.congestions
+    - vcenter.host.vsan.cache.hit_rate
+    - vcenter.vm.vsan.throughput
+    - vcenter.vm.vsan.operations
+    - vcenter.vm.vsan.latency.avg
+  
+
+### 🚩 Deprecations 🚩
+
+- `exporter/datadog`: Deprecates `logs::dump_payloads` since it is invalid with the Datadog Agent logs pipeline, which will be enabled by default in the v0.108.0 release. (#34490)
+
+### 🚀 New components 🚀
+
+- `logdedupeprocessor`: Add new logdedupeprocessor processor that deduplicates log entries. (#34118)
+- `coralogixprocessor`: creating new component for coralogix features (#33090)
+- `googlecloudmonitoringreceiver`: Adding new component - [Google Cloud monitoring](https://cloud.google.com/monitoring/api/metrics_gcp) receiver to fetch GCP Cloud Metrics and transform to OpenTelemetry compatible format. (#33762)
+
+### 💡 Enhancements 💡
+
+- `awsemfexporter`: AWS EMF Exporter to update ApplicationSignals log group name and namespace, and adjust AWS service name prefix logic in spans (#33798)
+- `azureeventhubreceiver`: Added traces support in azureeventhubreceiver (#33583)
+- `exporter/prometheusremotewrite`: Reduce unnecessary memory allocation by removing buffer that was not used by Snappy encoding function. (#34273)
+- `exporter/prometheusremotewrite`: Reduce memory allocations of prometheus remote write exporter "batchtimeseries" when large batch sizes are used (#34269)
+- `clickhouseexporter`: Updated the default logs table to a more optimized schema (#34203)
+  Improved partitioning and time range queries.
+- `bearertokenauthextension`: use constant time comparison. This fixes CVE-2024-42368 (#34516)
+- `processor/k8sattributes`: Add support for `container.image.repo_digests` metadata (#34029)
+- `datadogconnector`: Move feature gate `connector.datadogconnector.NativeIngest` to beta (#34549)
+  When this feature gate is enabled (default), the datadog connector uses the new API to produce APM stats under the hood. | The new API has better throughput when your spans have many attributes (especially container related attributes). Funtional-wise the new API should have no user-facing change compared to the old API. | However if you observe any unexpected behaviors, you can disable this feature gate to revert to the old stats processing APIs.
+- `elasticsearchexporter`: Add opt-in support for the experimental `batcher` config (#32377)
+  By enabling (or explicitly disabling) the batcher, the Elasticsearch exporter's
+  existing batching/buffering logic will be disabled, and the batch sender will be used.
+  
+- `elasticsearchexporter`: Add summary support for metrics (#34560)
+- `hostmetricsreceiver`: add reporting interval to entity event (#34240)
+- `elasticsearchreceiver`: Add metric for active index merges (#34387)
+- `kafkaexporter`: add an ability to partition logs based on resource attributes. (#33229)
+- `logdedupprocessor`: Adds a histogram metric to record the number of aggregated log records. (#34579)
+- `logdedupprocessor`: Updates stability level to alpha. (#34575)
+- `logdedup`: Make the name of the log deduplication component consistent (#34571)
+- `logdedupprocessor`: Ensures any pending aggregated logs are processed and sent to the next consumer before shutting down. (#34615)
+- `logdedupprocessor`: Adds a scope aggregator to the logdedup processor enabling the aggregation of logs per scope. (#34606)
+- `logdedupprocessor`: Simplifies the processor shutdown behaviour by removing the unnecessary done channel. (#34478)
+- `pkg/ottl`: Add support for map literals in OTTL (#32388)
+- `pkg/ottl`: Introduce ExtractGrokPatterns converter (#32593)
+- `pkg/ottl`: Add the `MD5` function to convert the `value` into a MD5 hash/digest (#33792)
+- `pkg/ottl`: Introduce `sha512` converter to generate SHA-512 hash/digest from given payload. (#34007)
+- `kafkametricsreceiver`: Add option to configure cluster alias name and add new metrics for kafka topic configurations (#34148)
+- `receiver/splunkhec`: Add a regex to enforce metrics naming for Splunk events fields based on metrics documentation. (#34275)
+- `telemetrygen`: Support boolean values in `--telemetry-attributes` and `--otlp-attributes` flag (#18928)
+- `filelogreceiver`: Check for unsupported fractional seconds directive when converting strptime time layout to native format (#34390)
+- `windowseventlogreceiver`: Add remote collection support to Stanza operator windows pkg to support remote log collect for the Windows Event Log receiver. (#33100)
+
+### 🧰 Bug fixes 🧰
+
+- `configauth`: Fix unmarshaling of authentication in HTTP servers. (#34325)
+  This brings in a bug fix from the core collector. See https://github.com/open-telemetry/opentelemetry-collector/issues/10750.
+- `docker_observer`: Change default endpoint for `docker_observer` on Windows to `npipe:////./pipe/docker_engine` (#34358)
+- `pkg/translator/jaeger`: Change the translation to jaeger spans to match semantic conventions. (#34368)
+  `otel.library.name` is deprecated and replaced by `otel.scope.name`
+  `otel.library.version` is deprecated and replaced by `otel.scope.version`
+  
+- `pkg/stanza`: Ensure that errors from `Process` and `Write` do not break for loops (#34295)
+- `cmd/opampsupervisor`: Start even if the OpAMP server cannot be contacted, and continually retry connecting. (#33408, #33799)
+- `cmd/opampsupervisor`: Write the generated effective config and agent log files to the user-defined storage directory. (#34341)
+- `azuremonitorreceiver`: Add Azure China as a `cloud` option. (#34315)
+- `postgresqlreceiver`: Support unix socket based replication by handling null values in the client_addr field (#33107)
+- `splunkhecexporter`: Copy the bytes to be placed in the request body to avoid corruption on reuse (#34357)
+  This bug is a manifestation of https://github.com/golang/go/issues/51907.
+  Under high load, the pool of buffers used to send requests is reused enough
+  that the same buffer is used concurrently to process data and be sent as request body.
+  The fix is to copy the payload into a new byte array before sending it.
+  
+- `syslogexporter`: Fix issue where exporter may hang indefinitely while dialing. (#34393)
+- `clickhouseexporter`: Use observed timestamp if timestamp is zero (#34150)
+  Some OpenTelemetry libraries do not send timestamp for logs, but they should always send | the observed timestamp. In these cases the ClickHouse exporter just stored a zero timestamp | to the database. This changes the behavior to look into the observed timestamp if the timestamp | is zero.
+- `webhookeventreceiver`: added a timestamp to the logs generated from incoming events. (#33702)
+
 ## v0.106.1
 
 ### 🧰 Bug fixes 🧰

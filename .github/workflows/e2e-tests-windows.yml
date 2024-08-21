@@ -1,0 +1,82 @@
+name: e2e-tests-windows
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+    paths-ignore:
+      - "**/README.md"
+  pull_request:
+    paths-ignore:
+      - "**/README.md"
+  merge_group:
+
+env:
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
+jobs:
+  collector-build:
+    runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.12"
+          cache: false
+      - name: Cache Go
+        id: go-mod-cache
+        timeout-minutes: 25
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Build Collector
+        run: make otelcontribcol
+      - name: Upload Collector Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: collector-binary
+          path: ./bin/*
+
+  supervisor-test:
+    runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    needs: [collector-build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.12"
+          cache: false
+      - name: Cache Go
+        id: go-mod-cache
+        timeout-minutes: 25
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Download Collector Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: collector-binary
+          path: bin/
+      - name: Run opampsupervisor e2e tests
+        run: |
+          cd cmd/opampsupervisor
+          go test -v --tags=e2e

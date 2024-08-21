@@ -118,7 +118,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{shards}'
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest
   - resource:
       attributes:
@@ -656,7 +656,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: By
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest
   - resource:
       attributes:
@@ -1194,5 +1194,5 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: By
         scope:
-          name: otelcol/elasticsearchreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
           version: latest

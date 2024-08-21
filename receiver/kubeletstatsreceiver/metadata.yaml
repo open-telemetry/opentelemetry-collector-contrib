@@ -1,5 +1,4 @@
 type: kubeletstats
-scope_name: otelcol/kubeletstatsreceiver
 
 status:
   class: receiver

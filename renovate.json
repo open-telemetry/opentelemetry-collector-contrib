@@ -5,7 +5,7 @@
       "dependencies"
     ],
     "constraints": {
-      "go": "1.21.0"
+      "go": "1.22.0"
     },
     "schedule": ["every tuesday"],
     "extends": ["config:recommended"],
@@ -76,6 +76,11 @@
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/otel"],
         "groupName": "All go.opentelemetry.io/otel packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchPackagePrefixes": ["cloud.google.com/go"],
+        "groupName": "All cloud.google.com/go packages"
       },
       {
         "matchManagers": ["gomod"],
