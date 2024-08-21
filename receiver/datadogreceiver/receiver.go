@@ -36,6 +36,94 @@ type datadogReceiver struct {
 	tReceiver *receiverhelper.ObsReport
 }
 
+// Endpoint specifies an API endpoint definition.
+type Endpoint struct {
+	// Pattern specifies the API pattern, as registered by the HTTP handler.
+	Pattern string
+
+	// Handler specifies the http.Handler for this endpoint.
+	Handler func(http.ResponseWriter, *http.Request)
+}
+
+// getEndpoints specifies the list of endpoints registered for the trace-agent API.
+func (ddr *datadogReceiver) getEndpoints() []Endpoint {
+	endpoints := []Endpoint{
+		{
+			Pattern: "/",
+			Handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			},
+		},
+	}
+
+	if ddr.nextTracesConsumer != nil {
+		endpoints = append(endpoints, []Endpoint{
+			{
+				Pattern: "/v0.3/traces",
+				Handler: ddr.handleTraces,
+			},
+			{
+				Pattern: "/v0.4/traces",
+				Handler: ddr.handleTraces,
+			},
+			{
+				Pattern: "/v0.5/traces",
+				Handler: ddr.handleTraces,
+			},
+			{
+				Pattern: "/v0.7/traces",
+				Handler: ddr.handleTraces,
+			},
+			{
+				Pattern: "/api/v0.2/traces",
+				Handler: ddr.handleTraces,
+			},
+		}...)
+	}
+
+	if ddr.nextMetricsConsumer != nil {
+		endpoints = append(endpoints, []Endpoint{
+			{
+				Pattern: "/api/v1/series",
+				Handler: ddr.handleV1Series,
+			},
+			{
+				Pattern: "/api/v2/series",
+				Handler: ddr.handleV2Series,
+			},
+			{
+				Pattern: "/api/v1/check_run",
+				Handler: ddr.handleCheckRun,
+			},
+			{
+				Pattern: "/api/v1/sketches",
+				Handler: ddr.handleSketches,
+			},
+			{
+				Pattern: "/api/beta/sketches",
+				Handler: ddr.handleSketches,
+			},
+			{
+				Pattern: "/intake",
+				Handler: ddr.handleIntake,
+			},
+			{
+				Pattern: "/api/v1/distribution_points",
+				Handler: ddr.handleDistributionPoints,
+			},
+		}...)
+	}
+
+	infoResponse, _ := ddr.buildInfoResponse(endpoints)
+
+	endpoints = append(endpoints, Endpoint{
+		Pattern: "/info",
+		Handler: func(w http.ResponseWriter, r *http.Request) { ddr.handleInfo(w, r, infoResponse) },
+	})
+
+	return endpoints
+}
+
 func newDataDogReceiver(config *Config, params receiver.Settings) (component.Component, error) {
 	instance, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
@@ -48,35 +136,17 @@ func newDataDogReceiver(config *Config, params receiver.Settings) (component.Com
 		server: &http.Server{
 			ReadTimeout: config.ReadTimeout,
 		},
-		tReceiver: instance,
+		tReceiver:         instance,
+		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
 	}, nil
 }
 
 func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) error {
 	ddmux := http.NewServeMux()
+	endpoints := ddr.getEndpoints()
 
-	ddmux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
-	if ddr.nextTracesConsumer != nil {
-		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.7/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/api/v0.2/traces", ddr.handleTraces)
-	}
-
-	if ddr.nextMetricsConsumer != nil {
-		ddr.metricsTranslator = translator.NewMetricsTranslator(ddr.params.BuildInfo)
-
-		ddmux.HandleFunc("/api/v1/series", ddr.handleV1Series)
-		ddmux.HandleFunc("/api/v2/series", ddr.handleV2Series)
-		ddmux.HandleFunc("/api/v1/check_run", ddr.handleCheckRun)
-		ddmux.HandleFunc("/api/v1/sketches", ddr.handleSketches)
-		ddmux.HandleFunc("/api/beta/sketches", ddr.handleSketches)
-		ddmux.HandleFunc("/intake", ddr.handleIntake)
-		ddmux.HandleFunc("/api/v1/distribution_points", ddr.handleDistributionPoints)
+	for _, e := range endpoints {
+		ddmux.HandleFunc(e.Pattern, e.Handler)
 	}
 
 	var err error
@@ -106,6 +176,32 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 
 func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 	return ddr.server.Shutdown(ctx)
+}
+
+func (ddr *datadogReceiver) buildInfoResponse(endpoints []Endpoint) ([]byte, error) {
+	var endpointPaths []string
+	for _, e := range endpoints {
+		endpointPaths = append(endpointPaths, e.Pattern)
+	}
+
+	return json.MarshalIndent(translator.DDInfo{
+		Version:          fmt.Sprintf("datadogreceiver-%s-%s", ddr.params.BuildInfo.Command, ddr.params.BuildInfo.Version),
+		Endpoints:        endpointPaths,
+		ClientDropP0s:    false,
+		SpanMetaStructs:  false,
+		LongRunningSpans: false,
+	}, "", "\t")
+}
+
+// handleInfo handles incoming /info payloads.
+func (ddr *datadogReceiver) handleInfo(w http.ResponseWriter, _ *http.Request, infoResponse []byte) {
+	_, err := fmt.Fprintf(w, "%s", infoResponse)
+
+	if err != nil {
+		ddr.params.Logger.Error("Error writing /info endpoint response", zap.Error(err))
+		http.Error(w, "Error writing /info endpoint response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
