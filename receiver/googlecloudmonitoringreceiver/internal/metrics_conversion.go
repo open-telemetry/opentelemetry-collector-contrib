@@ -6,12 +6,10 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"log"
 
-	"go.uber.org/zap"
-
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"go.uber.org/zap"
 )
 
 type MetricsBuilder struct {
