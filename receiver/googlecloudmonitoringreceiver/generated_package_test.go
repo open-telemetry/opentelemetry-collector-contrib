@@ -8,6 +8,12 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// Set up environment variable for Google Cloud Credentials
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "testdata/serviceAccount.json")
+
 	// skipping goleak test as per metadata.yml configuration
 	os.Exit(m.Run())
+
+	// Clean up (if necessary)
+	os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 }

@@ -30,7 +30,6 @@ type monitoringReceiver struct {
 	logger         *zap.Logger
 	client         *monitoring.MetricClient
 	metricsBuilder *internal.MetricsBuilder
-	wg             sync.WaitGroup
 	mutex          sync.Mutex
 }
 
@@ -41,43 +40,23 @@ func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitori
 		metricsBuilder: internal.NewMetricsBuilder(logger),
 	}
 }
-
 func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error {
-	// Initialize a wait group
-	var wg sync.WaitGroup
-	wg.Add(1) // Add a count to the wait group
-
-	// Lock to ensure thread-safe access to mr.client
-	mr.mutex.Lock()
-	defer mr.mutex.Unlock()
-
 	// If the client is already initialized, return nil
 	if mr.client != nil {
 		return nil
 	}
 
-	// Start a goroutine to create the client
-	go func() {
-		defer wg.Done() // Mark this goroutine as done when it finishes
-		for {
-			client, err := monitoring.NewMetricClient(ctx)
-			if err != nil {
-				// Log the error and retry after a delay
-				errMsg := fmt.Sprintf("failed to create a monitoring client, %+v\n", err)
-				mr.logger.Error(errMsg)
-				time.Sleep(5 * time.Second) // Retry delay
-				continue
-			}
+	// Lock to ensure thread-safe access to mr.client
+	mr.mutex.Lock()
+	defer mr.mutex.Unlock()
 
-			// Lock again to safely set the client
-			mr.client = client
-			mr.logger.Info("Monitoring client successfully created.")
-			break
-		}
-	}()
-
-	// Wait until the client is created
-	wg.Wait()
+	// Attempt to create the monitoring client
+	client, err := monitoring.NewMetricClient(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create a monitoring client: %w", err)
+	}
+	mr.client = client
+	mr.logger.Info("Monitoring client successfully created.")
 
 	// Return nil after client creation
 	return nil
@@ -88,7 +67,6 @@ func (mr *monitoringReceiver) Shutdown(context.Context) error {
 	if mr.client != nil {
 		err = mr.client.Close()
 	}
-	mr.wg.Wait()
 	return err
 }
 
