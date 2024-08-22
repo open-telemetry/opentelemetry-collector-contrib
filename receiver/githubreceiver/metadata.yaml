@@ -8,7 +8,7 @@ status:
     development: [metrics]
   distributions: []
   codeowners:
-    active: [adrielp, andrzej-stencel]
+    active: [adrielp, andrzej-stencel, crobert-1]
 
 resource_attributes:
   organization.name:
