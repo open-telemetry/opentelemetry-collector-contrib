@@ -53,8 +53,11 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Server: &OpAMPServer{
-				HTTP: &commonFields{
-					Endpoint: "https://127.0.0.1:4320/v1/opamp",
+				HTTP: &httpFields{
+					commonFields: commonFields{
+						Endpoint: "https://127.0.0.1:4320/v1/opamp",
+					},
+					PollingInterval: 1 * time.Minute,
 				},
 			},
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
@@ -115,13 +118,15 @@ func TestConfig_Getters(t *testing.T) {
 			name: "HTTP valid endpoint and valid instance id",
 			fields: fields{
 				Server: &OpAMPServer{
-					HTTP: &commonFields{
-						Endpoint: "https://127.0.0.1:4320/v1/opamp",
-						Headers: map[string]configopaque.String{
-							"test": configopaque.String("test"),
-						},
-						TLSSetting: configtls.ClientConfig{
-							Insecure: true,
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "https://127.0.0.1:4320/v1/opamp",
+							Headers: map[string]configopaque.String{
+								"test": configopaque.String("test"),
+							},
+							TLSSetting: configtls.ClientConfig{
+								Insecure: true,
+							},
 						},
 					},
 				},
@@ -194,7 +199,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "HTTP must have endpoint",
 			fields: fields{
 				Server: &OpAMPServer{
-					HTTP: &commonFields{},
+					HTTP: &httpFields{},
 				},
 			},
 			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
@@ -205,8 +210,10 @@ func TestConfig_Validate(t *testing.T) {
 			name: "HTTP valid endpoint and invalid instance id",
 			fields: fields{
 				Server: &OpAMPServer{
-					HTTP: &commonFields{
-						Endpoint: "https://127.0.0.1:4320/v1/opamp",
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "https://127.0.0.1:4320/v1/opamp",
+						},
 					},
 				},
 				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL",
@@ -219,8 +226,10 @@ func TestConfig_Validate(t *testing.T) {
 			name: "HTTP valid endpoint and valid instance id",
 			fields: fields{
 				Server: &OpAMPServer{
-					HTTP: &commonFields{
-						Endpoint: "https://127.0.0.1:4320/v1/opamp",
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "https://127.0.0.1:4320/v1/opamp",
+						},
 					},
 				},
 				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
@@ -241,7 +250,7 @@ func TestConfig_Validate(t *testing.T) {
 			fields: fields{
 				Server: &OpAMPServer{
 					WS:   &commonFields{},
-					HTTP: &commonFields{},
+					HTTP: &httpFields{},
 				},
 			},
 			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
