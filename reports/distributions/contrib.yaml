@@ -8,6 +8,7 @@ components:
         - exceptions
         - failover
         - grafanacloud
+        - otlpjson
         - roundrobin
         - routing
         - servicegraph
@@ -79,6 +80,7 @@ components:
     processor:
         - attributes
         - cumulativetodelta
+        - deltatocumulative
         - deltatorate
         - experimental_metricsgeneration
         - filter
@@ -124,6 +126,7 @@ components:
         - filestats
         - flinkmetrics
         - fluentforward
+        - googlecloudmonitoring
         - googlecloudspanner
         - haproxy
         - hostmetrics

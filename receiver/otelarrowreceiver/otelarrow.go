@@ -9,11 +9,9 @@ import (
 	"sync"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/admission"
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/auth"
@@ -25,6 +23,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metrics"
@@ -77,7 +78,7 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 	return r, nil
 }
 
-func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, _ component.Host) error {
+func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, host component.Host) error {
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", cfg.NetAddr.Endpoint))
 
 	gln, err := cfg.NetAddr.Listen(context.Background())
@@ -89,7 +90,7 @@ func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, _ compo
 		defer r.shutdownWG.Done()
 
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
-			r.settings.ReportStatus(component.NewFatalErrorEvent(errGrpc))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 		}
 	}()
 	return nil

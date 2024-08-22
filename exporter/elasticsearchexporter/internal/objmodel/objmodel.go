@@ -34,6 +34,7 @@ package objmodel // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"encoding/hex"
 	"io"
+	"maps"
 	"math"
 	"sort"
 	"strings"
@@ -48,7 +49,8 @@ import (
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
 // into a JSON document that can be processed by Elasticsearch.
 type Document struct {
-	fields []field
+	fields           []field
+	dynamicTemplates map[string]string
 }
 
 type field struct {
@@ -81,6 +83,7 @@ const (
 	KindObject
 	KindTimestamp
 	KindIgnore
+	KindUnflattenableObject // Unflattenable object is an object that should not be flattened at serialization time
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
@@ -105,13 +108,24 @@ func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 
 	fields := make([]field, 0, am.Len())
 	fields = appendAttributeFields(fields, path, am)
-	return Document{fields}
+	return Document{fields: fields}
 }
 
 func (doc *Document) Clone() *Document {
 	fields := make([]field, len(doc.fields))
 	copy(fields, doc.fields)
-	return &Document{fields}
+	return &Document{fields: fields, dynamicTemplates: maps.Clone(doc.dynamicTemplates)}
+}
+
+func (doc *Document) AddDynamicTemplate(path, template string) {
+	if doc.dynamicTemplates == nil {
+		doc.dynamicTemplates = make(map[string]string)
+	}
+	doc.dynamicTemplates[path] = template
+}
+
+func (doc *Document) DynamicTemplates() map[string]string {
+	return doc.dynamicTemplates
 }
 
 // AddTimestamp adds a raw timestamp value to the Document.
@@ -244,19 +258,19 @@ func (doc *Document) Dedup() {
 // Serialize writes the document to the given writer. The serializer will create nested objects if dedot is true.
 //
 // NOTE: The documented MUST be sorted if dedot is true.
-func (doc *Document) Serialize(w io.Writer, dedot bool) error {
+func (doc *Document) Serialize(w io.Writer, dedot bool, otel bool) error {
 	v := json.NewVisitor(w)
-	return doc.iterJSON(v, dedot)
+	return doc.iterJSON(v, dedot, otel)
 }
 
-func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
+func (doc *Document) iterJSON(v *json.Visitor, dedot bool, otel bool) error {
 	if dedot {
-		return doc.iterJSONDedot(v)
+		return doc.iterJSONDedot(v, otel)
 	}
-	return doc.iterJSONFlat(v)
+	return doc.iterJSONFlat(v, otel)
 }
 
-func (doc *Document) iterJSONFlat(w *json.Visitor) error {
+func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 	err := w.OnObjectStart(-1, structform.AnyType)
 	if err != nil {
 		return err
@@ -275,7 +289,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 			return err
 		}
 
-		if err := fld.value.iterJSON(w, true); err != nil {
+		if err := fld.value.iterJSON(w, true, otel); err != nil {
 			return err
 		}
 	}
@@ -283,7 +297,20 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 	return nil
 }
 
-func (doc *Document) iterJSONDedot(w *json.Visitor) error {
+// Under OTel mode, set of key prefixes where keys should be flattened from that level,
+// such that a document (root or not) with fields {"attributes.a.b": 1} will be serialized as {"attributes": {"a.b": 1}}
+// It is not aware of whether it is a root document or sub-document.
+// NOTE: This works very delicately with the implementation of OTel mode that
+// e.g. resource.attributes is a "resource" objmodel.Document under the root document that contains attributes
+// added using AddAttributes func as flattened keys.
+// Therefore, there will be correctness issues when attributes are added / used in other ways, but it is working
+// for current use cases and the proper fix will be slightly too complex. YAGNI.
+var otelPrefixSet = map[string]struct{}{
+	"attributes.": {},
+	"metrics.":    {},
+}
+
+func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 	objPrefix := ""
 	level := 0
 
@@ -335,6 +362,16 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 		// increase object level up to current field
 		for {
+
+			// Otel mode serialization
+			if otel {
+				// Check the prefix
+				_, isOtelPrefix := otelPrefixSet[objPrefix]
+				if isOtelPrefix {
+					break
+				}
+			}
+
 			start := len(objPrefix)
 			idx := strings.IndexByte(key[start:], '.')
 			if idx < 0 {
@@ -357,7 +394,7 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 		if err := w.OnKey(fieldName); err != nil {
 			return err
 		}
-		if err := fld.value.iterJSON(w, true); err != nil {
+		if err := fld.value.iterJSON(w, true, otel); err != nil {
 			return err
 		}
 	}
@@ -398,6 +435,12 @@ func ArrValue(values ...Value) Value {
 // TimestampValue create a new value from a time.Time.
 func TimestampValue(ts time.Time) Value {
 	return Value{kind: KindTimestamp, ts: ts}
+}
+
+// UnflattenableObjectValue creates a unflattenable object from a map
+func UnflattenableObjectValue(m pcommon.Map) Value {
+	sub := DocumentFromAttributes(m)
+	return Value{kind: KindUnflattenableObject, doc: sub}
 }
 
 // ValueFromAttribute converts a AttributeValue into a value.
@@ -460,7 +503,7 @@ func (v *Value) IsEmpty() bool {
 	}
 }
 
-func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
+func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 	switch v.kind {
 	case KindNil:
 		return w.OnNil()
@@ -483,13 +526,18 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 		if len(v.doc.fields) == 0 {
 			return w.OnNil()
 		}
-		return v.doc.iterJSON(w, dedot)
+		return v.doc.iterJSON(w, dedot, otel)
+	case KindUnflattenableObject:
+		if len(v.doc.fields) == 0 {
+			return w.OnNil()
+		}
+		return v.doc.iterJSON(w, true, otel)
 	case KindArr:
 		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
 			return err
 		}
 		for i := range v.arr {
-			if err := v.arr[i].iterJSON(w, dedot); err != nil {
+			if err := v.arr[i].iterJSON(w, dedot, otel); err != nil {
 				return err
 			}
 		}

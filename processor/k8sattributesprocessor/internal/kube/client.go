@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -572,24 +573,26 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	}
 
 	if needContainerAttributes(rules) {
+		removeUnnecessaryContainerStatus := func(c api_v1.ContainerStatus) api_v1.ContainerStatus {
+			transformedContainerStatus := api_v1.ContainerStatus{
+				Name:         c.Name,
+				ContainerID:  c.ContainerID,
+				RestartCount: c.RestartCount,
+			}
+			if rules.ContainerImageRepoDigests {
+				transformedContainerStatus.ImageID = c.ImageID
+			}
+			return transformedContainerStatus
+		}
+
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			transformedPod.Status.ContainerStatuses = append(
-				transformedPod.Status.ContainerStatuses,
-				api_v1.ContainerStatus{
-					Name:         containerStatus.Name,
-					ContainerID:  containerStatus.ContainerID,
-					RestartCount: containerStatus.RestartCount,
-				},
+				transformedPod.Status.ContainerStatuses, removeUnnecessaryContainerStatus(containerStatus),
 			)
 		}
 		for _, containerStatus := range pod.Status.InitContainerStatuses {
 			transformedPod.Status.InitContainerStatuses = append(
-				transformedPod.Status.InitContainerStatuses,
-				api_v1.ContainerStatus{
-					Name:         containerStatus.Name,
-					ContainerID:  containerStatus.ContainerID,
-					RestartCount: containerStatus.RestartCount,
-				},
+				transformedPod.Status.InitContainerStatuses, removeUnnecessaryContainerStatus(containerStatus),
 			)
 		}
 
@@ -670,11 +673,26 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			containerID = parts[1]
 		}
 		containers.ByID[containerID] = container
-		if c.Rules.ContainerID {
+		if c.Rules.ContainerID || c.Rules.ContainerImageRepoDigests {
 			if container.Statuses == nil {
 				container.Statuses = map[int]ContainerStatus{}
 			}
-			container.Statuses[int(apiStatus.RestartCount)] = ContainerStatus{containerID}
+			containerStatus := ContainerStatus{}
+			if c.Rules.ContainerID {
+				containerStatus.ContainerID = containerID
+			}
+
+			if c.Rules.ContainerImageRepoDigests {
+				if parsed, err := reference.ParseAnyReference(apiStatus.ImageID); err == nil {
+					switch parsed.(type) {
+					case reference.Canonical:
+						containerStatus.ImageRepoDigest = parsed.String()
+					default:
+					}
+				}
+			}
+
+			container.Statuses[int(apiStatus.RestartCount)] = containerStatus
 		}
 	}
 	return containers
@@ -965,6 +983,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 	return rules.ContainerImageName ||
 		rules.ContainerName ||
 		rules.ContainerImageTag ||
+		rules.ContainerImageRepoDigests ||
 		rules.ContainerID
 }
 

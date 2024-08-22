@@ -1,9 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
 
-go 1.21.0
+go 1.22.0
 
 require (
-	github.com/docker/docker v26.1.4+incompatible
+	github.com/Microsoft/go-winio v0.6.2
+	github.com/docker/docker v26.1.5+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/goleak v1.3.0
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
