@@ -69,7 +69,7 @@ func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error
 
 	// Attempt to create the monitoring client
 	if err != nil {
-		return fmt.Errorf("failed to create a monitoring client: %v", err)
+		return fmt.Errorf("failed to create a monitoring client: %w", err)
 	}
 	mr.client = client
 	mr.logger.Info("Monitoring client successfully created.")
