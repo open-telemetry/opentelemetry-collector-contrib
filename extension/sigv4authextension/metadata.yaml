@@ -10,4 +10,9 @@ status:
     active: [Aneurysm9, erichsueh3]
 
 tests:
+  goleak:
+    ignore:
+      top:
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"
   config:

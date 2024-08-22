@@ -9,8 +9,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/aerospike/aerospike-client-go/v7.(*baseMultiCommand).parseRecordResults"),
-		goleak.IgnoreTopFunction("sync.runtime_Semacquire"),
-		goleak.IgnoreTopFunction("github.com/aerospike/aerospike-client-go/v7.(*Cluster).clusterBoss"),
-	)
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/aerospike/aerospike-client-go/v7.(*baseMultiCommand).parseRecordResults"), goleak.IgnoreTopFunction("github.com/aerospike/aerospike-client-go/v7.(*Cluster).clusterBoss"), goleak.IgnoreTopFunction("sync.runtime_Semacquire"))
 }

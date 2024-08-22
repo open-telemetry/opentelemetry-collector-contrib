@@ -8,3 +8,11 @@ status:
   distributions: [contrib]
   codeowners:
     active: [rmfitzpatrick]
+
+tests:
+  config:
+    endpoint: myendpoint:12345
+  goleak:
+    ignore:
+      top:
+        - "github.com/SAP/go-hdb/driver.(*metrics).collect"

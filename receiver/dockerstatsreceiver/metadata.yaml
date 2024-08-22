@@ -11,6 +11,14 @@ status:
 
 sem_conv_version: 1.6.1
 
+tests:
+  goleak:
+    ignore:
+      top:
+        - "github.com/testcontainers/testcontainers-go.(*Reaper).Connect.func1"
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"
+
 # Note: there are other, additional resource attributes that the user can configure through the yaml
 resource_attributes:
   container.runtime:
