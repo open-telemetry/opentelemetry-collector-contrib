@@ -237,9 +237,18 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 	if err != nil {
 		m.set.Logger.Error("Errors encountered while creating readers", zap.Error(err))
 	}
-	for _, r := range readers {
-		m.tracker.Add(r)
-		m.set.Logger.Info("Started watching file", zap.String("path", r.GetFileName()))
+	for _, reader := range readers {
+		// Exclude duplicate paths with the same content. This can happen when files are
+		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
+		if r := m.tracker.GetCurrentFile(reader.Fingerprint); r != nil {
+			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", r.GetFileName()))
+			// re-add the reader as Match() removes duplicates
+			m.tracker.Add(r)
+			reader.Close()
+			continue
+		}
+		m.tracker.Add(reader)
+		m.set.Logger.Info("Started watching file", zap.String("path", reader.GetFileName()))
 	}
 
 }
