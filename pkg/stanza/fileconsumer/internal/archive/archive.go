@@ -49,10 +49,10 @@ func (a *archive) SetStorageClient(persister operator.Persister) {
 }
 
 func (a *archive) Match(_ []*ArchiveFileRecord) ([]*reader.Reader, error) {
-	// Arguements:
+	// Arguments:
 	//		unmatched files
 	// Returns:
-	//		found metadata from archive, unmatched files, error
+	//		readers created from old/new metadata
 	// TODO:
 	// 		Add logic to go through the storage and return a match.
 	//		Also update the storage if match found.
