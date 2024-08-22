@@ -8,8 +8,8 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
-	"github.com/golang/protobuf/proto"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"google.golang.org/protobuf/proto"
 )
 
 const (

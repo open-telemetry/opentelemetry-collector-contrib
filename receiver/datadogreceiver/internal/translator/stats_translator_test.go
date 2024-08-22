@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 )
@@ -134,7 +134,10 @@ func getTestSketchBytes(nums ...float64) []byte {
 		panic(err)
 	}
 	for _, num := range nums {
-		sketch.Add(num)
+		err := sketch.Add(num)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	buf, err := proto.Marshal(sketch.ToProto())
