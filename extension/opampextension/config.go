@@ -68,10 +68,16 @@ type commonFields struct {
 	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
 }
 
+type httpFields struct {
+	commonFields `mapstructure:",squash"`
+
+	PollingInterval time.Duration `mapstructure:"polling_interval"`
+}
+
 // OpAMPServer contains the OpAMP transport configuration.
 type OpAMPServer struct {
 	WS   *commonFields `mapstructure:"ws,omitempty"`
-	HTTP *commonFields `mapstructure:"http,omitempty"`
+	HTTP *httpFields   `mapstructure:"http,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {
@@ -93,7 +99,10 @@ func (s OpAMPServer) GetClient(logger *zap.Logger) client.OpAMPClient {
 	if s.WS != nil {
 		return client.NewWebSocket(newLoggerFromZap(logger.With(zap.String("client", "ws"))))
 	}
-	return client.NewHTTP(newLoggerFromZap(logger.With(zap.String("client", "http"))))
+
+	httpClient := client.NewHTTP(newLoggerFromZap(logger.With(zap.String("client", "http"))))
+	httpClient.SetPollingInterval(s.GetPollingInterval())
+	return httpClient
 }
 
 func (s OpAMPServer) GetHeaders() map[string]configopaque.String {
@@ -121,6 +130,14 @@ func (s OpAMPServer) GetEndpoint() string {
 		return s.HTTP.Endpoint
 	}
 	return ""
+}
+
+func (s OpAMPServer) GetPollingInterval() time.Duration {
+	if s.HTTP != nil {
+		return s.HTTP.PollingInterval
+	}
+
+	return 0
 }
 
 // Validate checks if the extension configuration is valid
