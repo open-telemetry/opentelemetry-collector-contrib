@@ -235,7 +235,7 @@ receiver/filelogreceiver/                                           @open-teleme
 receiver/filestatsreceiver/                                         @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                                      @open-telemetry/collector-contrib-approvers @JonathanWamsley @djaglowski
 receiver/fluentforwardreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/gitproviderreceiver/                                       @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel @crobert-1
+receiver/githubreceiver/                                            @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel @crobert-1
 receiver/googlecloudmonitoringreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth @abhishek-at-cloudwerx
 receiver/googlecloudpubsubreceiver/                                 @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/haproxyreceiver/                                           @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
@@ -293,7 +293,6 @@ receiver/syslogreceiver/                                            @open-teleme
 receiver/tcplogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/udplogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/vcenterreceiver/                                           @open-telemetry/collector-contrib-approvers @djaglowski @schmikei @StefanKurek
-receiver/vcsmetricsreceiver/                                        @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel
 receiver/wavefrontreceiver/                                         @open-telemetry/collector-contrib-approvers @samiura
 receiver/webhookeventreceiver/                                      @open-telemetry/collector-contrib-approvers @atoulme @shalper2
 receiver/windowseventlogreceiver/                                   @open-telemetry/collector-contrib-approvers @armstrmi @pjanotti
