@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -63,69 +64,145 @@ func TestConnectorShutdown(t *testing.T) {
 }
 
 func TestConnectorConsume(t *testing.T) {
-	t.Run("test common case", func(t *testing.T) {
-		// Prepare
-		cfg := &Config{
-			Dimensions: []string{"some-attribute", "non-existing-attribute"},
-			Store:      StoreConfig{MaxItems: 10},
-		}
+	for _, tc := range []struct {
+		name          string
+		cfg           *Config
+		gates         []*featuregate.Gate
+		sampleTraces  ptrace.Traces
+		verifyMetrics func(t *testing.T, md pmetric.Metrics)
+	}{
+		{
+			name: "complete traces with client and server span",
+			cfg: &Config{
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces:  buildSampleTrace(t, "val"),
+			verifyMetrics: verifyHappyCaseMetrics,
+		},
+		{
+			name: "test fix failed label not work",
+			cfg: &Config{
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces: getGoldenTraces(t, "testdata/failed-label-not-work-simple-trace.yaml"),
+			verifyMetrics: func(t *testing.T, actualMetrics pmetric.Metrics) {
+				expectedMetrics, err := golden.ReadMetrics("testdata/failed-label-not-work-expect-metrics.yaml")
+				assert.NoError(t, err)
 
-		set := componenttest.NewNopTelemetrySettings()
-		set.Logger = zaptest.NewLogger(t)
-		conn, err := newConnector(set, cfg, newMockMetricsExporter())
-		require.NoError(t, err)
-		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+				err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+					pmetrictest.IgnoreMetricsOrder(),
+					pmetrictest.IgnoreMetricDataPointsOrder(),
+					pmetrictest.IgnoreStartTimestamp(),
+					pmetrictest.IgnoreTimestamp(),
+					pmetrictest.IgnoreDatapointAttributesOrder(),
+				)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "incomplete traces with virtual server span",
+			cfg: &Config{
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces: incompleteClientTraces(),
+			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
+				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("server")
+				assert.True(t, ok)
+				assert.Equal(t, "AuthTokenCache", v.Str())
+			},
+		},
+		{
+			name: "incomplete traces with virtual client span",
+			cfg: &Config{
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces: incompleteServerTraces(false),
+			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
+				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("client")
+				assert.True(t, ok)
+				assert.Equal(t, "user", v.Str())
+			},
+		},
+		{
+			name: "incomplete traces with client span lost",
+			cfg: &Config{
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces: incompleteServerTraces(true),
+			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
+				assert.Equal(t, 0, md.MetricCount())
+			},
+		},
+		{
+			name: "complete traces with legacy latency metrics",
+			cfg: &Config{
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces:  buildSampleTrace(t, "val"),
+			gates:         []*featuregate.Gate{legacyLatencyUnitMsFeatureGate},
+			verifyMetrics: verifyHappyCaseMetricsWithDuration(1000),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Set feature gates
+			for _, gate := range tc.gates {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+			}
 
-		// Test & verify
-		td := buildSampleTrace(t, "val")
-		// The assertion is part of verifyHappyCaseMetrics func.
-		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+			// Prepare
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zaptest.NewLogger(t)
+			conn, err := newConnector(set, tc.cfg, newMockMetricsExporter())
+			require.NoError(t, err)
+			assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
-		// Force collection
-		conn.store.Expire()
-		md, err := conn.buildMetrics()
-		assert.NoError(t, err)
-		verifyHappyCaseMetrics(t, md)
+			// Send spans to the connector
+			assert.NoError(t, conn.ConsumeTraces(context.Background(), tc.sampleTraces))
 
-		// Shutdown the connector
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	})
-	t.Run("test fix failed label not work", func(t *testing.T) {
-		cfg := &Config{
-			Store: StoreConfig{MaxItems: 10},
-		}
-		set := componenttest.NewNopTelemetrySettings()
-		set.Logger = zaptest.NewLogger(t)
-		conn, err := newConnector(set, cfg, newMockMetricsExporter())
-		require.NoError(t, err)
+			// Force collection
+			conn.store.Expire()
+			md, err := conn.buildMetrics()
+			assert.NoError(t, err)
+			tc.verifyMetrics(t, md)
 
-		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-		defer require.NoError(t, conn.Shutdown(context.Background()))
+			// Shutdown the connector
+			assert.NoError(t, conn.Shutdown(context.Background()))
 
-		// this trace simulate two services' trace: foo, bar
-		// foo called bar three times, two success, one failed
-		td, err := golden.ReadTraces("testdata/failed-label-not-work-simple-trace.yaml")
-		assert.NoError(t, err)
-		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+			// Unset feature gates
+			for _, gate := range tc.gates {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+			}
+		})
+	}
+}
 
-		// Force collection
-		conn.store.Expire()
-		actualMetrics, err := conn.buildMetrics()
-		assert.NoError(t, err)
-
-		// Verify
-		expectedMetrics, err := golden.ReadMetrics("testdata/failed-label-not-work-expect-metrics.yaml")
-		assert.NoError(t, err)
-
-		err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreDatapointAttributesOrder(),
-		)
-		require.NoError(t, err)
-	})
+func getGoldenTraces(t *testing.T, file string) ptrace.Traces {
+	td, err := golden.ReadTraces(file)
+	assert.NoError(t, err)
+	return td
 }
 
 func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
@@ -242,6 +319,53 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	serverSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	serverSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
 
+	return traces
+}
+
+func incompleteClientTraces() ptrace.Traces {
+	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
+	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+
+	traces := ptrace.NewTraces()
+
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-client-service")
+
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	anotherClientSpanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
+	clientSpanNoServerSpan := scopeSpans.Spans().AppendEmpty()
+	clientSpanNoServerSpan.SetName("client span")
+	clientSpanNoServerSpan.SetSpanID(anotherClientSpanID)
+	clientSpanNoServerSpan.SetTraceID(anotherTraceID)
+	clientSpanNoServerSpan.SetKind(ptrace.SpanKindClient)
+	clientSpanNoServerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	clientSpanNoServerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
+	clientSpanNoServerSpan.Attributes().PutStr(semconv.AttributePeerService, "AuthTokenCache") // Attribute selected as dimension for metrics
+
+	return traces
+}
+
+func incompleteServerTraces(withParentSpan bool) ptrace.Traces {
+	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
+	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+
+	traces := ptrace.NewTraces()
+
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-server-service")
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	serverSpanNoClientSpan := scopeSpans.Spans().AppendEmpty()
+	serverSpanNoClientSpan.SetName("server span")
+	serverSpanNoClientSpan.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
+	if withParentSpan {
+		serverSpanNoClientSpan.SetParentSpanID([8]byte{0x27, 0x28, 0x29, 0x30, 0x31, 0x32, 0x33, 0x34})
+	}
+	serverSpanNoClientSpan.SetTraceID(anotherTraceID)
+	serverSpanNoClientSpan.SetKind(ptrace.SpanKindServer)
+	serverSpanNoClientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	serverSpanNoClientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
 	return traces
 }
 
