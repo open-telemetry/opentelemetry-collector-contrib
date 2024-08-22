@@ -14,14 +14,14 @@ const _ = "knownFiles"
 
 type Archive interface {
 	SetStorageClient(operator.Persister)
-	Match(*fingerprint.Fingerprint) (*reader.Metadata, error)
+	Match([]*fingerprint.Fingerprint) ([]*reader.Metadata, []*fingerprint.Fingerprint, error)
 	Write([]*reader.Metadata) error
 }
 
 type archive struct {
 	persister      operator.Persister
 	pollsToArchive int
-	index          int
+	_              int
 	_              *fileset.Fileset[*reader.Metadata]
 }
 
@@ -33,11 +33,16 @@ func (a *archive) SetStorageClient(persister operator.Persister) {
 	a.persister = persister
 }
 
-func (a *archive) Match(_ *fingerprint.Fingerprint) (*reader.Metadata, error) {
+func (a *archive) Match(_ []*fingerprint.Fingerprint) ([]*reader.Metadata, []*fingerprint.Fingerprint, error) {
+	// Arguements:
+	//		unmatched files
+	// Returns:
+	//		found metadata from archive, unmatched files, error
 	// TODO:
 	// 		Add logic to go through the storage and return a match.
 	//		Also update the storage if match found.
-	return nil, nil
+
+	return nil, nil, nil
 }
 
 func (a *archive) Write(_ []*reader.Metadata) error {
