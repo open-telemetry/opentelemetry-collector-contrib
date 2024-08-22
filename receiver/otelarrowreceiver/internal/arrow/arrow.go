@@ -611,7 +611,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// uncompressed request size and waiters.  Acquire will fail
 	// immediately if there are too many waiters, or will
 	// otherwise block until timeout or enough memory becomes
-	// available.
+
 	err = r.boundedQueue.Acquire(inflightCtx, prevAcquiredBytes)
 	if err != nil {
 		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue: %v", err)

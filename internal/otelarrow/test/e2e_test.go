@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -82,7 +81,7 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	return tc.sink.ConsumeTraces(ctx, td)
 }
 
-func testLoggerSettings(t *testing.T) (component.TelemetrySettings, *observer.ObservedLogs, *tracetest.InMemoryExporter) {
+func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.ObservedLogs, *tracetest.InMemoryExporter) {
 	tset := componenttest.NewNopTelemetrySettings()
 
 	core, obslogs := observer.New(zapcore.InfoLevel)
@@ -90,10 +89,10 @@ func testLoggerSettings(t *testing.T) (component.TelemetrySettings, *observer.Ob
 	exp := tracetest.NewInMemoryExporter()
 
 	// Note: if you want to see these logs in development, use:
-	tset.Logger = zap.New(zapcore.NewTee(core, zaptest.NewLogger(t).Core()))
+	// tset.Logger = zap.New(zapcore.NewTee(core, zaptest.NewLogger(t).Core()))
 	// Also see failureMemoryLimitEnding() for explicit tests based on the
 	// logs observer.
-	// tset.Logger = zap.New(core)
+	tset.Logger = zap.New(core)
 	tset.TracerProvider = trace.NewTracerProvider(trace.WithSyncer(exp))
 
 	return tset, obslogs, exp
@@ -360,8 +359,6 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 	rSigs, rMsgs := logSigs(testCon.recvLogs)
 
 	// Test for arrow stream errors.
-
-	fmt.Println("ESIGS", eSigs, eMsgs)
 	require.Less(t, 0, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eSigs)
 	require.Less(t, 0, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
 
@@ -406,7 +403,7 @@ func TestIntegrationTracesSimple(t *testing.T) {
 			var params = testParams{
 				threadCount: 10,
 				requestUntil: func(test *testConsumer) bool {
-					return test.sentSpans.Load() < 1000
+					return test.sink.SpanCount() < 1000
 				},
 			}
 
@@ -511,17 +508,11 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
-		rcfg.Arrow.MemoryLimitMiB = 1
 		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
 			ServerParameters: &configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,
 			},
 		}
-
-		ecfg.Arrow.NumStreams = 1
-		ecfg.Arrow.MaxStreamLifetime = 2 * time.Second
-		ecfg.TimeoutSettings.Timeout = 1 * time.Second
-
 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
 }
