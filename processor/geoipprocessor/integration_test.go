@@ -13,8 +13,6 @@ import (
 )
 
 func TestProcessorWithMaxMind(t *testing.T) {
-	t.Parallel()
-
 	tmpDBfiles := testdata.GenerateLocalDB(t, "./internal/provider/maxmindprovider/testdata/")
 	defer os.RemoveAll(tmpDBfiles)
 

@@ -104,6 +104,7 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 }
 
 func (d *dockerObserver) Shutdown(_ context.Context) error {
+	d.StopListAndWatch()
 	d.cancel()
 	return nil
 }
