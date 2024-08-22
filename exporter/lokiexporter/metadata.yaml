@@ -1,5 +1,4 @@
 type: loki
-scope_name: otelcol/loki
 
 status:
   class: exporter

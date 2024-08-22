@@ -89,6 +89,7 @@ type Config struct {
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
 	Compression             string          `mapstructure:"compression,omitempty"`
 	PollsToArchive          int             `mapstructure:"-"`
+	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -172,6 +173,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		DeleteAtEOF:             c.DeleteAfterRead,
 		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
 		Compression:             c.Compression,
+		AcquireFSLock:           c.AcquireFSLock,
 	}
 
 	var t tracker.Tracker

@@ -558,3 +558,126 @@ func TestUnmarshalWithUserData(t *testing.T) {
 
 	require.Equal(t, xml, event)
 }
+
+func TestParseBodyRemoteServer(t *testing.T) {
+	xml := EventXML{
+		EventID: EventID{
+			ID:         1,
+			Qualifiers: 2,
+		},
+		Provider: Provider{
+			Name:            "provider",
+			GUID:            "guid",
+			EventSourceName: "event source",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2020-07-30T01:01:01.123456789Z",
+		},
+		Computer:         "computer",
+		Channel:          "application",
+		RecordID:         1,
+		Level:            "Information",
+		Message:          "message",
+		Task:             "task",
+		Opcode:           "opcode",
+		Keywords:         []string{"keyword"},
+		EventData:        EventData{Data: []Data{{Name: "1st_name", Value: "value"}, {Name: "2nd_name", Value: "another_value"}}},
+		RenderedLevel:    "rendered_level",
+		RenderedTask:     "rendered_task",
+		RenderedOpcode:   "rendered_opcode",
+		RenderedKeywords: []string{"RenderedKeywords"},
+		RemoteServer:     "remote_server",
+	}
+
+	expected := map[string]any{
+		"event_id": map[string]any{
+			"id":         uint32(1),
+			"qualifiers": uint16(2),
+		},
+		"provider": map[string]any{
+			"name":         "provider",
+			"guid":         "guid",
+			"event_source": "event source",
+		},
+		"system_time": "2020-07-30T01:01:01.123456789Z",
+		"computer":    "computer",
+		"channel":     "application",
+		"record_id":   uint64(1),
+		"level":       "rendered_level",
+		"message":     "message",
+		"task":        "rendered_task",
+		"opcode":      "rendered_opcode",
+		"keywords":    []string{"RenderedKeywords"},
+		"event_data": map[string]any{
+			"data": []any{
+				map[string]any{"1st_name": "value"},
+				map[string]any{"2nd_name": "another_value"},
+			},
+		},
+		"remote_server": "remote_server",
+	}
+
+	require.Equal(t, expected, xml.parseBody())
+}
+
+// Additional test cases to ensure comprehensive coverage
+
+func TestParseBodyNoRemoteServer(t *testing.T) {
+	xml := EventXML{
+		EventID: EventID{
+			ID:         1,
+			Qualifiers: 2,
+		},
+		Provider: Provider{
+			Name:            "provider",
+			GUID:            "guid",
+			EventSourceName: "event source",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2020-07-30T01:01:01.123456789Z",
+		},
+		Computer:         "computer",
+		Channel:          "application",
+		RecordID:         1,
+		Level:            "Information",
+		Message:          "message",
+		Task:             "task",
+		Opcode:           "opcode",
+		Keywords:         []string{"keyword"},
+		EventData:        EventData{Data: []Data{{Name: "1st_name", Value: "value"}, {Name: "2nd_name", Value: "another_value"}}},
+		RenderedLevel:    "rendered_level",
+		RenderedTask:     "rendered_task",
+		RenderedOpcode:   "rendered_opcode",
+		RenderedKeywords: []string{"RenderedKeywords"},
+		RemoteServer:     "",
+	}
+
+	expected := map[string]any{
+		"event_id": map[string]any{
+			"id":         uint32(1),
+			"qualifiers": uint16(2),
+		},
+		"provider": map[string]any{
+			"name":         "provider",
+			"guid":         "guid",
+			"event_source": "event source",
+		},
+		"system_time": "2020-07-30T01:01:01.123456789Z",
+		"computer":    "computer",
+		"channel":     "application",
+		"record_id":   uint64(1),
+		"level":       "rendered_level",
+		"message":     "message",
+		"task":        "rendered_task",
+		"opcode":      "rendered_opcode",
+		"keywords":    []string{"RenderedKeywords"},
+		"event_data": map[string]any{
+			"data": []any{
+				map[string]any{"1st_name": "value"},
+				map[string]any{"2nd_name": "another_value"},
+			},
+		},
+	}
+
+	require.Equal(t, expected, xml.parseBody())
+}
