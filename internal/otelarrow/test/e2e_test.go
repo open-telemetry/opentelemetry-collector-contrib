@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -81,7 +82,7 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	return tc.sink.ConsumeTraces(ctx, td)
 }
 
-func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.ObservedLogs, *tracetest.InMemoryExporter) {
+func testLoggerSettings(t *testing.T) (component.TelemetrySettings, *observer.ObservedLogs, *tracetest.InMemoryExporter) {
 	tset := componenttest.NewNopTelemetrySettings()
 
 	core, obslogs := observer.New(zapcore.InfoLevel)
@@ -89,10 +90,10 @@ func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.Ob
 	exp := tracetest.NewInMemoryExporter()
 
 	// Note: if you want to see these logs in development, use:
-	// tset.Logger = zap.New(zapcore.NewTee(core, zaptest.NewLogger(t).Core()))
+	tset.Logger = zap.New(zapcore.NewTee(core, zaptest.NewLogger(t).Core()))
 	// Also see failureMemoryLimitEnding() for explicit tests based on the
 	// logs observer.
-	tset.Logger = zap.New(core)
+	// tset.Logger = zap.New(core)
 	tset.TracerProvider = trace.NewTracerProvider(trace.WithSyncer(exp))
 
 	return tset, obslogs, exp
