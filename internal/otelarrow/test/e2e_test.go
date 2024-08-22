@@ -361,6 +361,7 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 
 	// Test for arrow stream errors.
 
+	fmt.Println("ESIGS", eSigs, eMsgs)
 	require.Less(t, 0, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eSigs)
 	require.Less(t, 0, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
 
