@@ -549,17 +549,32 @@ func TestIntegrationInternalMetrics(t *testing.T) {
 	// 3. Generate and send traces
 	sendTraces(t)
 
-	// 4. Validate Datadog trace agent internal metrics are sent to the mock server
-	expectedMetrics := []string{
-		"otelcol_datadog_trace_agent_stats_writer_bytes",
-		"otelcol_datadog_trace_agent_stats_writer_retries",
-		"otelcol_datadog_trace_agent_stats_writer_stats_buckets",
-		"otelcol_datadog_trace_agent_stats_writer_stats_entries",
-		"otelcol_datadog_trace_agent_stats_writer_payloads",
-		"otelcol_datadog_otlp_translator_resources_missing_source",
-		"otelcol_datadog_trace_agent_stats_writer_client_payloads",
-		"otelcol_datadog_trace_agent_stats_writer_errors",
-		"otelcol_datadog_trace_agent_stats_writer_splits",
+	// 4. Validate Datadog trace agent & OTel internal metrics are sent to the mock server
+	expectedMetrics := map[string]struct{}{
+		// Datadog internal metrics on trace and stats writers
+		"otelcol_datadog_otlp_translator_resources_missing_source": {},
+		"otelcol_datadog_trace_agent_stats_writer_bytes":           {},
+		"otelcol_datadog_trace_agent_stats_writer_retries":         {},
+		"otelcol_datadog_trace_agent_stats_writer_stats_buckets":   {},
+		"otelcol_datadog_trace_agent_stats_writer_stats_entries":   {},
+		"otelcol_datadog_trace_agent_stats_writer_payloads":        {},
+		"otelcol_datadog_trace_agent_stats_writer_client_payloads": {},
+		"otelcol_datadog_trace_agent_stats_writer_errors":          {},
+		"otelcol_datadog_trace_agent_stats_writer_splits":          {},
+
+		// OTel collector internal metrics
+		"otelcol_process_memory_rss":                     {},
+		"otelcol_process_runtime_total_sys_memory_bytes": {},
+		"otelcol_process_uptime":                         {},
+		"otelcol_process_cpu_seconds":                    {},
+		"otelcol_process_runtime_heap_alloc_bytes":       {},
+		"otelcol_process_runtime_total_alloc_bytes":      {},
+		"otelcol_receiver_accepted_metric_points":        {},
+		"otelcol_receiver_accepted_spans":                {},
+		"otelcol_exporter_queue_capacity":                {},
+		"otelcol_exporter_queue_size":                    {},
+		"otelcol_exporter_sent_spans":                    {},
+		"otelcol_exporter_sent_metric_points":            {},
 	}
 
 	metricMap := make(map[string]series)
@@ -573,7 +588,9 @@ func TestIntegrationInternalMetrics(t *testing.T) {
 			dec := json.NewDecoder(gz)
 			assert.NoError(t, dec.Decode(&metrics))
 			for _, s := range metrics.Series {
-				metricMap[s.Metric] = s
+				if _, ok := expectedMetrics[s.Metric]; ok {
+					metricMap[s.Metric] = s
+				}
 			}
 		case <-time.After(60 * time.Second):
 			t.Fail()
