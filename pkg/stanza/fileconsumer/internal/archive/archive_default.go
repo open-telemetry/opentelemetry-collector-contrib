@@ -11,10 +11,10 @@ import (
 )
 
 type defaultArchive struct {
-	readerFactory reader.Factory
+	readerFactory *reader.Factory
 }
 
-func NewDefaultArchive(readerFactory reader.Factory) Archive {
+func NewDefaultArchive(readerFactory *reader.Factory) Archive {
 	return &defaultArchive{readerFactory: readerFactory}
 }
 
@@ -22,6 +22,7 @@ func (a *defaultArchive) SetStorageClient(_ operator.Persister) {
 }
 
 func (a *defaultArchive) Match(unmatchedFiles []*ArchiveFileRecord) ([]*reader.Reader, error) {
+	// to be called once per poll
 	readers := make([]*reader.Reader, 0)
 	var combinedError error
 	for _, record := range unmatchedFiles {

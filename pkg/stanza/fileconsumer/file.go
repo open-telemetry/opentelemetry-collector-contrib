@@ -28,7 +28,7 @@ type Manager struct {
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
-	readerFactory reader.Factory
+	readerFactory *reader.Factory
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
 	archive       archive.Archive
@@ -203,6 +203,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
 func (m *Manager) makeReaders(ctx context.Context, paths []string) {
+	m.unmatchedFiles = make([]*archive.ArchiveFileRecord, 0)
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
