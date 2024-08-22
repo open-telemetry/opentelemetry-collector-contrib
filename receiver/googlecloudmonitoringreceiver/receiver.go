@@ -44,14 +44,14 @@ func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error
 	var client *monitoring.MetricClient
 	var err error
 
+	// Lock to ensure thread-safe access to mr.client
+	mr.mutex.Lock()
+	defer mr.mutex.Unlock()
+
 	// If the client is already initialized, return nil
 	if mr.client != nil {
 		return nil
 	}
-
-	// Lock to ensure thread-safe access to mr.client
-	mr.mutex.Lock()
-	defer mr.mutex.Unlock()
 
 	// Get service account key file path
 	serAccKey := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")

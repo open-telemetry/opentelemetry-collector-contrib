@@ -4,6 +4,7 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver/internal"
 
 import (
+	"fmt"
 	"log"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -35,7 +36,14 @@ func (mb *MetricsBuilder) ConvertGaugeToMetrics(ts *monitoringpb.TimeSeries, m p
 			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
 		}
 
-		dp.SetTimestamp(pcommon.Timestamp(point.Interval.EndTime.Seconds * 1e9)) // Convert to nanoseconds)
+		// Check if EndTime is set and valid
+		if point.Interval.EndTime != nil && point.Interval.EndTime.IsValid() {
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(point.Interval.EndTime.AsTime()))
+		} else {
+			warnMsg := fmt.Sprintf("EndTime is invalid for metric: %s", ts.GetMetric().GetType())
+			mb.logger.Warn(warnMsg)
+			continue
+		}
 
 		switch v := point.Value.Value.(type) {
 		case *monitoringpb.TypedValue_DoubleValue:
@@ -64,7 +72,14 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
 		}
 
-		dp.SetTimestamp(pcommon.Timestamp(point.Interval.EndTime.Seconds * 1e9)) // Convert to nanoseconds)
+		// Check if EndTime is set and valid
+		if point.Interval.EndTime != nil && point.Interval.EndTime.IsValid() {
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(point.Interval.EndTime.AsTime()))
+		} else {
+			warnMsg := fmt.Sprintf("EndTime is invalid for metric: %s", ts.GetMetric().GetType())
+			mb.logger.Warn(warnMsg)
+			continue
+		}
 
 		switch v := point.Value.Value.(type) {
 		case *monitoringpb.TypedValue_DoubleValue:
@@ -93,7 +108,14 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(point.Interval.StartTime.AsTime()))
 		}
 
-		dp.SetTimestamp(pcommon.Timestamp(point.Interval.EndTime.Seconds * 1e9)) // Convert to nanoseconds
+		// Check if EndTime is set and valid
+		if point.Interval.EndTime != nil && point.Interval.EndTime.IsValid() {
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(point.Interval.EndTime.AsTime()))
+		} else {
+			warnMsg := fmt.Sprintf("EndTime is invalid for metric: %s", ts.GetMetric().GetType())
+			mb.logger.Warn(warnMsg)
+			continue
+		}
 
 		switch v := point.Value.Value.(type) {
 		case *monitoringpb.TypedValue_DoubleValue:
