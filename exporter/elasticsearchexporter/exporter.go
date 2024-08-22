@@ -222,7 +222,6 @@ func (e *elasticsearchExporter) pushMetricsData(
 					return nil
 				}
 
-				// TODO: support exponential histogram
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
@@ -243,6 +242,20 @@ func (e *elasticsearchExporter) pushMetricsData(
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
 						val, err := numberToValue(dp)
+						if err != nil {
+							errs = append(errs, err)
+							continue
+						}
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, err := exponentialHistogramToValue(dp)
 						if err != nil {
 							errs = append(errs, err)
 							continue

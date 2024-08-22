@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -478,6 +479,52 @@ func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
 	m.PutDouble("sum", dp.Sum())
 	m.PutInt("value_count", int64(dp.Count()))
 	return vm
+}
+
+// exponentialHistogramToValue converts an exponential histogram data point to T-digest.
+func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) (pcommon.Value, error) {
+	vm := pcommon.NewValueMap()
+	m := vm.Map()
+	counts := m.PutEmptySlice("counts")
+	values := m.PutEmptySlice("values")
+
+	scale := int(dp.Scale())
+
+	offset := int(dp.Negative().Offset())
+	bucketCounts := dp.Negative().BucketCounts()
+	for i := bucketCounts.Len() - 1; i >= 0; i++ {
+		count := bucketCounts.At(i)
+		if count == 0 {
+			continue
+		}
+		lb := -exphistogram.LowerBoundary(offset+i+1, scale)
+		ub := -exphistogram.LowerBoundary(offset+i, scale)
+		counts.AppendEmpty().SetInt(int64(count))
+		values.AppendEmpty().SetDouble(lb + (ub-lb)/2)
+	}
+
+	if zeroCount := dp.ZeroCount(); zeroCount != 0 {
+		counts.AppendEmpty().SetInt(int64(zeroCount))
+		// FIXME: do we really have to take the median of last negative and first positive, instead of using 0?
+		lastNegativeBoundary := -exphistogram.LowerBoundary(int(dp.Negative().Offset()), scale)
+		firstPositiveBoundary := exphistogram.LowerBoundary(int(dp.Positive().Offset()), scale)
+		values.AppendEmpty().SetDouble(lastNegativeBoundary + (firstPositiveBoundary-lastNegativeBoundary)/2)
+	}
+
+	offset = int(dp.Positive().Offset())
+	bucketCounts = dp.Positive().BucketCounts()
+	for i := 0; i < bucketCounts.Len(); i++ {
+		count := bucketCounts.At(i)
+		if count == 0 {
+			continue
+		}
+		lb := exphistogram.LowerBoundary(offset+i, scale)
+		ub := exphistogram.LowerBoundary(offset+i+1, scale)
+		counts.AppendEmpty().SetInt(int64(count))
+		values.AppendEmpty().SetDouble(lb + (ub-lb)/2)
+	}
+
+	return vm, nil
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
