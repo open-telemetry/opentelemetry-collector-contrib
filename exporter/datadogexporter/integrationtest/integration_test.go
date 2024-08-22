@@ -561,6 +561,13 @@ func TestIntegrationInternalMetrics(t *testing.T) {
 		"otelcol_datadog_trace_agent_stats_writer_client_payloads": {},
 		"otelcol_datadog_trace_agent_stats_writer_errors":          {},
 		"otelcol_datadog_trace_agent_stats_writer_splits":          {},
+		"otelcol_datadog_trace_agent_trace_writer_bytes":           {},
+		"otelcol_datadog_trace_agent_trace_writer_retries":         {},
+		"otelcol_datadog_trace_agent_trace_writer_spans":           {},
+		"otelcol_datadog_trace_agent_trace_writer_traces":          {},
+		"otelcol_datadog_trace_agent_trace_writer_payloads":        {},
+		"otelcol_datadog_trace_agent_trace_writer_errors":          {},
+		"otelcol_datadog_trace_agent_trace_writer_events":          {},
 
 		// OTel collector internal metrics
 		"otelcol_process_memory_rss":                     {},
