@@ -4,6 +4,8 @@
 package archive // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 
 import (
+	"os"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
@@ -14,8 +16,20 @@ const _ = "knownFiles"
 
 type Archive interface {
 	SetStorageClient(operator.Persister)
-	Match([]*fingerprint.Fingerprint) ([]*reader.Metadata, []*fingerprint.Fingerprint, error)
+	Match([]*ArchiveFileRecord) ([]*reader.Reader, error)
 	Write([]*reader.Metadata) error
+}
+
+type ArchiveFileRecord struct {
+	file *os.File
+	fp   *fingerprint.Fingerprint
+}
+
+func NewArchiveRecord(file *os.File, fp *fingerprint.Fingerprint) *ArchiveFileRecord {
+	return &ArchiveFileRecord{
+		file: file,
+		fp:   fp,
+	}
 }
 
 type archive struct {
@@ -23,17 +37,18 @@ type archive struct {
 	pollsToArchive int
 	_              int
 	_              *fileset.Fileset[*reader.Metadata]
+	readerFactory  reader.Factory
 }
 
-func NewArchive(pollsToArchive int) Archive {
-	return &archive{pollsToArchive: pollsToArchive}
+func NewArchive(pollsToArchive int, readerFactory reader.Factory) Archive {
+	return &archive{pollsToArchive: pollsToArchive, readerFactory: readerFactory}
 }
 
 func (a *archive) SetStorageClient(persister operator.Persister) {
 	a.persister = persister
 }
 
-func (a *archive) Match(_ []*fingerprint.Fingerprint) ([]*reader.Metadata, []*fingerprint.Fingerprint, error) {
+func (a *archive) Match(_ []*ArchiveFileRecord) ([]*reader.Reader, error) {
 	// Arguements:
 	//		unmatched files
 	// Returns:
@@ -42,7 +57,7 @@ func (a *archive) Match(_ []*fingerprint.Fingerprint) ([]*reader.Metadata, []*fi
 	// 		Add logic to go through the storage and return a match.
 	//		Also update the storage if match found.
 
-	return nil, nil, nil
+	return nil, nil
 }
 
 func (a *archive) Write(_ []*reader.Metadata) error {

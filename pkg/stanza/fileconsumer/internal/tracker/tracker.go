@@ -4,9 +4,12 @@
 package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
@@ -23,7 +26,7 @@ type Tracker interface {
 	CurrentPollFiles() []*reader.Reader
 	PreviousPollFiles() []*reader.Reader
 	ClosePreviousFiles() int
-	EndPoll()
+	EndPoll(archive archive.Archive)
 	EndConsume() int
 	TotalReaders() int
 }
@@ -110,11 +113,17 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 	return
 }
 
-func (t *fileTracker) EndPoll() {
+func (t *fileTracker) EndPoll(archive archive.Archive) {
 	// shift the filesets at end of every poll() call
 	// t.knownFiles[0] -> t.knownFiles[1] -> t.knownFiles[2]
+	oldFileset := t.knownFiles[2]
 	copy(t.knownFiles[1:], t.knownFiles)
 	t.knownFiles[0] = fileset.New[*reader.Metadata](t.maxBatchFiles)
+
+	err := archive.Write(oldFileset.Get())
+	if err != nil {
+		fmt.Errorf("Error faced while archiving: %v", err)
+	}
 }
 
 func (t *fileTracker) TotalReaders() int {
@@ -176,6 +185,6 @@ func (t *noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
 
 func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 
-func (t *noStateTracker) EndPoll() {}
+func (t *noStateTracker) EndPoll(archive.Archive) {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }

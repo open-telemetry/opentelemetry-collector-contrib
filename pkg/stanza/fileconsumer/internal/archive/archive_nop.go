@@ -4,24 +4,38 @@
 package archive // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"errors"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-type nopArchive struct{}
-
-func NewNopArchive() Archive {
-	return &nopArchive{}
+type defaultArchive struct {
+	readerFactory reader.Factory
 }
 
-func (a *nopArchive) SetStorageClient(_ operator.Persister) {
+func NewDefaultArchive(readerFactory reader.Factory) Archive {
+	return &defaultArchive{readerFactory: readerFactory}
 }
 
-func (a *nopArchive) Match([]*fingerprint.Fingerprint) ([]*reader.Metadata, []*fingerprint.Fingerprint, error) {
-	return nil, nil, nil
+func (a *defaultArchive) SetStorageClient(_ operator.Persister) {
 }
 
-func (a *nopArchive) Write(_ []*reader.Metadata) error {
+func (a *defaultArchive) Match(unmatchedFiles []*ArchiveFileRecord) ([]*reader.Reader, error) {
+	readers := make([]*reader.Reader, 0)
+	var combinedError error
+	for _, record := range unmatchedFiles {
+		r, err := a.readerFactory.NewReader(record.file, record.fp)
+		if err != nil {
+			combinedError = errors.Join(combinedError, err)
+		} else {
+			readers = append(readers, r)
+		}
+	}
+	return readers, combinedError
+}
+
+func (a *defaultArchive) Write(_ []*reader.Metadata) error {
+	// discard
 	return nil
 }

@@ -40,6 +40,8 @@ type Manager struct {
 	pollsToArchive int
 
 	telemetryBuilder *metadata.TelemetryBuilder
+
+	unmatchedFiles []*archive.ArchiveFileRecord
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -147,7 +149,7 @@ func (m *Manager) poll(ctx context.Context) {
 		}
 	}
 	// rotate at end of every poll()
-	m.tracker.EndPoll()
+	m.tracker.EndPoll(m.archive)
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
@@ -219,17 +221,30 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 			continue
 		}
 
-		r, err := m.newReader(ctx, file, fp)
+		r, matchFound, err := m.newReader(ctx, file, fp)
 		if err != nil {
 			m.set.Logger.Error("Failed to create reader", zap.Error(err))
 			continue
 		}
-
-		m.tracker.Add(r)
+		if matchFound {
+			m.tracker.Add(r)
+		} else {
+			m.unmatchedFiles = append(m.unmatchedFiles, archive.NewArchiveRecord(file, fp))
+		}
 	}
+
+	readers, err := m.archive.Match(m.unmatchedFiles)
+	if err != nil {
+		m.set.Logger.Error("Errors encountered while creating readers", zap.Error(err))
+	}
+	for _, r := range readers {
+		m.tracker.Add(r)
+		m.set.Logger.Info("Started watching file", zap.String("path", r.GetFileName()))
+	}
+
 }
 
-func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
+func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, bool, error) {
 	// Check previous poll cycle for match
 	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
 		if oldReader.GetFileName() != file.Name() {
@@ -245,25 +260,20 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 					zap.String("rotated_path", file.Name()))
 			}
 		}
-		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
+		r, err := m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
+		return r, true, err
 	}
 
 	// Check for closed files for match
 	if oldMetadata := m.tracker.GetClosedFile(fp); oldMetadata != nil {
 		r, err := m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
-		return r, nil
-	}
-
-	// If we don't match any previously known files, create a new reader from scratch
-	m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
-	r, err := m.readerFactory.NewReader(file, fp)
-	if err != nil {
-		return nil, err
+		return r, true, nil
 	}
 	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
-	return r, nil
+
+	return nil, false, nil
 }
