@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 	"google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -37,7 +39,11 @@ func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitori
 		metricsBuilder: internal.NewMetricsBuilder(logger),
 	}
 }
+
 func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error {
+	var client *monitoring.MetricClient
+	var err error
+
 	// If the client is already initialized, return nil
 	if mr.client != nil {
 		return nil
@@ -47,10 +53,23 @@ func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error
 	mr.mutex.Lock()
 	defer mr.mutex.Unlock()
 
+	// Get service account key file path
+	serAccKey := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if serAccKey != "" {
+		// Use provided credentials file
+		credentialsFileClientOption := option.WithCredentialsFile(serAccKey)
+		client, err = monitoring.NewMetricClient(ctx, credentialsFileClientOption)
+	} else {
+		// Set default credentials file path for testing
+		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "testdata/serviceAccount.json")
+
+		// Fallback to Application Default Credentials(https://google.aip.dev/auth/4110)
+		client, err = monitoring.NewMetricClient(ctx)
+	}
+
 	// Attempt to create the monitoring client
-	client, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create a monitoring client: %w", err)
+		return fmt.Errorf("failed to create a monitoring client: %v", err)
 	}
 	mr.client = client
 	mr.logger.Info("Monitoring client successfully created.")
