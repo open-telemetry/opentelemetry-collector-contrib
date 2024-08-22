@@ -5,11 +5,12 @@ package supervisor
 
 import (
 	"context"
+	"net/http"
+	"testing"
+
 	"github.com/open-telemetry/opamp-go/protobufs"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"testing"
 )
 
 func Test_flattenedSettings_toServerSettings(t *testing.T) {
@@ -27,7 +28,7 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 	t.Run("accept connection", func(t *testing.T) {
 		onConnectingFuncCalled := false
 		fs := flattenedSettings{
-			onConnectingFunc: func(request *http.Request) (shouldConnect bool, rejectStatusCode int) {
+			onConnectingFunc: func(_ *http.Request) (shouldConnect bool, rejectStatusCode int) {
 				onConnectingFuncCalled = true
 				return true, 0
 			},
@@ -42,7 +43,7 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 	t.Run("do not accept connection", func(t *testing.T) {
 		onConnectingFuncCalled := false
 		fs := flattenedSettings{
-			onConnectingFunc: func(request *http.Request) (shouldConnect bool, rejectStatusCode int) {
+			onConnectingFunc: func(_ *http.Request) (shouldConnect bool, rejectStatusCode int) {
 				onConnectingFuncCalled = true
 				return false, 500
 			},
@@ -59,7 +60,7 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 func Test_flattenedSettings_OnMessage(t *testing.T) {
 	onMessageFuncCalled := false
 	fs := flattenedSettings{
-		onMessageFunc: func(conn serverTypes.Connection, message *protobufs.AgentToServer) {
+		onMessageFunc: func(_ serverTypes.Connection, _ *protobufs.AgentToServer) {
 			onMessageFuncCalled = true
 		},
 	}
@@ -73,7 +74,7 @@ func Test_flattenedSettings_OnMessage(t *testing.T) {
 func Test_flattenedSettings_OnConnectionClose(t *testing.T) {
 	onConnectionCloseFuncCalled := false
 	fs := flattenedSettings{
-		onConnectionCloseFunc: func(conn serverTypes.Connection) {
+		onConnectionCloseFunc: func(_ serverTypes.Connection) {
 			onConnectionCloseFuncCalled = true
 		},
 	}

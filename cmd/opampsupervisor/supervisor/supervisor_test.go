@@ -7,8 +7,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/proto"
 	"net"
 	"os"
 	"path/filepath"
@@ -22,8 +20,10 @@ import (
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
@@ -291,7 +291,7 @@ service:
 				)
 				return nil
 			},
-			updateEffectiveConfigFunc: func(ctx context.Context) error {
+			updateEffectiveConfigFunc: func(_ context.Context) error {
 				return nil
 			},
 		}
@@ -393,7 +393,7 @@ service:
 				)
 				return fmt.Errorf("unexpected error")
 			},
-			updateEffectiveConfigFunc: func(ctx context.Context) error {
+			updateEffectiveConfigFunc: func(_ context.Context) error {
 				return nil
 			},
 		}
@@ -465,7 +465,7 @@ service:
 				assert.NotEmpty(t, rcs.ErrorMessage)
 				return nil
 			},
-			updateEffectiveConfigFunc: func(ctx context.Context) error {
+			updateEffectiveConfigFunc: func(_ context.Context) error {
 				return nil
 			},
 		}
@@ -1155,8 +1155,8 @@ service:
 		marshalledOwnMetricsCfg, err := proto.Marshal(ownMetricsCfg)
 		require.NoError(t, err)
 
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, os.ModePerm))
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, os.ModePerm))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, 0600))
 
 		s := Supervisor{
 			logger: zap.NewNop(),
