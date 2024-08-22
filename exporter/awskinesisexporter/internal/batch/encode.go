@@ -31,10 +31,10 @@ type Encoder interface {
 	Logs(ld plog.Logs) (*Batch, error)
 }
 
-func NewEncoder(named string, batchOptions ...Option) (Encoder, error) {
+func NewEncoder(named string, partitioner key.Partitioner, batchOptions ...Option) (Encoder, error) {
 	bm := &batchMarshaller{
 		batchOptions:      batchOptions,
-		partitioner:       key.Randomized,
+		partitioner:       partitioner,
 		logsMarshaller:    unsupported{},
 		tracesMarshaller:  unsupported{},
 		metricsMarshaller: unsupported{},

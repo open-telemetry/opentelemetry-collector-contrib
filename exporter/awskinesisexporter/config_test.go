@@ -44,8 +44,9 @@ func TestLoadConfig(t *testing.T) {
 				AWS: AWSConfig{
 					Region: "us-west-2",
 				},
-				MaxRecordsPerBatch: batch.MaxBatchedRecords,
-				MaxRecordSize:      batch.MaxRecordSize,
+				MaxRecordsPerBatch:  batch.MaxBatchedRecords,
+				MaxRecordSize:       batch.MaxRecordSize,
+				PartitionTracesByID: false,
 			},
 		},
 		{
@@ -71,8 +72,9 @@ func TestLoadConfig(t *testing.T) {
 					Region:          "mars-1",
 					Role:            "arn:test-role",
 				},
-				MaxRecordSize:      1000,
-				MaxRecordsPerBatch: 10,
+				MaxRecordSize:       1000,
+				MaxRecordsPerBatch:  10,
+				PartitionTracesByID: true,
 			},
 		},
 	}
