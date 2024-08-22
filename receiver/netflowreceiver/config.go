@@ -34,33 +34,32 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	validSchemes := [3]string{"sflow", "netflow", "flow"}
 
-		validScheme := false
-		for _, scheme := range validSchemes {
-			if cfg.Scheme == scheme {
-				validScheme = true
-				break
-			}
+	validScheme := false
+	for _, scheme := range validSchemes {
+		if cfg.Scheme == scheme {
+			validScheme = true
+			break
 		}
-		if !validScheme {
-			return fmt.Errorf("scheme must be one of sflow, netflow, or flow")
-		}
+	}
+	if !validScheme {
+		return fmt.Errorf("scheme must be one of sflow, netflow, or flow")
+	}
 
-		if cfg.Sockets <= 0 {
-			return fmt.Errorf("sockets must be greater than 0")
-		}
+	if cfg.Sockets <= 0 {
+		return fmt.Errorf("sockets must be greater than 0")
+	}
 
-		if cfg.Workers <= 0 {
-			return fmt.Errorf("workers must be greater than 0")
-		}
+	if cfg.Workers <= 0 {
+		return fmt.Errorf("workers must be greater than 0")
+	}
 
-		if cfg.QueueSize <= 0 {
-			cfg.QueueSize = defaultQueueSize
-		}
+	if cfg.QueueSize <= 0 {
+		cfg.QueueSize = defaultQueueSize
+	}
 
-		if cfg.Port <= 0 {
-			return fmt.Errorf("port must be greater than 0")
-		}
-	
+	if cfg.Port <= 0 {
+		return fmt.Errorf("port must be greater than 0")
+	}
 
 	return nil
 }
