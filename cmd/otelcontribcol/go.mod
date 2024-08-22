@@ -103,6 +103,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.107.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor v0.107.0
@@ -673,6 +674,8 @@ require (
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
+	github.com/oschwald/geoip2-golang v1.11.0 // indirect
+	github.com/oschwald/maxminddb-golang v1.13.0 // indirect
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
 	github.com/ovh/go-ovh v1.6.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
@@ -911,6 +914,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/span
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy => ../../extension/awsproxy
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor => ../../processor/geoipprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ../../processor/groupbyattrsprocessor
 
