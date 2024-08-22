@@ -108,7 +108,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 
 					// The ideal scenario is that we would re-use `aggregateDataPoints()` here, but we can't
-					// because the SummaryDataPoint does not fufill the DataPoint interface.
+					// because the SummaryDataPoint does not fulfill the DataPoint interface.
 					datapoints := m.Summary().DataPoints()
 					for i := 0; i < datapoints.Len(); i++ {
 						dp := datapoints.At(i)
