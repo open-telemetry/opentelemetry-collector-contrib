@@ -268,7 +268,7 @@ func bulkyGenFunc() MkGen {
 
 }
 
-func standardEnding(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int) {
+func standardEnding(t *testing.T, _ testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int) {
 	// Check for matching request count and data
 	require.Equal(t, int(testCon.sentSpans.Load()), testCon.sink.SpanCount())
 
