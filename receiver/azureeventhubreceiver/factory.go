@@ -16,11 +16,6 @@ import (
 )
 
 var (
-	// The receiver scope name
-	receiverScopeName = "otelcol/" + metadata.Type.String() + "receiver"
-)
-
-var (
 	errUnexpectedConfigurationType = errors.New("failed to cast configuration to azure event hub config")
 )
 

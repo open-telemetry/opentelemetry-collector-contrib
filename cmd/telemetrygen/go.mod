@@ -1,15 +1,15 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.106.2-0.20240809191011-ef07ea073562
-	go.opentelemetry.io/collector/pdata v1.12.1-0.20240809191011-ef07ea073562
-	go.opentelemetry.io/collector/semconv v0.106.2-0.20240809191011-ef07ea073562
+	go.opentelemetry.io/collector/component v0.107.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240816132030-9fd84668bb02
+	go.opentelemetry.io/collector/semconv v0.107.1-0.20240816132030-9fd84668bb02
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.0.0-20240712202007-aebcbfcbc296
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.4.0
@@ -43,7 +43,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.106.2-0.20240809191011-ef07ea073562 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240816132030-9fd84668bb02 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
