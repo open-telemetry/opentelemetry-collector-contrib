@@ -80,6 +80,7 @@ components:
     processor:
         - attributes
         - cumulativetodelta
+        - deltatocumulative
         - deltatorate
         - experimental_metricsgeneration
         - filter
@@ -125,6 +126,7 @@ components:
         - filestats
         - flinkmetrics
         - fluentforward
+        - googlecloudmonitoring
         - googlecloudspanner
         - haproxy
         - hostmetrics

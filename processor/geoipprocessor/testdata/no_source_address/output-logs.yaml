@@ -1,0 +1,16 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: host.name
+                value:
+                  stringValue: HOST.ONE
+              - key: log.file.name
+                value:
+                  stringValue: one.log
+            body:
+              stringValue: hello one
+            spanId: ""
+            traceId: ""
+        scope: {}

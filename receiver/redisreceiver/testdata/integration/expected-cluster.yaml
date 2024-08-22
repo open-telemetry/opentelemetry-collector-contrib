@@ -288,5 +288,5 @@ resourceMetrics:
               isMonotonic: true
             unit: s
         scope:
-          name: otelcol/redisreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
           version: latest

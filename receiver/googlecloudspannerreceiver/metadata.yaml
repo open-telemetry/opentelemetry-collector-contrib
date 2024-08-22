@@ -1,5 +1,4 @@
 type: googlecloudspanner
-scope_name: otelcol/googlecloudspannerreceiver
 
 status:
   class: receiver
