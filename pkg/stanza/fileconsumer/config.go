@@ -88,7 +88,7 @@ type Config struct {
 	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
 	Compression             string          `mapstructure:"compression,omitempty"`
-	PollsToArchive          int             `mapstructure:"-"`
+	PollsToArchive          int             `mapstructure:"-"` // TODO: activate this config once archiving is set up
 	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
@@ -183,12 +183,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
 
-	var a archive.Archive
-	if c.PollsToArchive <= 0 {
-		a = archive.NewNopArchive()
-	} else {
-		a = archive.NewArchive(c.PollsToArchive)
-	}
+	a := archive.NewDefaultArchive() // TODO: once archiving is set up, update this.
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {

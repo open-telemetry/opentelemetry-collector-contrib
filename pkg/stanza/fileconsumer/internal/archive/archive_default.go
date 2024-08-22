@@ -4,24 +4,26 @@
 package archive // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-type nopArchive struct{}
-
-func NewNopArchive() Archive {
-	return &nopArchive{}
+type defaultArchive struct {
 }
 
-func (a *nopArchive) SetStorageClient(_ operator.Persister) {
+func NewDefaultArchive() Archive {
+	return &defaultArchive{}
 }
 
-func (a *nopArchive) Match(_ *fingerprint.Fingerprint) (*reader.Metadata, error) {
-	return nil, nil
+func (a *defaultArchive) SetStorageClient(_ operator.Persister) {
 }
 
-func (a *nopArchive) Write(_ []*reader.Metadata) error {
+func (a *defaultArchive) Match(unmatchedFiles []*FileRecord) ([]*FileRecord, error) {
+	// Default archiving returns the files as it is
+	return unmatchedFiles, nil
+}
+
+func (a *defaultArchive) Write(_ []*reader.Metadata) error {
+	// discard the old offsets by default
 	return nil
 }
