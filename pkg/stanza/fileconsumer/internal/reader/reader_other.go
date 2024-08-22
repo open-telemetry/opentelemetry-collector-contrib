@@ -10,5 +10,4 @@ func (r *Reader) tryLockFile() bool {
 }
 
 func (r *Reader) unlockFile() {
-	return
 }
