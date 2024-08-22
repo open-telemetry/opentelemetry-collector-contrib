@@ -307,3 +307,4 @@ reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
 
 exporter/skywalkingexporter/                                        @open-telemetry/collector-contrib-approvers 
 receiver/googlecloudspannerreceiver/                                @open-telemetry/collector-contrib-approvers 
+e2e-tests/

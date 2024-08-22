@@ -26,3 +26,4 @@ internal/common
 ## UNMAINTAINED components
 exporter/skywalkingexporter/
 receiver/googlecloudspannerreceiver/
+e2e-tests/
