@@ -4,9 +4,9 @@ go 1.22.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.130
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.56.0
-	github.com/DataDog/datadog-agent/pkg/trace v0.56.0
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0-rc.12
+	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.12
+	github.com/DataDog/datadog-agent/pkg/trace v0.56.0-rc.12
 	github.com/DataDog/datadog-api-client-go/v2 v2.29.0
 	github.com/DataDog/sketches-go v1.4.6
 	github.com/golang/protobuf v1.5.4
