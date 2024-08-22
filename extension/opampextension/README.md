@@ -25,6 +25,7 @@ The following settings are optional:
   - `ws`: The OpAMP websocket transport settings.
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
+    - `polling_interval`: The interval at which the extension will poll the server. Only applicable to HTTP client. Defaults to 30s.
 - `instance_uid`: A UUIDv7 formatted as a 36 character string in canonical
   representation. Auto-generated on start if missing. Setting this ensures the
   instance UID remains constant across process restarts.
