@@ -45,8 +45,8 @@ type policy struct {
 type tailSamplingSpanProcessor struct {
 	ctx context.Context
 
-	telemetryBuilder *metadata.TelemetryBuilder
-	logger           *zap.Logger
+	telemetry *metadata.TelemetryBuilder
+	logger    *zap.Logger
 
 	nextConsumer    consumer.Traces
 	maxNumTraces    uint64
@@ -85,7 +85,7 @@ type Option func(*tailSamplingSpanProcessor)
 // configuration.
 func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config, opts ...Option) (processor.Traces, error) {
 	telemetrySettings := set.TelemetrySettings
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(telemetrySettings)
+	telemetry, err := metadata.NewTelemetryBuilder(telemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -98,14 +98,14 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	}
 
 	tsp := &tailSamplingSpanProcessor{
-		ctx:              ctx,
-		telemetryBuilder: telemetryBuilder,
-		nextConsumer:     nextConsumer,
-		maxNumTraces:     cfg.NumTraces,
-		sampledIDCache:   sampledDecisions,
-		logger:           telemetrySettings.Logger,
-		numTracesOnMap:   &atomic.Uint64{},
-		deleteChan:       make(chan pcommon.TraceID, cfg.NumTraces),
+		ctx:            ctx,
+		telemetry:      telemetry,
+		nextConsumer:   nextConsumer,
+		maxNumTraces:   cfg.NumTraces,
+		sampledIDCache: sampledDecisions,
+		logger:         telemetrySettings.Logger,
+		numTracesOnMap: &atomic.Uint64{},
+		deleteChan:     make(chan pcommon.TraceID, cfg.NumTraces),
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
@@ -262,11 +262,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.DecisionTime = time.Now()
 
 		decision := tsp.makeDecision(id, trace, &metrics)
-		tsp.telemetryBuilder.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Microsecond))
-		tsp.telemetryBuilder.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
-		tsp.telemetryBuilder.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
-		tsp.telemetryBuilder.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
-		tsp.telemetryBuilder.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
+		tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Microsecond))
+		tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
+		tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
+		tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -304,15 +304,15 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	for _, p := range tsp.policies {
 		policyEvaluateStartTime := time.Now()
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
-		tsp.telemetryBuilder.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(time.Since(policyEvaluateStartTime)/time.Microsecond), p.attribute)
+		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(time.Since(policyEvaluateStartTime)/time.Microsecond), p.attribute)
 		if err != nil {
 			samplingDecision[sampling.Error] = true
 			metrics.evaluateErrorCount++
 			tsp.logger.Debug("Sampling policy error", zap.Error(err))
 		} else {
-			tsp.telemetryBuilder.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
+			tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
 			if telemetry.IsMetricStatCountSpansSampledEnabled() {
-				tsp.telemetryBuilder.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
+				tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
 			}
 
 			samplingDecision[decision] = true
@@ -371,7 +371,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
 			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-			tsp.telemetryBuilder.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(tsp.ctx, int64(len(spans)))
+			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(tsp.ctx, int64(len(spans)))
 			continue
 		}
 
@@ -429,7 +429,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 				appendToTraces(traceTd, resourceSpans, spans)
 				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
 			case sampling.NotSampled:
-				tsp.telemetryBuilder.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
+				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
 			default:
 				tsp.logger.Warn("Encountered unexpected sampling decision",
 					zap.Int("decision", int(finalDecision)))
@@ -437,7 +437,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		}
 	}
 
-	tsp.telemetryBuilder.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
+	tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
 }
 
 func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
@@ -470,7 +470,7 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 		return
 	}
 
-	tsp.telemetryBuilder.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
+	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
 }
 
 // releaseSampledTrace sends the trace data to the next consumer.
