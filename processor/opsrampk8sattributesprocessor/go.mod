@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.106.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 )
 
 require (

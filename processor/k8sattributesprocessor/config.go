@@ -12,6 +12,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 )
 
 var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
@@ -49,6 +51,8 @@ type Config struct {
 
 	//Opsramp Metadata Addons Section
 	MetadataAddOn []AddOnMetadata `mapstructure:"metadata_addon"`
+
+	RedisConfig redis.OpsrampRedisConfig `mapstructure:"redis_config"`
 }
 
 func (cfg *Config) Validate() error {
@@ -128,6 +132,26 @@ func (cfg *Config) Validate() error {
 		default:
 			return fmt.Errorf("'%s' is not a valid label filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
 		}
+	}
+
+	if cfg.RedisConfig.RedisHost == "" || cfg.RedisConfig.RedisPort == "" || cfg.RedisConfig.RedisPass == "" {
+		return fmt.Errorf("redis host, redis port and redis pass is mandatory")
+	}
+
+	if cfg.RedisConfig.ClusterName == "" || cfg.RedisConfig.ClusterUid == "" {
+		return fmt.Errorf("cluster name and cluster uid is mandatory")
+	}
+
+	if cfg.RedisConfig.NodeName == "" {
+		return fmt.Errorf("node name is mandatory")
+	}
+
+	if cfg.RedisConfig.LruExpirationTime == 0 {
+		cfg.RedisConfig.LruExpirationTime = lru.DEFAULT_CACHE_EXPIRATION_INTERVAL
+	}
+
+	if cfg.RedisConfig.LruCacheSize == 0 {
+		cfg.RedisConfig.LruCacheSize = lru.DEFAULT_CACHE_SIZE
 	}
 
 	return nil
