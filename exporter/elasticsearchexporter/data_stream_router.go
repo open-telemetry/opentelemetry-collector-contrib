@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace string) func(
+func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace string) func( // nolint:unparam
 	pcommon.Map,
 	pcommon.Map,
 	pcommon.Map,
@@ -90,4 +90,18 @@ func routeSpan(
 ) string {
 	route := routeWithDefaults(defaultDataStreamTypeTraces, defaultDataStreamDataset, defaultDataStreamNamespace)
 	return route(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel)
+}
+
+// routeSpanEvent returns the name of the index to send the span event to according to data stream routing attributes.
+// This function may mutate record attributes.
+func routeSpanEvent(
+	spanEvent ptrace.SpanEvent,
+	scope pcommon.InstrumentationScope,
+	resource pcommon.Resource,
+	fIndex string,
+	otel bool,
+) string {
+	// span events are sent to logs-*, not traces-*
+	route := routeWithDefaults(defaultDataStreamTypeLogs, defaultDataStreamDataset, defaultDataStreamNamespace)
+	return route(spanEvent.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel)
 }
