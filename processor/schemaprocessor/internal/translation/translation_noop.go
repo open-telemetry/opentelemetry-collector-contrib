@@ -37,7 +37,7 @@ var (
 func (nopTranslation) SupportedVersion(_ *Version) bool {
 	return false
 }
-func (nopTranslation) ApplyAllResourceChanges(_ context.Context, in alias.Resource) error { return nil }
-func (nopTranslation) ApplyScopeSpanChanges(_ context.Context, in ptrace.ScopeSpans) error { return nil }
-func (nopTranslation) ApplyScopeLogChanges(_ context.Context, in plog.ScopeLogs) error  { return nil }
-func (nopTranslation) ApplyScopeMetricChanges(_ context.Context, in pmetric.ScopeMetrics) error { return nil }
+func (nopTranslation) ApplyAllResourceChanges(_ context.Context, in alias.Resource, schemaUrl string) error { return nil }
+func (nopTranslation) ApplyScopeSpanChanges(_ context.Context, in ptrace.ScopeSpans, schemaUrl string) error { return nil }
+func (nopTranslation) ApplyScopeLogChanges(_ context.Context, in plog.ScopeLogs, schemaUrl string) error  { return nil }
+func (nopTranslation) ApplyScopeMetricChanges(_ context.Context, in pmetric.ScopeMetrics, schemaUrl string) error { return nil }

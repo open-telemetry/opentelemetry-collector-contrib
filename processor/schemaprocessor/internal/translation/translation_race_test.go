@@ -43,10 +43,10 @@ func TestRaceTranslationSpanChanges(t *testing.T) {
 			spans := NewExampleSpans(t, *v)
 			for i := 0; i < spans.ResourceSpans().Len(); i++ {
 				rSpan := spans.ResourceSpans().At(i)
-				tn.ApplyAllResourceChanges(ctx, rSpan)
+				tn.ApplyAllResourceChanges(ctx, rSpan, rSpan.SchemaUrl())
 				for j := 0; j < rSpan.ScopeSpans().Len(); j++ {
 					span := rSpan.ScopeSpans().At(j)
-					tn.ApplyScopeSpanChanges(ctx, span)
+					tn.ApplyScopeSpanChanges(ctx, span, span.SchemaUrl())
 				}
 			}
 		}
@@ -72,10 +72,10 @@ func TestRaceTranslationMetricChanges(t *testing.T) {
 			spans := NewExampleSpans(t, Version{1, 0, 0})
 			for i := 0; i < spans.ResourceSpans().Len(); i++ {
 				rSpan := spans.ResourceSpans().At(i)
-				tn.ApplyAllResourceChanges(ctx, rSpan)
+				tn.ApplyAllResourceChanges(ctx, rSpan, rSpan.SchemaUrl())
 				for j := 0; j < rSpan.ScopeSpans().Len(); j++ {
 					span := rSpan.ScopeSpans().At(j)
-					tn.ApplyScopeSpanChanges(ctx, span)
+					tn.ApplyScopeSpanChanges(ctx, span, span.SchemaUrl())
 				}
 			}
 		}
@@ -101,10 +101,10 @@ func TestRaceTranslationLogChanges(t *testing.T) {
 			metrics := NewExampleMetrics(t, Version{1, 0, 0})
 			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 				rMetrics := metrics.ResourceMetrics().At(i)
-				tn.ApplyAllResourceChanges(ctx, rMetrics)
+				tn.ApplyAllResourceChanges(ctx, rMetrics, rMetrics.SchemaUrl())
 				for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
 					metric := rMetrics.ScopeMetrics().At(j)
-					tn.ApplyScopeMetricChanges(ctx, metric)
+					tn.ApplyScopeMetricChanges(ctx, metric, metric.SchemaUrl())
 				}
 			}
 		}
