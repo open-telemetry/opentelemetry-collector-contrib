@@ -610,7 +610,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(ctx context.Context) error {
+			updateEffectiveConfigFunc: func(_ context.Context) error {
 				updatedClientEffectiveConfig = true
 				return nil
 			},
@@ -650,7 +650,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient; client returns error", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(ctx context.Context) error {
+			updateEffectiveConfigFunc: func(_ context.Context) error {
 				updatedClientEffectiveConfig = true
 				return fmt.Errorf("unexpected error")
 			},
@@ -690,7 +690,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config message does not contain instance config", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(ctx context.Context) error {
+			updateEffectiveConfigFunc: func(_ context.Context) error {
 				updatedClientEffectiveConfig = true
 				return nil
 			},
