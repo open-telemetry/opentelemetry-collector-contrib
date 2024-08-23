@@ -4,8 +4,6 @@
 package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -122,7 +120,7 @@ func (t *fileTracker) EndPoll(archive archive.Archive) {
 
 	err := archive.Write(oldFileset.Get())
 	if err != nil {
-		fmt.Errorf("Error faced while archiving: %v", err)
+		t.set.Logger.Error("Error faced while archiving", zap.Error(err))
 	}
 }
 
