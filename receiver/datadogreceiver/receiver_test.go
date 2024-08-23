@@ -115,9 +115,6 @@ func TestDatadogServer(t *testing.T) {
 }
 
 func TestDatadogInfoEndpoint(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
-
 	for _, tc := range []struct {
 		name            string
 		tracesConsumer  consumer.Traces
@@ -213,6 +210,9 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
 			dd, err := newDataDogReceiver(
 				cfg,
