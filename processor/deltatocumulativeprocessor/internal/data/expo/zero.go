@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:gosec // https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34828
 package expo // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 
 import (
@@ -37,7 +38,7 @@ func WidenZero(dp DataPoint, width float64) {
 	widen(dp.Positive())
 	widen(dp.Negative())
 
-	_, max := scale.Bounds(zero)
+	_, max := scale.Bounds(zero) //nolint: predeclared
 	dp.SetZeroThreshold(max)
 }
 

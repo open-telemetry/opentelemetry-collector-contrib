@@ -164,7 +164,8 @@ func use[T data.Typed[T], M metric[T]](m M, state streams.Map[T]) aggrFunc {
 			err := do(id, aggr)
 
 			// update state to possibly changed value
-			state.Store(id, acc)
+			// TODO: make streams.Map.Store err free
+			_ = state.Store(id, acc)
 
 			// store new value in output metrics slice
 			return acc, err

@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package deltatocumulativeprocessor_test
 
 import (
@@ -216,11 +219,11 @@ func TestStreamLimit(t *testing.T) {
 	writeGood(100)
 }
 
-type copy interface {
+type copyable interface {
 	CopyTo(pmetric.Metric)
 }
 
-func (s SumBuilder) resourceMetrics(metrics ...copy) pmetric.Metrics {
+func (s SumBuilder) resourceMetrics(metrics ...copyable) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
 	rm := md.ResourceMetrics().AppendEmpty()

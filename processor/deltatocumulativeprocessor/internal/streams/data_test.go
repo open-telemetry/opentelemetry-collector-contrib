@@ -26,7 +26,7 @@ func BenchmarkApply(b *testing.B) {
 		b.ResetTimer()
 
 		i := 0
-		streams.Apply(dps, func(id identity.Stream, dp data.Number) (data.Number, error) {
+		_ = streams.Apply(dps, func(id identity.Stream, dp data.Number) (data.Number, error) {
 			i++
 			dp.Add(dp)
 			rid = id
