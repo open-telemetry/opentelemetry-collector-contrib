@@ -16,11 +16,6 @@ import (
 )
 
 var (
-	// The receiver scope name
-	receiverScopeName = "otelcol/" + metadata.Type.String() + "receiver"
-)
-
-var (
 	errUnexpectedConfigurationType = errors.New("failed to cast configuration to azure event hub config")
 )
 
@@ -38,7 +33,9 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
-		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -79,6 +76,23 @@ func (f *eventhubReceiverFactory) createMetricsReceiver(
 	return receiver, nil
 }
 
+func (f *eventhubReceiverFactory) createTracesReceiver(
+	_ context.Context,
+	settings receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Traces,
+) (receiver.Traces, error) {
+
+	receiver, err := f.getReceiver(component.DataTypeTraces, cfg, settings)
+	if err != nil {
+		return nil, err
+	}
+
+	receiver.(dataConsumer).setNextTracesConsumer(nextConsumer)
+
+	return receiver, nil
+}
+
 func (f *eventhubReceiverFactory) getReceiver(
 	receiverType component.Type,
 	cfg component.Config,
@@ -95,6 +109,7 @@ func (f *eventhubReceiverFactory) getReceiver(
 
 		var logsUnmarshaler eventLogsUnmarshaler
 		var metricsUnmarshaler eventMetricsUnmarshaler
+		var tracesUnmarshaler eventTracesUnmarshaler
 		switch receiverType {
 		case component.DataTypeLogs:
 			if logFormat(receiverConfig.Format) == rawLogFormat {
@@ -110,7 +125,12 @@ func (f *eventhubReceiverFactory) getReceiver(
 				metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger)
 			}
 		case component.DataTypeTraces:
-			err = errors.New("unsupported traces data")
+			if logFormat(receiverConfig.Format) == rawLogFormat {
+				tracesUnmarshaler = nil
+				err = errors.New("raw format not supported for Traces")
+			} else {
+				tracesUnmarshaler = newAzureTracesUnmarshaler(settings.BuildInfo, settings.Logger)
+			}
 		}
 
 		if err != nil {
@@ -120,7 +140,7 @@ func (f *eventhubReceiverFactory) getReceiver(
 		eventHandler := newEventhubHandler(receiverConfig, settings)
 
 		var rcvr component.Component
-		rcvr, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, eventHandler, settings)
+		rcvr, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, tracesUnmarshaler, eventHandler, settings)
 		return rcvr
 	})
 

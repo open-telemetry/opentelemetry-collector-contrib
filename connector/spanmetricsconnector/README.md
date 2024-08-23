@@ -58,7 +58,7 @@ across all spans:
 
 ## Span to Metrics processor to Span to metrics connector
 
-The spanmetrics connector is a port of the [spanmetrics](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/processor/spanmetricsprocessor/v0.95.0/processor/spanmetricsprocessor/README.md) processor, but with multiple improvements
+The spanmetrics connector replaces [spanmetrics](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/processor/spanmetricsprocessor/v0.95.0/processor/spanmetricsprocessor/README.md) processor with multiple improvements
 and breaking changes. It was done to bring the `spanmetrics` connector closer to the OpenTelemetry
 specification and make the component agnostic to exporters logic. The `spanmetrics` processor
 essentially was mixing the OTel with Prometheus conventions by using the OTel data model and

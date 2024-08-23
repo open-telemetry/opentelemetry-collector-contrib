@@ -1,5 +1,4 @@
 type: cloudflare
-scope_name: otelcol/cloudflarereceiver
 
 status:
   class: receiver

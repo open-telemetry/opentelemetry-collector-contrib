@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240821120936-6764622672bc
 	go.uber.org/multierr v1.11.0
 )
 
