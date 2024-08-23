@@ -21,12 +21,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/metadata"
 	"go.uber.org/multierr"
 )
 
 var (
-	// errTooManyBatchers is returned when the MetadataCardinalityLimit has been reached.
-	errTooManyBatchers = consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
+	// errTooManyExporters is returned when the MetadataCardinalityLimit has been reached.
+	errTooManyExporters = consumererror.NewPermanent(errors.New("too many exporter metadata-value combinations"))
 	// errUnexpectedType is returned when the object in the map isn't the expected type
 	errUnexpectedType = errors.New("unexpected type in map")
 )
@@ -35,9 +36,9 @@ type MetadataConfig struct {
 	*Config
 
 	// MetadataKeys is a list of client.Metadata keys that will be
-	// used to form distinct batchers.  If this setting is empty,
-	// a single batcher instance will be used.  When this setting
-	// is not empty, one batcher will be used per distinct
+	// used to form distinct exporters.  If this setting is empty,
+	// a single exporter instance will be used.  When this setting
+	// is not empty, one exporter will be used per distinct
 	// combination of values for the listed metadata keys.
 	//
 	// Empty value and unset metadata are treated as distinct cases.
@@ -47,9 +48,10 @@ type MetadataConfig struct {
 	MetadataKeys []string `mapstructure:"metadata_keys"`
 
 	// MetadataCardinalityLimit indicates the maximum number of
-	// batcher instances that will be created through a distinct
+	// exporter instances that will be created through a distinct
 	// combination of MetadataKeys.
 	MetadataCardinalityLimit uint32 `mapstructure:"metadata_cardinality_limit"`
+
 }
 
 var _ component.Config = (*MetadataConfig)(nil)
@@ -81,6 +83,7 @@ type metadataExporter struct {
 
 	metadataKeys []string
 	exporters    sync.Map
+	metadata metadata.MD
 
 	// Guards the size and the storing logic to ensure no more than limit items are stored.
 	// If we are willing to allow "some" extra items than the limit this can be removed and size can be made atomic.
@@ -133,6 +136,10 @@ func (e *metadataExporter) start(ctx context.Context, host component.Host) (err 
 	return nil
 }
 
+func (e *metadataExporter) setMetadata(md metadata.MD) {
+	return
+}
+
 func (e *metadataExporter) shutdown(ctx context.Context) error {
 	var err error
 	e.exporters.Range(func(key any, value any) bool {
@@ -148,19 +155,19 @@ func (e *metadataExporter) shutdown(ctx context.Context) error {
 }
 
 func (e *metadataExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	s := getSet(ctx, e.metadataKeys)
+	s, mdata := e.getAttrSet(ctx, e.metadataKeys)
 
-	be, err := e.getOrCreateExporter(ctx, s)
+	be, err := e.getOrCreateExporter(ctx, s, mdata)
 	if err != nil {
 		return err
 	}
-	return be.pushTraces(ctx, td)
+	return be.(exp).pushTraces(ctx, td)
 }
 
 func (e *metadataExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	s := getSet(ctx, e.metadataKeys)
+	s, mdata := e.getAttrSet(ctx, e.metadataKeys)
 
-	be, err := e.getOrCreateExporter(ctx, s)
+	be, err := e.getOrCreateExporter(ctx, s, mdata)
 	if err != nil {
 		return err
 	}
@@ -169,9 +176,9 @@ func (e *metadataExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) 
 }
 
 func (e *metadataExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	s := getSet(ctx, e.metadataKeys)
+	s, mdata := e.getAttrSet(ctx, e.metadataKeys)
 
-	be, err := e.getOrCreateExporter(ctx, s)
+	be, err := e.getOrCreateExporter(ctx, s, mdata)
 	if err != nil {
 		return err
 	}
@@ -179,13 +186,13 @@ func (e *metadataExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	return be.(exp).pushLogs(ctx, ld)
 }
 
-func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.Set) (exp, error) {
+func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.Set, md metadata.MD) (exp, error) {
 	v, ok := e.exporters.Load(s)
 	if !ok {
 		e.lock.Lock()
 		if e.config.MetadataCardinalityLimit != 0 && e.size >= int(e.config.MetadataCardinalityLimit) {
 			e.lock.Unlock()
-			return nil, errTooManyBatchers
+			return nil, errTooManyExporters
 		}
 
 		newExp, err := newExporter(e.config, e.settings, e.scf)
@@ -197,6 +204,7 @@ func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.
 		v, loaded = e.exporters.LoadOrStore(s, newExp)
 		if !loaded {
 			// Start the goroutine only if we added the object to the map, otherwise is already started.
+			newExp.setMetadata(md)
 			err = newExp.start(ctx, e.host)
 			if err != nil {
 				e.exporters.Delete(s)
@@ -213,7 +221,7 @@ func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.
 	return val, nil
 }
 
-func getSet(ctx context.Context, keys []string) attribute.Set {
+func (e *metadataExporter) getAttrSet(ctx context.Context, keys []string) (attribute.Set, metadata.MD) {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)
@@ -231,5 +239,6 @@ func getSet(ctx context.Context, keys []string) attribute.Set {
 			attrs = append(attrs, attribute.StringSlice(k, vs))
 		}
 	}
-	return attribute.NewSet(attrs...)
+	// ctx = metadata.NewOutgoingContext(ctx, metadata.MD(md))
+	return attribute.NewSet(attrs...), metadata.MD(md)
 }

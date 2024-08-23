@@ -80,16 +80,24 @@ type mockTracesReceiver struct {
 	mockReceiver
 	exportResponse func() ptraceotlp.ExportResponse
 	lastRequest    ptrace.Traces
+	hasMetadata bool
+	spanCountByMetadata map[string]int
 }
 
 func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	r.requestCount.Add(int32(1))
 	td := req.Traces()
 	r.totalItems.Add(int32(td.SpanCount()))
+	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	r.mux.Lock()
 	defer r.mux.Unlock()
+	if r.hasMetadata {
+		v1 := r.metadata.Get("key1")
+		v2 := r.metadata.Get("key2")
+		hashKey := fmt.Sprintf("%s|%s", v1, v2)
+		r.spanCountByMetadata[hashKey] += (td.SpanCount())
+	}
 	r.lastRequest = td
-	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	return r.exportResponse(), r.exportError
 }
 

@@ -12,6 +12,7 @@ import (
 
 	arrowPkg "github.com/apache/arrow/go/v16/arrow"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	// "go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -41,6 +42,7 @@ type exp interface {
 	helperOptions() []exporterhelper.Option
 	getSettings() exporter.Settings
 	getConfig() component.Config
+	setMetadata(metadata.MD)
 
 	start(context.Context, component.Host) error
 	shutdown(context.Context) error
@@ -80,7 +82,7 @@ type streamClientFactory func(conn *grpc.ClientConn) arrow.StreamClientFunc
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
 func newExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory) (exp, error) {
-	oCfg := cfg.(*Config)
+	oCfg := cfg.(*MetadataConfig)
 
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
@@ -101,7 +103,7 @@ func newExporter(cfg component.Config, set exporter.Settings, streamClientFactor
 	}
 
 	return &baseExporter{
-		config:              oCfg,
+		config:              oCfg.Config,
 		settings:            set,
 		userAgent:           userAgent,
 		netReporter:         netReporter,
@@ -117,6 +119,9 @@ func (e *baseExporter) getConfig() component.Config {
 	return e.config
 }
 
+func (e *baseExporter) setMetadata(md metadata.MD) {
+	e.metadata = metadata.Join(e.metadata, md)
+}
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
@@ -137,7 +142,8 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	for k, v := range e.config.ClientConfig.Headers {
 		headers[k] = string(v)
 	}
-	e.metadata = metadata.New(headers)
+	headerMetadata := metadata.New(headers)
+	e.metadata = metadata.Join(e.metadata, headerMetadata)
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
