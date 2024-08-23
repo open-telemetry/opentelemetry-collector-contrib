@@ -13,17 +13,16 @@ import (
 	httpprovider "go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	httpsprovider "go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	yamlprovider "go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/otelcol"
-
 	s3provider "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider"
 	secretsmanagerprovider "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider"
+	"go.opentelemetry.io/collector/otelcol"
 )
 
 func main() {
 	info := component.BuildInfo{
 		Command:     "otelcontribcol",
 		Description: "Local OpenTelemetry Collector Contrib binary, testing only.",
-		Version:     "0.107.0-dev",
+		Version:     "0.108.1-dev",
 	}
 
 	set := otelcol.CollectorSettings{

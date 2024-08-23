@@ -30,14 +30,15 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 				Logger:  logger,
 			},
 		}
-	} else {
-		return AzureResourceLogsEventUnmarshaler{
-			unmarshaler: &azure.ResourceLogsUnmarshaler{
-				Version: buildInfo.Version,
-				Logger:  logger,
-			},
-		}
 	}
+
+	return AzureResourceLogsEventUnmarshaler{
+		unmarshaler: &azure.ResourceLogsUnmarshaler{
+			Version: buildInfo.Version,
+			Logger:  logger,
+		},
+	}
+
 }
 
 // UnmarshalLogs takes a byte array containing a JSON-encoded

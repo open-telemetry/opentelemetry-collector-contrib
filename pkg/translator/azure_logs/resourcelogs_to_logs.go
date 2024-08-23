@@ -13,7 +13,7 @@ import (
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 )
@@ -22,19 +22,24 @@ const (
 	// Constants for OpenTelemetry Specs
 	scopeName = "otelcol/azureresourcelogs"
 
-	// Constants for Azure Log Records
-	azureCategory          = "azure.category"
-	azureCorrelationID     = "azure.correlation.id"
-	azureDuration          = "azure.duration"
-	azureIdentity          = "azure.identity"
-	azureOperationName     = "azure.operation.name"
-	azureOperationVersion  = "azure.operation.version"
-	azureProperties        = "azure.properties"
-	azureResourceID        = "azure.resource.id"
-	azureResultType        = "azure.result.type"
-	azureResultSignature   = "azure.result.signature"
-	azureResultDescription = "azure.result.description"
-	azureTenantID          = "azure.tenant.id"
+	// Constants for Azure Log Record Attributes
+	// TODO: Remove once these are available in semconv
+	eventName          = "event.name"
+	eventNameValue     = "az.resource.log"
+	networkPeerAddress = "network.peer.address"
+
+	// Constants for Azure Log Record body fields
+	azureCategory          = "category"
+	azureCorrelationID     = "correlation.id"
+	azureDuration          = "duration"
+	azureIdentity          = "identity"
+	azureOperationName     = "operation.name"
+	azureOperationVersion  = "operation.version"
+	azureProperties        = "properties"
+	azureResultType        = "result.type"
+	azureResultSignature   = "result.signature"
+	azureResultDescription = "result.description"
+	azureTenantID          = "tenant.id"
 )
 
 var (
@@ -99,7 +104,6 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	for _, resourceID := range resourceIDs {
 		logs := azureResourceLogs[resourceID]
 		resourceLogs := l.ResourceLogs().AppendEmpty()
-		resourceLogs.Resource().Attributes().PutStr(azureResourceID, resourceID)
 		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 		scopeLogs.Scope().SetName(scopeName)
 		scopeLogs.Scope().SetVersion(r.Version)
@@ -122,7 +126,11 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 				lr.SetSeverityText(log.Level.String())
 			}
 
-			if err := lr.Attributes().FromRaw(extractRawAttributes(log)); err != nil {
+			lr.Attributes().PutStr(conventions.AttributeCloudResourceID, resourceID)
+			lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+			lr.Attributes().PutStr(eventName, eventNameValue)
+
+			if err := lr.Body().FromRaw(extractRawAttributes(log)); err != nil {
 				return l, err
 			}
 		}
@@ -203,9 +211,7 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	setIf(attrs, azureTenantID, log.TenantID)
 
 	setIf(attrs, conventions.AttributeCloudRegion, log.Location)
-	attrs[conventions.AttributeCloudProvider] = conventions.AttributeCloudProviderAzure
-
-	setIf(attrs, conventions.AttributeNetSockPeerAddr, log.CallerIPAddress)
+	setIf(attrs, networkPeerAddress, log.CallerIPAddress)
 	return attrs
 }
 

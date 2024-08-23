@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -28,9 +28,15 @@ var minimumLogRecord = func() plog.LogRecord {
 
 	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
 	lr.SetTimestamp(ts)
-	lr.Attributes().PutStr(azureOperationName, "SecretGet")
-	lr.Attributes().PutStr(azureCategory, "AuditEvent")
 	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	lr.Attributes().PutStr(conventions.AttributeCloudResourceID, "/RESOURCE_ID")
+	lr.Attributes().PutStr(eventName, eventNameValue)
+
+	body := lr.Body().SetEmptyMap()
+	body.PutStr(azureOperationName, "SecretGet")
+	body.PutStr(azureCategory, "AuditEvent")
+	body.CopyTo(lr.Body().Map())
+
 	return lr
 }()
 
@@ -43,25 +49,29 @@ var maximumLogRecord1 = func() plog.LogRecord {
 	lr.SetSeverityText("Warning")
 	guid := "607964b6-41a5-4e24-a5db-db7aab3b9b34"
 
-	lr.Attributes().PutStr(azureTenantID, "/TENANT_ID")
-	lr.Attributes().PutStr(azureOperationName, "SecretGet")
-	lr.Attributes().PutStr(azureOperationVersion, "7.0")
-	lr.Attributes().PutStr(azureCategory, "AuditEvent")
-	lr.Attributes().PutStr(azureCorrelationID, guid)
-	lr.Attributes().PutStr(azureResultType, "Success")
-	lr.Attributes().PutStr(azureResultSignature, "Signature")
-	lr.Attributes().PutStr(azureResultDescription, "Description")
-	lr.Attributes().PutInt(azureDuration, 1234)
-	lr.Attributes().PutStr(conventions.AttributeNetSockPeerAddr, "127.0.0.1")
-	lr.Attributes().PutStr(conventions.AttributeCloudRegion, "ukso")
 	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	lr.Attributes().PutStr(conventions.AttributeCloudResourceID, "/RESOURCE_ID-1")
+	lr.Attributes().PutStr(eventName, eventNameValue)
 
-	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
-	m := lr.Attributes().PutEmptyMap(azureProperties)
-	m.PutStr("string", "string")
-	m.PutDouble("int", 429)
-	m.PutDouble("float", 3.14)
-	m.PutBool("bool", false)
+	body := lr.Body().SetEmptyMap()
+	body.PutStr(azureTenantID, "/TENANT_ID")
+	body.PutStr(azureOperationName, "SecretGet")
+	body.PutStr(azureOperationVersion, "7.0")
+	body.PutStr(azureCategory, "AuditEvent")
+	body.PutStr(azureCorrelationID, guid)
+	body.PutStr(azureResultType, "Success")
+	body.PutStr(azureResultSignature, "Signature")
+	body.PutStr(azureResultDescription, "Description")
+	body.PutInt(azureDuration, 1234)
+	body.PutStr(networkPeerAddress, "127.0.0.1")
+	body.PutStr(conventions.AttributeCloudRegion, "ukso")
+	body.PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
+
+	properties := body.PutEmptyMap(azureProperties)
+	properties.PutStr("string", "string")
+	properties.PutDouble("int", 429)
+	properties.PutDouble("float", 3.14)
+	properties.PutBool("bool", false)
 
 	return lr
 }()
@@ -77,25 +87,29 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 	lr.SetSeverityText("Warning")
 	guid := "96317703-2132-4a8d-a5d7-e18d2f486783"
 
-	lr.Attributes().PutStr(azureTenantID, "/TENANT_ID")
-	lr.Attributes().PutStr(azureOperationName, "SecretSet")
-	lr.Attributes().PutStr(azureOperationVersion, "7.0")
-	lr.Attributes().PutStr(azureCategory, "AuditEvent")
-	lr.Attributes().PutStr(azureCorrelationID, guid)
-	lr.Attributes().PutStr(azureResultType, "Success")
-	lr.Attributes().PutStr(azureResultSignature, "Signature")
-	lr.Attributes().PutStr(azureResultDescription, "Description")
-	lr.Attributes().PutInt(azureDuration, 4321)
-	lr.Attributes().PutStr(conventions.AttributeNetSockPeerAddr, "127.0.0.1")
-	lr.Attributes().PutStr(conventions.AttributeCloudRegion, "ukso")
 	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	lr.Attributes().PutStr(conventions.AttributeCloudResourceID, "/RESOURCE_ID-2")
+	lr.Attributes().PutStr(eventName, eventNameValue)
 
-	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
-	m := lr.Attributes().PutEmptyMap(azureProperties)
-	m.PutStr("string", "string")
-	m.PutDouble("int", 924)
-	m.PutDouble("float", 41.3)
-	m.PutBool("bool", true)
+	body := lr.Body().SetEmptyMap()
+	body.PutStr(azureTenantID, "/TENANT_ID")
+	body.PutStr(azureOperationName, "SecretSet")
+	body.PutStr(azureOperationVersion, "7.0")
+	body.PutStr(azureCategory, "AuditEvent")
+	body.PutStr(azureCorrelationID, guid)
+	body.PutStr(azureResultType, "Success")
+	body.PutStr(azureResultSignature, "Signature")
+	body.PutStr(azureResultDescription, "Description")
+	body.PutInt(azureDuration, 4321)
+	body.PutStr(networkPeerAddress, "127.0.0.1")
+	body.PutStr(conventions.AttributeCloudRegion, "ukso")
+
+	body.PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
+	properties := body.PutEmptyMap(azureProperties)
+	properties.PutStr("string", "string")
+	properties.PutDouble("int", 924)
+	properties.PutDouble("float", 41.3)
+	properties.PutBool("bool", true)
 
 	ts, _ = asTimestamp("2022-11-11T04:48:31.6767145Z")
 	lr2.SetTimestamp(ts)
@@ -103,25 +117,29 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 	lr2.SetSeverityText("Warning")
 	guid = "4ae807da-39d9-4327-b5b4-0ab685a57f9a"
 
-	lr2.Attributes().PutStr(azureTenantID, "/TENANT_ID")
-	lr2.Attributes().PutStr(azureOperationName, "SecretGet")
-	lr2.Attributes().PutStr(azureOperationVersion, "7.0")
-	lr2.Attributes().PutStr(azureCategory, "AuditEvent")
-	lr2.Attributes().PutStr(azureCorrelationID, guid)
-	lr2.Attributes().PutStr(azureResultType, "Success")
-	lr2.Attributes().PutStr(azureResultSignature, "Signature")
-	lr2.Attributes().PutStr(azureResultDescription, "Description")
-	lr2.Attributes().PutInt(azureDuration, 321)
-	lr2.Attributes().PutStr(conventions.AttributeNetSockPeerAddr, "127.0.0.1")
-	lr2.Attributes().PutStr(conventions.AttributeCloudRegion, "ukso")
 	lr2.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	lr2.Attributes().PutStr(conventions.AttributeCloudResourceID, "/RESOURCE_ID-2")
+	lr2.Attributes().PutStr(eventName, eventNameValue)
 
-	lr2.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
-	m = lr2.Attributes().PutEmptyMap(azureProperties)
-	m.PutStr("string", "string")
-	m.PutDouble("int", 925)
-	m.PutDouble("float", 41.4)
-	m.PutBool("bool", false)
+	body2 := lr2.Body().SetEmptyMap()
+	body2.PutStr(azureTenantID, "/TENANT_ID")
+	body2.PutStr(azureOperationName, "SecretGet")
+	body2.PutStr(azureOperationVersion, "7.0")
+	body2.PutStr(azureCategory, "AuditEvent")
+	body2.PutStr(azureCorrelationID, guid)
+	body2.PutStr(azureResultType, "Success")
+	body2.PutStr(azureResultSignature, "Signature")
+	body2.PutStr(azureResultDescription, "Description")
+	body2.PutInt(azureDuration, 321)
+	body2.PutStr(networkPeerAddress, "127.0.0.1")
+	body2.PutStr(conventions.AttributeCloudRegion, "ukso")
+
+	body2.PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
+	properties = body2.PutEmptyMap(azureProperties)
+	properties.PutStr("string", "string")
+	properties.PutDouble("int", 925)
+	properties.PutDouble("float", 41.4)
+	properties.PutBool("bool", false)
 
 	var records []plog.LogRecord
 	return append(records, lr, lr2)
@@ -136,34 +154,38 @@ var badLevelLogRecord = func() plog.LogRecord {
 	lr.SetSeverityText("4")
 	guid := "128bc026-5ead-40c7-8853-ebb32bc077a3"
 
-	lr.Attributes().PutStr(azureOperationName, "Microsoft.ApiManagement/GatewayLogs")
-	lr.Attributes().PutStr(azureCategory, "GatewayLogs")
-	lr.Attributes().PutStr(azureCorrelationID, guid)
-	lr.Attributes().PutStr(azureResultType, "Succeeded")
-	lr.Attributes().PutInt(azureDuration, 243)
-	lr.Attributes().PutStr(conventions.AttributeNetSockPeerAddr, "13.14.15.16")
-	lr.Attributes().PutStr(conventions.AttributeCloudRegion, "West US")
 	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	lr.Attributes().PutStr(conventions.AttributeCloudResourceID, "/RESOURCE_ID")
+	lr.Attributes().PutStr(eventName, eventNameValue)
 
-	m := lr.Attributes().PutEmptyMap(azureProperties)
-	m.PutStr("method", "GET")
-	m.PutStr("url", "https://api.azure-api.net/sessions")
-	m.PutDouble("backendResponseCode", 200)
-	m.PutDouble("responseCode", 200)
-	m.PutDouble("responseSize", 102945)
-	m.PutStr("cache", "none")
-	m.PutDouble("backendTime", 54)
-	m.PutDouble("requestSize", 632)
-	m.PutStr("apiId", "demo-api")
-	m.PutStr("operationId", "GetSessions")
-	m.PutStr("apimSubscriptionId", "master")
-	m.PutDouble("clientTime", 190)
-	m.PutStr("clientProtocol", "HTTP/1.1")
-	m.PutStr("backendProtocol", "HTTP/1.1")
-	m.PutStr("apiRevision", "1")
-	m.PutStr("clientTlsVersion", "1.2")
-	m.PutStr("backendMethod", "GET")
-	m.PutStr("backendUrl", "https://api.azurewebsites.net/sessions")
+	body := lr.Body().SetEmptyMap()
+	body.PutStr(azureOperationName, "Microsoft.ApiManagement/GatewayLogs")
+	body.PutStr(azureCategory, "GatewayLogs")
+	body.PutStr(azureCorrelationID, guid)
+	body.PutStr(azureResultType, "Succeeded")
+	body.PutInt(azureDuration, 243)
+	body.PutStr(networkPeerAddress, "13.14.15.16")
+	body.PutStr(conventions.AttributeCloudRegion, "West US")
+
+	properties := body.PutEmptyMap(azureProperties)
+	properties.PutStr("method", "GET")
+	properties.PutStr("url", "https://api.azure-api.net/sessions")
+	properties.PutDouble("backendResponseCode", 200)
+	properties.PutDouble("responseCode", 200)
+	properties.PutDouble("responseSize", 102945)
+	properties.PutStr("cache", "none")
+	properties.PutDouble("backendTime", 54)
+	properties.PutDouble("requestSize", 632)
+	properties.PutStr("apiId", "demo-api")
+	properties.PutStr("operationId", "GetSessions")
+	properties.PutStr("apimSubscriptionId", "master")
+	properties.PutDouble("clientTime", 190)
+	properties.PutStr("clientProtocol", "HTTP/1.1")
+	properties.PutStr("backendProtocol", "HTTP/1.1")
+	properties.PutStr("apiRevision", "1")
+	properties.PutStr("clientTlsVersion", "1.2")
+	properties.PutStr("backendMethod", "GET")
+	properties.PutStr("backendUrl", "https://api.azurewebsites.net/sessions")
 	return lr
 }()
 
@@ -173,40 +195,44 @@ var badTimeLogRecord = func() plog.LogRecord {
 	ts, _ := asTimestamp("2021-10-14T22:17:11+00:00")
 	lr.SetTimestamp(ts)
 
-	lr.Attributes().PutStr(azureOperationName, "ApplicationGatewayAccess")
-	lr.Attributes().PutStr(azureCategory, "ApplicationGatewayAccessLog")
 	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	lr.Attributes().PutStr(conventions.AttributeCloudResourceID, "/RESOURCE_ID")
+	lr.Attributes().PutStr(eventName, eventNameValue)
 
-	m := lr.Attributes().PutEmptyMap(azureProperties)
-	m.PutStr("instanceId", "appgw_2")
-	m.PutStr("clientIP", "185.42.129.24")
-	m.PutDouble("clientPort", 45057)
-	m.PutStr("httpMethod", "GET")
-	m.PutStr("originalRequestUriWithArgs", "/")
-	m.PutStr("requestUri", "/")
-	m.PutStr("requestQuery", "")
-	m.PutStr("userAgent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36")
-	m.PutDouble("httpStatus", 200)
-	m.PutStr("httpVersion", "HTTP/1.1")
-	m.PutDouble("receivedBytes", 184)
-	m.PutDouble("sentBytes", 466)
-	m.PutDouble("clientResponseTime", 0)
-	m.PutDouble("timeTaken", 0.034)
-	m.PutStr("WAFEvaluationTime", "0.000")
-	m.PutStr("WAFMode", "Detection")
-	m.PutStr("transactionId", "592d1649f75a8d480a3c4dc6a975309d")
-	m.PutStr("sslEnabled", "on")
-	m.PutStr("sslCipher", "ECDHE-RSA-AES256-GCM-SHA384")
-	m.PutStr("sslProtocol", "TLSv1.2")
-	m.PutStr("sslClientVerify", "NONE")
-	m.PutStr("sslClientCertificateFingerprint", "")
-	m.PutStr("sslClientCertificateIssuerName", "")
-	m.PutStr("serverRouted", "52.239.221.65:443")
-	m.PutStr("serverStatus", "200")
-	m.PutStr("serverResponseLatency", "0.028")
-	m.PutStr("upstreamSourcePort", "21564")
-	m.PutStr("originalHost", "20.110.30.194")
-	m.PutStr("host", "20.110.30.194")
+	body := lr.Body().SetEmptyMap()
+	body.PutStr(azureOperationName, "ApplicationGatewayAccess")
+	body.PutStr(azureCategory, "ApplicationGatewayAccessLog")
+
+	properties := body.PutEmptyMap(azureProperties)
+	properties.PutStr("instanceId", "appgw_2")
+	properties.PutStr("clientIP", "185.42.129.24")
+	properties.PutDouble("clientPort", 45057)
+	properties.PutStr("httpMethod", "GET")
+	properties.PutStr("originalRequestUriWithArgs", "/")
+	properties.PutStr("requestUri", "/")
+	properties.PutStr("requestQuery", "")
+	properties.PutStr("userAgent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36")
+	properties.PutDouble("httpStatus", 200)
+	properties.PutStr("httpVersion", "HTTP/1.1")
+	properties.PutDouble("receivedBytes", 184)
+	properties.PutDouble("sentBytes", 466)
+	properties.PutDouble("clientResponseTime", 0)
+	properties.PutDouble("timeTaken", 0.034)
+	properties.PutStr("WAFEvaluationTime", "0.000")
+	properties.PutStr("WAFMode", "Detection")
+	properties.PutStr("transactionId", "592d1649f75a8d480a3c4dc6a975309d")
+	properties.PutStr("sslEnabled", "on")
+	properties.PutStr("sslCipher", "ECDHE-RSA-AES256-GCM-SHA384")
+	properties.PutStr("sslProtocol", "TLSv1.2")
+	properties.PutStr("sslClientVerify", "NONE")
+	properties.PutStr("sslClientCertificateFingerprint", "")
+	properties.PutStr("sslClientCertificateIssuerName", "")
+	properties.PutStr("serverRouted", "52.239.221.65:443")
+	properties.PutStr("serverStatus", "200")
+	properties.PutStr("serverResponseLatency", "0.028")
+	properties.PutStr("upstreamSourcePort", "21564")
+	properties.PutStr("originalHost", "20.110.30.194")
+	properties.PutStr("host", "20.110.30.194")
 	return lr
 }()
 
@@ -297,9 +323,8 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:    &badDuration,
 			},
 			expected: map[string]any{
-				azureOperationName:                 "operation.name",
-				azureCategory:                      "category",
-				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
 			},
 		},
 		{
@@ -312,9 +337,8 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:    &badDuration,
 			},
 			expected: map[string]any{
-				azureOperationName:                 "operation.name",
-				azureCategory:                      "category",
-				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
 			},
 		},
 		{
@@ -338,20 +362,19 @@ func TestExtractRawAttributes(t *testing.T) {
 				Properties:        &properties,
 			},
 			expected: map[string]any{
-				azureTenantID:                        "tenant.id",
-				azureOperationName:                   "operation.name",
-				azureOperationVersion:                "operation.version",
-				azureCategory:                        "category",
-				azureCorrelationID:                   correlationID,
-				azureResultType:                      "result.type",
-				azureResultSignature:                 "result.signature",
-				azureResultDescription:               "result.description",
-				azureDuration:                        int64(1234),
-				conventions.AttributeNetSockPeerAddr: "127.0.0.1",
-				azureIdentity:                        "someone",
-				conventions.AttributeCloudRegion:     "location",
-				conventions.AttributeCloudProvider:   conventions.AttributeCloudProviderAzure,
-				azureProperties:                      properties,
+				azureTenantID:                    "tenant.id",
+				azureOperationName:               "operation.name",
+				azureOperationVersion:            "operation.version",
+				azureCategory:                    "category",
+				azureCorrelationID:               correlationID,
+				azureResultType:                  "result.type",
+				azureResultSignature:             "result.signature",
+				azureResultDescription:           "result.description",
+				azureDuration:                    int64(1234),
+				networkPeerAddress:               "127.0.0.1",
+				azureIdentity:                    "someone",
+				conventions.AttributeCloudRegion: "location",
+				azureProperties:                  properties,
 			},
 		},
 	}
@@ -371,12 +394,10 @@ func TestUnmarshalLogs(t *testing.T) {
 	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	lr := scopeLogs.LogRecords().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	minimumLogRecord.CopyTo(lr)
 
 	expectedMinimum2 := plog.NewLogs()
 	resourceLogs = expectedMinimum2.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
@@ -388,7 +409,6 @@ func TestUnmarshalLogs(t *testing.T) {
 
 	expectedMaximum := plog.NewLogs()
 	resourceLogs = expectedMaximum.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID-1")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
@@ -396,7 +416,6 @@ func TestUnmarshalLogs(t *testing.T) {
 	maximumLogRecord1.CopyTo(lr)
 
 	resourceLogs = expectedMaximum.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID-2")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
@@ -407,7 +426,6 @@ func TestUnmarshalLogs(t *testing.T) {
 
 	expectedBadLevel := plog.NewLogs()
 	resourceLogs = expectedBadLevel.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
@@ -416,7 +434,6 @@ func TestUnmarshalLogs(t *testing.T) {
 
 	expectedBadTime := plog.NewLogs()
 	resourceLogs = expectedBadTime.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
@@ -494,7 +511,7 @@ func TestAzureCdnAccessLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "GET", record["http.request.method"])
 	assert.Equal(t, "1.1.0.0", record["network.protocol.version"])
@@ -516,7 +533,7 @@ func TestFrontDoorAccessLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "GET", record["http.request.method"])
 	assert.Equal(t, "1.1.0.0", record["network.protocol.version"])
@@ -544,7 +561,7 @@ func TestFrontDoorHealthProbeLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "GET", record["http.request.method"])
 	assert.Equal(t, int64(200), record["http.response.status_code"])
@@ -559,7 +576,7 @@ func TestFrontDoorWAFLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "TRACKING_REFERENCE", record["az.service_request_id"])
 	assert.Equal(t, "https://test.net/", record["url.full"])
@@ -574,7 +591,7 @@ func TestAppServiceAppLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "CONTAINER_ID", record["container.id"])
 	assert.Equal(t, "EXCEPTION_CLASS", record["exception.type"])
@@ -589,7 +606,7 @@ func TestAppServiceConsoleLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "CONTAINER_ID", record["container.id"])
 	assert.Equal(t, "HOST", record["host.id"])
@@ -600,7 +617,7 @@ func TestAppServiceAuditLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "USER_ID", record["enduser.id"])
 	assert.Equal(t, "42.42.42.42", record["client.address"])
@@ -612,7 +629,7 @@ func TestAppServiceHTTPLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "test.com", record["url.domain"])
 	assert.Equal(t, "42.42.42.42", record["client.address"])
@@ -636,7 +653,7 @@ func TestAppServicePlatformLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "CONTAINER_ID", record["container.id"])
 	assert.Equal(t, "CONTAINER_NAME", record["container.name"])
@@ -647,7 +664,7 @@ func TestAppServiceIPSecAuditLog(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
 	assert.Equal(t, "42.42.42.42", record["client.address"])
 	assert.Equal(t, "HOST", record["url.domain"])

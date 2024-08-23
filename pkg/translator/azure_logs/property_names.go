@@ -1,4 +1,7 @@
-package azure_logs
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package azure_logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs"
 
 var mappings = map[string]map[string]string{
 	"common": {},

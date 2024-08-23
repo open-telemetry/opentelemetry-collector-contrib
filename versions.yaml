@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.107.0
+    version: v0.108.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
@@ -40,6 +40,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
@@ -148,7 +149,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
-      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs
+      # - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
