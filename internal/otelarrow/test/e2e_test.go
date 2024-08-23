@@ -515,7 +515,7 @@ func TestIntegrationSelfTracing(t *testing.T) {
 		},
 	}
 
-	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
+	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
 		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
 			ServerParameters: &configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
