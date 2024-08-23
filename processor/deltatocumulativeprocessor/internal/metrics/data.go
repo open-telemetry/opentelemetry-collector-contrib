@@ -115,3 +115,24 @@ func (s Gauge) Filter(expr func(data.Number) bool) {
 		return !expr(data.Number{NumberDataPoint: dp})
 	})
 }
+
+type Summary Metric
+
+func (s Summary) At(i int) data.Summary {
+	dp := Metric(s).Summary().DataPoints().At(i)
+	return data.Summary{SummaryDataPoint: dp}
+}
+
+func (s Summary) Len() int {
+	return Metric(s).Summary().DataPoints().Len()
+}
+
+func (s Summary) Ident() Ident {
+	return (*Metric)(&s).Ident()
+}
+
+func (s Summary) Filter(expr func(data.Summary) bool) {
+	s.Summary().DataPoints().RemoveIf(func(dp pmetric.SummaryDataPoint) bool {
+		return !expr(data.Summary{SummaryDataPoint: dp})
+	})
+}

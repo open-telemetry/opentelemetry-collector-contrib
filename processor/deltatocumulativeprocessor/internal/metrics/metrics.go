@@ -58,6 +58,8 @@ func (m Metric) Typed() any {
 		return ExpHistogram(m)
 	case pmetric.MetricTypeHistogram:
 		return Histogram(m)
+	case pmetric.MetricTypeSummary:
+		return Summary(m)
 	}
 	panic("unreachable")
 }
