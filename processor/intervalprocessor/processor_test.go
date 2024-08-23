@@ -32,8 +32,8 @@ func TestAggregation(t *testing.T) {
 		{name: "summaries_are_aggregated"},
 		{name: "all_delta_metrics_are_passed_through"},  // Deltas are passed through even when aggregation is enabled
 		{name: "non_monotonic_sums_are_passed_through"}, // Non-monotonic sums are passed through even when aggregation is enabled
-		{name: "gauges_passes_through", passThrough: true},
-		{name: "summaries_passes_through", passThrough: true},
+		{name: "gauges_are_passed_through", passThrough: true},
+		{name: "summaries_are_passed_through", passThrough: true},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
