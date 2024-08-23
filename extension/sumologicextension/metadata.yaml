@@ -6,7 +6,7 @@ status:
     alpha: [extension]
   distributions: []
   codeowners:
-    active: [aboguszewski-sumo, kkujawa-sumo, mat-rumian, rnishtala-sumo, sumo-drosiek]
+    active: [rnishtala-sumo]
 
 # TODO: Update the extension to make the tests pass
 tests:
