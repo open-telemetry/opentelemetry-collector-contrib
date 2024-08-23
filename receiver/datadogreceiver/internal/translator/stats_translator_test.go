@@ -140,10 +140,10 @@ func getTestSketchBytes(nums ...float64) []byte {
 		}
 	}
 
-	buf, err := proto.Marshal(sketch.ToProto())
-	if err != nil {
+	buf, err2 := proto.Marshal(sketch.ToProto())
+	if err2 != nil {
 		// there should be no error under any circumstances here
-		panic(err)
+		panic(err2)
 	}
 	return buf
 }
