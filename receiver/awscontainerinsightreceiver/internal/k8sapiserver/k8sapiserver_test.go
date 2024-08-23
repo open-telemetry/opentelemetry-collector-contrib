@@ -441,10 +441,10 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assert.Equal(t, "HyperPodNode", getStringAttrVal(metric, ci.MetricType))
 			assert.Equal(t, "ip-192-168-57-23.us-west-2.compute.internal", getStringAttrVal(metric, ci.NodeNameKey))
 			assert.Equal(t, "ip-192-168-57-23.us-west-2.compute.internal", getStringAttrVal(metric, ci.InstanceID))
-			assertMetricValueEqual(t, metric, "hyper_pod_node_health_status_unschedulable_pending_reboot", int64(0))
-			assertMetricValueEqual(t, metric, "hyper_pod_node_health_status_schedulable", int64(1))
-			assertMetricValueEqual(t, metric, "hyper_pod_node_health_status_unschedulable", int64(0))
-			assertMetricValueEqual(t, metric, "hyper_pod_node_health_status_unschedulable_pending_replacement", int64(0))
+			assertMetricValueEqual(t, metric, "hyperpod_node_health_status_unschedulable_pending_reboot", int64(0))
+			assertMetricValueEqual(t, metric, "hyperpod_node_health_status_schedulable", int64(1))
+			assertMetricValueEqual(t, metric, "hyperpod_node_health_status_unschedulable", int64(0))
+			assertMetricValueEqual(t, metric, "hyperpod_node_health_status_unschedulable_pending_replacement", int64(0))
 		default:
 			assert.Fail(t, "Unexpected metric type: "+metricType)
 		}
