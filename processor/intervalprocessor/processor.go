@@ -114,27 +114,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 					}
 
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
-
-					// The ideal scenario is that we would re-use `aggregateDataPoints()` here, but we can't
-					// because the SummaryDataPoint does not fulfill the DataPoint interface.
-					datapoints := m.Summary().DataPoints()
-					for i := 0; i < datapoints.Len(); i++ {
-						dp := datapoints.At(i)
-
-						streamID := identity.OfStream(metricID, dp)
-						existingDP, ok := p.summaryLookup[streamID]
-						if !ok {
-							dpClone := mClone.Summary().DataPoints().AppendEmpty()
-							dp.CopyTo(dpClone)
-							p.summaryLookup[streamID] = dpClone
-							continue
-						}
-
-						// Check if the datapoint is newer and replace it
-						if dp.Timestamp() > existingDP.Timestamp() {
-							dp.CopyTo(existingDP)
-						}
-					}
+					aggregateDataPoints(m.Summary().DataPoints(), mClone.Summary().DataPoints(), metricID, p.summaryLookup)
 					return true
 				case pmetric.MetricTypeGauge:
 					if p.gaugePassThrough {
