@@ -4,9 +4,6 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver/internal"
 
 import (
-	"fmt"
-	"log"
-
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -40,8 +37,7 @@ func (mb *MetricsBuilder) ConvertGaugeToMetrics(ts *monitoringpb.TimeSeries, m p
 		if point.Interval.EndTime != nil && point.Interval.EndTime.IsValid() {
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(point.Interval.EndTime.AsTime()))
 		} else {
-			warnMsg := fmt.Sprintf("EndTime is invalid for metric: %s", ts.GetMetric().GetType())
-			mb.logger.Warn(warnMsg)
+			mb.logger.Warn("EndTime is invalid for metric:", zap.String("Metric", ts.GetMetric().GetType()))
 			continue
 		}
 
@@ -51,7 +47,7 @@ func (mb *MetricsBuilder) ConvertGaugeToMetrics(ts *monitoringpb.TimeSeries, m p
 		case *monitoringpb.TypedValue_Int64Value:
 			dp.SetIntValue(v.Int64Value)
 		default:
-			log.Printf("Unhandled metric value type: %T", v)
+			mb.logger.Info("Unhandled metric value type:", zap.Reflect("Type", v))
 		}
 	}
 
@@ -76,8 +72,7 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 		if point.Interval.EndTime != nil && point.Interval.EndTime.IsValid() {
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(point.Interval.EndTime.AsTime()))
 		} else {
-			warnMsg := fmt.Sprintf("EndTime is invalid for metric: %s", ts.GetMetric().GetType())
-			mb.logger.Warn(warnMsg)
+			mb.logger.Warn("EndTime is invalid for metric:", zap.String("Metric", ts.GetMetric().GetType()))
 			continue
 		}
 
@@ -87,7 +82,7 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 		case *monitoringpb.TypedValue_Int64Value:
 			dp.SetIntValue(v.Int64Value)
 		default:
-			log.Printf("Unhandled metric value type: %T", v)
+			mb.logger.Info("Unhandled metric value type:", zap.Reflect("Type", v))
 		}
 	}
 
@@ -112,8 +107,7 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 		if point.Interval.EndTime != nil && point.Interval.EndTime.IsValid() {
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(point.Interval.EndTime.AsTime()))
 		} else {
-			warnMsg := fmt.Sprintf("EndTime is invalid for metric: %s", ts.GetMetric().GetType())
-			mb.logger.Warn(warnMsg)
+			mb.logger.Warn("EndTime is invalid for metric:", zap.String("Metric", ts.GetMetric().GetType()))
 			continue
 		}
 
@@ -123,7 +117,7 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 		case *monitoringpb.TypedValue_Int64Value:
 			dp.SetIntValue(v.Int64Value)
 		default:
-			log.Printf("Unhandled metric value type: %T", v)
+			mb.logger.Info("Unhandled metric value type:", zap.Reflect("Type", v))
 		}
 	}
 
