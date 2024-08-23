@@ -4,14 +4,13 @@
 package translator
 
 import (
-	"github.com/DataDog/sketches-go/ddsketch"
 	"strings"
 	"testing"
 
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/sketches-go/ddsketch"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
-
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 )
 
 // The sketch's relative accuracy and maximum number of bins is identical
