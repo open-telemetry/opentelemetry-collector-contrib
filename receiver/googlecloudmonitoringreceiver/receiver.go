@@ -24,6 +24,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver/internal"
 )
 
+var allMetricDescriptor = make(map[string]*metric.MetricDescriptor)
+
 type monitoringReceiver struct {
 	config         *Config
 	logger         *zap.Logger
@@ -74,6 +76,11 @@ func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error
 	mr.client = client
 	mr.logger.Info("Monitoring client successfully created.")
 
+	// Call the metricDescriptorAPI method to start processing metric descriptors.
+	if err := mr.metricDescriptorAPI(ctx); err != nil {
+		return err
+	}
+
 	// Return nil after client creation
 	return nil
 }
@@ -88,17 +95,24 @@ func (mr *monitoringReceiver) Shutdown(context.Context) error {
 
 func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var (
-		gInternal            time.Duration
-		gDelay               time.Duration
-		calStartTime         time.Time
-		calEndTime           time.Time
-		filterQuery          string
-		allTimeSeriesMetrics []*monitoringpb.TimeSeries
-		gErr                 error
+		gInternal    time.Duration
+		gDelay       time.Duration
+		calStartTime time.Time
+		calEndTime   time.Time
+		filterQuery  string
+		gErr         error
 	)
+
+	metrics := pmetric.NewMetrics()
 
 	// Iterate over each metric in the configuration to calculate start/end times and construct the filter query.
 	for _, metric := range mr.config.MetricsList {
+		metricDesc, exists := allMetricDescriptor[metric.MetricName]
+		if !exists {
+			mr.logger.Warn("Metric descriptor not found", zap.String("metric_name", metric.MetricName))
+			continue
+		}
+
 		// Set interval and delay times, using defaults if not provided
 		gInternal = mr.config.CollectionInterval
 		if gInternal <= 0 {
@@ -117,7 +131,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		filterQuery = getFilterQuery(metric)
 
 		// Define the request to list time series data
-		req := &monitoringpb.ListTimeSeriesRequest{
+		tsReq := &monitoringpb.ListTimeSeriesRequest{
 			Name:   "projects/" + mr.config.ProjectID,
 			Filter: filterQuery,
 			Interval: &monitoringpb.TimeInterval{
@@ -128,13 +142,12 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		}
 
 		// Create an iterator for the time series data
-		it := mr.client.ListTimeSeries(ctx, req)
+		tsIter := mr.client.ListTimeSeries(ctx, tsReq)
 		mr.logger.Debug("Retrieving time series data")
 
-		var metrics pmetric.Metrics
 		// Iterate over the time series data
 		for {
-			timeSeriesMetrics, err := it.Next()
+			timeSeries, err := tsIter.Next()
 			if errors.Is(err, iterator.Done) {
 				break
 			}
@@ -145,14 +158,47 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 				return metrics, gErr
 			}
 
-			allTimeSeriesMetrics = append(allTimeSeriesMetrics, timeSeriesMetrics)
+			// Convert and append the metric directly within the loop
+			mr.convertGCPTimeSeriesToMetrics(metrics, metricDesc, timeSeries)
 		}
 	}
 
-	// Convert the GCP TimeSeries to pmetric.Metrics format of OpenTelemetry
-	metrics := mr.convertGCPTimeSeriesToMetrics(allTimeSeriesMetrics)
-
 	return metrics, gErr
+}
+
+// metricDescriptorAPI fetches and processes metric descriptors from the monitoring API.
+func (mr *monitoringReceiver) metricDescriptorAPI(ctx context.Context) error {
+	// Iterate over each metric in the configuration to calculate start/end times and construct the filter query.
+	for _, metric := range mr.config.MetricsList {
+		// Get the filter query for the metric
+		filterQuery := getFilterQuery(metric)
+
+		// Define the request to list metric descriptors
+		metricReq := &monitoringpb.ListMetricDescriptorsRequest{
+			Name:   "projects/" + mr.config.ProjectID,
+			Filter: filterQuery,
+		}
+
+		// Create an iterator for the metric descriptors
+		metricIter := mr.client.ListMetricDescriptors(ctx, metricReq)
+
+		// Iterate over the time series data
+		for {
+			metricDesc, err := metricIter.Next()
+			if errors.Is(err, iterator.Done) {
+				break
+			}
+
+			// Handle errors and break conditions for the iterator
+			if err != nil {
+				return fmt.Errorf("failed to retrieve metric descriptors data: %w", err)
+			}
+			allMetricDescriptor[metricDesc.Type] = metricDesc
+		}
+	}
+
+	mr.logger.Info("Successfully retrieved all metric descriptors.")
+	return nil
 }
 
 // calculateStartEndTime calculates the start and end times based on the current time, interval, and delay.
@@ -181,53 +227,46 @@ func getFilterQuery(metric MetricConfig) string {
 }
 
 // ConvertGCPTimeSeriesToMetrics converts GCP Monitoring TimeSeries to pmetric.Metrics
-func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(timeSeriesMetrics []*monitoringpb.TimeSeries) pmetric.Metrics {
-	metrics := pmetric.NewMetrics()
+func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metrics, metricDesc *metric.MetricDescriptor, timeSeries *monitoringpb.TimeSeries) {
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
 
-	for _, resp := range timeSeriesMetrics {
-		m := sm.Metrics().AppendEmpty()
-		// Set metric name and description
-		m.SetName(resp.Metric.Type)
-		m.SetUnit(resp.Unit)
+	// Set metric name, description and unit
+	m.SetName(metricDesc.GetName())
+	m.SetDescription(metricDesc.GetDescription())
+	m.SetUnit(metricDesc.Unit)
 
-		// TODO: Retrieve and cache MetricDescriptor to set the correct description
-		m.SetDescription("Converted from GCP Monitoring TimeSeries")
+	// Set resource labels
+	resource := rm.Resource()
+	resource.Attributes().PutStr("resource_type", timeSeries.Resource.Type)
+	for k, v := range timeSeries.Resource.Labels {
+		resource.Attributes().PutStr(k, v)
+	}
 
-		// Set resource labels
-		resource := rm.Resource()
-		resource.Attributes().PutStr("resource_type", resp.Resource.Type)
-		for k, v := range resp.Resource.Labels {
+	// Set metadata (user and system labels)
+	if timeSeries.Metadata != nil {
+		for k, v := range timeSeries.Metadata.UserLabels {
 			resource.Attributes().PutStr(k, v)
 		}
-
-		// Set metadata (user and system labels)
-		if resp.Metadata != nil {
-			for k, v := range resp.Metadata.UserLabels {
-				resource.Attributes().PutStr(k, v)
+		if timeSeries.Metadata.SystemLabels != nil {
+			for k, v := range timeSeries.Metadata.SystemLabels.Fields {
+				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
 			}
-			if resp.Metadata.SystemLabels != nil {
-				for k, v := range resp.Metadata.SystemLabels.Fields {
-					resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
-				}
-			}
-		}
-
-		switch resp.GetMetricKind() {
-		case metric.MetricDescriptor_GAUGE:
-			mr.metricsBuilder.ConvertGaugeToMetrics(resp, m)
-		case metric.MetricDescriptor_CUMULATIVE:
-			mr.metricsBuilder.ConvertSumToMetrics(resp, m)
-		case metric.MetricDescriptor_DELTA:
-			mr.metricsBuilder.ConvertDeltaToMetrics(resp, m)
-		// TODO: Add support for HISTOGRAM
-		// TODO: Add support for EXPONENTIAL_HISTOGRAM
-		default:
-			metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", resp.GetMetricKind())
-			mr.logger.Info(metricError)
 		}
 	}
 
-	return metrics
+	switch timeSeries.GetMetricKind() {
+	case metric.MetricDescriptor_GAUGE:
+		mr.metricsBuilder.ConvertGaugeToMetrics(timeSeries, m)
+	case metric.MetricDescriptor_CUMULATIVE:
+		mr.metricsBuilder.ConvertSumToMetrics(timeSeries, m)
+	case metric.MetricDescriptor_DELTA:
+		mr.metricsBuilder.ConvertDeltaToMetrics(timeSeries, m)
+	// TODO: Add support for HISTOGRAM
+	// TODO: Add support for EXPONENTIAL_HISTOGRAM
+	default:
+		metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", timeSeries.GetMetricKind())
+		mr.logger.Info(metricError)
+	}
 }
