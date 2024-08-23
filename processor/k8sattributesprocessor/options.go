@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 )
 
 const (
@@ -388,4 +389,14 @@ func withAddOnFields(filters ...AddOnMetadata) option {
 		p.addons = fields
 		return nil
 	}
+}
+
+func withRedisConfigFields(filters redis.OpsrampRedisConfig) option {
+	fmt.Println("The value of filters received  : ", filters)
+
+	return func(p *kubernetesprocessor) error {
+		p.redisConfig = filters
+		return nil
+	}
+
 }
