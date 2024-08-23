@@ -27,7 +27,7 @@ The following metric types will *not* be aggregated, and will instead be passed,
 * All delta metrics
 * Non-monotonically increasing sums
 
-While sending only the last for cumulative metrics doesn't represent data loss, it's arguable if we do the same thing for Gauges and Summaries. In a push-based model, one can tell its instrumentation library to push metrics in important situations and the `intervalprocessor` might discard the data point if it was not the last in a given interval. For this reason, `Gauge` and `Summary` metric types can be configured to be passed through as they are. Copying the same behavior as delta metrics.
+> NOTE: Aggregating data over an interval is an inherently "lossy" process. For monotonically increasing, cumulative sums, histograms, and exponential histograms, you "lose" precision, but you don't lose overall data. But for non-monotonically increasing sums, gauges, and summaries, aggregation represents actual data loss. IE you could "lose" that a value increased and then decreased back to the original value. In most cases, this data "loss" is ok. However, if you would rather these values be passed through, and *not* aggregated, you can set that in the configuration
 
 ## Configuration
 
