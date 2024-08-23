@@ -18,6 +18,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/moid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 )
 
 const (
@@ -35,8 +38,10 @@ type kubernetesprocessor struct {
 	rules             kube.ExtractionRules
 	filters           kube.Filters
 	addons            []kube.AddOnMetadata
+	redisConfig       redis.OpsrampRedisConfig
 	podAssociations   []kube.Association
 	podIgnore         kube.Excludes
+	redisClient       *redis.Client
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
@@ -62,6 +67,19 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 			return nil
 		}
 	}
+
+	kp.logger.Info("ops k8s attr processor start", zap.Any("redisHost", kp.redisConfig.RedisHost),
+		zap.Any("redisPort", kp.redisConfig.RedisPort),
+		zap.Any("redisPass", kp.redisConfig.RedisPass))
+
+	cache := lru.GetInstance(kp.redisConfig.LruCacheSize, kp.redisConfig.LruExpirationTime)
+
+	if cache == nil {
+		kp.logger.Error("Failed to initilize the cache with GetInstance()")
+		return nil
+	}
+
+	kp.redisClient = redis.NewClient(kp.logger, cache, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
 
 	// This might have been set by an option already
 	if kp.kc == nil {
@@ -122,11 +140,6 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
 
-	for _, addon := range kp.addons {
-		//fmt.Println(">>>>>> Addons Added key : ", addon.Key, " Value ", addon.Value)
-		resource.Attributes().PutStr(addon.Key, addon.Value)
-	}
-
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
 			if _, found := resource.Attributes().Get(kube.K8sIPLabelName); !found {
@@ -179,6 +192,109 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			}
 		}
 	}
+	kp.processopsrampResources(ctx, resource)
+}
+
+// processResource adds Pod metadata tags to resource based on pod association configuration
+func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, resource pcommon.Resource) {
+	var found bool
+	var resourceUuid string
+
+	for _, addon := range kp.addons {
+		//fmt.Println(">>>>>> Addons Added key : ", addon.Key, " Value ", addon.Value)
+		resource.Attributes().PutStr(addon.Key, addon.Value)
+	}
+
+	if _, found = resource.Attributes().Get("k8s.pod.uid"); found {
+		if resourceUuid = kp.GetResourceUuidUsingPodMoid(ctx, resource); resourceUuid == "" {
+			resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+			/*
+				if resourceUuid = kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid == "" {
+					if resourceUuid = kp.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
+						resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+					}
+				}
+			*/
+		}
+	} else if _, found = resource.Attributes().Get("k8s.node.name"); found {
+		if resourceUuid = kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid == "" {
+			if resourceUuid = kp.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
+				resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+			}
+		}
+	} else {
+		resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+
+		/*
+			if resourceUuid = kp.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
+				resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+			}
+		*/
+	}
+
+	if resourceUuid != "" {
+		resource.Attributes().PutStr("uuid", resourceUuid)
+	}
+}
+
+func (op *kubernetesprocessor) GetResourceUuidUsingPodMoid(ctx context.Context, resource pcommon.Resource) (resourceUuid string) {
+	var namespace, podname, rsname, dsname, ssname pcommon.Value
+	var found bool
+
+	if namespace, found = resource.Attributes().Get("k8s.namespace.name"); !found {
+		return
+	}
+	if podname, found = resource.Attributes().Get("k8s.pod.name"); !found {
+		return
+	}
+
+	podMoid := moid.NewMoid(op.redisConfig.ClusterName).WithNamespaceName(namespace.Str()).WithPodName(podname.Str())
+
+	if rsname, found = resource.Attributes().Get("k8s.replicaset.name"); found {
+		podMoid.WithReplicasetName(rsname.Str())
+	} else if dsname, found = resource.Attributes().Get("k8s.daemonset.name"); found {
+		podMoid.WithDaemonsetName(dsname.Str())
+	} else if ssname, found = resource.Attributes().Get("k8s.statefulset.name"); found {
+		podMoid.WithStatefulsetName(ssname.Str())
+	}
+
+	podMoidKey := podMoid.PodMoid()
+
+	resourceUuid = op.redisClient.GetValueInString(ctx, podMoidKey)
+	op.logger.Debug("redis KV ", zap.Any("key", podMoidKey), zap.Any("value", resourceUuid))
+	return
+}
+
+func (op *kubernetesprocessor) GetResourceUuidUsingResourceNodeMoid(ctx context.Context, resource pcommon.Resource) (resourceUuid string) {
+	var nodename pcommon.Value
+	var found bool
+	if nodename, found = resource.Attributes().Get("k8s.node.name"); !found {
+		return
+	}
+
+	nodeMoidKey := moid.NewMoid(op.redisConfig.ClusterName).WithNodeName(nodename.Str()).NodeMoid()
+
+	resourceUuid = op.redisClient.GetValueInString(ctx, nodeMoidKey)
+	op.logger.Debug("redis KV ", zap.Any("key", nodeMoidKey), zap.Any("value", resourceUuid))
+	return
+}
+
+func (op *kubernetesprocessor) GetResourceUuidUsingCurrentNodeMoid(ctx context.Context, resource pcommon.Resource) (resourceUuid string) {
+
+	nodeMoidKey := moid.NewMoid(op.redisConfig.ClusterName).WithNodeName(op.redisConfig.NodeName).NodeMoid()
+
+	resourceUuid = op.redisClient.GetValueInString(ctx, nodeMoidKey)
+	op.logger.Debug("redis KV ", zap.Any("key", nodeMoidKey), zap.Any("value", resourceUuid))
+	return
+}
+
+func (op *kubernetesprocessor) GetResourceUuidUsingClusterMoid(ctx context.Context, resource pcommon.Resource) (resourceUuid string) {
+
+	nodeMoidKey := moid.NewMoid(op.redisConfig.ClusterName).WithNodeName(op.redisConfig.NodeName).NodeMoid()
+
+	resourceUuid = op.redisClient.GetValueInString(ctx, nodeMoidKey)
+	op.logger.Debug("redis KV ", zap.Any("key", nodeMoidKey), zap.Any("value", resourceUuid))
+	return
 }
 
 func getNamespace(pod *kube.Pod, resAttrs pcommon.Map) string {
