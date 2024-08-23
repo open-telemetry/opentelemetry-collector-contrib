@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.22.0
 
-toolchain go1.22.6
+toolchain go1.22.4
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.107.0
@@ -324,8 +324,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.56.0-rc.12 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.56.0-rc.12 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.56.0-rc.12 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.56.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0-rc.12 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.12 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.12 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.12 // indirect
