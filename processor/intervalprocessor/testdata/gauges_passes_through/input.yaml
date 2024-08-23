@@ -38,4 +38,3 @@ resourceMetrics:
                     - key: aaa
                       value:
                         stringValue: bbb
-                      
