@@ -53,7 +53,6 @@ type eksDetectorUtils struct {
 type detector struct {
 	utils  detectorUtils
 	logger *zap.Logger
-	err    error
 	ra     metadata.ResourceAttributesConfig
 	rb     *metadata.ResourceBuilder
 }
@@ -66,11 +65,12 @@ var _ detectorUtils = (*eksDetectorUtils)(nil)
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	utils, err := newK8sDetectorUtils()
-
+	if err != nil {
+		return nil, err
+	}
 	return &detector{
 		utils:  utils,
 		logger: set.Logger,
-		err:    err,
 		ra:     cfg.ResourceAttributes,
 		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil
