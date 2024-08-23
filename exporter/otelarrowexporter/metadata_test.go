@@ -104,8 +104,10 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return rcv.totalItems.Load() == int32(requestCount*spansPerRequest)
 	}, 1*time.Second, 5*time.Millisecond)
+	assert.Eventually(t, func() bool {
+		return len(callCtxs) == len(rcv.spanCountByMetadata)
+	}, 1*time.Second, 5*time.Millisecond)
 
-	require.Equal(t, len(callCtxs), len(rcv.spanCountByMetadata))
 	for idx, ctx := range callCtxs {
 		md := client.FromContext(ctx).Metadata
 		key := fmt.Sprintf("%s|%s", md.Get("key1"), md.Get("key2"))
