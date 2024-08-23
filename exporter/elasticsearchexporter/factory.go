@@ -69,10 +69,6 @@ func createDefaultConfig() component.Config {
 			MaxInterval:     1 * time.Minute,
 			RetryOnStatus: []int{
 				http.StatusTooManyRequests,
-				http.StatusInternalServerError,
-				http.StatusBadGateway,
-				http.StatusServiceUnavailable,
-				http.StatusGatewayTimeout,
 			},
 		},
 		Mapping: MappingsSettings{
