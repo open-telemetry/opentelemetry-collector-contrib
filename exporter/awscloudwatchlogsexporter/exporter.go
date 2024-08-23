@@ -47,7 +47,7 @@ type emfMetadata struct {
 	LogStreamName string       `json:"log_stream_name,omitempty"`
 }
 
-func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter, error) {
+func newCwLogsPusher(expConfig *Config, params exp.Settings) (*cwlExporter, error) {
 	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
@@ -82,7 +82,7 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter
 	return logsExporter, nil
 }
 
-func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.Logs, error) {
+func newCwLogsExporter(config component.Config, params exp.Settings) (exp.Logs, error) {
 	expConfig := config.(*Config)
 	logsPusher, err := newCwLogsPusher(expConfig, params)
 	if err != nil {

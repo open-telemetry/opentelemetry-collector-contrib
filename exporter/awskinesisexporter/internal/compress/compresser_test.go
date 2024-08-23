@@ -4,7 +4,12 @@
 package compress_test
 
 import (
+	"bytes"
+	"compress/flate"
+	"compress/gzip"
+	"compress/zlib"
 	"fmt"
+	"io"
 	"math/rand"
 	"sync"
 	"testing"
@@ -29,7 +34,8 @@ func TestCompressorFormats(t *testing.T) {
 		{format: "flate"},
 	}
 
-	const data = "You know nothing Jon Snow"
+	data := createRandomString(1024)
+
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("format_%s", tc.format), func(t *testing.T) {
 			c, err := compress.NewCompressor(tc.format)
@@ -39,10 +45,42 @@ func TestCompressorFormats(t *testing.T) {
 			out, err := c([]byte(data))
 			assert.NoError(t, err, "Must not error when processing data")
 			assert.NotNil(t, out, "Must have a valid record")
+
+			// now data gets decompressed and the original string gets compared with the decompressed one
+			var dc []byte
+			var err2 error
+
+			switch tc.format {
+			case "gzip":
+				dc, err2 = decompressGzip(out)
+			case "zlib":
+				dc, err2 = decompressZlib(out)
+			case "flate":
+				dc, err2 = decompressFlate(out)
+			case "noop", "none":
+				dc = out
+			default:
+				dc = out
+			}
+
+			assert.NoError(t, err2)
+			assert.Equal(t, data, string(dc))
 		})
 	}
 	_, err := compress.NewCompressor("invalid-format")
 	assert.Error(t, err, "Must error when an invalid compression format is given")
+}
+
+func createRandomString(length int) string {
+	// some characters for the random generation
+	const letterBytes = " ,.;:*-+/[]{}<>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+
+	return string(b)
 }
 
 func BenchmarkNoopCompressor_1000Bytes(b *testing.B) {
@@ -177,4 +215,49 @@ func concurrentCompressFunc(t *testing.T) {
 	for err := range errCh {
 		t.Errorf("Error encountered on concurrent compression: %v", err)
 	}
+}
+
+func decompressGzip(input []byte) ([]byte, error) {
+	r, err := gzip.NewReader(bytes.NewReader(input))
+	if err != nil {
+		return nil, err
+	}
+
+	defer r.Close()
+
+	decompressedData, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return decompressedData, nil
+}
+
+func decompressZlib(input []byte) ([]byte, error) {
+	r, err := zlib.NewReader(bytes.NewReader(input))
+	if err != nil {
+		return nil, err
+	}
+
+	defer r.Close()
+
+	decompressedData, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return decompressedData, nil
+}
+
+func decompressFlate(input []byte) ([]byte, error) {
+
+	r := flate.NewReader(bytes.NewReader(input))
+	defer r.Close()
+
+	decompressedData, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return decompressedData, nil
 }

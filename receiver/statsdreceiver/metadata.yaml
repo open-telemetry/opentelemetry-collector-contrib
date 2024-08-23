@@ -1,5 +1,4 @@
 type: statsd
-scope_name: otelcol/statsdreceiver
 
 status:
   class: receiver
@@ -8,3 +7,13 @@ status:
   distributions: [contrib]
   codeowners:
     active: [jmacd, dmitryax]
+
+telemetry:
+  metrics:
+    receiver_received_statsd_metrics:
+      enabled: true
+      description: Number of statsd metrics received.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true

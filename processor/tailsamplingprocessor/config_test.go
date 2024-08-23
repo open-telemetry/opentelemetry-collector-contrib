@@ -28,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.Equal(t,
 		cfg,
@@ -36,6 +36,7 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
+			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 500},
 			PolicyCfgs: []PolicyCfg{
 				{
 					sharedPolicyCfg: sharedPolicyCfg{

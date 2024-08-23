@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	pcfg := cfg.(*Config)

@@ -104,7 +104,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 		case failedChan <- f:
 		// log an error in case channel is closed
 		case <-time.After(waitDuration):
-			operator.Logger().Errorw("journalctl command exited", "error", f.err, "output", f.output)
+			operator.Logger().Error("journalctl command exited", zap.String("error", f.err), zap.String("output", f.output))
 		}
 	}()
 
@@ -120,7 +120,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 			line, err := stderrBuf.ReadBytes('\n')
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
-					operator.Errorw("Received error reading from journalctl stderr", zap.Error(err))
+					operator.Logger().Error("Received error reading from journalctl stderr", zap.Error(err))
 				}
 				stderrChan <- strings.Join(messages, "\n")
 				return
@@ -140,20 +140,22 @@ func (operator *Input) Start(persister operator.Persister) error {
 			line, err := stdoutBuf.ReadBytes('\n')
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
-					operator.Errorw("Received error reading from journalctl stdout", zap.Error(err))
+					operator.Logger().Error("Received error reading from journalctl stdout", zap.Error(err))
 				}
 				return
 			}
 
 			entry, cursor, err := operator.parseJournalEntry(line)
 			if err != nil {
-				operator.Warnw("Failed to parse journal entry", zap.Error(err))
+				operator.Logger().Warn("Failed to parse journal entry", zap.Error(err))
 				continue
 			}
-			if err := operator.persister.Set(ctx, lastReadCursorKey, []byte(cursor)); err != nil {
-				operator.Warnw("Failed to set offset", zap.Error(err))
+			if err = operator.persister.Set(ctx, lastReadCursorKey, []byte(cursor)); err != nil {
+				operator.Logger().Warn("Failed to set offset", zap.Error(err))
 			}
-			operator.Write(ctx, entry)
+			if err = operator.Write(ctx, entry); err != nil {
+				operator.Logger().Error("failed to write entry", zap.Error(err))
+			}
 		}
 	}()
 

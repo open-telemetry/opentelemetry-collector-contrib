@@ -435,7 +435,7 @@ func TestAttributeGrouping(t *testing.T) {
 			histogramMetrics := someHistogramMetrics(attrMap, 1, tt.count)
 			exponentialHistogramMetrics := someExponentialHistogramMetrics(attrMap, 1, tt.count)
 
-			gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), tt.groupByKeys)
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), tt.groupByKeys)
 			require.NoError(t, err)
 
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)
@@ -747,7 +747,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	datapoint.Attributes().PutStr("id", "eth0")
 
 	// Perform the test
-	gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), []string{"host.name"})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{"host.name"})
 	require.NoError(t, err)
 
 	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
@@ -832,7 +832,7 @@ func TestCompacting(t *testing.T) {
 	assert.Equal(t, 100, logs.ResourceLogs().Len())
 	assert.Equal(t, 100, metrics.ResourceMetrics().Len())
 
-	gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), []string{})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
 	require.NoError(t, err)
 
 	processedSpans, err := gap.processTraces(context.Background(), spans)
@@ -869,6 +869,59 @@ func TestCompacting(t *testing.T) {
 	}
 }
 
+func Test_GetMetricInInstrumentationLibrary(t *testing.T) {
+	// input metric with datapoint
+	m := pmetric.NewMetric()
+	m.SetName("metric")
+	m.SetDescription("description")
+	m.SetUnit("unit")
+	d := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	d.SetDoubleValue(1.0)
+
+	// expected metric without datapoint
+	// the datapoints are not copied to the resulting metric, since
+	// datapoints are moved in between metrics in the processor
+	m2 := pmetric.NewMetric()
+	m2.SetName("metric")
+	m2.SetDescription("description")
+	m2.SetUnit("unit")
+	m2.SetEmptyGauge()
+
+	metadata := pcommon.NewMap()
+	metadata.PutStr("key", "val")
+	metadata.CopyTo(m.Metadata())
+	metadata.CopyTo(m2.Metadata())
+
+	sm := pmetric.NewScopeMetrics()
+	m.CopyTo(sm.Metrics().AppendEmpty())
+
+	tests := []struct {
+		name     string
+		ilm      pmetric.ScopeMetrics
+		searched pmetric.Metric
+		want     pmetric.Metric
+	}{
+		{
+			name:     "existing metric",
+			ilm:      sm,
+			searched: m,
+			want:     m,
+		},
+		{
+			name:     "non-existing metric - datapoints will be removed",
+			ilm:      pmetric.NewScopeMetrics(),
+			searched: m,
+			want:     m2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, getMetricInInstrumentationLibrary(tt.ilm, tt.searched), tt.want)
+		})
+	}
+}
+
 func BenchmarkCompacting(bb *testing.B) {
 	runs := []struct {
 		ilCount   int
@@ -891,7 +944,7 @@ func BenchmarkCompacting(bb *testing.B) {
 	for _, run := range runs {
 		bb.Run(fmt.Sprintf("instrumentation_library_count=%d, spans_per_library_count=%d", run.ilCount, run.spanCount), func(b *testing.B) {
 			spans := someSpans(attrMap, run.ilCount, run.spanCount)
-			gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), []string{})
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
 			require.NoError(b, err)
 
 			b.ResetTimer()

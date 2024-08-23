@@ -57,16 +57,16 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint:        "https://somedest:1234/api/v2/spans",
-					WriteBufferSize: 524288,
-					Timeout:         5 * time.Second,
-					TLSSetting: configtls.ClientConfig{
+				ClientConfig: withDefaultHTTPClientConfig(func(config *confighttp.ClientConfig) {
+					config.Endpoint = "https://somedest:1234/api/v2/spans"
+					config.WriteBufferSize = 524288
+					config.Timeout = 5 * time.Second
+					config.TLSSetting = configtls.ClientConfig{
 						InsecureSkipVerify: true,
-					},
-					MaxIdleConns:    &maxIdleConns,
-					IdleConnTimeout: &idleConnTimeout,
-				},
+					}
+					config.MaxIdleConns = &maxIdleConns
+					config.IdleConnTimeout = &idleConnTimeout
+				}),
 				Format:             "proto",
 				DefaultServiceName: "test_name",
 			},
@@ -80,10 +80,18 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func withDefaultHTTPClientConfig(fns ...func(config *confighttp.ClientConfig)) confighttp.ClientConfig {
+	cfg := confighttp.NewDefaultClientConfig()
+	for _, fn := range fns {
+		fn(&cfg)
+	}
+	return cfg
 }

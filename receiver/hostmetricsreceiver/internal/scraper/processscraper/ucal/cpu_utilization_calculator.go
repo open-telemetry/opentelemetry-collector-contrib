@@ -6,7 +6,7 @@ package ucal // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"time"
 
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )

@@ -4,6 +4,7 @@
 package hostmetadata
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
@@ -26,8 +28,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 var (
@@ -50,14 +50,14 @@ var (
 		Version: "1.0",
 	}
 
-	mockExporterCreateSettings = exporter.CreateSettings{
+	mockExporterCreateSettings = exporter.Settings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         mockBuildInfo,
 	}
 )
 
 func TestFillHostMetadata(t *testing.T) {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.BuildInfo = mockBuildInfo
 
 	pcfg := PusherConfig{
@@ -65,10 +65,10 @@ func TestFillHostMetadata(t *testing.T) {
 		ConfigTags:     []string{"key1:tag1", "key2:tag2", "env:prod"},
 	}
 
-	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "hostname")
+	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "hostname", 31*time.Second)
 	require.NoError(t, err)
 
-	metadata := payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
+	metadata := payload.NewEmpty()
 	fillHostMetadata(params, pcfg, hostProvider, &metadata)
 
 	assert.Equal(t, metadata.InternalHostname, "hostname")
@@ -189,8 +189,9 @@ func TestPushMetadata(t *testing.T) {
 	handler.HandleFunc("/intake", func(_ http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Header.Get("DD-Api-Key"), "apikey")
 		assert.Equal(t, r.Header.Get("User-Agent"), "otelcontribcol/1.0")
-
-		body, err := io.ReadAll(r.Body)
+		reader, err := gzip.NewReader(r.Body)
+		require.NoError(t, err)
+		body, err := io.ReadAll(reader)
 		require.NoError(t, err)
 
 		var recvMetadata payload.HostMetadata
@@ -229,10 +230,10 @@ func TestPusher(t *testing.T) {
 		APIKey:              "apikey",
 		UseResourceMetadata: true,
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.BuildInfo = mockBuildInfo
 
-	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "source-hostname")
+	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "source-hostname", 31*time.Second)
 	require.NoError(t, err)
 
 	attrs := testutil.NewAttributeMap(map[string]string{
@@ -251,10 +252,7 @@ func TestPusher(t *testing.T) {
 
 	go RunPusher(ctx, params, pcfg, hostProvider, attrs, reporter)
 
-	body := <-server.MetadataChan
-	var recvMetadata payload.HostMetadata
-	err = json.Unmarshal(body, &recvMetadata)
-	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, recvMetadata.InternalHostname, "datadog-hostname")
 	assert.Equal(t, recvMetadata.Version, mockBuildInfo.Version)
 	assert.Equal(t, recvMetadata.Flavor, mockBuildInfo.Command)

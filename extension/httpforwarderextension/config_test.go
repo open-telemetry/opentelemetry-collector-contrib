@@ -23,6 +23,15 @@ func TestLoadConfig(t *testing.T) {
 	maxIdleConns := 42
 	idleConnTimeout := 80 * time.Second
 
+	egressCfg := confighttp.NewDefaultClientConfig()
+	egressCfg.Endpoint = "http://target/"
+	egressCfg.Headers = map[string]configopaque.String{
+		"otel_http_forwarder": "dev",
+	}
+	egressCfg.MaxIdleConns = &maxIdleConns
+	egressCfg.IdleConnTimeout = &idleConnTimeout
+	egressCfg.Timeout = 5 * time.Second
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -37,15 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				Ingress: confighttp.ServerConfig{
 					Endpoint: "http://localhost:7070",
 				},
-				Egress: confighttp.ClientConfig{
-					Endpoint: "http://target/",
-					Headers: map[string]configopaque.String{
-						"otel_http_forwarder": "dev",
-					},
-					MaxIdleConns:    &maxIdleConns,
-					IdleConnTimeout: &idleConnTimeout,
-					Timeout:         5 * time.Second,
-				},
+				Egress: egressCfg,
 			},
 		},
 	}
@@ -57,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})

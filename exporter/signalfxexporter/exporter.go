@@ -66,7 +66,7 @@ type signalfxExporter struct {
 // newSignalFxExporter returns a new SignalFx exporter.
 func newSignalFxExporter(
 	config *Config,
-	createSettings exporter.CreateSettings,
+	createSettings exporter.Settings,
 ) (*signalfxExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -174,7 +174,7 @@ func newGzipPool() sync.Pool {
 	}}
 }
 
-func newEventExporter(config *Config, createSettings exporter.CreateSettings) (*signalfxExporter, error) {
+func newEventExporter(config *Config, createSettings exporter.Settings) (*signalfxExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}

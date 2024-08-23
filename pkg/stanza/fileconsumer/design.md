@@ -206,6 +206,40 @@ When the operator shuts down, the following occurs:
 The net effect of the shut down routine is that all files are checkpointed in a normal manner
 (i.e. not in the middle of a log entry), and all checkpoints are persisted.
 
+### Log rotation
+
+#### Supported cases
+
+A) When a file is moved within the pattern with unread logs on the end, then the original is created again,
+   we get the unread logs on the moved as well as any new logs written to the newly created file.
+
+B) When a file is copied within the pattern with unread logs on the end, then the original is truncated,
+   we get the unread logs on the copy as well as any new logs written to the truncated file.
+
+C) When a file it rotated out of pattern via move/create, we detect that
+   our old handle is still valid and we attempt to read from it.
+
+D) When a file it rotated out of pattern via copy/truncate, we detect that
+   our old handle is invalid and we do not attempt to read from it.
+
+
+#### Rotated files that end up within the matching pattern
+
+In both cases of copy/truncate and move/create, if the rotated files match the pattern
+then the old readers that point to the original path will be closed and we will create new
+ones which will be pointing to the rotated file but using the existing metadata's offset.
+The receiver will continue consuming the rotated paths in any case so there will be
+no data loss during the transition.
+The original files will have a fresh fingerprint so they will be consumed by a completely
+new reader.
+
+#### Rotated files that end up out of the matching pattern
+
+In case of a file has been rotated with move/create, the old handle will be pointing
+to the moved file so we can still consume from it even if it's out of the pattern.
+In case of the file has been rotated with copy/truncate, the old handle will be pointing
+to the original file which is truncated. So we don't have a handle in order to consume any remaining
+logs from the moved file. This can cause data loss.
 
 # Known Limitations
 

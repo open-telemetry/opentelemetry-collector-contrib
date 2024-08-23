@@ -146,19 +146,14 @@ service:
 		Processors: processors,
 	}
 
-	fmp := fileprovider.NewFactory().Create(confmap.ProviderSettings{})
-	configProvider, err := otelcol.NewConfigProvider(
-		otelcol.ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{confFile.Name()},
-				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
-			},
-		})
-	require.NoError(t, err)
-
 	appSettings := otelcol.CollectorSettings{
-		Factories:      func() (otelcol.Factories, error) { return factories, nil },
-		ConfigProvider: configProvider,
+		Factories: func() (otelcol.Factories, error) { return factories, nil },
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{confFile.Name()},
+				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
+			},
+		},
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",

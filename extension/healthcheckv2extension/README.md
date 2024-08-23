@@ -1,6 +1,17 @@
 # Health Check Extension
 
 > ⚠️⚠️⚠️ **Warning** ⚠️⚠️⚠️
+> This extension is not ready for use. The code is written, but the
+[original PR](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/30673)
+is being sliced up into smaller PRs that are being reviewed and merged
+incrementally.
+
+## Forward Looking README
+
+The remainder of this README is forward looking and serves as a reference for
+the future functionality that will be provided and how it will be configured.
+
+> ⚠️⚠️⚠️ **Warning** ⚠️⚠️⚠️
 >
 > The `check_collector_pipeline` feature of this extension was not working as expected and has been
 > removed. The config remains for backwards compatibility, but it too will be removed in the future.
@@ -27,7 +38,7 @@ liveness and/or readiness probe on Kubernetes.
 
 The following settings are required:
 
-- `endpoint` (default = 0.0.0.0:13133): Address to publish the health check status. For full list of `ServerConfig` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:13133. This will become the default in a future release.
+- `endpoint` (default = localhost:13133): Address to publish the health check status. For full list of `ServerConfig` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to 0.0.0.0:13133. This feature gate will be removed in a future release.
 - `path` (default = "/"): Specifies the path to be configured for the health check server.
 - `response_body` (default = ""): Specifies a static body that overrides the default response returned by the health check service.
 - `check_collector_pipeline:` (deprecated and ignored): Settings of collector pipeline health check

@@ -88,10 +88,15 @@ func (s *Staleness[T]) Next() time.Time {
 	return ts
 }
 
-func (s *Staleness[T]) Evict() identity.Stream {
+func (s *Staleness[T]) Evict() (identity.Stream, bool) {
+	_, ts := s.pq.Peek()
+	if NowFunc().Sub(ts) < s.Max {
+		return identity.Stream{}, false
+	}
+
 	id, _ := s.pq.Pop()
 	s.items.Delete(id)
-	return id
+	return id, true
 }
 
 func (s *Staleness[T]) Clear() {

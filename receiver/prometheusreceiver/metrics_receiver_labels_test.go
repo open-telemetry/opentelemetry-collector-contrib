@@ -579,7 +579,9 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 	expectedAttributes := td.attributes
 	expectedAttributes.PutStr("service.name", "honor_labels_test")
 	expectedAttributes.PutStr("service.instance.id", "hostname:8080")
+	expectedAttributes.PutStr("server.port", "8080")
 	expectedAttributes.PutStr("net.host.port", "8080")
+	expectedAttributes.PutStr("server.address", "hostname")
 	expectedAttributes.PutStr("net.host.name", "hostname")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -667,7 +669,9 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 	wantAttributes := td.attributes
 	wantAttributes.PutStr("service.name", "not-target1")
 	wantAttributes.PutStr("service.instance.id", "relabeled-instance")
+	wantAttributes.PutStr("server.port", "")
 	wantAttributes.PutStr("net.host.port", "")
+	wantAttributes.PutStr("server.address", "relabeled-instance")
 	wantAttributes.PutStr("net.host.name", "relabeled-instance")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -773,7 +777,7 @@ func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	require.Equal(t, sms.At(0).Scope().Name(), "fake.scope.name")
 	require.Equal(t, sms.At(0).Scope().Version(), "v0.1.0")
 	require.Equal(t, sms.At(0).Scope().Attributes().Len(), 0)
-	require.Equal(t, sms.At(1).Scope().Name(), "otelcol/prometheusreceiver")
+	require.Equal(t, sms.At(1).Scope().Name(), "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver")
 	require.Equal(t, sms.At(1).Scope().Attributes().Len(), 0)
 	require.Equal(t, sms.At(2).Scope().Name(), "scope.with.attributes")
 	require.Equal(t, sms.At(2).Scope().Version(), "v1.5.0")

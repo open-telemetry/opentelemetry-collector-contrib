@@ -102,13 +102,15 @@ func TestParserConfigBuildValid(t *testing.T) {
 }
 
 func TestParserMissingField(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: zaptest.NewLogger(t).Sugar(),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 			},
 			OnError: DropOnError,
@@ -245,13 +247,15 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 }
 
 func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: testutil.Logger(t),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 			},
 			OnError: DropOnError,
@@ -298,13 +302,16 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 	expected, err := time.ParseInLocation(layout, sample, hst)
 	require.NoError(t, err)
 
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: testutil.Logger(t),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 			},
 			OnError: DropOnError,
@@ -343,14 +350,17 @@ func TestParserOutput(t *testing.T) {
 	output.On("ID").Return("test-output")
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
 
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			OnError: DropOnError,
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: testutil.Logger(t),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 				OutputOperators: []operator.Operator{output},
 			},
@@ -667,11 +677,13 @@ func NewTestParserConfig() ParserConfig {
 
 func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
 	fakeOut := testutil.NewFakeOutput(t)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	writer := &WriterOperator{
 		BasicOperator: BasicOperator{
-			OperatorID:    "test-id",
-			OperatorType:  "test-type",
-			SugaredLogger: testutil.Logger(t),
+			OperatorID:   "test-id",
+			OperatorType: "test-type",
+			set:          set,
 		},
 		OutputIDs: []string{fakeOut.ID()},
 	}

@@ -299,6 +299,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 			schema:      schema,
 			table:       table,
 			live:        live,
+			dead:        dead,
 			inserts:     ins,
 			upd:         upd,
 			del:         del,
@@ -500,7 +501,7 @@ type replicationStats struct {
 
 func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([]replicationStats, error) {
 	query := `SELECT
-	client_addr,
+	coalesce(cast(client_addr as varchar), 'unix') AS client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
 	extract('epoch' from coalesce(write_lag, '-1 seconds'))::integer,
 	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::integer,
@@ -542,7 +543,7 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	}
 
 	query := `SELECT
-	client_addr,
+	coalesce(cast(client_addr as varchar), 'unix') AS client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
 	extract('epoch' from coalesce(write_lag, '-1 seconds'))::decimal AS write_lag_fractional,
 	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::decimal AS flush_lag_fractional,

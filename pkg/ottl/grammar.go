@@ -218,8 +218,9 @@ type converter struct {
 }
 
 type argument struct {
-	Name  string `parser:"(@(Lowercase(Uppercase | Lowercase)*) Equal)?"`
-	Value value  `parser:"@@"`
+	Name         string  `parser:"(@(Lowercase(Uppercase | Lowercase)*) Equal)?"`
+	Value        value   `parser:"( @@"`
+	FunctionName *string `parser:"| @(Uppercase(Uppercase | Lowercase)*) )"`
 }
 
 func (a *argument) checkForCustomError() error {
@@ -236,7 +237,7 @@ type value struct {
 	String         *string          `parser:"| @String"`
 	Bool           *boolean         `parser:"| @Boolean"`
 	Enum           *enumSymbol      `parser:"| @Uppercase (?! Lowercase)"`
-	FunctionName   *string          `parser:"| @(Uppercase(Uppercase | Lowercase)*)"`
+	Map            *mapValue        `parser:"| @@"`
 	List           *list            `parser:"| @@)"`
 }
 
@@ -268,6 +269,15 @@ type key struct {
 
 type list struct {
 	Values []value `parser:"'[' (@@)* (',' @@)* ']'"`
+}
+
+type mapValue struct {
+	Values []mapItem `parser:"'{' (@@ ','?)* '}'"`
+}
+
+type mapItem struct {
+	Key   *string `parser:"@String ':'"`
+	Value *value  `parser:"@@"`
 }
 
 // byteSlice type for capturing byte slices
@@ -444,6 +454,9 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Equal`, Pattern: `=`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
+		{Name: `LBrace`, Pattern: `\{`},
+		{Name: `RBrace`, Pattern: `\}`},
+		{Name: `Colon`, Pattern: `\:`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
 		{Name: `Uppercase`, Pattern: `[A-Z][A-Z0-9_]*`},
 		{Name: `Lowercase`, Pattern: `[a-z][a-z0-9_]*`},

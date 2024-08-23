@@ -1,0 +1,47 @@
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otelcol'
+          scrape_interval: 1s
+          static_configs:
+            - targets: [ 'localhost:8888' ]
+          metric_relabel_configs:
+            - source_labels: [ __name__ ]
+              regex: "(otelcol_receiver_accepted_log_records|otelcol_exporter_sent_log_records)"
+              action: keep
+
+exporters:
+  datadog:
+    api:
+      key: "key"
+    tls:
+      insecure_skip_verify: true
+    host_metadata:
+      enabled: false
+    logs:
+      endpoint: ${env:SERVER_URL}
+    metrics:
+      endpoint: ${env:SERVER_URL}
+      sums:
+        cumulative_monotonic_mode: raw_value
+
+service:
+  telemetry:
+    metrics:
+      level: basic
+      address: "localhost:8888"
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [datadog]
+    metrics:
+      receivers: [prometheus]
+      exporters: [datadog]

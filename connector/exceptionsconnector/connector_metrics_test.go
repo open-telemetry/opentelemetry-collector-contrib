@@ -25,6 +25,7 @@ import (
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
 type metricID struct {
 	service    string
+	spanName   string
 	kind       string
 	statusCode string
 }
@@ -87,6 +88,25 @@ func TestConnectorConsumeTraces(t *testing.T) {
 			}
 		})
 	}
+	t.Run("Test without exemplars", func(t *testing.T) {
+		msink := &consumertest.MetricsSink{}
+
+		p := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
+		p.config.Exemplars.Enabled = false
+
+		ctx := metadata.NewIncomingContext(context.Background(), nil)
+		err := p.Start(ctx, componenttest.NewNopHost())
+		defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
+		require.NoError(t, err)
+
+		err = p.ConsumeTraces(ctx, buildBadSampleTrace())
+		assert.NoError(t, err)
+
+		metrics := msink.AllMetrics()
+		assert.Greater(t, len(metrics), 0)
+		verifyBadMetricsOkay(t, metrics[len(metrics)-1])
+	})
+
 }
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
@@ -121,6 +141,9 @@ func newTestMetricsConnector(mcon consumer.Metrics, defaultNullValue *string, lo
 			// Exception specific dimensions
 			{exceptionTypeKey, nil},
 			{exceptionMessageKey, nil},
+		},
+		Exemplars: Exemplars{
+			Enabled: true,
 		},
 	}
 	c := newMetricsConnector(logger, cfg)
@@ -174,6 +197,13 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativ
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 		verifyMetricLabels(dp, t, seenMetricIDs)
+
+		assert.Equal(t, 1, dp.Exemplars().Len())
+		exemplar := dp.Exemplars().At(0)
+		assert.NotZero(t, exemplar.Timestamp())
+		assert.NotZero(t, exemplar.TraceID())
+		assert.NotZero(t, exemplar.SpanID())
+
 	}
 	return true
 }
@@ -196,6 +226,8 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
+		case spanNameKey:
+			mID.spanName = v.Str()
 		case spanKindKey:
 			mID.kind = v.Str()
 		case statusCodeKey:
@@ -229,12 +261,12 @@ func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
 	buf := &bytes.Buffer{}
-	buildKey(buf, "ab", span0, nil, pcommon.NewMap())
+	buildKey(buf, "ab", span0, nil, pcommon.NewMap(), pcommon.NewMap())
 	k0 := buf.String()
 	buf.Reset()
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	buildKey(buf, "a", span1, nil, pcommon.NewMap())
+	buildKey(buf, "a", span1, nil, pcommon.NewMap(), pcommon.NewMap())
 	k1 := buf.String()
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET", k0)
@@ -309,7 +341,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
 			buf := &bytes.Buffer{}
-			buildKey(buf, "ab", span0, tc.optionalDims, resAttr)
+			buildKey(buf, "ab", span0, tc.optionalDims, pcommon.NewMap(), resAttr)
 			assert.Equal(t, tc.wantKey, buf.String())
 		})
 	}

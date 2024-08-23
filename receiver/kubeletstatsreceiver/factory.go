@@ -54,7 +54,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -68,7 +68,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := newKubletScraper(rest, set, rOptions, cfg.MetricsBuilderConfig)
+	scrp, err := newKubletScraper(rest, set, rOptions, cfg.MetricsBuilderConfig, cfg.NodeName)
 	if err != nil {
 		return nil, err
 	}

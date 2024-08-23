@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestInputConfigMissingBase(t *testing.T) {
@@ -59,12 +59,14 @@ func TestInputConfigValid(t *testing.T) {
 }
 
 func TestInputOperatorCanProcess(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	input := InputOperator{
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
-				SugaredLogger: testutil.Logger(t),
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
 			},
 		},
 	}
@@ -72,12 +74,14 @@ func TestInputOperatorCanProcess(t *testing.T) {
 }
 
 func TestInputOperatorProcess(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	input := InputOperator{
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
-				SugaredLogger: testutil.Logger(t),
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
 			},
 		},
 	}
@@ -97,6 +101,9 @@ func TestInputOperatorNewEntry(t *testing.T) {
 	resourceExpr, err := ExprStringConfig("resource").Build()
 	require.NoError(t, err)
 
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
 	input := InputOperator{
 		Attributer: Attributer{
 			attributes: map[string]*ExprString{
@@ -110,9 +117,9 @@ func TestInputOperatorNewEntry(t *testing.T) {
 		},
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
-				SugaredLogger: testutil.Logger(t),
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
 			},
 		},
 	}

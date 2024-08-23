@@ -28,7 +28,7 @@ type scraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
+func newScraper(cfg *Config, settings receiver.Settings) *scraper {
 	return &scraper{
 		config:   cfg,
 		settings: settings.TelemetrySettings,

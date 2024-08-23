@@ -40,7 +40,7 @@ func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err e
 
 func newGitHubScraper(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg *Config,
 ) *githubScraper {
 	return &githubScraper{
@@ -94,37 +94,79 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return ghs.mb.Emit(), err
 	}
 
-	ghs.mb.RecordGitRepositoryCountDataPoint(now, int64(count))
+	ghs.mb.RecordVcsRepositoryCountDataPoint(now, int64(count))
 
-	// Get the branch count (future branch data) for each repo and record the given metrics
+	// Get the ref (branch) count (future branch data) for each repo and record
+	// the given metrics
 	var wg sync.WaitGroup
+	wg.Add(len(repos))
+	var mux sync.Mutex
 
 	for _, repo := range repos {
 		repo := repo
 		name := repo.Name
 		trunk := repo.DefaultBranchRef.Name
+		now := now
 
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			count, err := ghs.getBranches(ctx, genClient, name, trunk)
+			branches, count, err := ghs.getBranches(ctx, genClient, name, trunk)
 			if err != nil {
-				ghs.logger.Sugar().Errorf("error getting branch count for repo %s", zap.Error(err), repo.Name)
+				ghs.logger.Sugar().Errorf("error getting branch count: %v", zap.Error(err))
 			}
-			ghs.mb.RecordGitRepositoryBranchCountDataPoint(now, int64(count), name)
+
+			// Create a mutual exclusion lock to prevent the recordDataPoint
+			// SetStartTimestamp call from having a nil pointer panic
+			mux.Lock()
+
+			refType := metadata.AttributeRefTypeBranch
+			ghs.mb.RecordVcsRepositoryRefCountDataPoint(now, int64(count), name, refType)
+
+			// Iterate through the refs (branches) populating the Branch focused
+			// metrics
+			for _, branch := range branches {
+				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
+				// for more information as to why we do not emit metrics for
+				// the default branch (trunk) nor any branch with no changes to
+				// it.
+				if branch.Name == branch.Repository.DefaultBranchRef.Name || branch.Compare.BehindBy == 0 {
+					continue
+				}
+
+				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
+				// for more information as to why `BehindBy` and `AheadBy` are
+				// swapped.
+				ghs.mb.RecordVcsRepositoryRefRevisionsAheadDataPoint(now, int64(branch.Compare.BehindBy), branch.Repository.Name, branch.Name, refType)
+				ghs.mb.RecordVcsRepositoryRefRevisionsBehindDataPoint(now, int64(branch.Compare.AheadBy), branch.Repository.Name, branch.Name, refType)
+
+				var additions int
+				var deletions int
+				var age int64
+
+				additions, deletions, age, err = ghs.evalCommits(ctx, genClient, branch.Repository.Name, branch)
+				if err != nil {
+					ghs.logger.Sugar().Errorf("error getting commit info: %v", zap.Error(err))
+					continue
+				}
+
+				ghs.mb.RecordVcsRepositoryRefTimeDataPoint(now, age, branch.Repository.Name, branch.Name, refType)
+				ghs.mb.RecordVcsRepositoryRefLinesAddedDataPoint(now, int64(additions), branch.Repository.Name, branch.Name, refType)
+				ghs.mb.RecordVcsRepositoryRefLinesDeletedDataPoint(now, int64(deletions), branch.Repository.Name, branch.Name, refType)
+
+			}
 
 			// Get the contributor count for each of the repositories
 			contribs, err := ghs.getContributorCount(ctx, restClient, name)
 			if err != nil {
-				ghs.logger.Sugar().Errorf("error getting contributor count for repo %s", zap.Error(err), repo.Name)
+				ghs.logger.Sugar().Errorf("error getting contributor count: %v", zap.Error(err))
 			}
-			ghs.mb.RecordGitRepositoryContributorCountDataPoint(now, int64(contribs), name)
+			ghs.mb.RecordVcsRepositoryContributorCountDataPoint(now, int64(contribs), name)
 
-			// Get Pull Request data
+			// Get change (pull request) data
 			prs, err := ghs.getPullRequests(ctx, genClient, name)
 			if err != nil {
-				ghs.logger.Sugar().Errorf("error getting pull requests for repo %s", zap.Error(err), repo.Name)
+				ghs.logger.Sugar().Errorf("error getting pull requests: %v", zap.Error(err))
 			}
 
 			var merged int
@@ -136,32 +178,33 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 					age := getAge(pr.CreatedAt, pr.MergedAt)
 
-					ghs.mb.RecordGitRepositoryPullRequestTimeToMergeDataPoint(now, age, name, pr.HeadRefName)
+					ghs.mb.RecordVcsRepositoryChangeTimeToMergeDataPoint(now, age, name, pr.HeadRefName)
 
 				} else {
 					open++
 
 					age := getAge(pr.CreatedAt, now.AsTime())
 
-					ghs.mb.RecordGitRepositoryPullRequestTimeOpenDataPoint(now, age, name, pr.HeadRefName)
+					ghs.mb.RecordVcsRepositoryChangeTimeOpenDataPoint(now, age, name, pr.HeadRefName)
 
 					if pr.Reviews.TotalCount > 0 {
 						age := getAge(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)
 
-						ghs.mb.RecordGitRepositoryPullRequestTimeToApprovalDataPoint(now, age, name, pr.HeadRefName)
+						ghs.mb.RecordVcsRepositoryChangeTimeToApprovalDataPoint(now, age, name, pr.HeadRefName)
 					}
 				}
 			}
 
-			ghs.mb.RecordGitRepositoryPullRequestCountDataPoint(now, int64(open), metadata.AttributePullRequestStateOpen, name)
-			ghs.mb.RecordGitRepositoryPullRequestCountDataPoint(now, int64(merged), metadata.AttributePullRequestStateMerged, name)
+			ghs.mb.RecordVcsRepositoryChangeCountDataPoint(now, int64(open), metadata.AttributeChangeStateOpen, name)
+			ghs.mb.RecordVcsRepositoryChangeCountDataPoint(now, int64(merged), metadata.AttributeChangeStateMerged, name)
+			mux.Unlock()
 		}()
 	}
 
 	wg.Wait()
 
 	// Set the resource attributes and emit metrics with those resources
-	ghs.rb.SetGitVendorName("github")
+	ghs.rb.SetVcsVendorName("github")
 	ghs.rb.SetOrganizationName(ghs.cfg.GitHubOrg)
 
 	res := ghs.rb.Emit()

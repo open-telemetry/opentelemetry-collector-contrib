@@ -28,36 +28,56 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for gitprovider metrics.
 type MetricsConfig struct {
-	GitRepositoryBranchCount               MetricConfig `mapstructure:"git.repository.branch.count"`
-	GitRepositoryContributorCount          MetricConfig `mapstructure:"git.repository.contributor.count"`
-	GitRepositoryCount                     MetricConfig `mapstructure:"git.repository.count"`
-	GitRepositoryPullRequestCount          MetricConfig `mapstructure:"git.repository.pull_request.count"`
-	GitRepositoryPullRequestTimeOpen       MetricConfig `mapstructure:"git.repository.pull_request.time_open"`
-	GitRepositoryPullRequestTimeToApproval MetricConfig `mapstructure:"git.repository.pull_request.time_to_approval"`
-	GitRepositoryPullRequestTimeToMerge    MetricConfig `mapstructure:"git.repository.pull_request.time_to_merge"`
+	VcsRepositoryChangeCount          MetricConfig `mapstructure:"vcs.repository.change.count"`
+	VcsRepositoryChangeTimeOpen       MetricConfig `mapstructure:"vcs.repository.change.time_open"`
+	VcsRepositoryChangeTimeToApproval MetricConfig `mapstructure:"vcs.repository.change.time_to_approval"`
+	VcsRepositoryChangeTimeToMerge    MetricConfig `mapstructure:"vcs.repository.change.time_to_merge"`
+	VcsRepositoryContributorCount     MetricConfig `mapstructure:"vcs.repository.contributor.count"`
+	VcsRepositoryCount                MetricConfig `mapstructure:"vcs.repository.count"`
+	VcsRepositoryRefCount             MetricConfig `mapstructure:"vcs.repository.ref.count"`
+	VcsRepositoryRefLinesAdded        MetricConfig `mapstructure:"vcs.repository.ref.lines_added"`
+	VcsRepositoryRefLinesDeleted      MetricConfig `mapstructure:"vcs.repository.ref.lines_deleted"`
+	VcsRepositoryRefRevisionsAhead    MetricConfig `mapstructure:"vcs.repository.ref.revisions_ahead"`
+	VcsRepositoryRefRevisionsBehind   MetricConfig `mapstructure:"vcs.repository.ref.revisions_behind"`
+	VcsRepositoryRefTime              MetricConfig `mapstructure:"vcs.repository.ref.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		GitRepositoryBranchCount: MetricConfig{
+		VcsRepositoryChangeCount: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryContributorCount: MetricConfig{
+		VcsRepositoryChangeTimeOpen: MetricConfig{
+			Enabled: true,
+		},
+		VcsRepositoryChangeTimeToApproval: MetricConfig{
+			Enabled: true,
+		},
+		VcsRepositoryChangeTimeToMerge: MetricConfig{
+			Enabled: true,
+		},
+		VcsRepositoryContributorCount: MetricConfig{
 			Enabled: false,
 		},
-		GitRepositoryCount: MetricConfig{
+		VcsRepositoryCount: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryPullRequestCount: MetricConfig{
+		VcsRepositoryRefCount: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryPullRequestTimeOpen: MetricConfig{
+		VcsRepositoryRefLinesAdded: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryPullRequestTimeToApproval: MetricConfig{
+		VcsRepositoryRefLinesDeleted: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryPullRequestTimeToMerge: MetricConfig{
+		VcsRepositoryRefRevisionsAhead: MetricConfig{
+			Enabled: true,
+		},
+		VcsRepositoryRefRevisionsBehind: MetricConfig{
+			Enabled: true,
+		},
+		VcsRepositoryRefTime: MetricConfig{
 			Enabled: true,
 		},
 	}
@@ -91,16 +111,16 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for gitprovider resource attributes.
 type ResourceAttributesConfig struct {
-	GitVendorName    ResourceAttributeConfig `mapstructure:"git.vendor.name"`
 	OrganizationName ResourceAttributeConfig `mapstructure:"organization.name"`
+	VcsVendorName    ResourceAttributeConfig `mapstructure:"vcs.vendor.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		GitVendorName: ResourceAttributeConfig{
+		OrganizationName: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		OrganizationName: ResourceAttributeConfig{
+		VcsVendorName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

@@ -7,10 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("elasticsearch")
+	Type      = component.MustNewType("elasticsearch")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 )
 
 const (
-	TracesStability = component.StabilityLevelBeta
-	LogsStability   = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

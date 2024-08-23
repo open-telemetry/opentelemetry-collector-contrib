@@ -1,5 +1,4 @@
 type: kafkametrics
-scope_name: otelcol/kafkametricsreceiver
 
 status:
   class: receiver
@@ -9,7 +8,16 @@ status:
   codeowners:
     active: [dmitryax]
 
+resource_attributes:
+  kafka.cluster.alias:
+    description: The alias name (string) of the cluster
+    enabled: false
+    type: string
+
 attributes:
+  broker:
+    description: The ID of the kafka broker
+    type: string
   topic:
     description: The ID (integer) of a topic
     type: string
@@ -30,6 +38,13 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
+  kafka.broker.log_retention_period:
+    enabled: false
+    description: log retention time (s) of a broker.
+    unit: "s"
+    gauge:
+      value_type: int
+    attributes: [broker]
   #  topics scraper
   kafka.topic.partitions:
     enabled: true
@@ -40,17 +55,45 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [topic]
+  kafka.topic.replication_factor:
+    enabled: false
+    description: replication factor of a topic.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [topic]
+  kafka.topic.log_retention_period:
+    enabled: false
+    description: log retention period of a topic (s).
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [topic]
+  kafka.topic.log_retention_size:
+    enabled: false
+    description: log retention size of a topic in Bytes, The value (-1) indicates infinite size.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [topic]
+  kafka.topic.min_insync_replicas:
+    enabled: false
+    description: minimum insync replicas of a topic.
+    unit: "{replicas}"
+    gauge:
+      value_type: int
+    attributes: [topic]
   kafka.partition.current_offset:
     enabled: true
     description: Current offset of partition of topic.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [topic, partition]
   kafka.partition.oldest_offset:
     enabled: true
     description: Oldest offset of partition of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [topic, partition]
@@ -85,28 +128,28 @@ metrics:
   kafka.consumer_group.offset:
     enabled: true
     description: Current offset of the consumer group at partition of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [group, topic, partition]
   kafka.consumer_group.offset_sum:
     enabled: true
     description: Sum of consumer group offset across partitions of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [group, topic]
   kafka.consumer_group.lag:
     enabled: true
     description: Current approximate lag of consumer group at partition of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [group, topic, partition]
   kafka.consumer_group.lag_sum:
     enabled: true
     description: Current approximate sum of consumer group lag across all partitions of topic
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [group, topic]

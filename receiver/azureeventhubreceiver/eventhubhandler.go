@@ -46,7 +46,7 @@ type eventhubHandler struct {
 	hub          hubWrapper
 	dataConsumer dataConsumer
 	config       *Config
-	settings     receiver.CreateSettings
+	settings     receiver.Settings
 	cancel       context.CancelFunc
 }
 
@@ -182,7 +182,7 @@ func (h *eventhubHandler) setDataConsumer(dataConsumer dataConsumer) {
 	h.dataConsumer = dataConsumer
 }
 
-func newEventhubHandler(config *Config, settings receiver.CreateSettings) *eventhubHandler {
+func newEventhubHandler(config *Config, settings receiver.Settings) *eventhubHandler {
 
 	return &eventhubHandler{
 		config:   config,

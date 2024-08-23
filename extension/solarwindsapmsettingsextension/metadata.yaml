@@ -1,5 +1,4 @@
 type: solarwindsapmsettings
-scope_name: otelcol/solarwindsapmsettings
 
 status:
   class: extension
@@ -8,3 +7,8 @@ status:
   distributions: []
   codeowners:
     active: [jerrytfleung, cheempz]
+
+tests:
+  config:
+    endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+

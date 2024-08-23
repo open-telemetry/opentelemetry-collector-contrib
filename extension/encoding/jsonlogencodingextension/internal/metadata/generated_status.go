@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("json_log_encoding")
+	Type      = component.MustNewType("json_log_encoding")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension"
 )
 
 const (
-	ExtensionStability = component.StabilityLevelDevelopment
+	ExtensionStability = component.StabilityLevelAlpha
 )

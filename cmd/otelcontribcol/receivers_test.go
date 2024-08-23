@@ -378,6 +378,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "snowflake",
 		},
 		{
+			receiver: "splunkenterprise",
+		},
+		{
 			receiver: "splunk_hec",
 		},
 		{
@@ -500,7 +503,7 @@ type getReceiverConfigFn func() component.Config
 func verifyReceiverLifecycle(t *testing.T, factory receiver.Factory, getConfigFn getReceiverConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	receiverCreateSet := receivertest.NewNopCreateSettings()
+	receiverCreateSet := receivertest.NewNopSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -531,7 +534,7 @@ func verifyReceiverLifecycle(t *testing.T, factory receiver.Factory, getConfigFn
 // verifyReceiverShutdown is used to test if a receiver type can be shutdown without being started first.
 func verifyReceiverShutdown(tb testing.TB, factory receiver.Factory, getConfigFn getReceiverConfigFn) {
 	ctx := context.Background()
-	receiverCreateSet := receivertest.NewNopCreateSettings()
+	receiverCreateSet := receivertest.NewNopSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -560,24 +563,24 @@ func verifyReceiverShutdown(tb testing.TB, factory receiver.Factory, getConfigFn
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
 type createReceiverFn func(
 	ctx context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 ) (component.Component, error)
 
 func wrapCreateLogsRcvr(factory receiver.Factory) createReceiverFn {
-	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsRcvr(factory receiver.Factory) createReceiverFn {
-	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesRcvr(factory receiver.Factory) createReceiverFn {
-	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }

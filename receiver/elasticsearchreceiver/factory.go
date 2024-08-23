@@ -52,7 +52,7 @@ var errConfigNotES = errors.New("config was not an elasticsearch receiver config
 // createMetricsReceiver creates a metrics receiver for scraping elasticsearch metrics.
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {

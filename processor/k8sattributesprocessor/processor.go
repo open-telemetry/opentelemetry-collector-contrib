@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -38,12 +39,12 @@ type kubernetesprocessor struct {
 	podIgnore         kube.Excludes
 }
 
-func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {
+func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
 	if kubeClient == nil {
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -52,21 +53,21 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 	return nil
 }
 
-func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
+func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
 
 	for _, opt := range allOptions {
 		if err := opt(kp); err != nil {
-			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			return nil
 		}
 	}
 
 	// This might have been set by an option already
 	if kp.kc == nil {
-		err := kp.initKubeClient(kp.logger, kubeClientProvider)
+		err := kp.initKubeClient(kp.telemetrySettings, kubeClientProvider)
 		if err != nil {
-			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			return nil
 		}
 	}
@@ -245,9 +246,12 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		}
 	}
 	if runID != -1 {
-		if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
-			if _, found := attrs.Get(conventions.AttributeContainerID); !found {
+		if containerStatus, ok := containerSpec.Statuses[runID]; ok {
+			if _, found := attrs.Get(conventions.AttributeContainerID); !found && containerStatus.ContainerID != "" {
 				attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
+			}
+			if _, found := attrs.Get(containerImageRepoDigests); !found && containerStatus.ImageRepoDigest != "" {
+				attrs.PutEmptySlice(containerImageRepoDigests).AppendEmpty().SetStr(containerStatus.ImageRepoDigest)
 			}
 		}
 	}

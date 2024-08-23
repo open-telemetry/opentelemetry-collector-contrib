@@ -38,6 +38,7 @@ The following settings can be optionally configured:
     - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
+- `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
 - `auth`
   - `plain_text`
     - `username`: The username to use.
@@ -49,7 +50,7 @@ The following settings can be optionally configured:
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM mechanism
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
-  - `tls`
+  - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
     - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
       only be used if `insecure` is set to false.
     - `cert_file`: path to the TLS cert to use for TLS required connections. Should
@@ -68,6 +69,7 @@ The following settings can be optionally configured:
     - `password`: The Kerberos password used for authenticate with KDC
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
+    - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. When
     disabled, the client does not make the initial request to broker at the

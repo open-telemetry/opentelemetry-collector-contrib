@@ -283,8 +283,8 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			switch {
 			case arg.Value.Enum != nil:
 				name = string(*arg.Value.Enum)
-			case arg.Value.FunctionName != nil:
-				name = *arg.Value.FunctionName
+			case arg.FunctionName != nil:
+				name = *arg.FunctionName
 			default:
 				return fmt.Errorf("invalid function name given")
 			}
@@ -493,6 +493,12 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardBoolLikeGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "ByteSliceLikeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardByteSliceLikeGetter[K]{Getter: arg.Get}, nil
 	case name == "Enum":
 		arg, err := p.enumParser((*EnumSymbol)(argVal.Enum))
 		if err != nil {

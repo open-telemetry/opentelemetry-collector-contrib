@@ -1,10 +1,9 @@
 type: splunkenterprise
-scope_name: otelcol/splunkenterprisereceiver
 
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions:
   codeowners:
     active: [shalper2, MovieStoreGuy, greatestusername]

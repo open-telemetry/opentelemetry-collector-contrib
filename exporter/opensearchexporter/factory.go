@@ -40,7 +40,7 @@ func newDefaultConfig() component.Config {
 }
 
 func createTracesExporter(ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config) (exporter.Traces, error) {
 	c := cfg.(*Config)
 	te, e := newSSOTracesExporter(c, set)
@@ -57,7 +57,7 @@ func createTracesExporter(ctx context.Context,
 }
 
 func createLogsExporter(ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	le, e := newLogExporter(c, set)

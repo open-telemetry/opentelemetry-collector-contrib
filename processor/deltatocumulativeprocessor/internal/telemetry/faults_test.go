@@ -7,12 +7,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/otel/metric/noop"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testdata/random"
@@ -29,6 +31,7 @@ func TestFaults(t *testing.T) {
 		Pre  func(Map, identity.Stream, data.Number) error
 		Bad  func(Map, identity.Stream, data.Number) error
 		Err  error
+		Want error
 	}
 
 	sum := random.Sum()
@@ -87,7 +90,8 @@ func TestFaults(t *testing.T) {
 				dp.SetTimestamp(ts(20))
 				return dps.Store(id, dp)
 			},
-			Err: streams.ErrLimit(1),
+			Err:  streams.ErrLimit(1),
+			Want: streams.Drop, // we can't ignore being at limit, we need to drop the entire stream for this request
 		},
 		{
 			Name: "evict",
@@ -110,10 +114,13 @@ func TestFaults(t *testing.T) {
 		},
 	}
 
+	telb, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: noop.NewMeterProvider()})
+	require.NoError(t, err)
+
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			id, dp := sum.Stream()
-			tel := telemetry.New(noop.Meter{})
+			tel := telemetry.New(telb)
 
 			dps := c.Map
 			if dps == nil {
@@ -130,7 +137,7 @@ func TestFaults(t *testing.T) {
 			require.Equal(t, c.Err, err)
 
 			err = c.Bad(onf, id, dp.Clone())
-			require.NoError(t, err)
+			require.Equal(t, c.Want, err)
 		})
 	}
 }
@@ -140,11 +147,11 @@ type ts = pcommon.Timestamp
 // HeadEvictor drops the first stream on Evict()
 type HeadEvictor[T any] struct{ streams.Map[T] }
 
-func (e HeadEvictor[T]) Evict() (evicted identity.Stream) {
+func (e HeadEvictor[T]) Evict() (evicted identity.Stream, ok bool) {
 	e.Items()(func(id identity.Stream, _ T) bool {
 		e.Delete(id)
 		evicted = id
 		return false
 	})
-	return evicted
+	return evicted, true
 }

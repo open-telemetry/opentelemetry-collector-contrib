@@ -7,7 +7,7 @@ package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -32,7 +32,7 @@ func TestScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	scraper := newIisReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -61,7 +61,7 @@ func TestScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings := receivertest.NewNopSettings()
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -71,7 +71,7 @@ func TestScrapeFailure(t *testing.T) {
 	)
 
 	expectedError := "failure to collect metric"
-	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError))("", "", "")
+	mockWatcher, err := newMockWatcherFactory(errors.New(expectedError))("", "", "")
 	require.NoError(t, err)
 	scraper.totalWatcherRecorders = []watcherRecorder{
 		{
@@ -97,7 +97,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings := receivertest.NewNopSettings()
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -107,7 +107,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 	)
 
 	expectedError := "failure to collect metric"
-	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError))("", "", "")
+	mockWatcher, err := newMockWatcherFactory(errors.New(expectedError))("", "", "")
 	require.NoError(t, err)
 	scraper.queueMaxAgeWatchers = []instanceWatcher{
 		{
@@ -128,7 +128,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings := receivertest.NewNopSettings()
 
 	scraper := newIisReceiver(
 		rcvrSettings,
@@ -137,7 +137,7 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 	)
 
 	expectedError := "Failed to scrape counter \"counter\": A counter with a negative denominator value was detected.\r\n"
-	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError))("", "", "")
+	mockWatcher, err := newMockWatcherFactory(errors.New(expectedError))("", "", "")
 	require.NoError(t, err)
 	scraper.queueMaxAgeWatchers = []instanceWatcher{
 		{
@@ -171,7 +171,7 @@ func newMockWatcherFactory(watchErr error) func(string, string,
 }
 
 func newMockWatcherFactorFromPath(watchErr error, value float64) func(string) (winperfcounters.PerfCounterWatcher, error) {
-	return func(s string) (winperfcounters.PerfCounterWatcher, error) {
+	return func(_ string) (winperfcounters.PerfCounterWatcher, error) {
 		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
 	}
 }
@@ -188,5 +188,9 @@ func (mpc *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error)
 
 // Close
 func (mpc *mockPerfCounter) Close() error {
+	return nil
+}
+
+func (mpc *mockPerfCounter) Reset() error {
 	return nil
 }

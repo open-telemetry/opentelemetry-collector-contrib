@@ -9,7 +9,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v4/load"
 	"go.uber.org/zap"
 )
 

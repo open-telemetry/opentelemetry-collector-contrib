@@ -449,7 +449,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			factory := NewFactory()
 			mgp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				cfg,
 				next,
 			)
@@ -594,7 +594,7 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 			if tm.metricMins != nil {
 				mins := tm.metricMins[i]
 				if len(mins) > 0 {
-					dp.SetMin(sums[index])
+					dp.SetMin(mins[index])
 				}
 			}
 			if tm.metricMaxes != nil {
@@ -615,7 +615,7 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 
 func BenchmarkConsumeMetrics(b *testing.B) {
 	c := consumertest.NewNop()
-	params := processor.CreateSettings{
+	params := processor.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.NewNop(),
 		},

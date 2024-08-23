@@ -4,12 +4,12 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
@@ -37,7 +39,6 @@ func Components() (
 
 	extensions, err := extension.MakeFactoryMap(
 		zpagesextension.NewFactory(),
-		ballastextension.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 
@@ -66,11 +67,18 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
+	connectors, err := connector.MakeFactoryMap(
+		spanmetricsconnector.NewFactory(),
+		routingconnector.NewFactory(),
+	)
+	errs = multierr.Append(errs, err)
+
 	factories := otelcol.Factories{
 		Extensions: extensions,
 		Receivers:  receivers,
 		Processors: processors,
 		Exporters:  exporters,
+		Connectors: connectors,
 	}
 
 	return factories, errs

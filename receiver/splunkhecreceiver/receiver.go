@@ -20,6 +20,7 @@ import (
 	"github.com/gorilla/mux"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
@@ -84,7 +85,7 @@ var (
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
 type splunkReceiver struct {
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	config          *Config
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
@@ -99,7 +100,7 @@ var _ receiver.Metrics = (*splunkReceiver)(nil)
 
 // newMetricsReceiver creates the Splunk HEC receiver with the given configuration.
 func newMetricsReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -144,7 +145,7 @@ func newMetricsReceiver(
 
 // newLogsReceiver creates the Splunk HEC receiver with the given configuration.
 func newLogsReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
@@ -233,7 +234,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	go func() {
 		defer r.shutdownWG.Done()
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -281,7 +282,7 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	var channelID string
 	var extracted bool
-	if channelID, extracted = r.extractChannelHeader(req); extracted {
+	if channelID, extracted = r.extractChannel(req); extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
 			return
@@ -327,7 +328,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	var channelID string
 	var extracted bool
-	if channelID, extracted = r.extractChannelHeader(req); extracted {
+	if channelID, extracted = r.extractChannel(req); extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
 			return
@@ -391,9 +392,18 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
-func (r *splunkReceiver) extractChannelHeader(req *http.Request) (string, bool) {
-	if headers, ok := req.Header[splunk.HTTPSplunkChannelHeader]; ok {
-		return headers[0], true
+func (r *splunkReceiver) extractChannel(req *http.Request) (string, bool) {
+	// check header
+	for k, v := range req.Header {
+		if strings.EqualFold(k, splunk.HTTPSplunkChannelHeader) {
+			return strings.ToUpper(v[0]), true
+		}
+	}
+	// check query param
+	for k, v := range req.URL.Query() {
+		if strings.EqualFold(k, "channel") {
+			return strings.ToUpper(v[0]), true
+		}
 	}
 
 	return "", false
@@ -434,7 +444,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	channelID, extracted := r.extractChannelHeader(req)
+	channelID, extracted := r.extractChannel(req)
 	if extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)

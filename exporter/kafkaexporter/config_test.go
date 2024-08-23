@@ -59,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
@@ -114,6 +115,7 @@ func TestLoadConfig(t *testing.T) {
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
@@ -168,6 +170,7 @@ func TestLoadConfig(t *testing.T) {
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				ResolveCanonicalBootstrapServersOnly: true,
@@ -199,7 +202,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
