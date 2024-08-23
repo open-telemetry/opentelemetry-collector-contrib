@@ -38,7 +38,9 @@ type Processor struct {
 	expHistogramLookup map[identity.Stream]pmetric.ExponentialHistogramDataPoint
 	summaryLookup      map[identity.Stream]pmetric.SummaryDataPoint
 
-	exportInterval time.Duration
+	exportInterval     time.Duration
+	gaugePassThrough   bool
+	summaryPassThrough bool
 
 	nextConsumer consumer.Metrics
 }
@@ -62,7 +64,9 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 		expHistogramLookup: map[identity.Stream]pmetric.ExponentialHistogramDataPoint{},
 		summaryLookup:      map[identity.Stream]pmetric.SummaryDataPoint{},
 
-		exportInterval: config.Interval,
+		exportInterval:     config.Interval,
+		gaugePassThrough:   config.GaugePassThrough,
+		summaryPassThrough: config.SummaryPassThrough,
 
 		nextConsumer: nextConsumer,
 	}
@@ -105,6 +109,10 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
 				switch m.Type() {
 				case pmetric.MetricTypeSummary:
+					if p.summaryPassThrough {
+						return false
+					}
+
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 
 					// The ideal scenario is that we would re-use `aggregateDataPoints()` here, but we can't
@@ -129,6 +137,10 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 					}
 					return true
 				case pmetric.MetricTypeGauge:
+					if p.gaugePassThrough {
+						return false
+					}
+
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					aggregateDataPoints(m.Gauge().DataPoints(), mClone.Gauge().DataPoints(), metricID, p.numberLookup)
 					return true
