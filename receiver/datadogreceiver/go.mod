@@ -9,7 +9,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.56.0-rc.12
 	github.com/DataDog/datadog-api-client-go/v2 v2.29.0
 	github.com/DataDog/sketches-go v1.4.6
-	github.com/golang/protobuf v1.5.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.107.0
 	github.com/stretchr/testify v1.9.0
@@ -50,6 +49,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
