@@ -7,7 +7,7 @@ change_type: breaking
 component: gitproviderreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: The Git Provider Receiver has been renamed to VCS Metrics Receiver.
+note: The Git Provider Receiver has been renamed to GitHub Receiver.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34731]
@@ -16,7 +16,9 @@ issues: [34731]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This rename was to better match the OpenTelemetry semantic convention changes in v1.27.0.
+  This rename was to better match the OpenTelemetry semantic convention changes in v1.27.0
+  and allows for Traces and Log signals to be added to this component. Traces
+  as mentioned in issue #27460 will be added in a future release to this component.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
