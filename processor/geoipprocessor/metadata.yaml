@@ -3,6 +3,7 @@ type: geoip
 status:
   class: processor
   stability:
-    development: [traces, metrics, logs]
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
   codeowners:
     active: [andrzej-stencel, michalpristas, rogercoll]

@@ -212,6 +212,8 @@ func TestLogsExporter(t *testing.T) {
 			},
 		},
 	}
+	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
+	assert.NoError(t, featuregateErr)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := testutil.DatadogLogServerMock()
@@ -238,6 +240,8 @@ func TestLogsExporter(t *testing.T) {
 			assert.Equal(t, tt.want, server.LogsData)
 		})
 	}
+	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
+	assert.NoError(t, featuregateErr)
 }
 
 func TestLogsAgentExporter(t *testing.T) {
@@ -497,8 +501,6 @@ func TestLogsAgentExporter(t *testing.T) {
 			},
 		},
 	}
-	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, err)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			doneChannel := make(chan bool)
