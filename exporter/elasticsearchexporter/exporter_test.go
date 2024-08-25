@@ -312,7 +312,7 @@ func TestExporterLogs(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0,"schema_url":""},"severity_number":0,"trace_flags":0}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0}`),
 			},
 		}
 
@@ -821,19 +821,19 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3]}},"resource":{"dropped_attributes_count":0,"schema_url":""}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3]}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}},"resource":{"dropped_attributes_count":0,"schema_url":""}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T02:00:00.000000000Z"}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"start_timestamp":"1970-01-01T02:00:00.000000000Z"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary_metrics"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T03:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{"dropped_attributes_count":0,"schema_url":""},"start_timestamp":"1970-01-01T03:00:00.000000000Z"}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T03:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"start_timestamp":"1970-01-01T03:00:00.000000000Z"}`),
 			},
 		}
 
@@ -1030,6 +1030,68 @@ func TestExporterTraces(t *testing.T) {
 			},
 		))
 		rec.WaitItems(1)
+	})
+
+	t.Run("otel mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
+		})
+
+		traces := ptrace.NewTraces()
+		resourceSpans := traces.ResourceSpans()
+		rs := resourceSpans.AppendEmpty()
+
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("name")
+		span.SetTraceID(pcommon.NewTraceIDEmpty())
+		span.SetSpanID(pcommon.NewSpanIDEmpty())
+		span.SetFlags(1)
+		span.SetDroppedAttributesCount(2)
+		span.SetDroppedEventsCount(3)
+		span.SetDroppedLinksCount(4)
+		span.TraceState().FromRaw("foo")
+		span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+
+		scopeAttr := span.Attributes()
+		fillResourceAttributeMap(scopeAttr, map[string]string{
+			"attr.foo": "attr.bar",
+		})
+
+		resAttr := rs.Resource().Attributes()
+		fillResourceAttributeMap(resAttr, map[string]string{
+			"resource.foo": "resource.bar",
+		})
+
+		spanLink := span.Links().AppendEmpty()
+		spanLink.SetTraceID(pcommon.NewTraceIDEmpty())
+		spanLink.SetSpanID(pcommon.NewSpanIDEmpty())
+		spanLink.SetFlags(10)
+		spanLink.SetDroppedAttributesCount(11)
+		spanLink.TraceState().FromRaw("bar")
+		fillResourceAttributeMap(spanLink.Attributes(), map[string]string{
+			"link.attr.foo": "link.attr.bar",
+		})
+
+		mustSendTraces(t, exporter, traces)
+
+		rec.WaitItems(1)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","attributes":{"attr.foo":"attr.bar"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"traces"},"dropped_attributes_count":2,"dropped_events_count":3,"dropped_links_count":4,"duration":3600000000000,"kind":"Unspecified","links":[{"attributes":{"link.attr.foo":"link.attr.bar"},"dropped_attributes_count":11,"span_id":"","trace_id":"","trace_state":"bar"}],"name":"name","resource":{"attributes":{"resource.foo":"resource.bar"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"status":{"code":"Unset"},"trace_state":"foo"}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 }
 
