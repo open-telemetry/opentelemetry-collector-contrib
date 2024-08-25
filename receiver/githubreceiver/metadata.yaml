@@ -1,4 +1,4 @@
-type: githubreceiver
+type: github
 
 sem_conv_version: 1.27.0
 

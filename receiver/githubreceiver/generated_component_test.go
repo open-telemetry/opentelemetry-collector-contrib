@@ -16,7 +16,7 @@ import (
 )
 
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "githubreceiver", NewFactory().Type().String())
+	require.Equal(t, "github", NewFactory().Type().String())
 }
 
 func TestComponentConfigStruct(t *testing.T) {

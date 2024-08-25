@@ -26,7 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for githubreceiver metrics.
+// MetricsConfig provides config for github metrics.
 type MetricsConfig struct {
 	VcsRepositoryChangeCount          MetricConfig `mapstructure:"vcs.repository.change.count"`
 	VcsRepositoryChangeTimeOpen       MetricConfig `mapstructure:"vcs.repository.change.time_open"`
@@ -109,7 +109,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for githubreceiver resource attributes.
+// ResourceAttributesConfig provides config for github resource attributes.
 type ResourceAttributesConfig struct {
 	OrganizationName ResourceAttributeConfig `mapstructure:"organization.name"`
 	VcsVendorName    ResourceAttributeConfig `mapstructure:"vcs.vendor.name"`
@@ -126,7 +126,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for githubreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for github metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
