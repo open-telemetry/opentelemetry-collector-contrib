@@ -21,6 +21,12 @@
                   "value": {
                     "stringValue": "sancia"
                   }
+                },
+                {
+                  "key": "d4r.image.name",
+                  "value": {
+                    "stringValue": "flooentd"
+                  }
                 }
               ]
             }

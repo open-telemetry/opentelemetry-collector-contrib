@@ -21,6 +21,12 @@
                   "value": {
                     "stringValue": "sancia"
                   }
+                },
+                {
+                  "key": "docker.image.name",
+                  "value": {
+                    "stringValue": "flooentd"
+                  }
                 }
               ]
             }
