@@ -122,6 +122,7 @@ func (e *baseExporter) getConfig() component.Config {
 func (e *baseExporter) setMetadata(md metadata.MD) {
 	e.metadata = metadata.Join(e.metadata, md)
 }
+
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {

@@ -78,9 +78,9 @@ func (r *mockReceiver) setExportError(err error) {
 type mockTracesReceiver struct {
 	ptraceotlp.UnimplementedGRPCServer
 	mockReceiver
-	exportResponse func() ptraceotlp.ExportResponse
-	lastRequest    ptrace.Traces
-	hasMetadata bool
+	exportResponse      func() ptraceotlp.ExportResponse
+	lastRequest         ptrace.Traces
+	hasMetadata         bool
 	spanCountByMetadata map[string]int
 }
 

@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 package otelarrowexporter
+
 import (
 	"context"
 	"fmt"
@@ -86,7 +87,7 @@ func TestSendTracesWithMetadata(t *testing.T) {
 		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			spans.At(spanIndex).SetName(fmt.Sprintf("%d-%d",requestNum, spanIndex))
+			spans.At(spanIndex).SetName(fmt.Sprintf("%d-%d", requestNum, spanIndex))
 		}
 		// td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
 
@@ -169,7 +170,6 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
-
 
 	for requestNum := 0; requestNum < cardLimit; requestNum++ {
 		td := testdata.GenerateTraces(1)

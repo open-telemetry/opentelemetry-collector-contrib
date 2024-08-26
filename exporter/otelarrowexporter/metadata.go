@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/grpc/metadata"
 	"go.uber.org/multierr"
+	"google.golang.org/grpc/metadata"
 )
 
 var (
@@ -40,7 +40,7 @@ type metadataExporter struct {
 
 	metadataKeys []string
 	exporters    sync.Map
-	metadata metadata.MD
+	metadata     metadata.MD
 
 	// Guards the size and the storing logic to ensure no more than limit items are stored.
 	// If we are willing to allow "some" extra items than the limit this can be removed and size can be made atomic.
@@ -88,18 +88,16 @@ func (e *metadataExporter) helperOptions() []exporterhelper.Option {
 	}
 }
 
-func (e *metadataExporter) start(ctx context.Context, host component.Host) (err error) {
+func (e *metadataExporter) start(_ context.Context, host component.Host) (err error) {
 	e.host = host
 	return nil
 }
 
-func (e *metadataExporter) setMetadata(md metadata.MD) {
-	return
-}
+func (e *metadataExporter) setMetadata(_ metadata.MD) {}
 
 func (e *metadataExporter) shutdown(ctx context.Context) error {
 	var err error
-	e.exporters.Range(func(key any, value any) bool {
+	e.exporters.Range(func(_ any, value any) bool {
 		be, ok := value.(exp)
 		if !ok {
 			err = multierr.Append(err, fmt.Errorf("%w: %T", errUnexpectedType, value))
@@ -118,7 +116,7 @@ func (e *metadataExporter) pushTraces(ctx context.Context, td ptrace.Traces) err
 	if err != nil {
 		return err
 	}
-	return be.(exp).pushTraces(ctx, td)
+	return be.pushTraces(ctx, td)
 }
 
 func (e *metadataExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -129,7 +127,7 @@ func (e *metadataExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) 
 		return err
 	}
 
-	return be.(exp).pushMetrics(ctx, md)
+	return be.pushMetrics(ctx, md)
 }
 
 func (e *metadataExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
@@ -140,7 +138,7 @@ func (e *metadataExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		return err
 	}
 
-	return be.(exp).pushLogs(ctx, ld)
+	return be.pushLogs(ctx, ld)
 }
 
 func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.Set, md metadata.MD) (exp, error) {
