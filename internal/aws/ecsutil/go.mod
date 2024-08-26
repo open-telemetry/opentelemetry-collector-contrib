@@ -38,18 +38,18 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rs/cors v1.11.0 // indirect
 	go.opentelemetry.io/collector v0.107.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/client v1.13.1-0.20240821120936-6764622672bc // indirect
+	go.opentelemetry.io/collector/client v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/configauth v0.107.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240821120936-6764622672bc // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240823141558-b10029ca8f46 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240821120936-6764622672bc // indirect
+	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/internal v0.107.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240821120936-6764622672bc // indirect
+	go.opentelemetry.io/collector/confmap v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/extension v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/extension/auth v0.107.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240821120936-6764622672bc // indirect
+	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240826191928-b33913ba527d // indirect
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect

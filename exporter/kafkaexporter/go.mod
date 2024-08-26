@@ -16,12 +16,12 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240821120936-6764622672bc
-	go.opentelemetry.io/collector/config/configretry v1.13.1-0.20240821120936-6764622672bc
-	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240821120936-6764622672bc
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240821120936-6764622672bc
+	go.opentelemetry.io/collector/config/configretry v1.13.1-0.20240826191928-b33913ba527d
+	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240826191928-b33913ba527d
+	go.opentelemetry.io/collector/confmap v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240821120936-6764622672bc
 	go.opentelemetry.io/collector/exporter v0.107.1-0.20240821120936-6764622672bc
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240821120936-6764622672bc
+	go.opentelemetry.io/collector/pdata v1.13.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/pdata/testdata v0.107.1-0.20240821120936-6764622672bc
 	go.opentelemetry.io/collector/semconv v0.107.1-0.20240821120936-6764622672bc
 	go.uber.org/goleak v1.3.0
@@ -74,7 +74,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/collector v0.107.1-0.20240821120936-6764622672bc // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240821120936-6764622672bc // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240821120936-6764622672bc // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240821120936-6764622672bc // indirect
