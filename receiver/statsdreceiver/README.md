@@ -30,6 +30,8 @@ The Following settings are optional:
 
 - `enable_metric_type: true`(default value is false): Enable the statsd receiver to be able to emit the metric type(gauge, counter, timer(in the future), histogram(in the future)) as a label.
 
+- `enable_ip_only_aggregation` (default value is false): Enables metric aggregation on `Client+IP` only. Normally, aggregation is performed on `Client+IP+Port`. This setting is useful when the client sends metrics from a random ports or the receiver should aggregate metrics from the same client but different ports.
+
 - `enable_simple_tags: true`(default value is false): Enable parsing tags that do not have a value, e.g. `#mykey` instead of `#mykey:myvalue`. DogStatsD supports such tagging.
 
 - `is_monotonic_counter` (default value is false): Set all counter-type metrics the statsd receiver received as monotonic.
