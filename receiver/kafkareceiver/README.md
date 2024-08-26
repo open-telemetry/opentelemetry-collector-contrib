@@ -31,7 +31,7 @@ The following settings can be optionally configured:
   Only one telemetry type may be used for a given topic.
 - `encoding` (default = otlp_proto): The encoding of the payload received from kafka. Available encodings:
   - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`, `ExportLogsServiceRequest` or `ExportMetricsServiceRequest` respectively.
-  - `otlp_json`: The payload is deserialized into OpenTelemetry traces using JSON format.This encoding uses the `ptrace.JSONUnmarshaler` to convert the JSON-encoded trace data into the internal OpenTelemetry format. The expected JSON structure includes resourceSpans containing trace data.
+  - `otlp_json`: the payload is deserialized to `ExportTraceServiceRequest` `ExportLogsServiceRequest` or `ExportMetricsServiceRequest` respectively using JSON encoding
   - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
   - `jaeger_json`: the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
   - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
