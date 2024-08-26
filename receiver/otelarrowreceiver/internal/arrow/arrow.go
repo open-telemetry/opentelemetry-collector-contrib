@@ -16,8 +16,6 @@ import (
 	"sync/atomic"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/admission"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -32,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel"
 	otelcodes "go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -43,12 +40,15 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
+	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const (
 	streamFormat        = "arrow"
 	hpackMaxDynamicSize = 4096
-	scopeName           = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver"
 )
 
 var (
@@ -71,17 +71,15 @@ type Receiver struct {
 	arrowpb.UnsafeArrowLogsServiceServer
 	arrowpb.UnsafeArrowMetricsServiceServer
 
-	telemetry            component.TelemetrySettings
-	tracer               trace.Tracer
-	obsrecv              *receiverhelper.ObsReport
-	gsettings            configgrpc.ServerConfig
-	authServer           auth.Server
-	newConsumer          func() arrowRecord.ConsumerAPI
-	netReporter          netstats.Interface
-	recvInFlightBytes    metric.Int64UpDownCounter
-	recvInFlightItems    metric.Int64UpDownCounter
-	recvInFlightRequests metric.Int64UpDownCounter
-	boundedQueue         *admission.BoundedQueue
+	telemetry        component.TelemetrySettings
+	tracer           trace.Tracer
+	obsrecv          *receiverhelper.ObsReport
+	gsettings        configgrpc.ServerConfig
+	authServer       auth.Server
+	newConsumer      func() arrowRecord.ConsumerAPI
+	netReporter      netstats.Interface
+	telemetryBuilder *internalmetadata.TelemetryBuilder
+	boundedQueue     *admission.BoundedQueue
 }
 
 // receiverStream holds the inFlightWG for a single stream.
@@ -102,44 +100,22 @@ func New(
 	netReporter netstats.Interface,
 ) (*Receiver, error) {
 	tracer := set.TelemetrySettings.TracerProvider.Tracer("otel-arrow-receiver")
-	var errors, err error
-	recv := &Receiver{
-		Consumers:    cs,
-		obsrecv:      obsrecv,
-		telemetry:    set.TelemetrySettings,
-		tracer:       tracer,
-		authServer:   authServer,
-		newConsumer:  newConsumer,
-		gsettings:    gsettings,
-		netReporter:  netReporter,
-		boundedQueue: bq,
+	telemetryBuilder, err := internalmetadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
 	}
-
-	meter := recv.telemetry.MeterProvider.Meter(scopeName)
-	recv.recvInFlightBytes, err = meter.Int64UpDownCounter(
-		"otel_arrow_receiver_in_flight_bytes",
-		metric.WithDescription("Number of bytes in flight"),
-		metric.WithUnit("By"),
-	)
-	errors = multierr.Append(errors, err)
-
-	recv.recvInFlightItems, err = meter.Int64UpDownCounter(
-		"otel_arrow_receiver_in_flight_items",
-		metric.WithDescription("Number of items in flight"),
-	)
-	errors = multierr.Append(errors, err)
-
-	recv.recvInFlightRequests, err = meter.Int64UpDownCounter(
-		"otel_arrow_receiver_in_flight_requests",
-		metric.WithDescription("Number of requests in flight"),
-	)
-	errors = multierr.Append(errors, err)
-
-	if errors != nil {
-		return nil, errors
-	}
-
-	return recv, nil
+	return &Receiver{
+		Consumers:        cs,
+		obsrecv:          obsrecv,
+		telemetry:        set.TelemetrySettings,
+		tracer:           tracer,
+		authServer:       authServer,
+		newConsumer:      newConsumer,
+		gsettings:        gsettings,
+		netReporter:      netReporter,
+		boundedQueue:     bq,
+		telemetryBuilder: telemetryBuilder,
+	}, nil
 }
 
 // headerReceiver contains the state necessary to decode per-request metadata
@@ -290,9 +266,8 @@ func (h *headerReceiver) newContext(ctx context.Context, hdrs map[string][]strin
 }
 
 // logStreamError decides how to log an error.
-func (r *Receiver) logStreamError(err error, where string) {
+func (r *Receiver) logStreamError(err error, where string) (occode otelcodes.Code, msg string) {
 	var code codes.Code
-	var msg string
 	// gRPC tends to supply status-wrapped errors, so we always
 	// unpack them.  A wrapped Canceled code indicates intentional
 	// shutdown, which can be due to normal causes (EOF, e.g.,
@@ -310,10 +285,14 @@ func (r *Receiver) logStreamError(err error, where string) {
 	}
 
 	if code == codes.Canceled {
+		occode = otelcodes.Unset
 		r.telemetry.Logger.Debug("arrow stream shutdown", zap.String("message", msg), zap.String("where", where))
 	} else {
+		occode = otelcodes.Error
 		r.telemetry.Logger.Error("arrow stream error", zap.Int("code", int(code)), zap.String("message", msg), zap.String("where", where))
 	}
+
+	return occode, msg
 }
 
 func gRPCName(desc grpc.ServiceDesc) string {
@@ -445,7 +424,7 @@ func (r *receiverStream) newInFlightData(ctx context.Context, method string, bat
 	ctx, span := r.tracer.Start(ctx, "otel_arrow_stream_inflight")
 
 	r.inFlightWG.Add(1)
-	r.recvInFlightRequests.Add(ctx, 1)
+	r.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, 1)
 	id := &inFlightData{
 		receiverStream: r,
 		method:         method,
@@ -482,8 +461,8 @@ func (id *inFlightData) recvDone(ctx context.Context, recvErrPtr *error) {
 
 	if retErr != nil {
 		// logStreamError because this response will break the stream.
-		id.logStreamError(retErr, "recv")
-		id.span.SetStatus(otelcodes.Error, retErr.Error())
+		occode, msg := id.logStreamError(retErr, "recv")
+		id.span.SetStatus(occode, msg)
 	}
 
 	id.anyDone(ctx)
@@ -498,14 +477,19 @@ func (id *inFlightData) consumeDone(ctx context.Context, consumeErrPtr *error) {
 		id.span.SetStatus(otelcodes.Error, retErr.Error())
 	}
 
-	id.replyToCaller(retErr)
+	id.replyToCaller(ctx, retErr)
 	id.anyDone(ctx)
 }
 
-func (id *inFlightData) replyToCaller(callerErr error) {
-	id.pendingCh <- batchResp{
+func (id *inFlightData) replyToCaller(ctx context.Context, callerErr error) {
+	select {
+	case id.pendingCh <- batchResp{
 		id:  id.batchID,
 		err: callerErr,
+	}:
+		// OK: Responded.
+	case <-ctx.Done():
+		// OK: Never responded due to cancelation.
 	}
 }
 
@@ -525,10 +509,10 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 	}
 
 	if id.uncompSize != 0 {
-		id.recvInFlightBytes.Add(ctx, -id.uncompSize)
+		id.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(ctx, -id.uncompSize)
 	}
 	if id.numItems != 0 {
-		id.recvInFlightItems.Add(ctx, int64(-id.numItems))
+		id.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(ctx, int64(-id.numItems))
 	}
 
 	// The netstats code knows that uncompressed size is
@@ -540,7 +524,7 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 	sized.Length = id.uncompSize
 	id.netReporter.CountReceive(ctx, sized)
 
-	id.recvInFlightRequests.Add(ctx, -1)
+	id.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, -1)
 	id.inFlightWG.Done()
 }
 
@@ -574,8 +558,16 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return err
+
 		} else if errors.Is(err, context.Canceled) {
-			return status.Error(codes.Canceled, "server stream shutdown")
+			// This is a special case to avoid introducing a span error
+			// for a canceled operation.
+			return io.EOF
+
+		} else if status, ok := status.FromError(err); ok && status.Code() == codes.Canceled {
+			// This is a special case to avoid introducing a span error
+			// for a canceled operation.
+			return io.EOF
 		}
 		// Note: err is directly from gRPC, should already have status.
 		return err
@@ -598,7 +590,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		var authErr error
 		inflightCtx, authErr = r.authServer.Authenticate(inflightCtx, authHdrs)
 		if authErr != nil {
-			flight.replyToCaller(status.Error(codes.Unauthenticated, authErr.Error()))
+			flight.replyToCaller(inflightCtx, status.Error(codes.Unauthenticated, authErr.Error()))
 			return nil
 		}
 	}
@@ -638,8 +630,8 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	flight.uncompSize = uncompSize
 	flight.numItems = numItems
 
-	r.recvInFlightBytes.Add(inflightCtx, uncompSize)
-	r.recvInFlightItems.Add(inflightCtx, int64(numItems))
+	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(inflightCtx, uncompSize)
+	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(inflightCtx, int64(numItems))
 
 	numAcquired, err := r.acquireAdditionalBytes(inflightCtx, prevAcquiredBytes, uncompSize, hrcv.connInfo.Addr, uncompSizeHeaderFound)
 
@@ -724,7 +716,7 @@ func (r *receiverStream) sendOne(serverStream anyStreamServer, resp batchResp) e
 
 	if err := serverStream.Send(bs); err != nil {
 		// logStreamError because this response will break the stream.
-		r.logStreamError(err, "send")
+		_, _ = r.logStreamError(err, "send")
 		return err
 	}
 

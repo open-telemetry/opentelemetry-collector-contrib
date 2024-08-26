@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/stretchr/testify/assert"
@@ -27,7 +28,6 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 var _ inframetadata.Pusher = (*testPusher)(nil)
@@ -121,67 +121,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-}
-
-// Test that the factory creates the default configuration
-func TestCreateDefaultConfigLogsAgent(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	assert.Equal(t, &Config{
-		ClientConfig:  defaultClientConfig(),
-		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-
-		API: APIConfig{
-			Site: "datadoghq.com",
-		},
-
-		Metrics: MetricsConfig{
-			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "https://api.datadoghq.com",
-			},
-			DeltaTTL: 3600,
-			HistConfig: HistogramConfig{
-				Mode:             "distributions",
-				SendAggregations: false,
-			},
-			SumConfig: SumConfig{
-				CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
-				InitialCumulativeMonotonicMode: InitialValueModeAuto,
-			},
-			SummaryConfig: SummaryConfig{
-				Mode: SummaryModeGauges,
-			},
-		},
-
-		Traces: TracesConfig{
-			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "https://trace.agent.datadoghq.com",
-			},
-			IgnoreResources: []string{},
-		},
-		Logs: LogsConfig{
-			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "https://http-intake.logs.datadoghq.com",
-			},
-			UseCompression:   true,
-			CompressionLevel: 6,
-			BatchWait:        5,
-		},
-
-		HostMetadata: HostMetadataConfig{
-			Enabled:        true,
-			HostnameSource: HostnameSourceConfigOrSystem,
-		},
-		OnlyMetadata: false,
-	}, cfg, "failed to create default config")
-
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	err = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
-	assert.NoError(t, err)
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -500,6 +439,8 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 }
 
 func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
+	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
+	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -577,9 +518,13 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
+	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
+	assert.NoError(t, featuregateErr)
 }
 
 func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
+	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
+	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -657,6 +602,8 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
+	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
+	assert.NoError(t, featuregateErr)
 }
 
 func TestCreateAPILogsExporter(t *testing.T) {
@@ -706,6 +653,7 @@ func TestOnlyMetadata(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
+			sourceTimeout:  50 * time.Millisecond,
 		},
 	}
 

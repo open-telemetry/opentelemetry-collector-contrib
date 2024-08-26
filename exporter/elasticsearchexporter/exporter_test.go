@@ -8,9 +8,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -168,7 +168,7 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
-	t.Run("publish with dynamic index", func(t *testing.T) {
+	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
 
 		rec := newBulkRecorder()
 		var (
@@ -180,16 +180,8 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Equal(t, expected, create["_index"].(string))
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -213,20 +205,40 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			assert.Equal(t, "logs-record.dataset-resource.namespace", actionJSONToIndex(t, docs[0].Action))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicIndex.Enabled = true
+		})
+		logs := newLogsWithAttributeAndResourceMap(
+			map[string]string{
+				dataStreamDataset: "record.dataset",
+			},
+			map[string]string{
+				dataStreamDataset:   "resource.dataset",
+				dataStreamNamespace: "resource.namespace",
+			},
+		)
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+		mustSendLogs(t, exporter, logs)
+
+		rec.WaitItems(1)
+	})
+
 	t.Run("publish with logstash index format enabled and dynamic index disabled", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-			assert.Contains(t, create["_index"], "not-used-index")
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), "not-used-index")
 
 			return itemsAllOK(docs)
 		})
@@ -250,17 +262,8 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-
-			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
 
 			return itemsAllOK(docs)
 		})
@@ -280,6 +283,40 @@ func TestExporterLogs(t *testing.T) {
 			},
 		))
 		rec.WaitItems(1)
+	})
+
+	t.Run("publish otel mapping mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
+		})
+		mustSendLogs(t, exporter, newLogsWithAttributeAndResourceMap(
+			map[string]string{
+				"data_stream.dataset": "attr.dataset",
+				"attr.foo":            "attr.foo.value",
+			},
+			map[string]string{
+				"data_stream.dataset":   "resource.attribute.dataset",
+				"data_stream.namespace": "resource.attribute.namespace",
+				"resource.attr.foo":     "resource.attr.foo.value",
+			},
+		))
+		rec.WaitItems(1)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
@@ -459,7 +496,9 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL)
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
 		dp := pmetric.NewNumberDataPoint()
 		dp.SetDoubleValue(123.456)
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -469,6 +508,381 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
+	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			expected := "resource.prefix-metrics.index-resource.suffix"
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.MetricsIndex = "metrics.index"
+			cfg.Mapping.Mode = "ecs"
+		})
+		metrics := newMetricsWithAttributeAndResourceMap(
+			map[string]string{
+				indexSuffix: "-data.point.suffix",
+			},
+			map[string]string{
+				indexPrefix: "resource.prefix-",
+				indexSuffix: "-resource.suffix",
+			},
+		)
+		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
+		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			expected := "metrics-resource.dataset-data.point.namespace"
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.MetricsIndex = "metrics.index"
+			cfg.Mapping.Mode = "ecs"
+		})
+		metrics := newMetricsWithAttributeAndResourceMap(
+			map[string]string{
+				dataStreamNamespace: "data.point.namespace",
+			},
+			map[string]string{
+				dataStreamDataset:   "resource.dataset",
+				dataStreamNamespace: "resource.namespace",
+			},
+		)
+		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with metrics grouping", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.MetricsIndex = "metrics.index"
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
+			fooMetric := metricSlice.AppendEmpty()
+			fooMetric.SetName("metric.foo")
+			fooDps := fooMetric.SetEmptyGauge().DataPoints()
+			fooDp := fooDps.AppendEmpty()
+			fooDp.SetIntValue(1)
+			fooOtherDp := fooDps.AppendEmpty()
+			fillResourceAttributeMap(fooOtherDp.Attributes(), map[string]string{
+				"dp.attribute": "dp.attribute.value",
+			})
+			fooOtherDp.SetDoubleValue(1.0)
+
+			barMetric := metricSlice.AppendEmpty()
+			barMetric.SetName("metric.bar")
+			barDps := barMetric.SetEmptyGauge().DataPoints()
+			barDp := barDps.AppendEmpty()
+			barDp.SetDoubleValue(1.0)
+			barOtherDp := barDps.AppendEmpty()
+			fillResourceAttributeMap(barOtherDp.Attributes(), map[string]string{
+				"dp.attribute": "dp.attribute.value",
+			})
+			barOtherDp.SetDoubleValue(1.0)
+			barOtherIndexDp := barDps.AppendEmpty()
+			fillResourceAttributeMap(barOtherIndexDp.Attributes(), map[string]string{
+				"dp.attribute":      "dp.attribute.value",
+				dataStreamNamespace: "bar",
+			})
+			barOtherIndexDp.SetDoubleValue(1.0)
+
+			bazMetric := metricSlice.AppendEmpty()
+			bazMetric.SetName("metric.baz")
+			bazDps := bazMetric.SetEmptyGauge().DataPoints()
+			bazDp := bazDps.AppendEmpty()
+			bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+			bazDp.SetDoubleValue(1.0)
+		}
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		fillResourceAttributeMap(resourceMetrics.Resource().Attributes(), map[string]string{
+			dataStreamNamespace: "resource.namespace",
+		})
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeA.Metrics())
+
+		scopeB := resourceMetrics.ScopeMetrics().AppendEmpty()
+		fillResourceAttributeMap(scopeB.Scope().Attributes(), map[string]string{
+			dataStreamDataset: "scope.b",
+		})
+		addToMetricSlice(scopeB.Metrics())
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(8)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-bar"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-bar"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("publish histogram", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooDps := fooMetric.SetEmptyHistogram().DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+		fooOtherDp := fooDps.AppendEmpty()
+		fooOtherDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
+		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(2)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3]}}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("publish only valid data points", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooDps := fooMetric.SetEmptyHistogram().DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		fooDp.BucketCounts().FromRaw([]uint64{})
+		fooOtherDp := fooDps.AppendEmpty()
+		fooOtherDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
+		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
+		barMetric := metricSlice.AppendEmpty()
+		barMetric.SetName("metric.bar")
+		barDps := barMetric.SetEmptySum().DataPoints()
+		barDp := barDps.AppendEmpty()
+		barDp.SetDoubleValue(math.Inf(1))
+		barOtherDp := barDps.AppendEmpty()
+		barOtherDp.SetDoubleValue(1.0)
+
+		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		require.ErrorContains(t, err, "invalid histogram data point")
+		require.ErrorContains(t, err, "invalid number data point")
+
+		rec.WaitItems(2)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"bar":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("otel mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooDps := fooMetric.SetEmptyHistogram().DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+		fooOtherDp := fooDps.AppendEmpty()
+		fooOtherDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
+		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
+
+		sumMetric := metricSlice.AppendEmpty()
+		sumMetric.SetName("metric.sum")
+		sumDps := sumMetric.SetEmptySum().DataPoints()
+		sumDp := sumDps.AppendEmpty()
+		sumDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		sumDp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		sumDp.SetDoubleValue(1.5)
+
+		summaryMetric := metricSlice.AppendEmpty()
+		summaryMetric.SetName("metric.summary")
+		summaryDps := summaryMetric.SetEmptySummary().DataPoints()
+		summaryDp := summaryDps.AppendEmpty()
+		summaryDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3*3600, 0)))
+		summaryDp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(3*3600, 0)))
+		summaryDp.SetCount(1)
+		summaryDp.SetSum(1.5)
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(2)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3]}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2,4.5,5.5,6]}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"start_timestamp":"1970-01-01T02:00:00.000000000Z"}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary_metrics"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T03:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"start_timestamp":"1970-01-01T03:00:00.000000000Z"}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("publish summary", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooDps := fooMetric.SetEmptySummary().DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.SetSum(1.5)
+		fooDp.SetCount(1)
+		fooOtherDp := fooDps.AppendEmpty()
+		fooOtherDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		fooOtherDp.SetSum(2)
+		fooOtherDp.SetCount(3)
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(2)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":1.5,"value_count":1}}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":2,"value_count":3}}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
 }
 
 func TestExporterTraces(t *testing.T) {
@@ -486,7 +900,7 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with dynamic index", func(t *testing.T) {
+	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
 
 		rec := newBulkRecorder()
 		var (
@@ -531,6 +945,35 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
+
+		rec := newBulkRecorder()
+
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			expected := "traces-span.dataset-default"
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicIndex.Enabled = true
+		})
+
+		mustSendTraces(t, exporter, newTracesWithAttributeAndResourceMap(
+			map[string]string{
+				dataStreamDataset: "span.dataset",
+			},
+			map[string]string{
+				dataStreamDataset: "resource.dataset",
+			},
+		))
+
+		rec.WaitItems(1)
+	})
+
 	t.Run("publish with logstash format index", func(t *testing.T) {
 		var defaultCfg Config
 
@@ -538,16 +981,7 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-
-			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.TracesIndex), true)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), defaultCfg.TracesIndex)
 
 			return itemsAllOK(docs)
 		})
@@ -574,17 +1008,8 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-
-			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
 
 			return itemsAllOK(docs)
 		})
@@ -605,6 +1030,68 @@ func TestExporterTraces(t *testing.T) {
 			},
 		))
 		rec.WaitItems(1)
+	})
+
+	t.Run("otel mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
+		})
+
+		traces := ptrace.NewTraces()
+		resourceSpans := traces.ResourceSpans()
+		rs := resourceSpans.AppendEmpty()
+
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("name")
+		span.SetTraceID(pcommon.NewTraceIDEmpty())
+		span.SetSpanID(pcommon.NewSpanIDEmpty())
+		span.SetFlags(1)
+		span.SetDroppedAttributesCount(2)
+		span.SetDroppedEventsCount(3)
+		span.SetDroppedLinksCount(4)
+		span.TraceState().FromRaw("foo")
+		span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+
+		scopeAttr := span.Attributes()
+		fillResourceAttributeMap(scopeAttr, map[string]string{
+			"attr.foo": "attr.bar",
+		})
+
+		resAttr := rs.Resource().Attributes()
+		fillResourceAttributeMap(resAttr, map[string]string{
+			"resource.foo": "resource.bar",
+		})
+
+		spanLink := span.Links().AppendEmpty()
+		spanLink.SetTraceID(pcommon.NewTraceIDEmpty())
+		spanLink.SetSpanID(pcommon.NewSpanIDEmpty())
+		spanLink.SetFlags(10)
+		spanLink.SetDroppedAttributesCount(11)
+		spanLink.TraceState().FromRaw("bar")
+		fillResourceAttributeMap(spanLink.Attributes(), map[string]string{
+			"link.attr.foo": "link.attr.bar",
+		})
+
+		mustSendTraces(t, exporter, traces)
+
+		rec.WaitItems(1)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","attributes":{"attr.foo":"attr.bar"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"traces"},"dropped_attributes_count":2,"dropped_events_count":3,"dropped_links_count":4,"duration":3600000000000,"kind":"Unspecified","links":[{"attributes":{"link.attr.foo":"link.attr.bar"},"dropped_attributes_count":11,"span_id":"","trace_id":"","trace_state":"bar"}],"name":"name","resource":{"attributes":{"resource.foo":"resource.bar"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"status":{"code":"Unset"},"trace_state":"foo"}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 }
 
@@ -636,6 +1123,43 @@ func TestExporterAuth(t *testing.T) {
 
 	mustSendLogRecords(t, exporter, plog.NewLogRecord())
 	<-done
+}
+
+func TestExporterBatcher(t *testing.T) {
+	var requests []*http.Request
+	testauthID := component.NewID(component.MustNewType("authtest"))
+	batcherEnabled := false // sync bulk indexer is used without batching
+	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		cfg.Batcher = BatcherConfig{Enabled: &batcherEnabled}
+		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+	})
+	err := exporter.Start(context.Background(), &mockHost{
+		extensions: map[component.ID]component.Component{
+			testauthID: &authtest.MockClient{
+				ResultRoundTripper: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+					requests = append(requests, req)
+					return nil, errors.New("nope")
+				}),
+			},
+		},
+	})
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, exporter.Shutdown(context.Background()))
+	}()
+
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty().Body().SetStr("log record body")
+
+	type key struct{}
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value1"), logs)
+	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value2"), logs)
+	require.Len(t, requests, 2) // flushed immediately by Consume
+
+	assert.Equal(t, "value1", requests[0].Context().Value(key{}))
+	assert.Equal(t, "value2", requests[1].Context().Value(key{}))
 }
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Traces {
@@ -775,4 +1299,15 @@ type roundTripperFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
+}
+
+func actionJSONToIndex(t *testing.T, actionJSON json.RawMessage) string {
+	action := struct {
+		Create struct {
+			Index string `json:"_index"`
+		} `json:"create"`
+	}{}
+	err := json.Unmarshal(actionJSON, &action)
+	require.NoError(t, err)
+	return action.Create.Index
 }

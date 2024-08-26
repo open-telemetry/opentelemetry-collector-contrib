@@ -53,7 +53,7 @@ func (i *Input) Start(_ operator.Persister) error {
 			}
 
 			if ok := scanner.Scan(); !ok {
-				if err := scanner.Err(); err != nil {
+				if err = scanner.Err(); err != nil {
 					i.Logger().Error("Scanning failed", zap.Error(err))
 				}
 				i.Logger().Info("Stdin has been closed")
@@ -62,7 +62,11 @@ func (i *Input) Start(_ operator.Persister) error {
 
 			e := entry.New()
 			e.Body = scanner.Text()
-			i.Write(ctx, e)
+			err = i.Write(ctx, e)
+			if err != nil {
+				i.Logger().Error("failed to write entry", zap.Error(err))
+				return
+			}
 		}
 	}()
 

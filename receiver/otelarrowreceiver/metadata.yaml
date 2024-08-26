@@ -1,10 +1,9 @@
 type: otelarrow
-scope_name: otelcol/otelarrowreceiver
 
 status:
   class: receiver
   stability:
-    alpha: [traces, metrics, logs]
+    beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
     active: [jmacd, moh-osman3]
@@ -22,7 +21,7 @@ telemetry:
     otel_arrow_receiver_in_flight_items:
       description: Number of items in flight
       enabled: true
-      unit: 1
+      unit: "1"
       sum:
         monotonic: false
         value_type: int
@@ -30,7 +29,7 @@ telemetry:
     otel_arrow_receiver_in_flight_requests:
       description: Number of requests in flight
       enabled: true
-      unit: 1
+      unit: "1"
       sum:
         monotonic: false
         value_type: int

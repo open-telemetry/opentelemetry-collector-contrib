@@ -1,9 +1,0 @@
-change_type: bug_fix
-component: tailsamplingprocessor
-note: Fix precedence of inverted match in and policy
-issues: [33671]
-subtext: |
-  Previously if the decision from a policy evaluation was `NotSampled` or `InvertNotSampled` it would return a `NotSampled` decision regardless, effectively downgrading the result.
-
-  This was breaking the documented behaviour that inverted decisions should take precedence over all others.
-change_logs: [user]

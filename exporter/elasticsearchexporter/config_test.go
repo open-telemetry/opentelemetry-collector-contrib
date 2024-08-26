@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -57,20 +58,29 @@ func TestConfig(t *testing.T) {
 					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
-				Endpoints:    []string{"https://elastic.example.com:9200"},
-				Index:        "",
-				LogsIndex:    "logs-generic-default",
-				MetricsIndex: "metrics-generic-default",
-				TracesIndex:  "trace_index",
-				Pipeline:     "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
-						"myheader": "test",
-					},
+				Endpoints: []string{"https://elastic.example.com:9200"},
+				Index:     "",
+				LogsIndex: "logs-generic-default",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
 				},
+				MetricsIndex: "metrics-generic-default",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+				},
+				TracesIndex: "trace_index",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				Pipeline: "mypipeline",
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
+						"myheader": "test",
+					}
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -91,13 +101,21 @@ func TestConfig(t *testing.T) {
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",
-					Dedup: true,
 					Dedot: true,
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
+				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
 				},
 			},
 		},
@@ -110,20 +128,29 @@ func TestConfig(t *testing.T) {
 					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
-				Endpoints:    []string{"http://localhost:9200"},
-				Index:        "",
-				LogsIndex:    "my_log_index",
-				MetricsIndex: "metrics-generic-default",
-				TracesIndex:  "traces-generic-default",
-				Pipeline:     "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
-						"myheader": "test",
-					},
+				Endpoints: []string{"http://localhost:9200"},
+				Index:     "",
+				LogsIndex: "my_log_index",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
 				},
+				MetricsIndex: "metrics-generic-default",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+				},
+				TracesIndex: "traces-generic-default",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				Pipeline: "mypipeline",
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
+						"myheader": "test",
+					}
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -144,13 +171,21 @@ func TestConfig(t *testing.T) {
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",
-					Dedup: true,
 					Dedot: true,
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
+				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
 				},
 			},
 		},
@@ -163,20 +198,29 @@ func TestConfig(t *testing.T) {
 					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
-				Endpoints:    []string{"http://localhost:9200"},
-				Index:        "",
-				LogsIndex:    "logs-generic-default",
-				MetricsIndex: "my_metric_index",
-				TracesIndex:  "traces-generic-default",
-				Pipeline:     "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
-						"myheader": "test",
-					},
+				Endpoints: []string{"http://localhost:9200"},
+				Index:     "",
+				LogsIndex: "logs-generic-default",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
 				},
+				MetricsIndex: "my_metric_index",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+				},
+				TracesIndex: "traces-generic-default",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				Pipeline: "mypipeline",
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
+						"myheader": "test",
+					}
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -197,13 +241,21 @@ func TestConfig(t *testing.T) {
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",
-					Dedup: true,
 					Dedot: true,
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
+				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
 				},
 			},
 		},
@@ -237,6 +289,16 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "batcher_disabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				enabled := false
+				cfg.Batcher.Enabled = &enabled
 			}),
 		},
 	}
@@ -358,6 +420,14 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
 	for _, fn := range fns {
 		fn(cfg)
+	}
+	return cfg
+}
+
+func withDefaultHTTPClientConfig(fns ...func(config *confighttp.ClientConfig)) confighttp.ClientConfig {
+	cfg := confighttp.NewDefaultClientConfig()
+	for _, fn := range fns {
+		fn(&cfg)
 	}
 	return cfg
 }

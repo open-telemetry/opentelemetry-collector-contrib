@@ -8,7 +8,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 // For the OpenTelemetry Collector Contrib distribution specifically, see
 // https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 
-go 1.21.0
+go 1.22.0
+
+// Replace references to modules that are in this repository with their relateive paths
+// so that we always build with current (latest) version of the source code.
 
 // see https://github.com/google/gnostic/issues/262
 replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5

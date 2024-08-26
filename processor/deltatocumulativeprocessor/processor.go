@@ -13,13 +13,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/maybe"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
@@ -36,15 +36,15 @@ type Processor struct {
 
 	sums Pipeline[data.Number]
 	expo Pipeline[data.ExpHistogram]
+	hist Pipeline[data.Histogram]
 
 	mtx sync.Mutex
 }
 
-func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consumer.Metrics) *Processor {
+func newProcessor(cfg *Config, log *zap.Logger, telb *metadata.TelemetryBuilder, next consumer.Metrics) *Processor {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	tel := telemetry.New(meter)
-
+	tel := telemetry.New(telb)
 	proc := Processor{
 		log:    log,
 		ctx:    ctx,
@@ -53,6 +53,7 @@ func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consume
 
 		sums: pipeline[data.Number](cfg, &tel),
 		expo: pipeline[data.ExpHistogram](cfg, &tel),
+		hist: pipeline[data.Histogram](cfg, &tel),
 	}
 
 	return &proc
@@ -94,7 +95,8 @@ func pipeline[D data.Point[D]](cfg *Config, tel *telemetry.Telemetry) Pipeline[D
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
 	sums, sok := p.sums.stale.Try()
 	expo, eok := p.expo.stale.Try()
-	if !(sok && eok) {
+	hist, hok := p.hist.stale.Try()
+	if !(sok && eok && hok) {
 		return nil
 	}
 
@@ -108,6 +110,7 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 				p.mtx.Lock()
 				sums.ExpireOldEntries()
 				expo.ExpireOldEntries()
+				hist.ExpireOldEntries()
 				p.mtx.Unlock()
 			}
 		}
@@ -143,7 +146,12 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
 		case pmetric.MetricTypeHistogram:
-			// TODO
+			hist := m.Histogram()
+			if hist.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+				err := streams.Apply(metrics.Histogram(m), p.hist.aggr.Aggregate)
+				errs = errors.Join(errs, err)
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			}
 		case pmetric.MetricTypeExponentialHistogram:
 			expo := m.ExponentialHistogram()
 			if expo.AggregationTemporality() == pmetric.AggregationTemporalityDelta {

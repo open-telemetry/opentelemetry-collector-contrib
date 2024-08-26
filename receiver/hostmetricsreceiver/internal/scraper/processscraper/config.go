@@ -22,21 +22,21 @@ type Config struct {
 	Include MatchConfig `mapstructure:"include"`
 	Exclude MatchConfig `mapstructure:"exclude"`
 
-	// MuteProcessNameError is a flag that will mute the error encountered when trying to read a process the
-	// collector does not have permission for.
+	// MuteProcessNameError is a flag that will mute the error encountered when trying to read a process name the
+	// collector does not have permission to read.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
 	MuteProcessNameError bool `mapstructure:"mute_process_name_error,omitempty"`
 
 	// MuteProcessIOError is a flag that will mute the error encountered when trying to read IO metrics of a process
-	// the collector does not have permission for.
+	// the collector does not have permission to read.
 	MuteProcessIOError bool `mapstructure:"mute_process_io_error,omitempty"`
 
 	// MuteProcessCgroupError is a flag that will mute the error encountered when trying to read the cgroup of a process
-	// the collector does not have permission for.
+	// the collector does not have permission to read.
 	MuteProcessCgroupError bool `mapstructure:"mute_process_cgroup_error,omitempty"`
 
-	// ResilientProcessScraping is a flag that will let the collector continue reading a process even when
-	// the collector does not have permission to read it's executable path (Linux)
+	// MuteProcessExeError is a flag that will mute the error encountered when trying to read the executable path of a process
+	// the collector does not have permission to read (Linux)
 	MuteProcessExeError bool `mapstructure:"mute_process_exe_error,omitempty"`
 
 	// MuteProcessUserError is a flag that will mute the error encountered when trying to read uid which

@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/fluentforwardreceiver")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/fluentforwardreceiver")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
@@ -57,31 +57,31 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.FluentClosedConnections, err = builder.meter.Int64UpDownCounter(
-		"fluent_closed_connections",
+		"otelcol_fluent_closed_connections",
 		metric.WithDescription("Number of connections closed to the fluentforward receiver"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.FluentEventsParsed, err = builder.meter.Int64UpDownCounter(
-		"fluent_events_parsed",
+		"otelcol_fluent_events_parsed",
 		metric.WithDescription("Number of Fluent events parsed successfully"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.FluentOpenedConnections, err = builder.meter.Int64UpDownCounter(
-		"fluent_opened_connections",
+		"otelcol_fluent_opened_connections",
 		metric.WithDescription("Number of connections opened to the fluentforward receiver"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.FluentParseFailures, err = builder.meter.Int64UpDownCounter(
-		"fluent_parse_failures",
+		"otelcol_fluent_parse_failures",
 		metric.WithDescription("Number of times Fluent messages failed to be decoded"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.FluentRecordsGenerated, err = builder.meter.Int64UpDownCounter(
-		"fluent_records_generated",
+		"otelcol_fluent_records_generated",
 		metric.WithDescription("Number of log records generated from Fluent forward input"),
 		metric.WithUnit("1"),
 	)

@@ -1,5 +1,4 @@
 type: docker_stats
-scope_name: otelcol/dockerstatsreceiver
 
 status:
   class: receiver
@@ -188,7 +187,7 @@ metrics:
   container.memory.percent:
     enabled: true
     description: "Percentage of memory used."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   container.memory.cache:

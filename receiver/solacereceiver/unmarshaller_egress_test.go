@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
@@ -307,7 +308,7 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 				assert.Equal(t, 0, actual.Len())
 				tel.assertMetrics(t, []metricdata.Metrics{
 					{
-						Name:        "solacereceiver_dropped_egress_spans",
+						Name:        "otelcol_solacereceiver_dropped_egress_spans",
 						Description: "Number of dropped egress spans",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -315,7 +316,8 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 							IsMonotonic: true,
 							DataPoints: []metricdata.DataPoint[int64]{
 								{
-									Value: 1,
+									Value:      1,
+									Attributes: u.metricAttrs,
 								},
 							},
 						},
@@ -430,7 +432,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -438,7 +440,8 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -641,7 +644,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -649,7 +652,8 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -664,5 +668,6 @@ func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1
 	tt := setupTestTelemetry()
 	builder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
 	require.NoError(t, err)
-	return &brokerTraceEgressUnmarshallerV1{zap.NewNop(), builder}, tt
+	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
+	return &brokerTraceEgressUnmarshallerV1{zap.NewNop(), builder, metricAttr}, tt
 }

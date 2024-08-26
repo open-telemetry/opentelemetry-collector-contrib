@@ -1,10 +1,9 @@
 type: podman_stats
-scope_name: otelcol/podmanreceiver
 
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
     active: [rogercoll]
@@ -64,7 +63,7 @@ metrics:
   container.cpu.percent:
     enabled: true
     description: "Percent of CPU used by the container."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   # Memory
@@ -87,7 +86,7 @@ metrics:
   container.memory.percent:
     enabled: true
     description: "Percentage of memory used."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   # Network

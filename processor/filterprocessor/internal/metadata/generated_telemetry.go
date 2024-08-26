@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/filter")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/filter")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
@@ -55,19 +55,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.ProcessorFilterDatapointsFiltered, err = builder.meter.Int64Counter(
-		"processor_filter_datapoints.filtered",
+		"otelcol_processor_filter_datapoints.filtered",
 		metric.WithDescription("Number of metric data points dropped by the filter processor"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorFilterLogsFiltered, err = builder.meter.Int64Counter(
-		"processor_filter_logs.filtered",
+		"otelcol_processor_filter_logs.filtered",
 		metric.WithDescription("Number of logs dropped by the filter processor"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorFilterSpansFiltered, err = builder.meter.Int64Counter(
-		"processor_filter_spans.filtered",
+		"otelcol_processor_filter_spans.filtered",
 		metric.WithDescription("Number of spans dropped by the filter processor"),
 		metric.WithUnit("1"),
 	)

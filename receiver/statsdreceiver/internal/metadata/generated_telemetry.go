@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/statsdreceiver")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/statsdreceiver")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
@@ -53,7 +53,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.ReceiverReceivedStatsdMetrics, err = builder.meter.Int64Counter(
-		"receiver_received_statsd_metrics",
+		"otelcol_receiver_received_statsd_metrics",
 		metric.WithDescription("Number of statsd metrics received."),
 		metric.WithUnit("1"),
 	)

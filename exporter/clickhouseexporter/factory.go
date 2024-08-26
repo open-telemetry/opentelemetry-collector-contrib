@@ -30,12 +30,9 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	queueSettings := exporterhelper.NewDefaultQueueSettings()
-	queueSettings.NumConsumers = 1
-
 	return &Config{
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		QueueSettings:    queueSettings,
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,
@@ -44,6 +41,7 @@ func createDefaultConfig() component.Config {
 		MetricsTableName: "otel_metrics",
 		TTL:              0,
 		CreateSchema:     true,
+		AsyncInsert:      true,
 	}
 }
 

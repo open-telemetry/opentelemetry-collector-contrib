@@ -7,6 +7,36 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.107.0
+
+### 🚀 New components 🚀
+
+- `googlecloudmonitoringreceiver`: Adding new component - [Google Cloud monitoring](https://cloud.google.com/monitoring/api/metrics_gcp) receiver to fetch GCP Cloud Metrics and transform to OpenTelemetry compatible format. (#33762)
+
+### 💡 Enhancements 💡
+
+- `internal/grpcutil`: Add internal/grpcutil package with gRPC-specified timeout parsing (#33688)
+- `pmetrictest`: Add support for histogram comparison options (#34521)
+- `kafkaexporter`: add an ability to partition logs based on resource attributes. (#33229)
+
+## v0.106.1
+
+## v0.106.0
+
+## v0.105.0
+
+## v0.104.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/clickhouse`: Unexport extra configuration methods. (#33647)
+- `exporter/clickhouse`: Change internal config type for `create_schema` to use a `bool` instead of `*bool` (#33694)
+- `pkg/ottl`: Changed ScopeContext, InstrumentationResourceContext, TransformContext interfaces to make SchemaURL accessible in resources and scopes on all signals (#30229)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add ByteSliceLikeGetter interface (#31929)
+
 ## v0.103.0
 
 ### 🛑 Breaking changes 🛑

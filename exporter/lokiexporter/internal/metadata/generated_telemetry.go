@@ -14,11 +14,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/loki")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/loki")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
@@ -53,7 +53,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.LokiexporterSendFailedDueToMissingLabels, err = builder.meter.Int64Counter(
-		"lokiexporter_send_failed_due_to_missing_labels",
+		"otelcol_lokiexporter_send_failed_due_to_missing_labels",
 		metric.WithDescription("Number of log records failed to send because labels were missing"),
 		metric.WithUnit("1"),
 	)

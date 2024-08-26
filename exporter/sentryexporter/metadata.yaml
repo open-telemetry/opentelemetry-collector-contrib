@@ -1,5 +1,4 @@
 type: sentry
-scope_name: otelcol/sentry
 
 status:
   class: exporter

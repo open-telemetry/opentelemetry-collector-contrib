@@ -20,7 +20,7 @@
 > The Datadog Exporter now skips APM stats computation by default. It is recommended to only use the [Datadog Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/datadogconnector) in order to compute APM stats.
 > To temporarily revert to the previous behavior, disable the `exporter.datadogexporter.DisableAPMStats` feature gate. Example: `otelcol --config=config.yaml --feature-gates=-exporter.datadogexporter.DisableAPMStats`
 
-Visit the [official documentation](https://docs.datadoghq.com/tracing/trace_collection/open_standards/otel_collector_datadog_exporter/) for usage instructions.
+Find the full configs of Datadog exporter and their usage in [collector.yaml](./examples/collector.yaml). More example configs can be found in the [official documentation](https://docs.datadoghq.com/opentelemetry/collector_exporter/configuration/).
 
 ## FAQs
 
@@ -62,7 +62,9 @@ Note that we are currently migrating the Datadog metrics exporter to use the met
 
 ### Remap OTel’s service.name attribute to service for logs
 
-For Datadog Exporter versions 0.83.0 and later, the `service` field of OTel logs is populated as [OTel semantic convention](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.name`. However, `service.name` is not one of the default [service attributes](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute) in Datadog’s log preprocessing.
+**NOTE** this workaround is only needed when feature gate `exporter.datadogexporter.UseLogsAgentExporter` is disabled. This feature gate is enabled by default starting v0.108.0.
+
+For Datadog Exporter versions 0.83.0 - v0.107.0, the `service` field of OTel logs is populated as [OTel semantic convention](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.name`. However, `service.name` is not one of the default [service attributes](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute) in Datadog’s log preprocessing.
 
 To get the service field correctly populated in your logs, you can specify service.name to be the source of a log’s service by setting a [log service remapper processor](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute).
 

@@ -17,11 +17,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
 const (
 	azureResourceID = "azure.resource.id"
-	scopeName       = "otelcol/azureresourcemetrics"
 )
 
 type azureResourceMetricsUnmarshaler struct {
@@ -75,7 +76,7 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 
 	resourceMetrics := md.ResourceMetrics().AppendEmpty()
 	resource := resourceMetrics.Resource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, receiverScopeName)
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, metadata.ScopeName)
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeTelemetrySDKLanguageGo)
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, r.buildInfo.Version)
 	resource.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
