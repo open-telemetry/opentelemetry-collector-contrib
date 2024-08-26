@@ -41,7 +41,7 @@ const (
 	// The resulting value is 1338.
 	// See: https://github.com/DataDog/opentelemetry-mapping-go/blob/4a6d530273741c84fe2d8f76c55c514cd5eb7488/pkg/quantile/config.go#L154
 	// (Note: in Datadog's code, it is referred to as 'bias')
-	agentSketchOffset = 1338
+	agentSketchOffset int32 = 1338
 )
 
 // Unmarshal the sketch payload, which contains the underlying Dogsketch structure used for the translation
@@ -96,6 +96,7 @@ func sketchToDatapoint(sketch gogen.SketchPayload_Sketch_Dogsketch, dp pmetric.E
 	dp.SetMin(sketch.Min)
 	dp.SetMax(sketch.Max)
 	dp.SetScale(scale)
+	dp.SetZeroThreshold(2.2250738585072014e-308 * gamma) // See https://github.com/DataDog/sketches-go/blob/7546f8f95179bb41d334d35faa281bfe97812a86/ddsketch/mapping/logarithmic_mapping.go#L48
 
 	attributes.CopyTo(dp.Attributes())
 
@@ -110,7 +111,7 @@ func sketchToDatapoint(sketch gogen.SketchPayload_Sketch_Dogsketch, dp pmetric.E
 // mapSketchBucketsToHistogramBuckets attempts to map the counts in each Sketch bucket to the closest equivalent Exponential Histogram
 // bucket(s). It works by first calculating an Exponential Histogram key that corresponds most closely with the Sketch key (using the lower
 // bound of the sketch bucket the key corresponds to), calculates differences in the range of the Sketch bucket and exponential histogram bucket,
-// and distributes the count to the corresponding bucket, and the bucket prior to it and after it, based on the proportion of overlap between the
+// and distributes the count to the corresponding bucket, and the bucket(s) after it, based on the proportion of overlap between the
 // exponential histogram buckets and the Sketch bucket. Note that the Sketch buckets are not separated into positive and negative buckets, but exponential
 // histograms store positive and negative buckets separately. Negative buckets in exponential histograms are mapped in the same way as positive buckets.
 // Note that negative indices in exponential histograms do not necessarily correspond to negative values; they correspond with values between 0 and 1,
@@ -144,11 +145,8 @@ func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint3
 		targetBucketCount := uint64(sketchCounts[i])
 		var currentAssignedCount uint64
 
-		// In some cases, the exponential histogram index that is mapped from the Sketch index corresponds to a bucket that
-		// has a lower bound that is higher than the Sketch bucket's lower bound. In this case, it is necessary to start
-		// at the bucket below the mapped index in order to distribute the count properly
 		//TODO: look into better algorithms for applying fractional counts
-		for outIndex := histogramKey - 1; histogramLowerBound(outIndex) < sketchUpperBound; outIndex++ {
+		for outIndex := histogramKey; histogramLowerBound(outIndex) < sketchUpperBound; outIndex++ {
 			histogramLowerBound, histogramUpperBound := getHistogramBounds(outIndex)
 			lowerIntersection := math.Max(histogramLowerBound, sketchLowerBound)
 			higherIntersection := math.Min(histogramUpperBound, sketchUpperBound)
@@ -237,7 +235,7 @@ func sketchLowerBound(index int32) float64 {
 	if index < 0 {
 		index = -index
 	}
-	return math.Exp((float64(index) - agentSketchOffset) / (1 / math.Log(gamma)))
+	return math.Exp((float64(index-agentSketchOffset) / (1 / math.Log(gamma))))
 }
 
 // getHistogramBounds returns the lower and upper boundaries of the histogram bucket that
