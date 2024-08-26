@@ -12,6 +12,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -158,7 +159,7 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
 }
 
-func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -194,7 +195,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, consumerGroup); !errors.Is(err, context.Canceled) {
-			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	<-consumerGroup.ready
@@ -255,7 +256,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler Metric
 	}, nil
 }
 
-func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -291,7 +292,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error 
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
-			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	<-metricsConsumerGroup.ready
@@ -352,7 +353,7 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmar
 	}, nil
 }
 
-func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -388,7 +389,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
-			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	<-logsConsumerGroup.ready
