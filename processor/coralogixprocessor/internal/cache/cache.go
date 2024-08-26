@@ -1,9 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cache // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/cache
+package cache // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/cache"
 
-import lru "github.com/hashicorp/golang-lru/v2"
+import (
+	lru "github.com/hashicorp/golang-lru/v2"
+)
 
 type lruBlueprintCache[V any] struct {
 	cache *lru.Cache[uint64, V]

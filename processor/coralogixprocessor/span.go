@@ -9,7 +9,7 @@ import (
 	"github.com/auxten/postgresql-parser/pkg/sql/sem/tree"
 	postgresqlwalk "github.com/auxten/postgresql-parser/pkg/walk"
 	"github.com/cespare/xxhash/v2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/cache"
+	cache2 "github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/cache"
 	mysqlparser "github.com/xwb1989/sqlparser"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -33,7 +33,7 @@ type coralogixProcessor struct {
 	config *Config
 	component.StartFunc
 	component.ShutdownFunc
-	cache  cache.Cache[string]
+	cache  cache2.Cache[string]
 	logger *zap.Logger
 }
 
@@ -204,7 +204,7 @@ func newCoralogixProcessor(ctx context.Context, set processor.Settings, cfg *Con
 		// 8 bytes per entry, 1GB / 8 Bytes = 134,217,728 entries by default
 		var cacheSize = fromConfigOrDefault(cfg.databaseBlueprintsConfig.sampling.maxCacheSizeMib*1024*1024, 1<<30) / 8 // Default to 1GB
 		var err error
-		sp.cache, err = cache.NewLRUBlueprintCache[string](int(cacheSize))
+		sp.cache, err = cache2.NewLRUBlueprintCache[string](int(cacheSize))
 		if err != nil {
 			return nil, err
 		}
