@@ -67,7 +67,7 @@ func TestTranslationSupportedVersion(t *testing.T) {
 	}
 }
 
-func TestTranslationIterator(t *testing.T) {
+func TestTranslationIteratorExact(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -75,30 +75,42 @@ func TestTranslationIterator(t *testing.T) {
 		target   string
 		income   string
 		status   int
+		versions []Version
 	}{
 		{
 			scenario: "No update",
 			target:   "https://opentelemetry.io/schemas/1.9.0",
 			income:   "https://opentelemetry.io/schemas/1.9.0",
 			status:   NoChange,
+			versions: []Version{},
 		},
 		{
 			scenario: "Update",
 			target:   "https://opentelemetry.io/schemas/1.9.0",
 			income:   "https://opentelemetry.io/schemas/1.6.1",
 			status:   Update,
+			versions: []Version{
+				{1, 7, 0},
+				{1, 8, 0},
+				{1, 9, 0},
+			},
 		},
 		{
 			scenario: "Revert",
 			target:   "https://opentelemetry.io/schemas/1.6.1",
 			income:   "https://opentelemetry.io/schemas/1.9.0",
 			status:   Revert,
-		},
+			versions: []Version{
+				{1, 9, 0},
+				{1, 8, 0},
+				{1, 7, 0},
+			},		},
 		{
 			scenario: "Unsupported / Unknown version",
 			target:   "https://opentelemetry.io/schemas/1.6.1",
 			income:   "https://opentelemetry.io/schemas/2.4.0",
 			status:   NoChange,
+			versions: []Version{},
 		},
 	}
 
@@ -110,23 +122,21 @@ func TestTranslationIterator(t *testing.T) {
 			tn, err := newTranslatorFromReader(zaptest.NewLogger(t), tc.target, LoadTranslationVersion(t, TranslationVersion190))
 			require.NoError(t, err, "Must have no error when creating translator")
 
-			_, version, err := GetFamilyAndVersion(tc.income)
-			require.NoError(t, err, "Must not error when parsing version from schemaURL")
+			_, inVersion, err := GetFamilyAndVersion(tc.income)
+			require.NoError(t, err, "Must not error when parsing inVersion from schemaURL")
 
-			it, status := tn.iterator(ctx, version)
+			it, status := tn.iterator(ctx, inVersion)
 			assert.Equal(t, tc.status, status, "Must match the expected status")
+			iterationVersions := make([]Version, 0)
 			for rev, more := it(); more; rev, more = it() {
-				switch status {
-				case Update:
-					version.LessThan(rev.Version())
-				case Revert:
-					version.GreaterThan(rev.Version())
-				}
-				version = rev.Version()
+				iterationVersions = append(iterationVersions, *rev.Version())
 			}
+			assert.EqualValues(t, tc.versions, iterationVersions)
 		})
 	}
+}
 
+func TestTranslationIterator(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
@@ -139,7 +149,7 @@ func TestTranslationIterator(t *testing.T) {
 
 	count := 0
 	for rev, more := it(); more; rev, more = it() {
-		if count == 4 {
+		if count == 3 {
 			cancel()
 		}
 		ver = rev.Version()

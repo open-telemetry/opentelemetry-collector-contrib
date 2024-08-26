@@ -66,17 +66,12 @@ func TestRequestTranslation(t *testing.T) {
 	assert.True(t, tn.SupportedVersion(&Version{1, 0, 0}), "Must have the version listed as supported")
 
 	count := 0
-	ver := &Version{1, 0, 0}
-	it, status := tn.iterator(context.Background(), ver)
+	prevRev := &Version{1, 0, 0}
+	it, status := tn.iterator(context.Background(), prevRev)
 	assert.Equal(t, Update, status, "Must return a status of update")
-	for rev, more := it(); more; rev, more = it() {
-		switch count {
-		case 0:
-			assert.True(t, ver.Equal(rev.Version()))
-		default:
-			assert.True(t, ver.LessThan(rev.Version()))
-		}
-		ver = rev.Version()
+	for currRev, more := it(); more; currRev, more = it() {
+		assert.True(t, prevRev.LessThan(currRev.Version()))
+		prevRev = currRev.Version()
 		count++
 	}
 

@@ -448,6 +448,9 @@ func (t *translator) iterator(ctx context.Context, from *Version) (iterator, int
 		// In the event of an update, the iterator needs to also run that version
 		// for the signal to be the correct version.
 		stop++
+
+		// we need to not run the starting version to start with, that's already been done!
+		it++
 	}
 	return func() (RevisionV1, bool) {
 		select {
