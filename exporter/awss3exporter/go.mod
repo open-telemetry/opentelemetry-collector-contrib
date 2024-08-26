@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240826191928-b33913ba527d
-	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240823141558-b10029ca8f46
+	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/confmap v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/exporter v0.107.1-0.20240826191928-b33913ba527d
@@ -68,7 +68,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240826191928-b33913ba527d // indirect
-	go.opentelemetry.io/collector/extension v0.107.1-0.20240823141558-b10029ca8f46 // indirect
+	go.opentelemetry.io/collector/extension v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/otelcol v0.107.1-0.20240826191928-b33913ba527d // indirect

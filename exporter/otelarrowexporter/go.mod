@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/client v1.13.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/component v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/config/configauth v0.107.1-0.20240826191928-b33913ba527d
-	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240823141558-b10029ca8f46
+	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/config/configgrpc v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/config/configretry v1.13.1-0.20240826191928-b33913ba527d
@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/exporter v0.107.1-0.20240826191928-b33913ba527d
-	go.opentelemetry.io/collector/extension v0.107.1-0.20240823141558-b10029ca8f46
+	go.opentelemetry.io/collector/extension v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/extension/auth v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/pdata v1.13.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/otel v1.28.0

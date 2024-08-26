@@ -78,12 +78,12 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/collector v0.107.1-0.20240826191928-b33913ba527d // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240823141558-b10029ca8f46 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/internal v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/exporter v0.107.1-0.20240826191928-b33913ba527d // indirect
-	go.opentelemetry.io/collector/extension v0.107.1-0.20240823141558-b10029ca8f46 // indirect
+	go.opentelemetry.io/collector/extension v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0 // indirect

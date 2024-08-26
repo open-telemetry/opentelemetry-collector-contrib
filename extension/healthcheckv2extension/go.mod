@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v0.107.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240826191928-b33913ba527d
 	go.opentelemetry.io/collector/confmap v0.107.1-0.20240826191928-b33913ba527d
-	go.opentelemetry.io/collector/extension v0.107.1-0.20240823141558-b10029ca8f46
+	go.opentelemetry.io/collector/extension v0.107.1-0.20240826191928-b33913ba527d
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -49,7 +49,7 @@ require (
 	go.opentelemetry.io/collector v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/client v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/configauth v0.107.1-0.20240826191928-b33913ba527d // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240823141558-b10029ca8f46 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/config/internal v0.107.1-0.20240826191928-b33913ba527d // indirect
