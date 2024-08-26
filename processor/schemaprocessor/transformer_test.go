@@ -65,7 +65,7 @@ func setSchemaForAllItems[T SchemaResource](iterable SchemaResourceIterable[T], 
 func TestTransformerSchemaAll(t *testing.T) {
 	defaultConfig := newDefaultConfiguration()
 	castedConfig := defaultConfig.(*Config)
-	castedConfig.Targets = []string{"https://example.com/testdata/testschemas/section_all/1.1.0"}
+	castedConfig.Targets = []string{"https://example.com/testdata/testschemas/section_all/1.0.0"}
 	transform, err := newTransformer(context.Background(), defaultConfig, processor.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
@@ -82,10 +82,10 @@ func TestTransformerSchemaAll(t *testing.T) {
 	inLogs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("k8s.cluster.name", "sancia")
 	inLogs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("don't", "change")
 
-	setSchemaForAllItems[plog.ResourceLogs](inLogs.ResourceLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
+	setSchemaForAllItems[plog.ResourceLogs](inLogs.ResourceLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
 
-	setSchemaForAllItems[plog.ScopeLogs](inLogs.ResourceLogs().At(0).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
-	setSchemaForAllItems[plog.ScopeLogs](inLogs.ResourceLogs().At(1).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
+	setSchemaForAllItems[plog.ScopeLogs](inLogs.ResourceLogs().At(0).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
+	setSchemaForAllItems[plog.ScopeLogs](inLogs.ResourceLogs().At(1).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
 
 
 	expectedLogs := plog.NewLogs()
@@ -98,17 +98,11 @@ func TestTransformerSchemaAll(t *testing.T) {
 	log0Attrs.Remove("k8s.cluster.name")
 	log0Attrs.PutStr("kubernetes.cluster.name", "sancia")
 
-	setSchemaForAllItems[plog.ResourceLogs](expectedLogs.ResourceLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
-	setSchemaForAllItems[plog.ScopeLogs](expectedLogs.ResourceLogs().At(0).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
-	setSchemaForAllItems[plog.ScopeLogs](expectedLogs.ResourceLogs().At(1).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
-
-	marshaler := plog.JSONMarshaler{}
-	jsonLogs, err := marshaler.MarshalLogs(inLogs)
-	println(string(jsonLogs[:]))
+	setSchemaForAllItems[plog.ResourceLogs](expectedLogs.ResourceLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
+	setSchemaForAllItems[plog.ScopeLogs](expectedLogs.ResourceLogs().At(0).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
+	setSchemaForAllItems[plog.ScopeLogs](expectedLogs.ResourceLogs().At(1).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
 
 	logs, err := transform.processLogs(context.Background(), inLogs)
-	jsonLogs, err = marshaler.MarshalLogs(logs)
-	println(string(jsonLogs[:]))
 	assert.NoError(t, err)
 	assert.EqualValues(t, expectedLogs, logs, "Must match the expected values")
 
