@@ -7,6 +7,7 @@ import (
 	"context"
 	"embed"
 	_ "embed"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -163,4 +164,113 @@ func TestTransformerProcessing(t *testing.T) {
 		assert.NoError(t, err, "Must not error when processing metrics")
 		assert.Equal(t, in, out, "Must return the same data (subject to change)")
 	})
+}
+
+// returns a test log with no schemas set
+func GenerateLogForTest() plog.Logs {
+	plog.NewResourceLogs()
+	in := plog.NewLogs()
+	in.ResourceLogs().AppendEmpty()
+	in.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
+	l := in.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
+	l.Attributes().PutStr("input", "test")
+	return in
+}
+
+type SchemaUsed int
+
+const (
+	ResourceSchemaVersionUsed = iota + 1
+	ScopeSchemaVersionUsed
+	NoopSchemaUsed
+)
+
+ // case 1: resource schema set, scope schema not set, use resource schema
+ // case 2: resource schema not set, scope schema set, use scope schema inside
+ // case 3: resource schema set, scope schema set, use scope schema
+ // case 4: resource schema not set, scope schema not set, noop translation
+func TestTransformerScopeLogSchemaPrecedence(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		input   func() plog.Logs
+		whichSchemaUsed    SchemaUsed
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "resourcesetscopeunset",
+			input: func() plog.Logs {
+				log := GenerateLogForTest()
+				log.ResourceLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.0.0")
+				return log
+			},
+			whichSchemaUsed: ResourceSchemaVersionUsed,
+			wantErr: assert.NoError,
+		},
+		{
+		    name: "resourceunsetscopeset",
+		    input: func() plog.Logs {
+		            log := GenerateLogForTest()
+		            log.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
+		            return log
+		    },
+			whichSchemaUsed: ScopeSchemaVersionUsed,
+		    wantErr: assert.NoError,
+		},
+		{
+		    name: "resourcesetscopeset",
+		    input: func() plog.Logs {
+		            log := GenerateLogForTest()
+		            log.ResourceLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.0.0")
+					 log.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
+
+				 return log
+		    },
+			whichSchemaUsed: ScopeSchemaVersionUsed,
+		    wantErr: assert.NoError,
+		},
+		{
+		     name: "resourceunsetscopeunset",
+		     input: func() plog.Logs {
+		             log := GenerateLogForTest()
+		             return log
+		     },
+		     //want: "https://example.com/testdata/testschemas/schemaprecedence/1.0.0",
+			whichSchemaUsed: NoopSchemaUsed,
+			wantErr: assert.NoError,
+		},
+		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defaultConfig := newDefaultConfiguration()
+			castedConfig := defaultConfig.(*Config)
+			castedConfig.Targets = []string{"https://example.com/testdata/testschemas/schemaprecedence/1.2.0"}
+			transform, err := newTransformer(context.Background(), defaultConfig, processor.Settings{
+				TelemetrySettings: component.TelemetrySettings{
+					Logger: zaptest.NewLogger(t),
+				},
+			})
+			require.NoError(t, err, "Must not error when creating transformer")
+
+			err = transform.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
+			require.NoError(t, err)
+			got, err := transform.processLogs(context.Background(), tt.input())
+			if !tt.wantErr(t, err, fmt.Sprintf("processLogs(%v)", tt.input())) {
+				return
+			}
+			targetLog := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			assert.Equal(t, targetLog.Attributes().Len(), 1)
+			_, usedResource := targetLog.Attributes().Get("one_one_zero_output")
+			_, usedScope := targetLog.Attributes().Get("one_two_zero_output")
+			_, usedNoop := targetLog.Attributes().Get("input")
+			switch tt.whichSchemaUsed {
+			case ResourceSchemaVersionUsed:
+				assert.True(t, usedResource, "processLogs(%v) not using correct schema,, attributes present: %v", tt.name, targetLog.Attributes().AsRaw())
+			case ScopeSchemaVersionUsed:
+				assert.True(t, usedScope, "processLogs(%v) not using correct schema, attributes present: %v", tt.name, targetLog.Attributes().AsRaw())
+			case NoopSchemaUsed:
+				assert.True(t, usedNoop, "processLogs(%v) not using correct schema,, attributes present: %v", tt.name, targetLog.Attributes().AsRaw())
+			}
+		})
+	}
 }
