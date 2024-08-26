@@ -40,7 +40,6 @@ type metadataExporter struct {
 
 	metadataKeys []string
 	exporters    sync.Map
-	metadata     metadata.MD
 
 	// Guards the size and the storing logic to ensure no more than limit items are stored.
 	// If we are willing to allow "some" extra items than the limit this can be removed and size can be made atomic.
