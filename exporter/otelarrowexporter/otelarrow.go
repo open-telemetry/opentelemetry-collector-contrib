@@ -82,7 +82,7 @@ type streamClientFactory func(conn *grpc.ClientConn) arrow.StreamClientFunc
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
 func newExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory) (exp, error) {
-	oCfg := cfg.(*MetadataConfig)
+	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
@@ -103,7 +103,7 @@ func newExporter(cfg component.Config, set exporter.Settings, streamClientFactor
 	}
 
 	return &baseExporter{
-		config:              oCfg.Config,
+		config:              oCfg,
 		settings:            set,
 		userAgent:           userAgent,
 		netReporter:         netReporter,

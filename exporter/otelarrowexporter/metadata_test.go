@@ -35,7 +35,7 @@ func TestSendTracesWithMetadata(t *testing.T) {
 
 	// Start an OTLP exporter and point to the receiver.
 	factory := NewFactory()
-	cfg := createMetadataDefaultConfig().(*MetadataConfig)
+	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.ClientConfig{
@@ -116,7 +116,7 @@ func TestSendTracesWithMetadata(t *testing.T) {
 }
 
 func TestDuplicateMetadataKeys(t *testing.T) {
-	cfg := createMetadataDefaultConfig().(*MetadataConfig)
+	cfg := createDefaultConfig().(*Config)
 	cfg.MetadataKeys = []string{"myTOKEN", "mytoken"}
 	err := cfg.Validate()
 	require.Error(t, err)
@@ -140,7 +140,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 
 	// Start an OTLP exporter and point to the receiver.
 	factory := NewFactory()
-	cfg := createMetadataDefaultConfig().(*MetadataConfig)
+	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.ClientConfig{

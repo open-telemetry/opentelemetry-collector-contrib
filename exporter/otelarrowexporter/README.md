@@ -123,7 +123,7 @@ metadata combinations:
   arrow exporter instance per distinct combination of values in the 
   client.Metadata.
 - `metadata_cardinality_limit` (default = 1000): When metadata_keys is not empty, 
- this setting limits the number of unique combinations of metadata key values 
+  this setting limits the number of unique combinations of metadata key values
   that will be processed over the lifetime of the exporter.
 
 ### Network Configuration

@@ -32,51 +32,8 @@ var (
 	errUnexpectedType = errors.New("unexpected type in map")
 )
 
-type MetadataConfig struct {
-	*Config
-
-	// MetadataKeys is a list of client.Metadata keys that will be
-	// used to form distinct exporters.  If this setting is empty,
-	// a single exporter instance will be used.  When this setting
-	// is not empty, one exporter will be used per distinct
-	// combination of values for the listed metadata keys.
-	//
-	// Empty value and unset metadata are treated as distinct cases.
-	//
-	// Entries are case-insensitive.  Duplicated entries will
-	// trigger a validation error.
-	MetadataKeys []string `mapstructure:"metadata_keys"`
-
-	// MetadataCardinalityLimit indicates the maximum number of
-	// exporter instances that will be created through a distinct
-	// combination of MetadataKeys.
-	MetadataCardinalityLimit uint32 `mapstructure:"metadata_cardinality_limit"`
-
-}
-
-var _ component.Config = (*MetadataConfig)(nil)
-
-// Validate checks if the exporter configuration is valid
-func (cfg *MetadataConfig) Validate() error {
-	uniq := map[string]bool{}
-	for _, k := range cfg.MetadataKeys {
-		l := strings.ToLower(k)
-		if _, has := uniq[l]; has {
-			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
-		}
-		uniq[l] = true
-	}
-	return nil
-}
-
-func createMetadataDefaultConfig() component.Config {
-	return &MetadataConfig{
-		Config: createDefaultConfig().(*Config),
-	}
-}
-
 type metadataExporter struct {
-	config   *MetadataConfig
+	config   *Config
 	settings exporter.Settings
 	scf      streamClientFactory
 	host     component.Host
@@ -94,7 +51,7 @@ type metadataExporter struct {
 var _ exp = (*metadataExporter)(nil)
 
 func newMetadataExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory) (exp, error) {
-	oCfg := cfg.(*MetadataConfig)
+	oCfg := cfg.(*Config)
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(oCfg.MetadataKeys))
 	for i, k := range oCfg.MetadataKeys {
@@ -123,9 +80,9 @@ func (e *metadataExporter) getConfig() component.Config {
 func (e *metadataExporter) helperOptions() []exporterhelper.Option {
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(e.config.Config.TimeoutSettings),
-		exporterhelper.WithRetry(e.config.Config.RetryConfig),
-		exporterhelper.WithQueue(e.config.Config.QueueSettings),
+		exporterhelper.WithTimeout(e.config.TimeoutSettings),
+		exporterhelper.WithRetry(e.config.RetryConfig),
+		exporterhelper.WithQueue(e.config.QueueSettings),
 		exporterhelper.WithStart(e.start),
 		exporterhelper.WithShutdown(e.shutdown),
 	}

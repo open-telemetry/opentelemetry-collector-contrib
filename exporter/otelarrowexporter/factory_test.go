@@ -31,7 +31,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	ocfg := createMetadataDefaultConfig().(*MetadataConfig)
+	ocfg := createDefaultConfig().(*Config)
 	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutConfig())
@@ -48,7 +48,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
-	cfg := createMetadataDefaultConfig().(*MetadataConfig)
+	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings()
@@ -61,127 +61,107 @@ func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name             string
-		config           MetadataConfig
+		config           Config
 		mustFailOnCreate bool
 		mustFailOnStart  bool
 	}{
 		{
 			name: "NoEndpoint",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: "",
-					},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: "",
 				},
 			},
 			mustFailOnCreate: true,
 		},
 		{
 			name: "UseSecure",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: endpoint,
-						TLSSetting: configtls.ClientConfig{
-							Insecure: false,
-						},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: endpoint,
+					TLSSetting: configtls.ClientConfig{
+						Insecure: false,
 					},
 				},
 			},
 		},
 		{
 			name: "Keepalive",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: endpoint,
-						Keepalive: &configgrpc.KeepaliveClientConfig{
-							Time:                30 * time.Second,
-							Timeout:             25 * time.Second,
-							PermitWithoutStream: true,
-						},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: endpoint,
+					Keepalive: &configgrpc.KeepaliveClientConfig{
+						Time:                30 * time.Second,
+						Timeout:             25 * time.Second,
+						PermitWithoutStream: true,
 					},
 				},
 			},
 		},
 		{
 			name: "NoneCompression",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    endpoint,
-						Compression: "none",
-					},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint:    endpoint,
+					Compression: "none",
 				},
 			},
 		},
 		{
 			name: "GzipCompression",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    endpoint,
-						Compression: configcompression.TypeGzip,
-					},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint:    endpoint,
+					Compression: configcompression.TypeGzip,
 				},
 			},
 		},
 		{
 			name: "SnappyCompression",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    endpoint,
-						Compression: configcompression.TypeSnappy,
-					},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint:    endpoint,
+					Compression: configcompression.TypeSnappy,
 				},
 			},
 		},
 		{
 			name: "ZstdCompression",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    endpoint,
-						Compression: configcompression.TypeZstd,
-					},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint:    endpoint,
+					Compression: configcompression.TypeZstd,
 				},
 			},
 		},
 		{
 			name: "Headers",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: endpoint,
-						Headers: map[string]configopaque.String{
-							"hdr1": "val1",
-							"hdr2": "val2",
-						},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: endpoint,
+					Headers: map[string]configopaque.String{
+						"hdr1": "val1",
+						"hdr2": "val2",
 					},
 				},
 			},
 		},
 		{
 			name: "NumConsumers",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: endpoint,
-					},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: endpoint,
 				},
 			},
 		},
 		{
 			name: "CaCert",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: endpoint,
-						TLSSetting: configtls.ClientConfig{
-							Config: configtls.Config{
-								CAFile: filepath.Join("testdata", "test_cert.pem"),
-							},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: endpoint,
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
+							CAFile: filepath.Join("testdata", "test_cert.pem"),
 						},
 					},
 				},
@@ -189,14 +169,12 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "CertPemFileError",
-			config: MetadataConfig{
-				Config: &Config{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: endpoint,
-						TLSSetting: configtls.ClientConfig{
-							Config: configtls.Config{
-								CAFile: "nosuchfile",
-							},
+			config: Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: endpoint,
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
+							CAFile: "nosuchfile",
 						},
 					},
 				},
@@ -236,7 +214,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
-	cfg := createMetadataDefaultConfig().(*MetadataConfig)
+	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings()
@@ -247,7 +225,7 @@ func TestCreateLogsExporter(t *testing.T) {
 
 func TestCreateArrowTracesExporter(t *testing.T) {
 	factory := NewFactory()
-	cfg := createMetadataDefaultConfig().(*MetadataConfig)
+	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.Arrow = ArrowConfig{
 		NumStreams: 1,
