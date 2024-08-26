@@ -166,16 +166,7 @@ func TestTransformerProcessing(t *testing.T) {
 	})
 }
 
-// returns a test log with no schemas set
-func GenerateLogForTest() plog.Logs {
-	plog.NewResourceLogs()
-	in := plog.NewLogs()
-	in.ResourceLogs().AppendEmpty()
-	in.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
-	l := in.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
-	l.Attributes().PutStr("input", "test")
-	return in
-}
+
 
 type SchemaUsed int
 
@@ -184,6 +175,16 @@ const (
 	ScopeSchemaVersionUsed
 	NoopSchemaUsed
 )
+
+// returns a test log with no schema versions set
+func GenerateLogForTest() plog.Logs {
+	in := plog.NewLogs()
+	in.ResourceLogs().AppendEmpty()
+	in.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
+	l := in.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
+	l.Attributes().PutStr("input", "test")
+	return in
+}
 
  // case 1: resource schema set, scope schema not set, use resource schema
  // case 2: resource schema not set, scope schema set, use scope schema inside
@@ -270,6 +271,208 @@ func TestTransformerScopeLogSchemaPrecedence(t *testing.T) {
 				assert.True(t, usedScope, "processLogs(%v) not using correct schema, attributes present: %v", tt.name, targetLog.Attributes().AsRaw())
 			case NoopSchemaUsed:
 				assert.True(t, usedNoop, "processLogs(%v) not using correct schema,, attributes present: %v", tt.name, targetLog.Attributes().AsRaw())
+			}
+		})
+	}
+}
+
+// returns a test trace with no schema versions set
+func GenerateTraceForTest() ptrace.Traces {
+	in := ptrace.NewTraces()
+	in.ResourceSpans().AppendEmpty()
+	in.ResourceSpans().At(0).ScopeSpans().AppendEmpty()
+	l := in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().AppendEmpty()
+	l.Attributes().PutStr("input", "test")
+	return in
+}
+
+// literally the exact same tests as above
+// case 1: resource schema set, scope schema not set, use resource schema
+// case 2: resource schema not set, scope schema set, use scope schema inside
+// case 3: resource schema set, scope schema set, use scope schema
+// case 4: resource schema not set, scope schema not set, noop translation
+func TestTransformerScopeTraceSchemaPrecedence(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		input   func() ptrace.Traces
+		whichSchemaUsed    SchemaUsed
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "resourcesetscopeunset",
+			input: func() ptrace.Traces {
+				trace := GenerateTraceForTest()
+				trace.ResourceSpans().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.0.0")
+				return trace
+			},
+			whichSchemaUsed: ResourceSchemaVersionUsed,
+			wantErr: assert.NoError,
+		},
+		{
+			name: "resourceunsetscopeset",
+			input: func() ptrace.Traces {
+				trace := GenerateTraceForTest()
+				trace.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
+				return trace
+			},
+			whichSchemaUsed: ScopeSchemaVersionUsed,
+			wantErr: assert.NoError,
+		},
+		{
+			name: "resourcesetscopeset",
+			input: func() ptrace.Traces {
+				trace := GenerateTraceForTest()
+				trace.ResourceSpans().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.0.0")
+				trace.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
+
+				return trace
+			},
+			whichSchemaUsed: ScopeSchemaVersionUsed,
+			wantErr: assert.NoError,
+		},
+		{
+			name: "resourceunsetscopeunset",
+			input: func() ptrace.Traces {
+				trace := GenerateTraceForTest()
+				return trace
+			},
+			//want: "https://example.com/testdata/testschemas/schemaprecedence/1.0.0",
+			whichSchemaUsed: NoopSchemaUsed,
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defaultConfig := newDefaultConfiguration()
+			castedConfig := defaultConfig.(*Config)
+			castedConfig.Targets = []string{"https://example.com/testdata/testschemas/schemaprecedence/1.2.0"}
+			transform, err := newTransformer(context.Background(), defaultConfig, processor.Settings{
+				TelemetrySettings: component.TelemetrySettings{
+					Logger: zaptest.NewLogger(t),
+				},
+			})
+			require.NoError(t, err, "Must not error when creating transformer")
+
+			err = transform.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
+			require.NoError(t, err)
+			got, err := transform.processTraces(context.Background(), tt.input())
+			if !tt.wantErr(t, err, fmt.Sprintf("processTraces(%v)", tt.input())) {
+				return
+			}
+			targetTrace := got.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+			assert.Equal(t, targetTrace.Attributes().Len(), 1)
+			_, usedResource := targetTrace.Attributes().Get("one_one_zero_output")
+			_, usedScope := targetTrace.Attributes().Get("one_two_zero_output")
+			_, usedNoop := targetTrace.Attributes().Get("input")
+			switch tt.whichSchemaUsed {
+			case ResourceSchemaVersionUsed:
+				assert.True(t, usedResource, "processTraces(%v) not using correct schema,, attributes present: %v", tt.name, targetTrace.Attributes().AsRaw())
+			case ScopeSchemaVersionUsed:
+				assert.True(t, usedScope, "processTraces(%v) not using correct schema, attributes present: %v", tt.name, targetTrace.Attributes().AsRaw())
+			case NoopSchemaUsed:
+				assert.True(t, usedNoop, "processTraces(%v) not using correct schema,, attributes present: %v", tt.name, targetTrace.Attributes().AsRaw())
+			}
+		})
+	}
+}
+
+
+// returns a test metric with no schema versions set
+func GenerateMetricForTest() pmetric.Metrics {
+	in := pmetric.NewMetrics()
+	in.ResourceMetrics().AppendEmpty()
+	in.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
+	l := in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+	l.SetEmptySum().DataPoints().AppendEmpty().Attributes().PutStr("input", "test")
+	return in
+}
+
+// case 1: resource schema set, scope schema not set, use resource schema
+// case 2: resource schema not set, scope schema set, use scope schema inside
+// case 3: resource schema set, scope schema set, use scope schema
+// case 4: resource schema not set, scope schema not set, noop translation
+func TestTransformerScopeMetricSchemaPrecedence(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		input   func() pmetric.Metrics
+		whichSchemaUsed    SchemaUsed
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "resourcesetscopeunset",
+			input: func() pmetric.Metrics {
+				metric := GenerateMetricForTest()
+				metric.ResourceMetrics().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.0.0")
+				return metric
+			},
+			whichSchemaUsed: ResourceSchemaVersionUsed,
+			wantErr: assert.NoError,
+		},
+		{
+			name: "resourceunsetscopeset",
+			input: func() pmetric.Metrics {
+				metric := GenerateMetricForTest()
+				metric.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
+				return metric
+			},
+			whichSchemaUsed: ScopeSchemaVersionUsed,
+			wantErr: assert.NoError,
+		},
+		{
+			name: "resourcesetscopeset",
+			input: func() pmetric.Metrics {
+				metric := GenerateMetricForTest()
+				metric.ResourceMetrics().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.0.0")
+				metric.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
+
+				return metric
+			},
+			whichSchemaUsed: ScopeSchemaVersionUsed,
+			wantErr: assert.NoError,
+		},
+		{
+			name: "resourceunsetscopeunset",
+			input: func() pmetric.Metrics {
+				metric := GenerateMetricForTest()
+				return metric
+			},
+			//want: "https://example.com/testdata/testschemas/schemaprecedence/1.0.0",
+			whichSchemaUsed: NoopSchemaUsed,
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defaultConfig := newDefaultConfiguration()
+			castedConfig := defaultConfig.(*Config)
+			castedConfig.Targets = []string{"https://example.com/testdata/testschemas/schemaprecedence/1.2.0"}
+			transform, err := newTransformer(context.Background(), defaultConfig, processor.Settings{
+				TelemetrySettings: component.TelemetrySettings{
+					Logger: zaptest.NewLogger(t),
+				},
+			})
+			require.NoError(t, err, "Must not error when creating transformer")
+
+			err = transform.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
+			require.NoError(t, err)
+			got, err := transform.processMetrics(context.Background(), tt.input())
+			if !tt.wantErr(t, err, fmt.Sprintf("processMetrics(%v)", tt.input())) {
+				return
+			}
+			targetMetric := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+			assert.Equal(t, targetMetric.Attributes().Len(), 1)
+			_, usedResource := targetMetric.Attributes().Get("one_one_zero_output")
+			_, usedScope := targetMetric.Attributes().Get("one_two_zero_output")
+			_, usedNoop := targetMetric.Attributes().Get("input")
+			switch tt.whichSchemaUsed {
+			case ResourceSchemaVersionUsed:
+				assert.True(t, usedResource, "processMetrics(%v) not using correct schema,, attributes present: %v", tt.name, targetMetric.Attributes().AsRaw())
+			case ScopeSchemaVersionUsed:
+				assert.True(t, usedScope, "processMetrics(%v) not using correct schema, attributes present: %v", tt.name, targetMetric.Attributes().AsRaw())
+			case NoopSchemaUsed:
+				assert.True(t, usedNoop, "processMetrics(%v) not using correct schema,, attributes present: %v", tt.name, targetMetric.Attributes().AsRaw())
 			}
 		})
 	}
