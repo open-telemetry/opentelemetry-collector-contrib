@@ -197,6 +197,5 @@ func (e *metadataExporter) getAttrSet(ctx context.Context, keys []string) (attri
 			attrs = append(attrs, attribute.StringSlice(k, vs))
 		}
 	}
-	// ctx = metadata.NewOutgoingContext(ctx, metadata.MD(md))
 	return attribute.NewSet(attrs...), metadata.MD(md)
 }
