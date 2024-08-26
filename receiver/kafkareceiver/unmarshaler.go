@@ -50,6 +50,7 @@ type LogsUnmarshalerWithEnc interface {
 // defaultTracesUnmarshalers returns map of supported encodings with TracesUnmarshaler.
 func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 	otlpPb := newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding)
+	otlpJSON := newOTLPJSONTracesUnmarshaler()
 	jaegerProto := jaegerProtoSpanUnmarshaler{}
 	jaegerJSON := jaegerJSONSpanUnmarshaler{}
 	zipkinProto := newPdataTracesUnmarshaler(zipkinv2.NewProtobufTracesUnmarshaler(false, false), "zipkin_proto")
@@ -57,6 +58,7 @@ func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 	zipkinThrift := newPdataTracesUnmarshaler(zipkinv1.NewThriftTracesUnmarshaler(), "zipkin_thrift")
 	return map[string]TracesUnmarshaler{
 		otlpPb.Encoding():       otlpPb,
+		otlpJSON.Encoding(): otlpJSON,
 		jaegerProto.Encoding():  jaegerProto,
 		jaegerJSON.Encoding():   jaegerJSON,
 		zipkinProto.Encoding():  zipkinProto,
