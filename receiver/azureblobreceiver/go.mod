@@ -93,7 +93,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/exporter v0.107.1-0.20240826191928-b33913ba527d // indirect
-	go.opentelemetry.io/collector/extension v0.107.1-0.20240823141558-b10029ca8f46 // indirect
+	go.opentelemetry.io/collector/extension v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/otelcol v0.107.1-0.20240826191928-b33913ba527d // indirect

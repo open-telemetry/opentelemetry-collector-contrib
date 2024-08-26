@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240826191928-b33913ba527d // indirect
-	go.opentelemetry.io/collector/extension v0.107.1-0.20240823141558-b10029ca8f46 // indirect
+	go.opentelemetry.io/collector/extension v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/receiver v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect

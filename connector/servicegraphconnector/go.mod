@@ -72,7 +72,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240826191928-b33913ba527d // indirect
-	go.opentelemetry.io/collector/extension v0.107.1-0.20240823141558-b10029ca8f46 // indirect
+	go.opentelemetry.io/collector/extension v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/otelcol v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240826191928-b33913ba527d // indirect
