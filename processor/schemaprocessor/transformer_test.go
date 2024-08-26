@@ -61,6 +61,8 @@ func setSchemaForAllItems[T SchemaResource](iterable SchemaResourceIterable[T], 
 	}
 }
 
+//go:embed testdata
+var f embed.FS
 
 func TestTransformerSchemaAll(t *testing.T) {
 	defaultConfig := newDefaultConfiguration()
@@ -76,31 +78,19 @@ func TestTransformerSchemaAll(t *testing.T) {
 	err = transform.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
 	require.NoError(t, err)
 
-	inLogs := plog.NewLogs()
-	inLogs.ResourceLogs().AppendEmpty().Resource().Attributes().PutStr("asdf", "1")
-	inLogs.ResourceLogs().AppendEmpty().Resource().Attributes().PutStr("k8s.cluster.name", "tevanne")
-	inLogs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("k8s.cluster.name", "sancia")
-	inLogs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes().PutStr("don't", "change")
-
-	setSchemaForAllItems[plog.ResourceLogs](inLogs.ResourceLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
-
-	setSchemaForAllItems[plog.ScopeLogs](inLogs.ResourceLogs().At(0).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
-	setSchemaForAllItems[plog.ScopeLogs](inLogs.ResourceLogs().At(1).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.1.0")
 
 
-	expectedLogs := plog.NewLogs()
-	inLogs.CopyTo(expectedLogs)
+	unmarshaler := plog.JSONUnmarshaler{}
 
-	attrs := expectedLogs.ResourceLogs().At(1).Resource().Attributes()
-	assert.True(t, attrs.Remove("k8s.cluster.name"))
-	attrs.PutStr("kubernetes.cluster.name", "tevanne")
-	log0Attrs := expectedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-	log0Attrs.Remove("k8s.cluster.name")
-	log0Attrs.PutStr("kubernetes.cluster.name", "sancia")
+	logJSON, err := f.ReadFile("testdata/transformerdata/log.json")
+	require.NoError(t, err)
+	inLogs, err := unmarshaler.UnmarshalLogs(logJSON)
+	require.NoError(t, err)
 
-	setSchemaForAllItems[plog.ResourceLogs](expectedLogs.ResourceLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
-	setSchemaForAllItems[plog.ScopeLogs](expectedLogs.ResourceLogs().At(0).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
-	setSchemaForAllItems[plog.ScopeLogs](expectedLogs.ResourceLogs().At(1).ScopeLogs(), "https://example.com/testdata/testschemas/section_all/1.0.0")
+	logOutJSON, err := f.ReadFile("testdata/transformerdata/log_out.json")
+	require.NoError(t, err)
+	expectedLogs, err := unmarshaler.UnmarshalLogs(logOutJSON)
+	require.NoError(t, err)
 
 	logs, err := transform.processLogs(context.Background(), inLogs)
 	assert.NoError(t, err)
