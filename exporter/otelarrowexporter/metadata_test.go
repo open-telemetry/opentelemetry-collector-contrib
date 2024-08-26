@@ -95,17 +95,22 @@ func TestSendTracesWithMetadata(t *testing.T) {
 		expectByContext[num] += spansPerRequest
 		go func(n int) {
 			assert.NoError(t, exp.ConsumeTraces(callCtxs[n], td))
-
 		}(num)
 	}
 
 	assert.Eventually(t, func() bool {
+		// rcv.mux.Lock()
+		// defer rcv.mux.Unlock()
 		return rcv.requestCount.Load() == int32(requestCount)
 	}, 1*time.Second, 5*time.Millisecond)
 	assert.Eventually(t, func() bool {
+		// rcv.mux.Lock()
+		// defer rcv.mux.Unlock()
 		return rcv.totalItems.Load() == int32(requestCount*spansPerRequest)
 	}, 1*time.Second, 5*time.Millisecond)
 	assert.Eventually(t, func() bool {
+		rcv.mux.Lock()
+		defer rcv.mux.Unlock()
 		return len(callCtxs) == len(rcv.spanCountByMetadata)
 	}, 1*time.Second, 5*time.Millisecond)
 

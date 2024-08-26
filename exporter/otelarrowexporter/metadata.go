@@ -92,8 +92,6 @@ func (e *metadataExporter) start(_ context.Context, host component.Host) (err er
 	return nil
 }
 
-func (e *metadataExporter) setMetadata(_ metadata.MD) {}
-
 func (e *metadataExporter) shutdown(ctx context.Context) error {
 	var err error
 	e.exporters.Range(func(_ any, value any) bool {
@@ -158,7 +156,13 @@ func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.
 		v, loaded = e.exporters.LoadOrStore(s, newExp)
 		if !loaded {
 			// Start the goroutine only if we added the object to the map, otherwise is already started.
-			newExp.setMetadata(md)
+			be, ok := newExp.(*baseExporter)
+			if !ok {
+				return nil, fmt.Errorf("%w: %T", errUnexpectedType, newExp)
+			}
+			// set metadata keys for base exporter to add them to the outgoing context.
+			be.setMetadata(md)
+
 			err = newExp.start(ctx, e.host)
 			if err != nil {
 				e.exporters.Delete(s)

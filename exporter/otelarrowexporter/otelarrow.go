@@ -42,7 +42,6 @@ type exp interface {
 	helperOptions() []exporterhelper.Option
 	getSettings() exporter.Settings
 	getConfig() component.Config
-	setMetadata(metadata.MD)
 
 	start(context.Context, component.Host) error
 	shutdown(context.Context) error

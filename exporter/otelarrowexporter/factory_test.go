@@ -31,7 +31,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	ocfg := createDefaultConfig().(*Config)
+	ocfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutConfig())
@@ -48,7 +48,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings()
@@ -214,7 +214,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings()
@@ -225,7 +225,7 @@ func TestCreateLogsExporter(t *testing.T) {
 
 func TestCreateArrowTracesExporter(t *testing.T) {
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.Arrow = ArrowConfig{
 		NumStreams: 1,

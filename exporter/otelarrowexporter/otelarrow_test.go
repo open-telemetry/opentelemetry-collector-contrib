@@ -88,9 +88,9 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRe
 	r.requestCount.Add(int32(1))
 	td := req.Traces()
 	r.totalItems.Add(int32(td.SpanCount()))
-	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	r.mux.Lock()
 	defer r.mux.Unlock()
+	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	if r.hasMetadata {
 		v1 := r.metadata.Get("key1")
 		v2 := r.metadata.Get("key2")
@@ -306,7 +306,7 @@ func TestSendTraces(t *testing.T) {
 	authID := component.NewID(component.MustNewType("testauth"))
 	expectedHeader := []string{"header-value"}
 
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see any errors.
 	cfg.QueueSettings.Enabled = false
@@ -464,7 +464,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 
 			// Start an OTLP exporter and point to the receiver.
 			factory := NewFactory()
-			cfg := createDefaultConfig().(*Config)
+			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.ClientConfig = test.gRPCClientSettings
 			cfg.ClientConfig.Endpoint = test.scheme + ln.Addr().String()
 			cfg.Arrow.MaxStreamLifetime = 100 * time.Second
@@ -511,7 +511,7 @@ func TestSendMetrics(t *testing.T) {
 
 	// Start an OTLP exporter and point to the receiver.
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
 	// otherwise we will not see any errors.
 	cfg.QueueSettings.Enabled = false
@@ -611,7 +611,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 
 	// Start an OTel-Arrow exporter and point to the receiver.
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
@@ -675,7 +675,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 
 	// Start an OTel-Arrow exporter and point to the receiver.
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.ClientConfig{
@@ -728,7 +728,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	defer rcv.srv.GracefulStop()
 
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.RetryConfig.InitialInterval = 0
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
@@ -809,7 +809,7 @@ func TestSendLogData(t *testing.T) {
 
 	// Start an OTel-Arrow exporter and point to the receiver.
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeLogs
 	// otherwise we will not see any errors.
 	cfg.QueueSettings.Enabled = false
@@ -917,7 +917,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	factory := NewFactory()
 	authID := component.NewID(component.MustNewType("testauth"))
 	expectedHeader := []string{"arrow-ftw"}
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.ClientConfig{
@@ -1092,7 +1092,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 
 	// Start an OTel-Arrow exporter and point to the receiver.
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.ClientConfig{
@@ -1154,7 +1154,7 @@ func TestUserDialOptions(t *testing.T) {
 
 	// Start an OTel-Arrow exporter and point to the receiver.
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.ClientConfig{
