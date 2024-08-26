@@ -5,8 +5,8 @@ go 1.22.0
 require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.107.1-0.20240821120936-6764622672bc
-	go.opentelemetry.io/collector/extension v0.107.1-0.20240821120936-6764622672bc
+	go.opentelemetry.io/collector/component v0.107.1-0.20240826191928-b33913ba527d
+	go.opentelemetry.io/collector/extension v0.107.1-0.20240823141558-b10029ca8f46
 	go.uber.org/goleak v1.3.0
 )
 
@@ -31,7 +31,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240821120936-6764622672bc // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/confmap v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/pdata v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
