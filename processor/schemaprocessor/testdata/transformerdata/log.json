@@ -25,7 +25,7 @@
               ]
             }
           ],
-          "schemaUrl": "https://example.com/testdata/testschemas/section_all/1.1.0"
+          "schemaUrl": "https://example.com/testdata/testschemas/sectionall/1.1.0"
         },
         {
           "logRecords": [
@@ -40,10 +40,10 @@
               ]
             }
           ],
-          "schemaUrl": "https://example.com/testdata/testschemas/section_all/1.1.0"
+          "schemaUrl": "https://example.com/testdata/testschemas/sectionall/1.1.0"
         }
       ],
-      "schemaUrl": "https://example.com/testdata/testschemas/section_all/1.1.0"
+      "schemaUrl": "https://example.com/testdata/testschemas/sectionall/1.1.0"
     },
     {
       "resource": {
@@ -56,7 +56,7 @@
           }
         ]
       },
-      "schemaUrl": "https://example.com/testdata/testschemas/section_all/1.1.0"
+      "schemaUrl": "https://example.com/testdata/testschemas/sectionall/1.1.0"
     }
   ]
 }

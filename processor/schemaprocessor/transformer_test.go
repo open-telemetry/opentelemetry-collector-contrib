@@ -92,7 +92,7 @@ func buildTestTransformer(t *testing.T, targetUrl string)  *transformer {
 
 func TestTransformerSchemaAll(t *testing.T) {
 	// todo(ankit) do i need to test all data types here?
-	transform := buildTestTransformer(t, "https://example.com/testdata/testschemas/section_all/1.0.0")
+	transform := buildTestTransformer(t, "https://example.com/testdata/testschemas/sectionall/1.0.0")
 
 	inLogs := plogsFromJson(t, "testdata/transformerdata/log.json")
 
