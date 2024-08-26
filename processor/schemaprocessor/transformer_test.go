@@ -64,38 +64,43 @@ func setSchemaForAllItems[T SchemaResource](iterable SchemaResourceIterable[T], 
 //go:embed testdata
 var f embed.FS
 
-func TestTransformerSchemaAll(t *testing.T) {
+func plogsFromJson(t *testing.T, path string) plog.Logs {
+	t.Helper()
+	unmarshaler := plog.JSONUnmarshaler{}
+	logJSON, err := f.ReadFile(path)
+	require.NoError(t, err)
+	inLogs, err := unmarshaler.UnmarshalLogs(logJSON)
+	require.NoError(t, err)
+	return inLogs
+}
+
+func buildTestTransformer(t *testing.T, targetUrl string)  *transformer {
+	t.Helper()
 	defaultConfig := newDefaultConfiguration()
 	castedConfig := defaultConfig.(*Config)
-	castedConfig.Targets = []string{"https://example.com/testdata/testschemas/section_all/1.0.0"}
-	transform, err := newTransformer(context.Background(), defaultConfig, processor.Settings{
+	castedConfig.Targets = []string{targetUrl}
+	transform, err := newTransformer(context.Background(), castedConfig, processor.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
 		},
 	})
 	require.NoError(t, err, "Must not error when creating transformer")
-
 	err = transform.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
 	require.NoError(t, err)
+	return transform
+}
 
+func TestTransformerSchemaAll(t *testing.T) {
+	// todo(ankit) do i need to test all data types here?
+	transform := buildTestTransformer(t, "https://example.com/testdata/testschemas/section_all/1.0.0")
 
+	inLogs := plogsFromJson(t, "testdata/transformerdata/log.json")
 
-	unmarshaler := plog.JSONUnmarshaler{}
-
-	logJSON, err := f.ReadFile("testdata/transformerdata/log.json")
-	require.NoError(t, err)
-	inLogs, err := unmarshaler.UnmarshalLogs(logJSON)
-	require.NoError(t, err)
-
-	logOutJSON, err := f.ReadFile("testdata/transformerdata/log_out.json")
-	require.NoError(t, err)
-	expectedLogs, err := unmarshaler.UnmarshalLogs(logOutJSON)
-	require.NoError(t, err)
+	expectedLogs := plogsFromJson(t, "testdata/transformerdata/log_out.json")
 
 	logs, err := transform.processLogs(context.Background(), inLogs)
 	assert.NoError(t, err)
 	assert.EqualValues(t, expectedLogs, logs, "Must match the expected values")
-
 }
 
 func TestTransformerProcessing(t *testing.T) {
