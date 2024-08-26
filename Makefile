@@ -93,7 +93,7 @@ all-common:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="common"
 
 .PHONY: e2e-test
-e2e-test: otelcontribcol oteltestbedcol
+e2e-test: otelcontribcol
 	$(MAKE) --no-print-directory -C testbed run-tests
 
 .PHONY: integration-test
@@ -344,22 +344,6 @@ otelcontribcollite:
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
-.PHONY: genoteltestbedcol
-genoteltestbedcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
-	$(MAKE) --no-print-directory -C cmd/oteltestbedcol fmt
-
-# Build the Collector executable, with only components used in testbed.
-.PHONY: oteltestbedcol
-oteltestbedcol:
-	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		-tags $(GO_BUILD_TAGS) .
-
-.PHONY: oteltestbedcollite
-oteltestbedcollite:
-	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
-
 # Build the telemetrygen executable.
 .PHONY: telemetrygen
 telemetrygen:
@@ -404,11 +388,8 @@ update-otel:$(MULTIMOD)
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(MAKE) gotidy
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml) 
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
+	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml)
 	$(MAKE) genotelcontribcol
-	$(MAKE) genoteltestbedcol
-	$(MAKE) oteltestbedcol
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -551,7 +532,6 @@ checks:
 	$(MAKE) crosslink
 	$(MAKE) -j4 gotidy
 	$(MAKE) genotelcontribcol
-	$(MAKE) genoteltestbedcol
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify

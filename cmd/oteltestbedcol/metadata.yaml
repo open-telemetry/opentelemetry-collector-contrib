@@ -1,6 +1,0 @@
-type: oteltestbedcol
-
-status:
-  class: cmd
-  codeowners:
-    active: []

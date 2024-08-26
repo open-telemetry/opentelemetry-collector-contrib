@@ -46,7 +46,7 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
-      - run: make oteltestbedcol
+      - run: make otelcontribcol
       - name: Upload Testbed Binaries
         uses: actions/upload-artifact@v4
         with:

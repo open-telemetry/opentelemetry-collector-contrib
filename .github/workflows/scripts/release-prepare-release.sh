@@ -33,14 +33,11 @@ find . -name "*.bak" -type f -delete
 git add versions.yaml
 git commit -m "update version.yaml ${CANDIDATE_BETA}"
 
-sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/oteltestbedcol/builder-config.yaml
 sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/otelcontribcol/builder-config.yaml
 sed -i.bak "s/${CURRENT_BETA_ESCAPED}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/otelcontribcol/builder-config.yaml
-sed -i.bak "s/${CURRENT_BETA_ESCAPED}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/oteltestbedcol/builder-config.yaml
 
 find . -name "*.bak" -type f -delete
 make genotelcontribcol
-make genoteltestbedcol
 git add .
 git commit -m "builder config changes ${CANDIDATE_BETA}" || (echo "no builder config changes to commit")
 

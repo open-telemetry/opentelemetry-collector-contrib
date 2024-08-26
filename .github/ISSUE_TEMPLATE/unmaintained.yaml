@@ -20,7 +20,6 @@ body:
       - cmd/githubgen
       - cmd/opampsupervisor
       - cmd/otelcontribcol
-      - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider

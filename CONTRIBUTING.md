@@ -222,7 +222,6 @@ When submitting a component to the community, consider breaking it down into sep
     * `make crosslink`
     * `make gotidy`
     * `make genotelcontribcol`
-    * `make genoteltestbedcol`
     * `make generate`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
