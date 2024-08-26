@@ -84,6 +84,7 @@ components:
         - deltatorate
         - experimental_metricsgeneration
         - filter
+        - geoip
         - groupbyattrs
         - groupbytrace
         - k8sattributes
