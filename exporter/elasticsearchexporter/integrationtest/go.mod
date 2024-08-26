@@ -152,6 +152,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.107.1-0.20240826191928-b33913ba527d // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.107.1-0.20240826191928-b33913ba527d // indirect
 	go.opentelemetry.io/collector/semconv v0.107.1-0.20240826191928-b33913ba527d // indirect
