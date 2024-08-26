@@ -156,8 +156,8 @@ func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.
 		v, loaded = e.exporters.LoadOrStore(s, newExp)
 		if !loaded {
 			// Start the goroutine only if we added the object to the map, otherwise is already started.
-			be, ok := newExp.(*baseExporter)
-			if !ok {
+			be, valid := newExp.(*baseExporter)
+			if !valid {
 				return nil, fmt.Errorf("%w: %T", errUnexpectedType, newExp)
 			}
 			// set metadata keys for base exporter to add them to the outgoing context.
