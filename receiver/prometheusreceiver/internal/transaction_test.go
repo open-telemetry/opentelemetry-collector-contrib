@@ -204,7 +204,7 @@ func testReceiverVersionAndNameAreAttached(t *testing.T, enableNativeHistograms 
 	require.Equal(t, expectedResource, gotResource)
 
 	gotScope := mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Scope()
-	require.Equal(t, receiverName, gotScope.Name())
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", gotScope.Name())
 	require.Equal(t, component.NewDefaultBuildInfo().Version, gotScope.Version())
 }
 

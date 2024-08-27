@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
@@ -50,7 +51,7 @@ func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) 
 
 		// The listener ownership goes to the server.
 		if err = hc.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			hc.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 

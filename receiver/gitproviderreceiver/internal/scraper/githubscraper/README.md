@@ -77,14 +77,14 @@ section that make decisions based on these limitations.
 Queries are constructed to maximize performance without being overly complex.
 Note that there are sections in the code where `BehindBy` is being used in
 place of `AheadBy` and vice versa. This is a byproduct of the `getBranchData`
-query which returns all the branches from a given repository and the
+query which returns all the refs (branches) from a given repository and the
 comparison to the default branch (trunk). Comparing it here reduces the need
-to make a query that gets all the names of the branches, and then queries
+to make a query that gets all the names of the refs (branches), and then queries
 against each branch. 
 
 Another such byproduct of this method is the skipping of metric creation if the
 branch is the default branch (trunk) or if no changes have been made to the
-branch. This is done for three main reasons.
+ref (branch). This is done for three main reasons.
 
 1. The default branch will always be a long-lived branch and
    may end up with more commits than can be possibly queried
