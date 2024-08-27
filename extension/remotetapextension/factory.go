@@ -22,5 +22,5 @@ func NewFactory() extension.Factory {
 }
 
 func createExtension(_ context.Context, settings extension.Settings, config component.Config) (extension.Extension, error) {
-	return &remoteObserverExtension{config: config.(*Config), settings: settings}, nil
+	return &remoteTapExtension{config: config.(*Config), settings: settings}, nil
 }
