@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.28
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.32.5
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240821120936-6764622672bc
+	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
 )
 
 require (
