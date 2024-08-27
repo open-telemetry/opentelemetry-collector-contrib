@@ -88,7 +88,7 @@ require (
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
-	github.com/elastic/go-structform v0.0.11 // indirect
+	github.com/elastic/go-structform v0.0.12 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/envoyproxy/go-control-plane v0.12.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
