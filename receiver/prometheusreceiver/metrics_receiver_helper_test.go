@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
@@ -237,23 +238,52 @@ func metricsCount(resourceMetric pmetric.ResourceMetrics) int {
 	return metricsCount
 }
 
-func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, normalizedNames bool) []pmetric.ResourceMetrics {
+func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testData) []pmetric.ResourceMetrics {
 	var out []pmetric.ResourceMetrics
 	// rms will include failed scrapes and scrapes that received no metrics but have internal scrape metrics, filter those out
+	// for metrics retrieved with 'honor_labels: true', there will be a resource metric containing the scrape metrics, based on the scrape job config,
+	// and resources containing only the retrieved metrics, without additional scrape metrics, based on the job/instance label pairs that are detected
+	// during a scrape
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
-		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount ||
-			expectedExtraScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedExtraScrapeMetricCount {
-			if isFirstFailedScrape(allMetrics, normalizedNames) {
+		if expectedScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedScrapeMetricCount ||
+			expectedExtraScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedExtraScrapeMetricCount {
+			if isFirstFailedScrape(allMetrics, target.normalizedName) {
 				continue
 			}
 			assertUp(t, 1, allMetrics)
 			out = append(out, rms[i])
 		} else {
-			assertUp(t, 0, allMetrics)
+			if isScrapeConfigResource(rms[i], target) {
+				assertUp(t, 0, allMetrics)
+			} else {
+				out = append(out, rms[i])
+			}
 		}
 	}
 	return out
+}
+
+func isScrapeConfigResource(rms pmetric.ResourceMetrics, target *testData) bool {
+	targetJobName, ok := target.attributes.Get(semconv.AttributeServiceName)
+	if !ok {
+		return false
+	}
+	targetInstanceID, ok := target.attributes.Get(semconv.AttributeServiceInstanceID)
+	if !ok {
+		return false
+	}
+
+	resourceJobName, ok := rms.Resource().Attributes().Get(semconv.AttributeServiceName)
+	if !ok {
+		return false
+	}
+	resourceInstanceID, ok := rms.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+	if !ok {
+		return false
+	}
+
+	return resourceJobName.AsString() == targetJobName.AsString() && resourceInstanceID.AsString() == targetInstanceID.AsString()
 }
 
 func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
@@ -386,18 +416,22 @@ func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.Resource
 func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, expectations []testExpectation, normalizedNames bool) {
 	t.Run(name, func(t *testing.T) {
 		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got, normalizedNames))
-		assert.Equal(t, want.Len(), got.Resource().Attributes().Len())
-		for k, v := range want.AsRaw() {
-			val, ok := got.Resource().Attributes().Get(k)
-			assert.True(t, ok, "%q attribute is missing", k)
-			if ok {
-				assert.EqualValues(t, v, val.AsString())
-			}
-		}
+		assertExpectedAttributes(t, want, got)
 		for _, e := range expectations {
 			e(t, got)
 		}
 	})
+}
+
+func assertExpectedAttributes(t *testing.T, want pcommon.Map, got pmetric.ResourceMetrics) {
+	assert.Equal(t, want.Len(), got.Resource().Attributes().Len())
+	for k, v := range want.AsRaw() {
+		val, ok := got.Resource().Attributes().Get(k)
+		assert.True(t, ok, "%q attribute is missing", k)
+		if ok {
+			assert.EqualValues(t, v, val.AsString())
+		}
+	}
 }
 
 func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, metricUnitExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
@@ -687,7 +721,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	lres, lep := len(pResults), len(mp.endpoints)
 	// There may be an additional scrape entry between when the mock server provided
 	// all responses and when we capture the metrics.  It will be ignored later.
-	assert.GreaterOrEqualf(t, lep, lres, "want at least %d targets, but got %v\n", lep, lres)
+	assert.GreaterOrEqualf(t, lres, lep, "want at least %d targets, but got %v\n", lep, lres)
 
 	// loop to validate outputs for each targets
 	// Stop once we have evaluated all expected results, any others are superfluous.
@@ -699,7 +733,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 			}
 			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name], target.normalizedName)
+				scrapes = getValidScrapes(t, pResults[name], target)
 			}
 			target.validateFunc(t, target, scrapes)
 		})
