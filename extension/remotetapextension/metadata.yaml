@@ -6,7 +6,7 @@ status:
     development: [extension]
   distributions: []
   codeowners:
-    active: [atoulme]
+    active: [atoulme, wildum]
 
 tests:
   config:
