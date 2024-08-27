@@ -1,6 +1,6 @@
 file_format: 1.0.0
 
-schema_url: https://example.com/testschemas/section_all/1.1.0
+schema_url: https://example.com/testschemas/schemaprecedence/1.1.0
 
 versions:
   1.2.0:
