@@ -246,7 +246,7 @@ exporters:
 
 This exporter includes a new, experimental `batcher` configuration for
 batching in the `exporterhelper` module, but this mode is disabled by
-default.  This batching support works when combined when
+default.  This batching support works when combined with
 `queue_sender` functionality.
 
 ```
