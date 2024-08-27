@@ -15,6 +15,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// Default value for HTTP client's polling interval, set to 30 seconds in
+// accordance with the OpAMP spec.
+const httpPollintIntervalDefault = 30 * time.Second
+
 // Config contains the configuration for the opamp extension. Trying to mirror
 // the OpAMP supervisor config for some consistency.
 type Config struct {
@@ -68,18 +72,6 @@ type commonFields struct {
 	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
 }
 
-type httpFields struct {
-	commonFields `mapstructure:",squash"`
-
-	PollingInterval time.Duration `mapstructure:"polling_interval"`
-}
-
-// OpAMPServer contains the OpAMP transport configuration.
-type OpAMPServer struct {
-	WS   *commonFields `mapstructure:"ws,omitempty"`
-	HTTP *httpFields   `mapstructure:"http,omitempty"`
-}
-
 func (c *commonFields) Scheme() string {
 	uri, err := url.ParseRequestURI(c.Endpoint)
 	if err != nil {
@@ -93,6 +85,30 @@ func (c *commonFields) Validate() error {
 		return errors.New("opamp server endpoint must be provided")
 	}
 	return nil
+}
+
+type httpFields struct {
+	commonFields `mapstructure:",squash"`
+
+	PollingInterval time.Duration `mapstructure:"polling_interval"`
+}
+
+func (h *httpFields) Validate() error {
+	if err := h.commonFields.Validate(); err != nil {
+		return err
+	}
+
+	if h.PollingInterval < 0 {
+		return errors.New("polling interval must be 0 or greater")
+	}
+
+	return nil
+}
+
+// OpAMPServer contains the OpAMP transport configuration.
+type OpAMPServer struct {
+	WS   *commonFields `mapstructure:"ws,omitempty"`
+	HTTP *httpFields   `mapstructure:"http,omitempty"`
 }
 
 func (s OpAMPServer) GetClient(logger *zap.Logger) client.OpAMPClient {
@@ -133,11 +149,11 @@ func (s OpAMPServer) GetEndpoint() string {
 }
 
 func (s OpAMPServer) GetPollingInterval() time.Duration {
-	if s.HTTP != nil {
+	if s.HTTP != nil && s.HTTP.PollingInterval > 0 {
 		return s.HTTP.PollingInterval
 	}
 
-	return 0
+	return httpPollintIntervalDefault
 }
 
 // Validate checks if the extension configuration is valid

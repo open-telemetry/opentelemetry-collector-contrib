@@ -237,6 +237,23 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "HTTP invalid polling interval",
+			fields: fields{
+				Server: &OpAMPServer{
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "https://127.0.0.1:4320/v1/opamp",
+						},
+						PollingInterval: -1,
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.Equal(t, "polling interval must be 0 or greater", err.Error())
+			},
+		},
+		{
 			name: "neither config set",
 			fields: fields{
 				Server: &OpAMPServer{},
