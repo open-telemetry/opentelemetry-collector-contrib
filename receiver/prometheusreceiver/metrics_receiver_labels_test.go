@@ -9,7 +9,9 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 )
 
 const targetExternalLabels = `
@@ -576,31 +578,57 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	// job and instance label values should be honored from honorLabelsTarget
-	expectedAttributes := td.attributes
-	expectedAttributes.PutStr("service.name", "honor_labels_test")
-	expectedAttributes.PutStr("service.instance.id", "hostname:8080")
-	expectedAttributes.PutStr("server.port", "8080")
-	expectedAttributes.PutStr("net.host.port", "8080")
-	expectedAttributes.PutStr("server.address", "hostname")
-	expectedAttributes.PutStr("net.host.name", "hostname")
+	expectedResourceAttributes := pcommon.NewMap()
+	td.attributes.CopyTo(expectedResourceAttributes)
+	expectedResourceAttributes.PutStr("service.name", "honor_labels_test")
+	expectedResourceAttributes.PutStr("service.instance.id", "hostname:8080")
+	expectedResourceAttributes.PutStr("server.port", "8080")
+	expectedResourceAttributes.PutStr("net.host.port", "8080")
+	expectedResourceAttributes.PutStr("server.address", "hostname")
+	expectedResourceAttributes.PutStr("net.host.name", "hostname")
 
-	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
+	expectedScrapeConfigAttributes := td.attributes
+
+	// get the resource created for the scraped metric
+	var resourceMetric pmetric.ResourceMetrics
+	var scrapeConfigResourceMetrics pmetric.ResourceMetrics
+	gotScrapeConfigMetrics, gotResourceMetrics := false, false
+	for _, rm := range rms {
+		serviceInstance, ok := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		require.True(t, ok)
+		if serviceInstance.AsString() == "hostname:8080" {
+			resourceMetric = rm
+			gotResourceMetrics = true
+		} else {
+			scrapeConfigResourceMetrics = rm
+			gotScrapeConfigMetrics = true
+		}
+		if gotResourceMetrics && gotScrapeConfigMetrics {
+			break
+		}
+	}
+
+	metrics1 := resourceMetric.ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
 
-	doCompare(t, "honor_labels_true", expectedAttributes, rms[0], []testExpectation{
-		assertMetricPresent("test_gauge0",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
-			[]dataPointExpectation{
-				{
-					numberPointComparator: []numberPointComparator{
-						compareTimestamp(ts1),
-						compareDoubleValue(1),
-						compareAttributes(map[string]string{"testLabel": "value1"}),
-					},
+	// check the scrape metrics of the resource created from the scrape config
+	doCompare(t, "honor_labels_true", expectedScrapeConfigAttributes, scrapeConfigResourceMetrics, []testExpectation{})
+
+	// assert that the gauge metric has been retrieved correctly. This resource only contains the gauge and no scrape metrics,
+	// so we directly check the gauge metric without the scrape metrics
+	assertExpectedAttributes(t, expectedResourceAttributes, resourceMetric)
+	assertMetricPresent("test_gauge0",
+		compareMetricType(pmetric.MetricTypeGauge),
+		compareMetricUnit(""),
+		[]dataPointExpectation{
+			{
+				numberPointComparator: []numberPointComparator{
+					compareTimestamp(ts1),
+					compareDoubleValue(1),
+					compareAttributes(map[string]string{"testLabel": "value1"}),
 				},
-			}),
-	})
+			},
+		})(t, resourceMetric)
 }
 
 func TestHonorLabelsTrueConfig(t *testing.T) {
@@ -676,20 +704,25 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
-	doCompare(t, "relabel-job-instance", wantAttributes, rms[0], []testExpectation{
-		assertMetricPresent("jvm_memory_bytes_used",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
-			[]dataPointExpectation{
-				{
-					numberPointComparator: []numberPointComparator{
-						compareTimestamp(ts1),
-						compareDoubleValue(100),
-						compareAttributes(map[string]string{"area": "heap"}),
-					},
+
+	// directly assert the expected attributes and the expected metrics,
+	// as the scrape metrics which are checked within the doCompare function
+	// are not included in this resourceMetric, which only contains the relabeled
+	// metrics
+	assertExpectedAttributes(t, wantAttributes, rms[0])
+	assertMetricPresent("jvm_memory_bytes_used",
+		compareMetricType(pmetric.MetricTypeGauge),
+		compareMetricUnit(""),
+		[]dataPointExpectation{
+			{
+				numberPointComparator: []numberPointComparator{
+					compareTimestamp(ts1),
+					compareDoubleValue(100),
+					compareAttributes(map[string]string{"area": "heap"}),
 				},
-			}),
-	})
+			},
+		})(t, rms[0])
+
 }
 
 const targetResourceAttsInTargetInfo = `
