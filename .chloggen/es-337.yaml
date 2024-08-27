@@ -7,7 +7,8 @@ change_type: enhancement
 component: receiver/statsd
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
+note: |
+  Add support for aggregating on Host/IP.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [23809]
