@@ -16,12 +16,12 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.0
-	go.opentelemetry.io/collector/config/configretry v1.14.0
-	go.opentelemetry.io/collector/config/configtls v1.14.0
-	go.opentelemetry.io/collector/confmap v1.14.0
+	go.opentelemetry.io/collector/config/configretry v1.14.1
+	go.opentelemetry.io/collector/config/configtls v1.14.1
+	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/consumer v0.108.0
 	go.opentelemetry.io/collector/exporter v0.108.0
-	go.opentelemetry.io/collector/pdata v1.14.0
+	go.opentelemetry.io/collector/pdata v1.14.1
 	go.opentelemetry.io/collector/pdata/testdata v0.108.0
 	go.opentelemetry.io/collector/semconv v0.108.0
 	go.uber.org/goleak v1.3.0
@@ -74,7 +74,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/collector v0.108.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.14.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.14.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.0 // indirect

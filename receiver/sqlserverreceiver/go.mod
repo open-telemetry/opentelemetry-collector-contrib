@@ -10,12 +10,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.107.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.0
-	go.opentelemetry.io/collector/config/configopaque v1.14.0
-	go.opentelemetry.io/collector/confmap v1.14.0
+	go.opentelemetry.io/collector/config/configopaque v1.14.1
+	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/consumer v0.108.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.0
 	go.opentelemetry.io/collector/filter v0.108.0
-	go.opentelemetry.io/collector/pdata v1.14.0
+	go.opentelemetry.io/collector/pdata v1.14.1
 	go.opentelemetry.io/collector/receiver v0.108.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

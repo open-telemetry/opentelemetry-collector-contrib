@@ -14,14 +14,14 @@ require (
 	go.mongodb.org/atlas v0.36.0
 	go.opentelemetry.io/collector/component v0.108.0
 	go.opentelemetry.io/collector/component/componentstatus v0.108.0
-	go.opentelemetry.io/collector/config/configopaque v1.14.0
-	go.opentelemetry.io/collector/config/configretry v1.14.0
-	go.opentelemetry.io/collector/config/configtls v1.14.0
-	go.opentelemetry.io/collector/confmap v1.14.0
+	go.opentelemetry.io/collector/config/configopaque v1.14.1
+	go.opentelemetry.io/collector/config/configretry v1.14.1
+	go.opentelemetry.io/collector/config/configtls v1.14.1
+	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/consumer v0.108.0
 	go.opentelemetry.io/collector/extension v0.108.0
 	go.opentelemetry.io/collector/filter v0.108.0
-	go.opentelemetry.io/collector/pdata v1.14.0
+	go.opentelemetry.io/collector/pdata v1.14.1
 	go.opentelemetry.io/collector/receiver v0.108.0
 	go.opentelemetry.io/collector/semconv v0.108.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
@@ -71,7 +71,7 @@ require (
 	go.opentelemetry.io/collector v0.108.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.14.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect

@@ -7,10 +7,10 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.48.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.0
-	go.opentelemetry.io/collector/confmap v1.14.0
+	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/exporter v0.108.0
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.108.0
-	go.opentelemetry.io/collector/pdata v1.14.0
+	go.opentelemetry.io/collector/pdata v1.14.1
 	go.uber.org/goleak v1.3.0
 )
 
@@ -79,7 +79,7 @@ require (
 	go.opentelemetry.io/collector v0.108.0 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.108.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.108.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.14.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.14.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.0 // indirect
@@ -90,7 +90,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.0 // indirect
 	go.opentelemetry.io/collector/extension v0.108.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.14.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.0 // indirect
 	go.opentelemetry.io/collector/otelcol v0.108.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.0 // indirect

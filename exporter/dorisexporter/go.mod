@@ -8,11 +8,11 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.0
-	go.opentelemetry.io/collector/config/configopaque v1.14.0
-	go.opentelemetry.io/collector/config/configretry v1.14.0
-	go.opentelemetry.io/collector/confmap v1.14.0
+	go.opentelemetry.io/collector/config/configopaque v1.14.1
+	go.opentelemetry.io/collector/config/configretry v1.14.1
+	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/exporter v0.108.0
-	go.opentelemetry.io/collector/pdata v1.14.0
+	go.opentelemetry.io/collector/pdata v1.14.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0 // indirect
 )

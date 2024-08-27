@@ -11,13 +11,13 @@ require (
 	github.com/testcontainers/testcontainers-go v0.31.0
 	go.opentelemetry.io/collector/component v0.108.0
 	go.opentelemetry.io/collector/config/confignet v0.108.0
-	go.opentelemetry.io/collector/config/configopaque v1.14.0
-	go.opentelemetry.io/collector/config/configtls v1.14.0
-	go.opentelemetry.io/collector/confmap v1.14.0
+	go.opentelemetry.io/collector/config/configopaque v1.14.1
+	go.opentelemetry.io/collector/config/configtls v1.14.1
+	go.opentelemetry.io/collector/confmap v1.14.1
 	go.opentelemetry.io/collector/consumer v0.108.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.0
 	go.opentelemetry.io/collector/filter v0.108.0
-	go.opentelemetry.io/collector/pdata v1.14.0
+	go.opentelemetry.io/collector/pdata v1.14.1
 	go.opentelemetry.io/collector/receiver v0.108.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
