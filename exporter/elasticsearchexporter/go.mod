@@ -70,7 +70,6 @@ require (
 	go.elastic.co/fastjson v1.3.0 // indirect
 	go.opentelemetry.io/collector v0.108.0 // indirect
 	go.opentelemetry.io/collector/client v1.14.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.108.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.14.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.14.0 // indirect
