@@ -257,7 +257,7 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 	}
 }
 
-func BenchmarkFindFiles(b *testing.B) {
+func BenchmarkFind10kFiles(b *testing.B) {
 	numFiles := 10000
 	tmpDir := b.TempDir()
 
