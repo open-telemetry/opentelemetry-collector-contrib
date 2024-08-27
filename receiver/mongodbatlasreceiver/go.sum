@@ -94,6 +94,8 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.mongodb.org/atlas v0.36.0 h1:m05S3AO7zkl+bcG1qaNsEKBnAqnKx2FDwLooHpIG3j4=
 go.mongodb.org/atlas v0.36.0/go.mod h1:nfPldE9dSama6G2IbIzmEza02Ly7yFZjMMVscaM0uEc=
+go.mongodb.org/atlas v0.37.0 h1:zQnO1o5+bVP9IotpAYpres4UjMD2F4nwNEFTZhNL4ck=
+go.mongodb.org/atlas v0.37.0/go.mod h1:DJYtM+vsEpPEMSkQzJnFHrT0sP7ev6cseZc/GGjJYG8=
 go.opentelemetry.io/collector v0.108.1 h1:c3JZU5g5KezDXaMgL7GDFB7ihuLNzXo6eBuaJOmBiDA=
 go.opentelemetry.io/collector v0.108.1/go.mod h1:7GL32WiQkZzJjxHstHme9igzYumDsw1hFPep3v1guHQ=
 go.opentelemetry.io/collector/component v0.108.1 h1:X+Afj07brX0NC36t6PvAq+ehaeUO/Q9eJNOUwhInpeY=
