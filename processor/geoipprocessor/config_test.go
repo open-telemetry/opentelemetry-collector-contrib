@@ -35,6 +35,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "maxmind"),
 			expected: &Config{
+				Context: resource,
+				Providers: map[string]provider.Config{
+					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "maxmind_record_context"),
+			expected: &Config{
+				Context: record,
 				Providers: map[string]provider.Config{
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
@@ -43,6 +53,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:                    component.NewIDWithName(metadata.Type, "invalid_providers_config"),
 			unmarshalErrorMessage: "unexpected sub-config value kind for key:providers value:this should be a map kind:string",
+		},
+		{
+			id:                    component.NewIDWithName(metadata.Type, "invalid_source"),
+			unmarshalErrorMessage: "unknown context not.an.otlp.context, available values: resource, record",
 		},
 	}
 
@@ -58,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 
 			if tt.unmarshalErrorMessage != "" {
-				assert.EqualError(t, sub.Unmarshal(cfg), tt.unmarshalErrorMessage)
+				assert.ErrorContains(t, sub.Unmarshal(cfg), tt.unmarshalErrorMessage)
 				return
 			}
 			require.NoError(t, sub.Unmarshal(cfg))
