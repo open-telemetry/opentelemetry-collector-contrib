@@ -50,7 +50,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.107.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.107.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.107.1-0.20240827012220-5963d446ca4a
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.107.0
@@ -173,7 +173,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver v0.107.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.107.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.107.1-0.20240827012220-5963d446ca4a
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.107.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.107.0
