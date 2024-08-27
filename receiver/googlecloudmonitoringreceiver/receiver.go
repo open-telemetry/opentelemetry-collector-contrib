@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/genproto/googleapis/api/metric"
@@ -24,14 +25,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver/internal"
 )
 
-var allMetricDescriptor = make(map[string]*metric.MetricDescriptor)
-
 type monitoringReceiver struct {
-	config         *Config
-	logger         *zap.Logger
-	client         *monitoring.MetricClient
-	metricsBuilder *internal.MetricsBuilder
-	mutex          sync.Mutex
+	config            *Config
+	logger            *zap.Logger
+	client            *monitoring.MetricClient
+	metricsBuilder    *internal.MetricsBuilder
+	mutex             sync.Mutex
+	metricDescriptors map[string]*metric.MetricDescriptor
 }
 
 func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitoringReceiver {
@@ -43,8 +43,7 @@ func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitori
 }
 
 func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error {
-	var client *monitoring.MetricClient
-	var err error
+	mr.metricDescriptors = make(map[string]*metric.MetricDescriptor)
 
 	// Lock to ensure thread-safe access to mr.client
 	mr.mutex.Lock()
@@ -55,17 +54,17 @@ func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error
 		return nil
 	}
 
-	// Get service account key file path
-	serAccKey := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	if serAccKey != "" {
-		// Use provided credentials file
-		credentialsFileClientOption := option.WithCredentialsFile(serAccKey)
-		client, err = monitoring.NewMetricClient(ctx, credentialsFileClientOption)
-	} else {
-		// Set default credentials file path for testing
-		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "testdata/serviceAccount.json")
+	var client *monitoring.MetricClient
+	var err error
 
-		// Fallback to Application Default Credentials(https://google.aip.dev/auth/4110)
+	// Use google.FindDefaultCredentials to find the credentials
+	creds, _ := google.FindDefaultCredentials(ctx)
+	// If a valid credentials file path is found, use it
+	if creds != nil && creds.JSON != nil {
+		client, err = monitoring.NewMetricClient(ctx, option.WithCredentials(creds))
+	} else {
+		// Set a default credentials file path for testing
+		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "testdata/serviceAccount.json")
 		client, err = monitoring.NewMetricClient(ctx)
 	}
 
@@ -86,6 +85,9 @@ func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error
 }
 
 func (mr *monitoringReceiver) Shutdown(context.Context) error {
+	mr.mutex.Lock()
+	defer mr.mutex.Unlock()
+
 	var err error
 	if mr.client != nil {
 		err = mr.client.Close()
@@ -107,7 +109,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 
 	// Iterate over each metric in the configuration to calculate start/end times and construct the filter query.
 	for _, metric := range mr.config.MetricsList {
-		metricDesc, exists := allMetricDescriptor[metric.MetricName]
+		metricDesc, exists := mr.metricDescriptors[metric.MetricName]
 		if !exists {
 			mr.logger.Warn("Metric descriptor not found", zap.String("metric_name", metric.MetricName))
 			continue
@@ -193,7 +195,7 @@ func (mr *monitoringReceiver) metricDescriptorAPI(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("failed to retrieve metric descriptors data: %w", err)
 			}
-			allMetricDescriptor[metricDesc.Type] = metricDesc
+			mr.metricDescriptors[metricDesc.Type] = metricDesc
 		}
 	}
 
@@ -228,34 +230,60 @@ func getFilterQuery(metric MetricConfig) string {
 
 // ConvertGCPTimeSeriesToMetrics converts GCP Monitoring TimeSeries to pmetric.Metrics
 func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metrics, metricDesc *metric.MetricDescriptor, timeSeries *monitoringpb.TimeSeries) {
-	rm := metrics.ResourceMetrics().AppendEmpty()
-	sm := rm.ScopeMetrics().AppendEmpty()
+	// Map to track existing ResourceMetrics by resource attributes
+	resourceMetricsMap := make(map[string]pmetric.ResourceMetrics)
+
+	// Generate a unique key based on resource attributes
+	resourceKey := generateResourceKey(timeSeries.Resource.Type, timeSeries.Resource.Labels, timeSeries)
+
+	// Check if ResourceMetrics for this resource already exists
+	rm, exists := resourceMetricsMap[resourceKey]
+
+	if !exists {
+		// Create a new ResourceMetrics if not already present
+		rm = metrics.ResourceMetrics().AppendEmpty()
+
+		// Set resource labels
+		resource := rm.Resource()
+		resource.Attributes().PutStr("gcp.resource_type", timeSeries.Resource.Type)
+		for k, v := range timeSeries.Resource.Labels {
+			resource.Attributes().PutStr(k, v)
+		}
+
+		// Set metadata (user and system labels)
+		if timeSeries.Metadata != nil {
+			for k, v := range timeSeries.Metadata.UserLabels {
+				resource.Attributes().PutStr(k, v)
+			}
+			if timeSeries.Metadata.SystemLabels != nil {
+				for k, v := range timeSeries.Metadata.SystemLabels.Fields {
+					resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+				}
+			}
+		}
+
+		// Store the newly created ResourceMetrics in the map
+		resourceMetricsMap[resourceKey] = rm
+	}
+
+	// Ensure we have a ScopeMetrics to append the metric to
+	var sm pmetric.ScopeMetrics
+	if rm.ScopeMetrics().Len() == 0 {
+		sm = rm.ScopeMetrics().AppendEmpty()
+	} else {
+		// For simplicity, let's assume all metrics will share the same ScopeMetrics
+		sm = rm.ScopeMetrics().At(0)
+	}
+
+	// Create a new Metric
 	m := sm.Metrics().AppendEmpty()
 
-	// Set metric name, description and unit
+	// Set metric name, description, and unit
 	m.SetName(metricDesc.GetName())
 	m.SetDescription(metricDesc.GetDescription())
 	m.SetUnit(metricDesc.Unit)
 
-	// Set resource labels
-	resource := rm.Resource()
-	resource.Attributes().PutStr("resource_type", timeSeries.Resource.Type)
-	for k, v := range timeSeries.Resource.Labels {
-		resource.Attributes().PutStr(k, v)
-	}
-
-	// Set metadata (user and system labels)
-	if timeSeries.Metadata != nil {
-		for k, v := range timeSeries.Metadata.UserLabels {
-			resource.Attributes().PutStr(k, v)
-		}
-		if timeSeries.Metadata.SystemLabels != nil {
-			for k, v := range timeSeries.Metadata.SystemLabels.Fields {
-				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
-			}
-		}
-	}
-
+	// Convert the TimeSeries to the appropriate metric type
 	switch timeSeries.GetMetricKind() {
 	case metric.MetricDescriptor_GAUGE:
 		mr.metricsBuilder.ConvertGaugeToMetrics(timeSeries, m)
@@ -270,3 +298,23 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 		mr.logger.Info(metricError)
 	}
 }
+
+// Helper function to generate a unique key for a resource based on its attributes
+func generateResourceKey(resourceType string, labels map[string]string, timeSeries *monitoringpb.TimeSeries) string {
+	key := resourceType
+	for k, v := range labels {
+		key += k + v
+	}
+	if timeSeries != nil {
+		for k, v := range timeSeries.Metric.Labels {
+			key += k + v
+		}
+		if timeSeries.Resource.Labels != nil {
+			for k, v := range timeSeries.Resource.Labels {
+				key += k + v
+			}
+		}
+	}
+	return key
+}
+

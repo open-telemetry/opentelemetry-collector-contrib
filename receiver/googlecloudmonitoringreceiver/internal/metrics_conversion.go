@@ -38,7 +38,6 @@ func (mb *MetricsBuilder) ConvertGaugeToMetrics(ts *monitoringpb.TimeSeries, m p
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(point.Interval.EndTime.AsTime()))
 		} else {
 			mb.logger.Warn("EndTime is invalid for metric:", zap.String("Metric", ts.GetMetric().GetType()))
-			continue
 		}
 
 		switch v := point.Value.Value.(type) {
@@ -73,7 +72,6 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(point.Interval.EndTime.AsTime()))
 		} else {
 			mb.logger.Warn("EndTime is invalid for metric:", zap.String("Metric", ts.GetMetric().GetType()))
-			continue
 		}
 
 		switch v := point.Value.Value.(type) {
@@ -108,7 +106,6 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(point.Interval.EndTime.AsTime()))
 		} else {
 			mb.logger.Warn("EndTime is invalid for metric:", zap.String("Metric", ts.GetMetric().GetType()))
-			continue
 		}
 
 		switch v := point.Value.Value.(type) {
