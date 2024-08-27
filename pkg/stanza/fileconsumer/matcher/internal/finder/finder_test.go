@@ -4,6 +4,7 @@
 package finder
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -253,5 +254,29 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 			assert.ErrorContains(t, err, tc.failedMsg)
 			assert.Equal(t, tc.expected, files)
 		})
+	}
+}
+
+func BenchmarkFindFiles(b *testing.B) {
+	numFiles := 10000
+	tmpDir := b.TempDir()
+
+	// Create a bunch of files for benchmarking
+	for i := range numFiles {
+		path := filepath.Join(tmpDir, fmt.Sprintf("log-%05d.log", i))
+		f, err := os.Create(path)
+		require.NoError(b, err)
+		require.NoError(b, f.Close())
+	}
+
+	includeGlobs := []string{
+		filepath.Join(tmpDir, "log-*.log"),
+	}
+
+	excludeGlobs := []string{}
+
+	b.ResetTimer()
+	for range b.N {
+		_, _ = FindFiles(includeGlobs, excludeGlobs)
 	}
 }
