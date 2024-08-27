@@ -355,7 +355,7 @@ func (e *elasticsearchExporter) pushTraceData(
 			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if err := e.pushTraceRecord(ctx, resource, span, scope, session); err != nil {
+				if err := e.pushTraceRecord(ctx, resource, il.SchemaUrl(), span, scope, scopeSpan.SchemaUrl(), session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -377,8 +377,10 @@ func (e *elasticsearchExporter) pushTraceData(
 func (e *elasticsearchExporter) pushTraceRecord(
 	ctx context.Context,
 	resource pcommon.Resource,
+	resourceSchemaURL string,
 	span ptrace.Span,
 	scope pcommon.InstrumentationScope,
+	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
 	fIndex := e.index
@@ -394,7 +396,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeSpan(resource, span, scope)
+	document, err := e.model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
