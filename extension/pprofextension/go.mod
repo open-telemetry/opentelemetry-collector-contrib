@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/component/componentstatus v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/config/confignet v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/confmap v1.14.0
 	go.opentelemetry.io/collector/extension v0.107.1-0.20240827012220-5963d446ca4a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0

@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/confmap v1.14.0
 	go.opentelemetry.io/collector/extension v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/semconv v0.107.1-0.20240827012220-5963d446ca4a
 	go.uber.org/goleak v1.3.0
