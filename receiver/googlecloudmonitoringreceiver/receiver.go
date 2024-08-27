@@ -317,4 +317,3 @@ func generateResourceKey(resourceType string, labels map[string]string, timeSeri
 	}
 	return key
 }
-
