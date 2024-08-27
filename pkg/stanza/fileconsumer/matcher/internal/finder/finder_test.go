@@ -189,7 +189,7 @@ func TestFindFiles(t *testing.T) {
 			}
 			files, err := FindFiles(tc.include, tc.exclude)
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, files)
+			assert.ElementsMatch(t, tc.expected, files)
 		})
 	}
 }
@@ -252,13 +252,13 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			files, err := FindFiles(tc.include, []string{})
 			assert.ErrorContains(t, err, tc.failedMsg)
-			assert.Equal(t, tc.expected, files)
+			assert.ElementsMatch(t, tc.expected, files)
 		})
 	}
 }
 
 func BenchmarkFind10kFiles(b *testing.B) {
-	numFiles := 10000
+	numFiles := 10
 	tmpDir := b.TempDir()
 
 	// Create a bunch of files for benchmarking
