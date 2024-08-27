@@ -108,6 +108,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.108.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.108.0
@@ -901,6 +902,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postg
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ../../receiver/receivercreator
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../../processor/k8sattributesprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor => ../../processor/logdedupprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ../../exporter/awsemfexporter
 

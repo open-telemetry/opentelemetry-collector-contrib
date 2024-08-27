@@ -118,6 +118,7 @@ import (
 	groupbytraceprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 	intervalprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor"
 	k8sattributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
+	logdedupprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
 	metricsgenerationprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor"
 	metricstransformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	probabilisticsamplerprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
@@ -602,6 +603,7 @@ func components() (otelcol.Factories, error) {
 		groupbytraceprocessor.NewFactory(),
 		intervalprocessor.NewFactory(),
 		k8sattributesprocessor.NewFactory(),
+		logdedupprocessor.NewFactory(),
 		metricsgenerationprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
@@ -631,6 +633,7 @@ func components() (otelcol.Factories, error) {
 	factories.ProcessorModules[groupbytraceprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.108.0"
 	factories.ProcessorModules[intervalprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor v0.108.0"
 	factories.ProcessorModules[k8sattributesprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.108.0"
+	factories.ProcessorModules[logdedupprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor v0.108.0"
 	factories.ProcessorModules[metricsgenerationprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.108.0"
 	factories.ProcessorModules[metricstransformprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.108.0"
 	factories.ProcessorModules[probabilisticsamplerprocessor.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.108.0"

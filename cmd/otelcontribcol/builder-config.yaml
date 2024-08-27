@@ -115,6 +115,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.108.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.108.0
@@ -267,6 +268,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => ../../receiver/postgresqlreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ../../receiver/receivercreator
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../../processor/k8sattributesprocessor
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor => ../../processor/logdedupprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ../../exporter/awsemfexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../../receiver/opencensusreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../../receiver/splunkhecreceiver
