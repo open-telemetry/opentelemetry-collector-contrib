@@ -2230,6 +2230,14 @@ func Test_basePath_Name(t *testing.T) {
 	assert.Equal(t, "test", n)
 }
 
+func Test_basePath_Context(t *testing.T) {
+	bp := basePath[any]{
+		context: "log",
+	}
+	n := bp.Context()
+	assert.Equal(t, "log", n)
+}
+
 func Test_basePath_Next(t *testing.T) {
 	bp := basePath[any]{
 		nextPath: &basePath[any]{},
@@ -2352,6 +2360,13 @@ func Test_basePath_NextWithIsComplete(t *testing.T) {
 }
 
 func Test_newPath(t *testing.T) {
+	ps, _ := NewParser[any](
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
 	fields := []field{
 		{
 			Name: "body",
@@ -2365,7 +2380,8 @@ func Test_newPath(t *testing.T) {
 			},
 		},
 	}
-	np, err := newPath[any](fields)
+
+	np, err := ps.newPath(&path{Fields: fields})
 	assert.NoError(t, err)
 	p := Path[any](np)
 	assert.Equal(t, "body", p.Name())
@@ -2382,6 +2398,115 @@ func Test_newPath(t *testing.T) {
 	i, err := p.Keys()[0].Int(context.Background(), struct{}{})
 	assert.NoError(t, err)
 	assert.Nil(t, i)
+}
+
+func Test_newPath_PathContext(t *testing.T) {
+	tests := []struct {
+		name                 string
+		pathContext          string
+		pathContextNames     []string
+		validationEnabled    bool
+		contextParsedAsField bool
+		expectedError        bool
+	}{
+		{
+			name:             "without context",
+			pathContextNames: []string{"log"},
+		},
+		{
+			name:             "with context",
+			pathContext:      "log",
+			pathContextNames: []string{"log"},
+		},
+		{
+			name:             "with multiple contexts",
+			pathContext:      "span",
+			pathContextNames: []string{"log", "span"},
+		},
+		{
+			name:                 "with unknown context validation disabled",
+			pathContext:          "span",
+			pathContextNames:     []string{"log"},
+			validationEnabled:    false,
+			contextParsedAsField: true,
+		},
+		{
+			name:              "with unknown context validation enabled",
+			pathContext:       "span",
+			pathContextNames:  []string{"log"},
+			validationEnabled: true,
+			expectedError:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ps, _ := NewParser[any](
+				defaultFunctionsForTests(),
+				testParsePath[any],
+				componenttest.NewNopTelemetrySettings(),
+				WithEnumParser[any](testParseEnum),
+				WithPathContextNames[any](tt.pathContextNames),
+				WithPathContextNameValidation[any](tt.validationEnabled),
+			)
+
+			gp := &path{
+				Context: tt.pathContext,
+				Fields: []field{
+					{
+						Name: "body",
+					},
+					{
+						Name: "string",
+						Keys: []key{
+							{
+								String: ottltest.Strp("key"),
+							},
+						},
+					},
+				}}
+
+			np, err := ps.newPath(gp)
+			if tt.expectedError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			p := Path[any](np)
+			if tt.contextParsedAsField {
+				assert.Equal(t, tt.pathContext, p.Name())
+				assert.Equal(t, "", p.Context())
+				assert.Nil(t, p.Keys())
+				p = p.Next()
+			}
+			var bodyStringFuncValue string
+			if tt.pathContext != "" {
+				bodyStringFuncValue = fmt.Sprintf("%s.body.string[key]", tt.pathContext)
+			} else {
+				bodyStringFuncValue = "body.string[key]"
+			}
+			assert.Equal(t, "body", p.Name())
+			assert.Nil(t, p.Keys())
+			assert.Equal(t, bodyStringFuncValue, p.String())
+			if !tt.contextParsedAsField {
+				assert.Equal(t, tt.pathContext, p.Context())
+			}
+			p = p.Next()
+			assert.Equal(t, "string", p.Name())
+			assert.Equal(t, bodyStringFuncValue, p.String())
+			if !tt.contextParsedAsField {
+				assert.Equal(t, tt.pathContext, p.Context())
+			}
+			assert.Nil(t, p.Next())
+			assert.Equal(t, 1, len(p.Keys()))
+			v, err := p.Keys()[0].String(context.Background(), struct{}{})
+			assert.NoError(t, err)
+			assert.Equal(t, "key", *v)
+			i, err := p.Keys()[0].Int(context.Background(), struct{}{})
+			assert.NoError(t, err)
+			assert.Nil(t, i)
+		})
+	}
 }
 
 func Test_baseKey_String(t *testing.T) {

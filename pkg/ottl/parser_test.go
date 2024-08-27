@@ -111,10 +111,8 @@ func Test_parse(t *testing.T) {
 												Value: value{
 													Literal: &mathExprLiteral{
 														Path: &path{
+															Context: "bear",
 															Fields: []field{
-																{
-																	Name: "bear",
-																},
 																{
 																	Name: "honey",
 																},
@@ -144,10 +142,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "attributes",
 												Keys: []key{
@@ -158,6 +154,42 @@ func Test_parse(t *testing.T) {
 											},
 											{
 												Name: "cat",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Value: value{
+								String: ottltest.Strp("dog"),
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "single field segment",
+			statement: `set(attributes["bar"], "dog")`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "set",
+					Arguments: []argument{
+						{
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &path{
+										Context: "",
+										Fields: []field{
+											{
+												Name: "attributes",
+												Keys: []key{
+													{
+														String: ottltest.Strp("bar"),
+													},
+												},
 											},
 										},
 									},
@@ -311,10 +343,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "bar",
 												Keys: []key{
@@ -367,10 +397,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "attributes",
 												Keys: []key{
@@ -430,10 +458,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "attributes",
 												Keys: []key{
@@ -493,10 +519,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "attributes",
 												Keys: []key{
