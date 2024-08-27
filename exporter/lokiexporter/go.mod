@@ -8,7 +8,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.108.0
-	github.com/prometheus/common v0.55.0
+	github.com/prometheus/common v0.56.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/client v1.14.1
 	go.opentelemetry.io/collector/component v0.108.1
