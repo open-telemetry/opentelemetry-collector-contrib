@@ -17,7 +17,7 @@ import (
 
 // Default value for HTTP client's polling interval, set to 30 seconds in
 // accordance with the OpAMP spec.
-const httpPollintIntervalDefault = 30 * time.Second
+const httpPollingIntervalDefault = 30 * time.Second
 
 // Config contains the configuration for the opamp extension. Trying to mirror
 // the OpAMP supervisor config for some consistency.
@@ -153,7 +153,7 @@ func (s OpAMPServer) GetPollingInterval() time.Duration {
 		return s.HTTP.PollingInterval
 	}
 
-	return httpPollintIntervalDefault
+	return httpPollingIntervalDefault
 }
 
 // Validate checks if the extension configuration is valid
