@@ -183,6 +183,10 @@ func TestConnectorConsume(t *testing.T) {
 			assert.NoError(t, conn.ConsumeTraces(context.Background(), tc.sampleTraces))
 
 			// Force collection
+			if runtime.GOOS == "windows" {
+				// On Windows timing doesn't tick forward quickly for the store data to expire, force a wait before expiring.
+				time.Sleep(time.Second)
+			}
 			conn.store.Expire()
 			md, err := conn.buildMetrics()
 			assert.NoError(t, err)
