@@ -12,12 +12,12 @@ require (
 	github.com/signalfx/sapm-proto v0.14.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configretry v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/config/configopaque v1.14.0
+	go.opentelemetry.io/collector/config/configretry v1.14.0
+	go.opentelemetry.io/collector/confmap v1.14.0
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/exporter v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/pdata v1.14.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )

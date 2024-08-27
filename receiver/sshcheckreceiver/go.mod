@@ -9,13 +9,13 @@ require (
 	github.com/pkg/sftp v1.13.6
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/confmap v1.14.0
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/extension v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/extension/auth v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/filter v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/pdata v1.14.0
 	go.opentelemetry.io/collector/receiver v0.107.1-0.20240827012220-5963d446ca4a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

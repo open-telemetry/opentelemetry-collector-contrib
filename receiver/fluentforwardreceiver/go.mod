@@ -8,10 +8,10 @@ require (
 	github.com/tinylib/msgp v1.2.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/confmap v1.14.0
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/pdata v1.14.0
 	go.opentelemetry.io/collector/receiver v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/sdk/metric v1.28.0

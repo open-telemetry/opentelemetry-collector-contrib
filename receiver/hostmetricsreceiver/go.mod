@@ -14,13 +14,13 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/yusufpapurcu/wmi v1.2.4
 	go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/confmap v1.14.0
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/featuregate v1.14.0
 	go.opentelemetry.io/collector/filter v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/pdata v1.14.0
 	go.opentelemetry.io/collector/receiver v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/semconv v0.107.1-0.20240827012220-5963d446ca4a
 	go.uber.org/goleak v1.3.0

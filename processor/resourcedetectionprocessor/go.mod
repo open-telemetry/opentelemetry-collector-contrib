@@ -16,13 +16,13 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/config/confighttp v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/config/configopaque v1.14.0
+	go.opentelemetry.io/collector/config/configtls v1.14.0
+	go.opentelemetry.io/collector/confmap v1.14.0
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/featuregate v1.14.0
+	go.opentelemetry.io/collector/pdata v1.14.0
 	go.opentelemetry.io/collector/processor v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/semconv v0.107.1-0.20240827012220-5963d446ca4a
 	go.uber.org/goleak v1.3.0
@@ -112,10 +112,10 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.107.1-0.20240827012220-5963d446ca4a // indirect
-	go.opentelemetry.io/collector/client v1.13.1-0.20240827012220-5963d446ca4a // indirect
+	go.opentelemetry.io/collector/client v1.14.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.107.1-0.20240827012220-5963d446ca4a // indirect
 	go.opentelemetry.io/collector/config/configauth v0.107.1-0.20240827012220-5963d446ca4a // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240827012220-5963d446ca4a // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.14.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240827012220-5963d446ca4a // indirect
 	go.opentelemetry.io/collector/config/internal v0.107.1-0.20240827012220-5963d446ca4a // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240827012220-5963d446ca4a // indirect

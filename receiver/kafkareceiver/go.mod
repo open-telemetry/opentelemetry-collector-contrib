@@ -19,11 +19,11 @@ require (
 	go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/component/componentstatus v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/config/configtelemetry v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/config/configtls v1.14.0
+	go.opentelemetry.io/collector/confmap v1.14.0
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/pdata v1.14.0
 	go.opentelemetry.io/collector/pdata/testdata v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/receiver v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/semconv v0.107.1-0.20240827012220-5963d446ca4a
@@ -82,8 +82,8 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/collector v0.107.1-0.20240827012220-5963d446ca4a // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240827012220-5963d446ca4a // indirect
-	go.opentelemetry.io/collector/config/configretry v1.13.1-0.20240827012220-5963d446ca4a // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.14.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.14.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.1-0.20240827012220-5963d446ca4a // indirect
 	go.opentelemetry.io/collector/exporter v0.107.1-0.20240827012220-5963d446ca4a // indirect
 	go.opentelemetry.io/collector/extension v0.107.1-0.20240827012220-5963d446ca4a // indirect

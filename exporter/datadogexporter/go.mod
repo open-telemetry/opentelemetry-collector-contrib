@@ -58,20 +58,20 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/config/configauth v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configcompression v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/config/configcompression v1.14.0
 	go.opentelemetry.io/collector/config/confighttp v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/config/confignet v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configretry v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/config/configopaque v1.14.0
+	go.opentelemetry.io/collector/config/configretry v1.14.0
+	go.opentelemetry.io/collector/config/configtls v1.14.0
+	go.opentelemetry.io/collector/confmap v1.14.0
 	go.opentelemetry.io/collector/connector v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/consumer v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/exporter v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/featuregate v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/featuregate v1.14.0
 	go.opentelemetry.io/collector/otelcol v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/pdata v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/pdata v1.14.0
 	go.opentelemetry.io/collector/processor v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/processor/batchprocessor v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.107.1-0.20240827012220-5963d446ca4a
@@ -312,7 +312,7 @@ require (
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.107.1-0.20240827012220-5963d446ca4a // indirect
-	go.opentelemetry.io/collector/client v1.13.1-0.20240827012220-5963d446ca4a // indirect
+	go.opentelemetry.io/collector/client v1.14.0 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.107.1-0.20240827012220-5963d446ca4a // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.107.1-0.20240827012220-5963d446ca4a // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.107.1-0.20240827012220-5963d446ca4a // indirect
