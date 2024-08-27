@@ -19,11 +19,11 @@ require (
 	go.opentelemetry.io/collector/pdata v1.13.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/pdata/testdata v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/receiver v0.107.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/otel v1.28.0
-	go.opentelemetry.io/otel/metric v1.28.0
-	go.opentelemetry.io/otel/sdk v1.28.0
-	go.opentelemetry.io/otel/sdk/metric v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
+	go.opentelemetry.io/otel v1.29.0
+	go.opentelemetry.io/otel/metric v1.29.0
+	go.opentelemetry.io/otel/sdk v1.29.0
+	go.opentelemetry.io/otel/sdk/metric v1.29.0
+	go.opentelemetry.io/otel/trace v1.29.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.65.0
