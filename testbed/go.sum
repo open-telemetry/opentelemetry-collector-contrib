@@ -59,8 +59,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.130 h1:pVMRVKkUMmw2vOpmP92TO9jrS0om3K0uKteXHcy/6v0=
-github.com/DataDog/agent-payload/v5 v5.0.130/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
+github.com/DataDog/agent-payload/v5 v5.0.131 h1:i5l0FLY+rpVzS1hBrwR0NxQOmIg+ypXDi7xytGXnaBM=
+github.com/DataDog/agent-payload/v5 v5.0.131/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0 h1:UdBCkJ1a4uxQNzggUEEbPylagIUaCWvFDxuf9QKWMXE=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0/go.mod h1:NHgTieB5DpTc4AZrzx1xE+tPCWTJ7Hw3TVRiWuK505U=
 github.com/DataDog/datadog-agent/pkg/proto v0.56.0 h1:DP4U8Ed3r8CisL3y6xlCOHwL4tIvSsB5tcNkay9vCTM=
