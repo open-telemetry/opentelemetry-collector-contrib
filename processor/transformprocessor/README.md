@@ -220,6 +220,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
+- [filter_datapoints](#filter_datapoints)
 
 ### convert_sum_to_gauge
 
@@ -406,6 +407,11 @@ The `aggregate_on_attributes` function can also be used in conjunction with
 [delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
 
 For example, to remove attribute keys matching a regex and aggregate the metrics on the remaining attributes, you can perform the following statement sequence:
+
+
+### aggregate_on_attributes
+
+....
 
 ```yaml
 statements:
