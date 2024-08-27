@@ -212,10 +212,8 @@ func Test_parse(t *testing.T) {
 															Value: &value{
 																Literal: &mathExprLiteral{
 																	Path: &path{
+																		Context: "bear",
 																		Fields: []field{
-																			{
-																				Name: "bear",
-																			},
 																			{
 																				Name: "honey",
 																			},

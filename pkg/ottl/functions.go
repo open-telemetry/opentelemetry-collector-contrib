@@ -52,8 +52,7 @@ func buildOriginalText(path *path) string {
 }
 
 func (p *Parser[K]) newPath(path *path) (*basePath[K], error) {
-	fields := path.Fields
-	if len(fields) == 0 {
+	if len(path.Fields) == 0 {
 		return nil, fmt.Errorf("cannot make a path from zero fields")
 	}
 
@@ -81,7 +80,6 @@ func (p *Parser[K]) newPath(path *path) (*basePath[K], error) {
 func (p *Parser[K]) parsePathContext(path *path) (string, []field, error) {
 	fields := path.Fields
 	var pathContext string
-
 	if path.Context != "" {
 		// nil or empty pathContextNames means the Parser isn't handling the grammar path's
 		// context yet, so it falls back to the previous behavior with the path.Context value
@@ -90,7 +88,7 @@ func (p *Parser[K]) parsePathContext(path *path) (string, []field, error) {
 			fields = append([]field{{Name: path.Context}}, fields...)
 		} else if _, ok := p.pathContextNames[path.Context]; !ok {
 			if p.validatePathContextNames {
-				return pathContext, fields, fmt.Errorf(`context "%s" from path "%s" is not valid, it must be replaced by one of [%[3]v]`, buildOriginalText(path), path.Context, p.buildPathContextNamesText(""))
+				return "", nil, fmt.Errorf(`context "%s" from path "%s" is not valid, it must be replaced by one of: %s`, path.Context, buildOriginalText(path), p.buildPathContextNamesText(""))
 			}
 			fields = append([]field{{Name: path.Context}}, fields...)
 		} else {
@@ -98,7 +96,7 @@ func (p *Parser[K]) parsePathContext(path *path) (string, []field, error) {
 		}
 	} else if p.validatePathContextNames {
 		originalText := buildOriginalText(path)
-		return pathContext, fields, fmt.Errorf(`missing context name for path "%s", valid options are [%v]`, originalText, p.buildPathContextNamesText(originalText))
+		return "", nil, fmt.Errorf(`missing context name for path "%s", valid options are: %s`, originalText, p.buildPathContextNamesText(originalText))
 	}
 
 	return pathContext, fields, nil

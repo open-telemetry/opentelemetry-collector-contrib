@@ -2400,7 +2400,7 @@ func Test_newPath(t *testing.T) {
 	assert.Nil(t, i)
 }
 
-func Test_newPath_PathContext(t *testing.T) {
+func Test_newPath_WithPathContextNames(t *testing.T) {
 	tests := []struct {
 		name                 string
 		pathContext          string
@@ -2410,7 +2410,7 @@ func Test_newPath_PathContext(t *testing.T) {
 		expectedError        bool
 	}{
 		{
-			name:             "without context",
+			name:             "with no context",
 			pathContextNames: []string{"log"},
 		},
 		{
@@ -2424,16 +2424,28 @@ func Test_newPath_PathContext(t *testing.T) {
 			pathContextNames: []string{"log", "span"},
 		},
 		{
-			name:                 "with unknown context validation disabled",
+			name:                 "with invalid context and validation disabled",
 			pathContext:          "span",
 			pathContextNames:     []string{"log"},
 			validationEnabled:    false,
 			contextParsedAsField: true,
 		},
 		{
-			name:              "with unknown context validation enabled",
+			name:              "with invalid context and validation enabled",
 			pathContext:       "span",
 			pathContextNames:  []string{"log"},
+			validationEnabled: true,
+			expectedError:     true,
+		},
+		{
+			name:              "with valid context and validation enabled",
+			pathContext:       "spanevent",
+			pathContextNames:  []string{"spanevent"},
+			validationEnabled: true,
+		},
+		{
+			name:              "with no context and validation enabled",
+			pathContextNames:  []string{"spanevent"},
 			validationEnabled: true,
 			expectedError:     true,
 		},
