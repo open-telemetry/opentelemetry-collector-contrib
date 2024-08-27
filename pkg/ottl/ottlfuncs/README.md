@@ -1217,19 +1217,170 @@ Examples:
 
 ### ParseXML
 
-`ParseXML(target)`
+`ParseXML(target, flatten)`
 
-The `ParseXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string as an XML document.
+The `ParseXML` Converter returns a `pcommon.Map` that is the result of parsing the target string as an XML document.
 
 `target` is a Getter that returns a string. This string should be in XML format.
-If `target` is not a string, nil, or cannot be parsed as XML, `ParseXML` will return an error.
+If `target` is not a string, nil, or cannot be parsed as XML, `ParseXML` will return an error. `flatten` is a boolean that determines whether any arrays in the XML should be flattened. In this context, flattening means that an array of children with a single common attribute will parse as a map with the attribute value as the key and the XML node's value as the value:
+
+For example, this XML document will parse in the following ways:
+
+```xml
+<Log>
+  <User id="00001">
+   Sam
+  </User>
+  <User id="00002">
+   Bob
+  </User>
+  <User id="00003">
+   Alice
+  </User>
+</Log>
+```
+
+<table>
+<tr>
+<th> </th><th> Flattened </th> <th> Unflattened </th>
+
+
+<tr>
+
+<td>
+
+
+</td>
+<td>
+
+```json
+{
+  "Log": {
+    "User": {
+      "00001": "Sam",
+      "00002": "Bob",
+      "00003": "Alice",
+      "xml_ordering": "00001,00003,00003",
+      "xml_flattened_array": "id",
+    }
+  }
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "Log": {
+    "User": [
+      {
+        "xml_attributes": {
+          "id": "00001",
+        },
+        "xml_value": "Sam",
+      }, 
+      {
+        "xml_attributes": {
+          "id": "00002",
+        },
+        "xml_value": "Bob",
+      }, 
+      {
+        "xml_attributes": {
+          "id": "00003",
+        },
+        "xml_value": "Alice",
+      }
+    ],
+    "xml_ordering": "User.0,User.1,User.2",
+  },
+}
+```
+
+</td>
+</tr>
+</table>
+
+The parser adds the following special fields to the map:
+
+- `xml_ordering`: A comma-separated list of the order in which the XML elements were parsed. In the case of a flattened array, this will be the attribute values, otherwise it will be the tag names. This is used to preserve the order of the XML elements when marshalling the map back to XML. If this value is not present, the order of the elements is not guaranteed.
+- `xml_flattened_array`: If the map represents a flattened array, this will contain name of the attribute that was used to flatten the XML.
+- `xml_attributes`: A map of the attributes of the XML element.
+- `xml_value`: The value of the XML element, if it has attributes or children. For example:
+
+  <table>
+  <tr>
+  <th>Children & Attributes </th><th> XML </th> <th> JSON </th>
+  <tr>
+  <td>
+  Yes
+  </td>
+  <td>
+
+  ```xml
+  <Log>
+    <User id="00001">
+    Sam
+    </User>
+  </Log>
+  ```
+
+  </td>
+  <td>
+
+
+  ```json
+  {
+    "Log": {
+      "User": {
+        "xml_attributes": {
+          "id": "00001",
+        },
+        "xml_value": "Sam",
+      },
+    },
+  }
+  ```
+
+  </td>
+
+  </tr>
+
+  <tr>
+  <td>No</td>
+  <td>
+
+  ```xml
+  <Log>
+    <User>
+      Sam
+    </User>
+  </Log>
+  ```
+
+  </td>
+
+  <td>
+
+  ```json
+  {
+    "Log": {
+      "User":  "Sam",   
+    },
+  }
+  ```
+  </td>
+  </tr>
+  </table>
 
 Unmarshalling XML is done using the following rules:
-1. All character data for an XML element is trimmed, joined, and placed into the `content` field.
-2. The tag for an XML element is trimmed, and placed into the `tag` field.
-3. The attributes for an XML element is placed as a `pcommon.Map` into the `attribute` field.
+1. All character data for an XML element is trimmed, joined, and placed into the `xml_value` field, or as the value of the map if the element has attributes or children.
+2. The tag for an XML element is trimmed, and used as the key in the parent map.
+3. The attributes for an XML element is placed as a `pcommon.Map` into the `xml_attributes` field.
 4. Processing instructions, directives, and comments are ignored and not represented in the resultant map.
-5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed into the `children` field.
+5. All child elements are parsed as above, and placed in a `pcommon.Map`, with the tag name as the key and the parsed child as the value.
+6. If the `flatten` parameter is set to `true`, then any child elements with a single common attribute will be flattened into a map, with the attribute value as the key and the parsed child as the value. The attribute name will be placed in the `xml_flattened_array` field.
 
 For example, the following XML document:
 ```xml
@@ -1246,44 +1397,33 @@ For example, the following XML document:
 
 will be parsed as:
 ```json
+
 {
-  "tag": "Log",
-  "children": [
-    {
-      "tag": "User",
-      "children": [
-        {
-          "tag": "ID",
-          "content": "00001"
+  "Log":{
+    "User":{
+      "Name":{
+        "xml_attributes":{
+          "type": "first",
         },
-        {
-          "tag": "Name",
-          "content": "Joe",
-          "attributes": {
-            "type": "first"
-          }
-        },
-        {
-          "tag": "Email",
-          "content": "joe.smith@example.com"
-        }
-      ]
+        "xml_value": "Joe",
+      },
+      "Email": "joe.smith@example.com",
+      "ID": "00001",
+      "xml_ordering": "ID,Name,Email",
     },
-    {
-      "tag": "Text",
-      "content": "User fired alert A"
-    }
-  ]
+    "Text": "User fired alert A",
+    "xml_ordering": "User,Text",
+  },
 }
 ```
 
 Examples:
 
-- `ParseXML(body)`
+- `ParseXML(body, false)`
 
-- `ParseXML(attributes["xml"])`
+- `ParseXML(attributes["xml"], false)`
 
-- `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
+- `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />", false)`
 
 
 
