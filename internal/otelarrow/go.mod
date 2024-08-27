@@ -5,8 +5,8 @@ go 1.22.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.17.9
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.107.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.107.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.107.1-0.20240827012220-5963d446ca4a
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.107.1-0.20240827012220-5963d446ca4a
 	github.com/open-telemetry/otel-arrow v0.25.0
 	github.com/stretchr/testify v1.9.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/exporter v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/pdata v1.13.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/pdata/testdata v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/receiver v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/metric v1.28.0
