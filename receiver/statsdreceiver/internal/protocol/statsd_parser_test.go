@@ -1947,7 +1947,7 @@ func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NoError(t, p.Aggregate("test.metric:1|c", testAddr01))
-	require.NoError(t, p.Aggregate("test.metric:2|g", testAddr02))
+	require.NoError(t, p.Aggregate("test.metric:3|c", testAddr02))
 	require.Equal(t, 1, len(p.instrumentsByAddress))
 	for k := range p.instrumentsByAddress {
 		assert.Equal(t, "1.2.3.4", k.String)
@@ -1955,4 +1955,12 @@ func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 	}
 	metrics := p.GetMetrics()
 	require.Equal(t, 1, len(metrics))
+
+	value := metrics[0].Metrics.
+		ResourceMetrics().At(0).
+		ScopeMetrics().At(0).
+		Metrics().At(0).Sum().DataPoints().At(0).IntValue()
+
+	assert.Equal(t, int64(4), value)
+
 }
