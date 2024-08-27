@@ -17,7 +17,7 @@ import (
 func TestFilterDatapoints(t *testing.T) {
 	type testCase struct {
 		name      string
-		args      map[string]string
+		args      map[string][]string
 		valueFunc func() pmetric.Metric
 		wantFunc  func() pmetric.Metric
 		wantErr   bool
@@ -37,7 +37,7 @@ func TestFilterDatapoints(t *testing.T) {
 				metric.Gauge().DataPoints().At(2).Attributes().PutStr("other_key", "value")
 				return metric
 			},
-			args: map[string]string{"key": "value"},
+			args: map[string][]string{"key": []string{"value"}},
 			wantFunc: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test-metric")
@@ -63,7 +63,7 @@ func TestFilterDatapoints(t *testing.T) {
 				metric.Gauge().DataPoints().At(2).Attributes().PutStr("key2", "value2")
 				return metric
 			},
-			args: map[string]string{"key1": "value1", "key2": "value2"},
+			args: map[string][]string{"key1": []string{"value1", "nonesense"}, "key2": []string{"value2", "blah"}},
 			wantFunc: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test-metric")

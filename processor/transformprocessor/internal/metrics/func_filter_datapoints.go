@@ -15,7 +15,7 @@ import (
 )
 
 type filterDatapointsArguments struct {
-	Attributes map[string]string
+	Attributes map[string][]string
 }
 
 func newFilterDatapointsFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -32,7 +32,7 @@ func createFilterDatapointsFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 	return filterDatapoints(args.Attributes)
 }
 
-func filterDatapoints(attributes map[string]string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func filterDatapoints(attributes map[string][]string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		// Get the current metric from the context
 		cur := tCtx.GetMetric()
@@ -50,9 +50,13 @@ func filterDatapoints(attributes map[string]string) (ottl.ExprFunc[ottlmetric.Tr
 		// Remove datapoints that do not match any of the key value pairs in attributes
 		dps.RemoveIf(func(point pmetric.NumberDataPoint) bool {
 			pointAttr := point.Attributes()
-			for key, val := range attributes {
-				pointAttrVal, hasKey := pointAttr.Get(key)
-				if !hasKey || pointAttrVal.Str() != val {
+			for key, vals := range attributes {
+				matched := false
+				for _, val := range vals {
+					pointAttrVal, hasKey := pointAttr.Get(key)
+					matched = matched || (hasKey && pointAttrVal.Str() == val)
+				}
+				if !matched {
 					return true
 				}
 			}
