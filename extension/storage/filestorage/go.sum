@@ -55,8 +55,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.etcd.io/bbolt v1.3.10 h1:+BqfJTcCzTItrop8mq/lbzL8wSGtj94UO/3U31shqG0=
-go.etcd.io/bbolt v1.3.10/go.mod h1:bK3UQLPJZly7IlNmV7uVHJDxfe5aK9Ll93e/74Y9oEQ=
+go.etcd.io/bbolt v1.3.11 h1:yGEzV1wPz2yVCLsD8ZAiGHhHVlczyC9d1rP43/VCRJ0=
+go.etcd.io/bbolt v1.3.11/go.mod h1:dksAq7YMXoljX0xu6VF5DMZGbhYYoLUalEiSySYAS4I=
 go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a h1:k34/Az0+m390b96dCaYrVOy6Miphu+lcXpmVuTjUJB8=
 go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a/go.mod h1:gfntGv2c1Zvc9juFwe9PFX6IxNkkibA9VZb67KJqx9Y=
 go.opentelemetry.io/collector/component/componentstatus v0.107.1-0.20240827012220-5963d446ca4a h1:yJIK+LsVtUdXs9JJa8kcRqFd/jueHu4Fie9+FMLNjBM=
