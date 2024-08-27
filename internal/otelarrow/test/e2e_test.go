@@ -434,8 +434,7 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 					cnt++
 				}
 			}
-			ok := cnt == 0 || test.sentSpans.Load() < 100
-			return ok
+			return cnt == 0 || test.sentSpans.Load() < 100
 		},
 	}
 
