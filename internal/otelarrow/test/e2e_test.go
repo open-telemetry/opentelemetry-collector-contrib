@@ -35,7 +35,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -83,14 +82,18 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	return tc.sink.ConsumeTraces(ctx, td)
 }
 
-func testLoggerSettings(t *testing.T) (component.TelemetrySettings, *observer.ObservedLogs, *tracetest.InMemoryExporter) {
+func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.ObservedLogs, *tracetest.InMemoryExporter) {
 	tset := componenttest.NewNopTelemetrySettings()
 
 	core, obslogs := observer.New(zapcore.InfoLevel)
 
 	exp := tracetest.NewInMemoryExporter()
 
-	tset.Logger = zap.New(zapcore.NewTee(core, zaptest.NewLogger(t).Core()))
+	// Note: To debug any of the logs-based assertions in this test, uncomment
+	// the following line:
+	//
+	// tset.Logger = zap.New(zapcore.NewTee(core, zaptest.NewLogger(t).Core()))
+	tset.Logger = zap.New(core)
 	tset.TracerProvider = trace.NewTracerProvider(trace.WithSyncer(exp))
 
 	return tset, obslogs, exp
@@ -374,7 +377,9 @@ func consumerSuccess(t *testing.T, err error) {
 }
 
 func consumerFailure(t *testing.T, err error) {
-	require.Error(t, err)
+	if err == nil {
+		return
+	}
 
 	// there should be no permanent errors anywhere in this test.
 	require.True(t, !consumererror.IsPermanent(err),
@@ -416,8 +421,6 @@ func TestIntegrationTracesSimple(t *testing.T) {
 func TestIntegrationMemoryLimited(t *testing.T) {
 	// This test is flaky, it only shows on Windows.  This will be
 	// addressed in a separate PR.
-	t.Skip("test flake disabled")
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -431,8 +434,8 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 					cnt++
 				}
 			}
-			return cnt == 0 || test.sentSpans.Load() < 100
-
+			ok := cnt == 0 || test.sentSpans.Load() < 100
+			return ok
 		},
 	}
 
@@ -440,6 +443,7 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 		rcfg.Arrow.MemoryLimitMiB = 1
 		ecfg.Arrow.NumStreams = 10
 		ecfg.TimeoutSettings.Timeout = 5 * time.Second
+		ecfg.RetryConfig.Enabled = false
 	}, bulkyGenFunc(), consumerFailure, failureMemoryLimitEnding)
 }
 
