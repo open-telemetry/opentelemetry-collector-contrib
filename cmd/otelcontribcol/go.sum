@@ -807,8 +807,8 @@ github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0-rc.12 h1:oV+cW5Mex13LY2z6
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0-rc.12/go.mod h1:NHgTieB5DpTc4AZrzx1xE+tPCWTJ7Hw3TVRiWuK505U=
 github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.12 h1:1ZBeAW/Cq6QSkRVQ8Hxz71tqaH3irzboGKemx5HX+o0=
 github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.12/go.mod h1:HG4/o+jZ2T6+bhTOKQj+3ikKGhFLWTp5Kib9swNxTeY=
-github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0-rc.12 h1:8FIfOVOgPGoHfwkgseHS1T4aCwMZzHKEoW9SkzWmWOc=
-github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0-rc.12/go.mod h1:If8HaT8MFPv9NdWDtaQfEy1OUB6RiMFeQwLSay7G91U=
+github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0 h1:haidBqVzNjVdzPE27eu8RjgXhDbHpvbxFSeNMHp0QXI=
+github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0/go.mod h1:If8HaT8MFPv9NdWDtaQfEy1OUB6RiMFeQwLSay7G91U=
 github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.12 h1:RCl3Sn6EebVsfA/dqOarv92cWqJhAFebD23S4f8bYQE=
 github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.12/go.mod h1:EkC/SgFR03BKwBitVV4dIuP+ofwPlUCkVi5K5k1Dh2Y=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.12 h1:1KhP5uIO1mk9oq4M9YSBLzSVaU01aq2IrWIRfQ1XWFg=
