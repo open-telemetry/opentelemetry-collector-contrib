@@ -82,14 +82,12 @@ func TestSendTracesWithMetadata(t *testing.T) {
 
 	requestCount := 3
 	spansPerRequest := 33
-	// sentResourceSpans := ptrace.NewTraces().ResourceSpans()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(fmt.Sprintf("%d-%d", requestNum, spanIndex))
 		}
-		// td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
 
 		num := requestNum % len(callCtxs)
 		expectByContext[num] += spansPerRequest
@@ -99,13 +97,9 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	}
 
 	assert.Eventually(t, func() bool {
-		// rcv.mux.Lock()
-		// defer rcv.mux.Unlock()
 		return rcv.requestCount.Load() == int32(requestCount)
 	}, 1*time.Second, 5*time.Millisecond)
 	assert.Eventually(t, func() bool {
-		// rcv.mux.Lock()
-		// defer rcv.mux.Unlock()
 		return rcv.totalItems.Load() == int32(requestCount*spansPerRequest)
 	}, 1*time.Second, 5*time.Millisecond)
 	assert.Eventually(t, func() bool {

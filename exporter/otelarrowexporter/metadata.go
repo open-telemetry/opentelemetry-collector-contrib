@@ -28,8 +28,6 @@ import (
 var (
 	// errTooManyExporters is returned when the MetadataCardinalityLimit has been reached.
 	errTooManyExporters = consumererror.NewPermanent(errors.New("too many exporter metadata-value combinations"))
-	// errUnexpectedType is returned when the object in the map isn't the expected type
-	errUnexpectedType = errors.New("unexpected type in map")
 )
 
 type metadataExporter struct {
@@ -95,11 +93,7 @@ func (e *metadataExporter) start(_ context.Context, host component.Host) (err er
 func (e *metadataExporter) shutdown(ctx context.Context) error {
 	var err error
 	e.exporters.Range(func(_ any, value any) bool {
-		be, ok := value.(exp)
-		if !ok {
-			err = multierr.Append(err, fmt.Errorf("%w: %T", errUnexpectedType, value))
-			return true
-		}
+		be := value.(exp)
 		err = multierr.Append(err, be.shutdown(ctx))
 		return true
 	})
@@ -140,45 +134,42 @@ func (e *metadataExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 
 func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.Set, md metadata.MD) (exp, error) {
 	v, ok := e.exporters.Load(s)
-	if !ok {
-		e.lock.Lock()
-		if e.config.MetadataCardinalityLimit != 0 && e.size >= int(e.config.MetadataCardinalityLimit) {
-			e.lock.Unlock()
-			return nil, errTooManyExporters
-		}
+	if ok {
+		return v.(exp), nil
+	}
 
-		newExp, err := newExporter(e.config, e.settings, e.scf)
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	if e.config.MetadataCardinalityLimit != 0 && e.size >= int(e.config.MetadataCardinalityLimit) {
+		return nil, errTooManyExporters
+	}
+
+	newExp, err := newExporter(e.config, e.settings, e.scf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create exporter: %w", err)
+	}
+
+	var loaded bool
+	v, loaded = e.exporters.LoadOrStore(s, newExp)
+	if !loaded {
+		// set metadata keys for base exporter to add them to the outgoing context.
+		newExp.(*baseExporter).setMetadata(md)
+
+		// Start the goroutine only if we added the object to the map, otherwise is already started.
+		err = newExp.start(ctx, e.host)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create exporter: %w", err)
+			e.exporters.Delete(s)
+			return nil, fmt.Errorf("failed to start exporter: %w", err)
 		}
-
-		var loaded bool
-		v, loaded = e.exporters.LoadOrStore(s, newExp)
-		if !loaded {
-			// Start the goroutine only if we added the object to the map, otherwise is already started.
-			be, valid := newExp.(*baseExporter)
-			if !valid {
-				return nil, fmt.Errorf("%w: %T", errUnexpectedType, newExp)
-			}
-			// set metadata keys for base exporter to add them to the outgoing context.
-			be.setMetadata(md)
-
-			err = newExp.start(ctx, e.host)
-			if err != nil {
-				e.exporters.Delete(s)
-				return nil, fmt.Errorf("failed to start exporter: %w", err)
-			}
-			e.size++
-		}
-		e.lock.Unlock()
+		e.size++
 	}
-	val, ok := v.(exp)
-	if !ok {
-		return nil, fmt.Errorf("%w: %T", errUnexpectedType, v)
-	}
-	return val, nil
+
+	return v.(exp), nil
 }
 
+// getAttrSet is code taken from the core collector's batchprocessor multibatch logic.
+// https://github.com/open-telemetry/opentelemetry-collector/blob/v0.107.0/processor/batchprocessor/batch_processor.go#L298
 func (e *metadataExporter) getAttrSet(ctx context.Context, keys []string) (attribute.Set, metadata.MD) {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
