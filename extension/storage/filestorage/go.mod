@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.etcd.io/bbolt v1.3.10
+	go.etcd.io/bbolt v1.3.11
 	go.opentelemetry.io/collector/component v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/confmap v0.107.1-0.20240827012220-5963d446ca4a
 	go.opentelemetry.io/collector/extension v0.107.1-0.20240827012220-5963d446ca4a
