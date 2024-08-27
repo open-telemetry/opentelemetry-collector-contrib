@@ -363,7 +363,12 @@ func (r *pReceiver) applyCfg(cfg *PromConfig) error {
 	}
 
 	discoveryCfg := make(map[string]discovery.Configs)
-	for _, scrapeConfig := range cfg.ScrapeConfigs {
+
+	scrapeConfigs, err := (*config.Config)(cfg).GetScrapeConfigs()
+	if err != nil {
+		return fmt.Errorf("could not get scrape configs: %w", err)
+	}
+	for _, scrapeConfig := range scrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
 		r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
 	}
