@@ -1261,6 +1261,129 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 	require.FileExists(t, filepath.Join(storageDir, "effective.yaml"))
 }
 
+func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
+	var agentConfig atomic.Value
+	var healthReport atomic.Value
+	var remoteConfigStatus atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+				if message.Health != nil {
+					healthReport.Store(message.Health)
+				}
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "report_status", map[string]string{
+		"url":                      server.addr,
+		"successful_health_checks": "2",
+		"config_apply_timeout":     "10s",
+	})
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	// Check that the status is set to APPLYING
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
+	}, 5*time.Second, 500*time.Millisecond, "Remote config status was not set to APPLYING")
+
+	// Wait for the required number of successful health checks
+	require.Eventually(t, func() bool {
+		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
+		return ok && health.Healthy
+	}, 30*time.Second, 500*time.Millisecond, "Collector did not become healthy")
+
+	// Check that the status is set to APPLIED after successful health checks
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
+	}, 5*time.Second, 500*time.Millisecond, "Remote config status was not set to APPLIED")
+
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			// The effective config may be structurally different compared to what was sent,
+			// and will also have some data redacted,
+			// so just check that it includes the filelog receiver
+			return strings.Contains(cfg, "filelog")
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
+
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+
+	// Test with bad configuration
+	badCfg, badHash := createBadCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: badCfg.Bytes()},
+				},
+			},
+			ConfigHash: badHash,
+		},
+	})
+
+	// Check that the status is set to APPLYING
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
+	}, 5*time.Second, 500*time.Millisecond, "Remote config status was not set to APPLYING for bad config")
+
+	// Wait for the health checks to fail
+	require.Eventually(t, func() bool {
+		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
+		return ok && !health.Healthy
+	}, 30*time.Second, 500*time.Millisecond, "Collector did not become unhealthy with bad config")
+
+	// Check that the status is set to FAILED after failed health checks
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+	}, 15*time.Second, 500*time.Millisecond, "Remote config status was not set to FAILED for bad config")
+}
+
 func findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 

@@ -116,7 +116,12 @@ type Supervisor struct {
 	remoteConfig *protobufs.AgentRemoteConfig
 
 	// A channel to indicate there is a new config to apply.
-	hasNewConfig chan struct{}
+	hasNewConfig           chan struct{}
+	waitingForHealthCheck  atomic.Bool
+	successfulHealthChecks atomic.Int32
+	requiredHealthChecks   int32
+	configApplyTimeout     time.Duration
+	lastConfigChangeTime   atomic.Value // stores time.Time
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -164,6 +169,9 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
+
+	s.requiredHealthChecks = s.config.Agent.SuccessfulHealthChecks
+	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
 
 	return s, nil
 }
@@ -1011,9 +1019,12 @@ func (s *Supervisor) healthCheck() {
 	err := s.healthChecker.Check(ctx)
 	cancel()
 
-	if errors.Is(err, s.lastHealthCheckErr) {
-		// No difference from last check. Nothing new to report.
-		return
+	if s.waitingForHealthCheck.Load() {
+		timeSinceChange := time.Since(s.lastConfigChangeTime.Load().(time.Time))
+		if timeSinceChange > s.configApplyTimeout {
+			s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
+			s.waitingForHealthCheck.Store(false)
+		}
 	}
 
 	// Prepare OpAMP health report.
@@ -1022,15 +1033,26 @@ func (s *Supervisor) healthCheck() {
 	}
 
 	if err != nil {
-		health.Healthy = false
+		if s.waitingForHealthCheck.Load() {
+			s.successfulHealthChecks.Store(0) // Reset successful checks on error
+		}
+
 		if !s.agentHasStarted && s.agentStartHealthCheckAttempts < 10 {
-			health.LastError = "Agent is starting"
 			s.agentStartHealthCheckAttempts++
 		} else {
+			health.Healthy = false
 			health.LastError = err.Error()
 			s.logger.Error("Agent is not healthy", zap.Error(err))
 		}
 	} else {
+		if s.waitingForHealthCheck.Load() {
+			count := s.successfulHealthChecks.Add(1)
+			if count >= s.requiredHealthChecks {
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				s.waitingForHealthCheck.Store(false)
+			}
+		}
+
 		s.agentHasStarted = true
 		health.Healthy = true
 		s.logger.Debug("Agent is healthy.")
@@ -1185,6 +1207,17 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0600)
 }
 
+func (s *Supervisor) reportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
+	err := s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+		LastRemoteConfigHash: s.remoteConfig.ConfigHash,
+		Status:               status,
+		ErrorMessage:         errorMessage,
+	})
+	if err != nil {
+		s.logger.Error("Could not report OpAMP remote config status", zap.Error(err))
+	}
+}
+
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	configChanged := false
 	if msg.RemoteConfig != nil {
@@ -1201,6 +1234,10 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 	// Update the agent config if any messages have touched the config
 	if configChanged {
+		s.waitingForHealthCheck.Store(true)
+		s.successfulHealthChecks.Store(0)
+		s.lastConfigChangeTime.Store(time.Now())
+
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
 			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
@@ -1255,22 +1292,9 @@ func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		s.logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
-		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-			LastRemoteConfigHash: msg.ConfigHash,
-			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
-			ErrorMessage:         err.Error(),
-		})
-		if err != nil {
-			s.logger.Error("Could not report failed OpAMP remote config status", zap.Error(err))
-		}
+		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 	} else {
-		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-			LastRemoteConfigHash: msg.ConfigHash,
-			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
-		})
-		if err != nil {
-			s.logger.Error("Could not report applied OpAMP remote config status", zap.Error(err))
-		}
+		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
 	}
 
 	return configChanged
