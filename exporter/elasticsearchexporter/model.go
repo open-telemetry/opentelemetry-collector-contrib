@@ -365,7 +365,7 @@ func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) (pcom
 
 	offset := int(dp.Negative().Offset())
 	bucketCounts := dp.Negative().BucketCounts()
-	for i := bucketCounts.Len() - 1; i >= 0; i++ {
+	for i := bucketCounts.Len() - 1; i >= 0; i-- {
 		count := bucketCounts.At(i)
 		if count == 0 {
 			continue
