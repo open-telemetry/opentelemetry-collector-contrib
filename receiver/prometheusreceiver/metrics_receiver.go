@@ -351,9 +351,14 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 }
 
 func (r *pReceiver) applyCfg(cfg *PromConfig) error {
+	scrapeConfigs, err := (*config.Config)(cfg).GetScrapeConfigs()
+	if err != nil {
+		return fmt.Errorf("could not get scrape configs: %w", err)
+	}
+
 	if !enableNativeHistogramsGate.IsEnabled() {
 		// Enforce scraping classic histograms to avoid dropping them.
-		for _, scrapeConfig := range cfg.ScrapeConfigs {
+		for _, scrapeConfig := range scrapeConfigs {
 			scrapeConfig.ScrapeClassicHistograms = true
 		}
 	}
@@ -364,10 +369,6 @@ func (r *pReceiver) applyCfg(cfg *PromConfig) error {
 
 	discoveryCfg := make(map[string]discovery.Configs)
 
-	scrapeConfigs, err := (*config.Config)(cfg).GetScrapeConfigs()
-	if err != nil {
-		return fmt.Errorf("could not get scrape configs: %w", err)
-	}
 	for _, scrapeConfig := range scrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
 		r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
