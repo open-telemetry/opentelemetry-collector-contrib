@@ -1,5 +1,4 @@
 type: httpcheck
-scope_name: otelcol/httpcheckreceiver
 
 status:
   class: receiver

@@ -379,6 +379,18 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ExtractGrokPatterns("http://user:password@example.com:80/path?query=string", "%{ELB_URI}", true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("url.scheme", "http")
+				m.PutStr("url.username", "user")
+				m.PutStr("url.domain", "example.com")
+				m.PutInt("url.port", 80)
+				m.PutStr("url.path", "/path")
+				m.PutStr("url.query", "query=string")
+			},
+		},
+		{
 			statement: `set(attributes["test"], FNV("pass"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutInt("test", 266877920130663416)
@@ -496,6 +508,12 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], Log(1))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutDouble("test", 0)
+			},
+		},
+		{
+			statement: `set(attributes["test"], MD5("pass"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "1a1dc91c907325c69271ddf0c944bc72")
 			},
 		},
 		{
@@ -756,6 +774,15 @@ func Test_e2e_converters(t *testing.T) {
 				m.PutStr("bar", "pass")
 			},
 		},
+		{
+			statement: `set(attributes["test"], UserAgent("curl/7.81.0"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("user_agent.original", "curl/7.81.0")
+				m.PutStr("user_agent.name", "curl")
+				m.PutStr("user_agent.version", "7.81.0")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -841,6 +868,25 @@ func Test_e2e_ottl_features(t *testing.T) {
 			name:      "complex indexing not found",
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
 			want:      func(_ ottllog.TransformContext) {},
+		},
+		{
+			name:      "map value",
+			statement: `set(body, {"_raw": body, "test": {"result": attributes["foo"]["bar"], "time": UnixNano(time)}})`,
+			want: func(tCtx ottllog.TransformContext) {
+				originalBody := tCtx.GetLogRecord().Body().AsString()
+				mapValue := tCtx.GetLogRecord().Body().SetEmptyMap()
+				mapValue.PutStr("_raw", originalBody)
+				mv1 := mapValue.PutEmptyMap("test")
+				mv1.PutStr("result", "pass")
+				mv1.PutInt("time", 1581452772000000321)
+			},
+		},
+		{
+			name:      "map value as input to function",
+			statement: `set(attributes["isMap"], IsMap({"foo": {"bar": "baz", "test": "pass"}}))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("isMap", true)
+			},
 		},
 	}
 

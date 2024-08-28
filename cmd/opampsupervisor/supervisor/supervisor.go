@@ -165,34 +165,38 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
+	return s, nil
+}
+
+func (s *Supervisor) Start() error {
 	var err error
 	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = s.getBootstrapInfo(); err != nil {
-		return nil, fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
+		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
 	healthCheckPort, err := s.findRandomPort()
 
 	if err != nil {
-		return nil, fmt.Errorf("could not find port for health check: %w", err)
+		return fmt.Errorf("could not find port for health check: %w", err)
 	}
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
-	logger.Debug("Supervisor starting",
+	s.logger.Debug("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
 	err = s.loadAndWriteInitialMergedConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed loading initial config: %w", err)
+		return fmt.Errorf("failed loading initial config: %w", err)
 	}
 
 	if err = s.startOpAMP(); err != nil {
-		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
+		return fmt.Errorf("cannot start OpAMP client: %w", err)
 	}
 
 	s.commander, err = commander.NewCommander(
@@ -202,7 +206,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		"--config", s.agentConfigFilePath(),
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	s.startHealthCheckTicker()
@@ -219,7 +223,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		s.forwardCustomMessagesToServerLoop()
 	}()
 
-	return s, nil
+	return nil
 }
 
 func (s *Supervisor) createTemplates() error {
@@ -455,17 +459,11 @@ func (s *Supervisor) startOpAMPClient() error {
 func (s *Supervisor) startOpAMPServer() error {
 	s.opampServer = server.New(newLoggerFromZap(s.logger))
 
-	var err error
-	s.opampServerPort, err = s.findRandomPort()
-	if err != nil {
-		return err
-	}
-
 	s.logger.Debug("Starting OpAMP server...")
 
 	connected := &atomic.Bool{}
 
-	err = s.opampServer.Start(flattenedSettings{
+	err := s.opampServer.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnectingFunc: func(_ *http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
