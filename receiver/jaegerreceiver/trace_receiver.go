@@ -451,7 +451,7 @@ func (jr *jReceiver) MakeMetricsFactory(ctx context.Context) metrics.Factory {
 				jr.tBuilder.JaegerReceiverThriftUDPServerPacketsDropped.Add(ctx, i)
 			},
 			ProcessedPacketsStat: func(i int64) {
-				jr.tBuilder.JaegerReceiverThriftUDPServerPacketsDropped.Add(ctx, i)
+				jr.tBuilder.JaegerReceiverThriftUDPServerPacketsProcessed.Add(ctx, i)
 			},
 		},
 	}
