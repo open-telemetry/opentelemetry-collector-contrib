@@ -51,7 +51,7 @@ func TestScrapeConfigFiles(t *testing.T) {
 	})
 }
 
-func verifyScrapeConfigFiles(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
+func verifyScrapeConfigFiles(t *testing.T, _ *testData, result []pmetric.ResourceMetrics) {
 	require.Len(t, result, 1)
 	serviceName, ok := result[0].Resource().Attributes().Get(semconv.AttributeServiceName)
 	assert.True(t, ok)
