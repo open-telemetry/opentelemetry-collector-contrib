@@ -378,10 +378,10 @@ func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) (pcom
 
 	if zeroCount := dp.ZeroCount(); zeroCount != 0 {
 		counts.AppendEmpty().SetInt(int64(zeroCount))
-		// FIXME: do we really have to take the median of last negative and first positive, instead of using 0?
-		lastNegativeBoundary := -exphistogram.LowerBoundary(int(dp.Negative().Offset()), scale)
-		firstPositiveBoundary := exphistogram.LowerBoundary(int(dp.Positive().Offset()), scale)
-		values.AppendEmpty().SetDouble(lastNegativeBoundary + (firstPositiveBoundary-lastNegativeBoundary)/2)
+		// The midpoint is only non-zero when positive offset and negative offset are not the same,
+		// but the midpoint between negative and positive boundaries closest to zero will not be very meaningful anyway.
+		// Using a zero here instead.
+		values.AppendEmpty().SetDouble(0)
 	}
 
 	offset = int(dp.Positive().Offset())
