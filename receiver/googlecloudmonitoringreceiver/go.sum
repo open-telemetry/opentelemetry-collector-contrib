@@ -118,6 +118,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
+go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
+go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
 go.opentelemetry.io/collector v0.108.1 h1:c3JZU5g5KezDXaMgL7GDFB7ihuLNzXo6eBuaJOmBiDA=
 go.opentelemetry.io/collector v0.108.1/go.mod h1:7GL32WiQkZzJjxHstHme9igzYumDsw1hFPep3v1guHQ=
 go.opentelemetry.io/collector/component v0.108.1 h1:X+Afj07brX0NC36t6PvAq+ehaeUO/Q9eJNOUwhInpeY=
@@ -140,8 +142,6 @@ go.opentelemetry.io/collector/pdata/testdata v0.108.1 h1:TpBDoBMBYvC/Ibswe3Ec2eo
 go.opentelemetry.io/collector/pdata/testdata v0.108.1/go.mod h1:PdUmBA4yDRD4Wf0fpCyrpdZexz9EDoHBw5Ot4iIUPRs=
 go.opentelemetry.io/collector/receiver v0.108.1 h1:YQgDv69v3fgd6uoiGZ+vUdUPdNzoodbLzjB7XfdQvxs=
 go.opentelemetry.io/collector/receiver v0.108.1/go.mod h1:eKe/VJgdvHr8JsBDma/PF3DlaheTRC2X6AmCUByJCNU=
-go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
-go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 h1:4Pp6oUg3+e/6M4C0A/3kJ2VYa++dsWVTtGgLVj5xtHg=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0/go.mod h1:Mjt1i1INqiaoZOMGR1RIUJN+i3ChKoFRqzrRQhlkbs0=
 go.opentelemetry.io/otel v1.28.0 h1:/SqNcYk+idO0CxKEUOtKQClMK/MimZihKYMruSMViUo=
