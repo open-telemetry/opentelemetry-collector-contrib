@@ -32,7 +32,7 @@ func TestLogProcessorCapabilities(t *testing.T) {
 	require.NotNil(t, p)
 
 	// verify
-	assert.Equal(t, false, p.Capabilities().MutatesData)
+	assert.False(t, p.Capabilities().MutatesData)
 }
 
 func TestLogs_RoutingWorks_Context(t *testing.T) {
