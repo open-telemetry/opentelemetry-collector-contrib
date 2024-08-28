@@ -22,7 +22,7 @@ var conversions = map[string]ComplexConversion{
 }
 
 // Splits the "TLS 1.2" value into "TLS" and "1.2" and sets as "network.protocol.name" and "network.protocol.version"
-func azureCdnAccessLogSecurityProtocol(key string, value any, attrs map[string]any) bool {
+func azureCdnAccessLogSecurityProtocol(_ string, value any, attrs map[string]any) bool {
 	if str, ok := value.(string); ok {
 		if parts := strings.SplitN(str, " ", 2); len(parts) == 2 {
 			attrs["tls.protocol.name"] = strings.ToLower(parts[0])
@@ -34,7 +34,7 @@ func azureCdnAccessLogSecurityProtocol(key string, value any, attrs map[string]a
 }
 
 // Splits the "HTTP/1.1" value into "HTTP" and "1.1" and sets as "network.protocol.name" and "network.protocol.version"
-func appServiceHTTPLogsProtocol(key string, value any, attrs map[string]any) bool {
+func appServiceHTTPLogsProtocol(_ string, value any, attrs map[string]any) bool {
 	if str, ok := value.(string); ok {
 		if parts := strings.SplitN(str, "/", 2); len(parts) == 2 {
 			attrs["network.protocol.name"] = strings.ToLower(parts[0])
@@ -46,7 +46,7 @@ func appServiceHTTPLogsProtocol(key string, value any, attrs map[string]any) boo
 }
 
 // Converts Microseconds value to Seconds and sets as "dns.lookup.duration"
-func frontDoorHealthProbeLogDNSLatencyMicroseconds(key string, value any, attrs map[string]any) bool {
+func frontDoorHealthProbeLogDNSLatencyMicroseconds(_ string, value any, attrs map[string]any) bool {
 	microseconds, ok := tryParseFloat64(value)
 	if !ok {
 		return false
@@ -57,7 +57,7 @@ func frontDoorHealthProbeLogDNSLatencyMicroseconds(key string, value any, attrs 
 }
 
 // Converts Milliseconds value to Seconds and sets as "http.client.request.duration"
-func frontDoorHealthProbeLogTotalLatencyMilliseconds(key string, value any, attrs map[string]any) bool {
+func frontDoorHealthProbeLogTotalLatencyMilliseconds(_ string, value any, attrs map[string]any) bool {
 	milliseconds, ok := tryParseFloat64(value)
 	if !ok {
 		return false
@@ -68,7 +68,7 @@ func frontDoorHealthProbeLogTotalLatencyMilliseconds(key string, value any, attr
 }
 
 // Converts Milliseconds value to Seconds and sets as "http.server.request.duration"
-func appServiceHTTPLogTimeTakenMilliseconds(key string, value any, attrs map[string]any) bool {
+func appServiceHTTPLogTimeTakenMilliseconds(_ string, value any, attrs map[string]any) bool {
 	milliseconds, ok := tryParseFloat64(value)
 	if !ok {
 		return false
@@ -79,19 +79,19 @@ func appServiceHTTPLogTimeTakenMilliseconds(key string, value any, attrs map[str
 }
 
 func tryParseFloat64(value any) (float64, bool) {
-	switch value.(type) {
+	switch v := value.(type) {
 	case float32:
-		return float64(value.(float32)), true
+		return float64(v), true
 	case float64:
-		return value.(float64), true
+		return v, true
 	case int:
-		return float64(value.(int)), true
+		return float64(v), true
 	case int32:
-		return float64(value.(int32)), true
+		return float64(v), true
 	case int64:
-		return float64(value.(int64)), true
+		return float64(v), true
 	case string:
-		f, err := strconv.ParseFloat(value.(string), 64)
+		f, err := strconv.ParseFloat(v, 64)
 		return f, err == nil
 	default:
 		return 0, false

@@ -484,7 +484,7 @@ func TestUnmarshalLogs(t *testing.T) {
 	}
 }
 
-func loadJsonLogsAndApplySemanticConventions(filename string) (plog.Logs, error) {
+func loadJSONLogsAndApplySemanticConventions(filename string) (plog.Logs, error) {
 	l := plog.NewLogs()
 
 	sut := &ResourceLogsUnmarshaler{
@@ -507,7 +507,7 @@ func loadJsonLogsAndApplySemanticConventions(filename string) (plog.Logs, error)
 }
 
 func TestAzureCdnAccessLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-azurecdnaccesslog.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-azurecdnaccesslog.json")
 
 	assert.NoError(t, err)
 
@@ -529,7 +529,7 @@ func TestAzureCdnAccessLog(t *testing.T) {
 }
 
 func TestFrontDoorAccessLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-frontdooraccesslog.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-frontdooraccesslog.json")
 
 	assert.NoError(t, err)
 
@@ -557,7 +557,7 @@ func TestFrontDoorAccessLog(t *testing.T) {
 }
 
 func TestFrontDoorHealthProbeLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-frontdoorhealthprobelog.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-frontdoorhealthprobelog.json")
 
 	assert.NoError(t, err)
 
@@ -572,7 +572,7 @@ func TestFrontDoorHealthProbeLog(t *testing.T) {
 }
 
 func TestFrontDoorWAFLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-frontdoorwaflog.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-frontdoorwaflog.json")
 
 	assert.NoError(t, err)
 
@@ -587,7 +587,7 @@ func TestFrontDoorWAFLog(t *testing.T) {
 }
 
 func TestAppServiceAppLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceapplogs.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-appserviceapplogs.json")
 
 	assert.NoError(t, err)
 
@@ -602,7 +602,7 @@ func TestAppServiceAppLog(t *testing.T) {
 }
 
 func TestAppServiceConsoleLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceconsolelogs.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-appserviceconsolelogs.json")
 
 	assert.NoError(t, err)
 
@@ -613,7 +613,7 @@ func TestAppServiceConsoleLog(t *testing.T) {
 }
 
 func TestAppServiceAuditLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceauditlogs.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-appserviceauditlogs.json")
 
 	assert.NoError(t, err)
 
@@ -625,7 +625,7 @@ func TestAppServiceAuditLog(t *testing.T) {
 }
 
 func TestAppServiceHTTPLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-appservicehttplogs.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-appservicehttplogs.json")
 
 	assert.NoError(t, err)
 
@@ -649,7 +649,7 @@ func TestAppServiceHTTPLog(t *testing.T) {
 }
 
 func TestAppServicePlatformLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceplatformlogs.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-appserviceplatformlogs.json")
 
 	assert.NoError(t, err)
 
@@ -660,7 +660,7 @@ func TestAppServicePlatformLog(t *testing.T) {
 }
 
 func TestAppServiceIPSecAuditLog(t *testing.T) {
-	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceipsecauditlogs.json")
+	logs, err := loadJSONLogsAndApplySemanticConventions("log-appserviceipsecauditlogs.json")
 
 	assert.NoError(t, err)
 
