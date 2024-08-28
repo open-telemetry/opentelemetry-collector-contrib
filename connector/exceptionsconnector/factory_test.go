@@ -7,6 +7,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -19,7 +21,7 @@ func TestNewConnector(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
 		dimensions     []Dimension
-		wantDimensions []dimension
+		wantDimensions []pdatautil.Dimension
 	}{
 		{
 			name: "simplest config (use defaults)",
@@ -30,8 +32,8 @@ func TestNewConnector(t *testing.T) {
 				{Name: "http.method", Default: &defaultMethod},
 				{Name: "http.status_code"},
 			},
-			wantDimensions: []dimension{
-				{name: "http.method", value: &defaultMethodValue},
+			wantDimensions: []pdatautil.Dimension{
+				{Name: "http.method", Value: &defaultMethodValue},
 				{"http.status_code", nil},
 			},
 		},

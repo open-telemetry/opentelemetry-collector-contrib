@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -277,7 +279,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
-		optionalDims    []dimension
+		optionalDims    []pdatautil.Dimension
 		resourceAttrMap map[string]any
 		spanAttrMap     map[string]any
 		wantKey         string
@@ -288,22 +290,22 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "neither span nor resource contains key, dim provides default",
-			optionalDims: []dimension{
-				{name: "foo", value: &defaultFoo},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo", Value: &defaultFoo},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides no default",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
 		},
 		{
 			name: "span attribute contains dimension",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			spanAttrMap: map[string]any{
 				"foo": 99,
@@ -312,8 +314,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "resource attribute contains dimension",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			resourceAttrMap: map[string]any{
 				"foo": 99,
@@ -322,8 +324,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "both span and resource attribute contains dimension, should prefer span attribute",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			spanAttrMap: map[string]any{
 				"foo": 100,

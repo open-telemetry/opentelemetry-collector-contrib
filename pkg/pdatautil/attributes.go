@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package pdatautil
 
 import "go.opentelemetry.io/collector/pdata/pcommon"
@@ -8,12 +11,12 @@ type Dimension struct {
 }
 
 // GetDimensionValue gets the Dimension Value for the given configured Dimension.
-// It iterates over multiple attributes until a Value is found.
+// It iterates over multiple attributes until a value is found.
 // The order comes first, the higher the priority.
-// Finally, falls back to the configured default Value if provided.
+// Finally, falls back to the configured default value if provided.
 //
 // The ok flag indicates if a Dimension Value was fetched in order to differentiate
-// an empty string Value from a state where no Value was found.
+// an empty string value from a state where no value was found.
 func GetDimensionValue(d Dimension, attributes ...pcommon.Map) (v pcommon.Value, ok bool) {
 	// The more specific span attribute should take precedence.
 	for _, attrs := range attributes {
@@ -28,6 +31,7 @@ func GetDimensionValue(d Dimension, attributes ...pcommon.Map) (v pcommon.Value,
 	return v, ok
 }
 
+// GetAttributeValue look up value from the given attributes for the specified key, and if not found, return empty string.
 func GetAttributeValue(key string, attributes ...pcommon.Map) (string, bool) {
 	for _, attr := range attributes {
 		if v, ok := attr.Get(key); ok {
