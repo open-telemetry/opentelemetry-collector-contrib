@@ -18,7 +18,6 @@ type Dimension struct {
 // The ok flag indicates if a Dimension Value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
 func GetDimensionValue(d Dimension, attributes ...pcommon.Map) (v pcommon.Value, ok bool) {
-	// The more specific span attribute should take precedence.
 	for _, attrs := range attributes {
 		if attr, exists := attrs.Get(d.Name); exists {
 			return attr, true
