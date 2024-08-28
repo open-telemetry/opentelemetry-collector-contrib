@@ -6,6 +6,7 @@ toolchain go1.22.6
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.1
+	github.com/elastic/go-grok v0.3.1
 	github.com/gobwas/glob v0.2.3
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
@@ -13,6 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.108.0
 	github.com/stretchr/testify v1.9.0
+	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	go.opentelemetry.io/collector/component v0.108.1
 	go.opentelemetry.io/collector/pdata v1.14.1
 	go.opentelemetry.io/collector/semconv v0.108.1
@@ -30,8 +32,12 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/magefile/mage v1.15.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.108.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.20.1 // indirect
@@ -50,6 +56,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
