@@ -64,6 +64,7 @@ func (t transformer) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, 
 			if logSchemaUrl == "" {
 				logSchemaUrl = resourceSchemaUrl
 			}
+
 			err := t.manager.
 				RequestTranslation(ctx, logSchemaUrl).
 				ApplyScopeLogChanges(ctx, log, logSchemaUrl)
