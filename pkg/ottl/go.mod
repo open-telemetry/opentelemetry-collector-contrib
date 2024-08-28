@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 
 go 1.22.0
 
-toolchain go1.22.6
-
 require (
 	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/elastic/go-grok v0.3.1
