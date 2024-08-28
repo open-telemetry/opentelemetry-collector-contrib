@@ -173,7 +173,7 @@ behaviours, which may be configured through the following settings:
 > [!WARNING]
 > The ECS mode mapping mode is currently undergoing changes, and its behaviour is unstable.
 
-In ECS mapping mode, the Elastisearch Exporter attempts to map fields from
+In ECS mapping mode, the Elasticsearch Exporter attempts to map fields from
 [OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS].
 This mode may be used for compatibility with existing dashboards that work with ECS.
 
@@ -198,7 +198,7 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `max_requests` (default=3): Number of HTTP request retries.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429, 500, 502, 503, 504]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it is recommended to set it to `[429]`. WARNING: The default will be changed to `[429]` in the future.
+  - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
 
 > [!NOTE]
 > The `flush` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
@@ -229,12 +229,14 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
 ## Exporting metrics
 
 Metrics support is currently in development.
-The only metric types supported are:
+The metric types supported are:
 
 - Gauge
 - Sum
+- Histogram
+- Summary
 
-Other metric types (Histogram, Exponential Histogram, Summary) are ignored.
+Exponential Histograms are ignored.
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings

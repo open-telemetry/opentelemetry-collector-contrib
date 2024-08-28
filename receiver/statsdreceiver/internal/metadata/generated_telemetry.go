@@ -13,12 +13,17 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/statsdreceiver")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver")
+}
+
+func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
+	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/statsdreceiver")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
