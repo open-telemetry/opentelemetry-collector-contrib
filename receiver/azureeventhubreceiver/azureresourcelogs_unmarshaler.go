@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 )
 
 type logsUnmarshaler interface {
@@ -25,7 +25,7 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 
 	if applySemanticConventions {
 		return AzureResourceLogsEventUnmarshaler{
-			unmarshaler: &azure_logs.ResourceLogsUnmarshaler{
+			unmarshaler: &azurelogs.ResourceLogsUnmarshaler{
 				Version: buildInfo.Version,
 				Logger:  logger,
 			},

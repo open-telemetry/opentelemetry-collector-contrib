@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs
+module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
 
 go 1.22.0
 

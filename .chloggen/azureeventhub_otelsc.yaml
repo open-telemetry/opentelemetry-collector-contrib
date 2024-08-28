@@ -4,7 +4,7 @@
 change_type: new_component
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: azure_logs_translater
+component: azurelogs_translater
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Adds a new translater that converts Azure EventHub logs to OpenTelemetry logs used by the Azure Events Hub receiver.
