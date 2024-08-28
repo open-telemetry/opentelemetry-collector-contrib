@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -23,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
@@ -171,7 +173,8 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		"/api/v1/sketches",
 		"/api/beta/sketches",
 		"/intake",
-		"/api/v1/distribution_points"
+		"/api/v1/distribution_points",
+		"/v0.6/stats"
 	],
 	"client_drop_p0s": false,
 	"span_meta_structs": false,
@@ -198,7 +201,8 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		"/api/v1/sketches",
 		"/api/beta/sketches",
 		"/intake",
-		"/api/v1/distribution_points"
+		"/api/v1/distribution_points",
+		"/v0.6/stats"
 	],
 	"client_drop_p0s": false,
 	"span_meta_structs": false,
@@ -389,4 +393,95 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(1636629081*1_000_000_000), metric.Sum().DataPoints().At(1).Timestamp())
 	assert.Equal(t, 2.0, metric.Sum().DataPoints().At(1).DoubleValue())
 	assert.Equal(t, pcommon.Timestamp(1636629071*1_000_000_000), metric.Sum().DataPoints().At(1).StartTimestamp())
+}
+
+func TestStats_EndToEnd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	sink := new(consumertest.MetricsSink)
+
+	dd, err := newDataDogReceiver(
+		cfg,
+		receivertest.NewNopSettings(),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	dd.(*datadogReceiver).nextMetricsConsumer = sink
+
+	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, dd.Shutdown(context.Background()))
+	}()
+
+	clientStatsPayload := pb.ClientStatsPayload{
+		Hostname:         "host",
+		Env:              "prod",
+		Version:          "v1.2",
+		Lang:             "go",
+		TracerVersion:    "v44",
+		RuntimeID:        "123jkl",
+		Sequence:         2,
+		AgentAggregation: "blah",
+		Service:          "mysql",
+		ContainerID:      "abcdef123456",
+		Tags:             []string{"a:b", "c:d"},
+		Stats: []*pb.ClientStatsBucket{
+			{
+				Start:    10,
+				Duration: 1,
+				Stats: []*pb.ClientGroupedStats{
+					{
+						Service:        "mysql",
+						Name:           "db.query",
+						Resource:       "UPDATE name",
+						HTTPStatusCode: 100,
+						Type:           "sql",
+						DBType:         "postgresql",
+						Synthetics:     true,
+						Hits:           5,
+						Errors:         2,
+						Duration:       100,
+						OkSummary:      nil,
+						ErrorSummary:   nil,
+						TopLevelHits:   3,
+					},
+				},
+			},
+		},
+	}
+
+	payload, err := clientStatsPayload.MarshalMsg(nil)
+	assert.NoError(t, err)
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/v0.6/stats", dd.(*datadogReceiver).address),
+		io.NopCloser(bytes.NewReader(payload)),
+	)
+	require.NoError(t, err, "Must not error when creating request")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Must not error performing request")
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.Equal(t, string(body), "OK", "Expected response to be 'OK', got %s", string(body))
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	got := mds[0]
+	require.Equal(t, 1, got.ResourceMetrics().Len())
+	metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	assert.Equal(t, 1, metrics.Len())
+	metric := metrics.At(0)
+	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+	assert.Equal(t, "dd.internal.stats.payload", metric.Name())
+	assert.Equal(t, 1, metric.Sum().DataPoints().Len())
+	if payload, ok := metric.Sum().DataPoints().At(0).Attributes().Get("dd.internal.stats.payload"); ok {
+		stats := &pb.StatsPayload{}
+		err = proto.Unmarshal(payload.Bytes().AsRaw(), stats)
+		assert.NoError(t, err)
+	}
+
+	assert.NoError(t, err)
 }
