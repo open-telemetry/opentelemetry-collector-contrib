@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package pdatautil
+package pdatautil // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 
 import "go.opentelemetry.io/collector/pdata/pcommon"
 
