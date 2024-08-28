@@ -34,7 +34,7 @@ func TestNewConnector(t *testing.T) {
 			},
 			wantDimensions: []pdatautil.Dimension{
 				{Name: "http.method", Value: &defaultMethodValue},
-				{"http.status_code", nil},
+				{Name: "http.status_code", Value: nil},
 			},
 		},
 	} {

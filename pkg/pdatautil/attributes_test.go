@@ -4,21 +4,22 @@
 package pdatautil
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"testing"
 )
 
 func TestGetDimensionValue(t *testing.T) {
-	resource_attris := pcommon.NewMap()
-	resource_attris.PutStr("service.name", "mock-service-name")
+	resourceattris := pcommon.NewMap()
+	resourceattris.PutStr("service.name", "mock-service-name")
 
-	span_attris := pcommon.NewMap()
-	span_attris.PutStr("span.name", "mock-span-name")
+	spanattris := pcommon.NewMap()
+	spanattris.PutStr("span.name", "mock-span-name")
 
-	other_attris := pcommon.NewMap()
-	other_attris.PutStr("a", "b")
-	other_attris.PutStr("foo", "bar")
+	otherattris := pcommon.NewMap()
+	otherattris.PutStr("a", "b")
+	otherattris.PutStr("foo", "bar")
 
 	defaultFoo := pcommon.NewValueStr("bar")
 
@@ -31,7 +32,7 @@ func TestGetDimensionValue(t *testing.T) {
 		{
 			name:             "success get dimension value",
 			dimension:        Dimension{Name: "foo"},
-			attributes:       []pcommon.Map{resource_attris, span_attris, other_attris},
+			attributes:       []pcommon.Map{resourceattris, spanattris, otherattris},
 			wantDimensionVal: "bar",
 		},
 		{
@@ -40,7 +41,7 @@ func TestGetDimensionValue(t *testing.T) {
 				Name:  "foo",
 				Value: &defaultFoo,
 			},
-			attributes:       []pcommon.Map{resource_attris, span_attris},
+			attributes:       []pcommon.Map{resourceattris, spanattris},
 			wantDimensionVal: "bar",
 		},
 		{
@@ -48,7 +49,7 @@ func TestGetDimensionValue(t *testing.T) {
 			dimension: Dimension{
 				Name: "foo",
 			},
-			attributes:       []pcommon.Map{resource_attris, span_attris},
+			attributes:       []pcommon.Map{resourceattris, spanattris},
 			wantDimensionVal: "",
 		},
 	}
