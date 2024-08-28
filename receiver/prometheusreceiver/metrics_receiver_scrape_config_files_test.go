@@ -5,15 +5,15 @@ package prometheusreceiver
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
+	"os"
+	"testing"
 
 	"github.com/prometheus/prometheus/config"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"gopkg.in/yaml.v2"
-	"os"
-	"testing"
 )
 
 var scrapeFileTargetPage = `
