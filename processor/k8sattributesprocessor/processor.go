@@ -122,6 +122,8 @@ func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Me
 		kp.processResource(ctx, rm.At(i).Resource())
 	}
 
+	kp.filterOnlyOpsrampMetrics(md)
+
 	return md, nil
 }
 
@@ -233,6 +235,17 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 	if resourceUuid != "" {
 		resource.Attributes().PutStr("uuid", resourceUuid)
 	}
+
+}
+
+func (kp *kubernetesprocessor) filterOnlyOpsrampMetrics(md pmetric.Metrics) {
+	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
+		resource := rmetrics.Resource()
+		if _, found := resource.Attributes().Get("uuid"); !found {
+			return true
+		}
+		return false
+	})
 }
 
 func (op *kubernetesprocessor) GetResourceUuidUsingPodMoid(ctx context.Context, resource pcommon.Resource) (resourceUuid string) {
