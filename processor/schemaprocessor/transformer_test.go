@@ -108,6 +108,11 @@ func TestTransformerSchemaBySections(t *testing.T) {
 			section: "resource",
 			dataType: component.DataTypeLogs,
 		},
+		{
+			name: "span",
+			section: "span",
+			dataType: component.DataTypeTraces,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

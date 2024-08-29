@@ -1,0 +1,18 @@
+file_format: 1.0.0
+
+schema_url: https://example.com/testschemas/span/1.1.0
+
+versions:
+  1.1.0:
+    spans:
+      changes:
+        - rename_attributes:
+            attribute_map:
+              string: string2
+        - rename_attributes:
+            attribute_map:
+             double: double2
+            apply_to_spans:
+              testSpan2
+  #  this has to be here
+  1.0.0:
