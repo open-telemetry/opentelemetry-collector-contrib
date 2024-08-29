@@ -122,6 +122,8 @@ func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Me
 		kp.processResource(ctx, rm.At(i).Resource())
 	}
 
+	kp.filterOnlyOpsrampMetrics(md)
+
 	return md, nil
 }
 
@@ -207,27 +209,25 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 
 	if _, found = resource.Attributes().Get("k8s.pod.uid"); found {
 		if resourceUuid = kp.GetResourceUuidUsingPodMoid(ctx, resource); resourceUuid == "" {
-			resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
-			/*
-				if resourceUuid = kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid == "" {
-					if resourceUuid = kp.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
-						resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
-					}
-				}
-			*/
+			if podname, found := resource.Attributes().Get("k8s.pod.name"); found {
+				kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("podname", podname.Str()))
+			}
 		}
 	} else if _, found = resource.Attributes().Get("k8s.node.name"); found {
 		if resourceUuid = kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid == "" {
-			if resourceUuid = kp.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
-				resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+			if nodename, found := resource.Attributes().Get("k8s.node.name"); found {
+				kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("nodename", nodename.Str()))
 			}
 		}
 	} else {
-		resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+		if resourceUuid = kp.redisConfig.ClusterUid; resourceUuid == "" {
+			kp.logger.Debug("opsramp resourceuuid not found", zap.Any("clustername", kp.redisConfig.ClusterName))
+		}
 
 		/*
-			if resourceUuid = kp.GetResourceUuidUsingCurrentNodeMoid(ctx, resource); resourceUuid == "" {
-				resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource)
+			No need to get it from redis. As its directly available in config.
+			if resourceUuid = kp.GetResourceUuidUsingClusterMoid(ctx, resource); resourceUuid == "" {
+				kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("clustername", kp.redisConfig.ClusterName))
 			}
 		*/
 	}
@@ -235,6 +235,17 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 	if resourceUuid != "" {
 		resource.Attributes().PutStr("uuid", resourceUuid)
 	}
+
+}
+
+func (kp *kubernetesprocessor) filterOnlyOpsrampMetrics(md pmetric.Metrics) {
+	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
+		resource := rmetrics.Resource()
+		if _, found := resource.Attributes().Get("uuid"); !found {
+			return true
+		}
+		return false
+	})
 }
 
 func (op *kubernetesprocessor) GetResourceUuidUsingPodMoid(ctx context.Context, resource pcommon.Resource) (resourceUuid string) {
@@ -290,7 +301,7 @@ func (op *kubernetesprocessor) GetResourceUuidUsingCurrentNodeMoid(ctx context.C
 
 func (op *kubernetesprocessor) GetResourceUuidUsingClusterMoid(ctx context.Context, resource pcommon.Resource) (resourceUuid string) {
 
-	nodeMoidKey := moid.NewMoid(op.redisConfig.ClusterName).WithNodeName(op.redisConfig.NodeName).NodeMoid()
+	nodeMoidKey := moid.NewMoid(op.redisConfig.ClusterName).WithClusterUuid(op.redisConfig.ClusterUid).ClusterMoid()
 
 	resourceUuid = op.redisClient.GetValueInString(ctx, nodeMoidKey)
 	op.logger.Debug("redis KV ", zap.Any("key", nodeMoidKey), zap.Any("value", resourceUuid))
