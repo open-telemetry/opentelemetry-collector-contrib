@@ -184,7 +184,7 @@ AFTER
 ... | keep __line__, detected_level
 ```
 
-### Grafana migration
+### Grafana visualizations migration
 
 #### Tempo data source: Trace 2 Logs
 
