@@ -90,17 +90,39 @@ func buildTestTransformer(t *testing.T, targetUrl string)  *transformer {
 	return transform
 }
 
-func TestTransformerSchemaAll(t *testing.T) {
-	// todo(ankit) do i need to test all data types here?
-	transform := buildTestTransformer(t, "https://example.com/testdata/testschemas/schema_sections/all/1.0.0")
+func TestTransformerSchemaBySections(t *testing.T) {
+	tests := []struct {
+		name            string
+		section           string
+		dataType       component.DataType
+	}{
+		{
+			// todo(ankit) do i need to test all data types here?
+			name: "all_log",
+			section: "all",
+			dataType: component.DataTypeLogs,
+		},
+		{
+			// todo(ankit) do i need to test all data types here?
+			name: "resource_log",
+			section: "resource",
+			dataType: component.DataTypeLogs,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			transform := buildTestTransformer(t, fmt.Sprintf("https://example.com/testdata/testschemas/schema_sections/%s/1.0.0", tc.section))
 
-	inLogs := plogsFromJson(t, "testdata/transformer_data/schema_sections/all/log_in.json")
+			inLogs := plogsFromJson(t, fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_in.json", tc.section, tc.dataType))
 
-	expectedLogs := plogsFromJson(t, "testdata/transformer_data/schema_sections/all/log_out.json")
+			expectedLogs := plogsFromJson(t, fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_out.json", tc.section, tc.dataType))
 
-	logs, err := transform.processLogs(context.Background(), inLogs)
-	assert.NoError(t, err)
-	assert.EqualValues(t, expectedLogs, logs, "Must match the expected values")
+			logs, err := transform.processLogs(context.Background(), inLogs)
+			assert.NoError(t, err)
+			assert.EqualValues(t, expectedLogs, logs, "Must match the expected values")
+		})
+
+	}
 }
 
 func TestTransformerProcessing(t *testing.T) {
