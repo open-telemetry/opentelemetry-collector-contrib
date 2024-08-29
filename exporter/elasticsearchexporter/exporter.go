@@ -255,11 +255,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val, err := exponentialHistogramToValue(dp)
-						if err != nil {
-							errs = append(errs, err)
-							continue
-						}
+						val := exponentialHistogramToValue(dp)
 						if err := upsertDataPoint(dp, val); err != nil {
 							errs = append(errs, err)
 							continue

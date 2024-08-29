@@ -354,8 +354,7 @@ func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
 	return vm
 }
 
-// exponentialHistogramToValue converts an exponential histogram data point to T-digest.
-func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) (pcommon.Value, error) {
+func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) pcommon.Value {
 	counts, values := exphistogram.ToTDigest(dp)
 
 	vm := pcommon.NewValueMap()
@@ -371,7 +370,7 @@ func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) (pcom
 		vmValues.AppendEmpty().SetDouble(v)
 	}
 
-	return vm, nil
+	return vm
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
