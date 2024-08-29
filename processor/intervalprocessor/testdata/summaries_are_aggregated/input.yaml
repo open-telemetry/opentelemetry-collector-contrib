@@ -46,6 +46,7 @@ resourceMetrics:
                     - key: aaa
                       value:
                         stringValue: bbb
+                # Only last summary should pass through
                 - timeUnixNano: 80
                   quantileValues:
                     - quantile: 0.25
