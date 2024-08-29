@@ -30,7 +30,7 @@ func TestClient(t *testing.T) {
 	require.Equal(t, "hello", string(resp))
 	require.True(t, tr.closed)
 	require.Equal(t, baseURL.String()+"/stats", tr.url)
-	require.Equal(t, 1, len(tr.header))
+	require.Len(t, tr.header, 1)
 	require.Equal(t, "application/json", tr.header["Content-Type"][0])
 	require.Equal(t, "GET", tr.method)
 }

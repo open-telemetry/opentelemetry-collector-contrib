@@ -1491,8 +1491,8 @@ func TestStatsDParser_Initialize(t *testing.T) {
 	instrument := newInstruments(addr)
 	instrument.gauges[teststatsdDMetricdescription] = pmetric.ScopeMetrics{}
 	p.instrumentsByAddress[addrKey] = instrument
-	assert.Equal(t, 1, len(p.instrumentsByAddress))
-	assert.Equal(t, 1, len(p.instrumentsByAddress[addrKey].gauges))
+	assert.Len(t, p.instrumentsByAddress, 1)
+	assert.Len(t, p.instrumentsByAddress[addrKey].gauges, 1)
 	assert.Equal(t, GaugeObserver, p.timerEvents.method)
 	assert.Equal(t, GaugeObserver, p.histogramEvents.method)
 }

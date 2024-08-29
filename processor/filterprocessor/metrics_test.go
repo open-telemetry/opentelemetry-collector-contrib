@@ -347,11 +347,11 @@ func TestFilterMetricProcessor(t *testing.T) {
 			got := next.AllMetrics()
 
 			if len(test.outMN) == 0 {
-				require.Equal(t, 0, len(got))
+				require.Len(t, got, 0)
 				return
 			}
 
-			require.Equal(t, 1, len(got))
+			require.Len(t, got, 1)
 			require.Equal(t, len(test.outMN), got[0].ResourceMetrics().Len())
 			for i, wantOut := range test.outMN {
 				gotMetrics := got[0].ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics()
