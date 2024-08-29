@@ -152,7 +152,7 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// verify
 	assert.NotNil(t, p)
-	assert.Equal(t, true, caps.MutatesData)
+	assert.True(t, caps.MutatesData)
 }
 
 func TestProcessBatchDoesntFail(t *testing.T) {

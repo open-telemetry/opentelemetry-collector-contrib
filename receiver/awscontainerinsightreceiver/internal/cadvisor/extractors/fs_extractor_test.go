@@ -107,11 +107,11 @@ func TestFSStats(t *testing.T) {
 
 func TestAllowList(t *testing.T) {
 	extractor := NewFileSystemMetricExtractor(nil)
-	assert.Equal(t, true, extractor.allowListRegexP.MatchString("/dev/shm"))
-	assert.Equal(t, true, extractor.allowListRegexP.MatchString("tmpfs"))
-	assert.Equal(t, true, extractor.allowListRegexP.MatchString("overlay"))
-	assert.Equal(t, false, extractor.allowListRegexP.MatchString("overlaytest"))
-	assert.Equal(t, false, extractor.allowListRegexP.MatchString("/dev"))
+	assert.True(t, extractor.allowListRegexP.MatchString("/dev/shm"))
+	assert.True(t, extractor.allowListRegexP.MatchString("tmpfs"))
+	assert.True(t, extractor.allowListRegexP.MatchString("overlay"))
+	assert.False(t, extractor.allowListRegexP.MatchString("overlaytest"))
+	assert.False(t, extractor.allowListRegexP.MatchString("/dev"))
 }
 
 func TestFSStatsWithAllowList(t *testing.T) {
