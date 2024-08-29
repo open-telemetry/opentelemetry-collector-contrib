@@ -168,13 +168,19 @@ func (cfg *Config) buildDB() (*sql.DB, error) {
 		return nil, err
 	}
 
-	// ClickHouse sql driver will read clickhouse settings from the DSN string.
-	// It also ensures defaults.
-	// See https://github.com/ClickHouse/clickhouse-go/blob/08b27884b899f587eb5c509769cd2bdf74a9e2a1/clickhouse_std.go#L189
-	conn, err := sql.Open(driverName, dsn)
+	opts, err := clickhouse.ParseDSN(dsn)
 	if err != nil {
 		return nil, err
 	}
+
+	if opts.ClientInfo.Products == nil {
+		opts.ClientInfo.Products = []struct {
+			Name    string
+			Version string
+		}{{"otel-exporter", getCollectorVersion()}}
+	}
+
+	conn := clickhouse.OpenDB(opts)
 
 	return conn, nil
 }
