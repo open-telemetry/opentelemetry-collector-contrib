@@ -42,11 +42,11 @@ func TestIsClosed(t *testing.T) {
 
 	channel := make(chan bool)
 
-	assert.Equal(t, false, isClosed(channel))
+	assert.False(t, isClosed(channel))
 
 	close(channel)
 
-	assert.Equal(t, true, isClosed(channel))
+	assert.True(t, isClosed(channel))
 
 }
 

@@ -43,8 +43,8 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.(*Config)
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
-	assert.Equal(t, r1.UseStartTimeMetric, true)
-	assert.Equal(t, r1.TrimMetricSuffixes, true)
+	assert.True(t, r1.UseStartTimeMetric)
+	assert.True(t, r1.TrimMetricSuffixes)
 	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
 	assert.True(t, r1.ReportExtraScrapeMetrics)
 
@@ -340,35 +340,4 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	require.NoError(t, component.ValidateConfig(cfg))
-}
-
-func TestPromHTTPClientConfigValidateAuthorization(t *testing.T) {
-	cfg := PromHTTPClientConfig{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.Authorization = &promConfig.Authorization{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.Authorization.CredentialsFile = "none"
-	require.Error(t, component.ValidateConfig(cfg))
-	cfg.Authorization.CredentialsFile = filepath.Join("testdata", "dummy-tls-cert-file")
-	require.NoError(t, component.ValidateConfig(cfg))
-}
-
-func TestPromHTTPClientConfigValidateTLSConfig(t *testing.T) {
-	cfg := PromHTTPClientConfig{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.TLSConfig.CertFile = "none"
-	require.Error(t, component.ValidateConfig(cfg))
-	cfg.TLSConfig.CertFile = filepath.Join("testdata", "dummy-tls-cert-file")
-	cfg.TLSConfig.KeyFile = "none"
-	require.Error(t, component.ValidateConfig(cfg))
-	cfg.TLSConfig.KeyFile = filepath.Join("testdata", "dummy-tls-key-file")
-	require.NoError(t, component.ValidateConfig(cfg))
-}
-
-func TestPromHTTPClientConfigValidateMain(t *testing.T) {
-	cfg := PromHTTPClientConfig{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.BearerToken = "foo"
-	cfg.BearerTokenFile = filepath.Join("testdata", "dummy-tls-key-file")
-	require.Error(t, component.ValidateConfig(cfg))
 }
