@@ -7,6 +7,8 @@ go 1.22.0
 toolchain go1.22.6
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.108.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.108.0
@@ -214,7 +216,11 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.108.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/connector v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/connector/forwardconnector v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240829190554-7da6b618a7ee
@@ -396,13 +402,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.16 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.16 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.16 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.18 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.16 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.29.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.60.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.32.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.31.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.22.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.5 // indirect
