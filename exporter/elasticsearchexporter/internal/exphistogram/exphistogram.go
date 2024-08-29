@@ -1,6 +1,10 @@
 package exphistogram
 
-import "math"
+import (
+	"math"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
 
 // LowerBoundary calculates the lower boundary given index and scale.
 // Adopted from https://opentelemetry.io/docs/specs/otel/metrics/data-model/#producer-expectations
@@ -22,4 +26,43 @@ func MapToIndex(value float64, scale int) int {
 	// Note: math.Floor(value) equals math.Ceil(value)-1 when value
 	// is not a power of two, which is checked above.
 	return int(math.Floor(math.Log(value) * scaleFactor))
+}
+
+func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values []float64) {
+	scale := int(dp.Scale())
+
+	offset := int(dp.Negative().Offset())
+	bucketCounts := dp.Negative().BucketCounts()
+	for i := bucketCounts.Len() - 1; i >= 0; i-- {
+		count := bucketCounts.At(i)
+		if count == 0 {
+			continue
+		}
+		lb := -LowerBoundary(offset+i+1, scale)
+		ub := -LowerBoundary(offset+i, scale)
+		counts = append(counts, int64(count))
+		values = append(values, lb+(ub-lb)/2)
+	}
+
+	if zeroCount := dp.ZeroCount(); zeroCount != 0 {
+		counts = append(counts, int64(zeroCount))
+		// The midpoint is only non-zero when positive offset and negative offset are not the same,
+		// but the midpoint between negative and positive boundaries closest to zero will not be very meaningful anyway.
+		// Using a zero here instead.
+		values = append(values, 0)
+	}
+
+	offset = int(dp.Positive().Offset())
+	bucketCounts = dp.Positive().BucketCounts()
+	for i := 0; i < bucketCounts.Len(); i++ {
+		count := bucketCounts.At(i)
+		if count == 0 {
+			continue
+		}
+		lb := LowerBoundary(offset+i, scale)
+		ub := LowerBoundary(offset+i+1, scale)
+		counts = append(counts, int64(count))
+		values = append(values, lb+(ub-lb)/2)
+	}
+	return
 }

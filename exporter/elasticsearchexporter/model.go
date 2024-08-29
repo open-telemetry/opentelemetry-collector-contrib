@@ -356,45 +356,19 @@ func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
 
 // exponentialHistogramToValue converts an exponential histogram data point to T-digest.
 func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) (pcommon.Value, error) {
+	counts, values := exphistogram.ToTDigest(dp)
+
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
-	counts := m.PutEmptySlice("counts")
-	values := m.PutEmptySlice("values")
-
-	scale := int(dp.Scale())
-
-	offset := int(dp.Negative().Offset())
-	bucketCounts := dp.Negative().BucketCounts()
-	for i := bucketCounts.Len() - 1; i >= 0; i-- {
-		count := bucketCounts.At(i)
-		if count == 0 {
-			continue
-		}
-		lb := -exphistogram.LowerBoundary(offset+i+1, scale)
-		ub := -exphistogram.LowerBoundary(offset+i, scale)
-		counts.AppendEmpty().SetInt(int64(count))
-		values.AppendEmpty().SetDouble(lb + (ub-lb)/2)
+	vmCounts := m.PutEmptySlice("counts")
+	vmCounts.EnsureCapacity(len(counts))
+	for _, c := range counts {
+		vmCounts.AppendEmpty().SetInt(c)
 	}
-
-	if zeroCount := dp.ZeroCount(); zeroCount != 0 {
-		counts.AppendEmpty().SetInt(int64(zeroCount))
-		// The midpoint is only non-zero when positive offset and negative offset are not the same,
-		// but the midpoint between negative and positive boundaries closest to zero will not be very meaningful anyway.
-		// Using a zero here instead.
-		values.AppendEmpty().SetDouble(0)
-	}
-
-	offset = int(dp.Positive().Offset())
-	bucketCounts = dp.Positive().BucketCounts()
-	for i := 0; i < bucketCounts.Len(); i++ {
-		count := bucketCounts.At(i)
-		if count == 0 {
-			continue
-		}
-		lb := exphistogram.LowerBoundary(offset+i, scale)
-		ub := exphistogram.LowerBoundary(offset+i+1, scale)
-		counts.AppendEmpty().SetInt(int64(count))
-		values.AppendEmpty().SetDouble(lb + (ub-lb)/2)
+	vmValues := m.PutEmptySlice("values")
+	vmValues.EnsureCapacity(len(values))
+	for _, v := range values {
+		vmValues.AppendEmpty().SetDouble(v)
 	}
 
 	return vm, nil
