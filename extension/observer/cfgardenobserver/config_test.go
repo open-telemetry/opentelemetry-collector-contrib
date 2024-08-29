@@ -190,7 +190,7 @@ func TestConfigValidate(t *testing.T) {
 	}
 }
 
-func loadConf(t testing.TB, path string, id component.ID) *confmap.Conf {
+func loadRawConf(t testing.TB, path string, id component.ID) *confmap.Conf {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", path))
 	require.NoError(t, err)
 	sub, err := cm.Sub(id.String())
@@ -201,7 +201,7 @@ func loadConf(t testing.TB, path string, id component.ID) *confmap.Conf {
 func loadConfig(t testing.TB, id component.ID) *Config {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	sub := loadConf(t, "config.yaml", id)
+	sub := loadRawConf(t, "config.yaml", id)
 	require.NoError(t, sub.Unmarshal(cfg))
 	return cfg.(*Config)
 }
