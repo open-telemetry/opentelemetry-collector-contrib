@@ -120,7 +120,6 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 
 	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 		ils := rm.ScopeMetrics().At(j)
-		s.processAttrs(ctx, ils.Scope().Attributes())
 		for k := 0; k < ils.Metrics().Len(); k++ {
 			metric := ils.Metrics().At(k)
 			switch metric.Type() {
