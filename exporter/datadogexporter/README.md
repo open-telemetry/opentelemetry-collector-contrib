@@ -62,7 +62,9 @@ Note that we are currently migrating the Datadog metrics exporter to use the met
 
 ### Remap OTel’s service.name attribute to service for logs
 
-For Datadog Exporter versions 0.83.0 and later, the `service` field of OTel logs is populated as [OTel semantic convention](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.name`. However, `service.name` is not one of the default [service attributes](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute) in Datadog’s log preprocessing.
+**NOTE** this workaround is only needed when feature gate `exporter.datadogexporter.UseLogsAgentExporter` is disabled. This feature gate is enabled by default starting v0.108.0.
+
+For Datadog Exporter versions 0.83.0 - v0.107.0, the `service` field of OTel logs is populated as [OTel semantic convention](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.name`. However, `service.name` is not one of the default [service attributes](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute) in Datadog’s log preprocessing.
 
 To get the service field correctly populated in your logs, you can specify service.name to be the source of a log’s service by setting a [log service remapper processor](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute).
 
