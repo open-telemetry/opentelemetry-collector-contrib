@@ -17,6 +17,162 @@ Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
 
 This component is **deprecated**: Loki now supports native [OTLP ingestion](https://grafana.com/docs/loki/latest/send-data/otel/) starting from v3. Grafana Cloud also supports [OTLP native ingestion](https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp) for logs. This component will be removed in September 2024.
 
+
+### Benefits of the new Loki OpenTelemetry log format
+
+* Simplified client configuration  
+* Simplified querying with better support for attributes (no more json)
+
+TODO
+
+### Loki log message format changes for OpenTelemetry logs
+
+See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/docs/specs/otel/logs/data-model/).
+
+| OpenTelemetry log field | Pre Loki V3 | Loki V3+ through the Loki OTLP Endpoint |
+| ----- | ----- | ----- |
+| [`Timestamp`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-timestamp) | `timestamp` | `timestamp` |
+| [`ObservedTimestamp`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-observedtimestamp) | Not available | `metadata[observed_timestamp]` |
+| [`TraceId`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceid)) | `traceid`  field of the Loki JSON log message | `metadata[trace_id]` |
+| [`SpanId`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-spanid)) | `spanid` field of the Loki JSON log message | `metadata[span_id]` |
+| [`TraceFlags`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceflags)) | Not available | `metadata[flags]` |
+| [`SeverityText`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext)) |  \`severity\` field of the JSON log message (eg `"Information") and `level` label (eg `ERROR`, `INFO`...), the `detected_level` label is also available | `metadata\[severity_text]`,  the `detected_level` label is also available |
+| [`SeverityNumber`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber) | Not available | `metadata[severity_number]` |
+| [`Body`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-body)) | `body`  field of the Loki JSON log message | The Loki log message. `__line__`in LogQL functions |
+| [`InstrumentationScope`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-instrumentationscope) | `instrumentation_scope_name` field of the JSON log message | `metadata[scope_name]` |
+| [`Attributes`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes) | JSON fields of the Loki log message | `metadata[xyz]` Where `xyz` is the `_` version of the OTel attribute name (e.g. `thread_name` Loki metadata for the `thread.name` OpenTelemetry attribute)|
+| [`Resource`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-resource) | `service.name`, `service.namespace`, and `service.instance.id` are promoted as the following labels: `job=[${service.namespace}/]${service.name}`, instance=${service.instance.id}, exporter="OTLP"`.  Other resource attributes are stored as JSON fields of the Loki log message with the prefix `resources_` (eg `resources_k8s_namespace_name`) | Default list of resource attributes promoted as Loki labels: `cloud.availability_zone`, `cloud.region`, `container.name`, `deployment.environment`, `k8s.cluster.name`, `k8s.container.name`, `k8s.cronjob.name`, `k8s.daemonset.name`, `k8s.deployment.name`, `k8s.job.name`, `k8s.namespace.name`, `k8s.pod.name`, k8s.replicaset.name k8s.statefulset.name service.instance.id service.name service.namespace Other resource attributes are by default promoted as Loki message metadata ℹ️ The list of promoted resource attributes is configurable using Loki’s distributor config parameter default\_resource\_attributes\_as\_index\_labels ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) |
+
+ℹ️additional conversion rules from OpenTelemetry Logs to Loki 
+
+* \`.\` in attributes and resource attributes are converted into \`\_\` as they are mapped as Loki labels or metadata,  
+* Otel attribute values with complex data types (i.e. arrays, nested structures) are converted into JSON strings
+
+## Migration instructions {#migration-instructions}
+
+### Instrumentation: No changes {#instrumentation:-no-changes}
+
+No changes in the instrumentation. OTel logs sources don’t have to be modified including workloads producing logs through OTel SDKs and OTel Collector File Log Receiver setups.
+
+### Collection: Replace the OpenTelemetry Collector Loki Exporter by the OTLP/HTTP Exporter {#collection:-replace-the-opentelemetry-collector-loki-exporter-by-the-otlp/http-exporter}
+
+Before
+
+```
+extensions:
+  basicauth/loki:
+    client_auth:
+      username: username
+      password: password
+
+exporters:
+  loki:
+    auth:
+      authenticator: basicauth/loki
+    endpoint: https://loki.example.com:3100/loki/api/v1/push
+
+service:
+  extensions: [basicauth/loki]
+  pipelines:
+    logs:
+      receivers: [...]
+      processors: [...]
+      exporters: [..., loki]
+```
+
+After
+
+```
+extensions:
+  basicauth/loki:
+    client_auth:
+      username: username
+      password: password
+
+exporters:
+  otlphttp/loki:
+    auth:
+      authenticator: basicauth/loki
+    endpoint: http://<loki-addr>:3100/otlp/v1/logs
+
+service:
+  extensions: [basicauth/loki]
+  pipelines:
+    logs:
+      receivers: [...]
+      processors: [...]
+      exporters: [..., otlphttp/loki]
+
+
+```
+
+Endpoint and credentials details for Grafana Cloud users are available using the \`OpenTelemetry Collector\` connection tile.
+
+Promotion of OpenTelemetry attributes and resource attributes to Loki labels using the \`loki.attribute.labels\` and \`loki.resource.labels\` hints are replaced by a list of promoted attributes managed centrally in Loki.  
+The default list of resource attributes promoted as labels (see above) should be sufficient for most use cases.  
+Changes can be made to this list using the Loki distributor configuration parameter default\_resource\_attributes\_as\_index\_labels ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) for self managed instances and opening a support ticket for Grafana Cloud.
+
+### LogQL queries changes {#logql-queries-changes}
+
+#### From \`job\` and \`instance\` to \`service\_name\`, \`service\_namespace\`, and \`service\_instance\_id\` {#from-`job`-and-`instance`-to-`service_name`,-`service_namespace`,-and-`service_instance_id`}
+
+The Loki labels \`job\` and \`instance\` are no longer generated and are replaced by the \`service\_name\`, \`service\_namespace\`, and \`service\_instance\_id\` labels.
+
+Example:
+
+```
+BEFORE
+{job="ecommerce/frontend", instance="1234567890"}
+
+AFTER
+{service_name="frontend", service_namespace="ecommerce", service_instance_id="1234567890"}
+```
+
+#### From \`| json | an\_attribute=...\` to \`{an\_attribute=...}\` or \`| an\_attribute=...\`  {#from-`|-json-|-an_attribute=...`-to-`{an_attribute=...}`-or-`|-an_attribute=...`}
+
+OTel log attributes, resource attributes, and fields are no longer stored in the JSON message but as labels for promoted resource attributes (see list above) or as metadata.
+
+LogQL statements \`| json | an\_attribute=...\` must be converted to
+
+* For promoted resource attributes: \`{an\_attribute=...}\`  
+* For other resource attributes, attributes, and fields: \`| an\_attribute=...\`
+
+#### From \`| json | traceid=...\` and \`| json | spanid=...\` to \`| trace\_id=...\` and \`| span\_id=...\` {#from-`|-json-|-traceid=...`-and-`|-json-|-spanid=...`-to-`|-trace_id=...`-and-`|-span_id=...`}
+
+The log fields SpanID and TraceId where stored as JSON field \`spanid\` and \`traceid\`, they are now stored as metadata \`span\_id\` and \`trace\_id\`, LogQL queries must be changed accordingly.
+
+TraceID filters like \`| json | traceid=${traceId} ...\` and \`|=${traceId} ...\` must be converted to \`| trace\_id=${traceId} ...\`.  
+Similarly, SpanID filters like \`| json | spanid=\<\<spanid\>\> ...\` and \`|=\<\<spanid\>\> ...\` must be converted to \`| span\_id=\<\<spanid\>\> ...\`.
+
+Example:
+
+```
+BEFORE
+{exporter="OTLP", job="ecommerce/frontend"} | json | resources_deployment_environment=~".*" |="00960a472ea5b87954ca07902d66f914" ...
+
+AFTER
+{service_namespace="ecommerce", service_name="frontend"} | deployment_environment=~".*" | trace_id="00960a472ea5b87954ca07902d66f914"...
+```
+
+#### From \`line\_format \`{{.body}}\` \`  to  \`line\_format \`{{\_\_line\_\_}}\` \` {#from-`line_format-`{{.body}}`-`-to-`line_format-`{{__line__}}`-`}
+
+The \`{{.body}}\` element of the JSON payload that used to hold the OTel log message body is now the message of the Loki log line and should be referenced as \`{{\_\_line\_\_}}\` in \`line\_format\` calls.
+
+#### Using \`keep \_\_line\_\_\` in direct LogQL queries to prevent stream splits {#using-`keep-__line__`-in-direct-logql-queries-to-prevent-stream-splits}
+
+TODO
+
+### Grafana changes {#grafana-changes}
+
+#### Loki data source Trace 2 Logs {#loki-data-source-trace-2-logs}
+
+Explain [Loki Data Source: default "Trace to logs on trace ID" cfg broken with the new Loki OTel logs format \#90335](https://github.com/grafana/grafana/issues/90335)
+
+## See Also {#see-also}
+
+[https://grafana.com/docs/loki/latest/send-data/otel/](https://grafana.com/docs/loki/latest/send-data/otel/) 
+
+
 ## Getting Started
 
 The following settings are required:
