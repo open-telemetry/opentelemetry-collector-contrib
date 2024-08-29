@@ -545,6 +545,23 @@ func TestMapSketchBucketsToHistogramBuckets(t *testing.T) {
 			expectedZeroCount:       0,
 		},
 		{
+			name:                    "Higher single positive bucket covered by multiple exponential buckets",
+			sketchKeys:              []int32{1340}, // Key-offset=2, bucket [1.031494140625, 1.0476112365722656)
+			sketchCounts:            []uint32{100},
+			expectedNegativeBuckets: map[int]uint64{},
+			expectedPositiveBuckets: map[int]uint64{1: 80, 2: 20}, // At zero offset, buckets (1.0219, 1.044] and (1.044, 1.067]
+			expectedZeroCount:       0,
+		},
+		{
+			name: "Two positive buckets covered by multiple overlapping exponential buckets",
+			// The superposition of the two previous cases.
+			sketchKeys:              []int32{1339, 1340},
+			sketchCounts:            []uint32{100, 100},
+			expectedNegativeBuckets: map[int]uint64{},
+			expectedPositiveBuckets: map[int]uint64{0: 39, 1: 141, 2: 20},
+			expectedZeroCount:       0,
+		},
+		{
 			name:                    "Single negative bucket covered by single exponential bucket",
 			sketchKeys:              []int32{-1338}, // (-Key)-offset=0, bucket (-1.015625, -1]
 			sketchCounts:            []uint32{100},
