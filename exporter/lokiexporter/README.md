@@ -29,14 +29,14 @@ TODO
 
 See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/docs/specs/otel/logs/data-model/).
 
-| OpenTelemetry log field | Pre Loki V3 | Loki V3+ through the Loki OTLP Endpoint |
+| OpenTelemetry log field | Pre Loki V3 | Loki V3 through the Loki OTLP Endpoint |
 | ----- | ----- | ----- |
 | [`Timestamp`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-timestamp) | `timestamp` | `timestamp` |
 | [`ObservedTimestamp`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-observedtimestamp) | Not available | `metadata[observed_timestamp]` |
 | [`TraceId`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceid) | `traceid`  field of the Loki JSON log message | `metadata[trace_id]` |
 | [`SpanId`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-spanid) | `spanid` field of the Loki JSON log message | `metadata[span_id]` |
 | [`TraceFlags`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceflags) | Not available | `metadata[flags]` |
-| [`SeverityText`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext) |  \`severity\` field of the JSON log message (eg `"Information") and `level` label (eg `ERROR`, `INFO`...), the `detected_level` label is also available | `metadata\[severity_text]`,  the `detected_level` label is also available |
+| [`SeverityText`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext) |  `severity` field of the JSON log message (eg `Information`) and `level` label (eg `ERROR`, `INFO`...), the `detected_level` label is also available | `metadata[severity_text]`,  the `detected_level` label is also available |
 | [`SeverityNumber`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber) | Not available | `metadata[severity_number]` |
 | [`Body`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-body) | `body`  field of the Loki JSON log message | The Loki log message. `__line__`in LogQL functions |
 | [`InstrumentationScope`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-instrumentationscope) | `instrumentation_scope_name` field of the JSON log message | `metadata[scope_name]` |
@@ -45,7 +45,7 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 
 ℹ️ Additional conversion rules from OpenTelemetry Logs to Loki 
 
-* `.` in attributes and resource attributes are converted into \`\_\` as they are mapped as Loki labels or metadata,  
+* `.` in attributes and resource attributes are converted into `_` when they are mapped as Loki labels or metadata,  
 * Otel attribute values with complex data types (i.e. arrays, nested structures) are converted into JSON strings
 
 ### Migration instructions
@@ -111,15 +111,15 @@ service:
 
 Endpoint and credentials details for Grafana Cloud users are available using the Grafana Cloud "OpenTelemetry Collector" connection tile.
 
-The promotion of OpenTelemetry attributes and resource attributes to Loki labels using the `loki.attribute.labels` and `loki.resource.labels` hints are replaced by a list of promoted attributes managed centrally in Loki. 
+The promotion of OpenTelemetry attributes and resource attributes to Loki labels using the `loki.attribute.labels` and `loki.resource.labels` hints is replaced by the list of promoted attributes managed centrally in Loki. 
 The default list of resource attributes promoted as labels (see above) should be sufficient for most use cases.  
-Changes can be made to this list using the Loki distributor configuration parameter default\_resource\_attributes\_as\_index\_labels ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) for self managed instances and opening a support ticket for Grafana Cloud.
+ℹ️ Changes can be made to this list using the Loki distributor configuration parameter `default_resource_attributes_as_index_labels` ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) for self managed instances and opening a support ticket for Grafana Cloud.
 
-### LogQL queries changes {#logql-queries-changes}
+### LogQL query changes
 
-#### From \`job\` and \`instance\` to \`service\_name\`, \`service\_namespace\`, and \`service\_instance\_id\` {#from-`job`-and-`instance`-to-`service_name`,-`service_namespace`,-and-`service_instance_id`}
+#### From `job` and `instance` to `service_name`, `service_namespace`, and `service_instance_id` {#from-`job`-and-`instance`-to-`service_name`,-`service_namespace`,-and-`service_instance_id`}
 
-The Loki labels \`job\` and \`instance\` are no longer generated and are replaced by the \`service\_name\`, \`service\_namespace\`, and \`service\_instance\_id\` labels.
+The Loki labels `job` and `instance` are no longer generated and are replaced by the `service_name`, `service_namespace`, and `service_instance_id` labels.
 
 Example:
 
@@ -131,21 +131,21 @@ AFTER
 {service_name="frontend", service_namespace="ecommerce", service_instance_id="1234567890"}
 ```
 
-#### From \`| json | an\_attribute=...\` to \`{an\_attribute=...}\` or \`| an\_attribute=...\`  {#from-`|-json-|-an_attribute=...`-to-`{an_attribute=...}`-or-`|-an_attribute=...`}
+#### From `| json | an_attribute=...` to `{an_attribute=...}` or `| an_attribute=...`
 
 OTel log attributes, resource attributes, and fields are no longer stored in the JSON message but as labels for promoted resource attributes (see list above) or as metadata.
 
-LogQL statements \`| json | an\_attribute=...\` must be converted to
+LogQL statements `| json | an_attribute=...` must be converted to:
 
-* For promoted resource attributes: \`{an\_attribute=...}\`  
-* For other resource attributes, attributes, and fields: \`| an\_attribute=...\`
+* For promoted resource attributes: `{an_attribute=...}`  
+* For other resource attributes, log attributes, and fields: `| an_attribute=...`
 
-#### From \`| json | traceid=...\` and \`| json | spanid=...\` to \`| trace\_id=...\` and \`| span\_id=...\` {#from-`|-json-|-traceid=...`-and-`|-json-|-spanid=...`-to-`|-trace_id=...`-and-`|-span_id=...`}
+#### From `| json | traceid=...` and `| json | spanid=...` to `| trace_id=...` and `| span_id=...`
 
-The log fields SpanID and TraceId where stored as JSON field \`spanid\` and \`traceid\`, they are now stored as metadata \`span\_id\` and \`trace\_id\`, LogQL queries must be changed accordingly.
+The log fields `SpanID` and `TraceId` where stored as JSON field `spanid` and `traceid`; they are now stored as metadata `span_id` and `trace_id`, LogQL queries must be changed accordingly.
 
-TraceID filters like \`| json | traceid=${traceId} ...\` and \`|=${traceId} ...\` must be converted to \`| trace\_id=${traceId} ...\`.  
-Similarly, SpanID filters like \`| json | spanid=\<\<spanid\>\> ...\` and \`|=\<\<spanid\>\> ...\` must be converted to \`| span\_id=\<\<spanid\>\> ...\`.
+`TraceID` filters like `| json | traceid=<<traceId>> ...` and `|= <<traceId>> ...` must be converted to `| trace_id=<<traceId>> ...` when `<<traceId>>` and <<spanId>> are th values you search for.  
+Similarly, `SpanID` filters like `| json | spanid=<<spanid>> ...` and `|=<<spanid>> ...` must be converted to `| span_id=<<spanid>> ...`.
 
 Example:
 
@@ -157,21 +157,21 @@ AFTER
 {service_namespace="ecommerce", service_name="frontend"} | deployment_environment=~".*" | trace_id="00960a472ea5b87954ca07902d66f914"...
 ```
 
-#### From \`line\_format \`{{.body}}\` \`  to  \`line\_format \`{{\_\_line\_\_}}\` \` {#from-`line_format-`{{.body}}`-`-to-`line_format-`{{__line__}}`-`}
+#### From `line_format `{{.body}}` to `line_format `{{__line__}}`
 
-The \`{{.body}}\` element of the JSON payload that used to hold the OTel log message body is now the message of the Loki log line and should be referenced as \`{{\_\_line\_\_}}\` in \`line\_format\` calls.
+The `{{.body}}` element of the JSON payload that used to hold the OTel log message body is now the message of the Loki log line and should be referenced as `{{__line__}}` in `line_format` calls.
 
-#### Using \`keep \_\_line\_\_\` in direct LogQL queries to prevent stream splits {#using-`keep-__line__`-in-direct-logql-queries-to-prevent-stream-splits}
+#### Using `keep __line__` in direct LogQL queries to prevent stream splits
 
 TODO
 
-### Grafana changes {#grafana-changes}
+### Grafana changes
 
-#### Loki data source Trace 2 Logs {#loki-data-source-trace-2-logs}
+#### Loki data source Trace 2 Logs
 
-Explain [Loki Data Source: default "Trace to logs on trace ID" cfg broken with the new Loki OTel logs format \#90335](https://github.com/grafana/grafana/issues/90335)
+TODO Explain [Loki Data Source: default "Trace to logs on trace ID" cfg broken with the new Loki OTel logs format \#90335](https://github.com/grafana/grafana/issues/90335)
 
-## See Also {#see-also}
+### See Also
 
 [https://grafana.com/docs/loki/latest/send-data/otel/](https://grafana.com/docs/loki/latest/send-data/otel/) 
 
