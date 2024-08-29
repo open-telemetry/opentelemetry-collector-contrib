@@ -6,16 +6,20 @@ package huaweicloudcesreceiver // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/config"
 	ces "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/model"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/region"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -23,15 +27,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver/internal"
 )
 
+const (
+	// See https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-errorcode.html
+	requestThrottledErrMsg = "APIGW.0308"
+)
+
 type cesReceiver struct {
 	logger *zap.Logger
 	client internal.CesClient
 	cancel context.CancelFunc
 
-	host             component.Host
-	nextConsumer     consumer.Metrics
-	lastUsedFinishTs time.Time
-	config           *Config
+	host         component.Host
+	nextConsumer consumer.Metrics
+	lastSeenTs   map[string]time.Time
+	config       *Config
+	shutdownChan chan struct{}
 }
 
 func newHuaweiCloudCesReceiver(settings receiver.Settings, cfg *Config, next consumer.Metrics) *cesReceiver {
@@ -39,6 +49,8 @@ func newHuaweiCloudCesReceiver(settings receiver.Settings, cfg *Config, next con
 		logger:       settings.Logger,
 		config:       cfg,
 		nextConsumer: next,
+		lastSeenTs:   make(map[string]time.Time),
+		shutdownChan: make(chan struct{}, 1),
 	}
 	return rcvr
 }
@@ -130,76 +142,136 @@ func (rcvr *cesReceiver) pollMetricsAndConsume(ctx context.Context) error {
 	if rcvr.client == nil {
 		return errors.New("invalid client")
 	}
-	metricDefinitions, err := rcvr.listMetricDefinitions()
+	metricDefinitions, err := rcvr.listMetricDefinitions(ctx)
 	if err != nil {
 		return err
 	}
-	cesMetrics, err := rcvr.listDataPoints(metricDefinitions)
-	if err != nil {
-		rcvr.logger.Error(err.Error())
-		return err
-	}
-	metrics := internal.ConvertCESMetricsToOTLP(rcvr.config.ProjectID, rcvr.config.RegionName, rcvr.config.Filter, cesMetrics)
-	if err := rcvr.nextConsumer.ConsumeMetrics(ctx, metrics); err != nil {
+	metrics := rcvr.listDataPoints(ctx, metricDefinitions)
+	otpMetrics := internal.ConvertCESMetricsToOTLP(rcvr.config.ProjectID, rcvr.config.RegionName, rcvr.config.Filter, metrics)
+	if err := rcvr.nextConsumer.ConsumeMetrics(ctx, otpMetrics); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (rcvr *cesReceiver) listMetricDefinitions() ([]model.MetricInfoList, error) {
-	response, err := rcvr.client.ListMetrics(&model.ListMetricsRequest{})
+func (rcvr *cesReceiver) listMetricDefinitions(ctx context.Context) ([]model.MetricInfoList, error) {
+	response, err := internal.MakeAPICallWithRetry(
+		ctx,
+		rcvr.shutdownChan,
+		rcvr.logger,
+		func() (*model.ListMetricsResponse, error) {
+			return rcvr.client.ListMetrics(&model.ListMetricsRequest{})
+		},
+		func(err error) bool { return strings.Contains(err.Error(), requestThrottledErrMsg) },
+		newExponentialBackOff(&rcvr.config.BackOffConfig),
+	)
 	if err != nil {
 		return []model.MetricInfoList{}, err
 	}
-	if response.Metrics == nil || len((*response.Metrics)) == 0 {
-		return []model.MetricInfoList{}, errors.New("empty list of metric definitions")
+	if response == nil || response.Metrics == nil || len((*response.Metrics)) == 0 {
+		return []model.MetricInfoList{}, errors.New("unexpected empty list of metric definitions")
 	}
 
 	return *response.Metrics, nil
 }
 
-func convertMetricInfoListArrayToMetricInfoArray(infoListArray []model.MetricInfoList) []model.MetricInfo {
-	infoArray := make([]model.MetricInfo, len(infoListArray))
-	for i, infoList := range infoListArray {
-		infoArray[i] = model.MetricInfo{
-			Namespace:  infoList.Namespace,
-			MetricName: infoList.MetricName,
-			Dimensions: infoList.Dimensions,
-		}
-	}
-	return infoArray
-}
-
-func (rcvr *cesReceiver) listDataPoints(metricDefinitions []model.MetricInfoList) ([]model.BatchMetricData, error) {
-	// TODO: Handle delayed metrics. CES accepts metrics with up to a 30-minute delay.
-	// If the request is based on the current time ('now'), it may miss metrics delayed by a minute or more,
-	// as the next request would exclude them. Consider adding a delay configuration to account for this.
+// listDataPoints retrieves data points for a list of metric definitions.
+// The function performs the following operations:
+//  1. Generates a unique key for each metric definition (at least one dimenstion is required) and checks for duplicates.
+//  2. Determines the time range (from-to) for fetching the metric data points, using the current timestamp
+//     and the last-seen timestamp for each metric.
+//  3. Fetches data points for each metric definition.
+//  4. Updates the last-seen timestamp for each metric based on the most recent data point timestamp.
+//  5. Returns a map of metric keys to their corresponding MetricData, containing all fetched data points.
+//
+// Parameters:
+//   - ctx: Context for controlling cancellation and deadlines.
+//   - metricDefinitions: A slice of MetricInfoList containing the definitions of metrics to be fetched.
+//
+// Returns:
+//   - A map where each key is a unique metric identifier and each value is the associated MetricData.
+func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions []model.MetricInfoList) map[string]internal.MetricData {
 	// TODO: Implement deduplication: There may be a need for deduplication, possibly using a Processor to ensure unique metrics are processed.
 	to := time.Now()
-	var from time.Time
-	if rcvr.lastUsedFinishTs.IsZero() {
-		from = to.Add(-1 * rcvr.config.CollectionInterval)
-	} else {
-		from = rcvr.lastUsedFinishTs
-	}
-	rcvr.lastUsedFinishTs = to
+	metrics := make(map[string]internal.MetricData)
+	for _, metricDefinition := range metricDefinitions {
+		if len(metricDefinition.Dimensions) == 0 {
+			rcvr.logger.Warn("metric has 0 dimensions. skipping it", zap.String("metricName", metricDefinition.MetricName))
+			continue
+		}
+		key := internal.GetMetricKey(metricDefinition)
+		if _, ok := metrics[key]; ok {
+			rcvr.logger.Warn("metric key found on multiple metric definitions", zap.String("key", key))
+			continue
+		}
+		from, ok := rcvr.lastSeenTs[key]
+		if !ok {
+			from = to.Add(-1 * rcvr.config.CollectionInterval)
+		}
+		resp, dpErr := rcvr.listDataPointsForMetric(ctx, from, to, metricDefinition)
+		if dpErr != nil {
+			rcvr.logger.Warn(fmt.Sprintf("unable to get datapoints for metric name %+v", metricDefinition), zap.Error(dpErr))
+		}
+		var datapoints []model.Datapoint
+		if resp != nil && resp.Datapoints != nil {
+			datapoints = *resp.Datapoints
 
-	response, err := rcvr.client.BatchListMetricData(&model.BatchListMetricDataRequest{
-		Body: &model.BatchListMetricDataRequestBody{
-			Metrics: convertMetricInfoListArrayToMetricInfoArray(metricDefinitions),
-			Period:  strconv.Itoa(rcvr.config.Period),
-			Filter:  rcvr.config.Filter,
-			From:    from.UnixMilli(),
-			To:      to.UnixMilli(),
+			var maxdpTs int64
+			for _, dp := range datapoints {
+				if dp.Timestamp > maxdpTs {
+					maxdpTs = dp.Timestamp
+				}
+			}
+			if maxdpTs > rcvr.lastSeenTs[key].UnixMilli() {
+				rcvr.lastSeenTs[key] = time.UnixMilli(maxdpTs)
+			}
+
+		}
+		metrics[key] = internal.MetricData{
+			MetricName: metricDefinition.MetricName,
+			Dimensions: metricDefinition.Dimensions,
+			Namespace:  metricDefinition.Namespace,
+			Unit:       metricDefinition.Unit,
+			Datapoints: datapoints,
+		}
+	}
+	return metrics
+}
+
+func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to time.Time, infoList model.MetricInfoList) (*model.ShowMetricDataResponse, error) {
+	return internal.MakeAPICallWithRetry(
+		ctx,
+		rcvr.shutdownChan,
+		rcvr.logger,
+		func() (*model.ShowMetricDataResponse, error) {
+			return rcvr.client.ShowMetricData(&model.ShowMetricDataRequest{
+				Namespace:  infoList.Namespace,
+				MetricName: infoList.MetricName,
+				Dim0:       infoList.Dimensions[0].Name + "," + infoList.Dimensions[0].Value,
+				Dim1:       internal.GetDimension(infoList.Dimensions, 1),
+				Dim2:       internal.GetDimension(infoList.Dimensions, 2),
+				Dim3:       internal.GetDimension(infoList.Dimensions, 3),
+				Period:     rcvr.config.Period,
+				Filter:     validFilters[rcvr.config.Filter],
+				From:       from.UnixMilli(),
+				To:         to.UnixMilli(),
+			})
 		},
-	})
-	if err != nil {
-		return []model.BatchMetricData{}, err
+		func(err error) bool { return strings.Contains(err.Error(), requestThrottledErrMsg) },
+		newExponentialBackOff(&rcvr.config.BackOffConfig),
+	)
+}
+
+func newExponentialBackOff(backOffConfig *configretry.BackOffConfig) *backoff.ExponentialBackOff {
+	return &backoff.ExponentialBackOff{
+		InitialInterval:     backOffConfig.InitialInterval,
+		RandomizationFactor: backOffConfig.RandomizationFactor,
+		Multiplier:          backOffConfig.Multiplier,
+		MaxInterval:         backOffConfig.MaxInterval,
+		MaxElapsedTime:      backOffConfig.MaxElapsedTime,
+		Stop:                backoff.Stop,
+		Clock:               backoff.SystemClock,
 	}
-	if response.Metrics == nil || len(*response.Metrics) == 0 {
-		return []model.BatchMetricData{}, errors.New("empty list of metric data")
-	}
-	return *response.Metrics, nil
 }
 
 func createHTTPConfig(cfg HuaweiSessionConfig) (*config.HttpConfig, error) {
@@ -239,5 +311,7 @@ func (rcvr *cesReceiver) Shutdown(_ context.Context) error {
 	if rcvr.cancel != nil {
 		rcvr.cancel()
 	}
+	rcvr.shutdownChan <- struct{}{}
+	close(rcvr.shutdownChan)
 	return nil
 }

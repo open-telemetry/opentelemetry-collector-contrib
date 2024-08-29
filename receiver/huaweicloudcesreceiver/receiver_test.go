@@ -13,13 +13,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver/internal/mocks"
-
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver/internal/mocks"
 )
 
 func stringPtr(s string) *string {
@@ -62,9 +62,10 @@ func TestListMetricDefinitionsSuccess(t *testing.T) {
 
 	receiver := &cesReceiver{
 		client: mockCes,
+		config: createDefaultConfig().(*Config),
 	}
 
-	metrics, err := receiver.listMetricDefinitions()
+	metrics, err := receiver.listMetricDefinitions(context.Background())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, metrics)
@@ -81,14 +82,81 @@ func TestListMetricDefinitionsFailure(t *testing.T) {
 	mockCes.On("ListMetrics", mock.Anything).Return(nil, errors.New("failed to list metrics"))
 	receiver := &cesReceiver{
 		client: mockCes,
+		config: createDefaultConfig().(*Config),
 	}
 
-	metrics, err := receiver.listMetricDefinitions()
+	metrics, err := receiver.listMetricDefinitions(context.Background())
 
 	assert.Error(t, err)
 	assert.Len(t, metrics, 0)
 	assert.Equal(t, "failed to list metrics", err.Error())
 	mockCes.AssertExpectations(t)
+}
+
+func TestListDataPointsForMetricBackOffWIthDefaultConfig(t *testing.T) {
+	mockCes := mocks.NewCesClient(t)
+	next := new(consumertest.MetricsSink)
+	receiver := newHuaweiCloudCesReceiver(receivertest.NewNopSettings(), createDefaultConfig().(*Config), next)
+	receiver.client = mockCes
+
+	mockCes.On("ShowMetricData", mock.Anything).Return(nil, errors.New(requestThrottledErrMsg)).Times(3)
+	mockCes.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
+		MetricName: stringPtr("cpu_util"),
+		Datapoints: &[]model.Datapoint{
+			{
+				Average:   float64Ptr(45.67),
+				Timestamp: 1556625610000,
+			},
+			{
+				Average:   float64Ptr(89.01),
+				Timestamp: 1556625715000,
+			},
+		},
+	}, nil)
+
+	resp, err := receiver.listDataPointsForMetric(context.Background(), time.Now().Add(10*time.Minute), time.Now(), model.MetricInfoList{
+		Namespace:  "SYS.ECS",
+		MetricName: "cpu_util",
+		Dimensions: []model.MetricsDimension{
+			{
+				Name:  "instance_id",
+				Value: "12345",
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	assert.Len(t, *resp.Datapoints, 2)
+}
+
+func TestListDataPointsForMetricBackOffFails(t *testing.T) {
+	mockCes := mocks.NewCesClient(t)
+	next := new(consumertest.MetricsSink)
+	receiver := newHuaweiCloudCesReceiver(receivertest.NewNopSettings(), &Config{BackOffConfig: configretry.BackOffConfig{
+		Enabled:             true,
+		InitialInterval:     100 * time.Millisecond,
+		MaxInterval:         800 * time.Millisecond,
+		MaxElapsedTime:      1 * time.Second,
+		RandomizationFactor: 0,
+		Multiplier:          2,
+	}}, next)
+	receiver.client = mockCes
+
+	mockCes.On("ShowMetricData", mock.Anything).Return(nil, errors.New(requestThrottledErrMsg)).Times(4)
+
+	resp, err := receiver.listDataPointsForMetric(context.Background(), time.Now().Add(10*time.Minute), time.Now(), model.MetricInfoList{
+		Namespace:  "SYS.ECS",
+		MetricName: "cpu_util",
+		Dimensions: []model.MetricsDimension{
+			{
+				Name:  "instance_id",
+				Value: "12345",
+			},
+		},
+	})
+
+	require.ErrorContains(t, err, requestThrottledErrMsg)
+	assert.Nil(t, resp)
 }
 
 func TestPollMetricsAndConsumeSuccess(t *testing.T) {
@@ -112,28 +180,16 @@ func TestPollMetricsAndConsumeSuccess(t *testing.T) {
 		},
 	}, nil)
 
-	mockCes.On("BatchListMetricData", mock.Anything).Return(&model.BatchListMetricDataResponse{
-		Metrics: &[]model.BatchMetricData{
+	mockCes.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
+		MetricName: stringPtr("cpu_util"),
+		Datapoints: &[]model.Datapoint{
 			{
-				Namespace:  stringPtr("SYS.ECS"),
-				MetricName: "cpu_util",
-				Dimensions: &[]model.MetricsDimension{
-					{
-						Name:  "instance_id",
-						Value: "faea5b75-e390-4e2b-8733-9226a9026070",
-					},
-				},
-				Datapoints: []model.DatapointForBatchMetric{
-					{
-						Average:   float64Ptr(45.67),
-						Timestamp: 1556625610000,
-					},
-					{
-						Average:   float64Ptr(89.01),
-						Timestamp: 1556625715000,
-					},
-				},
-				Unit: stringPtr("%"),
+				Average:   float64Ptr(45.67),
+				Timestamp: 1556625610000,
+			},
+			{
+				Average:   float64Ptr(89.01),
+				Timestamp: 1556625715000,
 			},
 		},
 	}, nil)
@@ -170,24 +226,12 @@ func TestStartReadingMetrics(t *testing.T) {
 					},
 				}, nil)
 
-				m.On("BatchListMetricData", mock.Anything).Return(&model.BatchListMetricDataResponse{
-					Metrics: &[]model.BatchMetricData{
+				m.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
+					MetricName: stringPtr("cpu_util"),
+					Datapoints: &[]model.Datapoint{
 						{
-							Namespace:  stringPtr("SYS.ECS"),
-							MetricName: "cpu_util",
-							Dimensions: &[]model.MetricsDimension{
-								{
-									Name:  "instance_id",
-									Value: "faea5b75-e390-4e2b-8733-9226a9026070",
-								},
-							},
-							Datapoints: []model.DatapointForBatchMetric{
-								{
-									Average:   float64Ptr(45.67),
-									Timestamp: 1556625610000,
-								},
-							},
-							Unit: stringPtr("%"),
+							Average:   float64Ptr(45.67),
+							Timestamp: 1556625610000,
 						},
 					},
 				}, nil)
@@ -220,6 +264,7 @@ func TestStartReadingMetrics(t *testing.T) {
 				client:       mockCes,
 				logger:       logger,
 				nextConsumer: next,
+				lastSeenTs:   make(map[string]time.Time),
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
