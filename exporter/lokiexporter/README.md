@@ -184,9 +184,24 @@ AFTER
 
 ### Grafana changes
 
-#### Loki data source Trace 2 Logs
+#### Tempo data source: Trace 2 Logs
 
-TODO Explain [Loki Data Source: default "Trace to logs on trace ID" cfg broken with the new Loki OTel logs format \#90335](https://github.com/grafana/grafana/issues/90335)
+To enable the "trace to logs" navigation from Tempo to Loki, navigate to the Grafana Tempo data source configuration screen, in the "Trace to logs" section, select "use custom query" and specify the query:
+
+```
+{service_name="${__span.tags["service.name"]}"} | trace_id="${__span.traceId}"
+```
+
+
+#### Loki data source: Log 2 Trace
+
+To enable the "logs to trace" navigation from Loki to Tempo, navigate to the Grafana Loki data source configuration screen, in the "Derived fields" section, update or create a derived field with:
+* Name: `Trace ID`
+* Type: `Label` (this `Label` name is missleading because it also supports Loki message metadata)
+* Label: `trace_id`
+* Internal link: activted
+* Select the Tempo data source on which "trace to logs" is configured
+
 
 ### See Also
 
