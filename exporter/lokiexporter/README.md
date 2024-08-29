@@ -20,11 +20,10 @@ This component is **deprecated**: Loki now supports native [OTLP ingestion](http
 
 ### Benefits of the new Loki OpenTelemetry log format
 
-* 
-* Simplified client configuration  
-* Simplified querying with better support for attributes (no more json)
+The new format for OpenTelemetry logs introduced in Loki V3 brings the following benefits:
 
-TODO
+* Native support for the structure of OpenTelemetry logs enabling simpler querying (no more JSON parsing),
+* Simplified client configuration to send OpenTelemetry data using the standard OTLP protocol.
 
 ### Loki log message format changes for OpenTelemetry logs
 
@@ -37,12 +36,12 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 | [`TraceId`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceid) | `traceid`  field of the Loki JSON log message | `metadata[trace_id]` |
 | [`SpanId`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-spanid) | `spanid` field of the Loki JSON log message | `metadata[span_id]` |
 | [`TraceFlags`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceflags) | Not available | `metadata[flags]` |
-| [`SeverityText`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext) |  `severity` field of the JSON log message (eg `Information`) and `level` label (eg `ERROR`, `INFO`...), the `detected_level` label is also available | `metadata[severity_text]`,  the `detected_level` label is also available |
+| [`SeverityText`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext) |  `severity` field of the JSON log message (e.g. `Information`) and `level` label (e.g. `ERROR`, `INFO`...), the `detected_level` label is also available | `metadata[severity_text]`,  the `detected_level` label is also available |
 | [`SeverityNumber`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber) | Not available | `metadata[severity_number]` |
 | [`Body`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-body) | `body`  field of the Loki JSON log message | The Loki log message. `__line__`in LogQL functions (e.g. `line_format`)|
 | [`InstrumentationScope`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-instrumentationscope) | `instrumentation_scope_name` field of the JSON log message | `metadata[scope_name]` |
 | [`Attributes`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes) | JSON fields of the Loki log message | `metadata[xyz]` Where `xyz` is the `_` version of the OTel attribute name (e.g. `thread_name` Loki metadata for the `thread.name` OpenTelemetry attribute)|
-| [`Resource`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-resource) | `service.name`, `service.namespace`, and `service.instance.id` are promoted as the following labels: `job=[${service.namespace}/]${service.name}`, instance=${service.instance.id}, exporter="OTLP"`.  Other resource attributes are stored as JSON fields of the Loki log message with the prefix `resources_` (eg `resources_k8s_namespace_name`) | Default list of resource attributes promoted as Loki labels: `cloud.availability_zone`, `cloud.region`, `container.name`, `deployment.environment`, `k8s.cluster.name`, `k8s.container.name`, `k8s.cronjob.name`, `k8s.daemonset.name`, `k8s.deployment.name`, `k8s.job.name`, `k8s.namespace.name`, `k8s.pod.name`, `k8s.replicaset.name` `k8s.statefulset.name`, `service.instance.id`, `service.name`, `service.namespace`. <br/>Other resource attributes are by default promoted as Loki message metadata.<br/> ℹ️ The list of promoted resource attributes is configurable using Loki’s distributor config parameter `default_resource_attributes_as_index_labels` when using self managed Loki ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) or opening a support request when using Grafana Cloud |
+| [`Resource`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-resource) | `service.name`, `service.namespace`, and `service.instance.id` are promoted as the following labels: `job=[${service.namespace}/]${service.name}`, instance=${service.instance.id}, exporter="OTLP"`.  Other resource attributes are stored as JSON fields of the Loki log message with the prefix `resources_` (e.g. `resources_k8s_namespace_name`) | Default list of resource attributes promoted as Loki labels: `cloud.availability_zone`, `cloud.region`, `container.name`, `deployment.environment`, `k8s.cluster.name`, `k8s.container.name`, `k8s.cronjob.name`, `k8s.daemonset.name`, `k8s.deployment.name`, `k8s.job.name`, `k8s.namespace.name`, `k8s.pod.name`, `k8s.replicaset.name` `k8s.statefulset.name`, `service.instance.id`, `service.name`, `service.namespace`. <br/>Other resource attributes are by default promoted as Loki message metadata.<br/> ℹ️ The list of promoted resource attributes is configurable using Loki’s distributor config parameter `default_resource_attributes_as_index_labels` when using self managed Loki ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) or opening a support request when using Grafana Cloud |
 
 ℹ️ Additional conversion rules from OpenTelemetry Logs to Loki 
 
@@ -201,13 +200,13 @@ To enable the "logs to trace" navigation from Loki to Tempo, navigate to the Gra
 * Name: `Trace ID`
 * Type: `Label` (this `Label` name is missleading because it also supports Loki message metadata)
 * Label: `trace_id`
-* Internal link: activted
+* Internal link: activated
 * Select the Tempo data source on which "trace to logs" is configured
 
 
 ### See Also
 
-[https://grafana.com/docs/loki/latest/send-data/otel/](https://grafana.com/docs/loki/latest/send-data/otel/) 
+* [Loki documentation / Ingesting OpenTelemetry logs](https://grafana.com/docs/loki/latest/send-data/otel/) 
 
 <hr/>
 <hr/>
