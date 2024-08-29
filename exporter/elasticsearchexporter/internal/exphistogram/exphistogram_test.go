@@ -86,6 +86,17 @@ func TestToTDigest(t *testing.T) {
 			expectedValues:  []float64{-1.5, -0.75, 0, 0.75, 1.5},
 		},
 		{
+			name:            "scale=0, different offsets",
+			scale:           0,
+			zeroCount:       1,
+			positiveOffset:  -1,
+			positiveBuckets: []uint64{1, 1},
+			negativeOffset:  1,
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			expectedValues:  []float64{-6, -3, 0, 0.75, 1.5},
+		},
+		{
 			name:            "scale=-1",
 			scale:           -1,
 			zeroCount:       1,
@@ -93,6 +104,15 @@ func TestToTDigest(t *testing.T) {
 			negativeBuckets: []uint64{1, 1},
 			expectedCounts:  []int64{1, 1, 1, 1, 1},
 			expectedValues:  []float64{-10, -2.5, 0, 2.5, 10},
+		},
+		{
+			name:            "scale=1",
+			scale:           1,
+			zeroCount:       1,
+			positiveBuckets: []uint64{1, 1},
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			expectedValues:  []float64{-1.7071067811865475, -1.2071067811865475, 0, 1.2071067811865475, 1.7071067811865475},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
