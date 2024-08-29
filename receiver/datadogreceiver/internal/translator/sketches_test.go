@@ -521,6 +521,46 @@ func TestMapSketchBucketsToHistogramBuckets(t *testing.T) {
 			expectedZeroCount:       0,
 		},
 		{
+			name:                    "Zero bucket only",
+			sketchKeys:              []int32{0},
+			sketchCounts:            []uint32{100},
+			expectedNegativeBuckets: map[int]uint64{},
+			expectedPositiveBuckets: map[int]uint64{},
+			expectedZeroCount:       100,
+		},
+		{
+			name:                    "Single positive bucket covered by single exponential bucket",
+			sketchKeys:              []int32{1338}, // Key-offset=0, bucket [1, 1.015625)
+			sketchCounts:            []uint32{100},
+			expectedNegativeBuckets: map[int]uint64{},
+			expectedPositiveBuckets: map[int]uint64{0: 100},
+			expectedZeroCount:       0, // At zero offset, bucket (1, 1.0219]
+		},
+		{
+			name:                    "Single positive bucket covered by multiple exponential buckets",
+			sketchKeys:              []int32{1339}, // Key-offset=1, bucket [1.015625, 1.031494140625)
+			sketchCounts:            []uint32{100},
+			expectedNegativeBuckets: map[int]uint64{},
+			expectedPositiveBuckets: map[int]uint64{0: 39, 1: 61}, // At zero offset, buckets (1, 1.0219] and (1.0219, 1.044]
+			expectedZeroCount:       0,
+		},
+		{
+			name:                    "Single negative bucket covered by single exponential bucket",
+			sketchKeys:              []int32{-1338}, // (-Key)-offset=0, bucket (-1.015625, -1]
+			sketchCounts:            []uint32{100},
+			expectedNegativeBuckets: map[int]uint64{0: 100}, // At zero offset, bucket (-1.0219, -1]
+			expectedPositiveBuckets: map[int]uint64{},
+			expectedZeroCount:       0,
+		},
+		{
+			name:                    "Lowest possible positive bucket",
+			sketchKeys:              []int32{1}, // Key-offset=-1337, bucket [9.941854089121418e-10, 1.0097195559263958e-09)
+			sketchCounts:            []uint32{100},
+			expectedNegativeBuckets: map[int]uint64{},
+			expectedPositiveBuckets: map[int]uint64{-957: 100}, // At zero offset, bucket (9.938519454345803e-10, 1.0156144692239443e-09]
+			expectedZeroCount:       0,
+		},
+		{
 			name:                    "Only positive buckets and no zero bucket",
 			sketchKeys:              []int32{1338, 1345, 1383, 1409, 1427, 1442, 1454, 1464},
 			sketchCounts:            []uint32{152, 75, 231, 97, 55, 101, 239, 66},
