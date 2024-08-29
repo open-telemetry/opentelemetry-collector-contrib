@@ -19,21 +19,9 @@ resourceMetrics:
             gauge:
               aggregationTemporality: 2
               dataPoints:
-                - timeUnixNano: 50
-                  asDouble: 345
-                  attributes:
-                    - key: aaa
-                      value:
-                        stringValue: bbb
-                - timeUnixNano: 20
-                  asDouble: 258
-                  attributes:
-                    - key: aaa
-                      value:
-                        stringValue: bbb
                 - timeUnixNano: 80
                   asDouble: 178
                   attributes:
                     - key: aaa
                       value:
-                        stringValue: bbb
+                        stringValue: bbb                      
