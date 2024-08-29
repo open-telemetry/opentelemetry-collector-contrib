@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
@@ -51,7 +52,7 @@ type connectorImp struct {
 	metricsConsumer consumer.Metrics
 
 	// Additional dimensions to add to metrics.
-	dimensions []pdatautil.Dimension
+	dimensions []utilattri.Dimension
 
 	resourceMetrics *cache.Cache[resourceKey, *resourceMetrics]
 
@@ -71,7 +72,7 @@ type connectorImp struct {
 	shutdownOnce sync.Once
 
 	// Event dimensions to add to the events metric.
-	eDimensions []pdatautil.Dimension
+	eDimensions []utilattri.Dimension
 
 	events EventsConfig
 
@@ -90,11 +91,11 @@ type resourceMetrics struct {
 	lastSeen time.Time
 }
 
-func newDimensions(cfgDims []Dimension) []pdatautil.Dimension {
+func newDimensions(cfgDims []Dimension) []utilattri.Dimension {
 	if len(cfgDims) == 0 {
 		return nil
 	}
-	dims := make([]pdatautil.Dimension, len(cfgDims))
+	dims := make([]utilattri.Dimension, len(cfgDims))
 	for i := range cfgDims {
 		dims[i].Name = cfgDims[i].Name
 		if cfgDims[i].Default != nil {
@@ -500,7 +501,7 @@ func contains(elements []string, value string) bool {
 	return false
 }
 
-func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []pdatautil.Dimension) pcommon.Map {
+func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []utilattri.Dimension) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(4 + len(dimensions))
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -516,7 +517,7 @@ func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, res
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	}
 	for _, d := range dimensions {
-		if v, ok := pdatautil.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			v.CopyTo(attr.PutEmpty(d.Name))
 		}
 	}
@@ -535,7 +536,7 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // or resource/event attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []pdatautil.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
 		concatDimensionValue(p.keyBuf, serviceName, false)
@@ -551,7 +552,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	}
 
 	for _, d := range optionalDims {
-		if v, ok := pdatautil.GetDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
 			concatDimensionValue(p.keyBuf, v.AsString(), true)
 		}
 	}
