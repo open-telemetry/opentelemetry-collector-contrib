@@ -31,9 +31,10 @@ resourceMetrics:
                     - key: aaa
                       value:
                         stringValue: bbb
+                # For interval processor point of view, only the last datapoint should be passed through.
                 - timeUnixNano: 80
                   asDouble: 178
                   attributes:
                     - key: aaa
                       value:
-                        stringValue: bbb
+                        stringValue: bbb                     

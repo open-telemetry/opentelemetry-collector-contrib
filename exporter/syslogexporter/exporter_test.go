@@ -168,7 +168,7 @@ func TestSyslogExportFail(t *testing.T) {
 	consumerErr := test.exp.pushLogsData(context.Background(), logs)
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)
-	assert.Equal(t, ok, true)
+	assert.True(t, ok)
 	consumerLogs := consumererror.Logs.Data(consumerErrorLogs)
 	rls := consumerLogs.ResourceLogs()
 	require.Equal(t, 1, rls.Len())

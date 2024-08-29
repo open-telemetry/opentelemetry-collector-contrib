@@ -15,24 +15,19 @@ resourceMetrics:
               value:
                 stringValue: bar
         metrics:
-          - name: test.gauge
-            gauge:
-              aggregationTemporality: 2
+          - name: summary.test
+            summary:
               dataPoints:
-                - timeUnixNano: 50
-                  asDouble: 345
-                  attributes:
-                    - key: aaa
-                      value:
-                        stringValue: bbb
-                - timeUnixNano: 20
-                  asDouble: 258
-                  attributes:
-                    - key: aaa
-                      value:
-                        stringValue: bbb
                 - timeUnixNano: 80
-                  asDouble: 178
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 80
+                    - quantile: 0.5
+                      value: 35
+                    - quantile: 0.75
+                      value: 90
+                    - quantile: 0.95
+                      value: 15
                   attributes:
                     - key: aaa
                       value:

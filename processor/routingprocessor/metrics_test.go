@@ -33,7 +33,7 @@ func TestMetricProcessorCapabilities(t *testing.T) {
 	require.NotNil(t, p)
 
 	// verify
-	assert.Equal(t, false, p.Capabilities().MutatesData)
+	assert.False(t, p.Capabilities().MutatesData)
 }
 
 func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {

@@ -37,7 +37,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			require.NoError(t, err)
 
 			caps := mtp.Capabilities()
-			assert.Equal(t, true, caps.MutatesData)
+			assert.True(t, caps.MutatesData)
 
 			// process
 			inMetrics := pmetric.NewMetrics()
