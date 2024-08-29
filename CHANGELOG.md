@@ -7,6 +7,112 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.108.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Added support for go1.23, bumped the minimum version to 1.22 (#34658)
+- `lokiexporter`: Update the scope name for telemetry produced by the lokiexporter from `otelcol/loki` to `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter` (#34612)
+- `azuretranslator`: The scope name has been updated from `otelcol/azureresourcelogs` and `otelcol/azureresourcetraces` to `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure` (#34712)
+- `datadogreceiver`: The scope name has been updated from `otelcol/datadogreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator` (#34711)
+- `splunkhecexporter`: The scope name has been updated from `otelcol/splunkhec` to `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter` (#34710)
+- `googlecloudmonitorreceiver`: The scope name has been updated from `otelcol/googlecloudmonitoringreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver` (#34709)
+- `elasticsearchexporter`: Update OTel mapping mode for logs and metrics; Remove trace_flags (#34472)
+  Update logs and metrics OTel mapping mode to always emit "scope" and zero int, but not emit empty strings for known fields. Breaking change to remove trace_flags from logs.
+- `elasticsearchexporter`: Change default retry.retry_on_status to [429] (#32584)
+  To retain the previous behavior, set retry.retry_on_status to `[429, 500, 502, 503, 504]`.
+- `gitproviderreceiver`: Update metric names and attributes to match the newest Semantic Conventions for VCS. (#34278)
+  Attribute Changes:
+    - `branch.name` is now `ref.name`
+    - Added a `ref.type` attribute
+    - `pull_request.state` is now `change.state`
+    - `git.vendor.name` is now `vcs.vendor.name`
+  Metric Changes:
+    - `git.repository.count` is now `vcs.repository.count`
+    - `git.repository.contributor.count` is now `vcs.repository.contributor.count`
+    - `git.repository.branch.count` is now `vcs.repository.ref.count`
+    - `git.repository.branch.time` is now `vcs.repository.ref.time
+    - `git.repository.branch.commit.aheadby.count` is now `vcs.repository.ref.revisions_ahead`
+    - `git.repository.branch.commit.behindby.count` is now `vcs.repository.ref.revisions_behind
+    - `git.repository.branch.line.addition.count` is now `vcs.repository.ref.lines_added`
+    - `git.repository.branch.line.deletion.count` is now `vcs.repository.ref.lines_deleted`
+    - `git.repository.pull_request.time_open` is now `vcs.change.time_open`
+    - `git.repository.pull_request.time_to_merge` is now `vcs.change.time_to_merge`
+    - `git.repository.pull_request.time_to_approval` is now `vcs.change.time_to_approval`
+    - `git.repository.pull_request.count` is now `vcs.change.count`
+  
+- `transformprocessor`: Promote processor.transform.ConvertBetweenSumAndGaugeMetricContext feature flag from alpha to beta (#34567)
+- `exporter/datadog`: The `logs::dump_payloads` config option is invalid when the Datadog Agent logs pipeline is enabled (now enabled by default). (#34420)
+  An error will be raised if `logs::dump_payloads` is set while the Datadog Agent logs pipeline is enabled. To avoid this error, remove the `logs::dump_payloads` config option or temporarily disable the `exporter.datadogexporter.UseLogsAgentExporter` feature gate.
+- `vcenterreceiver`: Several host performance metrics now return 1 data point per time series instead of 5. (#34708)
+  The 5 data points previously sent represented consecutive 20s sampling periods. Depending on the collection interval 
+  these could easily overlap. Sending just the latest of these data points is more in line with other performance metrics.
+  
+  This change also fixes an issue with the googlecloud exporter seeing these datapoints as duplicates.
+  
+  Following is the list of affected metrics which will now only report a single datapoint per set of unique attribute values.
+  - vcenter.host.cpu.reserved
+  - vcenter.host.disk.latency.avg
+  - vcenter.host.disk.latency.max
+  - vcenter.host.disk.throughput
+  - vcenter.host.network.packet.drop.rate
+  - vcenter.host.network.packet.error.rate
+  - vcenter.host.network.packet.rate
+  - vcenter.host.network.throughput
+  - vcenter.host.network.usage
+  
+
+### 🚀 New components 🚀
+
+- `exporter/doris`: Add a new component for exporting logs, traces and metrics to Doris (#33479)
+
+### 💡 Enhancements 💡
+
+- `geoipprocessor`: Add a context configuration option to specify the IP address attribute telemetry location. (#34036)
+- `awss3receiver`: Enhance the logging of the AWS S3 Receiver in normal operation to make it easier for user to debug what is happening. (#30750)
+- `datadogreceiver`: Implement '/info' endpoint (#34772)
+- `datadogreceiver`: Add sampling.priority attribute for Probabilistic Sampling Processor (#34267)
+- `datadogreceiver`: Implement '/stats' endpoint (#34790)
+- `datadogconnector`: Add a config `traces::bucket_interval` (#34554)
+  `traces::bucket_interval` specifies the time interval size of aggregation buckets that aggregate the Datadog trace metrics. It is also the time interval that Datadog trace metrics payloads are flushed to the pipeline. Default is 10s if unset.
+- `deltatocumulative`: Promote to `alpha` stability (#34747)
+  promotes the deltatocumulative processor to alpha stability, as most features are now implemented and ready for wider testing.
+- `deltatocumulative`: explicit-bounds histograms (#30705)
+  implements aggregation of explicit-bounds (traditional) histograms.
+- `elasticsearchexporter`: Add OTel mapping mode for metrics (#34248)
+- `elasticsearchexporter`: Add OTel mapping mode for traces (#34588, #34590)
+  Add OTel mapping mode support for traces, without span events.
+- `filelogreceiver`: If acquire_fs_lock is true, attempt to acquire a shared lock before reading a file. (#34801)
+  Unix only. If a lock cannot be acquired then the file will be ignored until the next poll cycle.
+- `solacereceiver`: Updated the format for generated metrics. Included a `receiver_name` attribute that identifies the Solace receiver that generated the metrics (#34541)
+- `geoipprocessor`: Move processor's stability to alpha. (#34737)
+- `prometheusreceiver`: Ensure Target Allocator's confighttp is used in the receiver's service discovery (#33370)
+- `datadogreceiver`: Include error when logging unmarshaling failures in Datadog receiver. (#34515)
+- `metricstransformprocessor`: Add scaling exponential histogram support (#29803)
+- `exporter/datadog`: Use Datadog Agent logs pipeline by default for exporting logs to Datadog. Upgrades `exporter.datadogexporter.UseLogsAgentExporter` feature flag to beta. (#34420)
+- `pkg/ottl`: Introduce `UserAgent` converter to parse UserAgent strings (#32434)
+
+### 🧰 Bug fixes 🧰
+
+- `tailsamplingprocessor`: Update the `policy` value in metrics dimension value to be unique across multiple tail sampling components with the same policy name. (#34192)
+  This change ensures that the `policy` value in the metrics exported by the tail sampling processor is unique across multiple tail sampling processors with the same policy name.
+- `datadogreceiver`: add feature discovery (#34718)
+- `datadogconnector`: Put back the `otelcol_` prefix for Datadog internal metrics on trace and APM stats exporting (#34807)
+  Recovers these metrics from an upstream breaking change. See https://github.com/open-telemetry/opentelemetry-collector/pull/9759 and https://github.com/open-telemetry/opentelemetry-collector/pull/10940.
+- `datadogexporter`: Put back the `otelcol_` prefix for Datadog internal metrics on trace and APM stats exporting (#34807)
+  Recovers these metrics from an upstream breaking change. See https://github.com/open-telemetry/opentelemetry-collector/pull/9759 and https://github.com/open-telemetry/opentelemetry-collector/pull/10940.
+- `awsfirehosereceiver`: Fix validation of requests with empty access key (#34847)
+- `connector/exceptionsconnector`: Fix dimensions configuration did not take effect for resource attributes (#34603)
+- `prometheusreceiver`: Group scraped metrics into resources created from `job` and `instance` label pairs (#34237)
+  The receiver will now create a resource for each distinct job/instance label combination.
+  In addition to the label/instance pairs detected from the scraped metrics, a resource representing the overall
+  scrape configuration will be created. This additional resource will contain the scrape metrics, such as the number of scraped metrics, the scrape duration, etc.
+  
+- `cmd/opampsupervisor`: Fix supervisor support for Windows. (#34570)
+- `tailsamplingprocessor`: Fix the behavior for numeric tag filters with `inverse_match` set to `true`. (#34296)
+- `pkg/stanza`: fix nil value conversion (#34672)
+- `k8sclusterreceiver`: Lower the log level of a message indicating a cache miss from WARN to DEBUG. (#34817)
+
 ## v0.107.0
 
 This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
