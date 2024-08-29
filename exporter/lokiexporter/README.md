@@ -38,7 +38,7 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 | [`TraceFlags`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceflags) | Not available | `metadata[flags]` |
 | [`SeverityText`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext) |  `severity` field of the JSON log message (eg `Information`) and `level` label (eg `ERROR`, `INFO`...), the `detected_level` label is also available | `metadata[severity_text]`,  the `detected_level` label is also available |
 | [`SeverityNumber`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber) | Not available | `metadata[severity_number]` |
-| [`Body`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-body) | `body`  field of the Loki JSON log message | The Loki log message. `__line__`in LogQL functions |
+| [`Body`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-body) | `body`  field of the Loki JSON log message | The Loki log message. `__line__`in LogQL functions (e.g. `line_format`)|
 | [`InstrumentationScope`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-instrumentationscope) | `instrumentation_scope_name` field of the JSON log message | `metadata[scope_name]` |
 | [`Attributes`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes) | JSON fields of the Loki log message | `metadata[xyz]` Where `xyz` is the `_` version of the OTel attribute name (e.g. `thread_name` Loki metadata for the `thread.name` OpenTelemetry attribute)|
 | [`Resource`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-resource) | `service.name`, `service.namespace`, and `service.instance.id` are promoted as the following labels: `job=[${service.namespace}/]${service.name}`, instance=${service.instance.id}, exporter="OTLP"`.  Other resource attributes are stored as JSON fields of the Loki log message with the prefix `resources_` (eg `resources_k8s_namespace_name`) | Default list of resource attributes promoted as Loki labels: `cloud.availability_zone`, `cloud.region`, `container.name`, `deployment.environment`, `k8s.cluster.name`, `k8s.container.name`, `k8s.cronjob.name`, `k8s.daemonset.name`, `k8s.deployment.name`, `k8s.job.name`, `k8s.namespace.name`, `k8s.pod.name`, `k8s.replicaset.name` `k8s.statefulset.name`, `service.instance.id`, `service.name`, `service.namespace`. <br/>Other resource attributes are by default promoted as Loki message metadata.<br/> ℹ️ The list of promoted resource attributes is configurable using Loki’s distributor config parameter `default_resource_attributes_as_index_labels` when using self managed Loki ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) or opening a support request when using Grafana Cloud |
@@ -157,13 +157,26 @@ AFTER
 {service_namespace="ecommerce", service_name="frontend"} | deployment_environment=~".*" | trace_id="00960a472ea5b87954ca07902d66f914"...
 ```
 
-#### From `line_format `{{.body}}` to `line_format `{{__line__}}`
+#### From `line_format {{.body}}` to `line_format {{__line__}}`
 
 The `{{.body}}` element of the JSON payload that used to hold the OTel log message body is now the message of the Loki log line and should be referenced as `{{__line__}}` in `line_format` calls.
 
+Example
+
+```
+AFTER
+{service_namespace="ecommerce", service_name="frontend"} | deployment_environment =~ `production` | line_format `[{{.detected_level}}] {{__line__}}`
+```
+
 #### Using `keep __line__` in direct LogQL queries to prevent stream splits
 
-TODO
+The number of logstreams return by LogQL queries made directly to Loki (without going through the Grafana GUI) may increase due to the distinct metadata label values and thus impact the sorting of the result as results are sorted per log stream.
+Use the `keep` function to limit the number of log streams return by LogQL queries and have a global doring of the returned  log entries
+
+```
+AFTER
+... | keep __line__, detected_level
+```
 
 ### Grafana changes
 
