@@ -210,13 +210,13 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 	if _, found = resource.Attributes().Get("k8s.pod.uid"); found {
 		if resourceUuid = kp.GetResourceUuidUsingPodMoid(ctx, resource); resourceUuid == "" {
 			if podname, found := resource.Attributes().Get("k8s.pod.name"); found {
-				kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("podname", podname))
+				kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("podname", podname.Str()))
 			}
 		}
 	} else if _, found = resource.Attributes().Get("k8s.node.name"); found {
 		if resourceUuid = kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid == "" {
 			if nodename, found := resource.Attributes().Get("k8s.node.name"); found {
-				kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("nodename", nodename))
+				kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("nodename", nodename.Str()))
 			}
 		}
 	} else {
