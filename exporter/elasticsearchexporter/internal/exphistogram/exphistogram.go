@@ -9,10 +9,18 @@ import (
 // LowerBoundary calculates the lower boundary given index and scale.
 // Adopted from https://opentelemetry.io/docs/specs/otel/metrics/data-model/#producer-expectations
 func LowerBoundary(index, scale int) float64 {
+	if scale <= 0 {
+		return LowerBoundaryNegativeScale(index, scale)
+	}
 	// Use this form in case the equation above computes +Inf
 	// as the lower boundary of a valid bucket.
 	inverseFactor := math.Ldexp(math.Ln2, -scale)
 	return 2.0 * math.Exp(float64(index-(1<<scale))*inverseFactor)
+}
+
+// LowerBoundaryNegativeScale calculates the lower boundary for scale <= 0.
+func LowerBoundaryNegativeScale(index, scale int) float64 {
+	return math.Ldexp(1, index<<-scale)
 }
 
 // MapToIndex gets bucket index from value and scale.
