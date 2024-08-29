@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
-
 	"github.com/jonboulle/clockwork"
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 const (

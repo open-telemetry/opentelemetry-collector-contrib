@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 func TestNewConnector(t *testing.T) {
@@ -38,7 +38,7 @@ func TestNewConnector(t *testing.T) {
 			},
 			wantDimensions: []pdatautil.Dimension{
 				{Name: "http.method", Value: &defaultMethodValue},
-				{"http.status_code", nil},
+				{Name: "http.status_code", Value: nil},
 			},
 		},
 	} {
