@@ -33,32 +33,34 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 | ----- | ----- | ----- |
 | [`Timestamp`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-timestamp) | `timestamp` | `timestamp` |
 | [`ObservedTimestamp`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-observedtimestamp) | Not available | `metadata[observed_timestamp]` |
-| [`TraceId`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceid)) | `traceid`  field of the Loki JSON log message | `metadata[trace_id]` |
-| [`SpanId`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-spanid)) | `spanid` field of the Loki JSON log message | `metadata[span_id]` |
-| [`TraceFlags`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceflags)) | Not available | `metadata[flags]` |
-| [`SeverityText`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext)) |  \`severity\` field of the JSON log message (eg `"Information") and `level` label (eg `ERROR`, `INFO`...), the `detected_level` label is also available | `metadata\[severity_text]`,  the `detected_level` label is also available |
+| [`TraceId`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceid) | `traceid`  field of the Loki JSON log message | `metadata[trace_id]` |
+| [`SpanId`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-spanid) | `spanid` field of the Loki JSON log message | `metadata[span_id]` |
+| [`TraceFlags`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-traceflags) | Not available | `metadata[flags]` |
+| [`SeverityText`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext) |  \`severity\` field of the JSON log message (eg `"Information") and `level` label (eg `ERROR`, `INFO`...), the `detected_level` label is also available | `metadata\[severity_text]`,  the `detected_level` label is also available |
 | [`SeverityNumber`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber) | Not available | `metadata[severity_number]` |
-| [`Body`]([url](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-body)) | `body`  field of the Loki JSON log message | The Loki log message. `__line__`in LogQL functions |
+| [`Body`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-body) | `body`  field of the Loki JSON log message | The Loki log message. `__line__`in LogQL functions |
 | [`InstrumentationScope`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-instrumentationscope) | `instrumentation_scope_name` field of the JSON log message | `metadata[scope_name]` |
 | [`Attributes`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes) | JSON fields of the Loki log message | `metadata[xyz]` Where `xyz` is the `_` version of the OTel attribute name (e.g. `thread_name` Loki metadata for the `thread.name` OpenTelemetry attribute)|
-| [`Resource`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-resource) | `service.name`, `service.namespace`, and `service.instance.id` are promoted as the following labels: `job=[${service.namespace}/]${service.name}`, instance=${service.instance.id}, exporter="OTLP"`.  Other resource attributes are stored as JSON fields of the Loki log message with the prefix `resources_` (eg `resources_k8s_namespace_name`) | Default list of resource attributes promoted as Loki labels: `cloud.availability_zone`, `cloud.region`, `container.name`, `deployment.environment`, `k8s.cluster.name`, `k8s.container.name`, `k8s.cronjob.name`, `k8s.daemonset.name`, `k8s.deployment.name`, `k8s.job.name`, `k8s.namespace.name`, `k8s.pod.name`, k8s.replicaset.name k8s.statefulset.name service.instance.id service.name service.namespace Other resource attributes are by default promoted as Loki message metadata ℹ️ The list of promoted resource attributes is configurable using Loki’s distributor config parameter default\_resource\_attributes\_as\_index\_labels ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) |
+| [`Resource`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-resource) | `service.name`, `service.namespace`, and `service.instance.id` are promoted as the following labels: `job=[${service.namespace}/]${service.name}`, instance=${service.instance.id}, exporter="OTLP"`.  Other resource attributes are stored as JSON fields of the Loki log message with the prefix `resources_` (eg `resources_k8s_namespace_name`) | Default list of resource attributes promoted as Loki labels: `cloud.availability_zone`, `cloud.region`, `container.name`, `deployment.environment`, `k8s.cluster.name`, `k8s.container.name`, `k8s.cronjob.name`, `k8s.daemonset.name`, `k8s.deployment.name`, `k8s.job.name`, `k8s.namespace.name`, `k8s.pod.name`, `k8s.replicaset.name` `k8s.statefulset.name`, `service.instance.id`, `service.name`, `service.namespace`. <br/>Other resource attributes are by default promoted as Loki message metadata.<br/> ℹ️ The list of promoted resource attributes is configurable using Loki’s distributor config parameter `default_resource_attributes_as_index_labels` when using self managed Loki ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) or opening a support request when using Grafana Cloud |
 
-ℹ️additional conversion rules from OpenTelemetry Logs to Loki 
+ℹ️ Additional conversion rules from OpenTelemetry Logs to Loki 
 
-* \`.\` in attributes and resource attributes are converted into \`\_\` as they are mapped as Loki labels or metadata,  
+* `.` in attributes and resource attributes are converted into \`\_\` as they are mapped as Loki labels or metadata,  
 * Otel attribute values with complex data types (i.e. arrays, nested structures) are converted into JSON strings
 
-## Migration instructions {#migration-instructions}
+### Migration instructions
 
-### Instrumentation: No changes {#instrumentation:-no-changes}
+### Instrumentation: No changes
 
-No changes in the instrumentation. OTel logs sources don’t have to be modified including workloads producing logs through OTel SDKs and OTel Collector File Log Receiver setups.
+No changes are needed in the instrumentation. OpenTelemetry logs sources don’t have to be modified including workloads producing logs through OTel SDKs and and OTel Collector File Log Receiver.
 
-### Collection: Replace the OpenTelemetry Collector Loki Exporter by the OTLP/HTTP Exporter {#collection:-replace-the-opentelemetry-collector-loki-exporter-by-the-otlp/http-exporter}
+### Collection: Replace the OpenTelemetry Collector Loki Exporter by the OTLP/HTTP Exporter
 
-Before
+OpenTelemetry logs should no longer be exporter to Loki using the OpenTelemetry Collector Loki Exporter and should be now sent to the Loki OTLP endpoint (or the Grafana Cloud OTLP endpoint when on Grafana Cloud) using the [OpenTelemetry Collector OTLP HTTP Exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlphttpexporter).
 
-```
+OpenTelemetry Collector configuration before migration
+
+```yaml
 extensions:
   basicauth/loki:
     client_auth:
@@ -80,9 +82,10 @@ service:
       exporters: [..., loki]
 ```
 
-After
+OpenTelemetry Collector configuration after migration
 
-```
+
+```yaml
 extensions:
   basicauth/loki:
     client_auth:
@@ -106,9 +109,9 @@ service:
 
 ```
 
-Endpoint and credentials details for Grafana Cloud users are available using the \`OpenTelemetry Collector\` connection tile.
+Endpoint and credentials details for Grafana Cloud users are available using the Grafana Cloud "OpenTelemetry Collector" connection tile.
 
-Promotion of OpenTelemetry attributes and resource attributes to Loki labels using the \`loki.attribute.labels\` and \`loki.resource.labels\` hints are replaced by a list of promoted attributes managed centrally in Loki.  
+The promotion of OpenTelemetry attributes and resource attributes to Loki labels using the `loki.attribute.labels` and `loki.resource.labels` hints are replaced by a list of promoted attributes managed centrally in Loki. 
 The default list of resource attributes promoted as labels (see above) should be sufficient for most use cases.  
 Changes can be made to this list using the Loki distributor configuration parameter default\_resource\_attributes\_as\_index\_labels ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) for self managed instances and opening a support ticket for Grafana Cloud.
 
