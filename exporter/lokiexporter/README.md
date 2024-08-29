@@ -51,22 +51,27 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 
 ### Migration instructions
 
-### Instrumentation: No changes to the instrumentation layer
+### Instrumentation migration: No changes to the instrumentation layer
 
 No changes are needed in the instrumentation layer. OpenTelemetry logs sources like OpenTelemetry SDKs or the OpenTelemetry Collector File Log Receiver don’t have to be modified.
 
-### Collection: Replace the OpenTelemetry Collector Loki Exporter by the OTLP/HTTP Exporter
+### Logs collection migration: Replace the OpenTelemetry Collector Loki Exporter by the OTLP/HTTP Exporter
 
 OpenTelemetry logs should no longer be exporter to Loki using the OpenTelemetry Collector Loki Exporter and should be now sent to the Loki OTLP endpoint (or the Grafana Cloud OTLP endpoint when on Grafana Cloud) using the [OpenTelemetry Collector OTLP HTTP Exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlphttpexporter).
+
 
 OpenTelemetry Collector configuration before migration
 
 ```yaml
+========================
+=   BEFORE MIGRATION   =
+========================
+
 extensions:
   basicauth/loki:
     client_auth:
-      username: username
-      password: password
+      username: <<username>>
+      password: <<password>>
 
 exporters:
   loki:
@@ -81,17 +86,17 @@ service:
       receivers: [...]
       processors: [...]
       exporters: [..., loki]
-```
-
-OpenTelemetry Collector configuration after migration
 
 
-```yaml
+========================
+=   AFTER MIGRATION    =
+========================
+
 extensions:
   basicauth/loki:
     client_auth:
-      username: username
-      password: password
+      username: <<username>>
+      password: <<password>>
 
 exporters:
   otlphttp/loki:
@@ -106,8 +111,6 @@ service:
       receivers: [...]
       processors: [...]
       exporters: [..., otlphttp/loki]
-
-
 ```
 
 * The OTLP HTTP endpoint URL and credentials details for Grafana Cloud users are available using the Grafana Cloud "OpenTelemetry Collector" connection tile.
@@ -115,7 +118,7 @@ service:
 * The default list of resource attributes promoted as labels (see above) should be sufficient for most use cases.  
 * ℹ️ Changes can be made to this list using the Loki distributor configuration parameter `default_resource_attributes_as_index_labels` ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) for self managed instances and opening a support ticket for Grafana Cloud.
 
-### LogQL query changes
+### LogQL queries migration
 
 #### From `job` and `instance` to `service_name`, `service_namespace`, and `service_instance_id`
 
@@ -182,7 +185,7 @@ AFTER
 ... | keep __line__, detected_level
 ```
 
-### Grafana changes
+### Grafana migration
 
 #### Tempo data source: Trace 2 Logs
 
@@ -191,7 +194,6 @@ To enable the "trace to logs" navigation from Tempo to Loki, navigate to the Gra
 ```
 {service_name="${__span.tags["service.name"]}"} | trace_id="${__span.traceId}"
 ```
-
 
 #### Loki data source: Log 2 Trace
 
@@ -207,8 +209,10 @@ To enable the "logs to trace" navigation from Loki to Tempo, navigate to the Gra
 
 [https://grafana.com/docs/loki/latest/send-data/otel/](https://grafana.com/docs/loki/latest/send-data/otel/) 
 
+<hr/>
+<hr/>
 
-## Getting Started
+## Getting Started with the deprecated OpenTelemetry Collector Loki Exporter
 
 The following settings are required:
 
