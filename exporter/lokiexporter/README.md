@@ -20,6 +20,7 @@ This component is **deprecated**: Loki now supports native [OTLP ingestion](http
 
 ### Benefits of the new Loki OpenTelemetry log format
 
+* 
 * Simplified client configuration  
 * Simplified querying with better support for attributes (no more json)
 
@@ -50,9 +51,9 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 
 ### Migration instructions
 
-### Instrumentation: No changes
+### Instrumentation: No changes to the instrumentation layer
 
-No changes are needed in the instrumentation. OpenTelemetry logs sources don’t have to be modified including workloads producing logs through OTel SDKs and and OTel Collector File Log Receiver.
+No changes are needed in the instrumentation layer. OpenTelemetry logs sources like OpenTelemetry SDKs or the OpenTelemetry Collector File Log Receiver don’t have to be modified.
 
 ### Collection: Replace the OpenTelemetry Collector Loki Exporter by the OTLP/HTTP Exporter
 
@@ -109,15 +110,14 @@ service:
 
 ```
 
-Endpoint and credentials details for Grafana Cloud users are available using the Grafana Cloud "OpenTelemetry Collector" connection tile.
-
-The promotion of OpenTelemetry attributes and resource attributes to Loki labels using the `loki.attribute.labels` and `loki.resource.labels` hints is replaced by the list of promoted attributes managed centrally in Loki. 
-The default list of resource attributes promoted as labels (see above) should be sufficient for most use cases.  
-ℹ️ Changes can be made to this list using the Loki distributor configuration parameter `default_resource_attributes_as_index_labels` ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) for self managed instances and opening a support ticket for Grafana Cloud.
+* The OTLP HTTP endpoint URL and credentials details for Grafana Cloud users are available using the Grafana Cloud "OpenTelemetry Collector" connection tile.
+* The promotion of OpenTelemetry attributes and resource attributes to Loki labels using the `loki.attribute.labels` and `loki.resource.labels` hints is replaced by the list of promoted attributes managed centrally in Loki. 
+* The default list of resource attributes promoted as labels (see above) should be sufficient for most use cases.  
+* ℹ️ Changes can be made to this list using the Loki distributor configuration parameter `default_resource_attributes_as_index_labels` ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) for self managed instances and opening a support ticket for Grafana Cloud.
 
 ### LogQL query changes
 
-#### From `job` and `instance` to `service_name`, `service_namespace`, and `service_instance_id` {#from-`job`-and-`instance`-to-`service_name`,-`service_namespace`,-and-`service_instance_id`}
+#### From `job` and `instance` to `service_name`, `service_namespace`, and `service_instance_id`
 
 The Loki labels `job` and `instance` are no longer generated and are replaced by the `service_name`, `service_namespace`, and `service_instance_id` labels.
 
@@ -125,43 +125,45 @@ Example:
 
 ```
 BEFORE
-{job="ecommerce/frontend", instance="1234567890"}
+{job="ecommerce/frontend", instance="instance-1234567890"}
 
 AFTER
-{service_name="frontend", service_namespace="ecommerce", service_instance_id="1234567890"}
+{service_name="frontend", service_namespace="ecommerce", service_instance_id="instance-1234567890"}
 ```
 
 #### From `| json | an_attribute=...` to `{an_attribute=...}` or `| an_attribute=...`
 
-OTel log attributes, resource attributes, and fields are no longer stored in the JSON message but as labels for promoted resource attributes (see list above) or as metadata.
+OTel log attributes, resource attributes, and fields are no longer stored in the JSON message but are stored as 
+* Loki message labels for promoted resource attributes (see list above),
+* Loki message metadata for other resource attributes, log attributes and log fields.
 
 LogQL statements `| json | an_attribute=...` must be converted to:
 
-* For promoted resource attributes: `{an_attribute=...}`  
-* For other resource attributes, log attributes, and fields: `| an_attribute=...`
+* Promoted resource attributes: `{an_attribute=...}`
+* For other resource attributes, log attributes, and log fields: `| an_attribute=...`
 
 #### From `| json | traceid=...` and `| json | spanid=...` to `| trace_id=...` and `| span_id=...`
 
-The log fields `SpanID` and `TraceId` where stored as JSON field `spanid` and `traceid`; they are now stored as metadata `span_id` and `trace_id`, LogQL queries must be changed accordingly.
+The log fields `SpanID` and `TraceId` where stored as JSON field `spanid` and `traceid`; they are now stored as `metadata[span_id]` and `metadata[trace_id]`, LogQL queries must be changed accordingly.
 
-`TraceID` filters like `| json | traceid=<<traceId>> ...` and `|= <<traceId>> ...` must be converted to `| trace_id=<<traceId>> ...` when `<<traceId>>` and <<spanId>> are th values you search for.  
+`TraceID` filters like `| json | traceid=<<traceId>> ...` and `|= <<traceId>> ...` must be converted to `| trace_id=<<traceId>> ...` where `<<traceId>>` and <<spanId>> are the values you search for.  
 Similarly, `SpanID` filters like `| json | spanid=<<spanid>> ...` and `|=<<spanid>> ...` must be converted to `| span_id=<<spanid>> ...`.
 
 Example:
 
 ```
 BEFORE
-{exporter="OTLP", job="ecommerce/frontend"} | json | resources_deployment_environment=~".*" |="00960a472ea5b87954ca07902d66f914" ...
+{exporter="OTLP", job="ecommerce/frontend"} | json | resources_deployment_environment="production" |= "00960a472ea5b87954ca07902d66f914" ...
 
 AFTER
-{service_namespace="ecommerce", service_name="frontend"} | deployment_environment=~".*" | trace_id="00960a472ea5b87954ca07902d66f914"...
+{service_namespace="ecommerce", service_name="frontend"} | deployment_environment="production" | trace_id="00960a472ea5b87954ca07902d66f914"...
 ```
 
 #### From `line_format {{.body}}` to `line_format {{__line__}}`
 
 The `{{.body}}` element of the JSON payload that used to hold the OTel log message body is now the message of the Loki log line and should be referenced as `{{__line__}}` in `line_format` calls.
 
-Example
+Example:
 
 ```
 AFTER
@@ -172,6 +174,8 @@ AFTER
 
 The number of logstreams return by LogQL queries made directly to Loki (without going through the Grafana GUI) may increase due to the distinct metadata label values and thus impact the sorting of the result as results are sorted per log stream.
 Use the `keep` function to limit the number of log streams return by LogQL queries and have a global doring of the returned  log entries
+
+Example:
 
 ```
 AFTER
