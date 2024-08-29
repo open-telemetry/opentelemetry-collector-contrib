@@ -19,10 +19,12 @@ func LowerBoundary(index, scale int) float64 {
 }
 
 // LowerBoundaryNegativeScale calculates the lower boundary for scale <= 0.
+// Adopted from https://opentelemetry.io/docs/specs/otel/metrics/data-model/#producer-expectations
 func LowerBoundaryNegativeScale(index, scale int) float64 {
 	return math.Ldexp(1, index<<-scale)
 }
 
+// ToTDigest converts an OTLP exponential histogram data point to T-Digest counts and mean centroid values.
 func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values []float64) {
 	scale := int(dp.Scale())
 
@@ -41,8 +43,8 @@ func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values
 
 	if zeroCount := dp.ZeroCount(); zeroCount != 0 {
 		counts = append(counts, int64(zeroCount))
-		// The midpoint is only non-zero when positive offset and negative offset are not the same,
-		// but the midpoint between negative and positive boundaries closest to zero will not be very meaningful anyway.
+		// The mean centroid is only non-zero when positive offset and negative offset are not the same,
+		// but the mean centroid between negative and positive boundaries closest to zero will not be very meaningful anyway.
 		// Using a zero here instead.
 		values = append(values, 0)
 	}
