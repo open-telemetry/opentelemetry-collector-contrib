@@ -75,7 +75,7 @@ func TestMetricsGrouping(t *testing.T) {
 				require.NoError(t, err)
 
 				caps := mtp.Capabilities()
-				assert.Equal(t, true, caps.MutatesData)
+				assert.True(t, caps.MutatesData)
 
 				input, err := golden.ReadMetrics(filepath.Join("testdata", "operation_group", test.name+"_in.yaml"))
 				require.NoError(t, err)
