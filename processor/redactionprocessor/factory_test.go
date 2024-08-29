@@ -24,5 +24,5 @@ func TestCreateTestProcessor(t *testing.T) {
 	tp, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
-	assert.Equal(t, true, tp.Capabilities().MutatesData)
+	assert.True(t, tp.Capabilities().MutatesData)
 }
