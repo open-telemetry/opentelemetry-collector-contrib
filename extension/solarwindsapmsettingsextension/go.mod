@@ -6,7 +6,7 @@ require (
 	github.com/solarwindscloud/apm-proto v1.0.7
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.1
-	go.opentelemetry.io/collector/confmap v1.14.1
+	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/extension v0.108.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -36,7 +36,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.14.1 // indirect
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect

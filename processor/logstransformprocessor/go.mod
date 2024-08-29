@@ -8,10 +8,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.108.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.1
-	go.opentelemetry.io/collector/confmap v1.14.1
+	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/consumer v0.108.1
 	go.opentelemetry.io/collector/extension v0.108.1
-	go.opentelemetry.io/collector/pdata v1.14.1
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/processor v0.108.1
 	go.opentelemetry.io/collector/semconv v0.108.1 // indirect
 	go.opentelemetry.io/otel/metric v1.29.0 // indirect
@@ -58,7 +58,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240829190554-7da6b618a7ee // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.108.1 // indirect
 	go.opentelemetry.io/collector/receiver v0.108.1 // indirect

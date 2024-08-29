@@ -7,11 +7,11 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.1
-	go.opentelemetry.io/collector/config/configretry v1.14.1
-	go.opentelemetry.io/collector/confmap v1.14.1
+	go.opentelemetry.io/collector/config/configretry v1.14.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/consumer v0.108.1
 	go.opentelemetry.io/collector/exporter v0.108.1
-	go.opentelemetry.io/collector/pdata v1.14.1
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.194.0
 	google.golang.org/grpc v1.65.0

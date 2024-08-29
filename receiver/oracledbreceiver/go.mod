@@ -7,11 +7,11 @@ require (
 	github.com/sijms/go-ora/v2 v2.8.19
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.1
-	go.opentelemetry.io/collector/confmap v1.14.1
+	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/consumer v0.108.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1
 	go.opentelemetry.io/collector/filter v0.108.1
-	go.opentelemetry.io/collector/pdata v1.14.1
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/receiver v0.108.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

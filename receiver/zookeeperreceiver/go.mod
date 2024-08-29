@@ -12,11 +12,11 @@ require (
 	github.com/testcontainers/testcontainers-go v0.31.0
 	go.opentelemetry.io/collector/component v0.108.1
 	go.opentelemetry.io/collector/config/confignet v0.108.1
-	go.opentelemetry.io/collector/confmap v1.14.1
+	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/consumer v0.108.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.1
 	go.opentelemetry.io/collector/filter v0.108.1
-	go.opentelemetry.io/collector/pdata v1.14.1
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/receiver v0.108.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -83,7 +83,7 @@ require (
 	go.opentelemetry.io/collector v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240829190554-7da6b618a7ee // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
