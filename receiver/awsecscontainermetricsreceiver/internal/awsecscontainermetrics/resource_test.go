@@ -64,7 +64,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 	require.NotNil(t, r)
 	attrMap := r.Attributes()
 	getExitCodeAd, found := attrMap.Get(attributeContainerExitCode)
-	require.EqualValues(t, true, found)
+	require.True(t, found)
 	require.EqualValues(t, 2, getExitCodeAd.Int())
 	require.EqualValues(t, 11, attrMap.Len())
 	expected := map[string]string{
@@ -165,7 +165,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 func verifyAttributeMap(t *testing.T, expected map[string]string, found pcommon.Map) {
 	for key, val := range expected {
 		attributeVal, found := found.Get(key)
-		require.EqualValues(t, true, found)
+		require.True(t, found)
 
 		require.EqualValues(t, val, attributeVal.Str())
 	}
