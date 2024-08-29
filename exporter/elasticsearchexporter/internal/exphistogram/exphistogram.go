@@ -23,19 +23,6 @@ func LowerBoundaryNegativeScale(index, scale int) float64 {
 	return math.Ldexp(1, index<<-scale)
 }
 
-// MapToIndex gets bucket index from value and scale.
-// Adopted from https://opentelemetry.io/docs/specs/otel/metrics/data-model/#producer-expectations
-func MapToIndex(value float64, scale int) int {
-	// Special case for power-of-two values.
-	if frac, exp := math.Frexp(value); frac == 0.5 {
-		return ((exp - 1) << scale) - 1
-	}
-	scaleFactor := math.Ldexp(math.Log2E, scale)
-	// Note: math.Floor(value) equals math.Ceil(value)-1 when value
-	// is not a power of two, which is checked above.
-	return int(math.Floor(math.Log(value) * scaleFactor))
-}
-
 func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values []float64) {
 	scale := int(dp.Scale())
 
