@@ -126,7 +126,7 @@ func TestInternalCacheLimit(t *testing.T) {
 	wg.Wait()
 
 	// verify
-	assert.Equal(t, 5, len(receivedTraceIDs))
+	assert.Len(t, receivedTraceIDs, 5)
 
 	for i := 5; i > 0; i-- { // last 5 traces
 		traceID := pcommon.TraceID(traceIDs[i])
@@ -152,7 +152,7 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// verify
 	assert.NotNil(t, p)
-	assert.Equal(t, true, caps.MutatesData)
+	assert.True(t, caps.MutatesData)
 }
 
 func TestProcessBatchDoesntFail(t *testing.T) {

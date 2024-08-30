@@ -124,7 +124,7 @@ func TestNewFileWriter(t *testing.T) {
 			validate: func(t *testing.T, writer *fileWriter) {
 				assert.Equal(t, 5*time.Second, writer.flushInterval)
 				_, ok := writer.file.(*bufferedWriteCloser)
-				assert.Equal(t, true, ok)
+				assert.True(t, ok)
 			},
 		},
 		{
@@ -139,7 +139,7 @@ func TestNewFileWriter(t *testing.T) {
 			},
 			validate: func(t *testing.T, writer *fileWriter) {
 				logger, ok := writer.file.(*lumberjack.Logger)
-				assert.Equal(t, true, ok)
+				assert.True(t, ok)
 				assert.Equal(t, defaultMaxBackups, logger.MaxBackups)
 			},
 		},
@@ -158,11 +158,11 @@ func TestNewFileWriter(t *testing.T) {
 			},
 			validate: func(t *testing.T, writer *fileWriter) {
 				logger, ok := writer.file.(*lumberjack.Logger)
-				assert.Equal(t, true, ok)
+				assert.True(t, ok)
 				assert.Equal(t, 3, logger.MaxBackups)
 				assert.Equal(t, 30, logger.MaxSize)
 				assert.Equal(t, 100, logger.MaxAge)
-				assert.Equal(t, true, logger.LocalTime)
+				assert.True(t, logger.LocalTime)
 			},
 		},
 	}

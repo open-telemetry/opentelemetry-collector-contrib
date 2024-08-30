@@ -65,7 +65,7 @@ func TestConsumeLogs(t *testing.T) {
 			err := consumer.ConsumeLogs(context.Background(), testdata.GenerateLogsTwoLogRecordsSameResource())
 			assert.Equal(t, tt.expectedErr, err)
 			if err == nil {
-				assert.Equal(t, 1, len(tt.consumer.AllLogs()))
+				assert.Len(t, tt.consumer.AllLogs(), 1)
 				assert.Equal(t, 2, tt.consumer.AllLogs()[0].LogRecordCount())
 				if tt.consumer.acceptAfter > 0 {
 					assert.Equal(t, tt.consumer.rejectCount.Load(), tt.consumer.acceptAfter)
@@ -106,7 +106,7 @@ func TestConsumeLogs_PartialRetry(t *testing.T) {
 	assert.NoError(t, consumer.ConsumeLogs(context.Background(), logs))
 
 	// Verify the logs batch is broken into two parts, one with the partial error and one without.
-	assert.Equal(t, 2, len(sink.AllLogs()))
+	assert.Len(t, sink.AllLogs(), 2)
 	assert.Equal(t, 1, sink.AllLogs()[0].ResourceLogs().Len())
 	assert.Equal(t, 2, sink.AllLogs()[0].LogRecordCount())
 	assert.Equal(t, 1, sink.AllLogs()[1].ResourceLogs().Len())
