@@ -1,0 +1,64 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "testHost"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "testService"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "spans": [
+            {
+              "name": "testSpanOne",
+              "attributes": [
+                {
+                  "key": "string",
+                  "value": {
+                    "stringValue": "value"
+                  }
+                },
+                {
+                  "key": "double",
+                  "value": {
+                    "doubleValue": 1.1
+                  }
+                }
+              ]
+            },
+            {
+              "name": "testSpanTwo",
+              "attributes": [
+                {
+                  "key": "string",
+                  "value": {
+                    "stringValue": "value"
+                  }
+                },
+                {
+                  "key": "double",
+                  "value": {
+                    "doubleValue": 1.1
+                  }
+                }
+              ]
+            }
+          ],
+          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span_events_rename_spans/1.1.0"
+        }
+      ],
+      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span_events_rename_spans/1.1.0"
+    }
+  ]
+}
