@@ -30,7 +30,7 @@ type CPUUtilizationCalculator struct {
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
 func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, logicalCores int, currentCPUStats *cpu.TimesStat, recorder func(pcommon.Timestamp, CPUUtilization)) error {
 	if logicalCores < 1 {
-		return fmt.Errorf("number of logical cores is 0")
+		return fmt.Errorf("number of logical cores is %d", logicalCores)
 	}
 
 	if c.previousCPUStats != nil {
