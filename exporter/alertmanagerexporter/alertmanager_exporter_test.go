@@ -101,7 +101,7 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 
 			// test - events
 			got := am.extractEvents(traces)
-			assert.Equal(t, tt.events, len(got))
+			assert.Len(t, got, tt.events)
 		})
 	}
 }
@@ -133,7 +133,7 @@ func TestAlertManagerExporterEventNameAttributes(t *testing.T) {
 	got := am.extractEvents(traces)
 
 	// test - result length
-	assert.Equal(t, 1, len(got))
+	assert.Len(t, got, 1)
 
 	// test - count of attributes
 	assert.Equal(t, 3, got[0].spanEvent.Attributes().Len())

@@ -138,9 +138,9 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 			require.NoError(t, err)
 
 			if testCase.expectMultipleRequests {
-				assert.Equal(t, 2, len(httpRequests))
+				assert.Len(t, httpRequests, 2)
 			} else {
-				assert.Equal(t, 1, len(httpRequests))
+				assert.Len(t, httpRequests, 1)
 			}
 		})
 	}
