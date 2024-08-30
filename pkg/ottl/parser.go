@@ -63,12 +63,11 @@ func (c *Condition[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 // Parser provides the means to parse OTTL StatementSequence and Conditions given a specific set of functions,
 // a PathExpressionParser, and an EnumParser.
 type Parser[K any] struct {
-	functions                map[string]Factory[K]
-	pathParser               PathExpressionParser[K]
-	enumParser               EnumParser
-	telemetrySettings        component.TelemetrySettings
-	pathContextNames         map[string]bool
-	validatePathContextNames bool
+	functions         map[string]Factory[K]
+	pathParser        PathExpressionParser[K]
+	enumParser        EnumParser
+	telemetrySettings component.TelemetrySettings
+	pathContextNames  map[string]bool
 }
 
 func NewParser[K any](
@@ -102,21 +101,11 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 	}
 }
 
-// WithPathContextNameValidation turns the validation mode on/off for the Path's contexts.
-// When enabled, and WithPathContextNames is configured, it requires all Path's to be prefixed
-// with a valid context name, matching at least one configured WithPathContextNames value.
-func WithPathContextNameValidation[K any](enabled bool) Option[K] {
-	return func(p *Parser[K]) {
-		p.validatePathContextNames = enabled
-	}
-}
-
 // WithPathContextNames sets the context names to be considered when parsing a Path value.
 // When this option is empty or nil, all Path segments are considered fields, and the
 // Path.Context value is always empty.
-// When this option is configured, and the first path segment is not present in this context
-// names list, it either parses the whole Path as fields, without a Path.Context value,
-// or results into an error, depending on the WithPathContextNameValidation config.
+// When this option is configured, and the path's context is empty or is not present in
+// this context names list, it results into an error.
 func WithPathContextNames[K any](contexts []string) Option[K] {
 	return func(p *Parser[K]) {
 		pathContextNames := make(map[string]bool, len(contexts))

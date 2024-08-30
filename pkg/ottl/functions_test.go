@@ -2402,52 +2402,34 @@ func Test_newPath(t *testing.T) {
 
 func Test_newPath_WithPathContextNames(t *testing.T) {
 	tests := []struct {
-		name                 string
-		pathContext          string
-		pathContextNames     []string
-		validationEnabled    bool
-		contextParsedAsField bool
-		expectedError        bool
+		name             string
+		pathContext      string
+		pathContextNames []string
+		expectedError    string
 	}{
 		{
-			name:             "with no context",
+			name:             "with no path context",
 			pathContextNames: []string{"log"},
+			expectedError:    `missing context name for path "body.string[key]", valid options are: "log.body.string[key]"`,
 		},
 		{
-			name:             "with context",
+			name: "with no path context and configuration",
+		},
+		{
+			name:             "with valid path context",
 			pathContext:      "log",
 			pathContextNames: []string{"log"},
 		},
 		{
-			name:             "with multiple contexts",
+			name:             "with invalid path context",
+			pathContext:      "span",
+			pathContextNames: []string{"log"},
+			expectedError:    `context "span" from path "span.body.string[key]" is not valid, it must be replaced by one of: "log"`,
+		},
+		{
+			name:             "with multiple configured contexts",
 			pathContext:      "span",
 			pathContextNames: []string{"log", "span"},
-		},
-		{
-			name:                 "with invalid context and validation disabled",
-			pathContext:          "span",
-			pathContextNames:     []string{"log"},
-			validationEnabled:    false,
-			contextParsedAsField: true,
-		},
-		{
-			name:              "with invalid context and validation enabled",
-			pathContext:       "span",
-			pathContextNames:  []string{"log"},
-			validationEnabled: true,
-			expectedError:     true,
-		},
-		{
-			name:              "with valid context and validation enabled",
-			pathContext:       "spanevent",
-			pathContextNames:  []string{"spanevent"},
-			validationEnabled: true,
-		},
-		{
-			name:              "with no context and validation enabled",
-			pathContextNames:  []string{"spanevent"},
-			validationEnabled: true,
-			expectedError:     true,
 		},
 	}
 
@@ -2459,7 +2441,6 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 				componenttest.NewNopTelemetrySettings(),
 				WithEnumParser[any](testParseEnum),
 				WithPathContextNames[any](tt.pathContextNames),
-				WithPathContextNameValidation[any](tt.validationEnabled),
 			)
 
 			gp := &path{
@@ -2479,13 +2460,14 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 				}}
 
 			np, err := ps.newPath(gp)
-			if tt.expectedError {
-				assert.Error(t, err)
+			if tt.expectedError != "" {
+				assert.Error(t, err, tt.expectedError)
 				return
 			}
 			assert.NoError(t, err)
 			p := Path[any](np)
-			if tt.contextParsedAsField {
+			contextParsedAsField := len(tt.pathContextNames) == 0 && tt.pathContext != ""
+			if contextParsedAsField {
 				assert.Equal(t, tt.pathContext, p.Name())
 				assert.Equal(t, "", p.Context())
 				assert.Nil(t, p.Keys())
@@ -2500,13 +2482,13 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 			assert.Equal(t, "body", p.Name())
 			assert.Nil(t, p.Keys())
 			assert.Equal(t, bodyStringFuncValue, p.String())
-			if !tt.contextParsedAsField {
+			if !contextParsedAsField {
 				assert.Equal(t, tt.pathContext, p.Context())
 			}
 			p = p.Next()
 			assert.Equal(t, "string", p.Name())
 			assert.Equal(t, bodyStringFuncValue, p.String())
-			if !tt.contextParsedAsField {
+			if !contextParsedAsField {
 				assert.Equal(t, tt.pathContext, p.Context())
 			}
 			assert.Nil(t, p.Next())
