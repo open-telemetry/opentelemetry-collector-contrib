@@ -35,6 +35,65 @@
                     "doubleValue": 1.1
                   }
                 }
+              ],
+              "events": [
+                {
+                  "timeUnixNano": "1684620382541971000",
+                  "name": "testEventOne",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                },
+                {
+                  "timeUnixNano": "1684620382541971000",
+                  "name": "testEventTwo",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                },
+                {
+                  "timeUnixNano": "1684620382541971000",
+                  "name": "testEventThree",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                }
               ]
             },
             {

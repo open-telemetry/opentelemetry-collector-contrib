@@ -21,7 +21,7 @@
         {
           "spans": [
             {
-              "name": "testSpanOne",
+              "name": "testSpan1",
               "attributes": [
                 {
                   "key": "string",
@@ -35,10 +35,69 @@
                     "doubleValue": 1.1
                   }
                 }
+              ],
+              "events": [
+                {
+                  "timeUnixNano": "1684620382541971000",
+                  "name": "testEvent1",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                },
+                {
+                  "timeUnixNano": "1684620382541971000",
+                  "name": "testEvent2",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                },
+                {
+                  "timeUnixNano": "1684620382541971000",
+                  "name": "testEventThree",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                }
               ]
             },
             {
-              "name": "testSpanTwo",
+              "name": "testSpan2",
               "attributes": [
                 {
                   "key": "string",
@@ -55,10 +114,10 @@
               ]
             }
           ],
-          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span_events_rename_spans/1.1.0"
+          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span_events_rename_spans/1.0.0"
         }
       ],
-      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span_events_rename_spans/1.1.0"
+      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span_events_rename_spans/1.0.0"
     }
   ]
 }
