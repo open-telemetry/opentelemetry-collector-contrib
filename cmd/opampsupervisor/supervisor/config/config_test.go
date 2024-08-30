@@ -36,6 +36,8 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      1 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,

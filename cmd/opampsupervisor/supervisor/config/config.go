@@ -139,6 +139,14 @@ func (a Agent) Validate() error {
 		return fmt.Errorf("could not stat agent::executable path: %w", err)
 	}
 
+	if a.SuccessfulHealthChecks <= 0 {
+		return errors.New("agent::successful_health_checks must be positive")
+	}
+
+	if a.ConfigApplyTimeout <= 0 {
+		return errors.New("agent::config_apply_timeout must be valid duration")
+	}
+
 	return nil
 }
 
