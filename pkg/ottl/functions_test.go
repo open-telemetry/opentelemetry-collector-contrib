@@ -2391,7 +2391,7 @@ func Test_newPath(t *testing.T) {
 	assert.Equal(t, "string", p.Name())
 	assert.Equal(t, "body.string[key]", p.String())
 	assert.Nil(t, p.Next())
-	assert.Equal(t, 1, len(p.Keys()))
+	assert.Len(t, p.Keys(), 1)
 	v, err := p.Keys()[0].String(context.Background(), struct{}{})
 	assert.NoError(t, err)
 	assert.Equal(t, "key", *v)
@@ -2492,7 +2492,7 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 				assert.Equal(t, tt.pathContext, p.Context())
 			}
 			assert.Nil(t, p.Next())
-			assert.Equal(t, 1, len(p.Keys()))
+			assert.Len(t, p.Keys(), 1)
 			v, err := p.Keys()[0].String(context.Background(), struct{}{})
 			assert.NoError(t, err)
 			assert.Equal(t, "key", *v)
@@ -2534,7 +2534,7 @@ func Test_newKey(t *testing.T) {
 	}
 	ks := newKeys[any](keys)
 
-	assert.Equal(t, 2, len(ks))
+	assert.Len(t, ks, 2)
 
 	s, err := ks[0].String(context.Background(), nil)
 	assert.NoError(t, err)
