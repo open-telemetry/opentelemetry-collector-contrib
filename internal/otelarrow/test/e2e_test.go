@@ -332,8 +332,17 @@ func logSigs(obs *observer.ObservedLogs) (map[string]int, []string) {
 		for _, f := range rl.Context {
 			attrs = append(attrs, f.Key)
 
+			// One way we can see memory limit errors is through the
+			// OTel-Arrow common "arrow stream error" message, which both
+			// sides will log.
 			if rl.Message == "arrow stream error" && f.Key == "message" {
 				msgs = append(msgs, f.String)
+			}
+			// The exporterhelper's basic error message has an "error"
+			// attribute, another place we may see the memory limit
+			// error reached.
+			if f.Key == "error" && f.Interface != nil {
+				msgs = append(msgs, fmt.Sprint(f.Interface))
 			}
 		}
 		var sig strings.Builder
@@ -349,7 +358,11 @@ var limitRegexp = regexp.MustCompile(`memory limit exceeded`)
 
 func countMemoryLimitErrors(msgs []string) (cnt int) {
 	for _, msg := range msgs {
-		if limitRegexp.MatchString(msg) {
+		// The memory errors are expected from the receiver,
+		// so whether these print on the exporter or receiver,
+		// the message will contain "otel-arrow decode" from
+		// the receiver.
+		if limitRegexp.MatchString(msg) && strings.Contains(msg, "otel-arrow decode") {
 			cnt++
 		}
 	}
@@ -360,15 +373,19 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 	eSigs, eMsgs := logSigs(testCon.expLogs)
 	rSigs, rMsgs := logSigs(testCon.recvLogs)
 
-	t.Log("EXP:", eSigs, eMsgs)
-	t.Log("REC:", rSigs, rMsgs)
+	//t.Log("EXP:", eSigs, eMsgs)
+	for _, s := range eMsgs {
+		t.Log("HEY", s)
+	}
+	//t.Log("REC:", rSigs, rMsgs)
 
-	// Test for arrow stream errors.
-	require.Less(t, 0, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eSigs)
+	// Test for arrow Receiver stream errors.  The exporter is required
+	// not to see an arrow stream error.
 	require.Less(t, 0, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
+	require.Equal(t, 0, eSigs["arrow stream error|||code///message///where"], "should NOT have exporter arrow stream errors: %v", eMsgs)
 
-	// Ensure the errors include memory limit errors.
-
+	// Ensure both side's error logs include memory limit errors
+	// one way or another.
 	require.Less(t, 0, countMemoryLimitErrors(rMsgs), "should have memory limit errors: %v", rMsgs)
 	require.Less(t, 0, countMemoryLimitErrors(eMsgs), "should have memory limit errors: %v", eMsgs)
 
