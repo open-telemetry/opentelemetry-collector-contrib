@@ -370,9 +370,9 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Invalid metric declaration should be filtered out
-	assert.Equal(t, 3, len(exp.config.MetricDeclarations))
+	assert.Len(t, exp.config.MetricDeclarations, 3)
 	// Invalid dimensions (> 10 dims) should be filtered out
-	assert.Equal(t, 1, len(exp.config.MetricDeclarations[2].Dimensions))
+	assert.Len(t, exp.config.MetricDeclarations[2].Dimensions, 1)
 
 	// Test output warning logs
 	expectedLogs := []observer.LoggedEntry{

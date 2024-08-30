@@ -335,7 +335,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			if test.jb == nil {
 				assert.Len(t, jbs, 0)
 			} else {
-				require.Equal(t, 1, len(jbs))
+				require.Len(t, jbs, 1)
 				assert.EqualValues(t, test.jb, jbs[0])
 			}
 		})

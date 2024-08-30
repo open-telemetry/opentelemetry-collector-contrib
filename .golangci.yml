@@ -141,7 +141,6 @@ linters-settings:
       - expected-actual
       - float-compare
       - go-require
-      - len
       - negative-positive
       - nil-compare
       - require-error
