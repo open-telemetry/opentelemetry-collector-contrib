@@ -109,5 +109,5 @@ exporters:
 ## Destination Topic
 The destination topic can be defined in a few different ways and takes priority in the following order:
 1. When `topic_from_attribute` is configured, and the corresponding attribute is found on the ingested data, the value of this attribute is used.
-2. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function, the value set in the context is used.
+2. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
 3. Finally, the `topic` configuration is used as a default/fallback destination. 

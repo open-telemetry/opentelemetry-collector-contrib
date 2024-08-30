@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package topic // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/topic"
+package topic // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 
 import (
 	"context"

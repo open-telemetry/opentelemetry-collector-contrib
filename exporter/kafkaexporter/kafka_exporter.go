@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
