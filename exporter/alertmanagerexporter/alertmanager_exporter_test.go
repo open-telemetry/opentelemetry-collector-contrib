@@ -138,11 +138,11 @@ func TestAlertManagerExporterEventNameAttributes(t *testing.T) {
 	// test - count of attributes
 	assert.Equal(t, 3, got[0].spanEvent.Attributes().Len())
 	attr, b := got[0].spanEvent.Attributes().Get("attr1")
-	assert.Equal(t, true, b)
+	assert.True(t, b)
 	assert.Equal(t, "unittest-event", got[0].spanEvent.Name())
 	assert.Equal(t, "unittest-baz", attr.AsString())
 	attr, b = got[0].spanEvent.Attributes().Get("attr3")
-	assert.Equal(t, true, b)
+	assert.True(t, b)
 	assert.Equal(t, 5.14, attr.Double())
 }
 

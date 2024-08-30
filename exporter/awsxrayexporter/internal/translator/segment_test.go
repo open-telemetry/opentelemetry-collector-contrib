@@ -1252,7 +1252,7 @@ func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segmen
 
 	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
 	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
-	assert.Equal(t, true, *segment.AWS.XRay.AutoInstrumentation)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
 
 	assert.Equal(t, "UpdateItem", *segment.AWS.Operation)
 	assert.Equal(t, "AWSAccountAttribute", *segment.AWS.AccountID)
@@ -1278,7 +1278,7 @@ func validateLocalRootServiceSegment(t *testing.T, segment *awsxray.Segment, spa
 	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
 	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
 	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
-	assert.Equal(t, true, *segment.AWS.XRay.AutoInstrumentation)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
 	assert.Nil(t, segment.AWS.Operation)
 	assert.Nil(t, segment.AWS.AccountID)
 	assert.Nil(t, segment.AWS.RemoteRegion)
@@ -1406,7 +1406,7 @@ func TestNonLocalRootConsumerProcess(t *testing.T) {
 	assert.Equal(t, "service.name=myTest", segments[0].Metadata["default"]["otel.resource.attributes"])
 	assert.Equal(t, "MySDK", *segments[0].AWS.XRay.SDK)
 	assert.Equal(t, "1.20.0", *segments[0].AWS.XRay.SDKVersion)
-	assert.Equal(t, true, *segments[0].AWS.XRay.AutoInstrumentation)
+	assert.True(t, *segments[0].AWS.XRay.AutoInstrumentation)
 	assert.Equal(t, "UpdateItem", *segments[0].AWS.Operation)
 	assert.Nil(t, segments[0].Namespace)
 }
@@ -1563,7 +1563,7 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
 	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
 	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
-	assert.Equal(t, true, *segment.AWS.XRay.AutoInstrumentation)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
 
 	assert.Equal(t, "UpdateItem", *segment.AWS.Operation)
 	assert.Equal(t, "AWSAccountAttribute", *segment.AWS.AccountID)
