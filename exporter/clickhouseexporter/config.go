@@ -177,7 +177,7 @@ func (cfg *Config) buildDB() (*sql.DB, error) {
 		opts.ClientInfo.Products = []struct {
 			Name    string
 			Version string
-		}{{"otel-exporter", getCollectorVersion()}}
+		}{{"otelcol", getCollectorVersion()}}
 	}
 
 	conn := clickhouse.OpenDB(opts)
