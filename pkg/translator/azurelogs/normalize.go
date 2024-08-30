@@ -9,22 +9,22 @@ import (
 	"strings"
 )
 
-type valueNormalizer func(any) any
-
-var normalizers = map[string]valueNormalizer{
-	"http.request.body.size":       toInt,
-	"http.request.size":            toInt,
-	"http.response.body.size":      toInt,
-	"http.response.size":           toInt,
-	"http.response.status_code":    toInt,
-	"http.server.request.duration": toFloat,
-	"network.protocol.name":        toLower,
-	"server.port":                  toInt,
-}
-
 func normalizeValue(key string, val any) any {
-	if f, exists := normalizers[key]; exists {
-		return f(val)
+	switch key {
+	case
+		"http.request.body.size",
+		"http.request.size",
+		"http.response.body.size",
+		"http.response.size",
+		"http.response.status_code",
+		"server.port":
+		return toInt(val)
+	case
+		"http.server.request.duration":
+		return toFloat(val)
+	case
+		"network.protocol.name":
+		return toLower(val)
 	}
 	return val
 }
@@ -40,10 +40,10 @@ func toLower(value any) any {
 
 func toFloat(value any) any {
 	switch v := value.(type) {
-	case float32:
-		return float64(v)
 	case float64:
 		return v
+	case float32:
+		return float64(v)
 	case int:
 		return float64(v)
 	case int32:
