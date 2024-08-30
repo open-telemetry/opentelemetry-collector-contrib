@@ -90,7 +90,7 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 	defer func() {
 		require.NoError(t, provider.Shutdown(context.Background()))
 	}()
-	set.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
+	set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return provider
 	}
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
