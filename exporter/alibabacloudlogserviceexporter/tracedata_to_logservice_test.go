@@ -30,7 +30,7 @@ func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
 func TestTraceDataToLogService(t *testing.T) {
 	gotLogs := traceDataToLogServiceData(constructSpanData())
-	assert.Equal(t, len(gotLogs), 2)
+	assert.Len(t, gotLogs, 2)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 

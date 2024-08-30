@@ -373,7 +373,7 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 			require.Equal(t, mValue, vValue)
 			require.Equal(t, dataPointValue1+dataPointValue2, vValue)
 			require.Equal(t, pmetric.AggregationTemporalityCumulative, vTemporality)
-			require.Equal(t, true, vIsMonotonic)
+			require.True(t, vIsMonotonic)
 
 			require.Equal(t, ts3.Unix(), vTS.Unix())
 		})

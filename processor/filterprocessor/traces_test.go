@@ -148,7 +148,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 
 			// If all traces got filtered you shouldn't even have ResourceSpans
 			if test.allTracesFiltered {
-				require.Equal(t, 0, len(got))
+				require.Len(t, got, 0)
 			} else {
 				require.Equal(t, test.spanCountExpected, got[0].SpanCount())
 			}
