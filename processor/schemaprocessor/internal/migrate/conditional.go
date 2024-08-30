@@ -47,6 +47,7 @@ func (ca *ConditionalAttributeSet) Rollback(attrs pcommon.Map, values ...string)
 	return errs
 }
 
+// todo make it harder to misuse this!  diff between no values and 0 values
 func (ca *ConditionalAttributeSet) check(values ...string) bool {
 	if len(*ca.on) == 0 {
 		return true

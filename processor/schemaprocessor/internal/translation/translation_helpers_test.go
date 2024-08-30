@@ -284,6 +284,11 @@ func NewExampleSpans(tb testing.TB, at Version) ptrace.Traces {
 			span.Attributes().PutStr("privacy.user.operation", "password encryption")
 			span.Attributes().PutStr("operation.failed.reason", "password too short")
 
+			span = spans.Spans().AppendEmpty()
+			span.SetName("HTTP GET1")
+			span.Attributes().PutStr("privacy.user.operation", "password encryption")
+			span.Attributes().PutStr("operation.failure", "password too short")
+
 			event := span.Events().AppendEmpty()
 			event.SetName("stack_trace")
 			event.Attributes().PutStr("privacy.net.user.ip", "127.0.0.1")
@@ -303,6 +308,11 @@ func NewExampleSpans(tb testing.TB, at Version) ptrace.Traces {
 			span.SetName("HTTP GET")
 			span.Attributes().PutStr("user.operation", "password encryption")
 			span.Attributes().PutStr("operation.failed.reason", "password too short")
+
+			span = spans.Spans().AppendEmpty()
+			span.SetName("HTTP GET1")
+			span.Attributes().PutStr("user.operation", "password encryption")
+			span.Attributes().PutStr("operation.failure", "password too short")
 
 			event := span.Events().AppendEmpty()
 			event.SetName("stack_trace")
@@ -324,6 +334,11 @@ func NewExampleSpans(tb testing.TB, at Version) ptrace.Traces {
 			span.Attributes().PutStr("user.operation", "password encryption")
 			span.Attributes().PutStr("operation.failed.reason", "password too short")
 
+			span = spans.Spans().AppendEmpty()
+			span.SetName("HTTP GET1")
+			span.Attributes().PutStr("user.operation", "password encryption")
+			span.Attributes().PutStr("operation.failure", "password too short")
+
 			event := span.Events().AppendEmpty()
 			event.SetName("stack_trace")
 			event.Attributes().PutStr("net.user.ip", "127.0.0.1")
@@ -341,6 +356,11 @@ func NewExampleSpans(tb testing.TB, at Version) ptrace.Traces {
 
 			span = spans.Spans().AppendEmpty()
 			span.SetName("HTTP GET")
+			span.Attributes().PutStr("operation", "password encryption")
+			span.Attributes().PutStr("operation.failure", "password too short")
+
+			span = spans.Spans().AppendEmpty()
+			span.SetName("HTTP GET1")
 			span.Attributes().PutStr("operation", "password encryption")
 			span.Attributes().PutStr("operation.failure", "password too short")
 
