@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS otel_traces (
     ScopeName String CODEC(ZSTD(1)),
     ScopeVersion String CODEC(ZSTD(1)),
     SpanAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-    Duration Int64 CODEC(ZSTD(1)),
+    Duration UInt64 CODEC(ZSTD(1)),
     StatusCode LowCardinality(String) CODEC(ZSTD(1)),
     StatusMessage String CODEC(ZSTD(1)),
     Events Nested (
@@ -23,9 +23,9 @@ CREATE TABLE IF NOT EXISTS otel_traces (
         Attributes Map(LowCardinality(String), String)
     ) CODEC(ZSTD(1)),
     Links Nested (
-        TraceId String,
-        SpanId String,
-        TraceState String,
+        TraceId String CODEC(ZSTD(1)),
+        SpanId String CODEC(ZSTD(1)),
+        TraceState String CODEC(ZSTD(1)),
         Attributes Map(LowCardinality(String), String)
     ) CODEC(ZSTD(1)),
     INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
