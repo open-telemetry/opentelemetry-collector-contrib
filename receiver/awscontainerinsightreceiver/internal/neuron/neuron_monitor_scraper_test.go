@@ -39,6 +39,7 @@ hardware_ecc_events_total{availability_zone="us-east-1c",event_type="sram_ecc_un
 const dummyClusterName = "cluster-name"
 const dummyHostName = "i-000000000"
 const dummyNodeName = "dummy-nodeName"
+const dummyInstanceType = "instance-type"
 
 type mockHostInfoProvider struct {
 }
@@ -51,13 +52,17 @@ func (m mockHostInfoProvider) GetInstanceID() string {
 	return dummyHostName
 }
 
+func (m mockHostInfoProvider) GetInstanceType() string {
+	return dummyInstanceType
+}
+
 func TestNewNeuronScraperEndToEnd(t *testing.T) {
 	t.Setenv("HOST_NAME", dummyNodeName)
 	expectedMetrics := make(map[string]prometheusscraper.ExpectedMetricStruct)
 	expectedMetrics["neuroncore_utilization_ratio"] = prometheusscraper.ExpectedMetricStruct{
 		MetricValue: 0.1,
 		MetricLabels: []prometheusscraper.MetricLabel{
-			{LabelName: "InstanceId", LabelValue: "i-09db9b55e0095612f"},
+			{LabelName: "InstanceId", LabelValue: dummyHostName},
 			{LabelName: "ClusterName", LabelValue: dummyClusterName},
 			{LabelName: "NeuronCore", LabelValue: "0"},
 			{LabelName: "NodeName", LabelValue: dummyNodeName},
@@ -66,7 +71,7 @@ func TestNewNeuronScraperEndToEnd(t *testing.T) {
 	expectedMetrics["neurondevice_hw_ecc_events_total_mem_ecc_corrected"] = prometheusscraper.ExpectedMetricStruct{
 		MetricValue: 3,
 		MetricLabels: []prometheusscraper.MetricLabel{
-			{LabelName: "InstanceId", LabelValue: "i-09db9b55e0095612f"},
+			{LabelName: "InstanceId", LabelValue: dummyHostName},
 			{LabelName: "ClusterName", LabelValue: dummyClusterName},
 			{LabelName: "NeuronDevice", LabelValue: "5"},
 			{LabelName: "NodeName", LabelValue: dummyNodeName},
@@ -75,7 +80,7 @@ func TestNewNeuronScraperEndToEnd(t *testing.T) {
 	expectedMetrics["neuron_runtime_memory_used_bytes"] = prometheusscraper.ExpectedMetricStruct{
 		MetricValue: 9.043968e+06,
 		MetricLabels: []prometheusscraper.MetricLabel{
-			{LabelName: "InstanceId", LabelValue: "i-09db9b55e0095612f"},
+			{LabelName: "InstanceId", LabelValue: dummyHostName},
 			{LabelName: "ClusterName", LabelValue: dummyClusterName},
 			{LabelName: "NodeName", LabelValue: dummyNodeName},
 		},
@@ -84,7 +89,7 @@ func TestNewNeuronScraperEndToEnd(t *testing.T) {
 	expectedMetrics["execution_errors_created"] = prometheusscraper.ExpectedMetricStruct{
 		MetricValue: 1.7083389404380567e+09,
 		MetricLabels: []prometheusscraper.MetricLabel{
-			{LabelName: "InstanceId", LabelValue: "i-09db9b55e0095612f"},
+			{LabelName: "InstanceId", LabelValue: dummyHostName},
 			{LabelName: "ClusterName", LabelValue: dummyClusterName},
 			{LabelName: "NodeName", LabelValue: dummyNodeName},
 		},
@@ -93,7 +98,7 @@ func TestNewNeuronScraperEndToEnd(t *testing.T) {
 	expectedMetrics["system_memory_total_bytes"] = prometheusscraper.ExpectedMetricStruct{
 		MetricValue: 5.32523487232e+011,
 		MetricLabels: []prometheusscraper.MetricLabel{
-			{LabelName: "InstanceId", LabelValue: "i-09db9b55e0095612f"},
+			{LabelName: "InstanceId", LabelValue: dummyHostName},
 			{LabelName: "ClusterName", LabelValue: dummyClusterName},
 			{LabelName: "NodeName", LabelValue: dummyNodeName},
 		},
@@ -102,7 +107,7 @@ func TestNewNeuronScraperEndToEnd(t *testing.T) {
 	expectedMetrics["hardware_ecc_events_total"] = prometheusscraper.ExpectedMetricStruct{
 		MetricValue: 864.0,
 		MetricLabels: []prometheusscraper.MetricLabel{
-			{LabelName: "InstanceId", LabelValue: "i-09db9b55e0095612f"},
+			{LabelName: "InstanceId", LabelValue: dummyHostName},
 			{LabelName: "ClusterName", LabelValue: dummyClusterName},
 			{LabelName: "NodeName", LabelValue: dummyNodeName},
 		},

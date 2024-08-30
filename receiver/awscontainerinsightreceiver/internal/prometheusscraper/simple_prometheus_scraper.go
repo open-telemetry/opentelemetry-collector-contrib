@@ -41,6 +41,7 @@ type SimplePrometheusScraperOpts struct {
 type HostInfoProvider interface {
 	GetClusterName() string
 	GetInstanceID() string
+	GetInstanceType() string
 }
 
 func NewSimplePrometheusScraper(opts SimplePrometheusScraperOpts) (*SimplePrometheusScraper, error) {

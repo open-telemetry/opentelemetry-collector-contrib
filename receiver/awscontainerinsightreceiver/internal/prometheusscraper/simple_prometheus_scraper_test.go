@@ -23,6 +23,10 @@ func (m mockHostInfoProvider) GetInstanceID() string {
 	return "i-000000000"
 }
 
+func (m mockHostInfoProvider) GetInstanceType() string {
+	return "instance-type"
+}
+
 func TestSimplePrometheusScraperBadInputs(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.Logger, _ = zap.NewDevelopment()
