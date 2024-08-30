@@ -80,7 +80,7 @@ func TestHostObserver(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hostPorts, notifier := tt.setup()
 			if tt.errorListingConnections {
-				require.Equal(t, len(notifier.endpointsMap), 0)
+				require.Len(t, notifier.endpointsMap, 0)
 				return
 			}
 

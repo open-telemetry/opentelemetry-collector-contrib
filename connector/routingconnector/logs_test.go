@@ -463,5 +463,5 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, false, conn.Capabilities().MutatesData)
+	assert.False(t, conn.Capabilities().MutatesData)
 }

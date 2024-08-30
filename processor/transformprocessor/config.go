@@ -41,12 +41,17 @@ type Config struct {
 	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
 
 	FlattenData bool `mapstructure:"flatten_data"`
+	logger      *zap.Logger
 }
 
 var _ component.Config = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
+
+	if c.logger != nil && metrics.UseConvertBetweenSumAndGaugeMetricContext.IsEnabled() {
+		c.logger.Sugar().Infof("Metric conversion functions use metric context since %s is enabled. If your statements are not parsing, check if you're using the metrics conversion functions via the datapoint context.", metrics.UseConvertBetweenSumAndGaugeMetricContext.ID())
+	}
 
 	if len(c.TraceStatements) > 0 {
 		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions()), common.WithSpanEventParser(traces.SpanEventFunctions()))
