@@ -85,7 +85,7 @@ func benchmarkPeerTags(b *testing.B) {
 		for {
 			metrics := metricsSink.AllMetrics()
 			if len(metrics) > 0 {
-				assert.Equal(b, 1, len(metrics))
+				assert.Len(b, metrics, 1)
 				break
 			}
 			time.Sleep(5 * time.Millisecond)
