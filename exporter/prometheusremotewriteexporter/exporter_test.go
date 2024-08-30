@@ -269,7 +269,7 @@ func Test_export(t *testing.T) {
 		ok := proto.Unmarshal(dest, writeReq)
 		require.NoError(t, ok)
 
-		assert.EqualValues(t, 1, len(writeReq.Timeseries))
+		assert.Len(t, writeReq.Timeseries, 1)
 		require.NotNil(t, writeReq.GetTimeseries())
 		assert.Equal(t, *ts1, writeReq.GetTimeseries()[0])
 		w.WriteHeader(code)
@@ -457,7 +457,7 @@ func Test_PushMetrics(t *testing.T) {
 		wr := &prompb.WriteRequest{}
 		ok := proto.Unmarshal(dest, wr)
 		require.Nil(t, ok)
-		assert.EqualValues(t, expected, len(wr.Timeseries))
+		assert.Len(t, wr.Timeseries, expected)
 		if isStaleMarker {
 			assert.True(t, value.IsStaleNaN(wr.Timeseries[0].Samples[0].Value))
 		}
@@ -1007,10 +1007,10 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		assert.NoError(t, err)
 		reqs = append(reqs, req)
 	}
-	assert.Equal(t, 1, len(reqs))
+	assert.Len(t, reqs, 1)
 	// We MUST have 2 time series as were passed into tsMap.
 	gotFromWAL := reqs[0]
-	assert.Equal(t, 2, len(gotFromWAL.Timeseries))
+	assert.Len(t, gotFromWAL.Timeseries, 2)
 	want := &prompb.WriteRequest{
 		Timeseries: orderBySampleTimestamp([]prompb.TimeSeries{
 			*ts1, *ts2,
