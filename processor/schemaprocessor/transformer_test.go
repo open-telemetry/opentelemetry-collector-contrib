@@ -71,6 +71,10 @@ func plogsFromJson(t *testing.T, path string) plog.Logs {
 	require.NoError(t, err)
 	inLogs, err := unmarshaler.UnmarshalLogs(logJSON)
 	require.NoError(t, err)
+	a := inLogs.ResourceLogs()
+	println(fmt.Sprintf("%d", a.Len()))
+	require.NotNil(t, inLogs.ResourceLogs())
+	//require.NotEqual(t, 0, inLogs.LogRecordCount())
 	return inLogs
 }
 
@@ -118,6 +122,12 @@ func TestTransformerSchemaBySections(t *testing.T) {
 			section: "span_events_rename_spans",
 			dataType: component.DataTypeTraces,
 		},
+		//{
+		//	// rename attributes with no conditions, with apply to spans, with apply to events, with BOTH apply to spans and apply to events
+		//	name: "span_events_rename_attributes",
+		//	section: "span_events_rename_attributes",
+		//	dataType: component.DataTypeTraces,
+		//},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -126,10 +136,12 @@ func TestTransformerSchemaBySections(t *testing.T) {
 			inLogs := plogsFromJson(t, fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_in.json", tc.section, tc.dataType))
 
 			expectedLogs := plogsFromJson(t, fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_out.json", tc.section, tc.dataType))
+			//println(inLogs)
+			//println(expectedLogs)
 
 			logs, err := transform.processLogs(context.Background(), inLogs)
 			assert.NoError(t, err)
-			assert.EqualValues(t, expectedLogs, logs, "Must match the expected values")
+			assert.Equal(t, expectedLogs, logs, "Must match the expected values")
 		})
 
 	}
