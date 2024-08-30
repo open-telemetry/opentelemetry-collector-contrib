@@ -47,7 +47,7 @@ func TestFSStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}
 
-	assert.Equal(t, len(cMetrics), 0)
+	assert.Len(t, cMetrics, 0)
 
 	// node type for eks
 
@@ -131,7 +131,7 @@ func TestFSStatsWithAllowList(t *testing.T) {
 	}
 
 	// There are 3 valid device names which pass the allowlist in testAllowList json.
-	assert.Equal(t, 3, len(cMetrics))
+	assert.Len(t, cMetrics, 3)
 	assert.Equal(t, "tmpfs", cMetrics[0].tags["device"])
 	assert.Equal(t, "/dev/xvda1", cMetrics[1].tags["device"])
 	assert.Equal(t, "overlay", cMetrics[2].tags["device"])
