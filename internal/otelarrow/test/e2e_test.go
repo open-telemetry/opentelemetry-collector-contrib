@@ -360,8 +360,8 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 	eSigs, eMsgs := logSigs(testCon.expLogs)
 	rSigs, rMsgs := logSigs(testCon.recvLogs)
 
-	t.Log("EXP", eSigs, eMsgs)
-	t.Log("REC", rSigs, rMsgs)
+	t.Log("EXP:", eSigs, eMsgs)
+	t.Log("REC:", rSigs, rMsgs)
 
 	// Test for arrow stream errors.
 	require.Less(t, 0, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eSigs)
