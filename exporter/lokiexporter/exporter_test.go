@@ -276,7 +276,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			assert.Equal(t, len(actualPushRequestPerTenant), len(tC.expected))
 			for tenant, request := range actualPushRequestPerTenant {
 				pr, ok := tC.expected[tenant]
-				assert.Equal(t, ok, true)
+				assert.True(t, ok)
 
 				expectedLabel := pr.label
 				expectedLine := pr.line

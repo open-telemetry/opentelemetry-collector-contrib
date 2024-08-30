@@ -786,7 +786,7 @@ func TestReceiveLogs(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, test.want.numBatches, len(got))
+			require.Len(t, got, test.want.numBatches)
 
 			for i, wantBatch := range test.want.batches {
 				require.NotZero(t, got[i])
@@ -1181,7 +1181,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				}
 
 				if test.want.numBatches == 0 {
-					assert.Equal(t, 0, len(got))
+					assert.Len(t, got, 0)
 					return
 				}
 
@@ -1670,7 +1670,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	require.NoError(t, err)
 	err = c.pushLogData(context.Background(), profilingData)
 	require.NoError(t, err)
-	assert.Equal(t, 30, len(*headers))
+	assert.Len(t, *headers, 30)
 
 	profilingCount, nonProfilingCount := 0, 0
 	for i := range *headers {
