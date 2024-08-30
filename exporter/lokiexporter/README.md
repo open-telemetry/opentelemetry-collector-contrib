@@ -15,7 +15,7 @@ Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
 
 ## Deprecation notice
 
-This component is **deprecated**: Loki now supports native [OTLP ingestion](https://grafana.com/docs/loki/latest/send-data/otel/) starting from v3. Grafana Cloud also supports [OTLP native ingestion](https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp) for logs. This component will be removed in September 2024.
+This component is **deprecated**: Loki now supports native [OTLP ingestion](https://grafana.com/docs/loki/latest/send-data/otel/) starting from v3. Grafana Cloud also supports [OTLP native ingestion](https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp) for logs. This component will be removed in November 2024.
 
 
 ### Benefits of the new Loki OpenTelemetry log format
