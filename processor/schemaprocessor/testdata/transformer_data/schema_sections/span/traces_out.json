@@ -55,10 +55,10 @@
               ]
             }
           ],
-          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span/1.1.0"
+          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span/1.0.0"
         }
       ],
-      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span/1.1.0"
+      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span/1.0.0"
     }
   ]
 }

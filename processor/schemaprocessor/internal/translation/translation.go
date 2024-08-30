@@ -235,7 +235,7 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 				if err != nil {
 					return err
 				}
-				err = rev.spans.Apply(span.Attributes())
+				err = rev.spans.Apply(span.Attributes(), span.Name())
 				if err != nil {
 					return err
 				}
@@ -268,7 +268,7 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 
 				}
 				//rev.Spans().RevertSignal(span)
-				err = rev.spans.Rollback(span.Attributes())
+				err = rev.spans.Rollback(span.Attributes(), span.Name())
 				if err != nil {
 					return err
 				}

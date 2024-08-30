@@ -67,15 +67,37 @@ var f embed.FS
 func plogsFromJson(t *testing.T, path string) plog.Logs {
 	t.Helper()
 	unmarshaler := plog.JSONUnmarshaler{}
-	logJSON, err := f.ReadFile(path)
+	signalJSON, err := f.ReadFile(path)
 	require.NoError(t, err)
-	inLogs, err := unmarshaler.UnmarshalLogs(logJSON)
+	inSignals, err := unmarshaler.UnmarshalLogs(signalJSON)
 	require.NoError(t, err)
-	a := inLogs.ResourceLogs()
-	println(fmt.Sprintf("%d", a.Len()))
-	require.NotNil(t, inLogs.ResourceLogs())
-	//require.NotEqual(t, 0, inLogs.LogRecordCount())
-	return inLogs
+	require.NotNil(t, inSignals.ResourceLogs())
+	require.NotEqual(t, 0, inSignals.LogRecordCount())
+	return inSignals
+}
+
+func ptracesFromJson(t *testing.T, path string) ptrace.Traces {
+	t.Helper()
+	unmarshaler := ptrace.JSONUnmarshaler{}
+	signalJSON, err := f.ReadFile(path)
+	require.NoError(t, err)
+	inSignals, err := unmarshaler.UnmarshalTraces(signalJSON)
+	require.NoError(t, err)
+	require.NotNil(t, inSignals.ResourceSpans())
+	require.NotEqual(t, 0, inSignals.SpanCount())
+	return inSignals
+}
+
+func pmetricsFromJson(t *testing.T, path string) pmetric.Metrics {
+	t.Helper()
+	unmarshaler := pmetric.JSONUnmarshaler{}
+	signalJSON, err := f.ReadFile(path)
+	require.NoError(t, err)
+	inSignals, err := unmarshaler.UnmarshalMetrics(signalJSON)
+	require.NoError(t, err)
+	require.NotNil(t, inSignals.ResourceMetrics())
+	require.NotEqual(t, 0, inSignals.MetricCount())
+	return inSignals
 }
 
 func buildTestTransformer(t *testing.T, targetUrl string)  *transformer {
@@ -131,18 +153,41 @@ func TestTransformerSchemaBySections(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			transform := buildTestTransformer(t, fmt.Sprintf("https://example.com/testdata/testschemas/schema_sections/%s/1.0.0", tc.section))
+			transformerTarget := fmt.Sprintf("https://example.com/testdata/testschemas/schema_sections/%s/1.0.0", tc.section)
+			transform := buildTestTransformer(t, transformerTarget)
+			inDataPath := fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_in.json", tc.section, tc.dataType)
+			outDataPath := fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_out.json", tc.section, tc.dataType)
+			switch tc.dataType {
+			case component.DataTypeLogs:
+				inLogs := plogsFromJson(t, inDataPath)
+				expected := plogsFromJson(t, outDataPath)
 
-			inLogs := plogsFromJson(t, fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_in.json", tc.section, tc.dataType))
+				logs, err := transform.processLogs(context.Background(), inLogs)
+				assert.NoError(t, err)
+				assert.Equal(t, expected, logs, "Must match the expected values")
+			case component.DataTypeMetrics:
+				inLogs := plogsFromJson(t, inDataPath)
+				expected := plogsFromJson(t, outDataPath)
 
-			expectedLogs := plogsFromJson(t, fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_out.json", tc.section, tc.dataType))
-			//println(inLogs)
-			//println(expectedLogs)
+				metrics, err := transform.processLogs(context.Background(), inLogs)
+				assert.NoError(t, err)
+				assert.Equal(t, expected, metrics, "Must match the expected values")
+			case component.DataTypeTraces:
+				inTraces := ptracesFromJson(t, inDataPath)
+				expected := ptracesFromJson(t, outDataPath)
 
-			logs, err := transform.processLogs(context.Background(), inLogs)
-			assert.NoError(t, err)
-			assert.Equal(t, expectedLogs, logs, "Must match the expected values")
+				metrics, err := transform.processTraces(context.Background(), inTraces)
+				assert.NoError(t, err)
+				assert.Equal(t, expected, metrics, "Must match the expected values")
+			default:
+				require.FailNow(t, "unrecognized data type")
+				return
+			}
+
+
+
 		})
+
 
 	}
 }
