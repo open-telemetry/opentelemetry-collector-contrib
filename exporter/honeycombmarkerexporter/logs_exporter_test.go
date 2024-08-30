@@ -138,7 +138,7 @@ func TestExportMarkers(t *testing.T) {
 
 				userAgent := req.Header.Get(userAgentHeaderKey)
 				assert.NotEmpty(t, userAgent)
-				assert.Equal(t, strings.Contains(userAgent, "OpenTelemetry Collector"), true)
+				assert.True(t, strings.Contains(userAgent, "OpenTelemetry Collector"))
 
 				rw.WriteHeader(http.StatusAccepted)
 			}))

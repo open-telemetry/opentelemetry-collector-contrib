@@ -377,7 +377,7 @@ func consumerFailure(t *testing.T, err error) {
 	require.Error(t, err)
 
 	// there should be no permanent errors anywhere in this test.
-	require.True(t, !consumererror.IsPermanent(err),
+	require.False(t, consumererror.IsPermanent(err),
 		"should not be permanent: %v", err)
 
 	stat, ok := status.FromError(err)

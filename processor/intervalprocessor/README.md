@@ -19,19 +19,23 @@ The interval processor (`intervalprocessor`) aggregates metrics and periodically
 * Monotonically increasing, cumulative sums
 * Monotonically increasing, cumulative histograms
 * Monotonically increasing, cumulative exponential histograms
+* Gauges 
+* Summaries
 
 The following metric types will *not* be aggregated, and will instead be passed, unchanged, to the next component in the pipeline:
 
 * All delta metrics
 * Non-monotonically increasing sums
-* Gauges
-* Summaries
+
+> NOTE: Aggregating data over an interval is an inherently "lossy" process. For monotonically increasing, cumulative sums, histograms, and exponential histograms, you "lose" precision, but you don't lose overall data. But for non-monotonically increasing sums, gauges, and summaries, aggregation represents actual data loss. IE you could "lose" that a value increased and then decreased back to the original value. In most cases, this data "loss" is ok. However, if you would rather these values be passed through, and *not* aggregated, you can set that in the configuration
 
 ## Configuration
 
 The following settings can be optionally configured:
 
 * `interval`: The interval in which the processor should export the aggregated metrics. Default: 60s
+* `gauge_pass_through`: Whether gauges should pass through as they are to the next component or be aggregated. Default: false
+* `summary_pass_through`: Whether summaries should pass through as they are to the next component or be aggregated. Default: false
 
 ## Example of metric flows
 
