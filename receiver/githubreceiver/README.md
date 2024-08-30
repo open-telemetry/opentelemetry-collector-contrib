@@ -90,4 +90,4 @@ and can be found
 For additional context on GitHub scraper limitations and inner workings please
 see the [Scraping README][ghsread].
 
-[ghsread]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/githubreceiver/internal/scraper/githubscraper/README.md#github-limitations
+[ghsread]: internal/scraper/githubscraper/README.md#github-limitations
