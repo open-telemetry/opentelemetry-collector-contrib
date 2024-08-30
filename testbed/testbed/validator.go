@@ -128,7 +128,7 @@ func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 	if len(tc.MockBackend.ReceivedTraces) > 0 {
 		v.assertSentRecdTracingDataEqual(append(tc.MockBackend.ReceivedTraces, tc.MockBackend.DroppedTraces...))
 	}
-	assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
+	assert.Len(tc.t, v.assertionFailures, 0, "There are span data mismatches.")
 }
 
 func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {

@@ -83,7 +83,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 	maps.Copy(map1, map2)
 	maps.Copy(map1, map3)
 
-	require.Equal(t, len(map1), 300)
+	require.Len(t, map1, 300)
 }
 
 func TestExtensionAck_ProcessEvents_EventsUnAcked(t *testing.T) {
@@ -104,7 +104,7 @@ func TestExtensionAck_ProcessEvents_EventsUnAcked(t *testing.T) {
 	// non-acked events should be return false
 	for i := 0; i < 100; i++ {
 		result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{0, 1, 2})
-		require.Equal(t, len(result), 3)
+		require.Len(t, result, 3)
 		require.False(t, result[0])
 		require.False(t, result[1])
 		require.False(t, result[2])
@@ -140,13 +140,13 @@ func TestExtensionAck_ProcessEvents_EventsAcked(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		if i%2 == 0 {
 			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
-			require.Equal(t, len(result), 3)
+			require.Len(t, result, 3)
 			require.False(t, result[1])
 			require.True(t, result[2])
 			require.False(t, result[3])
 		} else {
 			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
-			require.Equal(t, len(result), 3)
+			require.Len(t, result, 3)
 			require.True(t, result[1])
 			require.False(t, result[2])
 			require.True(t, result[3])
@@ -183,13 +183,13 @@ func TestExtensionAck_QueryAcks_Unidempotent(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		if i%2 == 0 {
 			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
-			require.Equal(t, len(result), 3)
+			require.Len(t, result, 3)
 			require.False(t, result[1])
 			require.True(t, result[2])
 			require.False(t, result[3])
 		} else {
 			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
-			require.Equal(t, len(result), 3)
+			require.Len(t, result, 3)
 			require.True(t, result[1])
 			require.False(t, result[2])
 			require.True(t, result[3])
@@ -199,7 +199,7 @@ func TestExtensionAck_QueryAcks_Unidempotent(t *testing.T) {
 	// querying the same acked events should result in false
 	for i := 0; i < 100; i++ {
 		result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
-		require.Equal(t, len(result), 3)
+		require.Len(t, result, 3)
 		require.False(t, result[1])
 		require.False(t, result[2])
 		require.False(t, result[3])
@@ -233,7 +233,7 @@ func TestExtensionAckAsync(t *testing.T) {
 	// non-acked events should be return false
 	for i := 0; i < partitionCount; i++ {
 		result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
-		require.Equal(t, len(result), 3)
+		require.Len(t, result, 3)
 		require.False(t, result[1])
 		require.False(t, result[2])
 		require.False(t, result[3])
@@ -259,13 +259,13 @@ func TestExtensionAckAsync(t *testing.T) {
 	for i := 0; i < partitionCount; i++ {
 		if i%2 == 0 {
 			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
-			require.Equal(t, len(result), 3)
+			require.Len(t, result, 3)
 			require.False(t, result[1])
 			require.True(t, result[2])
 			require.False(t, result[3])
 		} else {
 			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
-			require.Equal(t, len(result), 3)
+			require.Len(t, result, 3)
 			require.True(t, result[1])
 			require.False(t, result[2])
 			require.True(t, result[3])
@@ -285,7 +285,7 @@ func TestExtensionAckAsync(t *testing.T) {
 
 	for i := 0; i < partitionCount; i++ {
 		result := <-resultChan
-		require.Equal(t, len(result), 3)
+		require.Len(t, result, 3)
 		require.False(t, result[1])
 		require.False(t, result[2])
 		require.False(t, result[3])

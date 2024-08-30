@@ -90,7 +90,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
 	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
 
-	assert.Equal(t, 1, len(r1.PrometheusConfig.ScrapeConfigs))
+	assert.Len(t, r1.PrometheusConfig.ScrapeConfigs, 1)
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, promModel.Duration(5*time.Second), r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
 
@@ -101,7 +101,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, component.ValidateConfig(cfg))
 
 	r2 := cfg.(*Config)
-	assert.Equal(t, 1, len(r2.PrometheusConfig.ScrapeConfigs))
+	assert.Len(t, r2.PrometheusConfig.ScrapeConfigs, 1)
 	assert.Equal(t, "demo", r2.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
 }

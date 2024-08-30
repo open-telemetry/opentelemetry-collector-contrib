@@ -453,7 +453,7 @@ func TestGetPullRequests(t *testing.T) {
 
 			prs, err := ghs.getPullRequests(context.Background(), client, "repo name")
 
-			assert.Equal(t, tc.expectedPrCount, len(prs))
+			assert.Len(t, prs, tc.expectedPrCount)
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
