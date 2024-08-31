@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter/internal/metadata"
 )
@@ -59,13 +58,21 @@ func createLogsExporter(ctx context.Context, set exporter.Settings, cfg componen
 }
 
 func createTracesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
+	c := cfg.(*Config)
+	exporter, err := newTracesExporter(set.Logger, c)
+	if err != nil {
+		return nil, err
+	}
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
-		func(_ context.Context, _ ptrace.Traces) error {
-			return nil
-		},
+		exporter.pushTraceData,
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
 
