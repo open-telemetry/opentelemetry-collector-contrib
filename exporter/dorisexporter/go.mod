@@ -8,6 +8,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	// cannot use higher version: https://github.com/go-sql-driver/mysql/issues/1602
 	github.com/go-sql-driver/mysql v1.7.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.108.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.0
 	go.opentelemetry.io/collector/config/configopaque v1.15.0
@@ -17,11 +18,6 @@ require (
 	go.opentelemetry.io/collector/pdata v1.15.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-)
-
-require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.108.0
-	go.opentelemetry.io/collector/semconv v0.108.1
 )
 
 require (

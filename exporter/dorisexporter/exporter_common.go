@@ -94,7 +94,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 }
 
 func createMySQLClient(cfg *Config) (*sql.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/mysql", cfg.Username, cfg.Password, cfg.MySQLEndpoint)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/mysql", cfg.Username, string(cfg.Password), cfg.MySQLEndpoint)
 	conn, err := sql.Open("mysql", dsn)
 	return conn, err
 }
