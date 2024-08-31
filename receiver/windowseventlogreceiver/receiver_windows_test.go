@@ -272,7 +272,7 @@ func requireExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expect
 	// logs sometimes take a while to be written, so a substantial wait buffer is needed
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		actualLogRecords = filterAllLogRecordsBySource(t, sink, expectedEventSrc)
-		assert.Equal(c, expectedEventCount, len(actualLogRecords))
+		assert.Len(c, actualLogRecords, expectedEventCount)
 	}, 10*time.Second, 250*time.Millisecond)
 
 	return actualLogRecords

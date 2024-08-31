@@ -479,7 +479,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 		p.keyToMetric[key] = metric
 	}
 	p.cleanCache()
-	assert.Equal(t, 0, len(p.keyToMetric))
+	assert.Len(t, p.keyToMetric, 0)
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
@@ -525,8 +525,8 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	go p.cleanCache()
 
 	// Since everything is locked, nothing has happened, so both should still have length 1
-	assert.Equal(t, 1, len(p.reqTotal))
-	assert.Equal(t, 1, len(p.keyToMetric))
+	assert.Len(t, p.reqTotal, 1)
+	assert.Len(t, p.keyToMetric, 1)
 
 	// Now we pretend that we have stopped collecting metrics, by unlocking seriesMutex
 	p.seriesMutex.Unlock()
@@ -539,8 +539,8 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	// for dimensions from that series. It's important that it happens this way around,
 	// instead of deleting it from `keyToMetric`, otherwise the metrics collector will try
 	// and fail to find dimensions for a series that is about to be removed.
-	assert.Equal(t, 0, len(p.reqTotal))
-	assert.Equal(t, 1, len(p.keyToMetric))
+	assert.Len(t, p.reqTotal, 0)
+	assert.Len(t, p.keyToMetric, 1)
 
 	p.metricMutex.RUnlock()
 	p.seriesMutex.Unlock()
@@ -574,7 +574,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 		p.keyToMetric[key] = metric
 	}
 	p.cleanCache()
-	assert.Equal(t, 0, len(p.keyToMetric))
+	assert.Len(t, p.keyToMetric, 0)
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")

@@ -86,7 +86,7 @@ func TestMetricsGrouping(t *testing.T) {
 				assert.NoError(t, cErr)
 
 				got := next.AllMetrics()
-				require.Equal(t, 1, len(got))
+				require.Len(t, got, 1)
 				require.NoError(t, pmetrictest.CompareMetrics(expected, got[0], pmetrictest.IgnoreMetricValues()))
 
 				assert.NoError(t, mtp.Shutdown(context.Background()))

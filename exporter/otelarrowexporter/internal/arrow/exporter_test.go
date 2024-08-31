@@ -228,7 +228,7 @@ func TestArrowExporterSuccess(t *testing.T) {
 					case ptrace.Traces:
 						traces, err := testCon.TracesFrom(outputData)
 						require.NoError(t, err)
-						require.Equal(t, 1, len(traces))
+						require.Len(t, traces, 1)
 						otelAssert.Equiv(stdTesting, []json.Marshaler{
 							compareJSONTraces{testData},
 						}, []json.Marshaler{
@@ -237,7 +237,7 @@ func TestArrowExporterSuccess(t *testing.T) {
 					case plog.Logs:
 						logs, err := testCon.LogsFrom(outputData)
 						require.NoError(t, err)
-						require.Equal(t, 1, len(logs))
+						require.Len(t, logs, 1)
 						otelAssert.Equiv(stdTesting, []json.Marshaler{
 							compareJSONLogs{testData},
 						}, []json.Marshaler{
@@ -246,7 +246,7 @@ func TestArrowExporterSuccess(t *testing.T) {
 					case pmetric.Metrics:
 						metrics, err := testCon.MetricsFrom(outputData)
 						require.NoError(t, err)
-						require.Equal(t, 1, len(metrics))
+						require.Len(t, metrics, 1)
 						otelAssert.Equiv(stdTesting, []json.Marshaler{
 							compareJSONMetrics{testData},
 						}, []json.Marshaler{
@@ -547,7 +547,7 @@ func TestArrowExporterStreaming(t *testing.T) {
 				for data := range channel.sendChannel() {
 					traces, err := testCon.TracesFrom(data)
 					require.NoError(t, err)
-					require.Equal(t, 1, len(traces))
+					require.Len(t, traces, 1)
 					actualOutput = append(actualOutput, traces[0])
 					channel.recv <- statusOKFor(data.BatchId)
 				}
@@ -757,7 +757,7 @@ func TestArrowExporterStreamLifetimeAndShutdown(t *testing.T) {
 							for data := range channel.sendChannel() {
 								traces, err := testCon.TracesFrom(data)
 								require.NoError(t, err)
-								require.Equal(t, 1, len(traces))
+								require.Len(t, traces, 1)
 								atomic.AddUint64(&actualCount, 1)
 								channel.recv <- statusOKFor(data.BatchId)
 							}
