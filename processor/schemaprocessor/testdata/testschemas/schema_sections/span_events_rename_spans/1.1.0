@@ -8,7 +8,10 @@ versions:
       changes:
         - rename_events:
             name_map:
-              testEvent1: testEventOne
+              testEvent1: testEventUno
               testEvent2: testEventTwo
+        - rename_events:
+            name_map:
+              testEventUno: testEventOne
   #  this has to be here
   1.0.0:

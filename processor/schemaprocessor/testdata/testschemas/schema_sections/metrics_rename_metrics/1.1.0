@@ -6,10 +6,10 @@ versions:
   1.1.0:
     metrics:
       changes:
-      - rename_metrics:
-          testMetric1: testMetricUno
-      - rename_metrics:
-          testMetricUno: testMetricOne
-          testMetric2: testMetricTwo
-#  this has to be here
+        - rename_metrics:
+            testMetric1: testMetricUno
+            testMetric2: testMetricTwo
+        - rename_metrics:
+            testMetricUno: testMetricOne
+  #  this has to be here
   1.0.0:

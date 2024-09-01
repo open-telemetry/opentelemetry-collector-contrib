@@ -24,13 +24,13 @@
               "name": "testSpan1",
               "attributes": [
                 {
-                  "key": "string2",
+                  "key": "kubernetes.cluster.name",
                   "value": {
                     "stringValue": "value"
                   }
                 },
                 {
-                  "key": "double",
+                  "key": "d4r.image.name",
                   "value": {
                     "doubleValue": 1.1
                   }
@@ -41,13 +41,13 @@
               "name": "testSpan2",
               "attributes": [
                 {
-                  "key": "string2",
+                  "key": "kubernetes.cluster.name",
                   "value": {
                     "stringValue": "value"
                   }
                 },
                 {
-                  "key": "double2",
+                  "key": "docker.image.name",
                   "value": {
                     "doubleValue": 1.1
                   }
