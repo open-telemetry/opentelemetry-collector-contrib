@@ -41,9 +41,6 @@ func TestTransformerStart(t *testing.T) {
 	assert.NoError(t, trans.start(context.Background(), componenttest.NewNopHost()))
 }
 
-//go:embed testdata/testschemas
-var testdataFiles embed.FS
-
 type SchemaResource interface {
 	SetSchemaUrl(schema string)
 	SchemaUrl() string
@@ -111,13 +108,12 @@ func buildTestTransformer(t *testing.T, targetUrl string)  *transformer {
 		},
 	})
 	require.NoError(t, err, "Must not error when creating transformer")
-	err = transform.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
+	err = transform.manager.SetProviders(translation.NewTestProvider(&f))
 	require.NoError(t, err)
 	return transform
 }
 
 func TestTransformerSchemaBySections(t *testing.T) {
-	// todo(ankit) fix schema urls in testschemas
 	tests := []struct {
 		name            string
 		section           string
@@ -125,19 +121,19 @@ func TestTransformerSchemaBySections(t *testing.T) {
 	}{
 		{
 			// todo(ankit) do i need to test all data types here?
-			name: "all_log",
+			name: "all_logs",
 			section: "all",
 			dataType: component.DataTypeLogs,
 		},
 		{
 			// todo(ankit) do i need to test all data types here?
-			name: "resource_log",
-			section: "resource",
+			name: "resources_logs",
+			section: "resources",
 			dataType: component.DataTypeLogs,
 		},
 		{
-			name: "span",
-			section: "span",
+			name: "spans",
+			section: "spans",
 			dataType: component.DataTypeTraces,
 		},
 		{
@@ -160,10 +156,10 @@ func TestTransformerSchemaBySections(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			transformerTarget := fmt.Sprintf("https://example.com/testdata/testschemas/schema_sections/%s/1.0.0", tc.section)
+			transformerTarget := fmt.Sprintf("https://example.com/testdata/schema_sections/%s/1.0.0", tc.section)
 			transform := buildTestTransformer(t, transformerTarget)
-			inDataPath := fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_in.json", tc.section, tc.dataType)
-			outDataPath := fmt.Sprintf("testdata/transformer_data/schema_sections/%s/%s_out.json", tc.section, tc.dataType)
+			inDataPath := fmt.Sprintf("testdata/schema_sections/%s/%s_in.json", tc.section, tc.dataType)
+			outDataPath := fmt.Sprintf("testdata/schema_sections/%s/%s_out.json", tc.section, tc.dataType)
 			switch tc.dataType {
 			case component.DataTypeLogs:
 				inLogs := plogsFromJson(t, inDataPath)
@@ -270,6 +266,9 @@ func GenerateLogForTest() plog.Logs {
 	l.Attributes().PutStr("input", "test")
 	return in
 }
+
+//go:embed testdata/testschemas
+var testdataFiles embed.FS
 
  // case 1: resource schema set, scope schema not set, use resource schema
  // case 2: resource schema not set, scope schema set, use scope schema inside

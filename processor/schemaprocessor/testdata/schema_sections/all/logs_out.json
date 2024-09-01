@@ -17,13 +17,13 @@
             {
               "attributes": [
                 {
-                  "key": "k8s.cluster.name",
+                  "key": "kubernetes.cluster.name",
                   "value": {
                     "stringValue": "sancia"
                   }
                 },
                 {
-                  "key": "d4r.image.name",
+                  "key": "docker.image.name",
                   "value": {
                     "stringValue": "flooentd"
                   }
@@ -31,7 +31,7 @@
               ]
             }
           ],
-          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/resource/1.0.0"
+          "schemaUrl": "https://example.com/testdata/schema_sections/all/1.0.0"
         },
         {
           "logRecords": [
@@ -46,10 +46,10 @@
               ]
             }
           ],
-          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/resource/1.0.0"
+          "schemaUrl": "https://example.com/testdata/schema_sections/all/1.0.0"
         }
       ],
-      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/resource/1.0.0"
+      "schemaUrl": "https://example.com/testdata/schema_sections/all/1.0.0"
     },
     {
       "resource": {
@@ -62,7 +62,7 @@
           }
         ]
       },
-      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/resource/1.0.0"
+      "schemaUrl": "https://example.com/testdata/schema_sections/all/1.0.0"
     }
   ]
 }

@@ -50,10 +50,10 @@
               }
             }
           ],
-          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/metrics_rename_metrics/1.1.0"
+          "schemaUrl": "https://example.com/testdata/schema_sections/metrics_rename_metrics/1.1.0"
         }
       ],
-      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/metrics_rename_metrics/1.1.0"
+      "schemaUrl": "https://example.com/testdata/schema_sections/metrics_rename_metrics/1.1.0"
     }
   ]
 }

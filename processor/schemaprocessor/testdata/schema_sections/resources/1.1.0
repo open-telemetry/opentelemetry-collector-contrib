@@ -1,10 +1,10 @@
 file_format: 1.0.0
 
-schema_url: https://example.com/testschemas/all/1.1.0
+schema_url: https://example.com/testdata/schema_sections/resources/1.1.0
 
 versions:
   1.1.0:
-    all:
+    resources:
       changes:
         - rename_attributes:
             attribute_map:

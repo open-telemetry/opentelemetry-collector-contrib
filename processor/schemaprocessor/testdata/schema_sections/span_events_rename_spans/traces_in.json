@@ -39,7 +39,7 @@
               "events": [
                 {
                   "timeUnixNano": "1684620382541971000",
-                  "name": "testEvent1",
+                  "name": "testEventOne",
                   "attributes": [
                     {
                       "key": "string",
@@ -58,7 +58,7 @@
                 },
                 {
                   "timeUnixNano": "1684620382541971000",
-                  "name": "testEvent2",
+                  "name": "testEventTwo",
                   "attributes": [
                     {
                       "key": "string",
@@ -114,10 +114,10 @@
               ]
             }
           ],
-          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span_events_rename_spans/1.0.0"
+          "schemaUrl": "https://example.com/testdata/schema_sections/span_events_rename_spans/1.1.0"
         }
       ],
-      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span_events_rename_spans/1.0.0"
+      "schemaUrl": "https://example.com/testdata/schema_sections/span_events_rename_spans/1.1.0"
     }
   ]
 }

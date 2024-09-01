@@ -24,7 +24,7 @@
               "name": "testSpan1",
               "attributes": [
                 {
-                  "key": "kubernetes.cluster.name",
+                  "key": "k8s.cluster.name",
                   "value": {
                     "stringValue": "value"
                   }
@@ -41,13 +41,13 @@
               "name": "testSpan2",
               "attributes": [
                 {
-                  "key": "kubernetes.cluster.name",
+                  "key": "k8s.cluster.name",
                   "value": {
                     "stringValue": "value"
                   }
                 },
                 {
-                  "key": "docker.image.name",
+                  "key": "d4r.image.name",
                   "value": {
                     "doubleValue": 1.1
                   }
@@ -55,10 +55,10 @@
               ]
             }
           ],
-          "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span/1.0.0"
+          "schemaUrl": "https://example.com/testdata/schema_sections/spans/1.1.0"
         }
       ],
-      "schemaUrl": "https://example.com/testdata/testschemas/schema_sections/span/1.0.0"
+      "schemaUrl": "https://example.com/testdata/schema_sections/spans/1.1.0"
     }
   ]
 }

@@ -112,6 +112,7 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Tran
 				zap.Error(err),
 				zap.String("schemaURL", schemaURL),
 			)
+			// todo(ankit) figure out what to do when the providers dont respond something good
 		}
 		t, err := newTranslatorFromReader(
 			m.log.Named("translator").With(
