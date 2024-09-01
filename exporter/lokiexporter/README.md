@@ -45,14 +45,14 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 
 ℹ️ Additional conversion rules from OpenTelemetry Logs to Loki 
 
-* `.` in attributes and resource attributes are converted into `_` when they are mapped as Loki labels or metadata,  
-* Otel attribute values with complex data types (i.e. arrays, nested structures) are converted into JSON strings
+* `.` in attributes and resource attributes are converted into `_` when they are mapped as Loki labels or metadata.
+* OTel attribute values with complex data types (i.e. arrays, nested structures) are converted into JSON strings
 
 ### Migration instructions
 
 ### Instrumentation migration: No changes to the instrumentation layer
 
-No changes are needed in the instrumentation layer. OpenTelemetry logs sources like OpenTelemetry SDKs or the OpenTelemetry Collector File Log Receiver don’t have to be modified.
+No changes are needed in the instrumentation layer. OpenTelemetry logs sources like OpenTelemetry SDKs or the [OpenTelemetry Collector File Log Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver) don’t have to be modified.
 
 ### Logs collection migration: Replace the OpenTelemetry Collector Loki Exporter by the OTLP/HTTP Exporter
 
@@ -84,7 +84,7 @@ service:
     logs:
       receivers: [...]
       processors: [...]
-      exporters: [..., loki]
+      exporters: [loki, ...]
 
 
 ========================
@@ -101,7 +101,7 @@ exporters:
   otlphttp/loki:
     auth:
       authenticator: basicauth/loki
-    endpoint: http://<loki-addr>:3100/otlp/v1/logs
+    endpoint: http://loki.example.com:3100/otlp/v1/logs
 
 service:
   extensions: [basicauth/loki]
@@ -109,7 +109,7 @@ service:
     logs:
       receivers: [...]
       processors: [...]
-      exporters: [..., otlphttp/loki]
+      exporters: [otlphttp/loki, ...]
 ```
 
 * The OTLP HTTP endpoint URL and credentials details for Grafana Cloud users are available using the Grafana Cloud "OpenTelemetry Collector" connection tile.
@@ -135,9 +135,9 @@ AFTER
 
 #### From `| json | an_attribute=...` to `{an_attribute=...}` or `| an_attribute=...`
 
-OTel log attributes, resource attributes, and fields are no longer stored in the JSON message but are stored as 
+OTel log attributes, resource attributes, and fields are no longer stored in the JSON message but are stored as:
 * Loki message labels for promoted resource attributes (see list above),
-* Loki message metadata for other resource attributes, log attributes and log fields.
+* Loki message metadata for other resource attributes, log attributes, and log fields.
 
 LogQL statements `| json | an_attribute=...` must be converted to:
 
@@ -146,7 +146,7 @@ LogQL statements `| json | an_attribute=...` must be converted to:
 
 #### From `| json | traceid=...` and `| json | spanid=...` to `| trace_id=...` and `| span_id=...`
 
-The log fields `SpanID` and `TraceId` where stored as JSON field `spanid` and `traceid`; they are now stored as `metadata[span_id]` and `metadata[trace_id]`, LogQL queries must be changed accordingly.
+The log fields `SpanID` and `TraceId` were stored as the JSON fields `spanid` and `traceid`; they are now stored as `metadata[span_id]` and `metadata[trace_id]`, LogQL queries must be changed accordingly.
 
 `TraceID` filters like `| json | traceid=<<traceId>> ...` and `|= <<traceId>> ...` must be converted to `| trace_id=<<traceId>> ...` where `<<traceId>>` and <<spanId>> are the values you search for.  
 Similarly, `SpanID` filters like `| json | spanid=<<spanid>> ...` and `|=<<spanid>> ...` must be converted to `| span_id=<<spanid>> ...`.
@@ -174,7 +174,7 @@ AFTER
 
 #### Using `keep __line__` in direct LogQL queries to prevent stream splits
 
-The number of logstreams return by LogQL queries made directly to Loki (without going through the Grafana GUI) may increase due to the distinct metadata label values and thus impact the sorting of the result as results are sorted per log stream.
+The number of log streams returned by LogQL queries made directly to Loki (without going through the Grafana GUI) may increase due to the distinct metadata label values and thus impact the sorting of the result as results are sorted per log stream.
 Use the `keep` function to limit the number of log streams return by LogQL queries and have a global doring of the returned  log entries
 
 Example:
@@ -186,7 +186,7 @@ AFTER
 
 ### Grafana visualizations migration
 
-#### Tempo data source: Trace 2 Logs
+#### Tempo data source: Trace to Logs
 
 To enable the "trace to logs" navigation from Tempo to Loki, navigate to the Grafana Tempo data source configuration screen, in the "Trace to logs" section, select "use custom query" and specify the query:
 
@@ -194,7 +194,7 @@ To enable the "trace to logs" navigation from Tempo to Loki, navigate to the Gra
 {service_name="${__span.tags["service.name"]}"} | trace_id="${__span.traceId}"
 ```
 
-#### Loki data source: Log 2 Trace
+#### Loki data source: Log to Trace
 
 To enable the "logs to trace" navigation from Loki to Tempo, navigate to the Grafana Loki data source configuration screen, in the "Derived fields" section, update or create a derived field with:
 * Name: `Trace ID`
