@@ -22,7 +22,7 @@ This component is **deprecated**: Loki now supports native [OTLP ingestion](http
 
 The new format for OpenTelemetry logs introduced in Loki V3 brings the following benefits:
 
-* Native support for the structure of OpenTelemetry logs enabling simpler querying (no more JSON parsing),
+* Native support for the structure of OpenTelemetry logs enabling simpler querying (no more JSON parsing).
 * Simplified client configuration to send OpenTelemetry data using the standard OTLP protocol.
 
 ### Loki log message format changes for OpenTelemetry logs
