@@ -1,0 +1,128 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "testHost"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "testService"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "spans": [
+            {
+              "name": "testSpan1",
+              "events": [
+                {
+                  "name": "testEventOne",
+                  "attributes": [
+                    {
+                      "key": "k8s.cluster.name",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "d4r.image.name",
+                      "value": {
+                        "doubleValue": 1.1
+                      }
+                    },
+                    {
+                      "key": "provider",
+                      "value": {
+                        "stringValue": "aws"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "testEventTwo",
+                  "attributes": [
+                    {
+                      "key": "db.name",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "provider",
+                      "value": {
+                        "stringValue": "gcp"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "testEventThree",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "testSpan2",
+              "attributes": [
+                {
+                  "key": "k8s.cluster.name",
+                  "value": {
+                    "stringValue": "value"
+                  }
+                },
+                {
+                  "key": "d4r.image.name",
+                  "value": {
+                    "doubleValue": 1.1
+                  }
+                }
+              ],
+              "events": [
+                {
+                  "name": "testEventTwo",
+                  "attributes": [
+                    {
+                      "key": "db.name",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "provider",
+                      "value": {
+                        "stringValue": "aws"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "schemaUrl": "https://example.com/testdata/schema_sections/span_events_rename_attributes/1.1.0"
+        }
+      ],
+      "schemaUrl": "https://example.com/testdata/schema_sections/span_events_rename_attributes/1.1.0"
+    }
+  ]
+}
