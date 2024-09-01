@@ -20,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
 // todo(ankit) test for all schema changes
@@ -142,7 +145,6 @@ func TestTransformerSchemaBySections(t *testing.T) {
 			dataType: component.DataTypeTraces,
 		},
 		{
-			// rename attributes with no conditions, with apply to spans, with apply to events, with BOTH apply to spans and apply to events
 			name: "span_events_rename_attributes",
 			section: "span_events_rename_attributes",
 			dataType: component.DataTypeTraces,
@@ -177,21 +179,21 @@ func TestTransformerSchemaBySections(t *testing.T) {
 
 				logs, err := transform.processLogs(context.Background(), inLogs)
 				assert.NoError(t, err)
-				assert.Equal(t, expected, logs, "Must match the expected values")
+				assert.NoError(t, plogtest.CompareLogs(expected, logs), "Must match the expected values")
 			case component.DataTypeMetrics:
 				inMetrics := pmetricsFromJson(t, inDataPath)
 				expected := pmetricsFromJson(t, outDataPath)
 
 				metrics, err := transform.processMetrics(context.Background(), inMetrics)
 				assert.NoError(t, err)
-				assert.Equal(t, expected, metrics, "Must match the expected values")
+				assert.NoError(t, pmetrictest.CompareMetrics(expected, metrics), "Must match the expected values")
 			case component.DataTypeTraces:
 				inTraces := ptracesFromJson(t, inDataPath)
 				expected := ptracesFromJson(t, outDataPath)
 
-				metrics, err := transform.processTraces(context.Background(), inTraces)
+				traces, err := transform.processTraces(context.Background(), inTraces)
 				assert.NoError(t, err)
-				assert.Equal(t, expected, metrics, "Must match the expected values")
+				assert.NoError(t, ptracetest.CompareTraces(expected, traces), "Must match the expected values")
 			default:
 				require.FailNow(t, "unrecognized data type")
 				return
