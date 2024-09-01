@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -366,74 +368,119 @@ func TestFilterMetricProcessor(t *testing.T) {
 }
 
 func TestFilterMetricProcessorTelemetry(t *testing.T) {
-	telemetryTest(t, "FilterMetricProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
-		next := new(consumertest.MetricsSink)
-		cfg := &Config{
-			Metrics: MetricFilters{
-				MetricConditions: []string{
-					"name==\"metric1\"",
+	tel := setupTestTelemetry()
+	next := new(consumertest.MetricsSink)
+	cfg := &Config{
+		Metrics: MetricFilters{
+			MetricConditions: []string{
+				"name==\"metric1\"",
+			},
+		},
+	}
+	factory := NewFactory()
+	fmp, err := factory.CreateMetricsProcessor(
+		context.Background(),
+		tel.NewSettings(),
+		cfg,
+		next,
+	)
+	assert.NotNil(t, fmp)
+	assert.NoError(t, err)
+
+	caps := fmp.Capabilities()
+	assert.True(t, caps.MutatesData)
+	ctx := context.Background()
+	assert.NoError(t, fmp.Start(ctx, nil))
+
+	err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+		{
+			metricNames: []string{"foo", "bar"},
+			resourceAttributes: map[string]any{
+				"attr1": "attr1/val1",
+			},
+		},
+	}))
+	assert.NoError(t, err)
+
+	want := []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_filter_datapoints.filtered",
+			Description: "Number of metric data points dropped by the filter processor",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      0,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
 				},
 			},
-		}
-		factory := NewFactory()
-		fmp, err := factory.CreateMetricsProcessor(
-			context.Background(),
-			tel.NewProcessorCreateSettings(),
-			cfg,
-			next,
-		)
-		assert.NotNil(t, fmp)
-		assert.NoError(t, err)
+		},
+	}
 
-		caps := fmp.Capabilities()
-		assert.True(t, caps.MutatesData)
-		ctx := context.Background()
-		assert.NoError(t, fmp.Start(ctx, nil))
+	tel.assertMetrics(t, want)
 
-		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
-			{
-				metricNames: []string{"foo", "bar"},
-				resourceAttributes: map[string]any{
-					"attr1": "attr1/val1",
+	err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+		{
+			metricNames: []string{"metric1", "metric2"},
+			resourceAttributes: map[string]any{
+				"attr1": "attr1/val1",
+			},
+		},
+	}))
+	assert.NoError(t, err)
+
+	want = []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_filter_datapoints.filtered",
+			Description: "Number of metric data points dropped by the filter processor",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      1,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
 				},
 			},
-		}))
-		assert.NoError(t, err)
+		},
+	}
+	tel.assertMetrics(t, want)
 
-		tel.assertMetrics(t, expectedMetrics{
-			metricDataPointsFiltered: 0,
-		})
+	err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+		{
+			metricNames: []string{"metric1"},
+			resourceAttributes: map[string]any{
+				"attr1": "attr1/val1",
+			},
+		},
+	}))
+	assert.NoError(t, err)
 
-		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
-			{
-				metricNames: []string{"metric1", "metric2"},
-				resourceAttributes: map[string]any{
-					"attr1": "attr1/val1",
+	want = []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_filter_datapoints.filtered",
+			Description: "Number of metric data points dropped by the filter processor",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      2,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
 				},
 			},
-		}))
-		assert.NoError(t, err)
+		},
+	}
+	tel.assertMetrics(t, want)
 
-		tel.assertMetrics(t, expectedMetrics{
-			metricDataPointsFiltered: 1,
-		})
-
-		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
-			{
-				metricNames: []string{"metric1"},
-				resourceAttributes: map[string]any{
-					"attr1": "attr1/val1",
-				},
-			},
-		}))
-		assert.NoError(t, err)
-
-		tel.assertMetrics(t, expectedMetrics{
-			metricDataPointsFiltered: 2,
-		})
-
-		assert.NoError(t, fmp.Shutdown(ctx))
-	})
+	assert.NoError(t, fmp.Shutdown(ctx))
 }
 
 func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
