@@ -141,16 +141,26 @@ func TestTransformerSchemaBySections(t *testing.T) {
 			section: "span_events_rename_spans",
 			dataType: component.DataTypeTraces,
 		},
-		//{
-		//	// rename attributes with no conditions, with apply to spans, with apply to events, with BOTH apply to spans and apply to events
-		//	name: "span_events_rename_attributes",
-		//	section: "span_events_rename_attributes",
-		//	dataType: component.DataTypeTraces,
-		//},
+		{
+			// rename attributes with no conditions, with apply to spans, with apply to events, with BOTH apply to spans and apply to events
+			name: "span_events_rename_attributes",
+			section: "span_events_rename_attributes",
+			dataType: component.DataTypeTraces,
+		},
 		{
 			name: "metrics_rename_metrics",
 			section: "metrics_rename_metrics",
 			dataType: component.DataTypeMetrics,
+		},
+		{
+			name: "metrics_rename_attributes",
+			section: "metrics_rename_attributes",
+			dataType: component.DataTypeMetrics,
+		},
+		{
+			name: "logs_rename_attributes",
+			section: "logs_rename_attributes",
+			dataType: component.DataTypeLogs,
 		},
 
 	}
