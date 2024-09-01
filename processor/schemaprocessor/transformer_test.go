@@ -117,6 +117,7 @@ func buildTestTransformer(t *testing.T, targetUrl string)  *transformer {
 }
 
 func TestTransformerSchemaBySections(t *testing.T) {
+	// todo(ankit) fix schema urls in testschemas
 	tests := []struct {
 		name            string
 		section           string
@@ -150,6 +151,12 @@ func TestTransformerSchemaBySections(t *testing.T) {
 		//	section: "span_events_rename_attributes",
 		//	dataType: component.DataTypeTraces,
 		//},
+		{
+			name: "metrics_rename_metrics",
+			section: "metrics_rename_metrics",
+			dataType: component.DataTypeMetrics,
+		},
+
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -166,10 +173,10 @@ func TestTransformerSchemaBySections(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, expected, logs, "Must match the expected values")
 			case component.DataTypeMetrics:
-				inLogs := plogsFromJson(t, inDataPath)
-				expected := plogsFromJson(t, outDataPath)
+				inMetrics := pmetricsFromJson(t, inDataPath)
+				expected := pmetricsFromJson(t, outDataPath)
 
-				metrics, err := transform.processLogs(context.Background(), inLogs)
+				metrics, err := transform.processMetrics(context.Background(), inMetrics)
 				assert.NoError(t, err)
 				assert.Equal(t, expected, metrics, "Must match the expected values")
 			case component.DataTypeTraces:
