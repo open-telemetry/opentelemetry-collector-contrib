@@ -50,13 +50,13 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 
 ### Migration instructions
 
-### Instrumentation migration: No changes to the instrumentation layer
+#### Instrumentation migration
 
 No changes are needed in the instrumentation layer. OpenTelemetry logs sources like OpenTelemetry SDKs or the [OpenTelemetry Collector File Log Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver) don’t have to be modified.
 
-### Logs collection migration: Replace the OpenTelemetry Collector Loki Exporter by the OTLP/HTTP Exporter
+#### Logs collection migration
 
-OpenTelemetry logs should no longer be exporter to Loki using the OpenTelemetry Collector Loki Exporter and should be now sent to the Loki OTLP endpoint (or the Grafana Cloud OTLP endpoint when on Grafana Cloud) using the [OpenTelemetry Collector OTLP HTTP Exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlphttpexporter).
+Replace the OpenTelemetry Collector Loki Exporter by the [OpenTelemetry Collector OTLP HTTP Exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlphttpexporter) as OpenTelemetry logs should now be exported as is to the Loki OTLP endpoint.
 
 
 OpenTelemetry Collector configuration before migration
@@ -112,14 +112,14 @@ service:
       exporters: [otlphttp/loki, ...]
 ```
 
-* The OTLP HTTP endpoint URL and credentials details for Grafana Cloud users are available using the Grafana Cloud "OpenTelemetry Collector" connection tile.
+* When using Grafana Cloud, the [Grafana Cloud OTLP endpoint](https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/) should be used instead of the Loki OTLP endpoint. The connection details of the Grafana Cloud OTLP endpoint, OTLP HTTP URL and credentials are available using the Grafana Cloud "OpenTelemetry Collector" connection tile.
 * The promotion of OpenTelemetry attributes and resource attributes to Loki labels using the `loki.attribute.labels` and `loki.resource.labels` hints is replaced by the list of promoted attributes managed centrally in Loki. 
 * The default list of resource attributes promoted as labels (see above) should be sufficient for most use cases.  
 * ℹ️ Changes can be made to this list using the Loki distributor configuration parameter `default_resource_attributes_as_index_labels` ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) for self managed instances and opening a support ticket for Grafana Cloud.
 
-### LogQL queries migration
+#### LogQL queries migration
 
-#### From `job` and `instance` to `service_name`, `service_namespace`, and `service_instance_id`
+##### From `job` and `instance` to `service_name`, `service_namespace`, and `service_instance_id`
 
 The Loki labels `job` and `instance` are no longer generated and are replaced by the `service_name`, `service_namespace`, and `service_instance_id` labels.
 
@@ -133,7 +133,7 @@ AFTER
 {service_name="frontend", service_namespace="ecommerce", service_instance_id="instance-1234567890"}
 ```
 
-#### From `| json | an_attribute=...` to `{an_attribute=...}` or `| an_attribute=...`
+##### From `| json | an_attribute=...` to `{an_attribute=...}` or `| an_attribute=...`
 
 OTel log attributes, resource attributes, and fields are no longer stored in the JSON message but are stored as:
 * Loki message labels for promoted resource attributes (see list above),
@@ -144,7 +144,17 @@ LogQL statements `| json | an_attribute=...` must be converted to:
 * Promoted resource attributes: `{an_attribute=...}`
 * For other resource attributes, log attributes, and log fields: `| an_attribute=...`
 
-#### From `| json | traceid=...` and `| json | spanid=...` to `| trace_id=...` and `| span_id=...`
+Example:
+
+```
+BEFORE
+{exporter="OTLP", job="frontend"} | json | resources_deployment_environment="production"
+
+AFTER
+{service_name="frontend"} | deployment_environment="production"
+```
+
+##### From `| json | traceid=...` and `| json | spanid=...` to `| trace_id=...` and `| span_id=...`
 
 The log fields `SpanID` and `TraceId` were stored as the JSON fields `spanid` and `traceid`; they are now stored as `metadata[span_id]` and `metadata[trace_id]`, LogQL queries must be changed accordingly.
 
@@ -155,24 +165,27 @@ Example:
 
 ```
 BEFORE
-{exporter="OTLP", job="ecommerce/frontend"} | json | resources_deployment_environment="production" |= "00960a472ea5b87954ca07902d66f914" ...
+{exporter="OTLP", job="/frontend"} |= "00960a472ea5b87954ca07902d66f914"
 
 AFTER
-{service_namespace="ecommerce", service_name="frontend"} | deployment_environment="production" | trace_id="00960a472ea5b87954ca07902d66f914"...
+{service_name="frontend"} | trace_id="00960a472ea5b87954ca07902d66f914"
 ```
 
-#### From `line_format {{.body}}` to `line_format {{__line__}}`
+##### From `line_format {{.body}}` to `line_format {{__line__}}`
 
 The `{{.body}}` element of the JSON payload that used to hold the OTel log message body is now the message of the Loki log line and should be referenced as `{{__line__}}` in `line_format` calls.
 
 Example:
 
 ```
+BEFORE
+{exporter="OTLP", job="frontend"} | json | line_format `[{{.level}}] {{.body}}`
+
 AFTER
-{service_namespace="ecommerce", service_name="frontend"} | deployment_environment =~ `production` | line_format `[{{.detected_level}}] {{__line__}}`
+{service_name="frontend"} | line_format `[{{.detected_level}}] {{__line__}}`
 ```
 
-#### Using `keep __line__` in direct LogQL queries to prevent stream splits
+##### Using `keep __line__` in direct LogQL queries to prevent stream splits
 
 The number of log streams returned by LogQL queries made directly to Loki (without going through the Grafana GUI) may increase due to the distinct metadata label values and thus impact the sorting of the result as results are sorted per log stream.
 Use the `keep` function to limit the number of log streams return by LogQL queries and have a global doring of the returned  log entries
@@ -180,13 +193,18 @@ Use the `keep` function to limit the number of log streams return by LogQL queri
 Example:
 
 ```
+BEFORE
+logQl="{exporter="OTLP", job="frontend"} | json"
+queryUrl="/loki/api/v1/query_range?query=${urlEncode(logQL)}&direction=forward&..."
+
 AFTER
-... | keep __line__, detected_level
+logQl="{service_name="frontend"} | keep __line__, detected_level"
+queryUrl="/loki/api/v1/query_range?query=${urlEncode(logQL)}&direction=forward&..."
 ```
 
-### Grafana visualizations migration
+#### Grafana visualizations migration
 
-#### Tempo data source: Trace to Logs
+##### Tempo data source: Trace to Logs
 
 To enable the "trace to logs" navigation from Tempo to Loki, navigate to the Grafana Tempo data source configuration screen, in the "Trace to logs" section, select "use custom query" and specify the query:
 
@@ -194,7 +212,7 @@ To enable the "trace to logs" navigation from Tempo to Loki, navigate to the Gra
 {service_name="${__span.tags["service.name"]}"} | trace_id="${__span.traceId}"
 ```
 
-#### Loki data source: Log to Trace
+##### Loki data source: Log to Trace
 
 To enable the "logs to trace" navigation from Loki to Tempo, navigate to the Grafana Loki data source configuration screen, in the "Derived fields" section, update or create a derived field with:
 * Name: `Trace ID`
