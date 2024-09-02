@@ -64,7 +64,7 @@ func TestProcessContainers(t *testing.T) {
 	containerInfos = append(containerInfos, containerInContainerInfos...)
 	mInfo := testutils.MockCPUMemInfo{}
 	metrics := processContainers(containerInfos, mInfo, "eks", zap.NewNop(), metricsExtractors)
-	assert.Equal(t, 3, len(metrics))
+	assert.Len(t, metrics, 3)
 
 	for _, e := range metricsExtractors {
 		require.Nil(t, e.Shutdown())
