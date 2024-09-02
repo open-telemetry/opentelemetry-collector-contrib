@@ -681,7 +681,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	for _, cfgMut := range cfgMuts {
 		cfgMut(cfg)
 	}
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	config := &Config{

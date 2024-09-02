@@ -34,7 +34,7 @@ func TestDefaultTracesMarshalers(t *testing.T) {
 			m, err := createTracesMarshaler(Config{
 				Encoding: e,
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, m)
 		})
 	}
@@ -50,7 +50,7 @@ func TestDefaultMetricsMarshalers(t *testing.T) {
 			m, err := createMetricMarshaler(Config{
 				Encoding: e,
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, m)
 		})
 	}
@@ -67,7 +67,7 @@ func TestDefaultLogsMarshalers(t *testing.T) {
 			m, err := createLogMarshaler(Config{
 				Encoding: e,
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, m)
 		})
 	}
@@ -122,7 +122,7 @@ func TestOTLPMetricsJsonMarshaling(t *testing.T) {
 					Encoding:                             "otlp_json",
 					PartitionMetricsByResourceAttributes: tt.partitionByResources,
 				})
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			msgs, err := marshaler.Marshal(metric, "KafkaTopicX")
 			require.NoError(t, err, "Must have marshaled the data without error")
@@ -183,7 +183,7 @@ func TestOTLPLogsJsonMarshaling(t *testing.T) {
 					Encoding:                          "otlp_json",
 					PartitionLogsByResourceAttributes: tt.partitionByResources,
 				})
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			msgs, err := marshaler.Marshal(log, "KafkaTopicX")
 			require.NoError(t, err, "Must have marshaled the data without error")
@@ -461,7 +461,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 			Encoding:            test.encoding,
 			PartitionTracesByID: test.partitionTracesByID,
 		})
-		require.Nil(t, err, fmt.Sprintf("Must have %s marshaler", test.encoding))
+		require.NoError(t, err, fmt.Sprintf("Must have %s marshaler", test.encoding))
 
 		msg, err := marshaler.Marshal(traces, t.Name())
 		require.NoError(t, err, "Must have marshaled the data without error")

@@ -595,7 +595,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			assert.NoError(t, flp.Start(ctx, nil))
 
 			cErr := flp.ConsumeLogs(context.Background(), test.inLogs)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllLogs()
 
 			require.Len(t, got, 1)
