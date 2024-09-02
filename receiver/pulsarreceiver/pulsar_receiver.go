@@ -97,14 +97,14 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 		traces, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler traces message", zap.Error(err))
-			c.consumer.Ack(message)
+			_ = c.consumer.Ack(message)
 			return err
 		}
 
 		if err := traceConsumer.ConsumeTraces(context.Background(), traces); err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
-		c.consumer.Ack(message)
+		_ = c.consumer.Ack(message)
 	}
 }
 
@@ -197,7 +197,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 		metrics, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler metrics message", zap.Error(err))
-			c.consumer.Ack(message)
+			_ = c.consumer.Ack(message)
 			return err
 		}
 
@@ -205,7 +205,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 
-		c.consumer.Ack(message)
+		_ = c.consumer.Ack(message)
 	}
 }
 
@@ -297,7 +297,7 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 		logs, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler logs message", zap.Error(err))
-			c.consumer.Ack(message)
+			_ = c.consumer.Ack(message)
 			return err
 		}
 
@@ -305,7 +305,7 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 
-		c.consumer.Ack(message)
+		_ = c.consumer.Ack(message)
 	}
 }
 
