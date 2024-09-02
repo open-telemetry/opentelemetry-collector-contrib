@@ -138,6 +138,7 @@ body:
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
       - pkg/golden
+      - pkg/kafka/topic
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil
