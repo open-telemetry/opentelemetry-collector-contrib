@@ -221,7 +221,7 @@ func TestMetricsFromDataPointBuilder_GroupAndFilter_NilDataPoints(t *testing.T) 
 
 	require.NoError(t, err)
 
-	assert.Equal(t, 0, len(groupedDataPoints))
+	assert.Len(t, groupedDataPoints, 0)
 }
 
 func TestMetricsFromDataPointBuilder_Filter(t *testing.T) {

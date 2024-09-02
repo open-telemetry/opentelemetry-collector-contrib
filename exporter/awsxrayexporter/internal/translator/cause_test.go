@@ -81,7 +81,7 @@ func TestMakeCauseAwsSdkSpan(t *testing.T) {
 	assert.False(t, isThrottle)
 	assert.NotNil(t, cause)
 
-	assert.Equal(t, 1, len(cause.CauseObject.Exceptions))
+	assert.Len(t, cause.CauseObject.Exceptions, 1)
 	exception := cause.CauseObject.Exceptions[0]
 	assert.Equal(t, AwsIndividualHTTPErrorEventType, *exception.Type)
 	assert.True(t, *exception.Remote)
