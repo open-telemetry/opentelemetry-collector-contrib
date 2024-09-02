@@ -25,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
-// todo(ankit) test for all schema changes
 
 func newTestTransformer(t *testing.T) *transformer {
 	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), processor.Settings{

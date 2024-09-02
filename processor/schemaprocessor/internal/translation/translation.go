@@ -239,11 +239,8 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 				if err != nil {
 					return err
 				}
-				// todo(ankit) is this even allowed?  spans aren't renameable as far as i know
-				//rev.Spans().UpdateSignal(span)
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
-					// todo(ankit) in the original code it rollbacks the below line
 					err = rev.all.Apply(event.Attributes())
 					if err != nil {
 						return err

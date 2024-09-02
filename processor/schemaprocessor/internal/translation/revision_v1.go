@@ -12,7 +12,7 @@ import (
 
 // RevisionV1 represents all changes that are to be
 // applied to a signal at a given version.
-// todo(ankit) split
+// todo(ankit) implement split and rest of otel schema
 type RevisionV1 struct {
 	ver                               *Version
 	all                               *migrate.AttributeChangeSetSlice
@@ -30,7 +30,7 @@ type RevisionV1 struct {
 // Since VersionDef uses custom types for various definitions, it isn't possible
 // to cast those values into the primitives so each has to be processed together.
 // Generics would be handy here.
-// todo(ankit) investigate this
+// todo(ankit) investigate using generics
 func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 	// todo(ankit) change logs to be an ast.Attributes type so I dont have to change this
 	var logChanges ast.Attributes
