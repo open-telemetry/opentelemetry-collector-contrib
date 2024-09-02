@@ -130,6 +130,18 @@ func TestDecode(t *testing.T) {
 			want:     "test string",
 		},
 		{
+			name:     "decode UTF-16 encoded string 1",
+			value:    []byte{116, 0, 101, 0, 115, 0, 116, 0, 32, 0, 115, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0},
+			encoding: "UTF-16",
+			want:     "test string",
+		},
+		{
+			name:     "decode UTF-16 encoded string 2",
+			value:    []byte{116, 0, 101, 0, 115, 0, 116, 0, 32, 0, 115, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0},
+			encoding: "UTF16",
+			want:     "test string",
+		},
+		{
 			name:          "decode GB2312 encoded string; no decoder available",
 			value:         "test string",
 			encoding:      "GB2312",

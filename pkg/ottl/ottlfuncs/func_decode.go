@@ -7,6 +7,9 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/unicode"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"golang.org/x/text/encoding/ianaindex"
@@ -68,21 +71,44 @@ func Decode[K any](target ottl.Getter[K], encoding string) (ottl.ExprFunc[K], er
 			}
 			return string(decodedBytes), nil
 		default:
-			e, err := ianaindex.IANA.Encoding(encoding)
+			e, err := getEncoding(encoding)
 			if err != nil {
-				return nil, fmt.Errorf("could not get encoding for %s: %w", encoding, err)
-			}
-			if e == nil {
-				// for some encodings a nil error and a nil encoding is returned, so we need to double check
-				// if the encoding is actually set here
-				return nil, fmt.Errorf("no decoder available for encoding: %s", encoding)
+				return nil, err
 			}
 
 			decodedString, err := e.NewDecoder().String(stringValue)
 			if err != nil {
 				return nil, fmt.Errorf("could not decode: %w", err)
 			}
+
 			return decodedString, nil
 		}
 	}, nil
+}
+
+func getEncoding(encoding string) (encoding.Encoding, error) {
+	if e, ok := encodingOverrides[strings.ToLower(encoding)]; ok {
+		return e, nil
+	}
+	e, err := ianaindex.IANA.Encoding(encoding)
+	if err != nil {
+		return nil, fmt.Errorf("could not get encoding for %s: %w", encoding, err)
+	}
+	if e == nil {
+		// for some encodings a nil error and a nil encoding is returned, so we need to double check
+		// if the encoding is actually set here
+		return nil, fmt.Errorf("no decoder available for encoding: %s", encoding)
+	}
+	return e, nil
+}
+
+var encodingOverrides = map[string]encoding.Encoding{
+	"":         unicode.UTF8,
+	"nop":      encoding.Nop,
+	"ascii":    unicode.UTF8,
+	"us-ascii": unicode.UTF8,
+	"utf8":     unicode.UTF8,
+	"utf-8":    unicode.UTF8,
+	"utf16":    unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
+	"utf-16":   unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
 }
