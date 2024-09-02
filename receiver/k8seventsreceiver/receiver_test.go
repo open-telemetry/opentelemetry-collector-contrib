@@ -118,15 +118,15 @@ func TestAllowEvent(t *testing.T) {
 	k8sEvent := getEvent()
 
 	shouldAllowEvent := recv.allowEvent(k8sEvent)
-	assert.Equal(t, shouldAllowEvent, true)
+	assert.True(t, shouldAllowEvent)
 
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
 	shouldAllowEvent = recv.allowEvent(k8sEvent)
-	assert.Equal(t, shouldAllowEvent, false)
+	assert.False(t, shouldAllowEvent)
 
 	k8sEvent.FirstTimestamp = v1.Time{}
 	shouldAllowEvent = recv.allowEvent(k8sEvent)
-	assert.Equal(t, shouldAllowEvent, false)
+	assert.False(t, shouldAllowEvent)
 }
 
 func getEvent() *corev1.Event {

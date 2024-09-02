@@ -225,7 +225,7 @@ func TestToMetrics(t *testing.T) {
 				targetLen := 2*len(pt.Dimensions) + 1
 				dimensions := make([]*sfxpb.Dimension, targetLen)
 				copy(dimensions[1:], pt.Dimensions)
-				assert.Equal(t, targetLen, len(dimensions))
+				assert.Len(t, dimensions, targetLen)
 				assert.Nil(t, dimensions[0])
 				pt.Dimensions = dimensions
 				return []*sfxpb.DataPoint{pt}
