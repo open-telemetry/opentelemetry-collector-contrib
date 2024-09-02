@@ -124,8 +124,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	t.Parallel()
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
