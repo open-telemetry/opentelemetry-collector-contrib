@@ -4,6 +4,8 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -41,6 +43,8 @@ type Config struct {
 	// If a supplied attribute is not a valid attribute of a supplied detector it will be ignored.
 	// Deprecated: Please use detector's resource_attributes config instead
 	Attributes []string `mapstructure:"attributes"`
+	// interval of detect action
+	DetectInterval time.Duration `mapstructure:"detect_interval"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors

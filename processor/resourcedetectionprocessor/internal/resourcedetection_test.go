@@ -101,7 +101,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(processortest.NewNopSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopSettings(), time.Second, false, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -115,7 +115,7 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, false, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
@@ -126,7 +126,7 @@ func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, false, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -139,7 +139,7 @@ func TestDetectResource_Error(t *testing.T) {
 	md2 := &MockDetector{}
 	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, false, nil, md1, md2)
 	_, _, err := p.Get(context.Background(), http.DefaultClient)
 	require.NoError(t, err)
 }
@@ -212,7 +212,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
+	p := NewResourceProvider(zap.NewNop(), time.Second, false, nil, md1, md2, md3)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
