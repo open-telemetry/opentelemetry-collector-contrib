@@ -7,9 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/otel/metric/noop"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
@@ -114,7 +113,7 @@ func TestFaults(t *testing.T) {
 		},
 	}
 
-	telb, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: noop.NewMeterProvider()})
+	telb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	for _, c := range cases {
