@@ -140,7 +140,7 @@ func TestConfigValidate(t *testing.T) {
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
 
-	assert.Equal(t, 2, len(cfg.MetricDescriptors))
+	assert.Len(t, cfg.MetricDescriptors, 2)
 	assert.Equal(t, []MetricDescriptor{
 		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
 		{Unit: "Megabytes", MetricName: "memory_usage"},
