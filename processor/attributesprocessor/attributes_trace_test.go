@@ -500,7 +500,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 		SpanNames: []string{"^apply.*"},
 	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
-	require.Nil(b, err)
+	require.NoError(b, err)
 	require.NotNil(b, tp)
 
 	for _, tt := range testCases {

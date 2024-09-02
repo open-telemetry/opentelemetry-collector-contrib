@@ -1984,7 +1984,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		groupedMetric := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetric, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2007,7 +2007,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2030,7 +2030,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2053,7 +2053,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2071,7 +2071,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2140,7 +2140,7 @@ func BenchmarkTranslateGroupedMetricToCWMetricWithFiltering(b *testing.B) {
 	}
 	logger := zap.NewNop()
 	err := m.init(logger)
-	assert.Nil(b, err)
+	assert.NoError(b, err)
 	config := &Config{
 		MetricDeclarations:    []*MetricDeclaration{m},
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
