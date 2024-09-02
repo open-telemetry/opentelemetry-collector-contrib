@@ -77,7 +77,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 Emeritus Triagers:
 
-- [Alolita Sharma](https://github.com/alolita), AWS
+- [Alolita Sharma](https://github.com/alolita), Apple
 - [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Punya Biswal](https://github.com/punya), Google
