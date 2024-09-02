@@ -3,30 +3,34 @@ cfgarden_observer/all_settings:
   refresh_interval: 20s
   include_app_labels: true
   garden:
-    endpoint: /var/vcap/data/garden/custom.sock 
+    endpoint: /var/vcap/data/garden/custom.sock
   cloud_foundry:
     endpoint: https://api.cf.mydomain.com
-    auth_type: user_pass
-    username: myuser
-    password: mypass
+    auth:
+      type: user_pass
+      username: myuser
+      password: mypass
 cfgarden_observer/user_pass:
   include_app_labels: true
   cloud_foundry:
     endpoint: https://api.cf.mydomain.com
-    auth_type: user_pass
-    username: myuser
-    password: mypass
+    auth:
+      type: user_pass
+      username: myuser
+      password: mypass
 cfgarden_observer/client_credentials:
   include_app_labels: true
   cloud_foundry:
     endpoint: https://api.cf.mydomain.com
-    auth_type: client_credentials
-    client_id: myclientid
-    client_secret: myclientsecret
+    auth:
+      type: client_credentials
+      client_id: myclientid
+      client_secret: myclientsecret
 cfgarden_observer/token:
   include_app_labels: true
   cloud_foundry:
     endpoint: https://api.cf.mydomain.com
-    auth_type: token
-    access_token: myaccesstoken
-    refresh_token: myrefreshtoken
+    auth:
+      type:  token
+      access_token: myaccesstoken
+      refresh_token: myrefreshtoken

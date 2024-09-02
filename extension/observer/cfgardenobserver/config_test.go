@@ -46,9 +46,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
-					AuthType: "user_pass",
-					Username: "myuser",
-					Password: "mypass",
+					Auth: CfAuth{
+						Type:     "user_pass",
+						Username: "myuser",
+						Password: "mypass",
+					},
 				},
 			},
 		},
@@ -63,9 +65,11 @@ func TestLoadConfig(t *testing.T) {
 				IncludeAppLabels:  true,
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
-					AuthType: "user_pass",
-					Username: "myuser",
-					Password: "mypass",
+					Auth: CfAuth{
+						Type:     "user_pass",
+						Username: "myuser",
+						Password: "mypass",
+					},
 				},
 			},
 		},
@@ -79,10 +83,12 @@ func TestLoadConfig(t *testing.T) {
 				CacheSyncInterval: 5 * time.Minute,
 				IncludeAppLabels:  true,
 				CloudFoundry: CfConfig{
-					Endpoint:     "https://api.cf.mydomain.com",
-					AuthType:     "client_credentials",
-					ClientID:     "myclientid",
-					ClientSecret: "myclientsecret",
+					Endpoint: "https://api.cf.mydomain.com",
+					Auth: CfAuth{
+						Type:         "client_credentials",
+						ClientID:     "myclientid",
+						ClientSecret: "myclientsecret",
+					},
 				},
 			},
 		},
@@ -96,10 +102,12 @@ func TestLoadConfig(t *testing.T) {
 				CacheSyncInterval: 5 * time.Minute,
 				IncludeAppLabels:  true,
 				CloudFoundry: CfConfig{
-					Endpoint:     "https://api.cf.mydomain.com",
-					AuthType:     "token",
-					AccessToken:  "myaccesstoken",
-					RefreshToken: "myrefreshtoken",
+					Endpoint: "https://api.cf.mydomain.com",
+					Auth: CfAuth{
+						Type:         "token",
+						AccessToken:  "myaccesstoken",
+						RefreshToken: "myrefreshtoken",
+					},
 				},
 			},
 		},
@@ -124,25 +132,27 @@ func TestConfigValidate(t *testing.T) {
 			cfg: Config{
 				IncludeAppLabels: true,
 			},
-			msg: "config.Endpoint must be specified when include_app_labels is set to true",
+			msg: "CloudFoundry.Endpoint must be specified when IncludeAppLabels is set to true",
 		},
 		{
-			reason: "missing auth_type",
+			reason: "missing cloud_foundry.auth.type",
 			cfg: Config{
 				IncludeAppLabels: true,
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
 				},
 			},
-			msg: "config.authType must be specified when include_app_labels is set to true",
+			msg: "CloudFoundry.Auth.Type must be specified when IncludeAppLabels is set to true",
 		},
 		{
-			reason: "unknown auth_type",
+			reason: "unknown cloud_foundry.auth.type",
 			cfg: Config{
 				IncludeAppLabels: true,
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
-					AuthType: "unknown",
+					Auth: CfAuth{
+						Type: "unknown",
+					},
 				},
 			},
 			msg: "configuration option `auth_type` must be set to one of the following values: [user_pass, client_credentials, token]. Specified value: unknown",
@@ -153,7 +163,9 @@ func TestConfigValidate(t *testing.T) {
 				IncludeAppLabels: true,
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
-					AuthType: authTypeUserPass,
+					Auth: CfAuth{
+						Type: authTypeUserPass,
+					},
 				},
 			},
 			msg: fieldError(authTypeUserPass, "username").Error(),
@@ -164,7 +176,9 @@ func TestConfigValidate(t *testing.T) {
 				IncludeAppLabels: true,
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
-					AuthType: authTypeClientCredentials,
+					Auth: CfAuth{
+						Type: authTypeClientCredentials,
+					},
 				},
 			},
 			msg: fieldError(authTypeClientCredentials, "client_id").Error(),
@@ -175,7 +189,9 @@ func TestConfigValidate(t *testing.T) {
 				IncludeAppLabels: true,
 				CloudFoundry: CfConfig{
 					Endpoint: "https://api.cf.mydomain.com",
-					AuthType: authTypeToken,
+					Auth: CfAuth{
+						Type: authTypeToken,
+					},
 				},
 			},
 			msg: fieldError(authTypeToken, "access_token").Error(),

@@ -42,36 +42,36 @@ func (config *Config) Validate() error {
 
 	c := config.CloudFoundry
 	if c.Endpoint == "" {
-		return errors.New("config.Endpoint must be specified when include_app_labels is set to true")
+		return errors.New("CloudFoundry.Endpoint must be specified when IncludeAppLabels is set to true")
 	}
-	if c.AuthType == "" {
-		return errors.New("config.authType must be specified when include_app_labels is set to true")
+	if c.Auth.Type == "" {
+		return errors.New("CloudFoundry.Auth.Type must be specified when IncludeAppLabels is set to true")
 	}
 
-	switch c.AuthType {
+	switch c.Auth.Type {
 	case authTypeUserPass:
-		if c.Username == "" {
+		if c.Auth.Username == "" {
 			return fieldError(authTypeUserPass, "username")
 		}
-		if c.Password == "" {
+		if c.Auth.Password == "" {
 			return fieldError(authTypeUserPass, "password")
 		}
 	case authTypeClientCredentials:
-		if c.ClientID == "" {
+		if c.Auth.ClientID == "" {
 			return fieldError(authTypeClientCredentials, "client_id")
 		}
-		if c.ClientSecret == "" {
+		if c.Auth.ClientSecret == "" {
 			return fieldError(authTypeClientCredentials, "client_secret")
 		}
 	case authTypeToken:
-		if c.AccessToken == "" {
+		if c.Auth.AccessToken == "" {
 			return fieldError(authTypeToken, "access_token")
 		}
-		if c.RefreshToken == "" {
+		if c.Auth.RefreshToken == "" {
 			return fieldError(authTypeToken, "refresh_token")
 		}
 	default:
-		return fmt.Errorf("configuration option `auth_type` must be set to one of the following values: [user_pass, client_credentials, token]. Specified value: %s", c.AuthType)
+		return fmt.Errorf("configuration option `auth_type` must be set to one of the following values: [user_pass, client_credentials, token]. Specified value: %s", c.Auth.Type)
 	}
 
 	return nil
@@ -90,8 +90,13 @@ type CfConfig struct {
 	// The URL of the CloudFoundry API
 	Endpoint string `mapstructure:"endpoint"`
 
+	// Authentication details
+	Auth CfAuth `mapstructure:"auth"`
+}
+
+type CfAuth struct {
 	// Authentication method, there are 3 options
-	AuthType authType `mapstructure:"auth_type"`
+	Type authType `mapstructure:"type"`
 
 	// Used for user_pass authentication method
 	Username string `mapstructure:"username"`
