@@ -7,12 +7,12 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"golang.org/x/text/encoding"
-	"golang.org/x/text/encoding/unicode"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/ianaindex"
+	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
