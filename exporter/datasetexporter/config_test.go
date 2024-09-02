@@ -157,7 +157,7 @@ func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 	})
 	err := config.Unmarshal(configMap)
 	assert.NoError(t, err)
-	assert.Equal(t, true, config.LogsSettings.ExportResourceInfo)
+	assert.True(t, config.LogsSettings.ExportResourceInfo)
 }
 
 func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
@@ -172,5 +172,5 @@ func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 	})
 	err := config.Unmarshal(configMap)
 	assert.NoError(t, err)
-	assert.Equal(t, false, config.LogsSettings.ExportScopeInfo)
+	assert.False(t, config.LogsSettings.ExportScopeInfo)
 }

@@ -879,7 +879,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			assert.Equal(t, responseOK, bodyStr)
 
 			got := sink.AllLogs()
-			require.Equal(t, 1, len(got))
+			require.Len(t, got, 1)
 
 			tokenLabel := ""
 			if accessTokenAttr, ok := got[0].ResourceLogs().At(0).Resource().Attributes().Get("com.splunk.signalfx.access_token"); ok {
