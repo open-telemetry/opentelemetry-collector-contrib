@@ -23,7 +23,7 @@ type Config struct {
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 
 	// The time to wait before resyncing app information on cached containers
-	// using the CloudFoundry API. Example: cache_sync_interval: "20m"
+	// using the CloudFoundry API.
 	// Default: "5m"
 	CacheSyncInterval time.Duration `mapstructure:"cache_sync_interval"`
 
