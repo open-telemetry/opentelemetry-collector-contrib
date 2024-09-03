@@ -145,7 +145,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			require.NoError(t, fmp.Start(ctx, nil))
 
 			cErr := fmp.ConsumeTraces(ctx, test.inTraces)
-			require.Nil(t, cErr)
+			require.NoError(t, cErr)
 			got := next.AllTraces()
 
 			// If all traces got filtered you shouldn't even have ResourceSpans

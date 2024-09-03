@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 go 1.22.0
 
 require (
+	github.com/Antonboom/testifylint v1.4.3
 	github.com/Khan/genqlient v0.7.0
 	github.com/client9/misspell v0.3.4
 	github.com/daixiang0/gci v0.13.4
@@ -31,7 +32,6 @@ require (
 	github.com/Abirdcfly/dupword v0.0.14 // indirect
 	github.com/Antonboom/errname v0.1.13 // indirect
 	github.com/Antonboom/nilnil v0.1.9 // indirect
-	github.com/Antonboom/testifylint v1.3.1 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/Crocmagnon/fatcontext v0.2.2 // indirect
 	github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24 // indirect
