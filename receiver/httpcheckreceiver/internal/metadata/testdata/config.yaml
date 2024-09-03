@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    httpcheck.dnslookup_duration:
+      enabled: true
     httpcheck.duration:
       enabled: true
     httpcheck.error:
@@ -9,6 +11,8 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    httpcheck.dnslookup_duration:
+      enabled: false
     httpcheck.duration:
       enabled: false
     httpcheck.error:

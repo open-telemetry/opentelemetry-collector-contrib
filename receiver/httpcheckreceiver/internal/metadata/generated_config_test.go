@@ -25,9 +25,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HttpcheckDuration: MetricConfig{Enabled: true},
-					HttpcheckError:    MetricConfig{Enabled: true},
-					HttpcheckStatus:   MetricConfig{Enabled: true},
+					HttpcheckDnslookupDuration: MetricConfig{Enabled: true},
+					HttpcheckDuration:          MetricConfig{Enabled: true},
+					HttpcheckError:             MetricConfig{Enabled: true},
+					HttpcheckStatus:            MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -35,9 +36,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HttpcheckDuration: MetricConfig{Enabled: false},
-					HttpcheckError:    MetricConfig{Enabled: false},
-					HttpcheckStatus:   MetricConfig{Enabled: false},
+					HttpcheckDnslookupDuration: MetricConfig{Enabled: false},
+					HttpcheckDuration:          MetricConfig{Enabled: false},
+					HttpcheckError:             MetricConfig{Enabled: false},
+					HttpcheckStatus:            MetricConfig{Enabled: false},
 				},
 			},
 		},
