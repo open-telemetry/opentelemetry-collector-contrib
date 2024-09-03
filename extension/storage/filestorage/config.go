@@ -22,7 +22,8 @@ type Config struct {
 	FSync bool `mapstructure:"fsync,omitempty"`
 
 	// CreateDirectory specifies that the directory should be created automatically by the extension on start
-	CreateDirectory bool `mapstructure:"create_directory,omitempty"`
+	CreateDirectory bool   `mapstructure:"create_directory,omitempty"`
+	DirectoryPerm   string `mapstructure:"directory_permission,omitempty"`
 }
 
 // CompactionConfig defines configuration for optional file storage compaction.
