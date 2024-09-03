@@ -62,7 +62,7 @@ func convertExponentialHistToExplicitHist(distributionFn string, explicitBounds 
 
 	distFn, ok := distributionFnMap[distributionFn]
 	if !ok {
-		return nil, fmt.Errorf("invalid distribution alogrithm: %s, must be one of [upper, midpoint, random, uniform]", distributionFn)
+		return nil, fmt.Errorf("invalid distribution algorithm: %s, must be one of [upper, midpoint, random, uniform]", distributionFn)
 	}
 
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
