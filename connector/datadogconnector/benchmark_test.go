@@ -58,7 +58,7 @@ func benchmarkPeerTags(b *testing.B) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ComputeStatsBySpanKind = true
 	cfg.Traces.PeerTagsAggregation = true
-	cfg.Traces.BucketInterval = 10 * time.Millisecond
+	cfg.Traces.BucketInterval = 1 * time.Millisecond
 	cfg.Traces.TraceBuffer = 0
 
 	factory := NewFactory()
@@ -88,7 +88,6 @@ func benchmarkPeerTags(b *testing.B) {
 				assert.Len(b, metrics, 1)
 				break
 			}
-			time.Sleep(5 * time.Millisecond)
 		}
 		metricsSink.Reset()
 	}
