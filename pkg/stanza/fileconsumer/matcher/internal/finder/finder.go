@@ -7,9 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/bmatcuk/doublestar/v4"
+	"golang.org/x/exp/maps"
 )
 
 func Validate(globs []string) error {
