@@ -25,7 +25,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.56.2
 	github.com/DataDog/datadog-agent/pkg/status/health v0.56.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240722160158-ad956a31a730
+	github.com/DataDog/datadog-agent/pkg/trace v0.58.0-devel.0.20240830155027-f44a9da12951
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.56.2
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.56.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.29.0
@@ -116,7 +116,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/processor v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/sender v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.56.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.0-devel.0.20240830155027-f44a9da12951 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.56.2 // indirect
@@ -135,7 +135,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.56.2 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240419161837-f1b2f553edfe // indirect
-	github.com/DataDog/go-sqllexer v0.0.12 // indirect
+	github.com/DataDog/go-sqllexer v0.0.13 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/viper v1.13.5 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
@@ -358,15 +358,15 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
-	golang.org/x/mod v0.19.0 // indirect
+	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.23.0 // indirect
+	golang.org/x/time v0.6.0 // indirect
+	golang.org/x/tools v0.24.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/api v0.188.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240822170219-fc7c04adadcd // indirect

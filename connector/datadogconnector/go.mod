@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.56.2
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.2
 	github.com/DataDog/datadog-agent/pkg/proto v0.56.2
-	github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240722160158-ad956a31a730
+	github.com/DataDog/datadog-agent/pkg/trace v0.58.0-devel.0.20240830155027-f44a9da12951
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.19.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.19.0
@@ -70,7 +70,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.56.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.0-devel.0.20240830155027-f44a9da12951 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.56.2 // indirect
@@ -93,7 +93,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/version v0.56.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.29.0 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240419161837-f1b2f553edfe // indirect
-	github.com/DataDog/go-sqllexer v0.0.12 // indirect
+	github.com/DataDog/go-sqllexer v0.0.13 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.19.0 // indirect
@@ -273,7 +273,7 @@ require (
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
+	golang.org/x/time v0.6.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240822170219-fc7c04adadcd // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
