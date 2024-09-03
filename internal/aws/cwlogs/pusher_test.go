@@ -31,7 +31,7 @@ func TestValidateLogEventWithMutating(t *testing.T) {
 	logEvent.GeneratedTime = time.Now()
 	err := logEvent.Validate(zap.NewNop())
 	assert.NoError(t, err)
-	assert.True(t, *logEvent.InputLogEvent.Timestamp > int64(0))
+	assert.Greater(t, *logEvent.InputLogEvent.Timestamp, int64(0))
 	assert.Len(t, *logEvent.InputLogEvent.Message, 64-perEventHeaderBytes)
 
 	maxEventPayloadBytes = defaultMaxEventPayloadBytes
@@ -99,7 +99,7 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 	logEvents := logEventBatch.putLogEventsInput.LogEvents
 	for i := 1; i < totalEvents; i++ {
 		fmt.Printf("logEvents[%d].Timestamp=%d, logEvents[%d].Timestamp=%d.\n", i-1, *logEvents[i-1].Timestamp, i, *logEvents[i].Timestamp)
-		assert.True(t, *logEvents[i-1].Timestamp < *logEvents[i].Timestamp, "timestamp is not sorted correctly")
+		assert.Less(t, *logEvents[i-1].Timestamp, *logEvents[i].Timestamp, "timestamp is not sorted correctly")
 	}
 }
 
@@ -133,7 +133,7 @@ func TestPusher_newLogEventBatch(t *testing.T) {
 	assert.Equal(t, int64(0), logEventBatch.maxTimestampMs)
 	assert.Equal(t, int64(0), logEventBatch.minTimestampMs)
 	assert.Equal(t, 0, logEventBatch.byteTotal)
-	assert.Len(t, logEventBatch.putLogEventsInput.LogEvents, 0)
+	assert.Empty(t, logEventBatch.putLogEventsInput.LogEvents)
 	assert.Equal(t, p.logStreamName, logEventBatch.putLogEventsInput.LogStreamName)
 	assert.Equal(t, p.logGroupName, logEventBatch.putLogEventsInput.LogGroupName)
 	assert.Equal(t, (*string)(nil), logEventBatch.putLogEventsInput.SequenceToken)

@@ -138,8 +138,8 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
-		assert.Len(t, sink0.AllLogs(), 0)
-		assert.Len(t, sink1.AllLogs(), 0)
+		assert.Empty(t, sink0.AllLogs())
+		assert.Empty(t, sink1.AllLogs())
 	})
 
 	t.Run("logs matched one expression", func(t *testing.T) {
@@ -153,9 +153,9 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
 
-		assert.Len(t, defaultSink.AllLogs(), 0)
+		assert.Empty(t, defaultSink.AllLogs())
 		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 0)
+		assert.Empty(t, sink1.AllLogs())
 	})
 
 	t.Run("logs matched by two expressions", func(t *testing.T) {
@@ -173,7 +173,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
 
-		assert.Len(t, defaultSink.AllLogs(), 0)
+		assert.Empty(t, defaultSink.AllLogs())
 		assert.Len(t, sink0.AllLogs(), 1)
 		assert.Len(t, sink1.AllLogs(), 1)
 
@@ -222,7 +222,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
 		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 0)
+		assert.Empty(t, sink1.AllLogs())
 
 		assert.Equal(t, defaultSink.AllLogs()[0].LogRecordCount(), 1)
 		assert.Equal(t, sink0.AllLogs()[0].LogRecordCount(), 1)
@@ -294,8 +294,8 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
-		assert.Len(t, sink0.AllLogs(), 0)
-		assert.Len(t, sink1.AllLogs(), 0)
+		assert.Empty(t, sink0.AllLogs())
+		assert.Empty(t, sink1.AllLogs())
 	})
 
 	t.Run("logs matched one expression", func(t *testing.T) {
@@ -309,9 +309,9 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
 
-		assert.Len(t, defaultSink.AllLogs(), 0)
+		assert.Empty(t, defaultSink.AllLogs())
 		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 0)
+		assert.Empty(t, sink1.AllLogs())
 	})
 
 	t.Run("logs matched by two expressions, but sinks to one", func(t *testing.T) {
@@ -329,9 +329,9 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
 
-		assert.Len(t, defaultSink.AllLogs(), 0)
+		assert.Empty(t, defaultSink.AllLogs())
 		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 0)
+		assert.Empty(t, sink1.AllLogs())
 
 		assert.Equal(t, sink0.AllLogs()[0].LogRecordCount(), 2)
 	})
@@ -353,7 +353,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
 		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 0)
+		assert.Empty(t, sink1.AllLogs())
 
 		rlog := defaultSink.AllLogs()[0].ResourceLogs().At(0)
 		attr, ok := rlog.Resource().Attributes().Get("X-Tenant")
@@ -374,7 +374,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		assert.Len(t, defaultSink.AllLogs(), 1)
 		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 0)
+		assert.Empty(t, sink1.AllLogs())
 
 		assert.Equal(t, defaultSink.AllLogs()[0].LogRecordCount(), 1)
 		assert.Equal(t, sink0.AllLogs()[0].LogRecordCount(), 1)
@@ -433,7 +433,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
 	assert.Equal(t, "acme", v.Str())
-	assert.Len(t, sink0.AllLogs(), 0,
+	assert.Empty(t, sink0.AllLogs(),
 		"metrics should not be routed to default pipeline",
 	)
 }
