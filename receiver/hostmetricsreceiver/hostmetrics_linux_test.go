@@ -22,9 +22,9 @@ import (
 
 func TestConsistentRootPaths(t *testing.T) {
 	// use testdata because it's a directory that exists - don't actually use any files in it
-	assert.Nil(t, testValidate("testdata"))
-	assert.Nil(t, testValidate(""))
-	assert.Nil(t, testValidate("/"))
+	assert.NoError(t, testValidate("testdata"))
+	assert.NoError(t, testValidate(""))
+	assert.NoError(t, testValidate("/"))
 }
 
 func TestInconsistentRootPaths(t *testing.T) {

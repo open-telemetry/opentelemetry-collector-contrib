@@ -33,7 +33,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.108.0
 	github.com/prometheus/common v0.56.0
 	github.com/prometheus/prometheus v0.54.1
-	github.com/shirou/gopsutil/v4 v4.24.7
+	github.com/shirou/gopsutil/v4 v4.24.8
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/config/configcompression v1.14.2-0.20240829190554-7da6b618a7ee
@@ -79,10 +79,10 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.131 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.56.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.56.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.56.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.56.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.29.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
