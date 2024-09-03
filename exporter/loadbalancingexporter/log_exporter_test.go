@@ -112,7 +112,7 @@ func TestLogExporterShutdown(t *testing.T) {
 	res := p.Shutdown(context.Background())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestConsumeLogs(t *testing.T) {
@@ -149,7 +149,7 @@ func TestConsumeLogs(t *testing.T) {
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
