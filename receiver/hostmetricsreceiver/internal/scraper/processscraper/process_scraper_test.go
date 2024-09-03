@@ -1003,6 +1003,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 		muteProcessExeError  bool
 		muteProcessIOError   bool
 		muteProcessUserError bool
+		muteProcessAllErrors bool
 		skipProcessNameError bool
 		omitConfigField      bool
 		expectedError        string
@@ -1093,6 +1094,30 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				return 4
 			}(),
 		},
+		{
+			name:                 "All Process Errors Muted",
+			muteProcessNameError: false,
+			muteProcessExeError:  false,
+			muteProcessIOError:   false,
+			muteProcessUserError: false,
+			muteProcessAllErrors: true,
+			expectedCount:        0,
+		},
+		{
+			name:                 "Process User Error Enabled and All Process Errors Muted",
+			muteProcessUserError: false,
+			skipProcessNameError: true,
+			muteProcessExeError:  true,
+			muteProcessNameError: true,
+			muteProcessAllErrors: true,
+			expectedCount: func() int {
+				if runtime.GOOS == "darwin" {
+					// disk.io is not collected on darwin
+					return 3
+				}
+				return 4
+			}(),
+		},
 	}
 
 	for _, test := range testCases {
@@ -1106,6 +1131,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				config.MuteProcessExeError = test.muteProcessExeError
 				config.MuteProcessIOError = test.muteProcessIOError
 				config.MuteProcessUserError = test.muteProcessUserError
+				config.MuteProcessAllErrors = test.muteProcessAllErrors
 			}
 			scraper, err := newProcessScraper(receivertest.NewNopSettings(), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
@@ -1135,7 +1161,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 			assert.Equal(t, test.expectedCount, md.MetricCount())
 
-			if config.MuteProcessNameError && config.MuteProcessExeError && config.MuteProcessUserError {
+			if (config.MuteProcessNameError && config.MuteProcessExeError && config.MuteProcessUserError) || config.MuteProcessAllErrors {
 				assert.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.expectedError)
