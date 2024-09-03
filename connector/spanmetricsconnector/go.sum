@@ -19,6 +19,8 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
+github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hashicorp/golang-lru v1.0.2 h1:dV3g9Z/unq5DpblPpw+Oqcv4dU/1omnb4Ok8iPY6p1c=
 github.com/hashicorp/golang-lru v1.0.2/go.mod h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uGBxy+E8yxSoD4=
 github.com/hashicorp/golang-lru/v2 v2.0.7 h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k=
@@ -92,6 +94,8 @@ go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.2-0.2024082919055
 go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.2-0.20240829190554-7da6b618a7ee/go.mod h1:F6Shxg3TqoDZe2+p2PkVRUsnJMqATQxbs4c1nfaJrAc=
 go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240829190554-7da6b618a7ee h1:258eNHF/i76AAD7ETHoKT5osyCe+UdDVWIgVyNyMH2c=
 go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240829190554-7da6b618a7ee/go.mod h1:tRqOtUukG76iBlPTAUwFSU87dDO+x33Gyn2x9mecfko=
+go.opentelemetry.io/collector/featuregate v1.14.2-0.20240829190554-7da6b618a7ee h1:kOnDlEC1EDsymDjAZe8LZhwbVqnWPtPwSlUXDYwUmws=
+go.opentelemetry.io/collector/featuregate v1.14.2-0.20240829190554-7da6b618a7ee/go.mod h1:47xrISO71vJ83LSMm8+yIDsUbKktUp48Ovt7RR6VbRs=
 go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee h1:vqnRTZckt4i+bGcR+d/LAOAe4nAAs/KkN2L2CTXvW0Q=
 go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee/go.mod h1:z1dTjwwtcoXxZx2/nkHysjxMeaxe9pEmYTEr4SMNIx8=
 go.opentelemetry.io/collector/pdata/pprofile v0.108.2-0.20240829190554-7da6b618a7ee h1:ImK86bzHqdYHH1jNXKJLFld3stY9LuqroUvTAq3+Pws=
