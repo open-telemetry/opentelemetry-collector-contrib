@@ -383,7 +383,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(t, err)
-		assert.Len(t, groupedMetrics, 0)
+		assert.Empty(t, groupedMetrics)
 	})
 }
 
@@ -1957,7 +1957,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 
 			cWMeasurements := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
 			if len(tc.expectedDims) == 0 {
-				assert.Len(t, cWMeasurements, 0)
+				assert.Empty(t, cWMeasurements)
 			} else {
 				assert.Len(t, cWMeasurements, 1)
 				dims := cWMeasurements[0].Dimensions

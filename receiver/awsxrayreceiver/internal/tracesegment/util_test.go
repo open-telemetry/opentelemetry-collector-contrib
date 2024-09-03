@@ -66,7 +66,7 @@ func TestSplitHeaderBodyEmptyBody(t *testing.T) {
 		Format:  "json",
 		Version: 1,
 	}, header, "actual header is different from the expected")
-	assert.Len(t, body, 0, "body should be empty")
+	assert.Empty(t, body, "body should be empty")
 }
 
 func TestSplitHeaderBodyInvalidJsonHeader(t *testing.T) {

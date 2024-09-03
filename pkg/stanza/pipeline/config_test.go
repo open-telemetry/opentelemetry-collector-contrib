@@ -101,7 +101,7 @@ func TestBuildAPipelineDefaultOperator(t *testing.T) {
 			require.Equal(t, "fake", op.GetOutputIDs()[0])
 			exists["noop1"] = true
 		case "fake":
-			require.Len(t, op.GetOutputIDs(), 0)
+			require.Empty(t, op.GetOutputIDs())
 			exists["fake"] = true
 		}
 	}
