@@ -185,23 +185,6 @@ AFTER
 {service_name="frontend"} | line_format `[{{.detected_level}}] {{__line__}}`
 ```
 
-##### Using `keep __line__` in direct LogQL queries to prevent stream splits
-
-The number of log streams returned by LogQL queries made directly to Loki (without going through the Grafana GUI) may increase due to the distinct metadata label values and thus impact the sorting of the result as results are sorted per log stream.
-Use the `keep` function to limit the number of log streams return by LogQL queries and have a global doring of the returned  log entries
-
-Example:
-
-```
-BEFORE
-logQl="{exporter="OTLP", job="frontend"} | json"
-queryUrl="/loki/api/v1/query_range?query=${urlEncode(logQL)}&direction=forward&..."
-
-AFTER
-logQl="{service_name="frontend"} | keep __line__, detected_level"
-queryUrl="/loki/api/v1/query_range?query=${urlEncode(logQL)}&direction=forward&..."
-```
-
 #### Grafana visualizations migration
 
 ##### Tempo data source: Trace to Logs
