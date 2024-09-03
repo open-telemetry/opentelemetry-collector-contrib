@@ -144,7 +144,7 @@ func isSafe(character rune) bool {
 
 func createDirectory(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return os.MkdirAll(path, 0755)
+		return os.MkdirAll(path, 0750)
 	}
 	// we already handled other errors in config.Validate(), so it's okay to return nil
 	return nil
