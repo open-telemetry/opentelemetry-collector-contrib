@@ -71,7 +71,7 @@ type streamLoadResponse struct {
 }
 
 func (r *streamLoadResponse) success() bool {
-	return r.Status == "Success" || r.ExistingJobStatus == "Publish Timeout"
+	return r.Status == "Success" || r.Status == "Publish Timeout"
 }
 
 func streamLoadUrl(address string, db string, table string) string {
