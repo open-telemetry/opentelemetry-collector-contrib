@@ -45,7 +45,7 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 
 ℹ️ Additional conversion rules from OpenTelemetry Logs to Loki 
 
-* `.` in attributes and resource attributes are converted into `_` when they are mapped as Loki labels or metadata.
+* All special characters, including `.` in attribute and resource attribute names, are converted into `_` when they are mapped as Loki labels or metadata.
 * OTel attribute values with complex data types (i.e. arrays, nested structures) are converted into JSON strings
 
 ### Migration instructions
@@ -59,7 +59,7 @@ No changes are needed in the instrumentation layer. OpenTelemetry logs sources l
 Replace the OpenTelemetry Collector Loki Exporter by the [OpenTelemetry Collector OTLP HTTP Exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlphttpexporter) as OpenTelemetry logs should now be exported as is to the Loki OTLP endpoint.
 
 
-OpenTelemetry Collector configuration before migration
+OpenTelemetry Collector configuration migration
 
 ```yaml
 ========================
