@@ -41,6 +41,6 @@ func TestStreamLoadResponse_Success(t *testing.T) {
 }
 
 func TestStreamLoadUrl(t *testing.T) {
-	url := streamLoadUrl("http://doris:8030", "otel", "otel_logs")
+	url := streamLoadURL("http://doris:8030", "otel", "otel_logs")
 	require.Equal(t, "http://doris:8030/api/otel/otel_logs/_stream_load", url)
 }

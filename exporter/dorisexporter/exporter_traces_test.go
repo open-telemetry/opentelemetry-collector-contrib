@@ -23,7 +23,9 @@ func TestNewTracesExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	defer exporter.shutdown(ctx)
+	defer func() {
+		_ = exporter.shutdown(ctx)
+	}()
 }
 
 func TestPushTraceData(t *testing.T) {
@@ -32,18 +34,14 @@ func TestPushTraceData(t *testing.T) {
 	config.CreateSchema = false
 
 	err := config.Validate()
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
 
 	exporter, err := newTracesExporter(nil, config)
+	require.NoError(t, err)
 	ctx := context.Background()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer exporter.shutdown(ctx)
+	defer func() {
+		_ = exporter.shutdown(ctx)
+	}()
 
 	err = exporter.pushTraceData(ctx, simpleTraces(10))
 	require.Error(t, err)

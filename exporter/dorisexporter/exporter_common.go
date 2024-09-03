@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // for register database driver
 	"go.uber.org/zap"
 )
 
@@ -27,7 +27,7 @@ type commonExporter struct {
 
 func newExporter(logger *zap.Logger, cfg *Config) (*commonExporter, error) {
 	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(req *http.Request, _ []*http.Request) error {
 			req.SetBasicAuth(cfg.Username, string(cfg.Password))
 			return nil
 		},
@@ -51,7 +51,7 @@ func (e *commonExporter) formatTime(t time.Time) string {
 }
 
 type streamLoadResponse struct {
-	TxnId                  int64
+	TxnID                  int64
 	Label                  string
 	Status                 string
 	ExistingJobStatus      string
@@ -74,12 +74,12 @@ func (r *streamLoadResponse) success() bool {
 	return r.Status == "Success" || r.Status == "Publish Timeout"
 }
 
-func streamLoadUrl(address string, db string, table string) string {
+func streamLoadURL(address string, db string, table string) string {
 	return address + "/api/" + db + "/" + table + "/_stream_load"
 }
 
 func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []byte) (*http.Request, error) {
-	url := streamLoadUrl(cfg.Endpoint, cfg.Database, table)
+	url := streamLoadURL(cfg.Endpoint, cfg.Database, table)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err

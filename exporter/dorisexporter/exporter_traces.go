@@ -137,7 +137,7 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 	return err
 }
 
-func (e *tracesExporter) shutdown(ctx context.Context) error {
+func (e *tracesExporter) shutdown(_ context.Context) error {
 	e.client.CloseIdleConnections()
 	return nil
 }
@@ -242,7 +242,10 @@ func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dT
 	}
 
 	response := streamLoadResponse{}
-	json.Unmarshal(body, &response)
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return err
+	}
 
 	if !response.success() {
 		return fmt.Errorf("failed to push trace data: %s", response.Message)
