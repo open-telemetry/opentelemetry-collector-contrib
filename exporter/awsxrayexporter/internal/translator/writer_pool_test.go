@@ -59,7 +59,7 @@ func BenchmarkWithPool(b *testing.B) {
 		w := wp.borrow()
 		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false, nil, false)
 		err := w.Encode(*segment)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 		logger.Info(w.String())
 	}
 }
