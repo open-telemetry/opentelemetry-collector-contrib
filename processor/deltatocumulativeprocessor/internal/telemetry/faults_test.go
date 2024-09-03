@@ -116,7 +116,7 @@ func TestFaults(t *testing.T) {
 				dp.SetTimestamp(ts(20))
 				return dps.Store(id, dp)
 			},
-			Err: streams.ErrEvicted{Ident: evid, ErrLimit: streams.ErrLimit(1)},
+			Err:  streams.ErrEvicted{Ident: evid, ErrLimit: streams.ErrLimit(1)},
 			Want: nil,
 		},
 	}
