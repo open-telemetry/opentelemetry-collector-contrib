@@ -101,7 +101,7 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 		// If we did not skip sending on blocked channels, we'd expect this to never return.
 		registry.ProcessMessage(customMessage)
 
-		require.Equal(t, 0, len(sender.Message()))
+		require.Len(t, sender.Message(), 0)
 	})
 
 	t.Run("Callback is called only for its own capability", func(t *testing.T) {

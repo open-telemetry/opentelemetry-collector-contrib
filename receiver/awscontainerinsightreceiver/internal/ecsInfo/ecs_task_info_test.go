@@ -75,7 +75,7 @@ func TestECSTaskInfoFail(t *testing.T) {
 	ecsTaskinfo := newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
 	assert.NotNil(t, ecsTaskinfo)
 	assert.Equal(t, int64(0), ecsTaskinfo.getRunningTaskCount())
-	assert.Equal(t, 0, len(ecsTaskinfo.getRunningTasksInfo()))
+	assert.Len(t, ecsTaskinfo.getRunningTasksInfo(), 0)
 
 	data, err := os.ReadFile("./test/ecsinfo/taskinfo_wrong")
 	body := string(data)
@@ -87,6 +87,6 @@ func TestECSTaskInfoFail(t *testing.T) {
 	ecsTaskinfo = newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
 	assert.NotNil(t, ecsTaskinfo)
 	assert.Equal(t, int64(0), ecsTaskinfo.getRunningTaskCount())
-	assert.Equal(t, 0, len(ecsTaskinfo.getRunningTasksInfo()))
+	assert.Len(t, ecsTaskinfo.getRunningTasksInfo(), 0)
 
 }

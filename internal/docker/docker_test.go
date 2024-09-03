@@ -72,7 +72,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	cnt, ofInterest := cli.inspectedContainerIsOfInterest(context.Background(), "SomeContainerId")
 	assert.False(t, ofInterest)
 	assert.Nil(t, cnt)
-	assert.Equal(t, 1, len(logs.All()))
+	assert.Len(t, logs.All(), 1)
 	for _, l := range logs.All() {
 		assert.Contains(t, l.ContextMap()["error"], expectedError)
 	}
@@ -124,7 +124,7 @@ func TestFetchingTimeouts(t *testing.T) {
 
 	assert.Contains(t, err.Error(), expectedError)
 
-	assert.Equal(t, 1, len(logs.All()))
+	assert.Len(t, logs.All(), 1)
 	for _, l := range logs.All() {
 		assert.Contains(t, l.ContextMap()["error"], expectedError)
 	}

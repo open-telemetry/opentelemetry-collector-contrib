@@ -104,7 +104,7 @@ func TestContainerTagsNative(t *testing.T) {
 
 	// check if the container tags are added to the metrics
 	metrics := metricsSink.AllMetrics()
-	assert.Equal(t, 1, len(metrics))
+	assert.Len(t, metrics, 1)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
@@ -117,7 +117,7 @@ func TestContainerTagsNative(t *testing.T) {
 	require.NoError(t, err)
 
 	tags := sp.Stats[0].Tags
-	assert.Equal(t, 3, len(tags))
+	assert.Len(t, tags, 3)
 	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
 }
 
@@ -187,7 +187,7 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	}
 
 	metrics := metricsSink.AllMetrics()
-	require.Equal(t, 1, len(metrics))
+	require.Len(t, metrics, 1)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
