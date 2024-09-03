@@ -220,7 +220,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
-- [convert_exponential_hist_to_explicit_hist](#convert_exponential_hist_to_explicit_hist)
+- [convert_exponential_histogram_to_explicit_histogram](#convert_exponential_histogram_to_explicit_histogram)
 
 
 ### convert_sum_to_gauge
@@ -358,11 +358,13 @@ Examples:
 - `copy_metric(desc="new desc") where description == "old desc"`
 
 
-### convert_exponential_hist_to_explicit_hist
+### convert_exponential_histogram_to_explicit_histogram
 
-`convert_exponential_hist_to_explicit_hist(distribution, [ExplicitBounds])`
+__Warning:__ The approach used in this function to convert exponential histograms to explicit histograms __is not__ part of the __OpenTelemetry Specification__.
 
-The `convert_exponential_hist_to_explicit_hist` function converts an ExponentialHistogram to an Explicit (_normal_) Histogram.
+`convert_exponential_histogram_to_explicit_histogram(distribution, [ExplicitBounds])`
+
+The `convert_exponential_histogram_to_explicit_histogram` function converts an ExponentialHistogram to an Explicit (_normal_) Histogram.
 
 This function requires 2 arguments:
 
@@ -423,7 +425,7 @@ __WARNINGS:__
 
   For example, selecting Boundaries that are too high or too low may result histogram buckets that are too wide or too narrow, respectively.
 
-- __Negative Bucket Counts__ are not supported in Explicit Histograms, as such negative bucket count are ignored.
+- __Negative Bucket Counts__ are not supported in Explicit Histograms, as such negative bucket counts are ignored.
 
 - __ZeroCounts__ are only allocated if the ExplicitBounds array contains a zero boundary. That is, if the Explicit Boundaries that you provide does not start with `0`, the function will not allocate any zero counts from the Exponential Histogram.
 
@@ -431,7 +433,7 @@ This function should only be used when Exponential Histograms are not suitable f
 
 __Example__:
 
-- `convert_exponential_hist_to_explicit_hist("random", [0.0, 10.0, 100.0, 1000.0, 10000.0])`
+- `convert_exponential_histogram_to_explicit_histogram("random", [0.0, 10.0, 100.0, 1000.0, 10000.0])`
 
 ### scale_metric
 
