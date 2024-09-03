@@ -1403,6 +1403,15 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 	return configChanged
 }
 
+func (s *Supervisor) processesPackageAvailableMessage(msg *protobufs.PackageAvailable) error {
+	if msg.Type != protobufs.PackageType_PackageType_TopLevel {
+		s.logger.Debug("Got non-top-level PackageAvailable message, ignoring...")
+		return nil
+	}
+
+	return nil
+}
+
 func (s *Supervisor) persistentStateFilePath() string {
 	return filepath.Join(s.config.Storage.Directory, persistentStateFileName)
 }
