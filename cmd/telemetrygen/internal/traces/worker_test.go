@@ -262,7 +262,7 @@ func TestSpansWithNoAttrs(t *testing.T) {
 	assert.Len(t, syncer.spans, 4) // each trace has two spans
 	for _, span := range syncer.spans {
 		attributes := span.Attributes()
-		assert.Equal(t, 2, len(attributes), "it shouldn't have more than 2 fixed attributes")
+		assert.Len(t, attributes, 2, "it shouldn't have more than 2 fixed attributes")
 	}
 }
 
@@ -284,7 +284,7 @@ func TestSpansWithOneAttrs(t *testing.T) {
 	assert.Len(t, syncer.spans, 4) // each trace has two spans
 	for _, span := range syncer.spans {
 		attributes := span.Attributes()
-		assert.Equal(t, 3, len(attributes), "it should have more than 3 attributes")
+		assert.Len(t, attributes, 3, "it should have more than 3 attributes")
 	}
 }
 
@@ -306,7 +306,7 @@ func TestSpansWithMultipleAttrs(t *testing.T) {
 	assert.Len(t, syncer.spans, 4) // each trace has two spans
 	for _, span := range syncer.spans {
 		attributes := span.Attributes()
-		assert.Equal(t, 4, len(attributes), "it should have more than 4 attributes")
+		assert.Len(t, attributes, 4, "it should have more than 4 attributes")
 	}
 }
 

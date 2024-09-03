@@ -173,7 +173,7 @@ func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.
 			logError(err, jobRef, pod.UID, logger)
 			return nil
 		} else if !exists {
-			logWarning(jobRef, pod.UID, logger)
+			logDebug(jobRef, pod.UID, logger)
 			return nil
 		}
 
@@ -196,7 +196,7 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 			logError(err, rsRef, pod.UID, logger)
 			return nil
 		} else if !exists {
-			logWarning(rsRef, pod.UID, logger)
+			logDebug(rsRef, pod.UID, logger)
 			return nil
 		}
 
@@ -209,8 +209,8 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 	return nil
 }
 
-func logWarning(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
-	logger.Warn(
+func logDebug(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
+	logger.Debug(
 		"Resource does not exist in store, properties from it will not be synced.",
 		zap.String(conventions.AttributeK8SPodUID, string(podUID)),
 		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),

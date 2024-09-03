@@ -208,7 +208,7 @@ func TestCorrelationClient(t *testing.T) {
 		forcedRespCode.Store(200)
 		respPayload := map[string][]string{"sf_services": {"testService1"}}
 		respJSON, err := json.Marshal(&respPayload)
-		require.Nil(t, err, "json marshaling failed in test")
+		require.NoError(t, err, "json marshaling failed in test")
 		forcedRespPayload.Store(respJSON)
 
 		var wg sync.WaitGroup
