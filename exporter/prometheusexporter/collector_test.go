@@ -126,7 +126,7 @@ func exemplarsEqual(t *testing.T, otelExemplar pmetric.Exemplar, promExemplar *i
 	}
 
 	require.Equal(t, givenValue, promExemplar.GetValue())
-	require.Equal(t, 2, len(promExemplar.GetLabel()))
+	require.Len(t, promExemplar.GetLabel(), 2)
 	ml := make(map[string]string)
 	for _, l := range promExemplar.GetLabel() {
 		ml[l.GetName()] = l.GetValue()
@@ -174,7 +174,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	buckets := m.GetHistogram().GetBucket()
 
-	require.Equal(t, 3, len(buckets))
+	require.Len(t, buckets, 3)
 
 	require.Equal(t, 3.0, buckets[0].GetExemplar().GetValue())
 	exemplarsEqual(t, promExporterExemplars, buckets[0].GetExemplar())

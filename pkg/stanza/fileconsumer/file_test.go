@@ -1351,7 +1351,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.wg.Wait()
 	if runtime.GOOS != "windows" {
 		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
-		require.Equal(t, len(operator.tracker.PreviousPollFiles()), 1)
+		require.Len(t, operator.tracker.PreviousPollFiles(), 1)
 	}
 
 	// keep append data to file1 and file2
