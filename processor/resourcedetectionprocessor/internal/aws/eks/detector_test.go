@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -43,8 +44,13 @@ func (detectorUtils *MockDetectorUtils) getClusterNameTagFromReservations(_ []*e
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
 	detector, err := NewDetector(processortest.NewNopSettings(), dcfg)
-	assert.Error(t, err)
-	assert.Nil(t, detector)
+	assert.NoError(t, err)
+	assert.NotNil(t, detector)
+	// no-op
+	gotResource, gotSchema, gotErr := detector.Detect(context.Background())
+	assert.NoError(t, gotErr)
+	assert.Equal(t, pcommon.NewResource(), gotResource)
+	assert.Empty(t, gotSchema)
 }
 
 // Tests EKS resource detector running in EKS environment
