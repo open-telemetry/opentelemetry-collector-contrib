@@ -11,10 +11,12 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.uber.org/zap"
@@ -524,4 +526,53 @@ func TestCompactionOnStart(t *testing.T) {
 		require.GreaterOrEqual(t, len(logObserver.FilterMessage("finished compaction").All()), 1)
 		require.NoError(t, client.Close(context.TODO()))
 	})
+}
+
+func TestDirectoryCreation(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   func(*testing.T, extension.Factory) *Config
+		validate func(*testing.T, *Config)
+	}{
+		{
+			name: "create directory true - no error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				tempDir := t.TempDir()
+				storageDir := filepath.Join(tempDir, uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = true
+				require.NoError(t, cfg.Validate())
+				return cfg
+			},
+			validate: func(t *testing.T, cfg *Config) {
+				require.DirExists(t, cfg.Directory)
+			},
+		},
+		{
+			name: "create directory false - error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				tempDir := t.TempDir()
+				storageDir := filepath.Join(tempDir, uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = false
+				require.ErrorIs(t, cfg.Validate(), os.ErrNotExist)
+				return cfg
+			},
+			validate: func(t *testing.T, cfg *Config) {
+				require.NoDirExists(t, cfg.Directory)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := NewFactory()
+			config := tt.config(t, f)
+			ext, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), config)
+			require.NoError(t, err)
+			require.NotNil(t, ext)
+			tt.validate(t, config)
+		})
+	}
 }

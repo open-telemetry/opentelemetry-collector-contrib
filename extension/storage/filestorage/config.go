@@ -20,6 +20,9 @@ type Config struct {
 
 	// FSync specifies that fsync should be called after each database write
 	FSync bool `mapstructure:"fsync,omitempty"`
+
+	// CreateDirectory specifies that the directory should be created automatically by the extension
+	CreateDirectory bool `mapstructure:"create_directory,omitempty"`
 }
 
 // CompactionConfig defines configuration for optional file storage compaction.
@@ -59,18 +62,16 @@ func (cfg *Config) Validate() error {
 		dirs = []string{cfg.Directory}
 	}
 	for _, dir := range dirs {
-		info, err := os.Stat(dir)
-		if err != nil {
-			if os.IsNotExist(err) {
+		if info, err := os.Stat(dir); err != nil {
+			if !cfg.CreateDirectory && os.IsNotExist(err) {
 				return fmt.Errorf("directory must exist: %w", err)
 			}
 
 			fsErr := &fs.PathError{}
-			if errors.As(err, &fsErr) {
+			if errors.As(err, &fsErr) && !os.IsNotExist(err) {
 				return fmt.Errorf("problem accessing configured directory: %s, err: %w", dir, fsErr)
 			}
-		}
-		if !info.IsDir() {
+		} else if !info.IsDir() {
 			return fmt.Errorf("%s is not a directory", dir)
 		}
 	}
