@@ -44,7 +44,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
-	github.com/hamba/avro/v2 v2.25.0 // indirect
+	github.com/hamba/avro/v2 v2.25.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
