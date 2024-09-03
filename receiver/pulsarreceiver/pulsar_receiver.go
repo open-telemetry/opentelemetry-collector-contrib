@@ -79,6 +79,7 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 	unmarshaler := c.unmarshaler
 	traceConsumer := c.tracesConsumer
 
+	// TODO: Ensure returned errors are handled
 	for {
 		message, err := c.consumer.Receive(ctx)
 		if err != nil {
@@ -178,6 +179,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 	unmarshaler := c.unmarshaler
 	metricsConsumer := c.metricsConsumer
 
+	// TODO: Ensure returned errors are handled
 	for {
 		message, err := c.consumer.Receive(ctx)
 		if err != nil {
