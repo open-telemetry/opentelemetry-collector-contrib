@@ -30,7 +30,7 @@ var distributionFnMap = map[string]distAlgorithm{
 }
 
 func newconvertExponentialHistToExplicitHistFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("convert_exponential_histogram_to_explicit_histogram",
+	return ottl.NewFactory("convert_exponential_histogram_to_histogram",
 		&convertExponentialHistToExplicitHistArguments{}, createconvertExponentialHistToExplicitHistFunction)
 }
 

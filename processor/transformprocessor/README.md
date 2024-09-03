@@ -220,7 +220,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
-- [convert_exponential_histogram_to_explicit_histogram](#convert_exponential_histogram_to_explicit_histogram)
+- [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
 
 
 ### convert_sum_to_gauge
@@ -358,13 +358,13 @@ Examples:
 - `copy_metric(desc="new desc") where description == "old desc"`
 
 
-### convert_exponential_histogram_to_explicit_histogram
+### convert_exponential_histogram_to_histogram
 
 __Warning:__ The approach used in this function to convert exponential histograms to explicit histograms __is not__ part of the __OpenTelemetry Specification__.
 
-`convert_exponential_histogram_to_explicit_histogram(distribution, [ExplicitBounds])`
+`convert_exponential_histogram_to_histogram(distribution, [ExplicitBounds])`
 
-The `convert_exponential_histogram_to_explicit_histogram` function converts an ExponentialHistogram to an Explicit (_normal_) Histogram.
+The `convert_exponential_histogram_to_histogram` function converts an ExponentialHistogram to an Explicit (_normal_) Histogram.
 
 This function requires 2 arguments:
 
@@ -433,7 +433,7 @@ This function should only be used when Exponential Histograms are not suitable f
 
 __Example__:
 
-- `convert_exponential_histogram_to_explicit_histogram("random", [0.0, 10.0, 100.0, 1000.0, 10000.0])`
+- `convert_exponential_histogram_to_histogram("random", [0.0, 10.0, 100.0, 1000.0, 10000.0])`
 
 ### scale_metric
 
