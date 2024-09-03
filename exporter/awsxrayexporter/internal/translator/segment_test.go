@@ -409,7 +409,7 @@ func TestFixSegmentName(t *testing.T) {
 
 func TestFixAnnotationKey(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
@@ -424,7 +424,7 @@ func TestFixAnnotationKey(t *testing.T) {
 
 func TestFixAnnotationKeyWithAllowDot(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
@@ -585,7 +585,7 @@ func TestSpanWithAttributesSegmentMetadata(t *testing.T) {
 
 func TestResourceAttributesCanBeIndexed(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -618,7 +618,7 @@ func TestResourceAttributesCanBeIndexed(t *testing.T) {
 
 func TestResourceAttributesCanBeIndexedWithAllowDot(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -672,7 +672,7 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 
 func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -692,7 +692,7 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 
 func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -712,7 +712,7 @@ func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -731,7 +731,7 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAllWithAllowDot(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -1142,7 +1142,7 @@ func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
 	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -1336,7 +1336,7 @@ func addSpanLink(span ptrace.Span) {
 
 func TestLocalRootConsumer(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "destination operation"
 	resource := getBasicResource()
@@ -1352,7 +1352,7 @@ func TestLocalRootConsumer(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	validateLocalRootDependencySubsegment(t, segments[0], span, *segments[1].ID)
 	assert.Nil(t, segments[0].Links)
@@ -1383,7 +1383,7 @@ func TestNonLocalRootConsumerProcess(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	tempTraceID := span.TraceID()
 	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
@@ -1429,7 +1429,7 @@ func TestLocalRootConsumerAWSNamespace(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Ensure that AWS namespace is not overwritten to remote
 	assert.Equal(t, "aws", *segments[0].Namespace)
@@ -1437,7 +1437,7 @@ func TestLocalRootConsumerAWSNamespace(t *testing.T) {
 
 func TestLocalRootClient(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "SQS Get"
 	resource := getBasicResource()
@@ -1455,7 +1455,7 @@ func TestLocalRootClient(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	validateLocalRootDependencySubsegment(t, segments[0], span, *segments[1].ID)
 	assert.Len(t, segments[0].Links, 1)
@@ -1492,7 +1492,7 @@ func TestLocalRootClientAwsServiceMetrics(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	subsegment := segments[0]
 
@@ -1516,7 +1516,7 @@ func TestLocalRootProducer(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	validateLocalRootDependencySubsegment(t, segments[0], span, *segments[1].ID)
 	assert.Len(t, segments[0].Links, 1)
@@ -1577,7 +1577,7 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 
 func TestLocalRootServer(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "MyService"
 	resource := getBasicResource()
@@ -1593,14 +1593,14 @@ func TestLocalRootServer(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	validateLocalRootWithoutDependency(t, segments[0], span)
 }
 
 func TestLocalRootInternal(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	spanName := "MyInternalService"
 	resource := getBasicResource()
@@ -1616,7 +1616,7 @@ func TestLocalRootInternal(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	validateLocalRootWithoutDependency(t, segments[0], span)
 }
@@ -1637,7 +1637,7 @@ func TestNotLocalRootInternal(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Validate segment
 	assert.Equal(t, "subsegment", *segments[0].Type)
@@ -1661,7 +1661,7 @@ func TestNotLocalRootConsumer(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Validate segment
 	assert.Equal(t, "subsegment", *segments[0].Type)
@@ -1685,7 +1685,7 @@ func TestNotLocalRootClient(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Validate segment
 	assert.Equal(t, "subsegment", *segments[0].Type)
@@ -1709,7 +1709,7 @@ func TestNotLocalRootProducer(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Validate segment
 	assert.Equal(t, "subsegment", *segments[0].Type)
@@ -1735,7 +1735,7 @@ func TestNotLocalRootServer(t *testing.T) {
 
 	assert.NotNil(t, segments)
 	assert.Len(t, segments, 1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Validate segment
 	assert.Nil(t, segments[0].Type)
