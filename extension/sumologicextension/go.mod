@@ -6,7 +6,7 @@ require (
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/mitchellh/go-ps v1.0.0
-	github.com/shirou/gopsutil/v4 v4.24.7
+	github.com/shirou/gopsutil/v4 v4.24.8
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/config/confighttp v0.108.2-0.20240829190554-7da6b618a7ee
@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240829190554-7da6b618a7ee
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.65.0
+	google.golang.org/grpc v1.66.0
 )
 
 require (

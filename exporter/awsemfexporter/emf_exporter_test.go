@@ -314,10 +314,10 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
 	})
-	assert.NotNil(t, exp.pushMetricsData(ctx, md))
-	assert.NotNil(t, exp.pushMetricsData(ctx, md))
-	assert.Nil(t, exp.pushMetricsData(ctx, md))
-	assert.Nil(t, exp.shutdown(ctx))
+	assert.Error(t, exp.pushMetricsData(ctx, md))
+	assert.Error(t, exp.pushMetricsData(ctx, md))
+	assert.NoError(t, exp.pushMetricsData(ctx, md))
+	assert.NoError(t, exp.shutdown(ctx))
 }
 
 func TestNewExporterWithoutConfig(t *testing.T) {
