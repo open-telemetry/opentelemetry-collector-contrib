@@ -262,7 +262,7 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 var benchResult []string
 
 func BenchmarkFind10kFiles(b *testing.B) {
-	numFiles := 10
+	numFiles := 10000
 	tmpDir := b.TempDir()
 
 	// Create a bunch of files for benchmarking
