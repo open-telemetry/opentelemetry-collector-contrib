@@ -547,6 +547,28 @@ func TestDirectoryCreation(t *testing.T) {
 			},
 			validate: func(t *testing.T, cfg *Config) {
 				require.DirExists(t, cfg.Directory)
+				s, err := os.Stat(cfg.Directory)
+				require.NoError(t, err)
+				require.Equal(t, s.Mode()&os.ModePerm, os.FileMode(0750))
+			},
+		},
+		{
+			name: "create directory true - no error - 0700 permissions",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				tempDir := t.TempDir()
+				storageDir := filepath.Join(tempDir, uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.DirectoryPerm = "0700"
+				cfg.CreateDirectory = true
+				require.NoError(t, cfg.Validate())
+				return cfg
+			},
+			validate: func(t *testing.T, cfg *Config) {
+				require.DirExists(t, cfg.Directory)
+				s, err := os.Stat(cfg.Directory)
+				require.NoError(t, err)
+				require.Equal(t, s.Mode()&os.ModePerm, os.FileMode(0700))
 			},
 		},
 		{

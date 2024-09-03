@@ -24,7 +24,8 @@ The default timeout is `1s`.
 
 `fsync` when set, will force the database to perform an fsync after each write.  This helps to ensure database integrity if there is an interruption to the database process, but at the cost of performance.  See [DB.NoSync](https://pkg.go.dev/go.etcd.io/bbolt#DB) for more information.
 
-`create_directory` when set, will create the data storage directory if it does not already exist. The directory will be created with `0750 (rwxr-x--)` permissions.
+`create_directory` when set, will create the data storage directory if it does not already exist. The directory will be created with `0750 (rwxr-x--)` permissions, by default. Use `directory_permission` to customize directory creation permissions.
+
 
 ## Compaction
 `compaction` defines how and when files should be compacted. There are two modes of compaction available (both of which can be set concurrently):
