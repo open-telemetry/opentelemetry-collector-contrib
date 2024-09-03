@@ -26,6 +26,19 @@ type localFileStorage struct {
 var _ storage.Extension = (*localFileStorage)(nil)
 
 func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extension, error) {
+	if config.CreateDirectory {
+		var dirs []string
+		if config.Compaction.OnStart {
+			dirs = []string{config.Directory, config.Compaction.Directory}
+		} else {
+			dirs = []string{config.Directory}
+		}
+		for _, dir := range dirs {
+			if err := createDirectory(dir); err != nil {
+				return nil, err
+			}
+		}
+	}
 	return &localFileStorage{
 		cfg:    config,
 		logger: logger,
@@ -34,19 +47,6 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 
 // Start runs cleanup if configured
 func (lfs *localFileStorage) Start(context.Context, component.Host) error {
-	if lfs.cfg.CreateDirectory {
-		var dirs []string
-		if lfs.cfg.Compaction.CleanupOnStart {
-			dirs = []string{lfs.cfg.Directory, lfs.cfg.Compaction.Directory}
-		} else {
-			dirs = []string{lfs.cfg.Directory}
-		}
-		for _, dir := range dirs {
-			if err := createDirectory(dir); err != nil {
-				return err
-			}
-		}
-	}
 	if lfs.cfg.Compaction.CleanupOnStart {
 		return lfs.cleanup(lfs.cfg.Compaction.Directory)
 	}
@@ -144,7 +144,7 @@ func isSafe(character rune) bool {
 
 func createDirectory(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return os.MkdirAll(path, 0750)
+		return os.MkdirAll(path, 0755)
 	}
 	// we already handled other errors in config.Validate(), so it's okay to return nil
 	return nil
