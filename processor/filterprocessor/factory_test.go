@@ -103,11 +103,11 @@ func TestCreateProcessors(t *testing.T) {
 					assert.Equal(t, tt.succeed, tErr == nil)
 
 					assert.NotNil(t, mp)
-					assert.Nil(t, mErr)
+					assert.NoError(t, mErr)
 				} else {
 					// Should not break configs with no trace data
 					assert.NotNil(t, tp)
-					assert.Nil(t, tErr)
+					assert.NoError(t, tErr)
 
 					assert.Equal(t, tt.succeed, mp != nil)
 					assert.Equal(t, tt.succeed, mErr == nil)

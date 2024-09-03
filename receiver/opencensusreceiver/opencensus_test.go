@@ -719,7 +719,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.NotNil(t, ocr)
 
 				ocr.metricsConsumer = sink
-				require.Nil(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 				cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
