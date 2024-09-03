@@ -389,10 +389,10 @@ This function requires 2 arguments:
 <br>
 
     >The __uniform__ and __random__ distribution algorithms both utilise the concept of intersecting boundaries.
-    Intersecting boundaries are any boundary in the `boundaries array` that falls between or on the lower and upper values of the Exponential Histogram bounderies. 
+    Intersecting boundaries are any boundary in the `boundaries array` that falls between or on the lower and upper values of the Exponential Histogram boundaries. 
     _For Example:_ if you have an Exponential Histogram bucket with a lower bound of 10 and upper of 20, and your boundaries array is [5, 10, 15, 20, 25], the intersecting boundaries are 10, 15, and 20 because they lie within the range [10, 20].
 <br>
-  - __uniform__ - This approach distributes the datapoints for each bucket uniformly across the intersecting __ExplicitBounds__. The alogrithm works as follows:
+  - __uniform__ - This approach distributes the datapoints for each bucket uniformly across the intersecting __ExplicitBounds__. The algorithm works as follows:
 
      - If there are valid intersecting boundaries, the function evenly distributes the count across these boundaries. 
 	  - Calculate the count to be allocated to each boundary.
