@@ -4,9 +4,9 @@ go 1.22.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.131
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.56.0
-	github.com/DataDog/datadog-agent/pkg/trace v0.56.0
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.56.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.56.2
+	github.com/DataDog/datadog-agent/pkg/trace v0.56.2
 	github.com/DataDog/datadog-api-client-go/v2 v2.29.0
 	github.com/DataDog/sketches-go v1.4.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.108.0
@@ -30,7 +30,7 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.12 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
