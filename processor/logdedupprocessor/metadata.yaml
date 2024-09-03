@@ -11,3 +11,12 @@ status:
 
 tests:
   config:
+
+telemetry:
+  metrics:
+    dedup_processor_aggregated_logs:
+      description: Number of log records that were aggregated together.
+      unit: "{records}"
+      enabled: true
+      histogram:
+        value_type: int

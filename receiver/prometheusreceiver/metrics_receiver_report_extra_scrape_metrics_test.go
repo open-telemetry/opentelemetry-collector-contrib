@@ -47,7 +47,7 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetrics bool) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
@@ -92,7 +92,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 			name := target.name
 			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name], target.normalizedName)
+				scrapes = getValidScrapes(t, pResults[name], target)
 				assert.GreaterOrEqual(t, 1, len(scrapes))
 				if reportExtraScrapeMetrics {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics + 3 internal extra scraper metrics = 10

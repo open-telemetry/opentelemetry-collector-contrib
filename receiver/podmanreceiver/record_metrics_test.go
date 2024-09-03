@@ -73,7 +73,7 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, points)
 
 		default:
-			t.Errorf(fmt.Sprintf("unexpected metric: %s", m.Name()))
+			t.Errorf("unexpected metric: %s", m.Name())
 		}
 	}
 }
@@ -99,7 +99,7 @@ func assertMetricEqual(t *testing.T, m pmetric.Metric, dt pmetric.MetricType, pt
 }
 
 func assertPoints(t *testing.T, dpts pmetric.NumberDataPointSlice, pts []point) {
-	assert.Equal(t, dpts.Len(), len(pts))
+	assert.Len(t, pts, dpts.Len())
 	for i, expected := range pts {
 		got := dpts.At(i)
 		assert.Equal(t, got.IntValue(), int64(expected.intVal))
