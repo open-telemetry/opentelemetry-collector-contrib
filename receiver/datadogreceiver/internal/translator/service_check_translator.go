@@ -4,6 +4,8 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
+	"time"
+
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -32,7 +34,7 @@ func (mt *MetricsTranslator) TranslateServices(services []ServiceCheck) pmetric.
 		dps.EnsureCapacity(1)
 
 		dp := dps.AppendEmpty()
-		dp.SetTimestamp(pcommon.Timestamp(ts * time.Second.Nanoseconds())) // OTel uses nanoseconds, while Datadog uses seconds
+		dp.SetTimestamp(pcommon.Timestamp(service.Timestamp * time.Second.Nanoseconds())) // OTel uses nanoseconds, while Datadog uses seconds
 		metricProperties.dpAttrs.CopyTo(dp.Attributes())
 		dp.SetIntValue(int64(service.Status))
 
