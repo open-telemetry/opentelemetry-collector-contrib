@@ -21,7 +21,7 @@ type Config struct {
 	// FSync specifies that fsync should be called after each database write
 	FSync bool `mapstructure:"fsync,omitempty"`
 
-	// CreateDirectory specifies that the directory should be created automatically by the extension
+	// CreateDirectory specifies that the directory should be created automatically by the extension on start
 	CreateDirectory bool `mapstructure:"create_directory,omitempty"`
 }
 
