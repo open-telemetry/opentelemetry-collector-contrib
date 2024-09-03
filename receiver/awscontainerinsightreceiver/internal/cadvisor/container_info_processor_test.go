@@ -67,6 +67,6 @@ func TestProcessContainers(t *testing.T) {
 	assert.Len(t, metrics, 3)
 
 	for _, e := range metricsExtractors {
-		require.Nil(t, e.Shutdown())
+		require.NoError(t, e.Shutdown())
 	}
 }
