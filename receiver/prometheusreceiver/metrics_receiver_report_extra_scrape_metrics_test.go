@@ -47,7 +47,7 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetrics bool) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)

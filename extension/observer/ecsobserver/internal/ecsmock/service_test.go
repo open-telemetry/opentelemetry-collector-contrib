@@ -31,7 +31,7 @@ func TestCluster_ListTasksWithContext(t *testing.T) {
 		assert.True(t, errors.As(err, &aerr))
 		assert.Equal(t, ecs.ErrCodeClusterNotFoundException, aerr.Code())
 		assert.Equal(t, "code "+ecs.ErrCodeClusterNotFoundException+" message "+aerr.Message(), aerr.Error())
-		assert.Nil(t, aerr.OrigErr())
+		assert.NoError(t, aerr.OrigErr())
 	})
 
 	t.Run("get all", func(t *testing.T) {
