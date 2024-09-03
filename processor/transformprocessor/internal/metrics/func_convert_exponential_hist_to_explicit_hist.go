@@ -30,7 +30,7 @@ var distributionFnMap = map[string]distAlgorithm{
 }
 
 func newconvertExponentialHistToExplicitHistFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("convert_exponential_hist_to_explicit_hist",
+	return ottl.NewFactory("convert_exponential_histogram_to_explicit_histogram",
 		&convertExponentialHistToExplicitHistArguments{}, createconvertExponentialHistToExplicitHistFunction)
 }
 
@@ -119,20 +119,12 @@ func calculateBucketCounts(dp pmetric.ExponentialHistogramDataPoint, boundaries 
 		bucketCounts[0] += zerocount
 	}
 
-positionLoop:
 	for pos := 0; pos < posB.Len(); pos++ {
 		index := dp.Positive().Offset() + int32(pos)
 		upper := math.Exp(float64(index+1) * factor)
 		lower := math.Exp(float64(index) * factor)
 		count := posB.At(pos)
-
-		// check if lower and upper bounds are within the boundaries
-		for bIndex := 1; bIndex < len(boundaries); bIndex++ {
-			if lower > boundaries[bIndex-1] && upper <= boundaries[bIndex] {
-				bucketCounts[bIndex-1] += count
-				continue positionLoop
-			}
-		}
+		runDistFn := true
 
 		// if the lower bound is greater than the last boundary, add the count to the overflow bucket
 		if lower > boundaries[len(boundaries)-1] {
@@ -140,7 +132,18 @@ positionLoop:
 			continue
 		}
 
-		distFn(count, upper, lower, boundaries, posB, &bucketCounts)
+		// check if lower and upper bounds are within the boundaries
+		for bIndex := 1; bIndex < len(boundaries); bIndex++ {
+			if lower > boundaries[bIndex-1] && upper <= boundaries[bIndex] {
+				bucketCounts[bIndex-1] += count
+				runDistFn = false
+				break
+			}
+		}
+
+		if runDistFn {
+			distFn(count, upper, lower, boundaries, posB, &bucketCounts)
+		}
 	}
 
 	return bucketCounts
