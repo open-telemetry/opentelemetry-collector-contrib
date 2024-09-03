@@ -28,7 +28,6 @@ import (
 )
 
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
-
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
@@ -412,6 +411,7 @@ func TestStats_EndToEnd(t *testing.T) {
 	defer func() {
 		require.NoError(t, dd.Shutdown(context.Background()))
 	}()
+
 	clientStatsPayload := pb.ClientStatsPayload{
 		Hostname:         "host",
 		Env:              "prod",
