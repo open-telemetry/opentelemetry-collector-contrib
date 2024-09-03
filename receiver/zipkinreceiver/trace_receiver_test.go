@@ -139,7 +139,7 @@ func TestStartTraceReception(t *testing.T) {
 			err = zr.Start(context.Background(), tt.host)
 			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
-				require.Nil(t, zr.Shutdown(context.Background()))
+				require.NoError(t, zr.Shutdown(context.Background()))
 			}
 		})
 	}
