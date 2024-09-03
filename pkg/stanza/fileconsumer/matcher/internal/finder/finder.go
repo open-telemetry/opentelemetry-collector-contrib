@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/bmatcuk/doublestar/v4"
 )
 
@@ -45,10 +47,5 @@ func FindFiles(includes []string, excludes []string) ([]string, error) {
 		}
 	}
 
-	all := make([]string, 0, len(allSet))
-	for k := range allSet {
-		all = append(all, k)
-	}
-
-	return all, errs
+	return maps.Keys(allSet), errs
 }

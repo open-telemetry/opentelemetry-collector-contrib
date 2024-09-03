@@ -257,6 +257,10 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 	}
 }
 
+// benchResult is package level variable that store the result of the benchmark.
+// It is used to prevent go from optimizing out the benchmarked code.
+var benchResult []string
+
 func BenchmarkFind10kFiles(b *testing.B) {
 	numFiles := 10
 	tmpDir := b.TempDir()
@@ -275,8 +279,11 @@ func BenchmarkFind10kFiles(b *testing.B) {
 
 	excludeGlobs := []string{}
 
+	var r []string
 	b.ResetTimer()
 	for range b.N {
-		_, _ = FindFiles(includeGlobs, excludeGlobs)
+		r, _ = FindFiles(includeGlobs, excludeGlobs)
 	}
+
+	benchResult = r
 }
