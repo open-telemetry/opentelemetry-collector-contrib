@@ -46,13 +46,13 @@ func TestBufferReadString(t *testing.T) {
 func TestBufferUpdateSize(t *testing.T) {
 	buffer := NewBuffer()
 	buffer.UpdateSizeBytes(1)
-	require.Equal(t, 1, len(buffer.buffer))
+	require.Len(t, buffer.buffer, 1)
 }
 
 func TestBufferUpdateSizeWide(t *testing.T) {
 	buffer := NewBuffer()
 	buffer.UpdateSizeWide(1)
-	require.Equal(t, 2, len(buffer.buffer))
+	require.Len(t, buffer.buffer, 2)
 }
 
 func TestBufferSize(t *testing.T) {

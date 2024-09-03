@@ -83,9 +83,9 @@ func TestHandleMetricsPayloadV2(t *testing.T) {
 			series, err := mt.HandleSeriesV2Payload(req)
 			require.NoError(t, err)
 			require.NoError(t, err, "Failed to parse metrics payload")
-			require.Equal(t, tt.expectedSeriesCount, len(series))
+			require.Len(t, series, tt.expectedSeriesCount)
 			for i, s := range series {
-				require.Equal(t, tt.expectedPointsCounts[i], len(s.Points))
+				require.Len(t, s.Points, tt.expectedPointsCounts[i])
 			}
 		})
 	}
@@ -414,7 +414,7 @@ func TestTranslateSeriesV2(t *testing.T) {
 				require.Equal(t, 1, result.ResourceMetrics().At(0).ScopeMetrics().Len())
 				require.Equal(t, 1, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 
-				require.Equal(t, "otelcol/datadogreceiver", result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
+				require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator", result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
 				require.Equal(t, component.NewDefaultBuildInfo().Version, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Version())
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)

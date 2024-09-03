@@ -7,6 +7,7 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient"
 	"github.com/DataDog/datadog-agent/pkg/trace/timing"
@@ -44,6 +45,7 @@ func createDefaultConfig() component.Config {
 		Traces: TracesConfig{
 			IgnoreResources: []string{},
 			TraceBuffer:     1000,
+			BucketInterval:  10 * time.Second,
 		},
 	}
 }

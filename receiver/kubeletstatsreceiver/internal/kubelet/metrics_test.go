@@ -45,7 +45,7 @@ func TestMetricAccumulator(t *testing.T) {
 	mbs.NodeMetricsBuilder.Reset()
 	mbs.PodMetricsBuilder.Reset()
 	mbs.OtherMetricsBuilder.Reset()
-	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs)))
+	require.Len(t, MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs), 0)
 }
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {

@@ -27,7 +27,7 @@ var (
 	openSessionProc           SyscallProc = api.NewProc("EvtOpenSession")
 )
 
-type EvtRpcLogin struct {
+type EvtRPCLogin struct {
 	Server   *uint16
 	User     *uint16
 	Domain   *uint16
@@ -47,8 +47,8 @@ const (
 	EvtSubscribeStartAtOldestRecord uint32 = 2
 	// EvtSubscribeStartAfterBookmark is a flag that will subscribe to all events that begin after a bookmark.
 	EvtSubscribeStartAfterBookmark uint32 = 3
-	// EvtRpcLoginClass is a flag that indicates the login class.
-	EvtRpcLoginClass uint32 = 1
+	// EvtRPCLoginClass is a flag that indicates the login class.
+	EvtRPCLoginClass uint32 = 1
 )
 
 const (
@@ -162,7 +162,7 @@ func evtFormatMessage(publisherMetadata uintptr, event uintptr, messageID uint32
 }
 
 // evtOpenSession is the direct syscall implementation of EvtOpenSession (https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtopensession)
-func evtOpenSession(loginClass uint32, login *EvtRpcLogin, timeout uint32, flags uint32) (windows.Handle, error) {
+func evtOpenSession(loginClass uint32, login *EvtRPCLogin, timeout uint32, flags uint32) (windows.Handle, error) {
 	r0, _, e1 := openSessionProc.Call(uintptr(loginClass), uintptr(unsafe.Pointer(login)), uintptr(timeout), uintptr(flags))
 	handle := windows.Handle(r0)
 	if handle == 0 {
