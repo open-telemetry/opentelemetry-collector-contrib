@@ -217,12 +217,12 @@ func TestGetMetricsDataCpuReservedZero(t *testing.T) {
 	require.Less(t, 0, len(acc.mds))
 }
 func TestIsEmptyStats(t *testing.T) {
-	require.EqualValues(t, false, isEmptyStats(&containerStats))
-	require.EqualValues(t, true, isEmptyStats(cstats["002"]))
+	require.False(t, isEmptyStats(&containerStats))
+	require.True(t, isEmptyStats(cstats["002"]))
 	cstats = map[string]*ContainerStats{"001": nil}
-	require.EqualValues(t, true, isEmptyStats(cstats["001"]))
+	require.True(t, isEmptyStats(cstats["001"]))
 	cstats = map[string]*ContainerStats{"001": {}}
-	require.EqualValues(t, true, isEmptyStats(cstats["001"]))
+	require.True(t, isEmptyStats(cstats["001"]))
 }
 
 func TestCalculateDuration(t *testing.T) {

@@ -6,15 +6,19 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
+// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor")
+}
+
+func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
+	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -39,111 +43,100 @@ type TelemetryBuilder struct {
 	OtelsvcK8sReplicasetAdded   metric.Int64Counter
 	OtelsvcK8sReplicasetDeleted metric.Int64Counter
 	OtelsvcK8sReplicasetUpdated metric.Int64Counter
-	level                       configtelemetry.Level
+	meters                      map[configtelemetry.Level]metric.Meter
 }
 
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
 
-// WithLevel sets the current telemetry level for the component.
-func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.level = lvl
-	}
-}
-
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
+	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
 	for _, op := range options {
 		op(&builder)
 	}
+	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error
-	if builder.level >= configtelemetry.LevelBasic {
-		builder.meter = Meter(settings)
-	} else {
-		builder.meter = noop.Meter{}
-	}
-	builder.OtelsvcK8sIPLookupMiss, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sIPLookupMiss, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_ip_lookup_miss",
 		metric.WithDescription("Number of times pod by IP lookup failed."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sNamespaceAdded, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sNamespaceAdded, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_namespace_added",
 		metric.WithDescription("Number of namespace add events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sNamespaceDeleted, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sNamespaceDeleted, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_namespace_deleted",
 		metric.WithDescription("Number of namespace delete events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sNamespaceUpdated, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sNamespaceUpdated, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_namespace_updated",
 		metric.WithDescription("Number of namespace update events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sNodeAdded, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sNodeAdded, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_node_added",
 		metric.WithDescription("Number of node add events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sNodeDeleted, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sNodeDeleted, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_node_deleted",
 		metric.WithDescription("Number of node delete events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sNodeUpdated, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sNodeUpdated, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_node_updated",
 		metric.WithDescription("Number of node update events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sPodAdded, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sPodAdded, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_pod_added",
 		metric.WithDescription("Number of pod add events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sPodDeleted, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sPodDeleted, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_pod_deleted",
 		metric.WithDescription("Number of pod delete events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sPodTableSize, err = builder.meter.Int64Gauge(
+	builder.OtelsvcK8sPodTableSize, err = builder.meters[configtelemetry.LevelBasic].Int64Gauge(
 		"otelcol_otelsvc_k8s_pod_table_size",
 		metric.WithDescription("Size of table containing pod info"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sPodUpdated, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sPodUpdated, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_pod_updated",
 		metric.WithDescription("Number of pod update events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sReplicasetAdded, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sReplicasetAdded, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_replicaset_added",
 		metric.WithDescription("Number of ReplicaSet add events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sReplicasetDeleted, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sReplicasetDeleted, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_replicaset_deleted",
 		metric.WithDescription("Number of ReplicaSet delete events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelsvcK8sReplicasetUpdated, err = builder.meter.Int64Counter(
+	builder.OtelsvcK8sReplicasetUpdated, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_otelsvc_k8s_replicaset_updated",
 		metric.WithDescription("Number of ReplicaSet update events received"),
 		metric.WithUnit("1"),

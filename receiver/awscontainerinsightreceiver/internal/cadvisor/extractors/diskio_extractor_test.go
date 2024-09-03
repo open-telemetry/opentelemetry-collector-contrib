@@ -98,5 +98,5 @@ func TestDiskIOStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result2[0], nil, containerType)
 	}
 
-	assert.Equal(t, len(cMetrics), 0)
+	assert.Len(t, cMetrics, 0)
 }
