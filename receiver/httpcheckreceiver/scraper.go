@@ -5,7 +5,9 @@ package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -30,6 +32,46 @@ type httpcheckScraper struct {
 	cfg      *Config
 	settings component.TelemetrySettings
 	mb       *metadata.MetricsBuilder
+}
+
+// Custom transport to measure DNS resolution time
+func newCustomTransport(insecureSkipVerify bool, dnsDuration *time.Duration) *http.Transport {
+	return &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: insecureSkipVerify, // Enable or disable cert verification as needed
+		},
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			host, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				return nil, err
+			}
+
+			ip := net.ParseIP(host)
+			if ip != nil {
+				return net.Dial(network, addr)
+			}
+
+			start := time.Now()
+			addrs, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+			*dnsDuration = time.Since(start)
+			if err != nil {
+				return nil, err
+			}
+
+			var conn net.Conn
+			for _, ip := range addrs {
+				conn, err = net.Dial(network, net.JoinHostPort(ip.String(), port))
+				if err == nil {
+					break
+				}
+			}
+
+			if err != nil {
+				return nil, err
+			}
+			return conn, nil
+		},
+	}
 }
 
 // start starts the scraper by creating a new HTTP Client on the scraper
@@ -59,6 +101,11 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			defer wg.Done()
 
 			now := pcommon.NewTimestampFromTime(time.Now())
+			dnsDuration := time.Duration(0)
+
+			// Create a custom transport to measure DNS timing
+			transport := newCustomTransport(h.cfg.Targets[targetIndex].ClientConfig.TLSSetting.InsecureSkipVerify, &dnsDuration)
+			targetClient.Transport = transport
 
 			req, err := http.NewRequestWithContext(ctx, h.cfg.Targets[targetIndex].Method, h.cfg.Targets[targetIndex].Endpoint, http.NoBody)
 			if err != nil {
@@ -69,6 +116,10 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			start := time.Now()
 			resp, err := targetClient.Do(req)
 			mux.Lock()
+			if dnsDuration != 0 {
+				h.mb.RecordHttpcheckDnslookupDurationDataPoint(now, dnsDuration.Milliseconds(), h.cfg.Targets[targetIndex].Endpoint)
+			}
+
 			h.mb.RecordHttpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), h.cfg.Targets[targetIndex].Endpoint)
 
 			statusCode := 0
