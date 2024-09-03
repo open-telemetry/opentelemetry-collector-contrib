@@ -50,7 +50,7 @@ type LogsUnmarshalerWithEnc interface {
 // defaultTracesUnmarshalers returns map of supported encodings with TracesUnmarshaler.
 func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 	otlpPb := newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding)
-	otlpJSON := newOTLPJSONTracesUnmarshaler()
+	otlpJSON := newPdataTracesUnmarshaler(&ptrace.JSONUnmarshaler{}, "otlp_json")
 	jaegerProto := jaegerProtoSpanUnmarshaler{}
 	jaegerJSON := jaegerJSONSpanUnmarshaler{}
 	zipkinProto := newPdataTracesUnmarshaler(zipkinv2.NewProtobufTracesUnmarshaler(false, false), "zipkin_proto")
@@ -69,7 +69,7 @@ func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 
 func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
 	otlpPb := newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding)
-	otlpJSON := newOTLPJSONMetricsUnmarshaler()
+	otlpJSON := newPdataMetricsUnmarshaler(&pmetric.JSONUnmarshaler{}, "otlp_json")
 	return map[string]MetricsUnmarshaler{
 		otlpPb.Encoding(): otlpPb,
 		otlpJSON.Encoding(): otlpJSON,
@@ -79,7 +79,7 @@ func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
 func defaultLogsUnmarshalers(version string, logger *zap.Logger) map[string]LogsUnmarshaler {
 	azureResourceLogs := newAzureResourceLogsUnmarshaler(version, logger)
 	otlpPb := newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding)
-	otlpJSON := newOTLPJSONLogsUnmarshaler()
+	otlpJSON := newPdataLogsUnmarshaler(&plog.JSONUnmarshaler{}, "otlp_json")
 	raw := newRawLogsUnmarshaler()
 	text := newTextLogsUnmarshaler()
 	json := newJSONLogsUnmarshaler()
