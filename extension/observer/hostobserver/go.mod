@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.108.0
-	github.com/shirou/gopsutil/v4 v4.24.7
+	github.com/shirou/gopsutil/v4 v4.24.8
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
