@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -1053,53 +1054,80 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 }
 
 func TestExcludeDimensionsConsumeTraces(t *testing.T) {
+
+	testcases := []struct {
+		dsc                string
+		featureGateEnabled bool
+	}{
+		{
+			dsc:                fmt.Sprintf("%s enabled", legacyMetricNamesFeatureGateID),
+			featureGateEnabled: true,
+		},
+		{
+			dsc:                fmt.Sprintf("%s disabled", legacyMetricNamesFeatureGateID),
+			featureGateEnabled: false,
+		},
+	}
+
 	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), excludeDimensions...)
-	require.NoError(t, err)
-	traces := buildSampleTrace()
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.dsc, func(t *testing.T) {
+			// Set feature gate value
+			previousValue := legacyMetricNamesFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), tc.featureGateEnabled))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), previousValue))
+			}()
 
-	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), excludeDimensions...)
+			require.NoError(t, err)
+			traces := buildSampleTrace()
 
-	err = p.ConsumeTraces(ctx, traces)
-	require.NoError(t, err)
-	metrics := p.buildMetrics()
+			ctx := metadata.NewIncomingContext(context.Background(), nil)
 
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-		rm := metrics.ResourceMetrics().At(i)
-		ism := rm.ScopeMetrics()
-		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
-		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
-			m := ism.At(ilmC).Metrics()
-			for mC := 0; mC < m.Len(); mC++ {
-				metric := m.At(mC)
-				// We check only sum and histogram metrics here, because for now only they are present in this module.
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+			metrics := p.buildMetrics()
 
-				switch metric.Type() {
-				case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeHistogram:
-					{
-						dp := metric.Histogram().DataPoints()
-						for dpi := 0; dpi < dp.Len(); dpi++ {
-							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
-								assert.NotContains(t, excludeDimensions, attributeKey)
+			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+				rm := metrics.ResourceMetrics().At(i)
+				ism := rm.ScopeMetrics()
+				// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+				for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+					m := ism.At(ilmC).Metrics()
+					for mC := 0; mC < m.Len(); mC++ {
+						metric := m.At(mC)
+						// We check only sum and histogram metrics here, because for now only they are present in this module.
+
+						switch metric.Type() {
+						case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeHistogram:
+							{
+								dp := metric.Histogram().DataPoints()
+								for dpi := 0; dpi < dp.Len(); dpi++ {
+									for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+										assert.NotContains(t, excludeDimensions, attributeKey)
+									}
+
+								}
+							}
+						case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeSummary:
+							{
+								dp := metric.Sum().DataPoints()
+								for dpi := 0; dpi < dp.Len(); dpi++ {
+									for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+										assert.NotContains(t, excludeDimensions, attributeKey)
+									}
+								}
 							}
 
 						}
-					}
-				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeSummary:
-					{
-						dp := metric.Sum().DataPoints()
-						for dpi := 0; dpi < dp.Len(); dpi++ {
-							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
-								assert.NotContains(t, excludeDimensions, attributeKey)
-							}
-						}
-					}
 
+					}
 				}
-
 			}
-		}
+
+		})
 	}
 
 }
