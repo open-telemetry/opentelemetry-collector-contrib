@@ -17,8 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-const defaultBootstrapTimeout = 3 * time.Second
-
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
 	Server       OpAMPServer
