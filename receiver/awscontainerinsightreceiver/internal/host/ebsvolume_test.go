@@ -180,5 +180,5 @@ func TestEBSVolume(t *testing.T) {
 	e = newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
 		clientOption, maxJitterOption, hostMountsOption, LstatOption, evalSymLinksOption)
 	ebsIDs = e.extractEbsIDsUsedByKubernetes()
-	assert.Len(t, ebsIDs, 0)
+	assert.Empty(t, ebsIDs)
 }

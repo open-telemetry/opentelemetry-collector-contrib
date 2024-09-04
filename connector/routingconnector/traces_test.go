@@ -139,8 +139,8 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
-		assert.Len(t, sink0.AllTraces(), 0)
-		assert.Len(t, sink1.AllTraces(), 0)
+		assert.Empty(t, sink0.AllTraces())
+		assert.Empty(t, sink1.AllTraces())
 	})
 
 	t.Run("span matched by one of two expressions", func(t *testing.T) {
@@ -154,9 +154,9 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
 
-		assert.Len(t, defaultSink.AllTraces(), 0)
+		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
-		assert.Len(t, sink1.AllTraces(), 0)
+		assert.Empty(t, sink1.AllTraces())
 	})
 
 	t.Run("span matched by all expressions", func(t *testing.T) {
@@ -175,7 +175,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
 
-		assert.Len(t, defaultSink.AllTraces(), 0)
+		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
 		assert.Len(t, sink1.AllTraces(), 1)
 
@@ -197,7 +197,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Len(t, sink0.AllTraces(), 1)
-		assert.Len(t, sink1.AllTraces(), 0)
+		assert.Empty(t, sink1.AllTraces())
 
 		assert.Equal(t, defaultSink.AllTraces()[0].SpanCount(), 1)
 		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 1)
@@ -270,8 +270,8 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
-		assert.Len(t, sink0.AllTraces(), 0)
-		assert.Len(t, sink1.AllTraces(), 0)
+		assert.Empty(t, sink0.AllTraces())
+		assert.Empty(t, sink1.AllTraces())
 	})
 
 	t.Run("span matched by one of two expressions", func(t *testing.T) {
@@ -285,9 +285,9 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
 
-		assert.Len(t, defaultSink.AllTraces(), 0)
+		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
-		assert.Len(t, sink1.AllTraces(), 0)
+		assert.Empty(t, sink1.AllTraces())
 	})
 
 	t.Run("span matched by all expressions, but sinks to one", func(t *testing.T) {
@@ -306,9 +306,9 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
 
-		assert.Len(t, defaultSink.AllTraces(), 0)
+		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
-		assert.Len(t, sink1.AllTraces(), 0)
+		assert.Empty(t, sink1.AllTraces())
 
 		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 2)
 	})
@@ -326,7 +326,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Len(t, sink0.AllTraces(), 1)
-		assert.Len(t, sink1.AllTraces(), 0)
+		assert.Empty(t, sink1.AllTraces())
 
 		assert.Equal(t, defaultSink.AllTraces()[0].SpanCount(), 1)
 		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 1)
@@ -387,7 +387,7 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non-routing attributes shouldn't have been dropped")
 	assert.Equal(t, "acme", v.Str())
-	require.Len(t, sink0.AllTraces(), 0,
+	require.Empty(t, sink0.AllTraces(),
 		"trace should not be routed to default pipeline",
 	)
 }

@@ -948,7 +948,7 @@ func TestTranslation(t *testing.T) {
 		t.Run(tc.testCase, func(t *testing.T) {
 			content, err := os.ReadFile(tc.samplePath)
 			assert.NoError(t, err, "can not read raw segment")
-			assert.True(t, len(content) > 0, "content length is 0")
+			assert.NotEmpty(t, content, "content length is 0")
 
 			var (
 				actualSeg  awsxray.Segment
