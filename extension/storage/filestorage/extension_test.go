@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -549,7 +550,13 @@ func TestDirectoryCreation(t *testing.T) {
 				require.DirExists(t, cfg.Directory)
 				s, err := os.Stat(cfg.Directory)
 				require.NoError(t, err)
-				require.Equal(t, s.Mode()&os.ModePerm, os.FileMode(0750))
+				var expectedFileMode os.FileMode
+				if runtime.GOOS == "windows" { // on Windows, we get 0777 for writable directories
+					expectedFileMode = os.FileMode(0777)
+				} else {
+					expectedFileMode = os.FileMode(0750)
+				}
+				require.Equal(t, expectedFileMode, s.Mode()&os.ModePerm)
 			},
 		},
 		{
@@ -568,7 +575,13 @@ func TestDirectoryCreation(t *testing.T) {
 				require.DirExists(t, cfg.Directory)
 				s, err := os.Stat(cfg.Directory)
 				require.NoError(t, err)
-				require.Equal(t, s.Mode()&os.ModePerm, os.FileMode(0700))
+				var expectedFileMode os.FileMode
+				if runtime.GOOS == "windows" { // on Windows, we get 0777 for writable directories
+					expectedFileMode = os.FileMode(0777)
+				} else {
+					expectedFileMode = os.FileMode(0700)
+				}
+				require.Equal(t, expectedFileMode, s.Mode()&os.ModePerm)
 			},
 		},
 		{
