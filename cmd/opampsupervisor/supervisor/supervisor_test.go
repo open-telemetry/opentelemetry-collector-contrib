@@ -32,7 +32,7 @@ func setupSupervisorConfig(t *testing.T) config.Supervisor {
 	require.NoError(t, err)
 
 	executablePath := filepath.Join(tmpDir, "binary")
-	err = os.WriteFile(executablePath, []byte{}, 0o600)
+	err = os.WriteFile(executablePath, []byte{}, 0o700)
 	require.NoError(t, err)
 
 	configuration := `
@@ -83,7 +83,7 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 	cfg := setupSupervisorConfig(t)
 
 	dir := filepath.Dir(cfg.Storage.Directory)
-	require.NoError(t, os.Chmod(dir, 0o400))
+	require.NoError(t, os.Chmod(dir, 0o500))
 
 	supervisor, err := NewSupervisor(zap.L(), cfg)
 	require.Error(t, err)
