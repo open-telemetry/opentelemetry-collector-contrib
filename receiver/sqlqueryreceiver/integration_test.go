@@ -607,7 +607,7 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 }
 
 func testAllSimpleLogs(t *testing.T, logs []plog.Logs) {
-	assert.Equal(t, 1, len(logs))
+	assert.Len(t, logs, 1)
 	assert.Equal(t, 1, logs[0].ResourceLogs().Len())
 	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
 	expectedEntries := []string{

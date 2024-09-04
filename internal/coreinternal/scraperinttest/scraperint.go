@@ -269,7 +269,7 @@ func (ci *ContainerInfo) MappedPortForNamedContainer(t *testing.T, containerName
 }
 
 func (ci *ContainerInfo) container(t *testing.T, name string) testcontainers.Container {
-	require.NotZero(t, len(ci.containers), "no containers in use")
+	require.NotEmpty(t, ci.containers, "no containers in use")
 	c, ok := ci.containers[name]
 	require.True(t, ok, "container with name %q not found", name)
 	return c

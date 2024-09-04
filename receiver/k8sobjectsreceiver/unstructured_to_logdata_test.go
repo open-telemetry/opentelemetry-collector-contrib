@@ -86,7 +86,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		resourceAttributes := rl.Resource().Attributes()
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
 		_, ok := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
-		assert.Equal(t, ok, false)
+		assert.False(t, ok)
 		assert.Equal(t, rl.ScopeLogs().Len(), 1)
 		assert.Equal(t, logRecords.Len(), 3)
 

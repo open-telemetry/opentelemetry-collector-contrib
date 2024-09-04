@@ -116,7 +116,7 @@ func TestTracesExporterShutdown(t *testing.T) {
 	res := p.Shutdown(context.Background())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestConsumeTraces(t *testing.T) {
@@ -153,7 +153,7 @@ func TestConsumeTraces(t *testing.T) {
 	res := p.ConsumeTraces(context.Background(), simpleTraces())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.
@@ -245,7 +245,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	res := p.ConsumeTraces(context.Background(), simpleTracesWithServiceName())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
@@ -271,7 +271,7 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
-			assert.Equal(t, err, nil)
+			assert.NoError(t, err)
 			assert.Equal(t, res, tt.res)
 		})
 	}
