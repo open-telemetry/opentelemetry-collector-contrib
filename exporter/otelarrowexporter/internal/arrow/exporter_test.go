@@ -650,8 +650,8 @@ func TestArrowExporterHeaders(t *testing.T) {
 			if withDeadline {
 				for _, out := range actualOutput {
 					dead := out.Get("grpc-timeout")
-					require.Equal(t, 1, len(dead))
-					require.Less(t, 0, len(dead[0]))
+					require.Len(t, dead, 1)
+					require.NotEmpty(t, dead[0])
 					to, err := grpcutil.DecodeTimeout(dead[0])
 					require.NoError(t, err)
 					// Allow the test to lapse for 0.5s.
