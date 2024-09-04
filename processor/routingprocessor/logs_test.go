@@ -178,9 +178,9 @@ func TestLogs_RoutingWorks_Context_Ordered(t *testing.T) {
 				})),
 				l,
 			))
-			assert.Len(t, defaultExp.AllLogs(), 0)
-			assert.Len(t, lExpFirst.AllLogs(), 0)
-			assert.Len(t, lExpSecond.AllLogs(), 0)
+			assert.Empty(t, defaultExp.AllLogs())
+			assert.Empty(t, lExpFirst.AllLogs())
+			assert.Empty(t, lExpSecond.AllLogs())
 			assert.Len(t, lExpThird.AllLogs(), i, "log should only be routed to lExpThird exporter")
 		})
 	}
@@ -286,9 +286,9 @@ func TestLogs_RoutingWorks_ResourceAttribute_Ordered(t *testing.T) {
 			rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("this is a log")
 
 			assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
-			assert.Len(t, defaultExp.AllLogs(), 0)
-			assert.Len(t, lExpFirst.AllLogs(), 0)
-			assert.Len(t, lExpSecond.AllLogs(), 0)
+			assert.Empty(t, defaultExp.AllLogs())
+			assert.Empty(t, lExpFirst.AllLogs())
+			assert.Empty(t, lExpSecond.AllLogs())
 			assert.Len(t, lExpThird.AllLogs(), i, "log should only be routed to lExpThird exporter")
 		})
 	}
@@ -556,8 +556,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_WithOTTL_Ordered(t *testing.T) {
 
 			assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 
-			assert.Len(t, defaultExp.AllLogs(), 0)
-			assert.Len(t, lExpFirst.AllLogs(), 0)
+			assert.Empty(t, defaultExp.AllLogs())
+			assert.Empty(t, lExpFirst.AllLogs())
 
 			// we expect Statement eval in order and log should only be routed to lExpSecond exporter
 			assert.Len(t, lExpSecond.AllLogs(), i, "log should only be routed to lExpSecond exporter")
