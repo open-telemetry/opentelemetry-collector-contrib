@@ -94,8 +94,8 @@ func (cfg *Config) Validate() (err error) {
 		err = errors.Join(err, errors.New("metrics table name must be alphanumeric and underscore"))
 	}
 
-	_, err_t := cfg.timeZone()
-	if err_t != nil {
+	_, errT := cfg.timeZone()
+	if errT != nil {
 		err = errors.Join(err, errors.New("invalid timezone"))
 	}
 

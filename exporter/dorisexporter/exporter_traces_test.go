@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
@@ -20,7 +19,7 @@ func TestNewTracesExporter(t *testing.T) {
 	config.MySQLEndpoint = "127.0.0.1:9030"
 	config.CreateSchema = false
 
-	exporter := newTracesExporter(nil, config, component.TelemetrySettings{})
+	exporter := newTracesExporter(nil, config, testTelemetrySettings)
 
 	ctx := context.Background()
 	defer func() {
@@ -36,14 +35,14 @@ func TestPushTraceData(t *testing.T) {
 	err := config.Validate()
 	require.NoError(t, err)
 
-	exporter := newTracesExporter(nil, config, component.TelemetrySettings{})
+	exporter := newTracesExporter(nil, config, testTelemetrySettings)
 
 	ctx := context.Background()
 
-	client, err := createDorisHttpClient(ctx, config, nil, component.TelemetrySettings{})
+	client, err := createDorisHttpClient(ctx, config, nil, testTelemetrySettings)
 	require.NoError(t, err)
 	require.NotNil(t, client)
-	
+
 	exporter.client = client
 
 	defer func() {
