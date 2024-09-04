@@ -32,7 +32,7 @@ func setupSupervisorConfig(t *testing.T) config.Supervisor {
 	require.NoError(t, err)
 
 	executablePath := filepath.Join(tmpDir, "binary")
-	err = os.WriteFile(executablePath, []byte{}, 0o700)
+	err = os.WriteFile(executablePath, []byte{}, 0o600)
 	require.NoError(t, err)
 
 	configuration := `
