@@ -279,7 +279,7 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 				require.Len(t, sampledData, 1)
 				assert.Equal(t, 1, sink.SpanCount())
 			} else {
-				require.Len(t, sampledData, 0)
+				require.Empty(t, sampledData)
 				assert.Equal(t, 0, sink.SpanCount())
 			}
 
@@ -289,7 +289,7 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 				require.Contains(t, observed.All()[0].Message, "traces sampler")
 				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
 			} else {
-				require.Len(t, observed.All(), 0, "should have no logs: %v", observed.All())
+				require.Empty(t, observed.All(), "should have no logs: %v", observed.All())
 			}
 		})
 	}
@@ -409,7 +409,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 					require.Len(t, sampledData, 1)
 					assert.Equal(t, 1, sink.SpanCount())
 				} else {
-					require.Len(t, sampledData, 0)
+					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
 				}
 			})
@@ -899,13 +899,13 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					}
 					require.Equal(t, expectTS, got.TraceState().AsRaw())
 				} else {
-					require.Len(t, sampledData, 0)
+					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
 					require.Equal(t, "", expectTS)
 				}
 
 				if len(tt.log) == 0 {
-					require.Len(t, observed.All(), 0, "should not have logs: %v", observed.All())
+					require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				} else {
 					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 					require.Contains(t, observed.All()[0].Message, "traces sampler")
@@ -1026,7 +1026,7 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 
 				sampledData := sink.AllTraces()
 
-				require.Len(t, sampledData, 0)
+				require.Empty(t, sampledData)
 				assert.Equal(t, 0, sink.SpanCount())
 
 				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())

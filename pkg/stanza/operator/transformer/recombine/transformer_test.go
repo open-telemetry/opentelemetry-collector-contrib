@@ -952,7 +952,7 @@ func TestSourceBatchDelete(t *testing.T) {
 	require.NoError(t, recombine.Process(ctx, start))
 	require.Len(t, recombine.batchMap, 1)
 	require.NoError(t, recombine.Process(ctx, next))
-	require.Len(t, recombine.batchMap, 0)
+	require.Empty(t, recombine.batchMap)
 	fake.ExpectEntry(t, expect)
 	require.NoError(t, recombine.Stop())
 }

@@ -93,9 +93,9 @@ func TestRateOfMetrics(t *testing.T) {
 
 	// assert
 	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(m.rms) >= 6, "there should have been more than 6 metrics, had %d", len(m.rms))
+	assert.GreaterOrEqual(t, len(m.rms), 6, "there should have been more than 6 metrics, had %d", len(m.rms))
 	// the maximum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(m.rms) <= 20, "there should have been less than 20 metrics, had %d", len(m.rms))
+	assert.LessOrEqual(t, len(m.rms), 20, "there should have been less than 20 metrics, had %d", len(m.rms))
 }
 
 func TestUnthrottled(t *testing.T) {
@@ -117,7 +117,7 @@ func TestUnthrottled(t *testing.T) {
 	require.NoError(t, Run(cfg, expFunc, logger))
 
 	// assert
-	assert.True(t, len(m.rms) > 100, "there should have been more than 100 metrics, had %d", len(m.rms))
+	assert.Greater(t, len(m.rms), 100, "there should have been more than 100 metrics, had %d", len(m.rms))
 }
 
 func TestSumNoTelemetryAttrs(t *testing.T) {
