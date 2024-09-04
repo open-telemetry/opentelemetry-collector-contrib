@@ -265,7 +265,7 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	expectedMd := map[string]string{
 		"authorization": fmt.Sprintf("Basic %s", authCreds),
 	}
-	assert.Equal(t, md, expectedMd)
+	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
 	assert.True(t, credential.RequireTransportSecurity())
 

@@ -24,7 +24,7 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		Port:     514,
 		Network:  "tcp",
 		Protocol: "rfc5424",
@@ -44,5 +44,5 @@ func TestCreateDefaultConfig(t *testing.T) {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 5 * time.Second,
 		},
-	})
+	}, cfg)
 }

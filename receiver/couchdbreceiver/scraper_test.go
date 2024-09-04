@@ -172,7 +172,7 @@ func TestMetricSettings(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metrics, pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
-	require.Equal(t, metrics.MetricCount(), 1)
+	require.Equal(t, 1, metrics.MetricCount())
 }
 
 func getStats(filename string) (map[string]any, error) {
