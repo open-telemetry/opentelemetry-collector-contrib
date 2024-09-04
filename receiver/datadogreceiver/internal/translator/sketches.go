@@ -4,6 +4,7 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -42,6 +43,11 @@ const (
 	// See: https://github.com/DataDog/opentelemetry-mapping-go/blob/4a6d530273741c84fe2d8f76c55c514cd5eb7488/pkg/quantile/config.go#L154
 	// (Note: in Datadog's code, it is referred to as 'bias')
 	agentSketchOffset int32 = 1338
+
+	// The max limit for the index of a sketch bucket
+	// See https://github.com/DataDog/opentelemetry-mapping-go/blob/00c3f838161a00de395d7d0ed44d967ac71e43b9/pkg/quantile/ddsketch.go#L21
+	// and https://github.com/DataDog/opentelemetry-mapping-go/blob/00c3f838161a00de395d7d0ed44d967ac71e43b9/pkg/quantile/ddsketch.go#L127
+	maxIndex = math.MaxInt16
 )
 
 // Unmarshal the sketch payload, which contains the underlying Dogsketch structure used for the translation
@@ -76,7 +82,17 @@ func (mt *MetricsTranslator) TranslateSketches(sketches []gogen.SketchPayload_Sk
 		for i := range sketch.Dogsketches {
 			dp := dps.AppendEmpty()
 
-			sketchToDatapoint(sketch.Dogsketches[i], dp, dimensions.dpAttrs)
+			err := sketchToDatapoint(sketch.Dogsketches[i], dp, dimensions.dpAttrs)
+			if err != nil {
+				// If a sketch is invalid, remove this datapoint
+				metric.ExponentialHistogram().DataPoints().RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
+					if dp.Positive().BucketCounts().Len() == 0 && dp.Negative().BucketCounts().Len() == 0 {
+						return true
+					}
+					return false
+				})
+				continue
+			}
 			stream := identity.OfStream(metricID, dp)
 			if ts, ok := mt.streamHasTimestamp(stream); ok {
 				dp.SetStartTimestamp(ts)
@@ -88,7 +104,7 @@ func (mt *MetricsTranslator) TranslateSketches(sketches []gogen.SketchPayload_Sk
 	return bt.Metrics
 }
 
-func sketchToDatapoint(sketch gogen.SketchPayload_Sketch_Dogsketch, dp pmetric.ExponentialHistogramDataPoint, attributes pcommon.Map) {
+func sketchToDatapoint(sketch gogen.SketchPayload_Sketch_Dogsketch, dp pmetric.ExponentialHistogramDataPoint, attributes pcommon.Map) error {
 	dp.SetTimestamp(pcommon.Timestamp(sketch.Ts * time.Second.Nanoseconds())) // OTel uses nanoseconds, while Datadog uses seconds
 
 	dp.SetCount(uint64(sketch.Cnt))
@@ -96,16 +112,21 @@ func sketchToDatapoint(sketch gogen.SketchPayload_Sketch_Dogsketch, dp pmetric.E
 	dp.SetMin(sketch.Min)
 	dp.SetMax(sketch.Max)
 	dp.SetScale(scale)
-	dp.SetZeroThreshold(2.2250738585072014e-308 * gamma) // See https://github.com/DataDog/sketches-go/blob/7546f8f95179bb41d334d35faa281bfe97812a86/ddsketch/mapping/logarithmic_mapping.go#L48
+	dp.SetZeroThreshold(math.Exp(float64(1-agentSketchOffset) / (1 / gamma))) // See https://github.com/DataDog/sketches-go/blob/7546f8f95179bb41d334d35faa281bfe97812a86/ddsketch/mapping/logarithmic_mapping.go#L48
 
 	attributes.CopyTo(dp.Attributes())
 
-	negativeBuckets, positiveBuckets, zeroCount := mapSketchBucketsToHistogramBuckets(sketch.K, sketch.N)
+	negativeBuckets, positiveBuckets, zeroCount, err := mapSketchBucketsToHistogramBuckets(sketch.K, sketch.N)
+	if err != nil {
+		return err
+	}
 
 	dp.SetZeroCount(zeroCount)
 
 	convertBucketLayout(positiveBuckets, dp.Positive())
 	convertBucketLayout(negativeBuckets, dp.Negative())
+
+	return nil
 }
 
 // mapSketchBucketsToHistogramBuckets attempts to map the counts in each Sketch bucket to the closest equivalent Exponential Histogram
@@ -116,7 +137,7 @@ func sketchToDatapoint(sketch gogen.SketchPayload_Sketch_Dogsketch, dp pmetric.E
 // histograms store positive and negative buckets separately. Negative buckets in exponential histograms are mapped in the same way as positive buckets.
 // Note that negative indices in exponential histograms do not necessarily correspond to negative values; they correspond with values between 0 and 1,
 // on either the negative or positive side
-func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint32) (map[int]uint64, map[int]uint64, uint64) {
+func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint32) (map[int]uint64, map[int]uint64, uint64, error) {
 	var zeroCount uint64
 
 	var positiveBuckets = make(map[int]uint64)
@@ -129,6 +150,13 @@ func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint3
 		if sketchKeys[i] == 0 { // A sketch key of 0 corresponds to the zero bucket
 			zeroCount += uint64(sketchCounts[i])
 			continue
+		}
+		if sketchKeys[i] >= maxIndex {
+			// This should not happen, as sketches that contain bucket(s) with an index higher than the max
+			// limit should have already been discarded. However, if there happens to be an index > maxIndex,
+			// it can cause an infinite loop within the below inner for loop on some operating systems. Therefore,
+			// throw an error for sketches that have an index above the max limit
+			return nil, nil, 0, fmt.Errorf("Sketch contains bucket index %d which exceeds maximum supported index value %d", sketchKeys[i], maxIndex)
 		}
 
 		// The approach here is to use the Datadog sketch index's lower bucket boundary to find the
@@ -183,7 +211,7 @@ func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint3
 
 	}
 
-	return negativeBuckets, positiveBuckets, zeroCount
+	return negativeBuckets, positiveBuckets, zeroCount, nil
 }
 
 // convertBucketLayout populates the count for positive or negative buckets in the resulting OTel

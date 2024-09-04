@@ -327,6 +327,87 @@ func TestTranslateSketches(t *testing.T) {
 	}
 }
 
+func TestHandleInvalidBuckets(t *testing.T) {
+	tests := []struct {
+		name     string
+		sketches []gogen.SketchPayload_Sketch
+	}{
+		{
+			name: "Sketch that contains invalid index is excluded",
+			sketches: []gogen.SketchPayload_Sketch{
+				{
+					Metric:        "Test1",
+					Host:          "Host1",
+					Tags:          []string{"version:tag1"},
+					Distributions: []gogen.SketchPayload_Sketch_Distribution{},
+					Dogsketches: []gogen.SketchPayload_Sketch_Dogsketch{
+						{
+							Ts:  100,
+							Cnt: 1029,
+							Min: 1.0,
+							Max: 6.0,
+							Avg: 3.0,
+							Sum: 2038.0,
+							K:   []int32{0, 1338, 1345, 1383, 1409, 1427, 1442, 1454, 1464},
+							N:   []uint32{13, 152, 75, 231, 97, 55, 101, 239, 66},
+						},
+						{
+							Ts:  200,
+							Cnt: 1029,
+							Min: 1.0,
+							Max: 6.0,
+							Avg: 3.0,
+							Sum: 2038.0,
+							K:   []int32{0, 1338, 1345, 1383, 50000},
+							N:   []uint32{13, 152, 75, 231, 97},
+						},
+						{
+							Ts:  300,
+							Cnt: 1029,
+							Min: 1.0,
+							Max: 6.0,
+							Avg: 3.0,
+							Sum: 2038.0,
+							K:   []int32{0, 1338, 1345, 1383, 1409, 1427, 1442, 1454, 1464},
+							N:   []uint32{13, 152, 75, 231, 97, 55, 101, 239, 66},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mt := createMetricsTranslator()
+			result := mt.TranslateSketches(tt.sketches)
+			require.Equal(t, 1, result.ResourceMetrics().Len())
+			require.Equal(t, 1, result.MetricCount())
+			require.Equal(t, 2, result.DataPointCount())
+
+			requireScope(t, result, pcommon.NewMap(), component.NewDefaultBuildInfo().Version)
+
+			metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			require.Equal(t, 1, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+			require.Equal(t, pmetric.MetricTypeExponentialHistogram, metric.At(0).Type())
+
+			// While the input was 3 sketches, the result should exclude the 2nd input due to an invalid bucket
+			require.Equal(t, metric.At(0).ExponentialHistogram().DataPoints().Len(), 2)
+
+			var lastTimestamp pcommon.Timestamp
+			for i := 0; i < metric.At(0).ExponentialHistogram().DataPoints().Len(); i++ {
+				m := metric.At(0).ExponentialHistogram().DataPoints().At(i)
+				if i == 0 {
+					require.Equal(t, m.StartTimestamp(), pcommon.Timestamp(0))
+				} else {
+					require.Equal(t, m.StartTimestamp(), lastTimestamp)
+				}
+				lastTimestamp = m.Timestamp()
+			}
+		})
+	}
+}
+
 func TestSketchTemporality(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -629,7 +710,8 @@ func TestMapSketchBucketsToHistogramBuckets(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			negativeBuckets, positiveBuckets, zeroCount := mapSketchBucketsToHistogramBuckets(tt.sketchKeys, tt.sketchCounts)
+			negativeBuckets, positiveBuckets, zeroCount, err := mapSketchBucketsToHistogramBuckets(tt.sketchKeys, tt.sketchCounts)
+			require.NoError(t, err)
 
 			require.Equal(t, tt.expectedNegativeBuckets, negativeBuckets)
 			require.Equal(t, tt.expectedPositiveBuckets, positiveBuckets)
