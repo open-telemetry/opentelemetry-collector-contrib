@@ -6,7 +6,10 @@ toolchain go1.22.1
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.108.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.108.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.108.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.108.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee

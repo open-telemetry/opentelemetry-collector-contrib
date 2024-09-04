@@ -19,10 +19,6 @@ import (
 
 var noAttributes = [16]byte{}
 
-func roundFloat(val float64) float64 {
-	return math.Round(val*100000) / 100000
-}
-
 func newSummer[K any](metricDefs map[string]metricDef[K]) *summer[K] {
 	return &summer[K]{
 		metricDefs: metricDefs,
@@ -61,7 +57,7 @@ func (c *summer[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) error
 			}
 		}
 
-		// Get attribute values to include otherwise include default value
+		// Get attribute values to include otherwise use default value
 		for _, attr := range md.attrs {
 			if attrVal, ok := attrs.Get(attr.Key); ok {
 				switch {
@@ -137,6 +133,10 @@ func (c *summer[K]) increment(metricName string, sumVal float64, attrs pcommon.M
 	return nil
 }
 
+func reduceFloatPrecision(val float64) float64 {
+	return math.Round(val*100000) / 100000
+}
+
 func (c *summer[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 	for name, md := range c.metricDefs {
 		if len(c.sums[name]) == 0 {
@@ -152,7 +152,7 @@ func (c *summer[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 		for _, dpSum := range c.sums[name] {
 			dp := sum.DataPoints().AppendEmpty()
 			dpSum.attrs.CopyTo(dp.Attributes())
-			dp.SetDoubleValue(roundFloat(dpSum.sum))
+			dp.SetDoubleValue(reduceFloatPrecision(dpSum.sum))
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(c.timestamp))
 		}
 	}

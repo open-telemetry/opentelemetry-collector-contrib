@@ -22,8 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
-const scopeName = "otelcol/sumconnector"
-
 // sum can sum attribute values from spans, span event, metrics, data points, or log records
 // and emit the sums onto a metrics pipeline.
 type sum struct {
@@ -76,7 +74,6 @@ func (c *sum) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 		sumResource.ScopeMetrics().EnsureCapacity(resourceSpan.ScopeSpans().Len())
 		sumScope := sumResource.ScopeMetrics().AppendEmpty()
-		sumScope.Scope().SetName(scopeName)
 
 		spansSummer.appendMetricsTo(sumScope.Metrics())
 		spanEventsSummer.appendMetricsTo(sumScope.Metrics())
@@ -151,7 +148,6 @@ func (c *sum) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 		sumResource.ScopeMetrics().EnsureCapacity(resourceMetric.ScopeMetrics().Len())
 		sumScope := sumResource.ScopeMetrics().AppendEmpty()
-		sumScope.Scope().SetName(scopeName)
 
 		metricsSummer.appendMetricsTo(sumScope.Metrics())
 		dataPointsSummer.appendMetricsTo(sumScope.Metrics())
@@ -190,7 +186,6 @@ func (c *sum) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 		sumResource.ScopeMetrics().EnsureCapacity(resourceLog.ScopeLogs().Len())
 		sumScope := sumResource.ScopeMetrics().AppendEmpty()
-		sumScope.Scope().SetName(scopeName)
 
 		summer.appendMetricsTo(sumScope.Metrics())
 	}

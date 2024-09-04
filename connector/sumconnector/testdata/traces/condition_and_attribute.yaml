@@ -45,8 +45,7 @@ resourceMetrics:
                         stringValue: notfoo
                   timeUnixNano: "1678392127929006000"
               isMonotonic: true
-        scope:
-          name: otelcol/sumconnector
+
   - resource:
       attributes:
         - key: resource.required
@@ -93,5 +92,4 @@ resourceMetrics:
                         stringValue: notfoo
                   timeUnixNano: "1678392127929018000"
               isMonotonic: true
-        scope:
-          name: otelcol/sumconnector
+

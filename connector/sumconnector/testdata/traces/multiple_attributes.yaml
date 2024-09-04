@@ -57,8 +57,7 @@ resourceMetrics:
                         stringValue: notbar
                   timeUnixNano: "1678392127926637000"
               isMonotonic: true
-        scope:
-          name: otelcol/sumconnector
+
   - resource:
       attributes:
         - key: resource.required
@@ -117,8 +116,7 @@ resourceMetrics:
                         stringValue: notbar
                   timeUnixNano: "1678392127926647000"
               isMonotonic: true
-        scope:
-          name: otelcol/sumconnector
+
   - resource:
       attributes:
         - key: resource.required
@@ -174,8 +172,7 @@ resourceMetrics:
                         stringValue: notbar
                   timeUnixNano: "1678392127926654000"
               isMonotonic: true
-        scope:
-          name: otelcol/sumconnector
+
   - resource: {}
     scopeMetrics:
       - metrics:
@@ -227,5 +224,4 @@ resourceMetrics:
                         stringValue: notbar
                   timeUnixNano: "1678392127926661000"
               isMonotonic: true
-        scope:
-          name: otelcol/sumconnector
+

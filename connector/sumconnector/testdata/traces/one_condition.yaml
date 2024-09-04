@@ -25,8 +25,7 @@ resourceMetrics:
                 - asDouble: "23"
                   timeUnixNano: "1678392127922310000"
               isMonotonic: true
-        scope:
-          name: otelcol/sumconnector
+
   - resource:
       attributes:
         - key: resource.required
@@ -53,5 +52,4 @@ resourceMetrics:
                 - asDouble: "23"
                   timeUnixNano: "1678392127922364000"
               isMonotonic: true
-        scope:
-          name: otelcol/sumconnector
+

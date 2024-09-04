@@ -33,6 +33,8 @@ If you are not already familiar with connectors, you may find it helpful to firs
 
 This configuration will sum numerical values found within the attribute `attribute.with.numerical.value` of any log telemetry routed to the connector. It will then output a metric time series with the name `my.example.metric.name` with those summed values.
 
+Note: Values found within an attribute will be converted into a float regardless of their original type before being summed and output as a metric value. Non-convertable strings will be dropped and not included.  
+
 ```yaml
 receivers:
   foo:
