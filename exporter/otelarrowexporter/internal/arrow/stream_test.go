@@ -321,7 +321,7 @@ func TestStreamUnsupported(t *testing.T) {
 
 			tc.waitForShutdown()
 
-			require.Less(t, 0, len(tc.observedLogs.All()), "should have at least one log: %v", tc.observedLogs.All())
+			require.NotEmpty(t, tc.observedLogs.All(), "should have at least one log: %v", tc.observedLogs.All())
 			require.Equal(t, tc.observedLogs.All()[0].Message, "arrow is not supported")
 		})
 	}
