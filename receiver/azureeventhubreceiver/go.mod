@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/consumer v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240904075637-48b11ba1c5f8
-	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240902085631-cd1f7623fe67
+	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/pdata v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/receiver v0.108.2-0.20240904075637-48b11ba1c5f8
