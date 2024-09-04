@@ -47,9 +47,6 @@ func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values
 
 	if zeroCount := dp.ZeroCount(); zeroCount != 0 {
 		counts = append(counts, int64(zeroCount))
-		// The mean centroid is only non-zero when positive offset and negative offset are not the same,
-		// but the mean centroid between negative and positive boundaries closest to zero will not be very meaningful anyway.
-		// Using a zero here instead.
 		values = append(values, 0)
 	}
 
