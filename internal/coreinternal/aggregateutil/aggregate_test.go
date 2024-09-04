@@ -150,8 +150,7 @@ func Test_FilterAttributes(t *testing.T) {
 			d.Attributes().PutStr("attr2", "val2")
 
 			FilterAttrs(m, tt.attr)
-			w := tt.want()
-			require.Equal(t, w, m)
+			require.Equal(t, tt.want(), m)
 		})
 	}
 }
