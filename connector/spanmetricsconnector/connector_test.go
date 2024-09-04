@@ -113,7 +113,7 @@ func verifyExemplarsExist(t testing.TB, input pmetric.Metrics) bool {
 				dps := metric.Histogram().DataPoints()
 				for dp := 0; dp < dps.Len(); dp++ {
 					d := dps.At(dp)
-					assert.True(t, d.Exemplars().Len() > 0)
+					assert.Greater(t, d.Exemplars().Len(), 0)
 				}
 			}
 		}
