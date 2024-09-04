@@ -338,12 +338,6 @@ func logSigs(obs *observer.ObservedLogs) (map[string]int, []string) {
 			if rl.Message == "arrow stream error" && f.Key == "message" {
 				msgs = append(msgs, f.String)
 			}
-			// The exporterhelper's basic error message has an "error"
-			// attribute, another place we may see the memory limit
-			// error reached.
-			if f.Key == "error" && f.Interface != nil {
-				msgs = append(msgs, fmt.Sprint(f.Interface))
-			}
 		}
 		var sig strings.Builder
 		sig.WriteString(rl.Message)
@@ -432,12 +426,10 @@ func TestIntegrationTracesSimple(t *testing.T) {
 }
 
 func TestIntegrationMemoryLimited(t *testing.T) {
-	// This test is flaky, it only shows on Windows.  This will be
-	// addressed in a separate PR.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// until 10 threads can write 100 spans
+	// until exporter and receiver finish at least one ArrowTraces span.
 	params := testParams{
 		threadCount: 10,
 		requestUntil: func(test *testConsumer) bool {
@@ -451,7 +443,6 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 			}
 			rcnt := cf(test.recvSpans.GetSpans())
 			ecnt := cf(test.expSpans.GetSpans())
-			fmt.Println("E R S", ecnt, rcnt)
 			return ecnt == 0 || rcnt == 0
 		},
 	}
@@ -459,6 +450,13 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
 		rcfg.Arrow.MemoryLimitMiB = 1
 		ecfg.Arrow.NumStreams = 10
+		// Shorten timeouts for this test, because we intend
+		// for it to fail and don't want to wait for retries.
+		ecfg.TimeoutSettings.Timeout = 5 * time.Second
+		ecfg.RetryConfig.InitialInterval = 1 * time.Second
+		ecfg.RetryConfig.MaxInterval = 2 * time.Second
+		ecfg.RetryConfig.MaxElapsedTime = 5 * time.Second
+		ecfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	}, bulkyGenFunc(), consumerFailure, failureMemoryLimitEnding)
 }
 
@@ -468,9 +466,6 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 	const streamName = "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces"
 
 	total := int(testCon.sentSpans.Load())
-
-	fmt.Println("EXPOPS", expOps)
-	fmt.Println("RECOPS", recvOps)
 
 	// Exporter spans:
 	//

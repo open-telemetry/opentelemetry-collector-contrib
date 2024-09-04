@@ -342,9 +342,6 @@ func (r *Receiver) recoverErr(retErr *error) {
 }
 
 func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retErr error) {
-	fmt.Println("START STREAM")
-	defer fmt.Println("END STREAM", retErr)
-
 	streamCtx := serverStream.Context()
 	ac := r.newConsumer()
 
