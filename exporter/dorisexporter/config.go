@@ -9,21 +9,20 @@ import (
 	"regexp"
 	"time"
 
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	confighttp.ClientConfig      `mapstructure:",squash"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 
 	// TableNames is the table name for logs, traces and metrics.
 	Table `mapstructure:"table"`
 
-	// Endpoint is the http stream load address.
-	Endpoint string `mapstructure:"endpoint"`
 	// Database is the database name.
 	Database string `mapstructure:"database"`
 	// Username is the authentication username.
@@ -95,6 +94,11 @@ func (cfg *Config) Validate() (err error) {
 		err = errors.Join(err, errors.New("metrics table name must be alphanumeric and underscore"))
 	}
 
+	_, err_t := cfg.timeZone()
+	if err_t != nil {
+		err = errors.Join(err, errors.New("invalid timezone"))
+	}
+
 	return err
 }
 
@@ -102,7 +106,7 @@ const (
 	defaultStart = -2147483648 // IntMin
 )
 
-func (cfg *Config) start() int32 {
+func (cfg *Config) startHistoryDays() int32 {
 	if cfg.HistoryDays == 0 {
 		return defaultStart
 	}
@@ -131,5 +135,5 @@ PROPERTIES (
 )
 
 func (cfg *Config) propertiesStr() string {
-	return fmt.Sprintf(properties, cfg.ReplicationNum, cfg.start(), cfg.CreateHistoryDays)
+	return fmt.Sprintf(properties, cfg.ReplicationNum, cfg.startHistoryDays(), cfg.CreateHistoryDays)
 }

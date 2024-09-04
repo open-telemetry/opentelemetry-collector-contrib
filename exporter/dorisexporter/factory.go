@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -28,10 +29,13 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	httpClientConfig := confighttp.NewDefaultClientConfig()
+	httpClientConfig.Timeout = 60 * time.Second
+
 	return &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+		ClientConfig:  httpClientConfig,
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		Table: Table{
 			Logs:    "otel_logs",
 			Traces:  "otel_traces",
@@ -59,10 +63,7 @@ func createLogsExporter(ctx context.Context, set exporter.Settings, cfg componen
 
 func createTracesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	c := cfg.(*Config)
-	exporter, err := newTracesExporter(set.Logger, c)
-	if err != nil {
-		return nil, err
-	}
+	exporter := newTracesExporter(set.Logger, c, set.TelemetrySettings)
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
@@ -70,7 +71,8 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, cfg compon
 		exporter.pushTraceData,
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
-		exporterhelper.WithTimeout(c.TimeoutSettings),
+		// we config the timeout option in http client, so we don't need to set timeout here
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.BackOffConfig),
 	)

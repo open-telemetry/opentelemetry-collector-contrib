@@ -12,12 +12,15 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql" // for register database driver
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
 
 const timeFormat = "2006-01-02 15:04:05.999999"
 
 type commonExporter struct {
+	component.TelemetrySettings
+
 	client *http.Client
 
 	logger   *zap.Logger
@@ -25,25 +28,16 @@ type commonExporter struct {
 	timeZone *time.Location
 }
 
-func newExporter(logger *zap.Logger, cfg *Config) (*commonExporter, error) {
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, _ []*http.Request) error {
-			req.SetBasicAuth(cfg.Username, string(cfg.Password))
-			return nil
-		},
-	}
-
-	timeZone, err := cfg.timeZone()
-	if err != nil {
-		return nil, err
-	}
+func newExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *commonExporter {
+	// There won't be an error because it's already been validated in the Config.Validate method.
+	timeZone, _ := cfg.timeZone()
 
 	return &commonExporter{
-		logger:   logger,
-		cfg:      cfg,
-		client:   client,
-		timeZone: timeZone,
-	}, nil
+		TelemetrySettings: set,
+		logger:            logger,
+		cfg:               cfg,
+		timeZone:          timeZone,
+	}
 }
 
 func (e *commonExporter) formatTime(t time.Time) string {
@@ -93,7 +87,21 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	return req, nil
 }
 
-func createMySQLClient(cfg *Config) (*sql.DB, error) {
+func createDorisHttpClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	client, err := cfg.ClientConfig.ToClient(ctx, host, settings)
+	if err != nil {
+		return nil, err
+	}
+
+	client.CheckRedirect = func(req *http.Request, _ []*http.Request) error {
+		req.SetBasicAuth(cfg.Username, string(cfg.Password))
+		return nil
+	}
+
+	return client, nil
+}
+
+func createDorisMySQLClient(cfg *Config) (*sql.DB, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/mysql", cfg.Username, string(cfg.Password), cfg.MySQLEndpoint)
 	conn, err := sql.Open("mysql", dsn)
 	return conn, err
