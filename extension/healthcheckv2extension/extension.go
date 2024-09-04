@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -34,8 +35,8 @@ type healthCheckExtension struct {
 }
 
 var _ component.Component = (*healthCheckExtension)(nil)
-var _ extension.ConfigWatcher = (*healthCheckExtension)(nil)
-var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
+var _ extensioncapabilities.ConfigWatcher = (*healthCheckExtension)(nil)
+var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func newExtension(
 	ctx context.Context,
@@ -142,24 +143,24 @@ func (hc *healthCheckExtension) ComponentStatusChanged(
 	hc.eventCh <- &eventSourcePair{source: source, event: event}
 }
 
-// NotifyConfig implements the extension.ConfigWatcher interface.
+// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
 func (hc *healthCheckExtension) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
 	var err error
 	for _, comp := range hc.subcomponents {
-		if cw, ok := comp.(extension.ConfigWatcher); ok {
+		if cw, ok := comp.(extensioncapabilities.ConfigWatcher); ok {
 			err = multierr.Append(err, cw.NotifyConfig(ctx, conf))
 		}
 	}
 	return err
 }
 
-// Ready implements the extension.PipelineWatcher interface.
+// Ready implements the extensioncapabilities.PipelineWatcher interface.
 func (hc *healthCheckExtension) Ready() error {
 	close(hc.readyCh)
 	return nil
 }
 
-// NotReady implements the extension.PipelineWatcher interface.
+// NotReady implements the extensioncapabilities.PipelineWatcher interface.
 func (hc *healthCheckExtension) NotReady() error {
 	return nil
 }

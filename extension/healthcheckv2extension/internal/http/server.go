@@ -36,7 +36,7 @@ type Server struct {
 }
 
 var _ component.Component = (*Server)(nil)
-var _ extension.ConfigWatcher = (*Server)(nil)
+var _ extensioncapabilities.ConfigWatcher = (*Server)(nil)
 
 func NewServer(
 	config *Config,
@@ -114,7 +114,7 @@ func (s *Server) Shutdown(context.Context) error {
 	return nil
 }
 
-// NotifyConfig implements the extension.ConfigWatcher interface.
+// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
 func (s *Server) NotifyConfig(_ context.Context, conf *confmap.Conf) error {
 	confBytes, err := json.Marshal(conf.ToStringMap())
 	if err != nil {
