@@ -92,7 +92,7 @@ func expectedMetrics() pmetric.Metrics {
 	resource := resourceMetric.Resource()
 	resource.Attributes().PutStr("cloud.provider", "huawei_cloud")
 	resource.Attributes().PutStr("project.id", "project_1")
-	resource.Attributes().PutStr("region", "eu-west-101")
+	resource.Attributes().PutStr("region.id", "eu-west-101")
 
 	scopedMetric := resourceMetric.ScopeMetrics().AppendEmpty()
 	scopedMetric.Scope().SetName("huawei_cloud_ces")

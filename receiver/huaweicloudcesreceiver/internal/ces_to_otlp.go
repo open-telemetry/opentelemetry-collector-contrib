@@ -37,7 +37,7 @@ func GetDimension(dimensions []model.MetricsDimension, index int) *string {
 	return nil
 }
 
-func ConvertCESMetricsToOTLP(projectID, region, filter string, cesMetrics map[string]MetricData) pmetric.Metrics {
+func ConvertCESMetricsToOTLP(projectID, regionID, filter string, cesMetrics map[string]MetricData) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	if len(cesMetrics) == 0 {
 		return metrics
@@ -47,7 +47,7 @@ func ConvertCESMetricsToOTLP(projectID, region, filter string, cesMetrics map[st
 	resource := resourceMetric.Resource()
 	resource.Attributes().PutStr("cloud.provider", "huawei_cloud")
 	resource.Attributes().PutStr("project.id", projectID)
-	resource.Attributes().PutStr("region", region)
+	resource.Attributes().PutStr("region.id", regionID)
 
 	for _, cesMetric := range cesMetrics {
 		scopedMetric := resourceMetric.ScopeMetrics().AppendEmpty()

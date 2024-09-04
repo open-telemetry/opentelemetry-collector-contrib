@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-func TestConfig_Validate(t *testing.T) {
+func TestConfigValidate(t *testing.T) {
 	tests := []struct {
 		name          string
 		config        Config
@@ -23,10 +23,10 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				RegionName: "cn-north-1",
-				ProjectID:  "my_project",
-				Period:     300,
-				Filter:     "min",
+				RegionID:  "cn-north-1",
+				ProjectID: "my_project",
+				Period:    300,
+				Filter:    "min",
 			},
 			expectedError: "",
 		},
@@ -36,20 +36,20 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				RegionName: "cn-north-1",
-				ProjectID:  "my_project",
-				Period:     100,
-				Filter:     "min",
+				RegionID:  "cn-north-1",
+				ProjectID: "my_project",
+				Period:    100,
+				Filter:    "min",
 			},
 			expectedError: "invalid period",
 		},
 		{
 			name: "Invalid Filter",
 			config: Config{
-				RegionName: "cn-north-1",
-				ProjectID:  "my_project",
-				Period:     300,
-				Filter:     "invalid",
+				RegionID:  "cn-north-1",
+				ProjectID: "my_project",
+				Period:    300,
+				Filter:    "invalid",
 			},
 			expectedError: "invalid filter",
 		},
@@ -63,7 +63,7 @@ func TestConfig_Validate(t *testing.T) {
 				Period:    300,
 				Filter:    "min",
 			},
-			expectedError: errMissingRegionName.Error(),
+			expectedError: errMissingRegionID.Error(),
 		},
 		{
 			name: "Missing project id",
@@ -71,9 +71,9 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				RegionName: "cn-north-1",
-				Period:     300,
-				Filter:     "min",
+				RegionID: "cn-north-1",
+				Period:   300,
+				Filter:   "min",
 			},
 			expectedError: errMissingProjectID.Error(),
 		},
@@ -86,10 +86,10 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				RegionName: "cn-north-1",
-				ProjectID:  "my_project",
-				Period:     300,
-				Filter:     "min",
+				RegionID:  "cn-north-1",
+				ProjectID: "my_project",
+				Period:    300,
+				Filter:    "min",
 			},
 			expectedError: errInvalidProxy.Error(),
 		},
@@ -102,10 +102,10 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				RegionName: "cn-north-1",
-				ProjectID:  "my_project",
-				Period:     300,
-				Filter:     "min",
+				RegionID:  "cn-north-1",
+				ProjectID: "my_project",
+				Period:    300,
+				Filter:    "min",
 			},
 			expectedError: errInvalidProxy.Error(),
 		},
@@ -120,10 +120,10 @@ func TestConfig_Validate(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Hour,
 				},
-				RegionName: "cn-north-1",
-				ProjectID:  "my_project",
-				Period:     300,
-				Filter:     "min",
+				RegionID:  "cn-north-1",
+				ProjectID: "my_project",
+				Period:    300,
+				Filter:    "min",
 			},
 			expectedError: "",
 		},
