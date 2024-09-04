@@ -17,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
+const defaultBootstrapTimeout = 3 * time.Second
+
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
 	Server       OpAMPServer
@@ -121,11 +123,16 @@ type Agent struct {
 	Executable              string
 	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription `mapstructure:"description"`
+	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
 }
 
 func (a Agent) Validate() error {
 	if a.OrphanDetectionInterval <= 0 {
 		return errors.New("agent::orphan_detection_interval must be positive")
+	}
+
+	if a.BootstrapTimeout <= 0 {
+		return errors.New("agent::bootstrap_timeout must be positive")
 	}
 
 	if a.Executable == "" {
@@ -175,6 +182,7 @@ func DefaultSupervisor() Supervisor {
 		},
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
+			BootstrapTimeout:        3 * time.Second,
 		},
 	}
 }
