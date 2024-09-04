@@ -12,12 +12,12 @@ require (
 	github.com/signalfx/sapm-proto v0.14.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/config/configretry v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/config/configretry v1.14.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/confmap v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/consumer v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/exporter v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -51,7 +51,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240829190554-7da6b618a7ee // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.2-0.20240829190554-7da6b618a7ee // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240829190554-7da6b618a7ee // indirect
 	go.opentelemetry.io/collector/extension v0.108.2-0.20240829190554-7da6b618a7ee // indirect

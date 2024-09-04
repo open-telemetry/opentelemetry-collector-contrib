@@ -9,13 +9,13 @@ require (
 	github.com/pkg/sftp v1.13.6
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/confmap v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/consumer v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/extension v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/filter v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/receiver v0.108.2-0.20240829190554-7da6b618a7ee
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -28,7 +28,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.108.0 // indirect
 	go.opentelemetry.io/collector v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240829190554-7da6b618a7ee // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
 )
 
