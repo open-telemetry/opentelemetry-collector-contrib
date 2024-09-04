@@ -114,21 +114,21 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 		)
 
 		matchCount := len(p.router.routes)
-		for key, route := range p.router.routes {
+		for _, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, stx)
 			if err != nil {
 				if p.config.ErrorMode == ottl.PropagateError {
 					return err
 				}
 				p.group("", groups, p.router.defaultExporters, rspans)
-				p.recordNonRoutedResourceSpans(ctx, key, rspans)
+				p.recordNonRoutedResourceSpans(ctx, route.key, rspans)
 				continue
 			}
 			if !isMatch {
 				matchCount--
 				continue
 			}
-			p.group(key, groups, route.exporters, rspans)
+			p.group(route.key, groups, route.exporters, rspans)
 		}
 
 		if matchCount == 0 {
