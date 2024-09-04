@@ -125,9 +125,7 @@ func Test_FilterAttributes(t *testing.T) {
 			want: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				s := m.SetEmptySum()
-				d := s.DataPoints().AppendEmpty()
-				d.Attributes().PutStr("attr1", "val1")
-				d.Attributes().PutStr("attr2", "val2")
+				s.DataPoints().AppendEmpty()
 				return m
 			},
 		},
@@ -152,7 +150,8 @@ func Test_FilterAttributes(t *testing.T) {
 			d.Attributes().PutStr("attr2", "val2")
 
 			FilterAttrs(m, tt.attr)
-			require.Equal(t, tt.want(), m)
+			w := tt.want()
+			require.Equal(t, w, m)
 		})
 	}
 }
