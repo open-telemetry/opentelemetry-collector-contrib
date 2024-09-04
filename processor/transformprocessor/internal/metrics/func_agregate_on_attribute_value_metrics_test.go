@@ -489,7 +489,7 @@ func Test_aggregateOnAttributeValues(t *testing.T) {
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			actualMetric := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetric.AppendEmpty())
@@ -506,7 +506,7 @@ func Test_aggregateOnAttributeValues(t *testing.T) {
 				sl2 := actualMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 				actualMetric.CopyTo(sl2)
 
-				require.Nil(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricDataPointsOrder()))
+				require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricDataPointsOrder()))
 			}
 		})
 	}
