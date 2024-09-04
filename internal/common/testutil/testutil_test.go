@@ -66,5 +66,5 @@ Start Port    End Port
 	require.Len(t, exclusions, 2)
 
 	emptyExclusions := createExclusionsList(t, emptyExclusionsText)
-	require.Len(t, emptyExclusions, 0)
+	require.Empty(t, emptyExclusions)
 }
