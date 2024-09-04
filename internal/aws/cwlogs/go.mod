@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.108.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/component v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
