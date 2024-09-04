@@ -445,18 +445,14 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 				for _, span := range spans {
 					if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
 						cnt++
-						fmt.Println("GOT IT!!!")
-					} else {
-						fmt.Println("SN", span.Name)
 					}
 				}
 				return
 			}
 			rcnt := cf(test.recvSpans.GetSpans())
 			ecnt := cf(test.expSpans.GetSpans())
-			//scnt := test.sentSpans.Load()
 			fmt.Println("E R S", ecnt, rcnt)
-			return ecnt == 0 || rcnt == 0 // || scnt < 100
+			return ecnt == 0 || rcnt == 0
 		},
 	}
 
