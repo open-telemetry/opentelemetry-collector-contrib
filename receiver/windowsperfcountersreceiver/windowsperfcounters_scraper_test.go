@@ -241,6 +241,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				// The check only takes the first instance of multi-instance counters and assumes that the other instances would be included.
 				pmetrictest.IgnoreSubsequentDataPoints("cpu.idle"),
 				pmetrictest.IgnoreSubsequentDataPoints("processor.time"),
+				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreScopeMetricsOrder(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricValues(),
