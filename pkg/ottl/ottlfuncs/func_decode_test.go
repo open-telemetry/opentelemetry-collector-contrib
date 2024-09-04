@@ -184,7 +184,7 @@ func TestDecode(t *testing.T) {
 				Encoding: tt.encoding,
 			})
 
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			result, err := expressionFunc(nil, nil)
 			if tt.expectedError != "" {
