@@ -152,10 +152,6 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		return nil, err
 	}
 
-	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("error validating config: %w", err)
-	}
-
 	s.config = cfg
 
 	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
