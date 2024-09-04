@@ -19,7 +19,7 @@ import (
 
 var (
 	// Predefined error responses for configuration validation failures
-	errMissingRegionName         = errors.New(`"region_name" is not specified in config`)
+	errMissingRegionID           = errors.New(`"region_id" is not specified in config`)
 	errMissingProjectID          = errors.New(`"project_id" is not specified in config`)
 	errInvalidCollectionInterval = errors.New(`invalid period; must be less than "collection_interval"`)
 	errInvalidProxy              = errors.New(`"proxy_address" must be specified if "proxy_user" or "proxy_password" is set"`)
@@ -47,8 +47,8 @@ type Config struct {
 	// If ProjectID is not filled in, the SDK will automatically call the IAM service to query the project id corresponding to the region.
 	ProjectID string `mapstructure:"project_id"`
 
-	// RegionName is the full name of the CES region exporter should send metrics to
-	RegionName string `mapstructure:"region_name"`
+	// RegionID is the ID of the CES region.
+	RegionID string `mapstructure:"region_id"`
 
 	// How retrieved data from Cloud Eye is aggregated.
 	// Possible values are 1, 300, 1200, 3600, 14400, and 86400.
@@ -96,8 +96,8 @@ var validFilters = map[string]model.ShowMetricDataRequestFilter{
 // Validate config
 func (config *Config) Validate() error {
 	var err error
-	if config.RegionName == "" {
-		err = multierr.Append(err, errMissingRegionName)
+	if config.RegionID == "" {
+		err = multierr.Append(err, errMissingRegionID)
 	}
 
 	if config.ProjectID == "" {

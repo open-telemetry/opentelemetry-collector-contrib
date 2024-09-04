@@ -118,7 +118,7 @@ func (rcvr *cesReceiver) createClient() (*ces.CesClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := region.SafeValueOf(rcvr.config.RegionName)
+	r, err := region.SafeValueOf(rcvr.config.RegionID)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (rcvr *cesReceiver) pollMetricsAndConsume(ctx context.Context) error {
 		return err
 	}
 	metrics := rcvr.listDataPoints(ctx, metricDefinitions)
-	otpMetrics := internal.ConvertCESMetricsToOTLP(rcvr.config.ProjectID, rcvr.config.RegionName, rcvr.config.Filter, metrics)
+	otpMetrics := internal.ConvertCESMetricsToOTLP(rcvr.config.ProjectID, rcvr.config.RegionID, rcvr.config.Filter, metrics)
 	if err := rcvr.nextConsumer.ConsumeMetrics(ctx, otpMetrics); err != nil {
 		return err
 	}

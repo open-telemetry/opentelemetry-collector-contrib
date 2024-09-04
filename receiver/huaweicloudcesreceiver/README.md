@@ -17,7 +17,7 @@ This receiver contains the implementation of the Huawei Cloud [Cloud Eye Service
 
 The following settings are required:
 
-- `region_name`: The name of the Huawei Cloud region from which metrics are collected. For example, `eu-west-101`. The full list of the available regions can be found [here](https://pkg.go.dev/github.com/huaweicloud/huaweicloud-sdk-go-v3@v0.1.104/services/ces/v1/region).
+- `region_id`: The ID of the Huawei Cloud region from which metrics are collected. For example, `eu-west-101`. The full list of the available regions can be found [here](https://pkg.go.dev/github.com/huaweicloud/huaweicloud-sdk-go-v3@v0.1.104/services/ces/v1/region).
 
 - `project_id`: The ID of the project in Huawei Cloud. This is used to identify which project's metrics are to be collected. See [Obtaining a Project ID](https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-provide-proid.html).
 
@@ -63,7 +63,7 @@ receivers:
   huaweicloudcesreceiver:
     collection_interval: 3h
     initial_delay: 5s
-    region_name: eu-west-101
+    region_id: eu-west-101
     access_key: ${env:HUAWEICLOUD_SDK_AK}
     secret_key: ${env:HUAWEICLOUD_SDK_SK}
     project_id: "project_1"
@@ -112,7 +112,7 @@ If you encounter any CES errors, please refer to the [Huawei Cloud Error Codes](
 | **dimensions.name**         | key of `metrics.metadata`                                  | The dimension name stored as metadata key.                                                     |
 | **dimensions.value**         | value of `metrics.metadata`                                  | The dimension value stored as metadata value.                                                     |
 | **Receiver Config**                                       | `resource.attributes.project.id`                        | The project id used in the configuration file of the receiver.                                                               |
-| **Receiver Config**                                       | `resource.attributes.region`                        | The region name used in the configuration file of the receiver.                                                               |
+| **Receiver Config**                                       | `resource.attributes.region.id`                        | The region id used in the configuration file of the receiver.                                                               |
 | *N/A*                                       | `resource.attributes.cloud.provider`                    | Set to `"huawei_cloud"` as the cloud provider.                                                        |
 | *N/A*                                       | `resource.attributes.service.name`                      | Set to `"ces_service"` to indicate the service name.                                                  |
 | *N/A*                                       | `resource.attributes.service.version`                   | Set to `"v1"` as the service version.                                                                 |
@@ -171,7 +171,7 @@ converts to
         "attributes": {
             "cloud.provider": "huawei_cloud",
             "project.id": "project_1",
-            "region": "eu-west-101"
+            "region.id": "eu-west-101"
           }
       },
       "scopeMetrics": [
