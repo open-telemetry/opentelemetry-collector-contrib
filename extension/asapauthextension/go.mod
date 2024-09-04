@@ -6,13 +6,13 @@ require (
 	bitbucket.org/atlassian/go-asap/v2 v2.9.0
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/extension v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/component v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/confmap v1.14.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/extension v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.65.0
+	google.golang.org/grpc v1.66.0
 )
 
 require (
@@ -35,12 +35,12 @@ require (
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/client_golang v1.20.2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.56.0 // indirect
+	github.com/prometheus/common v0.57.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240904075637-48b11ba1c5f8 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
 	go.opentelemetry.io/otel/metric v1.29.0 // indirect
@@ -51,7 +51,7 @@ require (
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -72,7 +72,7 @@ func TestNewExporter(t *testing.T) {
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	assert.Len(t, server.MetadataChan, 0)
+	assert.Empty(t, server.MetadataChan)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
@@ -393,7 +393,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	assert.Len(t, server.MetadataChan, 0)
+	assert.Empty(t, server.MetadataChan)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource

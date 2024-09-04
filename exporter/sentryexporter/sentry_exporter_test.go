@@ -600,7 +600,7 @@ func TestClassifyOrphanSpans(t *testing.T) {
 			transactionMap: generateEmptyTransactionMap(rootSpan1),
 			spans:          generateOrphanSpansFromSpans(childChildSpan1, childSpan1, childSpan2),
 			assertion: func(t *testing.T, orphanSpans []*sentry.Span) {
-				assert.Len(t, orphanSpans, 0)
+				assert.Empty(t, orphanSpans)
 			},
 		},
 		{
@@ -628,7 +628,7 @@ func TestClassifyOrphanSpans(t *testing.T) {
 			transactionMap: generateEmptyTransactionMap(rootSpan1, rootSpan2),
 			spans:          generateOrphanSpansFromSpans(childChildSpan1, childSpan1, root2childSpan, childSpan2),
 			assertion: func(t *testing.T, orphanSpans []*sentry.Span) {
-				assert.Len(t, orphanSpans, 0)
+				assert.Empty(t, orphanSpans)
 			},
 		},
 	}
