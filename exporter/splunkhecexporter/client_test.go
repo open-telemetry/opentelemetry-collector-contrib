@@ -508,7 +508,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 			for i, batch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthTraces != 0 {
-					require.True(t, int(test.conf.MaxContentLengthTraces) > len(got[i].body))
+					require.Greater(t, int(test.conf.MaxContentLengthTraces), len(got[i].body))
 				}
 				if test.conf.DisableCompression {
 					for _, expected := range batch {
@@ -791,7 +791,7 @@ func TestReceiveLogs(t *testing.T) {
 			for i, wantBatch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthLogs != 0 {
-					require.True(t, int(test.conf.MaxContentLengthLogs) > len(got[i].body))
+					require.Greater(t, int(test.conf.MaxContentLengthLogs), len(got[i].body))
 				}
 				if test.conf.DisableCompression {
 					for _, expected := range wantBatch {
@@ -1163,7 +1163,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				for i, batch := range test.want.batches {
 					require.NotZero(t, got[i])
 					if test.conf.MaxContentLengthMetrics != 0 {
-						require.True(t, int(test.conf.MaxContentLengthMetrics) > len(got[i].body))
+						require.Greater(t, int(test.conf.MaxContentLengthMetrics), len(got[i].body))
 					}
 					if test.want.compressed {
 						validateCompressedContains(t, batch, got[i].body)
@@ -1181,7 +1181,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				}
 
 				if test.want.numBatches == 0 {
-					assert.Len(t, got, 0)
+					assert.Empty(t, got)
 					return
 				}
 

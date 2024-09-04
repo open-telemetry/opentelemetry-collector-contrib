@@ -449,7 +449,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// check if emptyTempDir is empty after compaction
 	files, err = os.ReadDir(emptyTempDir)
 	require.NoError(t, err)
-	require.Len(t, files, 0)
+	require.Empty(t, files)
 }
 
 func TestCleanupOnStart(t *testing.T) {
