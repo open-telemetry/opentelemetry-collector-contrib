@@ -1,0 +1,20 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource-attr
+          value:
+            stringValue: resource-attr-val-1
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asInt: "456"
+                  attributes:
+                    - key: label-2
+                      value:
+                        stringValue: label-value-2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "1000000"
+            name: gauge-int
+            unit: "1"
+        scope: {}

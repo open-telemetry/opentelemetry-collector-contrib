@@ -240,7 +240,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.NotNil(t, segment.Service)
 	assert.NotNil(t, segment.AWS)
 	assert.NotNil(t, segment.Metadata)
-	assert.Len(t, segment.Annotations, 0)
+	assert.Empty(t, segment.Annotations)
 	assert.Equal(t, enterpriseAppID, segment.Metadata["default"]["enterprise.app.id"])
 	assert.Nil(t, segment.Cause)
 	assert.Nil(t, segment.HTTP)
@@ -467,7 +467,7 @@ func TestSpanWithAttributesDefaultNotIndexed(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Len(t, segment.Annotations, 0)
+	assert.Empty(t, segment.Annotations)
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
 	assert.Equal(t, "string", segment.Metadata["default"]["otel.resource.string.key"])
@@ -494,7 +494,7 @@ func TestSpanWithResourceNotStoredIfSubsegment(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Len(t, segment.Annotations, 0)
+	assert.Empty(t, segment.Annotations)
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
 	assert.Nil(t, segment.Metadata["default"]["otel.resource.string.key"])
@@ -570,7 +570,7 @@ func TestSpanWithAttributesSegmentMetadata(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Len(t, segment.Annotations, 0)
+	assert.Empty(t, segment.Annotations)
 	assert.Len(t, segment.Metadata, 2)
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 	assert.Equal(t, "custom_value", segment.Metadata["default"]["custom_key"])

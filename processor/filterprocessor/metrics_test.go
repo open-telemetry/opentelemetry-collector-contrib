@@ -349,7 +349,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			got := next.AllMetrics()
 
 			if len(test.outMN) == 0 {
-				require.Len(t, got, 0)
+				require.Empty(t, got)
 				return
 			}
 
