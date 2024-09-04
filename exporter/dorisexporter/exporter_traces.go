@@ -69,7 +69,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config, set component.TelemetryS
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
-	client, err := createDorisHttpClient(ctx, e.cfg, host, e.TelemetrySettings)
+	client, err := createDorisHTTPClient(ctx, e.cfg, host, e.TelemetrySettings)
 	if err != nil {
 		return err
 	}

@@ -39,7 +39,7 @@ func TestPushTraceData(t *testing.T) {
 
 	ctx := context.Background()
 
-	client, err := createDorisHttpClient(ctx, config, nil, testTelemetrySettings)
+	client, err := createDorisHTTPClient(ctx, config, nil, testTelemetrySettings)
 	require.NoError(t, err)
 	require.NotNil(t, client)
 

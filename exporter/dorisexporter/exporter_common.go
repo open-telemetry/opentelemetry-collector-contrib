@@ -87,7 +87,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	return req, nil
 }
 
-func createDorisHttpClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+func createDorisHTTPClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	client, err := cfg.ClientConfig.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, err
