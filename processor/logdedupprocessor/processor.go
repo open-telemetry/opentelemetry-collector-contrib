@@ -12,7 +12,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
@@ -20,14 +23,19 @@ type logDedupProcessor struct {
 	emitInterval time.Duration
 	aggregator   *logAggregator
 	remover      *fieldRemover
-	consumer     consumer.Logs
+	nextConsumer consumer.Logs
 	logger       *zap.Logger
 	cancel       context.CancelFunc
 	wg           sync.WaitGroup
 	mux          sync.Mutex
 }
 
-func newProcessor(cfg *Config, consumer consumer.Logs, logger *zap.Logger) (*logDedupProcessor, error) {
+func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
+	}
+
 	// This should not happen due to config validation but we check anyways.
 	timezone, err := time.LoadLocation(cfg.Timezone)
 	if err != nil {
@@ -36,10 +44,10 @@ func newProcessor(cfg *Config, consumer consumer.Logs, logger *zap.Logger) (*log
 
 	return &logDedupProcessor{
 		emitInterval: cfg.Interval,
-		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone),
+		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder),
 		remover:      newFieldRemover(cfg.ExcludeFields),
-		consumer:     consumer,
-		logger:       logger,
+		nextConsumer: nextConsumer,
+		logger:       settings.Logger,
 	}, nil
 }
 
@@ -123,10 +131,10 @@ func (p *logDedupProcessor) exportLogs(ctx context.Context) {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
-	logs := p.aggregator.Export()
+	logs := p.aggregator.Export(ctx)
 	// Only send logs if we have some
 	if logs.LogRecordCount() > 0 {
-		err := p.consumer.ConsumeLogs(ctx, logs)
+		err := p.nextConsumer.ConsumeLogs(ctx, logs)
 		if err != nil {
 			p.logger.Error("failed to consume logs", zap.Error(err))
 		}

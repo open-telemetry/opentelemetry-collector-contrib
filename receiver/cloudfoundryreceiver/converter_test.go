@@ -217,7 +217,7 @@ func TestConvertLogsEnvelope(t *testing.T) {
 		t.Run(tt.id, func(t *testing.T) {
 			logSlice := plog.NewLogRecordSlice()
 			e := convertEnvelopeToLogs(&tt.envelope, logSlice, now)
-			require.Equal(t, nil, e)
+			require.NoError(t, e)
 			require.Equal(t, 1, logSlice.Len())
 			log := logSlice.At(0)
 			assert.Equal(t, tt.expected["Body"], log.Body().AsString())

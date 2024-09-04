@@ -18,7 +18,6 @@ import (
 const (
 	// Constants for OpenTelemetry Specs
 	traceAzureResourceID = "azure.resource.id"
-	traceScopeName       = "otelcol/azureresourcetraces"
 )
 
 type azureTracesRecords struct {
@@ -79,7 +78,7 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 	resourceTraces := t.ResourceSpans().AppendEmpty()
 	resource := resourceTraces.Resource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, traceScopeName)
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, scopeName)
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeTelemetrySDKLanguageGo)
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, r.Version)
 	resource.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
