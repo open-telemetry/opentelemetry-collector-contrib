@@ -1216,7 +1216,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 			Value: fmt.Sprint("dim_val_", i),
 		})
 	}
-	assert.Len(t, c.MetricsToSignalFxV2(mdInvalid), 0)
+	assert.Empty(t, c.MetricsToSignalFxV2(mdInvalid))
 	require.Equal(t, 1, observedLogs.Len())
 	assert.Equal(t, "dropping datapoint", observedLogs.All()[0].Message)
 	assert.ElementsMatch(t, []zap.Field{

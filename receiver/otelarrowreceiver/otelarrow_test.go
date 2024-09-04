@@ -710,7 +710,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, ocr.Shutdown(context.Background()))
 
-	assert.Len(t, sink.AllTraces(), 0)
+	assert.Empty(t, sink.AllTraces())
 }
 
 func TestConcurrentArrowReceiver(t *testing.T) {
