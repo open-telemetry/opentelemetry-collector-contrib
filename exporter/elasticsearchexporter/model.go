@@ -148,9 +148,9 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
-	m.encodeAttributesOTelMode(&document, record.Attributes())
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+	m.encodeAttributesOTelMode(&document, record.Attributes(), false)
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, false)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, false)
 
 	// Body
 	setOTelLogBody(&document, record.Body())
@@ -284,9 +284,9 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		}
 		document.AddString("unit", metric.Unit())
 
-		m.encodeAttributesOTelMode(&document, dp.Attributes())
-		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+		m.encodeAttributesOTelMode(&document, dp.Attributes(), true)
+		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, true)
+		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, true)
 	}
 
 	switch value.Type() {
@@ -417,7 +417,7 @@ func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
 	return pcommon.Value{}, errInvalidNumberDataPoint
 }
 
-func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string) {
+func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, stringifyArrayValues bool) {
 	resourceMapVal := pcommon.NewValueMap()
 	resourceMap := resourceMapVal.Map()
 	if resourceSchemaURL != "" {
@@ -433,11 +433,13 @@ func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resour
 		}
 		return false
 	})
-
+	if stringifyArrayValues {
+		mapStringifyArrayValues(resourceAttrMap)
+	}
 	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
 }
 
-func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pcommon.InstrumentationScope, scopeSchemaURL string) {
+func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pcommon.InstrumentationScope, scopeSchemaURL string, stringifyArrayValues bool) {
 	scopeMapVal := pcommon.NewValueMap()
 	scopeMap := scopeMapVal.Map()
 	if scope.Name() != "" {
@@ -459,10 +461,16 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 		}
 		return false
 	})
+	if stringifyArrayValues {
+		mapStringifyArrayValues(scopeAttrMap)
+	}
 	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
 }
 
-func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
+func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, from pcommon.Map, stringifyArrayValues bool) {
+	attributeMapVal := pcommon.NewValueMap()
+	attributeMap := attributeMapVal.Map()
+	from.CopyTo(attributeMap)
 	attributeMap.RemoveIf(func(key string, val pcommon.Value) bool {
 		switch key {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
@@ -474,7 +482,19 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 		}
 		return false
 	})
+	if stringifyArrayValues {
+		mapStringifyArrayValues(attributeMap)
+	}
 	document.AddAttributes("attributes", attributeMap)
+}
+
+func mapStringifyArrayValues(m pcommon.Map) {
+	m.Range(func(k string, v pcommon.Value) bool {
+		if v.Type() == pcommon.ValueTypeSlice {
+			v.SetStr(v.AsString())
+		}
+		return true
+	})
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
@@ -502,7 +522,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddString("kind", span.Kind().String())
 	document.AddInt("duration", int64(span.EndTimestamp()-span.StartTimestamp()))
 
-	m.encodeAttributesOTelMode(&document, span.Attributes())
+	m.encodeAttributesOTelMode(&document, span.Attributes(), false)
 
 	document.AddInt("dropped_attributes_count", int64(span.DroppedAttributesCount()))
 	document.AddInt("dropped_events_count", int64(span.DroppedEventsCount()))
@@ -526,8 +546,8 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddString("status.message", span.Status().Message())
 	document.AddString("status.code", span.Status().Code().String())
 
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, false)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, false)
 
 	// TODO: add span events to log data streams
 
