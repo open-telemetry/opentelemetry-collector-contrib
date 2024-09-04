@@ -28,9 +28,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, defaultInitialOffset, cfg.InitialOffset)
 	assert.Equal(t, defaultSessionTimeout, cfg.SessionTimeout)
 	assert.Equal(t, defaultHeartbeatInterval, cfg.HeartbeatInterval)
-	assert.Equal(t, int32(defaultMinFetchSize), cfg.MinFetchSize)
-	assert.Equal(t, int32(defaultDefaultFetchSize), cfg.DefaultFetchSize)
-	assert.Equal(t, int32(defaultMaxFetchSize), cfg.MaxFetchSize)
+	assert.Equal(t, defaultMinFetchSize, cfg.MinFetchSize)
+	assert.Equal(t, defaultDefaultFetchSize, cfg.DefaultFetchSize)
+	assert.Equal(t, defaultMaxFetchSize, cfg.MaxFetchSize)
 }
 
 func TestCreateTracesReceiver(t *testing.T) {
