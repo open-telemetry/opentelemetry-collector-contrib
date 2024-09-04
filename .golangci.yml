@@ -134,7 +134,6 @@ linters-settings:
 
   testifylint:
     disable:
-      - error-is-as
       - expected-actual
       - float-compare
       - formatter

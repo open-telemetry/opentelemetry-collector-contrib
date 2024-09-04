@@ -172,7 +172,7 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	auth = base64.StdEncoding.EncodeToString([]byte("username:fromfile"))
 
 	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth}})
-	assert.Error(t, errInvalidCredentials, err)
+	assert.ErrorIs(t, errInvalidCredentials, err)
 }
 
 func TestBasicAuth_SupportedHeaders(t *testing.T) {

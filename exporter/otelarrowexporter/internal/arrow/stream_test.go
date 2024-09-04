@@ -5,7 +5,6 @@ package arrow
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -216,7 +215,7 @@ func TestStreamUnknownBatchError(t *testing.T) {
 			// sender should get ErrStreamRestarting
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, ErrStreamRestarting))
+			require.ErrorIs(t, err, ErrStreamRestarting)
 		})
 	}
 }
@@ -347,7 +346,7 @@ func TestStreamSendError(t *testing.T) {
 			// sender should get ErrStreamRestarting
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, ErrStreamRestarting))
+			require.ErrorIs(t, err, ErrStreamRestarting)
 		})
 	}
 }
