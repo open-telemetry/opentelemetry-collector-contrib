@@ -45,7 +45,11 @@ func Load(configFile string) (Supervisor, error) {
 
 	cfg := DefaultSupervisor()
 	if err := k.UnmarshalWithConf("", &cfg, decodeConf); err != nil {
-		return Supervisor{}, fmt.Errorf("cannot parse %v: %w", configFile, err)
+		return Supervisor{}, fmt.Errorf("cannot parse %s: %w", configFile, err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return Supervisor{}, fmt.Errorf("cannot validate supervisor config %s: %w", configFile, err)
 	}
 
 	return cfg, nil
