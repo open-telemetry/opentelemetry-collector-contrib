@@ -50,17 +50,17 @@ func TestLogsRoundRobin(t *testing.T) {
 	assert.NoError(t, logs.ConsumeLogs(ctx, plog.NewLogs()))
 	assert.NoError(t, logs.ConsumeLogs(ctx, plog.NewLogs()))
 
-	assert.Equal(t, 1, len(sink1.AllLogs()))
-	assert.Equal(t, 1, len(sink2.AllLogs()))
-	assert.Equal(t, 1, len(sink3.AllLogs()))
+	assert.Len(t, sink1.AllLogs(), 1)
+	assert.Len(t, sink2.AllLogs(), 1)
+	assert.Len(t, sink3.AllLogs(), 1)
 
 	assert.NoError(t, logs.ConsumeLogs(ctx, plog.NewLogs()))
 	assert.NoError(t, logs.ConsumeLogs(ctx, plog.NewLogs()))
 	assert.NoError(t, logs.ConsumeLogs(ctx, plog.NewLogs()))
 
-	assert.Equal(t, 2, len(sink1.AllLogs()))
-	assert.Equal(t, 2, len(sink2.AllLogs()))
-	assert.Equal(t, 2, len(sink3.AllLogs()))
+	assert.Len(t, sink1.AllLogs(), 2)
+	assert.Len(t, sink2.AllLogs(), 2)
+	assert.Len(t, sink3.AllLogs(), 2)
 
 	assert.NoError(t, logs.Shutdown(ctx))
 }
@@ -87,17 +87,17 @@ func TestMetricsRoundRobin(t *testing.T) {
 	assert.NoError(t, metrics.ConsumeMetrics(ctx, pmetric.NewMetrics()))
 	assert.NoError(t, metrics.ConsumeMetrics(ctx, pmetric.NewMetrics()))
 
-	assert.Equal(t, 1, len(sink1.AllMetrics()))
-	assert.Equal(t, 1, len(sink2.AllMetrics()))
-	assert.Equal(t, 1, len(sink3.AllMetrics()))
+	assert.Len(t, sink1.AllMetrics(), 1)
+	assert.Len(t, sink2.AllMetrics(), 1)
+	assert.Len(t, sink3.AllMetrics(), 1)
 
 	assert.NoError(t, metrics.ConsumeMetrics(ctx, pmetric.NewMetrics()))
 	assert.NoError(t, metrics.ConsumeMetrics(ctx, pmetric.NewMetrics()))
 	assert.NoError(t, metrics.ConsumeMetrics(ctx, pmetric.NewMetrics()))
 
-	assert.Equal(t, 2, len(sink1.AllMetrics()))
-	assert.Equal(t, 2, len(sink2.AllMetrics()))
-	assert.Equal(t, 2, len(sink3.AllMetrics()))
+	assert.Len(t, sink1.AllMetrics(), 2)
+	assert.Len(t, sink2.AllMetrics(), 2)
+	assert.Len(t, sink3.AllMetrics(), 2)
 
 	assert.NoError(t, metrics.Shutdown(ctx))
 }
@@ -124,17 +124,17 @@ func TestTracesRoundRobin(t *testing.T) {
 	assert.NoError(t, traces.ConsumeTraces(ctx, ptrace.NewTraces()))
 	assert.NoError(t, traces.ConsumeTraces(ctx, ptrace.NewTraces()))
 
-	assert.Equal(t, 1, len(sink1.AllTraces()))
-	assert.Equal(t, 1, len(sink2.AllTraces()))
-	assert.Equal(t, 1, len(sink3.AllTraces()))
+	assert.Len(t, sink1.AllTraces(), 1)
+	assert.Len(t, sink2.AllTraces(), 1)
+	assert.Len(t, sink3.AllTraces(), 1)
 
 	assert.NoError(t, traces.ConsumeTraces(ctx, ptrace.NewTraces()))
 	assert.NoError(t, traces.ConsumeTraces(ctx, ptrace.NewTraces()))
 	assert.NoError(t, traces.ConsumeTraces(ctx, ptrace.NewTraces()))
 
-	assert.Equal(t, 2, len(sink1.AllTraces()))
-	assert.Equal(t, 2, len(sink2.AllTraces()))
-	assert.Equal(t, 2, len(sink3.AllTraces()))
+	assert.Len(t, sink1.AllTraces(), 2)
+	assert.Len(t, sink2.AllTraces(), 2)
+	assert.Len(t, sink3.AllTraces(), 2)
 
 	assert.NoError(t, traces.Shutdown(ctx))
 }

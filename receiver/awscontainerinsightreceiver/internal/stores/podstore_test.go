@@ -558,7 +558,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	assert.Equal(t, kpName, metric.GetTag(ci.PodNameKey))
-	assert.True(t, len(kubernetesBlob) == 0)
+	assert.Empty(t, kubernetesBlob)
 
 	podStore.prefFullPodName = false
 	metric = generateMetric(fields, tags)
@@ -567,7 +567,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	assert.Equal(t, kubeProxy, metric.GetTag(ci.PodNameKey))
-	assert.True(t, len(kubernetesBlob) == 0)
+	assert.Empty(t, kubernetesBlob)
 }
 
 type mockPodClient struct {
