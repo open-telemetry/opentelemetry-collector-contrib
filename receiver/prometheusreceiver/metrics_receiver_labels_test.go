@@ -37,7 +37,7 @@ func TestExternalLabels(t *testing.T) {
 
 func verifyExternalLabels(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -67,7 +67,7 @@ test_gauge0{label1="value1",label2="value2"} 10
 func verifyLabelLimitTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	// each sample in the scraped metrics is within the configured label_limit, scrape should be successful
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -159,7 +159,7 @@ test_summary0_count{label1="value1",label2="value2"} 1000
 
 func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -322,7 +322,7 @@ test_summary0_count{id="1",testLabel=""} 1000
 `
 
 func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -397,7 +397,7 @@ test_counter0{id="2",testLabel="foobar"} 110
 `
 
 func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -474,7 +474,7 @@ test_gauge0{instance="hostname:8080",job="honor_labels_test",testLabel="value1"}
 
 func verifyHonorLabelsFalse(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	want := td.attributes
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
@@ -508,7 +508,7 @@ test_counter0 100
 `
 
 func verifyEmptyLabelsTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -575,7 +575,7 @@ func TestHonorLabelsFalseConfig(t *testing.T) {
 }
 
 func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	// job and instance label values should be honored from honorLabelsTarget
 	expectedResourceAttributes := pcommon.NewMap()
@@ -692,7 +692,7 @@ func TestRelabelJobInstance(t *testing.T) {
 
 func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
 	wantAttributes.PutStr("service.name", "not-target1")
@@ -750,7 +750,7 @@ func TestTargetInfoResourceAttributes(t *testing.T) {
 
 func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
 	wantAttributes.PutStr("foo", "bar")
@@ -800,7 +800,7 @@ func TestScopeInfoScopeAttributes(t *testing.T) {
 
 func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	sms := rms[0].ScopeMetrics()
 	require.Equal(t, sms.Len(), 3, "Three scope metrics should be present")

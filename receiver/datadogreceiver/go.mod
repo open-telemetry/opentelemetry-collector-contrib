@@ -32,7 +32,7 @@ require (
 require (
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
-	github.com/DataDog/go-sqllexer v0.0.12 // indirect
+	github.com/DataDog/go-sqllexer v0.0.13 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.14.0 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect

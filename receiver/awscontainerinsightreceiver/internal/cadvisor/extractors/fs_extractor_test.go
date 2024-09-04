@@ -47,7 +47,7 @@ func TestFSStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}
 
-	assert.Len(t, cMetrics, 0)
+	assert.Empty(t, cMetrics)
 
 	// node type for eks
 
