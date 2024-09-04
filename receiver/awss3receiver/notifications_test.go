@@ -221,7 +221,7 @@ func Test_opampNotifier_SendStatus_MessagePending(t *testing.T) {
 		completionTime = time.Now()
 		wg.Done()
 	}()
-	require.Len(t, registry.sentMessages, 0)
+	require.Empty(t, registry.sentMessages)
 	registry.pendingChannel <- struct{}{}
 	wg.Wait()
 	require.True(t, completionTime.After(now))
@@ -241,7 +241,7 @@ func Test_opampNotifier_SendStatus_Error(t *testing.T) {
 	}
 
 	notifier.SendStatus(context.Background(), toSend)
-	require.Len(t, registry.sentMessages, 0)
+	require.Empty(t, registry.sentMessages)
 	require.Equal(t, registry.sendMessageCalls, 1)
 }
 
@@ -273,6 +273,6 @@ func Test_opampNotifier_SendStatus_MaxRetries(t *testing.T) {
 	wg.Wait()
 
 	require.True(t, completionTime.After(now))
-	require.Len(t, registry.sentMessages, 0)
+	require.Empty(t, registry.sentMessages)
 	require.Equal(t, registry.sendMessageCalls, maxNotificationAttempts)
 }
