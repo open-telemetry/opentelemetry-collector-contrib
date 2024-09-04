@@ -255,10 +255,10 @@ func TestSyncMetadata(t *testing.T) {
 			syncer.Sync(tt.metricsData)
 
 			if tt.wantMetadataUpdate != nil {
-				require.Equal(t, 1, len(dimClient.getMetadataUpdates()))
+				require.Len(t, dimClient.getMetadataUpdates(), 1)
 				require.EqualValues(t, tt.wantMetadataUpdate, dimClient.getMetadataUpdates()[0])
 			} else {
-				require.Equal(t, 0, len(dimClient.getMetadataUpdates()))
+				require.Empty(t, dimClient.getMetadataUpdates())
 			}
 
 			require.Equal(t, len(tt.wantLogs), logs.Len())

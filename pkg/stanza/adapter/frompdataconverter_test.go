@@ -155,7 +155,7 @@ func BenchmarkFromPdataConverter(b *testing.B) {
 							break forLoop
 						}
 
-						require.Equal(b, 250_000, len(entries))
+						require.Len(b, entries, 250_000)
 						n += len(entries)
 
 					case <-timeoutTimer.C:

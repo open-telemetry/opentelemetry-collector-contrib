@@ -295,14 +295,20 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 			return startTime
 		}
 
+		metricsNamespace := p.config.Namespace
+		if legacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
+			metricsNamespace = ""
+		}
+
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
-		metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
+		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
 		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
+			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
 			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 		}
@@ -310,7 +316,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameEvents))
+			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
 			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 		}
 

@@ -24,6 +24,12 @@ const (
 )
 
 func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config) *splunk.Event {
+	body := lr.Body().AsRaw()
+	if body == nil || body == "" {
+		// events with no body are rejected by Splunk.
+		return nil
+	}
+
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
@@ -82,11 +88,6 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		}
 		return true
 	})
-
-	body := lr.Body().AsRaw()
-	if body == nil {
-		body = ""
-	}
 
 	return &splunk.Event{
 		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),
