@@ -7,6 +7,12 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.108.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza/operator/input/windows`: Change type name from `EvtRpcLogin` to `EvtRPCLogin`. (#34656)
+
 ## v0.107.0
 
 ### 🚀 New components 🚀

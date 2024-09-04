@@ -185,7 +185,7 @@ func TestCopyNil(t *testing.T) {
 	require.Equal(t, "", cp.SeverityText)
 	require.Equal(t, map[string]any{}, cp.Attributes)
 	require.Equal(t, map[string]any{}, cp.Resource)
-	require.Equal(t, nil, cp.Body)
+	require.Nil(t, cp.Body)
 	require.Equal(t, []byte{}, cp.TraceID)
 	require.Equal(t, []byte{}, cp.SpanID)
 	require.Equal(t, []byte{}, cp.TraceFlags)

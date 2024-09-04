@@ -162,7 +162,7 @@ func TestDiscovery(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
-	require.Equal(t, len(logsRcvr.groupRequests), 2)
+	require.Len(t, logsRcvr.groupRequests, 2)
 	require.NoError(t, logsRcvr.Shutdown(context.Background()))
 }
 

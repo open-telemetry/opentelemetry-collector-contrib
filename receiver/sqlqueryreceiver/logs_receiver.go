@@ -291,7 +291,7 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 	for logsConfigIndex, logsConfig := range queryReceiver.query.Logs {
 		for _, row := range rows {
 			logRecord := scopeLogs.AppendEmpty()
-			rowToLog(row, logsConfig, logRecord)
+			errs = append(errs, rowToLog(row, logsConfig, logRecord))
 			logRecord.SetObservedTimestamp(observedAt)
 			if logsConfigIndex == 0 {
 				errs = append(errs, queryReceiver.storeTrackingValue(ctx, row))
@@ -315,8 +315,17 @@ func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, 
 	return nil
 }
 
-func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.LogRecord) {
+func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.LogRecord) error {
 	logRecord.Body().SetStr(row[config.BodyColumn])
+	attrs := logRecord.Attributes()
+	for _, columnName := range config.AttributeColumns {
+		if attrVal, found := row[columnName]; found {
+			attrs.PutStr(columnName, attrVal)
+		} else {
+			return fmt.Errorf("rowToLog: attribute_column not found: '%s'", columnName)
+		}
+	}
+	return nil
 }
 
 func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) error {

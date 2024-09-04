@@ -49,6 +49,9 @@ type kafkaTracesConsumer struct {
 	messageMarking    MessageMarking
 	headerExtraction  bool
 	headers           []string
+	minFetchSize      int32
+	defaultFetchSize  int32
+	maxFetchSize      int32
 }
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
@@ -67,6 +70,9 @@ type kafkaMetricsConsumer struct {
 	messageMarking    MessageMarking
 	headerExtraction  bool
 	headers           []string
+	minFetchSize      int32
+	defaultFetchSize  int32
+	maxFetchSize      int32
 }
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
@@ -85,6 +91,9 @@ type kafkaLogsConsumer struct {
 	messageMarking    MessageMarking
 	headerExtraction  bool
 	headers           []string
+	minFetchSize      int32
+	defaultFetchSize  int32
+	maxFetchSize      int32
 }
 
 var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
@@ -112,6 +121,9 @@ func newTracesReceiver(config Config, set receiver.Settings, unmarshaler TracesU
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 		telemetryBuilder:  telemetryBuilder,
+		minFetchSize:      config.MinFetchSize,
+		defaultFetchSize:  config.DefaultFetchSize,
+		maxFetchSize:      config.MaxFetchSize,
 	}, nil
 }
 
@@ -125,6 +137,9 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
 	saramaConfig.Consumer.Group.Session.Timeout = config.SessionTimeout
 	saramaConfig.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
+	saramaConfig.Consumer.Fetch.Min = config.MinFetchSize
+	saramaConfig.Consumer.Fetch.Default = config.DefaultFetchSize
+	saramaConfig.Consumer.Fetch.Max = config.MaxFetchSize
 
 	var err error
 	if saramaConfig.Consumer.Offsets.Initial, err = toSaramaInitialOffset(config.InitialOffset); err != nil {
@@ -235,6 +250,9 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler Metric
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 		telemetryBuilder:  telemetryBuilder,
+		minFetchSize:      config.MinFetchSize,
+		defaultFetchSize:  config.DefaultFetchSize,
+		maxFetchSize:      config.MaxFetchSize,
 	}, nil
 }
 
@@ -329,6 +347,9 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmar
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 		telemetryBuilder:  telemetryBuilder,
+		minFetchSize:      config.MinFetchSize,
+		defaultFetchSize:  config.DefaultFetchSize,
+		maxFetchSize:      config.MaxFetchSize,
 	}, nil
 }
 
