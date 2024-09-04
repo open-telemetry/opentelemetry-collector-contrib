@@ -61,7 +61,7 @@ func TestLogsToLogs2(t *testing.T) {
 			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
 
 			allLogs := sink.AllLogs()
-			assert.Equal(t, tc.expectedLogs, len(allLogs))
+			assert.Len(t, allLogs, tc.expectedLogs)
 
 			if tc.expectedLogs > 0 {
 				// golden.WriteLogs(t, filepath.Join("testdata", "logsToLogs", tc.expectedFile), allLogs[0])
@@ -114,7 +114,7 @@ func TestLogsToMetrics(t *testing.T) {
 			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
 
 			allMetrics := sink.AllMetrics()
-			assert.Equal(t, tc.expectedMetrics, len(allMetrics))
+			assert.Len(t, allMetrics, tc.expectedMetrics)
 
 			if tc.expectedMetrics > 0 {
 				// golden.WriteMetrics(t, filepath.Join("testdata", "logsToMetrics", tc.expectedFile), allMetrics[0])
@@ -167,7 +167,7 @@ func TestLogsToTraces(t *testing.T) {
 			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
 
 			allMetrics := sink.AllTraces()
-			assert.Equal(t, tc.expectedTraces, len(allMetrics))
+			assert.Len(t, allMetrics, tc.expectedTraces)
 
 			if tc.expectedTraces > 0 {
 				// golden.WriteTraces(t, filepath.Join("testdata", "logsToTraces", tc.expectedFile), allMetrics[0])
