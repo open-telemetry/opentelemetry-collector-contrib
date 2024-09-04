@@ -7,7 +7,115 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.108.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Added support for go1.23, bumped the minimum version to 1.22 (#34658)
+- `lokiexporter`: Update the scope name for telemetry produced by the lokiexporter from `otelcol/loki` to `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter` (#34612)
+- `azuretranslator`: The scope name has been updated from `otelcol/azureresourcelogs` and `otelcol/azureresourcetraces` to `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure` (#34712)
+- `datadogreceiver`: The scope name has been updated from `otelcol/datadogreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator` (#34711)
+- `splunkhecexporter`: The scope name has been updated from `otelcol/splunkhec` to `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter` (#34710)
+- `googlecloudmonitorreceiver`: The scope name has been updated from `otelcol/googlecloudmonitoringreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver` (#34709)
+- `elasticsearchexporter`: Update OTel mapping mode for logs and metrics; Remove trace_flags (#34472)
+  Update logs and metrics OTel mapping mode to always emit "scope" and zero int, but not emit empty strings for known fields. Breaking change to remove trace_flags from logs.
+- `elasticsearchexporter`: Change default retry.retry_on_status to [429] (#32584)
+  To retain the previous behavior, set retry.retry_on_status to `[429, 500, 502, 503, 504]`.
+- `gitproviderreceiver`: Update metric names and attributes to match the newest Semantic Conventions for VCS. (#34278)
+  Attribute Changes:
+    - `branch.name` is now `ref.name`
+    - Added a `ref.type` attribute
+    - `pull_request.state` is now `change.state`
+    - `git.vendor.name` is now `vcs.vendor.name`
+  Metric Changes:
+    - `git.repository.count` is now `vcs.repository.count`
+    - `git.repository.contributor.count` is now `vcs.repository.contributor.count`
+    - `git.repository.branch.count` is now `vcs.repository.ref.count`
+    - `git.repository.branch.time` is now `vcs.repository.ref.time
+    - `git.repository.branch.commit.aheadby.count` is now `vcs.repository.ref.revisions_ahead`
+    - `git.repository.branch.commit.behindby.count` is now `vcs.repository.ref.revisions_behind
+    - `git.repository.branch.line.addition.count` is now `vcs.repository.ref.lines_added`
+    - `git.repository.branch.line.deletion.count` is now `vcs.repository.ref.lines_deleted`
+    - `git.repository.pull_request.time_open` is now `vcs.change.time_open`
+    - `git.repository.pull_request.time_to_merge` is now `vcs.change.time_to_merge`
+    - `git.repository.pull_request.time_to_approval` is now `vcs.change.time_to_approval`
+    - `git.repository.pull_request.count` is now `vcs.change.count`
+  
+- `transformprocessor`: Promote processor.transform.ConvertBetweenSumAndGaugeMetricContext feature flag from alpha to beta (#34567)
+- `exporter/datadog`: The `logs::dump_payloads` config option is invalid when the Datadog Agent logs pipeline is enabled (now enabled by default). (#34420)
+  An error will be raised if `logs::dump_payloads` is set while the Datadog Agent logs pipeline is enabled. To avoid this error, remove the `logs::dump_payloads` config option or temporarily disable the `exporter.datadogexporter.UseLogsAgentExporter` feature gate.
+- `vcenterreceiver`: Several host performance metrics now return 1 data point per time series instead of 5. (#34708)
+  The 5 data points previously sent represented consecutive 20s sampling periods. Depending on the collection interval 
+  these could easily overlap. Sending just the latest of these data points is more in line with other performance metrics.
+  
+  This change also fixes an issue with the googlecloud exporter seeing these datapoints as duplicates.
+  
+  Following is the list of affected metrics which will now only report a single datapoint per set of unique attribute values.
+  - vcenter.host.cpu.reserved
+  - vcenter.host.disk.latency.avg
+  - vcenter.host.disk.latency.max
+  - vcenter.host.disk.throughput
+  - vcenter.host.network.packet.drop.rate
+  - vcenter.host.network.packet.error.rate
+  - vcenter.host.network.packet.rate
+  - vcenter.host.network.throughput
+  - vcenter.host.network.usage
+  
+
+### 🚀 New components 🚀
+
+- `exporter/doris`: Add a new component for exporting logs, traces and metrics to Doris (#33479)
+
+### 💡 Enhancements 💡
+
+- `geoipprocessor`: Add a context configuration option to specify the IP address attribute telemetry location. (#34036)
+- `awss3receiver`: Enhance the logging of the AWS S3 Receiver in normal operation to make it easier for user to debug what is happening. (#30750)
+- `datadogreceiver`: Implement '/info' endpoint (#34772)
+- `datadogreceiver`: Add sampling.priority attribute for Probabilistic Sampling Processor (#34267)
+- `datadogreceiver`: Implement '/stats' endpoint (#34790)
+- `datadogconnector`: Add a config `traces::bucket_interval` (#34554)
+  `traces::bucket_interval` specifies the time interval size of aggregation buckets that aggregate the Datadog trace metrics. It is also the time interval that Datadog trace metrics payloads are flushed to the pipeline. Default is 10s if unset.
+- `deltatocumulative`: Promote to `alpha` stability (#34747)
+  promotes the deltatocumulative processor to alpha stability, as most features are now implemented and ready for wider testing.
+- `deltatocumulative`: explicit-bounds histograms (#30705)
+  implements aggregation of explicit-bounds (traditional) histograms.
+- `elasticsearchexporter`: Add OTel mapping mode for metrics (#34248)
+- `elasticsearchexporter`: Add OTel mapping mode for traces (#34588, #34590)
+  Add OTel mapping mode support for traces, without span events.
+- `filelogreceiver`: If acquire_fs_lock is true, attempt to acquire a shared lock before reading a file. (#34801)
+  Unix only. If a lock cannot be acquired then the file will be ignored until the next poll cycle.
+- `solacereceiver`: Updated the format for generated metrics. Included a `receiver_name` attribute that identifies the Solace receiver that generated the metrics (#34541)
+- `geoipprocessor`: Move processor's stability to alpha. (#34737)
+- `prometheusreceiver`: Ensure Target Allocator's confighttp is used in the receiver's service discovery (#33370)
+- `datadogreceiver`: Include error when logging unmarshaling failures in Datadog receiver. (#34515)
+- `metricstransformprocessor`: Add scaling exponential histogram support (#29803)
+- `exporter/datadog`: Use Datadog Agent logs pipeline by default for exporting logs to Datadog. Upgrades `exporter.datadogexporter.UseLogsAgentExporter` feature flag to beta. (#34420)
+- `pkg/ottl`: Introduce `UserAgent` converter to parse UserAgent strings (#32434)
+
+### 🧰 Bug fixes 🧰
+
+- `tailsamplingprocessor`: Update the `policy` value in metrics dimension value to be unique across multiple tail sampling components with the same policy name. (#34192)
+  This change ensures that the `policy` value in the metrics exported by the tail sampling processor is unique across multiple tail sampling processors with the same policy name.
+- `datadogreceiver`: add feature discovery (#34718)
+- `datadogconnector`: Put back the `otelcol_` prefix for Datadog internal metrics on trace and APM stats exporting (#34807)
+  Recovers these metrics from an upstream breaking change. See https://github.com/open-telemetry/opentelemetry-collector/pull/9759 and https://github.com/open-telemetry/opentelemetry-collector/pull/10940.
+- `datadogexporter`: Put back the `otelcol_` prefix for Datadog internal metrics on trace and APM stats exporting (#34807)
+  Recovers these metrics from an upstream breaking change. See https://github.com/open-telemetry/opentelemetry-collector/pull/9759 and https://github.com/open-telemetry/opentelemetry-collector/pull/10940.
+- `awsfirehosereceiver`: Fix validation of requests with empty access key (#34847)
+- `connector/exceptionsconnector`: Fix dimensions configuration did not take effect for resource attributes (#34603)
+- `prometheusreceiver`: Group scraped metrics into resources created from `job` and `instance` label pairs (#34237)
+  The receiver will now create a resource for each distinct job/instance label combination.
+  In addition to the label/instance pairs detected from the scraped metrics, a resource representing the overall
+  scrape configuration will be created. This additional resource will contain the scrape metrics, such as the number of scraped metrics, the scrape duration, etc.
+  
+- `cmd/opampsupervisor`: Fix supervisor support for Windows. (#34570)
+- `tailsamplingprocessor`: Fix the behavior for numeric tag filters with `inverse_match` set to `true`. (#34296)
+- `pkg/stanza`: fix nil value conversion (#34672)
+- `k8sclusterreceiver`: Lower the log level of a message indicating a cache miss from WARN to DEBUG. (#34817)
+
 ## v0.107.0
+
+This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 ### 🛑 Breaking changes 🛑
 
@@ -20,79 +128,83 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   While this change is marked as breaking, there should be no effect to existing deployments by enabling compression.
   Compression should improve network performance on most deployments that have a remote ClickHouse server.
   
-- `azureeventhubreceiver`: Update the scope name for telemetry produced by the azureeventhubreceiver from `otelcol/azureeventhubreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver` (#34611)
-- `cloudfoundryreceiver`: Update the scope name for telemetry produced by the cloudfoundryreceiver from `otelcol/cloudfoundry` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver` (#34612)
-- `cloudflarereceiver`: Update the scope name for telemetry produced by the cloudflarereceiver from `otelcol/cloudflare` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver` (#34613)
-- `azuremonitorreceiver`: Update the scope name for telemetry produced by the azuremonitorreceiver from `otelcol/azuremonitorreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver` (#34618)
-- `fileconsumer`: Update the scope name for telemetry produced by pkg/stanza/fileconsumer from `otelcol/fileconsumer` to `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer` (#34619)
-- `loadbalancingexporter`: Update the scope name for telemetry produced by the loadbalancingexporter from `otelcol/loadbalancing` to `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter` (#34429)
-- `sumologicexporter`: Update the scope name for telemetry produced by the sumologicexporter from `otelcol/sumologic` to `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter` (#34438)
-- `prometheusremotewriteexporter`: Update the scope name for telemetry produced by the prometheusremotewriteexporter from `otelcol/prometheusremotewrite` to `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter` (#34440)
-- `activedirectorydsreceiver`: Update the scope name for telemetry produced by the activedirectorydsreceiver from `otelcol/activedirectorydsreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver` (#34492)
-- `aerospikereceiver`: Update the scope name for telemetry produced by the aerospikereceiver from `otelcol/aerospikereceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver` (#34518)
-- `apachereceiver`: Update the scope name for telemetry produced by the apachereceiver from `otelcol/apachereceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver` (#34517)
-- `apachesparkreceiver`: Update the scope name for telemetry produced by the apachesparkreceiver from `otelcol/apachesparkreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver` (#34519)
-- `bigipreceiver`: Update the scope name for telemetry produced by the bigipreceiver from `otelcol/bigipreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver` (#34520)
-- `chronyreceiver`: Update the scope name for telemetry produced by the chronyreceiver from `otelcol/chronyreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver` (#34524)
-- `couchdbreceiver`: Update the scope name for telemetry produced by the couchdbreceiver from `otelcol/couchdbreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver` (#34525)
-- `countconnector`: Update the scope name for telemetry produced by the countconnector from `otelcol/countconnector` to `github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector (#34583)
-- `deltatocumulativeprocessor`: Update the scope name for telemetry produced by the deltatocumulativeprocessor from `otelcol/deltatocumulative` to `github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor` (#34550)
-- `dockerstatsreceiver`: Update the scope name for telemetry produced by the dockerstatsreceiver from `otelcol/dockerstatsreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver` (#34528)
-- `elasticsearchreceiver`: Update the scope name for telemetry produced by the elasticsearchreceiver from `otelcol/elasticsearchreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver` (#34529)
-- `expvarreceiver`: Update the scope name for telemetry produced by the expvarreceiver from `otelcol/expvarreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver` (#34530)
-- `filestatsreceiver`: Update the scope name for telemetry produced by the filestatsreceiver from `otelcol/filestatsreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver` (#34429)
-- `filterprocessor`: Update the scope name for telemetry produced by the filterprocessor from `otelcol/filter` to `github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor` (#34550)
-- `flinkmetricsreceiver`: Update the scope name for telemetry produced by the flinkmetricsreceiver from `otelcol/flinkmetricsreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver` (#34533)
-- `fluentforwardreceiver`: Update the scope name for telemetry produced by the fluentforwardreceiver from `otelcol/fluentforwardreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver` (#34534)
-- `gitproviderreceiver`: Update the scope name for telemetry produced by the gitproviderreceiver from `otelcol/gitproviderreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver` (#34496)
-- `googlespannerreceiver`: Update the scope name for telemetry produced by the googlespannerreceiver from `otelcol/googlecloudspannermetrics` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlespannerreceiver` (#34593)
-- `grafanacloudconnector`: Update the scope name for telemetry produced by the grafanacloudconnector from `otelcol/grafanacloud` to `github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector (#34552)
-- `groupbyattrsprocessor`: Update the scope name for telemetry produced by the groupbyattrsprocessor from `otelcol/groupbyattrs` to `github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor` (#34550)
-- `groupbytraceprocessor`: Update the scope name for telemetry produced by the groupbytraceprocessor from `otelcol/groupbytrace` to `github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor` (#34550)
-- `haproxyreceiver`: Update the scope name for telemetry produced by the haproxyreceiver from `otelcol/haproxyreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver` (#34498)
-- `hostmetricsreceiver`: Update the scope name for telemetry produced by the hostmetrics receiver's scrapers from `otelcol/hostmetricsreceiver/*` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/*` (#34526)
-- `httpcheckreceiver`: Update the scope name for telemetry produced by the httpcheckreceiver from `otelcol/httpcheckreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver` (#34497)
-- `iisreceiver`: Update the scope name for telemetry produced by the iisreceiver from `otelcol/iisreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver` (#34535)
-- `k8sattributesprocessor`: Update the scope name for telemetry produced by the k8sattributesprocessor from `otelcol/k8sattributes` to `github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor` (#34550)
-- `k8sclusterreceiver`: Update the scope name for telemetry produced by the k8sclusterreceiver from `otelcol/k8sclusterreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver` (#34536)
-- `kafkametricsreceiver`: Update the scope name for telemetry produced by the kafkametricsreceiver from `otelcol/kafkametricsreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver` (#34538)
-- `kafkareceiver`: Update the scope name for telemetry produced by the kafkareceiver from `otelcol/kafkareceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver` (#34539)
-- `kubeletstatsreceiver`: Update the scope name for telemetry produced by the kubeletstatsreceiver from `otelcol/kubeletstatsreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver` (#34537)
-- `memcachedreceiver`: Update the scope name for telemetry produced by the memcachedreceiver from `otelcol/memcachedreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver` (#34542)
-- `mongodbatlasreceiver`: Update the scope name for telemetry produced by the mongodbatlasreceiver from `otelcol/mongodbatlasreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver` (#34543)
-- `mongodbreceiver`: Update the scope name for telemetry produced by the mongodbreceiver from `otelcol/mongodbreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver` (#34544)
-- `mysqlreceiver`: Update the scope name for telemetry produced by the mysqlreceiver from `otelcol/mysqlreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver` (#34545)
-- `nginxreceiver`: Update the scope name for telemetry produced by the nginxreceiver from `otelcol/nginxreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver` (#34493)
-- `nsxtreceiver`: Update the scope name for telemetry produced by the nsxtreceiver from `otelcol/nsxtreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver` (#34429)
-- `oracledbreceiver`: Update the scope name for telemetry produced by the oracledbreceiver from `otelcol/oracledbreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver` (#34491)
-- `otelarrowreceiver`: Update the scope name for telemetry produced by the otelarrowreceiver from `otelcol/otelarrowreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver` (#34546)
-- `podmanreceiver`: Update the scope name for telemetry produced by the podmanreceiver from `otelcol/podmanreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver` (#34429)
-- `postgresqlreceiver`: Update the scope name for telemetry produced by the postgresqlreceiver from `otelcol/postgresqlreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver` (#34476)
-- `probabilisticsamplerprocessor`: Update the scope name for telemetry produced by the probabilisticsamplerprocessor from `otelcol/probabilisticsampler` to `github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor` (#34550)
-- `prometheusreceiver`: Update the scope name for telemetry produced by the prometheusreceiver from `otelcol/prometheusreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver (#34589)
-- `rabbitmqreceiver`: Update the scope name for telemetry produced by the rabbitmqreceiver from `otelcol/rabbitmqreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver` (#34475)
-- `sshcheckreceiver`: Update the scope name for telemetry produced by the sshcheckreceiver from `otelcol/sshcheckreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver` (#34448)
-- `vcenterreceiver`: Update the scope name for telemetry produced by the vcenterreceiver from `otelcol/vcenter` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver` (#34449)
-- `zookeeperreceiver`: Update the scope name for telemetry produced by the zookeeperreceiver from `otelcol/zookeeper` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver` (#34450)
-- `redisreceiver`: Update the scope name for telemetry produced by the redisreceiver from `otelcol/redisreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver` (#34470)
-- `riakreceiver`: Update the scope name for telemetry produced by the riakreceiver from `otelcol/riakreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver` (#34469)
-- `routingprocessor`: Update the scope name for telemetry produced by the routingprocessor from `otelcol/routing` to `github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor` (#34550)
-- `saphanareceiver`: Update the scope name for telemetry produced by the saphanareceiver from otelcol/saphanareceiver to github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver (#34468)
-- `servicegraphconnector`: Update the scope name for telemetry produced by the servicegraphconnector from `otelcol/servicegraph` to `github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector (#34552)
-- `snmpreceiver`: Update the scope name for telemetry produced by the snmpreceiver from `otelcol/snmpreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver (#34592)
-- `snowflakereceiver`: Update the scope name for telemetry produced by the snowflakereceiver from `otelcol/snowflakereceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver` (#34467)
-- `solacereceiver`: Update the scope name for telemetry produced by the solacereceiver from `otelcol/solacereceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver` (#34466)
-- `splunkenterprisereceiver`: Update the scope name for telemetry produced by the splunkenterprisereceiver from `otelcol/splunkenterprisereceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver` (#34452)
-- `statsdreceiver`: Update the scope name for telemetry produced by the statsdreceiver from `otelcol/statsdreceiver` to `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver` (#34547)
-- `tailsamplingprocessor`: Update the scope name for telemetry produced by the tailsamplingprocessor from `otelcol/tailsampling` to `github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor` (#34550)
+- Update the scope name for telemetry produce by components. The following table summarizes the changes:
+
+| Component name | Previous scope | New scope |  PR number |
+|----------------|----------------|-----------|------------|
+| `azureeventhubreceiver` | `otelcol/azureeventhubreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver` |  #34611 |
+| `cloudfoundryreceiver` | `otelcol/cloudfoundry` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver` |  #34612 |
+| `cloudflarereceiver` | `otelcol/cloudflare` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver` |  #34613 |
+| `azuremonitorreceiver` | `otelcol/azuremonitorreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver` |  #34618 |
+| `fileconsumer` | `otelcol/fileconsumer` | `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer` |  #34619 |
+| `loadbalancingexporter` | `otelcol/loadbalancing` | `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter` |  #34429 |
+| `sumologicexporter` | `otelcol/sumologic` | `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter` |  #34438 |
+| `prometheusremotewriteexporter` | `otelcol/prometheusremotewrite` | `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter` |  #34440 |
+| `activedirectorydsreceiver` | `otelcol/activedirectorydsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver` |  #34492 |
+| `aerospikereceiver` | `otelcol/aerospikereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver` |  #34518 |
+| `apachereceiver` | `otelcol/apachereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver` |  #34517 |
+| `apachesparkreceiver` | `otelcol/apachesparkreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver` |  #34519 |
+| `bigipreceiver` | `otelcol/bigipreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver` |  #34520 |
+| `chronyreceiver` | `otelcol/chronyreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver` |  #34524 |
+| `couchdbreceiver` | `otelcol/couchdbreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver` |  #34525 |
+| `countconnector` | `otelcol/countconnector` | `github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector` |  #34583 |
+| `deltatocumulativeprocessor` | `otelcol/deltatocumulative` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor` |  #34550 |
+| `dockerstatsreceiver` | `otelcol/dockerstatsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver` |  #34528 |
+| `elasticsearchreceiver` | `otelcol/elasticsearchreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver` |  #34529 |
+| `expvarreceiver` | `otelcol/expvarreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver` |  #34530 |
+| `filestatsreceiver` | `otelcol/filestatsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver` |  #34429 |
+| `filterprocessor` | `otelcol/filter` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor` |  #34550 |
+| `flinkmetricsreceiver` | `otelcol/flinkmetricsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver` |  #34533 |
+| `fluentforwardreceiver` | `otelcol/fluentforwardreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver` |  #34534 |
+| `gitproviderreceiver` | `otelcol/gitproviderreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver` |  #34496 |
+| `googlespannerreceiver` | `otelcol/googlecloudspannermetrics` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlespannerreceiver` |  #34593 |
+| `grafanacloudconnector` | `otelcol/grafanacloud` | `github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector` |  #34552 |
+| `groupbyattrsprocessor` | `otelcol/groupbyattrs` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor` |  #34550 |
+| `groupbytraceprocessor` | `otelcol/groupbytrace` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor` |  #34550 |
+| `haproxyreceiver` | `otelcol/haproxyreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver` |  #34498 |
+| `hostmetricsreceiver` receiver's scrapers | `otelcol/hostmetricsreceiver/*` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/*` |  #34526 |
+| `httpcheckreceiver` | `otelcol/httpcheckreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver` |  #34497 |
+| `iisreceiver` | `otelcol/iisreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver` |  #34535 |
+| `k8sattributesprocessor` | `otelcol/k8sattributes` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor` |  #34550 |
+| `k8sclusterreceiver` | `otelcol/k8sclusterreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver` |  #34536 |
+| `kafkametricsreceiver` | `otelcol/kafkametricsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver` |  #34538 |
+| `kafkareceiver` | `otelcol/kafkareceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver` |  #34539 |
+| `kubeletstatsreceiver` | `otelcol/kubeletstatsreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver` |  #34537 |
+| `memcachedreceiver` | `otelcol/memcachedreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver` |  #34542 |
+| `mongodbatlasreceiver` | `otelcol/mongodbatlasreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver` |  #34543 |
+| `mongodbreceiver` | `otelcol/mongodbreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver` |  #34544 |
+| `mysqlreceiver` | `otelcol/mysqlreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver` |  #34545 |
+| `nginxreceiver` | `otelcol/nginxreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver` |  #34493 |
+| `nsxtreceiver` | `otelcol/nsxtreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver` |  #34429 |
+| `oracledbreceiver` | `otelcol/oracledbreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver` |  #34491 |
+| `otelarrowreceiver` | `otelcol/otelarrowreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver` |  #34546 |
+| `podmanreceiver` | `otelcol/podmanreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver` |  #34429 |
+| `postgresqlreceiver` | `otelcol/postgresqlreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver` |  #34476 |
+| `probabilisticsamplerprocessor` | `otelcol/probabilisticsampler` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor` |  #34550 |
+| `prometheusreceiver` | `otelcol/prometheusreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver` |  #34589 |
+| `rabbitmqreceiver` | `otelcol/rabbitmqreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver` |  #34475 |
+| `sshcheckreceiver` | `otelcol/sshcheckreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver` |  #34448 |
+| `vcenterreceiver` | `otelcol/vcenter` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver` |  #34449 |
+| `zookeeperreceiver` | `otelcol/zookeeper` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver` |  #34450 |
+| `redisreceiver` | `otelcol/redisreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver` |  #34470 |
+| `riakreceiver` | `otelcol/riakreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver` |  #34469 |
+| `routingprocessor` | `otelcol/routing` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor` |  #34550 |
+| `saphanareceiver` | `otelcol/saphanareceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver` |  #34468 |
+| `servicegraphconnector` | `otelcol/servicegraph` | `github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector` |  #34552 |
+| `snmpreceiver` | `otelcol/snmpreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver` |  #34592 |
+| `snowflakereceiver` | `otelcol/snowflakereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver` |  #34467 |
+| `solacereceiver` | `otelcol/solacereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver` |  #34466 |
+| `splunkenterprisereceiver` | `otelcol/splunkenterprisereceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver` |  #34452 |
+| `statsdreceiver` | `otelcol/statsdreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver` |  #34547 |
+| `tailsamplingprocessor` | `otelcol/tailsampling` | `github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor` |  #34550 |
+| `sqlserverreceiver` | `otelcol/sqlserverreceiver` | `github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver` |  #34451 |
+
 - `elasticsearchreceiver`: Enable more index metrics by default (#34396)
   This enables the following metrics by default: 
   `elasticsearch.index.documents`
   `elasticsearch.index.operations.merge.current`
   `elasticsearch.index.segments.count`
   To preserve previous behavior, update your Elasticsearch receiver configuration to disable these metrics.
-  
-- `sqlserverreceiver`: Update the scope name for telemetry produced by the sqlserverreceiver from otelcol/sqlserverreceiver to github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver (#34451)
 - `vcenterreceiver`: Enables all of the vSAN metrics by default. (#34409)
   The following metrics will be enabled by default now:
     - vcenter.cluster.vsan.throughput
@@ -127,7 +239,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `exporter/prometheusremotewrite`: Reduce memory allocations of prometheus remote write exporter "batchtimeseries" when large batch sizes are used (#34269)
 - `clickhouseexporter`: Updated the default logs table to a more optimized schema (#34203)
   Improved partitioning and time range queries.
-- `bearertokenauthextension`: use constant time comparison (#34516)
+- `bearertokenauthextension`: use constant time comparison. This fixes CVE-2024-42368 (#34516)
 - `processor/k8sattributes`: Add support for `container.image.repo_digests` metadata (#34029)
 - `datadogconnector`: Move feature gate `connector.datadogconnector.NativeIngest` to beta (#34549)
   When this feature gate is enabled (default), the datadog connector uses the new API to produce APM stats under the hood. | The new API has better throughput when your spans have many attributes (especially container related attributes). Funtional-wise the new API should have no user-facing change compared to the old API. | However if you observe any unexpected behaviors, you can disable this feature gate to revert to the old stats processing APIs.

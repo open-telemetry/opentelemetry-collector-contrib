@@ -52,6 +52,7 @@ body:
       - exporter/coralogix
       - exporter/datadog
       - exporter/dataset
+      - exporter/doris
       - exporter/elasticsearch
       - exporter/file
       - exporter/googlecloud
@@ -134,6 +135,7 @@ body:
       - internal/metadataproviders
       - internal/otelarrow
       - internal/pdatautil
+      - internal/rabbitmq
       - internal/sharedcomponent
       - internal/splunk
       - internal/sqlquery
@@ -228,7 +230,7 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
-      - receiver/gitprovider
+      - receiver/github
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner

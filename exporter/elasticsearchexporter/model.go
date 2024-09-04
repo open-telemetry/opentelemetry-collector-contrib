@@ -65,8 +65,8 @@ var resourceAttrsToPreserve = map[string]bool{
 
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
-	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
-	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, pcommon.InstrumentationScope, pmetric.Metric, dataPoint, pcommon.Value) error
+	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
+	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint, pcommon.Value) error
 	encodeDocument(objmodel.Document) ([]byte, error)
 }
 
@@ -83,6 +83,7 @@ type encodeModel struct {
 
 type dataPoint interface {
 	Timestamp() pcommon.Timestamp
+	StartTimestamp() pcommon.Timestamp
 	Attributes() pcommon.Map
 }
 
@@ -130,8 +131,6 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	return document
 }
 
-var datastreamKeys = []string{dataStreamType, dataStreamDataset, dataStreamNamespace}
-
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
 	var document objmodel.Document
 
@@ -145,76 +144,13 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 
 	document.AddTraceID("trace_id", record.TraceID())
 	document.AddSpanID("span_id", record.SpanID())
-	document.AddInt("trace_flags", int64(record.Flags()))
 	document.AddString("severity_text", record.SeverityText())
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
-	// At this point the data_stream attributes are expected to be in the record attributes,
-	// updated by the router.
-	// Move them to the top of the document and remove them from the record
-	attributeMap := record.Attributes()
-
-	forEachDataStreamKey := func(fn func(key string)) {
-		for _, key := range datastreamKeys {
-			fn(key)
-		}
-	}
-
-	forEachDataStreamKey(func(key string) {
-		if value, exists := attributeMap.Get(key); exists {
-			document.AddAttribute(key, value)
-			attributeMap.Remove(key)
-		}
-	})
-
-	document.AddAttributes("attributes", attributeMap)
-
-	// Resource
-	resourceMapVal := pcommon.NewValueMap()
-	resourceMap := resourceMapVal.Map()
-	resourceMap.PutStr("schema_url", resourceSchemaURL)
-	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
-	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
-
-	resource.Attributes().CopyTo(resourceAttrMap)
-
-	// Remove data_stream attributes from the resources attributes if present
-	forEachDataStreamKey(func(key string) {
-		resourceAttrMap.Remove(key)
-	})
-
-	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
-
-	// Scope
-	scopeMapVal := pcommon.NewValueMap()
-	scopeMap := scopeMapVal.Map()
-	if scope.Name() != "" {
-		scopeMap.PutStr("name", scope.Name())
-	}
-	if scope.Version() != "" {
-		scopeMap.PutStr("version", scope.Version())
-	}
-	if scopeSchemaURL != "" {
-		scopeMap.PutStr("schema_url", scopeSchemaURL)
-	}
-	if scope.DroppedAttributesCount() > 0 {
-		scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
-	}
-	scopeAttributes := scope.Attributes()
-	if scopeAttributes.Len() > 0 {
-		scopeAttrMap := scopeMap.PutEmptyMap("attributes")
-		scopeAttributes.CopyTo(scopeAttrMap)
-
-		// Remove data_stream attributes from the scope attributes if present
-		forEachDataStreamKey(func(key string) {
-			scopeAttrMap.Remove(key)
-		})
-	}
-
-	if scopeMap.Len() > 0 {
-		document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
-	}
+	m.encodeAttributesOTelMode(&document, record.Attributes())
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
 	// Body
 	setOTelLogBody(&document, record.Body())
@@ -303,8 +239,21 @@ func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error)
 	return buf.Bytes(), nil
 }
 
-func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ pcommon.InstrumentationScope, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
-	hash := metricHash(dp.Timestamp(), dp.Attributes())
+// upsertMetricDataPointValue upserts a datapoint value to documents which is already hashed by resource and index
+func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+	switch m.mode {
+	case MappingOTel:
+		return m.upsertMetricDataPointValueOTelMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
+	case MappingECS:
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
+	default:
+		// Defaults to ECS for backward compatibility
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
+	}
+}
+
+func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+	hash := metricECSHash(dp.Timestamp(), dp.Attributes())
 	var (
 		document objmodel.Document
 		ok       bool
@@ -319,6 +268,79 @@ func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.D
 
 	documents[hash] = document
 	return nil
+}
+
+func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+	// documents is per-resource. Therefore, there is no need to hash resource attributes
+	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit())
+	var (
+		document objmodel.Document
+		ok       bool
+	)
+	if document, ok = documents[hash]; !ok {
+		document.AddTimestamp("@timestamp", dp.Timestamp())
+		if dp.StartTimestamp() != 0 {
+			document.AddTimestamp("start_timestamp", dp.StartTimestamp())
+		}
+		document.AddString("unit", metric.Unit())
+
+		m.encodeAttributesOTelMode(&document, dp.Attributes())
+		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
+		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+	}
+
+	switch value.Type() {
+	case pcommon.ValueTypeMap:
+		m := pcommon.NewMap()
+		value.Map().CopyTo(m)
+		document.Add("metrics."+metric.Name(), objmodel.UnflattenableObjectValue(m))
+	default:
+		document.Add("metrics."+metric.Name(), objmodel.ValueFromAttribute(value))
+	}
+	// TODO: support quantiles
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
+
+	document.AddDynamicTemplate("metrics."+metric.Name(), metricDpToDynamicTemplate(metric, dp))
+	documents[hash] = document
+	return nil
+}
+
+// metricDpToDynamicTemplate returns the name of dynamic template that applies to the metric and data point,
+// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
+// dynamic template that is defined in ES mapping, e.g.
+// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
+func metricDpToDynamicTemplate(metric pmetric.Metric, dp dataPoint) string {
+	switch metric.Type() {
+	case pmetric.MetricTypeSum:
+		switch dp.(pmetric.NumberDataPoint).ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			if metric.Sum().IsMonotonic() {
+				return "counter_double"
+			}
+			return "gauge_double"
+		case pmetric.NumberDataPointValueTypeInt:
+			if metric.Sum().IsMonotonic() {
+				return "counter_long"
+			}
+			return "gauge_long"
+		default:
+			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
+		}
+	case pmetric.MetricTypeGauge:
+		switch dp.(pmetric.NumberDataPoint).ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			return "gauge_double"
+		case pmetric.NumberDataPointValueTypeInt:
+			return "gauge_long"
+		default:
+			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
+		}
+	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram:
+		return "histogram"
+	case pmetric.MetricTypeSummary:
+		return "summary_metrics"
+	}
+	return ""
 }
 
 func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
@@ -395,7 +417,124 @@ func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
 	return pcommon.Value{}, errInvalidNumberDataPoint
 }
 
-func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
+func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string) {
+	resourceMapVal := pcommon.NewValueMap()
+	resourceMap := resourceMapVal.Map()
+	if resourceSchemaURL != "" {
+		resourceMap.PutStr("schema_url", resourceSchemaURL)
+	}
+	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
+	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
+	resource.Attributes().CopyTo(resourceAttrMap)
+	resourceAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
+		switch key {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		return false
+	})
+
+	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
+}
+
+func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pcommon.InstrumentationScope, scopeSchemaURL string) {
+	scopeMapVal := pcommon.NewValueMap()
+	scopeMap := scopeMapVal.Map()
+	if scope.Name() != "" {
+		scopeMap.PutStr("name", scope.Name())
+	}
+	if scope.Version() != "" {
+		scopeMap.PutStr("version", scope.Version())
+	}
+	if scopeSchemaURL != "" {
+		scopeMap.PutStr("schema_url", scopeSchemaURL)
+	}
+	scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
+	scopeAttrMap := scopeMap.PutEmptyMap("attributes")
+	scope.Attributes().CopyTo(scopeAttrMap)
+	scopeAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
+		switch key {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		return false
+	})
+	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
+}
+
+func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
+	attributeMap.RemoveIf(func(key string, val pcommon.Value) bool {
+		switch key {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			// At this point the data_stream attributes are expected to be in the record attributes,
+			// updated by the router.
+			// Move them to the top of the document and remove them from the record
+			document.AddAttribute(key, val)
+			return true
+		}
+		return false
+	})
+	document.AddAttributes("attributes", attributeMap)
+}
+
+func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
+	var document objmodel.Document
+	switch m.mode {
+	case MappingOTel:
+		document = m.encodeSpanOTelMode(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
+	default:
+		document = m.encodeSpanDefaultMode(resource, span, scope)
+	}
+	document.Dedup()
+	var buf bytes.Buffer
+	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
+	return buf.Bytes(), err
+}
+
+func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
+	var document objmodel.Document
+	document.AddTimestamp("@timestamp", span.StartTimestamp())
+	document.AddTraceID("trace_id", span.TraceID())
+	document.AddSpanID("span_id", span.SpanID())
+	document.AddString("trace_state", span.TraceState().AsRaw())
+	document.AddSpanID("parent_span_id", span.ParentSpanID())
+	document.AddString("name", span.Name())
+	document.AddString("kind", span.Kind().String())
+	document.AddInt("duration", int64(span.EndTimestamp()-span.StartTimestamp()))
+
+	m.encodeAttributesOTelMode(&document, span.Attributes())
+
+	document.AddInt("dropped_attributes_count", int64(span.DroppedAttributesCount()))
+	document.AddInt("dropped_events_count", int64(span.DroppedEventsCount()))
+
+	links := pcommon.NewValueSlice()
+	linkSlice := links.SetEmptySlice()
+	spanLinks := span.Links()
+	for i := 0; i < spanLinks.Len(); i++ {
+		linkMap := linkSlice.AppendEmpty().SetEmptyMap()
+		spanLink := spanLinks.At(i)
+		linkMap.PutStr("trace_id", spanLink.TraceID().String())
+		linkMap.PutStr("span_id", spanLink.SpanID().String())
+		linkMap.PutStr("trace_state", spanLink.TraceState().AsRaw())
+		mAttr := linkMap.PutEmptyMap("attributes")
+		spanLink.Attributes().CopyTo(mAttr)
+		linkMap.PutInt("dropped_attributes_count", int64(spanLink.DroppedAttributesCount()))
+	}
+	document.AddAttribute("links", links)
+
+	document.AddInt("dropped_links_count", int64(span.DroppedLinksCount()))
+	document.AddString("status.message", span.Status().Message())
+	document.AddString("status.code", span.Status().Code().String())
+
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+
+	// TODO: add span events to log data streams
+
+	return document
+}
+
+func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) objmodel.Document {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
@@ -412,12 +551,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	m.encodeEvents(&document, span.Events())
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 	document.AddAttributes("Scope", scopeToAttributes(scope))
-	document.Dedup()
-
-	var buf bytes.Buffer
-	// OTel serialization is not supported for traces yet
-	err := document.Serialize(&buf, m.dedot, false)
-	return buf.Bytes(), err
+	return document
 }
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
@@ -584,16 +718,49 @@ func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecor
 }
 
 // TODO use https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/exp/metrics/identity
-func metricHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
+func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
 	hasher.Write(timestampBuf)
 
-	mapHash(hasher, attributes)
+	mapHashExcludeDataStreamAttr(hasher, attributes)
 
 	return hasher.Sum32()
+}
+
+func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
+	hasher := fnv.New32a()
+
+	timestampBuf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
+	hasher.Write(timestampBuf)
+
+	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.StartTimestamp()))
+	hasher.Write(timestampBuf)
+
+	hasher.Write([]byte(unit))
+
+	mapHashExcludeDataStreamAttr(hasher, scopeAttrs)
+	mapHashExcludeDataStreamAttr(hasher, dp.Attributes())
+
+	return hasher.Sum32()
+}
+
+// mapHashExcludeDataStreamAttr is mapHash but ignoring DS attributes.
+// It is useful for cases where index is already considered during routing and no need to be considered in hashing.
+func mapHashExcludeDataStreamAttr(hasher hash.Hash, m pcommon.Map) {
+	m.Range(func(k string, v pcommon.Value) bool {
+		switch k {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		hasher.Write([]byte(k))
+		valueHash(hasher, v)
+
+		return true
+	})
 }
 
 func mapHash(hasher hash.Hash, m pcommon.Map) {

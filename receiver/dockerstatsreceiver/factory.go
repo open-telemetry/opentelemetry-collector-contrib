@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
@@ -27,9 +28,12 @@ func createDefaultConfig() component.Config {
 	scs.CollectionInterval = 10 * time.Second
 	scs.Timeout = 5 * time.Second
 	return &Config{
-		ControllerConfig:     scs,
-		Endpoint:             "unix:///var/run/docker.sock",
-		DockerAPIVersion:     defaultDockerAPIVersion,
+		ControllerConfig: scs,
+		Config: docker.Config{
+			Endpoint:         "unix:///var/run/docker.sock",
+			DockerAPIVersion: defaultDockerAPIVersion,
+			Timeout:          scs.Timeout,
+		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }

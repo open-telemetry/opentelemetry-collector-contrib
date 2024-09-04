@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -93,7 +94,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 }
 
 // Start starts a UDP server that can process StatsD messages.
-func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
+func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
 	server, err := buildTransportServer(*r.config)
 	if err != nil {
@@ -114,7 +115,7 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 	go func() {
 		if err := r.server.ListenAndServe(r.nextConsumer, r.reporter, transferChan); err != nil {
 			if !errors.Is(err, net.ErrClosed) {
-				r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 		}
 	}()

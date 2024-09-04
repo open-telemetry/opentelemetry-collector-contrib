@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 var testTime = time.Date(2021, 02, 01, 17, 32, 00, 00, time.UTC)
@@ -85,6 +86,7 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			reader := s3Reader{
+				logger:      zap.NewNop(),
 				s3Prefix:    test.args.s3Prefix,
 				s3Partition: test.args.s3Partition,
 				filePrefix:  test.args.filePrefix,
@@ -166,6 +168,7 @@ func Test_readTelemetryForTime(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
+		logger:      zap.NewNop(),
 		s3Bucket:    "bucket",
 		s3Partition: "minute",
 		s3Prefix:    "",
@@ -214,6 +217,7 @@ func Test_readTelemetryForTime_GetObjectError(t *testing.T) {
 			require.Equal(t, testKey, *params.Key)
 			return nil, testError
 		}),
+		logger:      zap.NewNop(),
 		s3Bucket:    "bucket",
 		s3Partition: "minute",
 		s3Prefix:    "",
@@ -248,6 +252,7 @@ func Test_readTelemetryForTime_ListObjectsNoResults(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
+		logger:      zap.NewNop(),
 		s3Bucket:    "bucket",
 		s3Partition: "minute",
 		s3Prefix:    "",
@@ -294,6 +299,7 @@ func Test_readTelemetryForTime_NextPageError(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
+		logger:      zap.NewNop(),
 		s3Bucket:    "bucket",
 		s3Partition: "minute",
 		s3Prefix:    "",
@@ -335,6 +341,7 @@ func Test_readAll(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
+		logger:      zap.NewNop(),
 		s3Bucket:    "bucket",
 		s3Prefix:    "",
 		s3Partition: "minute",
@@ -381,6 +388,7 @@ func Test_readAll_ContextDone(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
+		logger:      zap.NewNop(),
 		s3Bucket:    "bucket",
 		s3Prefix:    "",
 		s3Partition: "minute",
@@ -397,6 +405,6 @@ func Test_readAll_ContextDone(t *testing.T) {
 		dataCallbackKeys = append(dataCallbackKeys, key)
 		return nil
 	})
-	require.NoError(t, err)
-	require.Len(t, dataCallbackKeys, 0)
+	require.Error(t, err)
+	require.Empty(t, dataCallbackKeys)
 }
