@@ -196,13 +196,13 @@ service:
 	// 6. Assert that we encounter the stale markers aka special NaNs for the various time series.
 	staleMarkerCount := 0
 	totalSamples := 0
-	require.True(t, len(wReqL) > 0, "Expecting at least one WriteRequest")
+	require.NotEmpty(t, wReqL, "Expecting at least one WriteRequest")
 	for i, wReq := range wReqL {
 		name := fmt.Sprintf("WriteRequest#%d", i)
-		require.True(t, len(wReq.Timeseries) > 0, "Expecting at least 1 timeSeries for:: "+name)
+		require.NotEmpty(t, wReq.Timeseries, "Expecting at least 1 timeSeries for:: "+name)
 		for j, ts := range wReq.Timeseries {
 			fullName := fmt.Sprintf("%s/TimeSeries#%d", name, j)
-			assert.True(t, len(ts.Samples) > 0, "Expected at least 1 Sample in:: "+fullName)
+			assert.NotEmpty(t, ts.Samples, "Expected at least 1 Sample in:: "+fullName)
 
 			// We are strictly counting series directly included in the scrapes, and no
 			// internal timeseries like "up" nor "scrape_seconds" etc.
@@ -225,11 +225,11 @@ service:
 		}
 	}
 
-	require.True(t, totalSamples > 0, "Expected at least 1 sample")
+	require.Greater(t, totalSamples, 0, "Expected at least 1 sample")
 	// On every alternative scrape the prior scrape will be reported as sale.
 	// Expect at least:
 	//    * The first scrape will NOT return stale markers
 	//    * (N-1 / alternatives) = ((10-1) / 2) = ~40% chance of stale markers being emitted.
 	chance := float64(staleMarkerCount) / float64(totalSamples)
-	require.True(t, chance >= 0.4, fmt.Sprintf("Expected at least one stale marker: %.3f", chance))
+	require.GreaterOrEqual(t, chance, 0.4, fmt.Sprintf("Expected at least one stale marker: %.3f", chance))
 }

@@ -33,9 +33,17 @@ The following metric types will *not* be aggregated, and will instead be passed,
 
 The following settings can be optionally configured:
 
-* `interval`: The interval in which the processor should export the aggregated metrics. Default: 60s
-* `gauge_pass_through`: Whether gauges should pass through as they are to the next component or be aggregated. Default: false
-* `summary_pass_through`: Whether summaries should pass through as they are to the next component or be aggregated. Default: false
+```yaml
+intervalprocessor:
+  # The interval in which the processor should export the aggregated metrics. 
+  [ interval: <duration> | default = 60s ]
+  
+  pass_through:
+    # Whether gauges should be aggregated or passed through to the next component as they are
+    [ gauge: <bool> | default = false ]
+    # Whether summaries should be aggregated or passed through to the next component as they are
+    [ summary: <boo>l | default = false ]
+```
 
 ## Example of metric flows
 

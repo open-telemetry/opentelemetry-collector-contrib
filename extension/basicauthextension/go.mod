@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.108.2-0.20240829190554-7da6b618a7ee
 	go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240829190554-7da6b618a7ee
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.65.0
+	google.golang.org/grpc v1.66.0
 )
 
 require (

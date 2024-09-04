@@ -298,7 +298,7 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Len(t, droppedAttributes, 0)
+	assert.Empty(t, droppedAttributes)
 }
 
 func TestFilterAttributes_NoAttributes(t *testing.T) {
@@ -315,5 +315,5 @@ func TestFilterAttributes_NoAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Len(t, droppedAttributes, 0)
+	assert.Empty(t, droppedAttributes)
 }

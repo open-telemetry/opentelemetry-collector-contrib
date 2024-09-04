@@ -189,7 +189,7 @@ func TestDimensionClient(t *testing.T) {
 			},
 		}))
 		dims := waitForDims(dimCh, 1, 3)
-		require.Len(t, dims, 0)
+		require.Empty(t, dims)
 
 		forcedResp.Store(200)
 		dims = waitForDims(dimCh, 1, 3)
@@ -219,11 +219,11 @@ func TestDimensionClient(t *testing.T) {
 			},
 		}))
 		dims := waitForDims(dimCh, 1, 3)
-		require.Len(t, dims, 0)
+		require.Empty(t, dims)
 
 		forcedResp.Store(200)
 		dims = waitForDims(dimCh, 1, 3)
-		require.Len(t, dims, 0)
+		require.Empty(t, dims)
 	})
 
 	t.Run("does retry 404 responses", func(t *testing.T) {
@@ -239,7 +239,7 @@ func TestDimensionClient(t *testing.T) {
 		}))
 
 		dims := waitForDims(dimCh, 1, 3)
-		require.Len(t, dims, 0)
+		require.Empty(t, dims)
 
 		forcedResp.Store(200)
 		dims = waitForDims(dimCh, 1, 3)
@@ -372,7 +372,7 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 	}))
 
 	dims := waitForDims(dimCh, 2, 3)
-	require.Len(t, dims, 0)
+	require.Empty(t, dims)
 }
 
 func newString(s string) *string {
