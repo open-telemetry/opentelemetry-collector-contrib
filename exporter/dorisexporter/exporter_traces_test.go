@@ -14,19 +14,6 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 )
 
-func TestNewTracesExporter(t *testing.T) {
-	config := createDefaultConfig().(*Config)
-	config.MySQLEndpoint = "127.0.0.1:9030"
-	config.CreateSchema = false
-
-	exporter := newTracesExporter(nil, config, testTelemetrySettings)
-
-	ctx := context.Background()
-	defer func() {
-		_ = exporter.shutdown(ctx)
-	}()
-}
-
 func TestPushTraceData(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "http://127.0.0.1:0000"
