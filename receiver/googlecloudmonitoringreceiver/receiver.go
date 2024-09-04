@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -49,38 +48,21 @@ func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error
 	mr.mutex.Lock()
 	defer mr.mutex.Unlock()
 
-	// If the client is already initialized, return nil
-	if mr.client != nil {
-		return nil
+	// Skip client initialization if already initialized
+	if mr.client == nil {
+		if err := mr.initializeClient(ctx); err != nil {
+			return err
+		}
+		mr.logger.Info("Monitoring client successfully created.")
 	}
 
-	var client *monitoring.MetricClient
-	var err error
-
-	// Use google.FindDefaultCredentials to find the credentials
-	creds, _ := google.FindDefaultCredentials(ctx)
-	// If a valid credentials file path is found, use it
-	if creds != nil && creds.JSON != nil {
-		client, err = monitoring.NewMetricClient(ctx, option.WithCredentials(creds))
-	} else {
-		// Set a default credentials file path for testing
-		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "testdata/serviceAccount.json")
-		client, err = monitoring.NewMetricClient(ctx)
+	// Initialize metric descriptors, even if the client was previously initialized
+	if len(mr.metricDescriptors) == 0 {
+		if err := mr.initializeMetricDescriptors(ctx); err != nil {
+			return err
+		}
 	}
 
-	// Attempt to create the monitoring client
-	if err != nil {
-		return fmt.Errorf("failed to create a monitoring client: %w", err)
-	}
-	mr.client = client
-	mr.logger.Info("Monitoring client successfully created.")
-
-	// Call the metricDescriptorAPI method to start processing metric descriptors.
-	if err := mr.metricDescriptorAPI(ctx); err != nil {
-		return err
-	}
-
-	// Return nil after client creation
 	return nil
 }
 
@@ -166,6 +148,37 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 	}
 
 	return metrics, gErr
+}
+
+// initializeClient handles the creation of the monitoring client
+func (mr *monitoringReceiver) initializeClient(ctx context.Context) error {
+	// Use google.FindDefaultCredentials to find the credentials
+	creds, err := google.FindDefaultCredentials(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to find default credentials: %w", err)
+	}
+	if creds == nil || creds.JSON == nil {
+		return fmt.Errorf("no valid credentials found")
+	}
+
+	// Attempt to create the monitoring client
+	client, err := monitoring.NewMetricClient(ctx, option.WithCredentials(creds))
+	if err != nil {
+		return fmt.Errorf("failed to create a monitoring client: %w", err)
+	}
+
+	mr.client = client
+	return nil
+}
+
+// initializeMetricDescriptors handles the retrieval and processing of metric descriptors
+func (mr *monitoringReceiver) initializeMetricDescriptors(ctx context.Context) error {
+	// Call the metricDescriptorAPI method to start processing metric descriptors.
+	if err := mr.metricDescriptorAPI(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // metricDescriptorAPI fetches and processes metric descriptors from the monitoring API.
