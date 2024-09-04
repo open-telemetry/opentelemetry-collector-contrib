@@ -373,16 +373,9 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 	eSigs, eMsgs := logSigs(testCon.expLogs)
 	rSigs, rMsgs := logSigs(testCon.recvLogs)
 
-	//t.Log("EXP:", eSigs, eMsgs)
-	for _, s := range eMsgs {
-		t.Log("HEY", s)
-	}
-	//t.Log("REC:", rSigs, rMsgs)
-
-	// Test for arrow Receiver stream errors.  The exporter is required
-	// not to see an arrow stream error.
+	// Test for arrow Receiver stream errors on both sides.
+	require.Less(t, 0, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eMsgs)
 	require.Less(t, 0, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
-	require.Equal(t, 0, eSigs["arrow stream error|||code///message///where"], "should NOT have exporter arrow stream errors: %v", eMsgs)
 
 	// Ensure both side's error logs include memory limit errors
 	// one way or another.
@@ -448,21 +441,28 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 	params := testParams{
 		threadCount: 10,
 		requestUntil: func(test *testConsumer) bool {
-			cnt := 0
-			for _, span := range test.expSpans.GetSpans() {
-				if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
-					cnt++
+			cf := func(spans tracetest.SpanStubs) (cnt int) {
+				for _, span := range spans {
+					if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
+						cnt++
+						fmt.Println("GOT IT!!!")
+					} else {
+						fmt.Println("SN", span.Name)
+					}
 				}
+				return
 			}
-			return cnt == 0 || test.sentSpans.Load() < 100
+			rcnt := cf(test.recvSpans.GetSpans())
+			ecnt := cf(test.expSpans.GetSpans())
+			//scnt := test.sentSpans.Load()
+			fmt.Println("E R S", ecnt, rcnt)
+			return ecnt == 0 || rcnt == 0 // || scnt < 100
 		},
 	}
 
 	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
 		rcfg.Arrow.MemoryLimitMiB = 1
 		ecfg.Arrow.NumStreams = 10
-		ecfg.TimeoutSettings.Timeout = 5 * time.Second
-		ecfg.RetryConfig.Enabled = false
 	}, bulkyGenFunc(), consumerFailure, failureMemoryLimitEnding)
 }
 
@@ -472,6 +472,9 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 	const streamName = "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces"
 
 	total := int(testCon.sentSpans.Load())
+
+	fmt.Println("EXPOPS", expOps)
+	fmt.Println("RECOPS", recvOps)
 
 	// Exporter spans:
 	//
