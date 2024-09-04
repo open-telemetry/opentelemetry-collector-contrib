@@ -7,7 +7,7 @@ change_type: enhancement
 component: transformprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Support aggregating metrics based on their attribute values and substituing the values with a new value."
+note: "Support aggregating metrics based on their attribute values and substituting the values with a new value."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [16224]

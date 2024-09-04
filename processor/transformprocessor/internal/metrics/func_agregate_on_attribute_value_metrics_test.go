@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -33,6 +34,27 @@ func Test_aggregateOnAttributeValues(t *testing.T) {
 			values: []string{
 				"test44",
 			},
+			attribute: "test",
+			newValue:  "test_new",
+			want: func(metrics pmetric.MetricSlice) {
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.SetName("sum_metric")
+
+				input := sumMetric.Sum().DataPoints().AppendEmpty()
+				input.SetDoubleValue(100)
+				input.Attributes().PutStr("test", "test1")
+
+				input2 := sumMetric.Sum().DataPoints().AppendEmpty()
+				input2.SetDoubleValue(50)
+				input2.Attributes().PutStr("test", "test2")
+			},
+		},
+		{
+			name:      "empty values",
+			input:     getTestSumMetricMultipleAggregateOnAttributeValue(),
+			t:         aggregateutil.Sum,
+			values:    []string{},
 			attribute: "test",
 			newValue:  "test_new",
 			want: func(metrics pmetric.MetricSlice) {
@@ -94,6 +116,49 @@ func Test_aggregateOnAttributeValues(t *testing.T) {
 				input2.SetDoubleValue(50)
 				input2.Attributes().PutStr("test", "test2")
 				input2.Attributes().PutStr("test3", "test3")
+			},
+		},
+		{
+			name:  "duplicated values",
+			input: getTestSumMetricMultipleAggregateOnAttributeValue(),
+			t:     aggregateutil.Sum,
+			values: []string{
+				"test1",
+				"test1",
+				"test2",
+			},
+			attribute: "test",
+			newValue:  "test_new",
+			want: func(metrics pmetric.MetricSlice) {
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.SetName("sum_metric")
+				input := sumMetric.Sum().DataPoints().AppendEmpty()
+				input.SetDoubleValue(150)
+				input.Attributes().PutStr("test", "test_new")
+			},
+		},
+		{
+			name:  "2 datapoints aggregated, one left unaggregated",
+			input: getTestSumMetricMultipleAggregateOnAttributeValueOdd(),
+			t:     aggregateutil.Sum,
+			values: []string{
+				"test1",
+			},
+			attribute: "test",
+			newValue:  "test_new",
+			want: func(metrics pmetric.MetricSlice) {
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.SetName("sum_metric")
+
+				input := sumMetric.Sum().DataPoints().AppendEmpty()
+				input.SetDoubleValue(150)
+				input.Attributes().PutStr("test", "test_new")
+
+				input3 := sumMetric.Sum().DataPoints().AppendEmpty()
+				input3.SetDoubleValue(30)
+				input3.Attributes().PutStr("test", "test2")
 			},
 		},
 		{
@@ -445,6 +510,21 @@ func Test_aggregateOnAttributeValues(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_createAggregateOnAttributeValueFunction(t *testing.T) {
+	// invalid input arguments
+	_, e := createAggregateOnAttributeValueFunction(ottl.FunctionContext{}, nil)
+	require.Contains(t, e.Error(), "AggregateOnAttributeValueFactory args must be of type *AggregateOnAttributeValueArguments")
+
+	// invalid aggregation function
+	_, e = createAggregateOnAttributeValueFunction(ottl.FunctionContext{}, &aggregateOnAttributeValueArguments{
+		AggregationFunction: "invalid",
+		Attribute:           "attr",
+		Values:              []string{"val"},
+		NewValue:            "newVal",
+	})
+	require.Contains(t, e.Error(), "invalid aggregation function")
 }
 
 func getTestSumMetricMultipleAggregateOnAttributeValue() pmetric.Metric {
