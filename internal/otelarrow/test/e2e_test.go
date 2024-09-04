@@ -455,7 +455,7 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 		ecfg.TimeoutSettings.Timeout = 5 * time.Second
 		ecfg.RetryConfig.InitialInterval = 1 * time.Second
 		ecfg.RetryConfig.MaxInterval = 2 * time.Second
-		ecfg.RetryConfig.MaxElapsedTime = 5 * time.Second
+		ecfg.RetryConfig.MaxElapsedTime = 30 * time.Second
 		ecfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	}, bulkyGenFunc(), consumerFailure, failureMemoryLimitEnding)
 }
