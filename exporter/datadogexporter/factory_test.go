@@ -84,7 +84,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://api.datadoghq.com",
 			},
-			DeltaTTL: 3600,
+			DeltaTTL:     3600,
+			RemapMetrics: true,
 			HistConfig: HistogramConfig{
 				Mode:             "distributions",
 				SendAggregations: false,
@@ -149,7 +150,8 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.com",
 					},
-					DeltaTTL: 3600,
+					DeltaTTL:     3600,
+					RemapMetrics: true,
 					HistConfig: HistogramConfig{
 						Mode:             "distributions",
 						SendAggregations: false,
@@ -202,7 +204,8 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.eu",
 					},
-					DeltaTTL: 3600,
+					DeltaTTL:     3600,
+					RemapMetrics: false,
 					HistConfig: HistogramConfig{
 						Mode:             "distributions",
 						SendAggregations: false,
@@ -260,7 +263,8 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.test",
 					},
-					DeltaTTL: 3600,
+					DeltaTTL:     3600,
+					RemapMetrics: true,
 					HistConfig: HistogramConfig{
 						Mode:             "distributions",
 						SendAggregations: false,

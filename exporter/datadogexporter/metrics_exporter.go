@@ -55,7 +55,10 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
-		otlpmetrics.WithRemapping(),
+	}
+
+	if cfg.Metrics.RemapMetrics {
+		options = append(options, otlpmetrics.WithRemapping())
 	}
 
 	if cfg.Metrics.HistConfig.SendAggregations {

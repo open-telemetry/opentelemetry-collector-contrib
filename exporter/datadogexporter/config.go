@@ -54,6 +54,9 @@ type MetricsConfig struct {
 	// metric are kept in memory to calculate deltas
 	DeltaTTL int64 `mapstructure:"delta_ttl"`
 
+	// RemapMetrics ...
+	RemapMetrics bool `mapstructure:"remap_metrics"`
+
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddrConfig `mapstructure:",squash"`
