@@ -512,7 +512,7 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 // It is useful to workaround Elasticsearch TSDB not supporting arrays as dimensions.
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35004
 func mapStringifyArrayValues(m pcommon.Map) {
-	m.Range(func(k string, v pcommon.Value) bool {
+	m.Range(func(_ string, v pcommon.Value) bool {
 		if v.Type() == pcommon.ValueTypeSlice {
 			v.SetStr(v.AsString())
 		}
