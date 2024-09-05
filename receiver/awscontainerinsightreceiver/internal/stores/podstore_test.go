@@ -475,6 +475,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test StatefulSet
+	podStore.prefControllerNameForStatefulSet = false
 	metric = generateMetric(fields, tags)
 	ssName := "StatefulSetTest"
 	pod.OwnerReferences[0].Kind = ci.StatefulSet
@@ -483,6 +484,14 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.StatefulSet, "owner_name": ssName}}
 	expectedOwnerName = "cpu-limit"
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
+	assert.Equal(t, expectedOwner, kubernetesBlob)
+
+	podStore.prefControllerNameForStatefulSet = true
+	kubernetesBlob = map[string]any{}
+	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.StatefulSet, "owner_name": ssName}}
+	expectedOwnerName = "StatefulSetTest"
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
