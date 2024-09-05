@@ -603,11 +603,11 @@ func Test_ParseXML(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			oArgs := &ParseXMLArguments[any]{
-				FlattenArrays: ottl.StandardBoolGetter[any]{
+				FlattenArrays: ottl.NewTestingOptional[ottl.BoolGetter[any]](ottl.StandardBoolGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
 						return tt.flatten, nil
 					},
-				},
+				}),
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
 						return tt.xml, nil

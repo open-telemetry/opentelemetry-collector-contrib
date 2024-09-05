@@ -29,7 +29,7 @@ var (
 
 type ParseXMLArguments[K any] struct {
 	Target        ottl.StringGetter[K]
-	FlattenArrays ottl.BoolGetter[K]
+	FlattenArrays ottl.Optional[ottl.BoolGetter[K]]
 }
 
 func NewParseXMLFactory[K any]() ottl.Factory[K] {
@@ -47,15 +47,21 @@ func createParseXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 }
 
 // parseXML returns a `pcommon.Map` struct that is a result of parsing the target string as XML
-func parseXML[K any](target ottl.StringGetter[K], flattenArrays ottl.BoolGetter[K]) ottl.ExprFunc[K] {
+func parseXML[K any](target ottl.StringGetter[K], flatten ottl.Optional[ottl.BoolGetter[K]]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		flattenArraysVal, err := flattenArrays.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
+
+		flattenArrays := false
+		if !flatten.IsEmpty() {
+			getter := flatten.Get()
+			getterVal, getterErr := getter.Get(ctx, tCtx)
+			if getterErr != nil {
+				return nil, getterErr
+			}
+			flattenArrays = getterVal
 		}
 
 		parsedXML := xmlElement{}
@@ -71,7 +77,7 @@ func parseXML[K any](target ottl.StringGetter[K], flattenArrays ottl.BoolGetter[
 		}
 
 		parsedMap := pcommon.NewMap()
-		parsedXML.intoMap(parsedMap, flattenArraysVal)
+		parsedXML.intoMap(parsedMap, flattenArrays)
 
 		return parsedMap, nil
 	}
