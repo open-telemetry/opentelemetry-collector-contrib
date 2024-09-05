@@ -18,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -878,6 +879,46 @@ func TestExporterMetrics(t *testing.T) {
 		}
 
 		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("otel mode attribute array value", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		err := resourceMetrics.Resource().Attributes().PutEmptySlice("some.resource.attribute").FromRaw([]any{"foo", "bar"})
+		require.NoError(t, err)
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		err = scopeA.Scope().Attributes().PutEmptySlice("some.scope.attribute").FromRaw([]any{"foo", "bar"})
+		require.NoError(t, err)
+		metricSlice := scopeA.Metrics()
+
+		sumMetric := metricSlice.AppendEmpty()
+		sumMetric.SetName("metric.sum")
+		sumDps := sumMetric.SetEmptySum().DataPoints()
+		sumDp := sumDps.AppendEmpty()
+		sumDp.SetDoubleValue(0)
+		err = sumDp.Attributes().PutEmptySlice("some.dp.attribute").FromRaw([]any{"foo", "bar"})
+		require.NoError(t, err)
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+
+		assert.Len(t, rec.Items(), 1)
+		doc := rec.Items()[0].Document
+		// Workaround TSDB limitation by stringifying array values
+		assert.Equal(t, `{"some.dp.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.Equal(t, `{"some.scope.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.Equal(t, `{"some.resource.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
 	t.Run("publish summary", func(t *testing.T) {
