@@ -84,9 +84,9 @@ func TestValidateConfig(t *testing.T) {
 		collectionInterval time.Duration
 		requireError       bool
 	}{
-		"Valid Config":                {[]MetricConfig{validMetric}, 60 * time.Second, false},
-		"Empty Services":              {nil, 60 * time.Second, true},
-		"Invalid Service in Services": {[]MetricConfig{{}}, 60 * time.Second, true},
+		"Valid Config":                {[]MetricConfig{validMetric}, 300 * time.Second, false},
+		"Empty Services":              {nil, 300 * time.Second, true},
+		"Invalid Service in Services": {[]MetricConfig{{}}, 300 * time.Second, true},
 		"Invalid Collection Interval": {[]MetricConfig{validMetric}, 0 * time.Second, true},
 	}
 
