@@ -14,17 +14,12 @@ import (
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC  configgrpc.ServerConfig `mapstructure:"grpc"`
-	Arrow ArrowConfig             `mapstructure:"arrow"`
+	GRPC      configgrpc.ServerConfig `mapstructure:"grpc"`
+	Arrow     ArrowConfig             `mapstructure:"arrow"`
+	Admission AdmissionConfig         `mapstructure:"admission"`
 }
 
-// ArrowConfig support configuring the Arrow receiver.
-type ArrowConfig struct {
-	// MemoryLimitMiB is the size of a shared memory region used
-	// by all Arrow streams, in MiB.  When too much load is
-	// passing through, they will see ResourceExhausted errors.
-	MemoryLimitMiB uint64 `mapstructure:"memory_limit_mib"`
-
+type AdmissionConfig struct {
 	// AdmissionLimitMiB limits the number of requests that are received by the stream based on
 	// request size information available. Request size is used to control how much traffic we admit
 	// for processing, but does not control how much memory is used during request processing.
@@ -34,6 +29,14 @@ type ArrowConfig struct {
 	// This is a dimension of memory limiting to ensure waiters are not consuming an
 	// unexpectedly large amount of memory in the arrow receiver.
 	WaiterLimit int64 `mapstructure:"waiter_limit"`
+}
+
+// ArrowConfig support configuring the Arrow receiver.
+type ArrowConfig struct {
+	// MemoryLimitMiB is the size of a shared memory region used
+	// by all Arrow streams, in MiB.  When too much load is
+	// passing through, they will see ResourceExhausted errors.
+	MemoryLimitMiB uint64 `mapstructure:"memory_limit_mib"`
 
 	// Zstd settings apply to OTel-Arrow use of gRPC specifically.
 	Zstd zstd.DecoderConfig `mapstructure:"zstd"`

@@ -77,7 +77,9 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 				},
 				Arrow: ArrowConfig{
-					MemoryLimitMiB:    123,
+					MemoryLimitMiB: 123,
+				},
+				Admission: AdmissionConfig{
 					AdmissionLimitMiB: 80,
 					WaiterLimit:       100,
 				},
@@ -103,7 +105,9 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					ReadBufferSize: 512 * 1024,
 				},
 				Arrow: ArrowConfig{
-					MemoryLimitMiB:    defaultMemoryLimitMiB,
+					MemoryLimitMiB: defaultMemoryLimitMiB,
+				},
+				Admission: AdmissionConfig{
 					AdmissionLimitMiB: defaultAdmissionLimitMiB,
 					WaiterLimit:       defaultWaiterLimit,
 				},

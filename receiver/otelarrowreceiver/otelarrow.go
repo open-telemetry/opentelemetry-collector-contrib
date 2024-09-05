@@ -43,8 +43,9 @@ type otelArrowReceiver struct {
 	arrowReceiver   *arrow.Receiver
 	shutdownWG      sync.WaitGroup
 
-	obsrepGRPC  *receiverhelper.ObsReport
-	netReporter *netstats.NetworkReporter
+	obsrepGRPC   *receiverhelper.ObsReport
+	netReporter  *netstats.NetworkReporter
+	boundedQueue *admission.BoundedQueue
 
 	settings receiver.Settings
 }
@@ -57,10 +58,12 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 	if err != nil {
 		return nil, err
 	}
+	bq := admission.NewBoundedQueue(int64(cfg.Admission.AdmissionLimitMiB<<20), cfg.Admission.WaiterLimit)
 	r := &otelArrowReceiver{
-		cfg:         cfg,
-		settings:    set,
-		netReporter: netReporter,
+		cfg:          cfg,
+		settings:     set,
+		netReporter:  netReporter,
+		boundedQueue: bq,
 	}
 	if err = zstd.SetDecoderConfig(cfg.Arrow.Zstd); err != nil {
 		return nil, err
@@ -127,7 +130,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.TelemetrySettings.MeterProvider, r.settings.TelemetrySettings.MetricsLevel))
 		}
 		return arrowRecord.NewConsumer(opts...)
-	}, bq, r.netReporter)
+	}, r.boundedQueue, r.netReporter)
 
 	if err != nil {
 		return err
@@ -178,15 +181,15 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 }
 
 func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) {
-	r.tracesReceiver = trace.New(tc, r.obsrepGRPC)
+	r.tracesReceiver = trace.New(tc, r.obsrepGRPC, r.boundedQueue)
 }
 
 func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) {
-	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC)
+	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC, r.boundedQueue)
 }
 
 func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) {
-	r.logsReceiver = logs.New(lc, r.obsrepGRPC)
+	r.logsReceiver = logs.New(lc, r.obsrepGRPC, r.boundedQueue)
 }
 
 var _ arrow.Consumers = &otelArrowReceiver{}

@@ -47,7 +47,9 @@ func createDefaultConfig() component.Config {
 				ReadBufferSize: 512 * 1024,
 			},
 			Arrow: ArrowConfig{
-				MemoryLimitMiB:    defaultMemoryLimitMiB,
+				MemoryLimitMiB: defaultMemoryLimitMiB,
+			},
+			Admission: AdmissionConfig{
 				AdmissionLimitMiB: defaultAdmissionLimitMiB,
 				WaiterLimit:       defaultWaiterLimit,
 			},
