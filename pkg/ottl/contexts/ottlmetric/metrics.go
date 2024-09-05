@@ -15,6 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 )
 
+const (
+	PathContextName = internal.MetricPathContext
+)
+
 var _ internal.ResourceContext = TransformContext{}
 var _ internal.InstrumentationScopeContext = TransformContext{}
 var _ internal.MetricContext = TransformContext{}
@@ -88,6 +92,16 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 	return p, err
 }
 
+func WithPathContextNames() Option {
+	return func(p *ottl.Parser[TransformContext]) {
+		ottl.WithPathContextNames[TransformContext]([]string{
+			PathContextName,
+			internal.InstrumentationScopePathContext,
+			internal.ResourcePathContext,
+		})(p)
+	}
+}
+
 type StatementSequenceOption func(*ottl.StatementSequence[TransformContext])
 
 func WithStatementSequenceErrorMode(errorMode ottl.ErrorMode) StatementSequenceOption {
@@ -140,18 +154,32 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	if path == nil {
 		return nil, fmt.Errorf("path cannot be nil")
 	}
-	switch path.Name() {
-	case "cache":
-		if path.Keys() == nil {
-			return accessCache(), nil
+
+	if path.Context() == PathContextName || path.Context() == "" {
+		switch path.Name() {
+		case "cache":
+			if path.Keys() == nil {
+				return accessCache(), nil
+			}
+			return accessCacheKey(path.Keys()), nil
+		case internal.ResourcePathContext, internal.InstrumentationScopePathContext: // BC paths without context
+			return pep.parseLowerContextPath(path.Name(), path.Next())
+		default:
+			return internal.MetricPathGetSetter[TransformContext](path)
 		}
-		return accessCacheKey(path.Keys()), nil
-	case "resource":
-		return internal.ResourcePathGetSetter[TransformContext](path.Next())
-	case "instrumentation_scope":
-		return internal.ScopePathGetSetter[TransformContext](path.Next())
+	}
+
+	return pep.parseLowerContextPath(path.Context(), path)
+}
+
+func (pep *pathExpressionParser) parseLowerContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	switch context {
+	case internal.ResourcePathContext:
+		return internal.ResourcePathGetSetter(path)
+	case internal.InstrumentationScopePathContext:
+		return internal.ScopePathGetSetter(path)
 	default:
-		return internal.MetricPathGetSetter[TransformContext](path)
+		return nil, internal.FormatDefaultErrorMessage(context, path.String(), internal.MetricContextName, internal.MetricRef)
 	}
 }
 

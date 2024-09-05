@@ -85,13 +85,18 @@ func (p *Parser[K]) parsePathContext(path *path) (string, []field, error) {
 		// path's segment.
 		if !hasPathContextNames {
 			return "", append([]field{{Name: path.Context}}, path.Fields...), nil
-		} else if _, ok := p.pathContextNames[path.Context]; !ok {
+		}
+
+		if _, ok := p.pathContextNames[path.Context]; !ok {
 			return "", path.Fields, fmt.Errorf(`context "%s" from path "%s" is not valid, it must be replaced by one of: %s`, path.Context, buildOriginalText(path), p.buildPathContextNamesText(""))
 		}
+
 		return path.Context, path.Fields, nil
-	} else if hasPathContextNames {
+	}
+
+	if hasPathContextNames {
 		originalText := buildOriginalText(path)
-		return "", nil, fmt.Errorf(`missing context name for path "%s", valid options are: %s`, originalText, p.buildPathContextNamesText(originalText))
+		return "", nil, fmt.Errorf(`missing context name for path "%s", possibly valid options are: %s`, originalText, p.buildPathContextNamesText(originalText))
 	}
 
 	return "", path.Fields, nil

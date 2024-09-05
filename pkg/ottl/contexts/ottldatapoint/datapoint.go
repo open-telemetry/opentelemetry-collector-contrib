@@ -20,7 +20,8 @@ import (
 )
 
 const (
-	contextName = "DataPoint"
+	contextName     = "DataPoint"
+	PathContextName = "datapoint"
 )
 
 var _ internal.ResourceContext = (*TransformContext)(nil)
@@ -122,6 +123,17 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 	return p, nil
 }
 
+func WithPathContextNames() Option {
+	return func(p *ottl.Parser[TransformContext]) {
+		ottl.WithPathContextNames[TransformContext]([]string{
+			PathContextName,
+			internal.ResourcePathContext,
+			internal.InstrumentationScopePathContext,
+			internal.MetricPathContext,
+		})(p)
+	}
+}
+
 type StatementSequenceOption func(*ottl.StatementSequence[TransformContext])
 
 func WithStatementSequenceErrorMode(errorMode ottl.ErrorMode) StatementSequenceOption {
@@ -183,81 +195,93 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	if path == nil {
 		return nil, fmt.Errorf("path cannot be nil")
 	}
-	switch path.Name() {
-	case "cache":
-		if path.Keys() == nil {
-			return accessCache(), nil
-		}
-		return accessCacheKey(path.Keys()), nil
-	case "resource":
-		return internal.ResourcePathGetSetter[TransformContext](path.Next())
-	case "instrumentation_scope":
-		return internal.ScopePathGetSetter[TransformContext](path.Next())
-	case "metric":
-		return internal.MetricPathGetSetter[TransformContext](path.Next())
-	case "attributes":
-		if path.Keys() == nil {
-			return accessAttributes(), nil
-		}
-		return accessAttributesKey(path.Keys()), nil
-	case "start_time_unix_nano":
-		return accessStartTimeUnixNano(), nil
-	case "time_unix_nano":
-		return accessTimeUnixNano(), nil
-	case "start_time":
-		return accessStartTime(), nil
-	case "time":
-		return accessTime(), nil
-	case "value_double":
-		return accessDoubleValue(), nil
-	case "value_int":
-		return accessIntValue(), nil
-	case "exemplars":
-		return accessExemplars(), nil
-	case "flags":
-		return accessFlags(), nil
-	case "count":
-		return accessCount(), nil
-	case "sum":
-		return accessSum(), nil
-	case "bucket_counts":
-		return accessBucketCounts(), nil
-	case "explicit_bounds":
-		return accessExplicitBounds(), nil
-	case "scale":
-		return accessScale(), nil
-	case "zero_count":
-		return accessZeroCount(), nil
-	case "positive":
-		nextPath := path.Next()
-		if nextPath != nil {
-			switch nextPath.Name() {
-			case "offset":
-				return accessPositiveOffset(), nil
-			case "bucket_counts":
-				return accessPositiveBucketCounts(), nil
-			default:
-				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.DataPointRef)
+
+	if path.Context() == PathContextName || path.Context() == "" {
+		switch path.Name() {
+		case "cache":
+			if path.Keys() == nil {
+				return accessCache(), nil
 			}
-		}
-		return accessPositive(), nil
-	case "negative":
-		nextPath := path.Next()
-		if nextPath != nil {
-			switch nextPath.Name() {
-			case "offset":
-				return accessNegativeOffset(), nil
-			case "bucket_counts":
-				return accessNegativeBucketCounts(), nil
-			default:
-				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.DataPointRef)
+			return accessCacheKey(path.Keys()), nil
+		case "attributes":
+			if path.Keys() == nil {
+				return accessAttributes(), nil
 			}
+			return accessAttributesKey(path.Keys()), nil
+		case "start_time_unix_nano":
+			return accessStartTimeUnixNano(), nil
+		case "time_unix_nano":
+			return accessTimeUnixNano(), nil
+		case "start_time":
+			return accessStartTime(), nil
+		case "time":
+			return accessTime(), nil
+		case "value_double":
+			return accessDoubleValue(), nil
+		case "value_int":
+			return accessIntValue(), nil
+		case "exemplars":
+			return accessExemplars(), nil
+		case "flags":
+			return accessFlags(), nil
+		case "count":
+			return accessCount(), nil
+		case "sum":
+			return accessSum(), nil
+		case "bucket_counts":
+			return accessBucketCounts(), nil
+		case "explicit_bounds":
+			return accessExplicitBounds(), nil
+		case "scale":
+			return accessScale(), nil
+		case "zero_count":
+			return accessZeroCount(), nil
+		case "positive":
+			nextPath := path.Next()
+			if nextPath != nil {
+				switch nextPath.Name() {
+				case "offset":
+					return accessPositiveOffset(), nil
+				case "bucket_counts":
+					return accessPositiveBucketCounts(), nil
+				default:
+					return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.DataPointRef)
+				}
+			}
+			return accessPositive(), nil
+		case "negative":
+			nextPath := path.Next()
+			if nextPath != nil {
+				switch nextPath.Name() {
+				case "offset":
+					return accessNegativeOffset(), nil
+				case "bucket_counts":
+					return accessNegativeBucketCounts(), nil
+				default:
+					return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.DataPointRef)
+				}
+			}
+			return accessNegative(), nil
+		case "quantile_values":
+			return accessQuantileValues(), nil
+		default:
+			return pep.parseLowerContextPath(path.Name(), path.Next()) // BC paths without context
 		}
-		return accessNegative(), nil
-	case "quantile_values":
-		return accessQuantileValues(), nil
+	}
+
+	return pep.parseLowerContextPath(path.Context(), path)
+}
+
+func (pep *pathExpressionParser) parseLowerContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	switch context {
+	case internal.ResourcePathContext:
+		return internal.ResourcePathGetSetter(path)
+	case internal.InstrumentationScopePathContext:
+		return internal.ScopePathGetSetter(path)
+	case internal.MetricPathContext:
+		return internal.MetricPathGetSetter(path)
 	default:
-		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextName, internal.DataPointRef)
+		return nil, internal.FormatDefaultErrorMessage(context, path.String(), contextName, internal.DataPointRef)
 	}
 }
 

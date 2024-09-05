@@ -5,8 +5,11 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -24,7 +27,8 @@ var (
 		featuregate.WithRegisterFromVersion("v0.103.0"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080#issuecomment-2120764953"),
 	)
-	errFlatLogsGateDisabled = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
+	errFlatLogsGateDisabled       = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
+	configContextStatementsFields = []string{"trace_statements", "metric_statements", "log_statements"}
 )
 
 // Config defines the configuration for the processor.
@@ -42,6 +46,49 @@ type Config struct {
 
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
+}
+
+func (c *Config) Unmarshal(component *confmap.Conf) error {
+	if component == nil {
+		return nil
+	}
+
+	contextStatementsPatch := map[string]any{}
+	for _, fieldName := range configContextStatementsFields {
+		if !component.IsSet(fieldName) {
+			continue
+		}
+
+		rawVal := component.Get(fieldName)
+		values, ok := rawVal.([]any)
+		if !ok {
+			return fmt.Errorf("invalid %s type, expected: array, got: %t", fieldName, rawVal)
+		}
+
+		if len(values) == 0 {
+			continue
+		}
+
+		stmts := make([]any, 0, len(values))
+		for _, value := range values {
+			if reflect.TypeOf(value).Kind() == reflect.String {
+				stmts = append(stmts, map[string]any{"statements": []any{value}})
+			} else {
+				stmts = append(stmts, value)
+			}
+		}
+
+		contextStatementsPatch[fieldName] = stmts
+	}
+
+	if len(contextStatementsPatch) > 0 {
+		err := component.Merge(confmap.NewFromStringMap(contextStatementsPatch))
+		if err != nil {
+			return err
+		}
+	}
+
+	return component.Unmarshal(c)
 }
 
 var _ component.Config = (*Config)(nil)

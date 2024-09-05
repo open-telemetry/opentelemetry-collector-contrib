@@ -36,3 +36,7 @@ type ContextStatements struct {
 	Conditions []string  `mapstructure:"conditions"`
 	Statements []string  `mapstructure:"statements"`
 }
+
+func (c ContextStatements) GetStatements() []string {
+	return c.Statements
+}

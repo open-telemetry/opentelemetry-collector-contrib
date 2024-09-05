@@ -19,6 +19,7 @@ import (
 
 const (
 	SpanContextName = "Span"
+	SpanPathContext = "span"
 )
 
 type SpanContext interface {

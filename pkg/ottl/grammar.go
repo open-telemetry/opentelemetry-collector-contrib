@@ -253,6 +253,7 @@ func (v *value) checkForCustomError() error {
 
 // path represents a telemetry path mathExpression.
 type path struct {
+	Pos     lexer.Position
 	Context string  `parser:"(@Lowercase '.')?"`
 	Fields  []field `parser:"@@ ( '.' @@ )*"`
 }

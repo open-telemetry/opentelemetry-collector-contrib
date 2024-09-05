@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	contextName = "Log"
+	contextName     = "Log"
+	PathContextName = "log"
 )
 
 var _ internal.ResourceContext = (*TransformContext)(nil)
@@ -119,6 +120,16 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 	return p, nil
 }
 
+func WithPathContextNames() Option {
+	return func(p *ottl.Parser[TransformContext]) {
+		ottl.WithPathContextNames[TransformContext]([]string{
+			PathContextName,
+			internal.InstrumentationScopePathContext,
+			internal.ResourcePathContext,
+		})(p)
+	}
+}
+
 type StatementSequenceOption func(*ottl.StatementSequence[TransformContext])
 
 func WithStatementSequenceErrorMode(errorMode ottl.ErrorMode) StatementSequenceOption {
@@ -197,69 +208,81 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	if path == nil {
 		return nil, fmt.Errorf("path cannot be nil")
 	}
-	switch path.Name() {
-	case "cache":
-		if path.Keys() == nil {
-			return accessCache(), nil
-		}
-		return accessCacheKey(path.Keys()), nil
-	case "resource":
-		return internal.ResourcePathGetSetter[TransformContext](path.Next())
-	case "instrumentation_scope":
-		return internal.ScopePathGetSetter[TransformContext](path.Next())
-	case "time_unix_nano":
-		return accessTimeUnixNano(), nil
-	case "observed_time_unix_nano":
-		return accessObservedTimeUnixNano(), nil
-	case "time":
-		return accessTime(), nil
-	case "observed_time":
-		return accessObservedTime(), nil
-	case "severity_number":
-		return accessSeverityNumber(), nil
-	case "severity_text":
-		return accessSeverityText(), nil
-	case "body":
-		nextPath := path.Next()
-		if nextPath != nil {
-			if nextPath.Name() == "string" {
-				return accessStringBody(), nil
+
+	if path.Context() == PathContextName || path.Context() == "" {
+		switch path.Name() {
+		case "cache":
+			if path.Keys() == nil {
+				return accessCache(), nil
 			}
-			return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), contextName, internal.LogRef)
-		}
-		if path.Keys() == nil {
-			return accessBody(), nil
-		}
-		return accessBodyKey(path.Keys()), nil
-	case "attributes":
-		if path.Keys() == nil {
-			return accessAttributes(), nil
-		}
-		return accessAttributesKey(path.Keys()), nil
-	case "dropped_attributes_count":
-		return accessDroppedAttributesCount(), nil
-	case "flags":
-		return accessFlags(), nil
-	case "trace_id":
-		nextPath := path.Next()
-		if nextPath != nil {
-			if nextPath.Name() == "string" {
-				return accessStringTraceID(), nil
+			return accessCacheKey(path.Keys()), nil
+		case "time_unix_nano":
+			return accessTimeUnixNano(), nil
+		case "observed_time_unix_nano":
+			return accessObservedTimeUnixNano(), nil
+		case "time":
+			return accessTime(), nil
+		case "observed_time":
+			return accessObservedTime(), nil
+		case "severity_number":
+			return accessSeverityNumber(), nil
+		case "severity_text":
+			return accessSeverityText(), nil
+		case "body":
+			nextPath := path.Next()
+			if nextPath != nil {
+				if nextPath.Name() == "string" {
+					return accessStringBody(), nil
+				}
+				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), contextName, internal.LogRef)
 			}
-			return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), contextName, internal.LogRef)
-		}
-		return accessTraceID(), nil
-	case "span_id":
-		nextPath := path.Next()
-		if nextPath != nil {
-			if nextPath.Name() == "string" {
-				return accessStringSpanID(), nil
+			if path.Keys() == nil {
+				return accessBody(), nil
 			}
-			return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.LogRef)
+			return accessBodyKey(path.Keys()), nil
+		case "attributes":
+			if path.Keys() == nil {
+				return accessAttributes(), nil
+			}
+			return accessAttributesKey(path.Keys()), nil
+		case "dropped_attributes_count":
+			return accessDroppedAttributesCount(), nil
+		case "flags":
+			return accessFlags(), nil
+		case "trace_id":
+			nextPath := path.Next()
+			if nextPath != nil {
+				if nextPath.Name() == "string" {
+					return accessStringTraceID(), nil
+				}
+				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), contextName, internal.LogRef)
+			}
+			return accessTraceID(), nil
+		case "span_id":
+			nextPath := path.Next()
+			if nextPath != nil {
+				if nextPath.Name() == "string" {
+					return accessStringSpanID(), nil
+				}
+				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.LogRef)
+			}
+			return accessSpanID(), nil
+		default:
+			return pep.parseLowerContextPath(path.Name(), path.Next()) // BC paths without context
 		}
-		return accessSpanID(), nil
+	}
+
+	return pep.parseLowerContextPath(path.Context(), path)
+}
+
+func (pep *pathExpressionParser) parseLowerContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	switch context {
+	case internal.ResourcePathContext:
+		return internal.ResourcePathGetSetter(path)
+	case internal.InstrumentationScopePathContext:
+		return internal.ScopePathGetSetter(path)
 	default:
-		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextName, internal.LogRef)
+		return nil, internal.FormatDefaultErrorMessage(context, path.String(), contextName, internal.LogRef)
 	}
 }
 
