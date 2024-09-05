@@ -112,7 +112,7 @@ func sketchToDatapoint(sketch gogen.SketchPayload_Sketch_Dogsketch, dp pmetric.E
 	dp.SetMin(sketch.Min)
 	dp.SetMax(sketch.Max)
 	dp.SetScale(scale)
-	dp.SetZeroThreshold(math.Exp(float64(1-agentSketchOffset) / (1 / gamma))) // See https://github.com/DataDog/sketches-go/blob/7546f8f95179bb41d334d35faa281bfe97812a86/ddsketch/mapping/logarithmic_mapping.go#L48
+	dp.SetZeroThreshold(math.Exp(float64(1-agentSketchOffset) / (1 / math.Log(gamma)))) // See https://github.com/DataDog/sketches-go/blob/7546f8f95179bb41d334d35faa281bfe97812a86/ddsketch/mapping/logarithmic_mapping.go#L48
 
 	attributes.CopyTo(dp.Attributes())
 
