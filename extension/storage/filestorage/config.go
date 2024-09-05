@@ -87,7 +87,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if _, err := strconv.ParseInt(cfg.DirectoryPermissions, 8, 32); err != nil {
-		return errors.New("DirectoryPermissions value must be a valid octal representation of file permissions.")
+		return errors.New("directory_permissions value must be a valid octal representation of file permissions.")
 	}
 
 	return nil
