@@ -15,6 +15,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// Default value for HTTP client's polling interval, set to 30 seconds in
+// accordance with the OpAMP spec.
+const httpPollingIntervalDefault = 30 * time.Second
+
 // Config contains the configuration for the opamp extension. Trying to mirror
 // the OpAMP supervisor config for some consistency.
 type Config struct {
@@ -68,12 +72,6 @@ type commonFields struct {
 	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
 }
 
-// OpAMPServer contains the OpAMP transport configuration.
-type OpAMPServer struct {
-	WS   *commonFields `mapstructure:"ws,omitempty"`
-	HTTP *commonFields `mapstructure:"http,omitempty"`
-}
-
 func (c *commonFields) Scheme() string {
 	uri, err := url.ParseRequestURI(c.Endpoint)
 	if err != nil {
@@ -89,11 +87,38 @@ func (c *commonFields) Validate() error {
 	return nil
 }
 
+type httpFields struct {
+	commonFields `mapstructure:",squash"`
+
+	PollingInterval time.Duration `mapstructure:"polling_interval"`
+}
+
+func (h *httpFields) Validate() error {
+	if err := h.commonFields.Validate(); err != nil {
+		return err
+	}
+
+	if h.PollingInterval < 0 {
+		return errors.New("polling interval must be 0 or greater")
+	}
+
+	return nil
+}
+
+// OpAMPServer contains the OpAMP transport configuration.
+type OpAMPServer struct {
+	WS   *commonFields `mapstructure:"ws,omitempty"`
+	HTTP *httpFields   `mapstructure:"http,omitempty"`
+}
+
 func (s OpAMPServer) GetClient(logger *zap.Logger) client.OpAMPClient {
 	if s.WS != nil {
 		return client.NewWebSocket(newLoggerFromZap(logger.With(zap.String("client", "ws"))))
 	}
-	return client.NewHTTP(newLoggerFromZap(logger.With(zap.String("client", "http"))))
+
+	httpClient := client.NewHTTP(newLoggerFromZap(logger.With(zap.String("client", "http"))))
+	httpClient.SetPollingInterval(s.GetPollingInterval())
+	return httpClient
 }
 
 func (s OpAMPServer) GetHeaders() map[string]configopaque.String {
@@ -121,6 +146,14 @@ func (s OpAMPServer) GetEndpoint() string {
 		return s.HTTP.Endpoint
 	}
 	return ""
+}
+
+func (s OpAMPServer) GetPollingInterval() time.Duration {
+	if s.HTTP != nil && s.HTTP.PollingInterval > 0 {
+		return s.HTTP.PollingInterval
+	}
+
+	return httpPollingIntervalDefault
 }
 
 // Validate checks if the extension configuration is valid

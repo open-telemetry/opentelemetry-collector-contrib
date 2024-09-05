@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Exporters), 2)
+	assert.Len(t, cfg.Exporters, 2)
 
 	r0 := cfg.Exporters[component.NewID(metadata.Type)].(*Config)
 	assert.Equal(t, r0, factory.CreateDefaultConfig().(*Config))
@@ -54,6 +55,29 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					Prefix: "my-metric-domain.com",
+					ResourceFilters: []collector.ResourceFilter{
+						{
+							Prefix: "cloud",
+						},
+						{
+							Prefix: "k8s",
+						},
+						{
+							Prefix: "faas",
+						},
+						{
+							Regex: "container.id",
+						},
+						{
+							Regex: "process.pid",
+						},
+						{
+							Regex: "host.name",
+						},
+						{
+							Regex: "host.id",
+						},
+					},
 				},
 			},
 			QueueSettings: exporterhelper.QueueSettings{
