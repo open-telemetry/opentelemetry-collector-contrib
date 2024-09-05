@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-    development: [logs]
+    development: [logs,traces]
   distributions: [contrib]
   codeowners:
     active: [crobert-1]

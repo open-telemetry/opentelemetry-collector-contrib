@@ -6,6 +6,7 @@ package cloudfoundryreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 	"unicode"
@@ -83,9 +84,39 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 	return nil
 }
 
-func convertEnvelopeToSpan(envelope *loggregator_v2.Envelope, spanSlice ptrace.SpanSlice, startTime time.Time) error {
+func convertEnvelopeToSpan(envelope *loggregator_v2.Envelope, spanSlice ptrace.SpanSlice) error {
+	var traceId pcommon.TraceID
+	var spanId pcommon.SpanID
 	span := spanSlice.AppendEmpty()
-	// TODO
+	eSpanId, err := hex.DecodeString(envelope.GetTags()["span_id"])
+	if err != nil {
+		return err
+	}
+	copy(spanId[:], eSpanId)
+	eTraceId, err := hex.DecodeString(envelope.GetTags()["trace_id"])
+	if err != nil {
+		return err
+	}
+	copy(traceId[:], eTraceId)
+	name := envelope.GetTimer().GetName()
+	if uri, ok := envelope.GetTags()["uri"]; ok {
+		if u, err := url.Parse(uri); err == nil {
+			name = u.Path
+		}
+	}
+	kind := ptrace.SpanKindInternal
+	if envelope.GetTags()["peer_type"] == "Server" {
+		kind = ptrace.SpanKindServer
+	}
+	startTimeStamp := pcommon.NewTimestampFromTime(time.Unix(0, envelope.GetTimer().GetStart()).UTC())
+	endTimeStamp := pcommon.NewTimestampFromTime(time.Unix(0, envelope.GetTimer().GetStop()).UTC())
+	span.SetKind(kind)
+	span.SetName(name)
+	span.SetTraceID(traceId)
+	span.SetSpanID(spanId)
+	span.SetStartTimestamp(startTimeStamp)
+	span.SetEndTimestamp(endTimeStamp)
+	span.Status().SetCode(ptrace.StatusCodeUnset)
 	copyEnvelopeAttributes(span.Attributes(), envelope)
 	return nil
 }

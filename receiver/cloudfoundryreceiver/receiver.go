@@ -258,10 +258,9 @@ func (cfr *cloudFoundryReceiver) streamTraces(
 		}
 		traces := ptrace.NewTraces()
 		libraryTraces := createLibraryTracesSlice(traces)
-		observedTime := time.Now()
 		for _, envelope := range envelopes {
 			if envelope != nil {
-				_ = convertEnvelopeToSpan(envelope, libraryTraces, observedTime)
+				_ = convertEnvelopeToSpan(envelope, libraryTraces)
 			}
 		}
 		if libraryTraces.Len() > 0 {
@@ -289,6 +288,6 @@ func createLibraryLogsSlice(logs plog.Logs) plog.LogRecordSlice {
 func createLibraryTracesSlice(traces ptrace.Traces) ptrace.SpanSlice {
 	resourceTrace := traces.ResourceSpans().AppendEmpty()
 	libraryTraces := resourceTrace.ScopeSpans().AppendEmpty()
-	libraryTraces.Scope().SetName(instrumentationLibName)
+	libraryTraces.Scope().SetName(metadata.ScopeName)
 	return libraryTraces.Spans()
 }
