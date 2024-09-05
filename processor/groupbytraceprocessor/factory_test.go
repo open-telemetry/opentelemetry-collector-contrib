@@ -60,7 +60,7 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 		p, err := f.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.config, consumertest.NewNop())
 
 		// verify
-		assert.Error(t, tt.expectedErr, err)
+		assert.ErrorIs(t, tt.expectedErr, err)
 		assert.Nil(t, p)
 	}
 }

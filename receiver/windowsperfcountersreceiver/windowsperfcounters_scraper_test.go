@@ -219,7 +219,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			} else {
 				require.Equal(t, 1, obs.Len())
 				log := obs.All()[0]
-				assert.Equal(t, log.Level, zapcore.WarnLevel)
+				assert.Equal(t, zapcore.WarnLevel, log.Level)
 				assert.Equal(t, test.startMessage, log.Message)
 				assert.Equal(t, "error", log.Context[0].Key)
 				assert.EqualError(t, log.Context[0].Interface.(error), test.startErr)

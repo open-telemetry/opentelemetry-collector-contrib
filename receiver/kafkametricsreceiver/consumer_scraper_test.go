@@ -44,7 +44,7 @@ func TestConsumerShutdown_closed(t *testing.T) {
 
 func TestConsumerScraper_Name(t *testing.T) {
 	s := consumerScraper{}
-	assert.Equal(t, s.Name(), consumersScraperName)
+	assert.Equal(t, consumersScraperName, s.Name())
 }
 
 func TestConsumerScraper_createConsumerScraper(t *testing.T) {
