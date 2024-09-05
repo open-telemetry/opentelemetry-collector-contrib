@@ -103,7 +103,7 @@ func (c *sum) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 				//exhaustive:enforce
 				//  For metric types each must be handled in exactly the same way
- 				//  Switch case required because each type calls DataPoints() differently
+				//  Switch case required because each type calls DataPoints() differently
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
 					dps := metric.Gauge().DataPoints()
