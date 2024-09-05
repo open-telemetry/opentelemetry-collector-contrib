@@ -449,6 +449,7 @@ Available Converters:
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SHA512](#sha512)
+- [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
 - [String](#string)
@@ -1318,7 +1319,6 @@ Examples:
 
 - `SHA256(attributes["device.name"])`
 
-
 - `SHA256("name")`
 
 ### SHA512
@@ -1337,6 +1337,34 @@ Examples:
 - `SHA512(attributes["device.name"])`
 
 - `SHA512("name")`
+
+### Sort
+
+`Sort(target, Optional[order])`
+
+The `Sort` Converter sorts the `target` array in either ascending or descending order.
+
+`target` is an array or `pcommon.Slice` typed field containing the elements to be sorted. 
+
+`order` is a string specifying the sort order. Must be either `asc` or `desc`. The default value is `asc`.
+
+The Sort Converter preserves the data type of the original elements while sorting. 
+The behavior varies based on the types of elements in the target slice:
+
+| Element Types | Sorting Behavior                    | Return Value |
+|---------------|-------------------------------------|--------------|
+| Integers | Sorts as integers                   | Sorted array of integers |
+| Doubles | Sorts as doubles                    | Sorted array of doubles |
+| Integers and doubles | Converts all to doubles, then sorts | Sorted array of integers and doubles |
+| Strings | Sorts as strings                    | Sorted array of strings |
+| Booleans | Converts all to strings, then sorts | Sorted array of booleans |
+| Mix of integers, doubles, booleans, and strings | Converts all to strings, then sorts | Sorted array of mixed types |
+| Any other types | N/A                                 | Returns an error |
+
+Examples:
+
+- `Sort(attributes["device.tags"])`
+- `Sort(attributes["device.tags"], "desc")`
 
 ### SpanID
 
