@@ -409,7 +409,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.16 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.29.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.60.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.61.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.32.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.31.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.22.5 // indirect
@@ -512,7 +512,7 @@ require (
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/go-github/v63 v63.0.0 // indirect
+	github.com/google/go-github/v64 v64.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
