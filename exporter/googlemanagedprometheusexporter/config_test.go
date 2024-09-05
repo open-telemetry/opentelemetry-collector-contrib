@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -54,6 +55,29 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					Prefix: "my-metric-domain.com",
+					ResourceFilters: []collector.ResourceFilter{
+						{
+							Prefix: "cloud",
+						},
+						{
+							Prefix: "k8s",
+						},
+						{
+							Prefix: "faas",
+						},
+						{
+							Regex: "container.id",
+						},
+						{
+							Regex: "process.pid",
+						},
+						{
+							Regex: "host.name",
+						},
+						{
+							Regex: "host.id",
+						},
+					},
 				},
 			},
 			QueueSettings: exporterhelper.QueueSettings{
