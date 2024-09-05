@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("netflow")
+	Type      = component.MustNewType("netflow")
+	ScopeName = "otelcol/netflowreceiver"
 )
 
 const (
