@@ -1,15 +1,12 @@
-# Health Check Extension
+# Health Check Extension V2
 
-> ⚠️⚠️⚠️ **Warning** ⚠️⚠️⚠️
-> This extension is not ready for use. The code is written, but the
-[original PR](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/30673)
-is being sliced up into smaller PRs that are being reviewed and merged
-incrementally.
-
-## Forward Looking README
-
-The remainder of this README is forward looking and serves as a reference for
-the future functionality that will be provided and how it will be configured.
+This is an experimental extension that is intended to replace the existing
+health check extension. As the stability level is currently development, users
+wishing to experiment with this extension will have to build a custom collector
+binary using the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder).
+Health check extension V2 has new functionality that can be opted-in to, and
+also supports original healthcheck extension functionality with the exception
+of the `check_collector_pipeline` feature. See the warning below.
 
 > ⚠️⚠️⚠️ **Warning** ⚠️⚠️⚠️
 >

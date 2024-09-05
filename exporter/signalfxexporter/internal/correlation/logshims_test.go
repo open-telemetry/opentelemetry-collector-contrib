@@ -102,5 +102,5 @@ func TestZapShim_Fields(t *testing.T) {
 	c := e.Context[0]
 	assert.Equal(t, "field", c.Key)
 	require.Equal(t, zapcore.StringType, c.Type)
-	assert.Equal(t, c.String, "field value")
+	assert.Equal(t, "field value", c.String)
 }
