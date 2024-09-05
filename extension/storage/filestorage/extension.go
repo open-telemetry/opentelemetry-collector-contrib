@@ -34,9 +34,9 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 		} else {
 			dirs = []string{config.Directory}
 		}
-		perm, err := strconv.ParseInt(config.DirectoryPerm, 8, 32)
+		perm, err := strconv.ParseInt(config.DirectoryPermissions, 8, 32)
 		if err != nil {
-			logger.Debug("Error while parsing permissions, switching to default mode (0750)", zap.String("DirectoryPerms", config.DirectoryPerm))
+			logger.Debug("Error while parsing permissions, switching to default mode (0750)", zap.String("DirectoryPerms", config.DirectoryPermissions))
 			perm = 0750
 		}
 		for _, dir := range dirs {

@@ -566,7 +566,7 @@ func TestDirectoryCreation(t *testing.T) {
 				storageDir := filepath.Join(tempDir, uuid.NewString())
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Directory = storageDir
-				cfg.DirectoryPerm = "0700"
+				cfg.DirectoryPermissions = "0700"
 				cfg.CreateDirectory = true
 				require.NoError(t, cfg.Validate())
 				return cfg
