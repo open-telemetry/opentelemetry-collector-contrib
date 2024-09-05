@@ -116,7 +116,7 @@ func TestTracesExporterShutdown(t *testing.T) {
 	res := p.Shutdown(context.Background())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestConsumeTraces(t *testing.T) {
@@ -131,7 +131,7 @@ func TestConsumeTraces(t *testing.T) {
 	p, err := newTracesExporter(ts, simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, traceIDRouting)
+	assert.Equal(t, traceIDRouting, p.routingKey)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -153,7 +153,7 @@ func TestConsumeTraces(t *testing.T) {
 	res := p.ConsumeTraces(context.Background(), simpleTraces())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.
@@ -179,7 +179,7 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	p, err := newTracesExporter(ts, simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, traceIDRouting)
+	assert.Equal(t, traceIDRouting, p.routingKey)
 
 	endpoints := []string{"endpoint-1"}
 	lb.res = &mockResolver{
@@ -222,7 +222,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	p, err := newTracesExporter(ts, serviceBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, svcRouting)
+	assert.Equal(t, svcRouting, p.routingKey)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -245,7 +245,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	res := p.ConsumeTraces(context.Background(), simpleTracesWithServiceName())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
@@ -271,7 +271,7 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
-			assert.Equal(t, err, nil)
+			assert.NoError(t, err)
 			assert.Equal(t, res, tt.res)
 		})
 	}
@@ -407,7 +407,7 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	assert.Len(t, sink.AllTraces(), 1)
-	assert.Equal(t, sink.AllTraces()[0].SpanCount(), 2)
+	assert.Equal(t, 2, sink.AllTraces()[0].SpanCount())
 }
 
 func TestNoTracesInBatch(t *testing.T) {

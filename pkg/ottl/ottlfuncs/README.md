@@ -410,6 +410,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 
 - [Base64Decode](#base64decode)
+- [Decode](#decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Day](#day)
@@ -449,6 +450,7 @@ Available Converters:
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SHA512](#sha512)
+- [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
 - [String](#string)
@@ -461,10 +463,13 @@ Available Converters:
 - [UnixMilli](#unixmilli)
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
+- [UserAgent](#useragent)
 - [UUID](#UUID)
 - [Year](#year)
 
-### Base64Decode
+### Base64Decode (Deprecated)
+
+*This function has been deprecated. Please use the [Decode](#decode) function instead.*
 
 `Base64Decode(value)`
 
@@ -478,6 +483,22 @@ Examples:
 
 
 - `Base64Decode(attributes["encoded field"])`
+
+### Decode
+
+`Decode(value, encoding)`
+
+The `Decode` Converter takes a string or byte array encoded with the specified encoding and returns the decoded string.
+
+`value` is a valid encoded string or byte array.
+`encoding` is a valid encoding name included in the [IANA encoding index](https://www.iana.org/assignments/character-sets/character-sets.xhtml).
+
+Examples:
+
+- `Decode("aGVsbG8gd29ybGQ=", "base64")`
+
+
+- `Decode(attributes["encoded field"], "us-ascii")`
 
 ### Concat
 
@@ -1317,7 +1338,6 @@ Examples:
 
 - `SHA256(attributes["device.name"])`
 
-
 - `SHA256("name")`
 
 ### SHA512
@@ -1336,6 +1356,34 @@ Examples:
 - `SHA512(attributes["device.name"])`
 
 - `SHA512("name")`
+
+### Sort
+
+`Sort(target, Optional[order])`
+
+The `Sort` Converter sorts the `target` array in either ascending or descending order.
+
+`target` is an array or `pcommon.Slice` typed field containing the elements to be sorted. 
+
+`order` is a string specifying the sort order. Must be either `asc` or `desc`. The default value is `asc`.
+
+The Sort Converter preserves the data type of the original elements while sorting. 
+The behavior varies based on the types of elements in the target slice:
+
+| Element Types | Sorting Behavior                    | Return Value |
+|---------------|-------------------------------------|--------------|
+| Integers | Sorts as integers                   | Sorted array of integers |
+| Doubles | Sorts as doubles                    | Sorted array of doubles |
+| Integers and doubles | Converts all to doubles, then sorts | Sorted array of integers and doubles |
+| Strings | Sorts as strings                    | Sorted array of strings |
+| Booleans | Converts all to strings, then sorts | Sorted array of booleans |
+| Mix of integers, doubles, booleans, and strings | Converts all to strings, then sorts | Sorted array of mixed types |
+| Any other types | N/A                                 | Returns an error |
+
+Examples:
+
+- `Sort(attributes["device.tags"])`
+- `Sort(attributes["device.tags"], "desc")`
 
 ### SpanID
 
@@ -1567,6 +1615,34 @@ The returned type is `int64`.
 Examples:
 
 - `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UserAgent
+
+`UserAgent(value)`
+
+The `UserAgent` Converter parses the string argument trying to match it against well-known user-agent strings.
+
+`value` is a string or a path to a string.  If `value` is not a string an error is returned.
+
+The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version` and `user_agent.original`
+as defined in semconv v1.25.0.
+
+Parsing is done using the [uap-go package](https://github.com/ua-parser/uap-go). The specific formats it recognizes can be found [here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
+
+Examples:
+
+- `UserAgent("curl/7.81.0")`
+  ```yaml
+  "user_agent.name": "curl"
+  "user_agent.version": "7.81.0"
+  "user_agent.original": "curl/7.81.0"
+  ```
+- `Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0`
+  ```yaml
+  "user_agent.name": "Firefox"
+  "user_agent.version": "126.0"
+  "user_agent.original": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0"
+  ```
 
 ### URL
 

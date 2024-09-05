@@ -48,7 +48,7 @@ resourceMetrics:
                 - asInt: "18352"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The number of datastores in the datacenter.
             name: vcenter.datacenter.datastore.count
             sum:
@@ -140,7 +140,7 @@ resourceMetrics:
                 - asInt: "6882"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The amount of CPU available to the cluster.
             name: vcenter.cluster.cpu.limit
             sum:
@@ -149,7 +149,7 @@ resourceMetrics:
                 - asInt: "6882"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The number of hosts in the cluster.
             name: vcenter.cluster.host.count
             sum:
