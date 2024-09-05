@@ -333,7 +333,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   postgresql.blks_read:
-    enabled: true
+    enabled: false
     description: Number of disk blocks read in this database
     unit: "{blks_read}"
     sum:
