@@ -141,14 +141,14 @@ func TestHandleSketchPayload(t *testing.T) {
 			require.NoError(t, err)
 
 			req, err := http.NewRequest(http.MethodPost, "/api/beta/sketches", io.NopCloser(bytes.NewReader(pb)))
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			mt := createMetricsTranslator()
 			metrics, err := mt.HandleSketchesPayload(req)
-			require.Nil(t, err)
-			require.Equal(t, tt.expectedSketchesCount, len(metrics))
+			require.NoError(t, err)
+			require.Len(t, tt.expectedSketchesCount, len(metrics))
 			for i, metric := range metrics {
-				require.Equal(t, tt.expectedDogsketchesCounts[i], len(metric.Dogsketches))
+				require.Len(t, tt.expectedDogsketchesCounts[i], len(metric.Dogsketches))
 			}
 		})
 	}
