@@ -154,11 +154,12 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 			)
 			return
 		}
-		if cfr.nextLogs != nil {
+		switch {
+		case cfr.nextLogs != nil:
 			cfr.streamLogs(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
-		} else if cfr.nextMetrics != nil {
+		case cfr.nextMetrics != nil:
 			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
-		} else if cfr.nextTraces != nil {
+		case cfr.nextTraces != nil:
 			cfr.streamTraces(innerCtx, streamFactory.CreateTracesStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
 		}
 		cfr.settings.Logger.Debug("cloudfoundry receiver stopped")

@@ -85,19 +85,19 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 }
 
 func convertEnvelopeToSpan(envelope *loggregator_v2.Envelope, spanSlice ptrace.SpanSlice) error {
-	var traceId pcommon.TraceID
-	var spanId pcommon.SpanID
+	var traceID pcommon.TraceID
+	var spanID pcommon.SpanID
 	span := spanSlice.AppendEmpty()
-	eSpanId, err := hex.DecodeString(envelope.GetTags()["span_id"])
+	eSpanID, err := hex.DecodeString(envelope.GetTags()["span_id"])
 	if err != nil {
 		return err
 	}
-	copy(spanId[:], eSpanId)
-	eTraceId, err := hex.DecodeString(envelope.GetTags()["trace_id"])
+	copy(spanID[:], eSpanID)
+	eTraceID, err := hex.DecodeString(envelope.GetTags()["trace_id"])
 	if err != nil {
 		return err
 	}
-	copy(traceId[:], eTraceId)
+	copy(traceID[:], eTraceID)
 	name := envelope.GetTimer().GetName()
 	if uri, ok := envelope.GetTags()["uri"]; ok {
 		if u, err := url.Parse(uri); err == nil {
@@ -112,8 +112,8 @@ func convertEnvelopeToSpan(envelope *loggregator_v2.Envelope, spanSlice ptrace.S
 	endTimeStamp := pcommon.NewTimestampFromTime(time.Unix(0, envelope.GetTimer().GetStop()).UTC())
 	span.SetKind(kind)
 	span.SetName(name)
-	span.SetTraceID(traceId)
-	span.SetSpanID(spanId)
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
 	span.SetStartTimestamp(startTimeStamp)
 	span.SetEndTimestamp(endTimeStamp)
 	span.Status().SetCode(ptrace.StatusCodeUnset)
