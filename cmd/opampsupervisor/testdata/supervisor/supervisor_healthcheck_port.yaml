@@ -12,8 +12,8 @@ capabilities:
   accepts_restart_command: true
 
 storage:
-  directory: "{{.storage_dir}}"
+  directory: '{{.storage_dir}}'
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
-  health_check_port: "{{ .healthcheck_port }}"
+  health_check_port: {{ .healthcheck_port }}
