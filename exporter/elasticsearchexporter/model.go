@@ -488,7 +488,7 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
 }
 
-func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
+func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map, stringifyArrayValues bool) {
 	attrsCopy := pcommon.NewMap() // Copy to avoid mutating original map
 	attributeMap.CopyTo(attrsCopy)
 	attrsCopy.RemoveIf(func(key string, val pcommon.Value) bool {
@@ -608,9 +608,9 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 	document.AddTraceID("trace_id", span.TraceID())
 	document.AddInt("dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
 
-	m.encodeAttributesOTelMode(&document, spanEvent.Attributes())
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+	m.encodeAttributesOTelMode(&document, spanEvent.Attributes(), false)
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, false)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, false)
 
 	return &document
 }
