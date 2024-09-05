@@ -133,6 +133,7 @@ func (c *summer[K]) increment(metricName string, sumVal float64, attrs pcommon.M
 	return nil
 }
 
+// Addresses issues with float precision smaller than 6 decimal places
 func reduceFloatPrecision(val float64) float64 {
 	return math.Round(val*100000) / 100000
 }

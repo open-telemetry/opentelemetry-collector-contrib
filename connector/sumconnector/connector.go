@@ -102,6 +102,8 @@ func (c *sum) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 				multiError = errors.Join(multiError, metricsSummer.update(ctx, pcommon.NewMap(), mCtx))
 
 				//exhaustive:enforce
+				//  For metric types each must be handled in exactly the same way
+ 				//  Switch case required because each type calls DataPoints() differently
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
 					dps := metric.Gauge().DataPoints()
