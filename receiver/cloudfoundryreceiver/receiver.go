@@ -159,7 +159,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		} else if cfr.nextMetrics != nil {
 			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
 		} else if cfr.nextTraces != nil {
-			cfr.streamTraces(innerCtx, streamFactory.CreateTracesStream(innerCtx, cfr.config.RLPGateway.ShardID))
+			cfr.streamTraces(innerCtx, streamFactory.CreateTracesStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
 		}
 		cfr.settings.Logger.Debug("cloudfoundry receiver stopped")
 	}()
@@ -248,14 +248,16 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 
 func (cfr *cloudFoundryReceiver) streamTraces(
 	ctx context.Context,
-	stream loggregator.EnvelopeStream) {
+	stream loggregator.EnvelopeStream,
+	host component.Host) {
 
 	for {
 		envelopes := stream()
 		if envelopes == nil {
 			if ctx.Err() == nil {
-				cfr.settings.ReportStatus(
-					component.NewFatalErrorEvent(
+				componentstatus.ReportStatus(
+					host,
+					componentstatus.NewFatalErrorEvent(
 						errors.New("RLP gateway trace streamer shut down due to an error"),
 					),
 				)
