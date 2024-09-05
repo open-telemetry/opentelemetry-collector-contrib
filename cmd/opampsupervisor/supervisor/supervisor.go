@@ -179,10 +179,13 @@ func (s *Supervisor) Start() error {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
-	healthCheckPort, err := s.findRandomPort()
+	healthCheckPort := s.config.Agent.HealthCheckPort
+	if healthCheckPort == 0 {
+		healthCheckPort, err = s.findRandomPort()
 
-	if err != nil {
-		return fmt.Errorf("could not find port for health check: %w", err)
+		if err != nil {
+			return fmt.Errorf("could not find port for health check: %w", err)
+		}
 	}
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)

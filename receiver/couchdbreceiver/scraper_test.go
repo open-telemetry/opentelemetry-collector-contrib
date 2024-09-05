@@ -81,7 +81,7 @@ func TestScrape(t *testing.T) {
 		assert.Equal(t, 0, metrics.DataPointCount(), "Expected 0 datapoints to be collected")
 
 		var partialScrapeErr scrapererror.PartialScrapeError
-		require.True(t, errors.As(err, &partialScrapeErr), "returned error was not PartialScrapeError")
+		require.ErrorAs(t, err, &partialScrapeErr, "returned error was not PartialScrapeError")
 		require.Greater(t, partialScrapeErr.Failed, 0, "Expected scrape failures, but none were recorded!")
 	})
 
