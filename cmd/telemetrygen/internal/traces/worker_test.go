@@ -185,7 +185,7 @@ func TestSpanKind(t *testing.T) {
 
 	// verify that the default Span Kind is being overridden
 	for _, span := range syncer.spans {
-		assert.NotEqual(t, span.SpanKind(), trace.SpanKindInternal)
+		assert.NotEqual(t, trace.SpanKindInternal, span.SpanKind())
 	}
 }
 

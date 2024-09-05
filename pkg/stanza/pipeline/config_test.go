@@ -243,7 +243,7 @@ func TestDeduplicateIDs(t *testing.T) {
 		t.Run("Deduplicate/"+tc.name, func(t *testing.T) {
 			ops := tc.ops()
 			dedeplucateIDs(ops)
-			require.Equal(t, ops, tc.expectedOps)
+			require.Equal(t, tc.expectedOps, ops)
 		})
 	}
 }
