@@ -494,6 +494,34 @@ func TestExporterLogs(t *testing.T) {
 
 		assert.Equal(t, [3]int{1, 2, 1}, attempts)
 	})
+
+	t.Run("otel mode attribute array value", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		mustSendLogs(t, exporter, newLogsWithAttributes(map[string]any{
+			"some.record.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.scope.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.resource.attribute": []string{"foo", "bar"},
+		}))
+
+		rec.WaitItems(1)
+
+		assert.Len(t, rec.Items(), 1)
+		doc := rec.Items()[0].Document
+		assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
 }
 
 func TestExporterMetrics(t *testing.T) {
@@ -901,31 +929,20 @@ func TestExporterMetrics(t *testing.T) {
 			cfg.Mapping.Mode = "otel"
 		})
 
-		metrics := pmetric.NewMetrics()
-		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-		err := resourceMetrics.Resource().Attributes().PutEmptySlice("some.resource.attribute").FromRaw([]any{"foo", "bar"})
-		require.NoError(t, err)
-		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
-		err = scopeA.Scope().Attributes().PutEmptySlice("some.scope.attribute").FromRaw([]any{"foo", "bar"})
-		require.NoError(t, err)
-		metricSlice := scopeA.Metrics()
-
-		sumMetric := metricSlice.AppendEmpty()
-		sumMetric.SetName("metric.sum")
-		sumDps := sumMetric.SetEmptySum().DataPoints()
-		sumDp := sumDps.AppendEmpty()
-		sumDp.SetDoubleValue(0)
-		err = sumDp.Attributes().PutEmptySlice("some.dp.attribute").FromRaw([]any{"foo", "bar"})
-		require.NoError(t, err)
-
-		mustSendMetrics(t, exporter, metrics)
+		mustSendMetrics(t, exporter, newMetricsWithAttributes(map[string]any{
+			"some.record.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.scope.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.resource.attribute": []string{"foo", "bar"},
+		}))
 
 		rec.WaitItems(1)
 
 		assert.Len(t, rec.Items(), 1)
 		doc := rec.Items()[0].Document
 		// Workaround TSDB limitation by stringifying array values
-		assert.Equal(t, `{"some.dp.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.Equal(t, `{"some.record.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `attributes`).Raw)
 		assert.Equal(t, `{"some.scope.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
 		assert.Equal(t, `{"some.resource.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
@@ -1194,6 +1211,41 @@ func TestExporterTraces(t *testing.T) {
 		}
 
 		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("otel mode attribute array value", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		traces := newTracesWithAttributes(map[string]any{
+			"some.record.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.scope.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.resource.attribute": []string{"foo", "bar"},
+		})
+		spanEventAttrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty().Attributes()
+		fillAttributeMap(spanEventAttrs, map[string]any{
+			"some.record.attribute": []string{"foo", "bar"},
+		})
+		mustSendTraces(t, exporter, traces)
+
+		rec.WaitItems(2)
+
+		assert.Len(t, rec.Items(), 2)
+		for _, item := range rec.Items() {
+			doc := item.Document
+			assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+			assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+			assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+		}
 	})
 }
 
