@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/ianaindex"
-	"golang.org/x/text/encoding/unicode"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -87,7 +87,7 @@ func Decode[K any](target ottl.Getter[K], encoding string) (ottl.ExprFunc[K], er
 }
 
 func getEncoding(encoding string) (encoding.Encoding, error) {
-	if e, ok := encodingOverrides[strings.ToLower(encoding)]; ok {
+	if e, ok := textutils.EncodingOverridesMap.Get(strings.ToLower(encoding)); ok {
 		return e, nil
 	}
 	e, err := ianaindex.IANA.Encoding(encoding)
@@ -100,15 +100,4 @@ func getEncoding(encoding string) (encoding.Encoding, error) {
 		return nil, fmt.Errorf("no decoder available for encoding: %s", encoding)
 	}
 	return e, nil
-}
-
-var encodingOverrides = map[string]encoding.Encoding{
-	"":         unicode.UTF8,
-	"nop":      encoding.Nop,
-	"ascii":    unicode.UTF8,
-	"us-ascii": unicode.UTF8,
-	"utf8":     unicode.UTF8,
-	"utf-8":    unicode.UTF8,
-	"utf16":    unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
-	"utf-16":   unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
 }
