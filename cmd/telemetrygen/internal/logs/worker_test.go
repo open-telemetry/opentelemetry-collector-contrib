@@ -177,7 +177,7 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 
 		l.WalkAttributes(func(attr log.KeyValue) bool {
 			if attr.Key == telemetryAttrKeyOne {
-				assert.EqualValues(t, attr.Value.AsString(), telemetryAttrValueOne)
+				assert.EqualValues(t, telemetryAttrValueOne, attr.Value.AsString())
 			}
 			return true
 		})

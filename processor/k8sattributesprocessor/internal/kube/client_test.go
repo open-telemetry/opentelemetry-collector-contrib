@@ -258,13 +258,13 @@ func TestReplicaSetHandler(t *testing.T) {
 	c.handleReplicaSetAdd(replicaset)
 	assert.Len(t, c.ReplicaSets, 1)
 	got := c.ReplicaSets[string(replicaset.UID)]
-	assert.Equal(t, got.Name, "deployment-aaa")
-	assert.Equal(t, got.Namespace, "namespaceA")
-	assert.Equal(t, got.UID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-	assert.Equal(t, got.Deployment, Deployment{
+	assert.Equal(t, "deployment-aaa", got.Name)
+	assert.Equal(t, "namespaceA", got.Namespace)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.UID)
+	assert.Equal(t, Deployment{
 		Name: "deployment",
 		UID:  "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjj",
-	})
+	}, got.Deployment)
 
 	// test update replicaset
 	updatedReplicaset := replicaset
@@ -272,13 +272,13 @@ func TestReplicaSetHandler(t *testing.T) {
 	c.handleReplicaSetUpdate(replicaset, updatedReplicaset)
 	assert.Len(t, c.ReplicaSets, 1)
 	got = c.ReplicaSets[string(replicaset.UID)]
-	assert.Equal(t, got.Name, "deployment-aaa")
-	assert.Equal(t, got.Namespace, "namespaceA")
-	assert.Equal(t, got.UID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-	assert.Equal(t, got.Deployment, Deployment{
+	assert.Equal(t, "deployment-aaa", got.Name)
+	assert.Equal(t, "namespaceA", got.Namespace)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.UID)
+	assert.Equal(t, Deployment{
 		Name: "deployment",
 		UID:  "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjj",
-	})
+	}, got.Deployment)
 
 	// test delete replicaset
 	c.handleReplicaSetDelete(updatedReplicaset)

@@ -179,8 +179,8 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Len(t, sink0.AllTraces(), 1)
 		assert.Len(t, sink1.AllTraces(), 1)
 
-		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 2)
-		assert.Equal(t, sink1.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, 2, sink0.AllTraces()[0].SpanCount())
+		assert.Equal(t, 2, sink1.AllTraces()[0].SpanCount())
 		assert.Equal(t, sink0.AllTraces(), sink1.AllTraces())
 	})
 
@@ -199,8 +199,8 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Len(t, sink0.AllTraces(), 1)
 		assert.Empty(t, sink1.AllTraces())
 
-		assert.Equal(t, defaultSink.AllTraces()[0].SpanCount(), 1)
-		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 1)
+		assert.Equal(t, 1, defaultSink.AllTraces()[0].SpanCount())
+		assert.Equal(t, 1, sink0.AllTraces()[0].SpanCount())
 		assert.Equal(t, defaultSink.AllTraces(), sink0.AllTraces())
 	})
 }
@@ -310,7 +310,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		assert.Len(t, sink0.AllTraces(), 1)
 		assert.Empty(t, sink1.AllTraces())
 
-		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, 2, sink0.AllTraces()[0].SpanCount())
 	})
 
 	t.Run("span matched by one expression, multiple pipelines", func(t *testing.T) {
@@ -328,8 +328,8 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		assert.Len(t, sink0.AllTraces(), 1)
 		assert.Empty(t, sink1.AllTraces())
 
-		assert.Equal(t, defaultSink.AllTraces()[0].SpanCount(), 1)
-		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 1)
+		assert.Equal(t, 1, defaultSink.AllTraces()[0].SpanCount())
+		assert.Equal(t, 1, sink0.AllTraces()[0].SpanCount())
 		assert.Equal(t, defaultSink.AllTraces(), sink0.AllTraces())
 	})
 }
