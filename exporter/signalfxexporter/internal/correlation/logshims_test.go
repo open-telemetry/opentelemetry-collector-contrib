@@ -48,7 +48,7 @@ func TestZapShim_Debug(t *testing.T) {
 	e := logs[0]
 	assert.Equal(t, "debug message", e.Message)
 	assert.Equal(t, zap.DebugLevel, e.Level)
-	assert.Len(t, e.Context, 0)
+	assert.Empty(t, e.Context)
 }
 
 func TestZapShim_Warn(t *testing.T) {
@@ -60,7 +60,7 @@ func TestZapShim_Warn(t *testing.T) {
 	e := logs[0]
 	assert.Equal(t, "warn message", e.Message)
 	assert.Equal(t, zap.WarnLevel, e.Level)
-	assert.Len(t, e.Context, 0)
+	assert.Empty(t, e.Context)
 }
 
 func TestZapShim_Info(t *testing.T) {
@@ -72,7 +72,7 @@ func TestZapShim_Info(t *testing.T) {
 	e := logs[0]
 	assert.Equal(t, "info message", e.Message)
 	assert.Equal(t, zap.InfoLevel, e.Level)
-	assert.Len(t, e.Context, 0)
+	assert.Empty(t, e.Context)
 }
 
 func TestZapShim_Panic(t *testing.T) {
@@ -86,7 +86,7 @@ func TestZapShim_Panic(t *testing.T) {
 	e := logs[0]
 	assert.Equal(t, "panic message", e.Message)
 	assert.Equal(t, zap.PanicLevel, e.Level)
-	assert.Len(t, e.Context, 0)
+	assert.Empty(t, e.Context)
 }
 
 func TestZapShim_Fields(t *testing.T) {

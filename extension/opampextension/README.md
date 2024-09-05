@@ -19,12 +19,23 @@ The following settings are required:
   - `ws`: The OpAMP websocket transport settings.
     - `endpoint` (no default): The OpAMP server websocket endpoint (URL).
 
-The following settings are optional:
+The following settings are optional for the websocket client:
 
 - `server`: The OpAMP server connection settings.
   - `ws`: The OpAMP websocket transport settings.
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
+
+The following settings are optional for the HTTP client:
+
+- `server`: The OpAMP server connection settings.
+  - `http`: The OpAMP websocket transport settings.
+    - `tls`: TLS settings.
+    - `headers`: HTTP headers to set.
+    - `polling_interval`: The interval at which the extension will poll the server. Defaults to 30s.
+
+The following settings are optional for both transports:
+
 - `instance_uid`: A UUIDv7 formatted as a 36 character string in canonical
   representation. Auto-generated on start if missing. Setting this ensures the
   instance UID remains constant across process restarts.
