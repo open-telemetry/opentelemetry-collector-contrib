@@ -60,7 +60,7 @@ receivers:
 
 exporters:
   debug:
-    verbosity: info
+    verbosity: basic
 
 service:
   extensions: [basicauth/indexer, basicauth/cluster_master]
