@@ -495,7 +495,7 @@ func TestForceShutdown(t *testing.T) {
 	duration := time.Since(start)
 
 	// verify
-	assert.True(t, duration > 20*time.Millisecond)
+	assert.Greater(t, duration, 20*time.Millisecond)
 
 	// wait for shutdown goroutine to end
 	time.Sleep(100 * time.Millisecond)

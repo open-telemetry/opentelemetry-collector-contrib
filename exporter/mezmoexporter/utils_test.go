@@ -13,7 +13,7 @@ import (
 func TestTruncateString(t *testing.T) {
 	t.Run("Test empty string", func(t *testing.T) {
 		s := truncateString("", 10)
-		require.Len(t, s, 0)
+		require.Empty(t, s)
 	})
 
 	// Test string is less than the maximum length
