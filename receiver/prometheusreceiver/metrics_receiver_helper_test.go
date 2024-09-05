@@ -626,7 +626,7 @@ func compareDoubleValue(doubleVal float64) numberPointComparator {
 
 func assertNormalNan() numberPointComparator {
 	return func(t *testing.T, numberDataPoint pmetric.NumberDataPoint) {
-		assert.Equal(t, math.Float64bits(numberDataPoint.DoubleValue()), value.NormalNaN,
+		assert.Equal(t, value.NormalNaN, math.Float64bits(numberDataPoint.DoubleValue()),
 			"Metric double value is not normalNaN as expected")
 	}
 }
@@ -663,7 +663,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 				assert.Equal(t, quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile(),
 					"Summary quantile do not match")
 				if math.IsNaN(quantiles[i][1]) {
-					assert.Equal(t, math.Float64bits(summaryDataPoint.QuantileValues().At(i).Value()), value.NormalNaN,
+					assert.Equal(t, value.NormalNaN, math.Float64bits(summaryDataPoint.QuantileValues().At(i).Value()),
 						"Summary quantile value is not normalNaN as expected")
 				} else {
 					assert.Equal(t, quantiles[i][1], summaryDataPoint.QuantileValues().At(i).Value(),

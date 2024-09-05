@@ -382,7 +382,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			// verifySpan verifies that attributes was added to the internal data span.
 			verifySpan := func(span ptrace.Span) {
 				require.NotNil(t, span)
-				require.Equal(t, span.Attributes().Len(), 1)
+				require.Equal(t, 1, span.Attributes().Len())
 				attrVal, ok := span.Attributes().Get("new_attr")
 				assert.True(t, ok)
 				assert.EqualValues(t, "string value", attrVal.Str())
@@ -395,14 +395,14 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span ptrace.Span) {
 				// Verify attributes was not added to the new internal data span.
-				assert.Equal(t, span.Attributes().Len(), 0)
+				assert.Equal(t, 0, span.Attributes().Len())
 			})
 
 			// Create another span that does not match "include" filter.
 			spanToExclude := "span-not-to-add-attr"
 			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span ptrace.Span) {
 				// Verify attributes was not added to the new internal data span.
-				assert.Equal(t, span.Attributes().Len(), 0)
+				assert.Equal(t, 0, span.Attributes().Len())
 			})
 		})
 	}
@@ -470,7 +470,7 @@ func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
 	// verifySpan verifies that attributes was added to the internal data span.
 	verifySpan := func(span ptrace.Span) {
 		require.NotNil(t, span)
-		require.Equal(t, span.Attributes().Len(), 1)
+		require.Equal(t, 1, span.Attributes().Len())
 		attrVal, ok := span.Attributes().Get("new_attr")
 		assert.True(t, ok)
 		assert.EqualValues(t, "string value", attrVal.Str())
@@ -483,13 +483,13 @@ func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
 
 	verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span ptrace.Span) {
 		// Verify attributes was not added to the new internal data span.
-		assert.Equal(t, span.Attributes().Len(), 0)
+		assert.Equal(t, 0, span.Attributes().Len())
 	})
 
 	// Create another span that does not match "include" filter.
 	spanToExclude := "span-not-to-add-attr"
 	verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span ptrace.Span) {
 		// Verify attributes was not added to the new internal data span.
-		assert.Equal(t, span.Attributes().Len(), 0)
+		assert.Equal(t, 0, span.Attributes().Len())
 	})
 }

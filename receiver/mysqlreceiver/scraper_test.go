@@ -120,7 +120,7 @@ func TestScrape(t *testing.T) {
 		require.ErrorAs(t, scrapeErr, &partialError, "returned error was not PartialScrapeError")
 		// 5 comes from 4 failed "must-have" metrics that aren't present,
 		// and the other failure comes from a row that fails to parse as a number
-		require.Equal(t, partialError.Failed, 5, "Expected partial error count to be 5")
+		require.Equal(t, 5, partialError.Failed, "Expected partial error count to be 5")
 	})
 
 }

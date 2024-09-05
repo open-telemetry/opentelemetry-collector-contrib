@@ -319,7 +319,7 @@ func TestArrowExporterStreamConnectError(t *testing.T) {
 			require.NoError(t, tc.exporter.Shutdown(bg))
 
 			require.NotEmpty(t, tc.observedLogs.All(), "should have at least one log: %v", tc.observedLogs.All())
-			require.Equal(t, tc.observedLogs.All()[0].Message, "cannot start arrow stream")
+			require.Equal(t, "cannot start arrow stream", tc.observedLogs.All()[0].Message)
 		})
 	}
 }
@@ -345,7 +345,7 @@ func TestArrowExporterDowngrade(t *testing.T) {
 			require.NoError(t, tc.exporter.Shutdown(bg))
 
 			require.Less(t, 1, len(tc.observedLogs.All()), "should have at least two logs: %v", tc.observedLogs.All())
-			require.Equal(t, tc.observedLogs.All()[0].Message, "arrow is not supported")
+			require.Equal(t, "arrow is not supported", tc.observedLogs.All()[0].Message)
 			require.Contains(t, tc.observedLogs.All()[1].Message, "downgrading")
 		})
 	}
@@ -394,7 +394,7 @@ func TestArrowExporterDisableDowngrade(t *testing.T) {
 			require.NoError(t, tc.exporter.Shutdown(bg))
 
 			require.Less(t, 1, len(tc.observedLogs.All()), "should have at least two logs: %v", tc.observedLogs.All())
-			require.Equal(t, tc.observedLogs.All()[0].Message, "arrow is not supported")
+			require.Equal(t, "arrow is not supported", tc.observedLogs.All()[0].Message)
 			require.NotContains(t, tc.observedLogs.All()[1].Message, "downgrading")
 		})
 	}

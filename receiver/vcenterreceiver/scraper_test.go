@@ -75,7 +75,7 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string)
 
 	metrics, err := scraper.scrape(ctx)
 	require.NoError(t, err)
-	require.NotEqual(t, metrics.MetricCount(), 0)
+	require.NotEqual(t, 0, metrics.MetricCount())
 
 	goldenPath := filepath.Join("testdata", "metrics", fileName)
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
@@ -119,7 +119,7 @@ func TestScrape_NoClient(t *testing.T) {
 	}
 	metrics, err := scraper.scrape(ctx)
 	require.ErrorContains(t, err, "unable to connect to vSphere SDK")
-	require.Equal(t, metrics.MetricCount(), 0)
+	require.Equal(t, 0, metrics.MetricCount())
 	require.NoError(t, scraper.Shutdown(ctx))
 }
 

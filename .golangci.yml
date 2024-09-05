@@ -134,7 +134,6 @@ linters-settings:
 
   testifylint:
     disable:
-      - expected-actual
       - float-compare
       - formatter
       - go-require
