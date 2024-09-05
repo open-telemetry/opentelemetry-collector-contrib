@@ -234,9 +234,8 @@ The metric types supported are:
 - Gauge
 - Sum
 - Histogram
+- Exponential histogram
 - Summary
-
-Exponential Histograms are ignored.
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings
