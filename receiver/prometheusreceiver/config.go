@@ -55,10 +55,7 @@ func containsScrapeConfig(cfg *Config) bool {
 		return false
 	}
 
-	if len(scrapeConfigs) == 0 {
-		return false
-	}
-	return true
+	return len(scrapeConfigs) > 0
 }
 
 // PromConfig is a redeclaration of promconfig.Config because we need custom unmarshaling
