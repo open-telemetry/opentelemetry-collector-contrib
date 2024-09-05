@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elastic/go-structform/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -358,14 +357,15 @@ func TestValue_Serialize(t *testing.T) {
 		value Value
 		want  string
 	}{
-		"nil value":         {value: nilValue, want: "null"},
-		"bool value: true":  {value: BoolValue(true), want: "true"},
-		"bool value: false": {value: BoolValue(false), want: "false"},
-		"int value":         {value: IntValue(42), want: "42"},
-		"double value":      {value: DoubleValue(3.14), want: "3.14"},
-		"NaN is undefined":  {value: DoubleValue(math.NaN()), want: "null"},
-		"Inf is undefined":  {value: DoubleValue(math.Inf(0)), want: "null"},
-		"string value":      {value: StringValue("Hello World!"), want: `"Hello World!"`},
+		"nil value":          {value: nilValue, want: "null"},
+		"bool value: true":   {value: BoolValue(true), want: "true"},
+		"bool value: false":  {value: BoolValue(false), want: "false"},
+		"int value":          {value: IntValue(42), want: "42"},
+		"double value: 3.14": {value: DoubleValue(3.14), want: "3.14"},
+		"double value: 1.0":  {value: DoubleValue(1.0), want: "1.0"},
+		"NaN is undefined":   {value: DoubleValue(math.NaN()), want: "null"},
+		"Inf is undefined":   {value: DoubleValue(math.Inf(0)), want: "null"},
+		"string value":       {value: StringValue("Hello World!"), want: `"Hello World!"`},
 		"timestamp": {
 			value: TimestampValue(dijkstra),
 			want:  `"1930-05-11T16:33:11.123456789Z"`,
@@ -391,7 +391,7 @@ func TestValue_Serialize(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
-			err := test.value.iterJSON(json.NewVisitor(&buf), false, false)
+			err := test.value.iterJSON(newJSONVisitor(&buf), false, false)
 			require.NoError(t, err)
 			assert.Equal(t, test.want, buf.String())
 		})
