@@ -1100,6 +1100,11 @@ func TestExporterTraces(t *testing.T) {
 		span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
 		span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
 
+		event := span.Events().AppendEmpty()
+		event.SetName("exception")
+		event.Attributes().PutStr("event.attr.foo", "event.attr.bar")
+		event.SetDroppedAttributesCount(1)
+
 		scopeAttr := span.Attributes()
 		fillResourceAttributeMap(scopeAttr, map[string]string{
 			"attr.foo": "attr.bar",
@@ -1122,12 +1127,16 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, traces)
 
-		rec.WaitItems(1)
+		rec.WaitItems(2)
 
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default"}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","attributes":{"attr.foo":"attr.bar"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"traces"},"dropped_attributes_count":2,"dropped_events_count":3,"dropped_links_count":4,"duration":3600000000000,"kind":"Unspecified","links":[{"attributes":{"link.attr.foo":"link.attr.bar"},"dropped_attributes_count":11,"span_id":"","trace_id":"","trace_state":"bar"}],"name":"name","resource":{"attributes":{"resource.foo":"resource.bar"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"status":{"code":"Unset"},"trace_state":"foo"}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"logs-generic.otel-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"event.attr.foo":"event.attr.bar","event.name":"exception"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"logs"},"dropped_attributes_count":1,"resource":{"attributes":{"resource.foo":"resource.bar"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
 			},
 		}
 

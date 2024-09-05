@@ -67,6 +67,7 @@ var resourceAttrsToPreserve = map[string]bool{
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
+	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document
 	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint, pcommon.Value) error
 	encodeDocument(objmodel.Document) ([]byte, error)
 }
@@ -483,7 +484,9 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 }
 
 func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
-	attributeMap.RemoveIf(func(key string, val pcommon.Value) bool {
+	attrsCopy := pcommon.NewMap() // Copy to avoid mutating original map
+	attributeMap.CopyTo(attrsCopy)
+	attrsCopy.RemoveIf(func(key string, val pcommon.Value) bool {
 		switch key {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
 			// At this point the data_stream attributes are expected to be in the record attributes,
@@ -494,7 +497,7 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 		}
 		return false
 	})
-	document.AddAttributes("attributes", attributeMap)
+	document.AddAttributes("attributes", attrsCopy)
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
@@ -549,8 +552,6 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
-	// TODO: add span events to log data streams
-
 	return document
 }
 
@@ -572,6 +573,26 @@ func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptra
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 	return document
+}
+
+func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document {
+	if m.mode != MappingOTel {
+		// Currently span events are stored separately only in OTel mapping mode.
+		// In other modes, they are stored within the span document.
+		return nil
+	}
+	var document objmodel.Document
+	document.AddTimestamp("@timestamp", spanEvent.Timestamp())
+	document.AddString("attributes.event.name", spanEvent.Name())
+	document.AddSpanID("span_id", span.SpanID())
+	document.AddTraceID("trace_id", span.TraceID())
+	document.AddInt("dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
+
+	m.encodeAttributesOTelMode(&document, spanEvent.Attributes())
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+
+	return &document
 }
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
