@@ -29,7 +29,7 @@ type monitoringReceiver struct {
 	logger            *zap.Logger
 	client            *monitoring.MetricClient
 	metricsBuilder    *internal.MetricsBuilder
-	mutex             sync.Mutex
+	mutex             sync.RWMutex
 	metricDescriptors map[string]*metric.MetricDescriptor
 }
 
@@ -91,7 +91,10 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 
 	// Iterate over each metric in the configuration to calculate start/end times and construct the filter query.
 	for _, metric := range mr.config.MetricsList {
+		// Acquire read lock to safely read metricDescriptors
+		mr.mutex.RLock()
 		metricDesc, exists := mr.metricDescriptors[metric.MetricName]
+		mr.mutex.RUnlock()
 		if !exists {
 			mr.logger.Warn("Metric descriptor not found", zap.String("metric_name", metric.MetricName))
 			continue
@@ -153,7 +156,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 // initializeClient handles the creation of the monitoring client
 func (mr *monitoringReceiver) initializeClient(ctx context.Context) error {
 	// Use google.FindDefaultCredentials to find the credentials
-	creds, err := google.FindDefaultCredentials(ctx)
+	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/monitoring.read")
 	if err != nil {
 		return fmt.Errorf("failed to find default credentials: %w", err)
 	}
