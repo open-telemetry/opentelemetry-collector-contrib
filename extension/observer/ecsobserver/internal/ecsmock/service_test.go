@@ -5,7 +5,6 @@ package ecsmock
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -28,7 +27,7 @@ func TestCluster_ListTasksWithContext(t *testing.T) {
 		_, err := c.ListTasksWithContext(ctx, req)
 		require.Error(t, err)
 		var aerr awserr.Error
-		assert.True(t, errors.As(err, &aerr))
+		assert.ErrorAs(t, err, &aerr)
 		assert.Equal(t, ecs.ErrCodeClusterNotFoundException, aerr.Code())
 		assert.Equal(t, "code "+ecs.ErrCodeClusterNotFoundException+" message "+aerr.Message(), aerr.Error())
 		assert.NoError(t, aerr.OrigErr())

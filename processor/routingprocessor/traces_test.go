@@ -421,8 +421,8 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Len(t, firstExp.AllTraces(), 1)
 		assert.Len(t, secondExp.AllTraces(), 1)
 
-		assert.Equal(t, firstExp.AllTraces()[0].SpanCount(), 2)
-		assert.Equal(t, secondExp.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, 2, firstExp.AllTraces()[0].SpanCount())
+		assert.Equal(t, 2, secondExp.AllTraces()[0].SpanCount())
 		assert.Equal(t, firstExp.AllTraces(), secondExp.AllTraces())
 	})
 

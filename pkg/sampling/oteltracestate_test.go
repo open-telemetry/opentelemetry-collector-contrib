@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -233,7 +232,7 @@ func TestParseOpenTelemetryTraceState(t *testing.T) {
 			otts, err := NewOpenTelemetryTraceState(test.in)
 
 			if test.expectErr != nil {
-				require.True(t, errors.Is(err, test.expectErr), "%q: not expecting %v wanted %v", test.in, err, test.expectErr)
+				require.ErrorIs(t, err, test.expectErr, "%q: not expecting %v wanted %v", test.in, err, test.expectErr)
 			} else {
 				require.NoError(t, err)
 			}
