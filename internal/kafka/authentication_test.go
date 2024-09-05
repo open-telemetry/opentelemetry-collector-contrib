@@ -167,7 +167,7 @@ func TestAuthentication(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			config := &sarama.Config{}
-			err := ConfigureAuthentication(test.auth, config)
+			err := ConfigureAuthentication(context.Background(), test.auth, config)
 			if test.err != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), test.err)

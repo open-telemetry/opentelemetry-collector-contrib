@@ -65,8 +65,8 @@ func (e *kafkaTracesProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-func (e *kafkaTracesProducer) start(_ context.Context, _ component.Host) error {
-	producer, err := newSaramaProducer(e.cfg)
+func (e *kafkaTracesProducer) start(ctx context.Context, _ component.Host) error {
+	producer, err := newSaramaProducer(ctx, e.cfg)
 	if err != nil {
 		return err
 	}
@@ -107,8 +107,8 @@ func (e *kafkaMetricsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-func (e *kafkaMetricsProducer) start(_ context.Context, _ component.Host) error {
-	producer, err := newSaramaProducer(e.cfg)
+func (e *kafkaMetricsProducer) start(ctx context.Context, _ component.Host) error {
+	producer, err := newSaramaProducer(ctx, e.cfg)
 	if err != nil {
 		return err
 	}
@@ -149,8 +149,8 @@ func (e *kafkaLogsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-func (e *kafkaLogsProducer) start(_ context.Context, _ component.Host) error {
-	producer, err := newSaramaProducer(e.cfg)
+func (e *kafkaLogsProducer) start(ctx context.Context, _ component.Host) error {
+	producer, err := newSaramaProducer(ctx, e.cfg)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (e *kafkaLogsProducer) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
+func newSaramaProducer(ctx context.Context, config Config) (sarama.SyncProducer, error) {
 	c := sarama.NewConfig()
 
 	c.ClientID = config.ClientID
@@ -187,7 +187,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 		c.Version = version
 	}
 
-	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, c); err != nil {
 		return nil, err
 	}
 

@@ -49,7 +49,7 @@ var newMetricsReceiver = func(
 		}
 		sc.Version = version
 	}
-	if err := kafka.ConfigureAuthentication(config.Authentication, sc); err != nil {
+	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, sc); err != nil {
 		return nil, err
 	}
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
