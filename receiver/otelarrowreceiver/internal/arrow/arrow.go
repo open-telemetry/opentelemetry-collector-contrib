@@ -174,7 +174,9 @@ func newHeaderReceiver(streamCtx context.Context, as auth.Server, includeMetadat
 // client.Info with additional key:values associated with the arrow batch.
 func (h *headerReceiver) combineHeaders(ctx context.Context, hdrsBytes []byte) (context.Context, map[string][]string, error) {
 	if len(hdrsBytes) == 0 && len(h.streamHdrs) == 0 {
-		return ctx, nil, nil
+		// Note: call newContext in this case to ensure that
+		// connInfo is added to the context, for Auth.
+		return h.newContext(ctx, nil), nil, nil
 	}
 
 	if len(hdrsBytes) == 0 {
@@ -559,7 +561,9 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	flight := r.newInFlightData(streamCtx, method, req.GetBatchId(), pendingCh)
 
 	// inflightCtx is carried through into consumeAndProcess on the success path.
-	inflightCtx := context.Background()
+	// this inherits the stream context so that its auth headers are present
+	// when the per-data Auth call is made.
+	inflightCtx := streamCtx
 	defer flight.recvDone(inflightCtx, &retErr)
 
 	if recvErr != nil {
