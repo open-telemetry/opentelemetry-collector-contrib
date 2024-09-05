@@ -550,7 +550,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 
 	// Receive a batch corresponding with one ptrace.Traces, pmetric.Metrics,
 	// or plog.Logs item.
-	req, err := serverStream.Recv()
+	req, recvErr := serverStream.Recv()
 
 	// the incoming stream context is the parent of the in-flight context, which
 	// carries a span covering sequential stream-processing work.  the context
@@ -562,29 +562,29 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	inflightCtx := context.Background()
 	defer flight.recvDone(inflightCtx, &retErr)
 
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return err
+	if recvErr != nil {
+		if errors.Is(recvErr, io.EOF) {
+			return recvErr
 
-		} else if errors.Is(err, context.Canceled) {
+		} else if errors.Is(recvErr, context.Canceled) {
 			// This is a special case to avoid introducing a span error
 			// for a canceled operation.
 			return io.EOF
 
-		} else if status, ok := status.FromError(err); ok && status.Code() == codes.Canceled {
+		} else if status, ok := status.FromError(recvErr); ok && status.Code() == codes.Canceled {
 			// This is a special case to avoid introducing a span error
 			// for a canceled operation.
 			return io.EOF
 		}
 		// Note: err is directly from gRPC, should already have status.
-		return err
+		return recvErr
 	}
 
 	// Check for optional headers and set the incoming context.
-	inflightCtx, authHdrs, err := hrcv.combineHeaders(inflightCtx, req.GetHeaders())
-	if err != nil {
+	inflightCtx, authHdrs, hdrErr := hrcv.combineHeaders(inflightCtx, req.GetHeaders())
+	if hdrErr != nil {
 		// Failing to parse the incoming headers breaks the stream.
-		return status.Errorf(codes.Internal, "arrow metadata error: %v", err)
+		return status.Errorf(codes.Internal, "arrow metadata error: %v", hdrErr)
 	}
 
 	// start this span after hrcv.combineHeaders returns extracted context. This will allow this span
@@ -608,16 +608,17 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		// This is a compressed size so make sure to acquire the difference when request is decompressed.
 		prevAcquiredBytes = int64(proto.Size(req))
 	} else {
-		prevAcquiredBytes, err = strconv.ParseInt(uncompSizeHeaderStr[0], 10, 64)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to convert string to request size: %v", err)
+		var parseErr error
+		prevAcquiredBytes, parseErr = strconv.ParseInt(uncompSizeHeaderStr[0], 10, 64)
+		if parseErr != nil {
+			return status.Errorf(codes.Internal, "failed to convert string to request size: %v", parseErr)
 		}
 	}
 
 	var callerCancel context.CancelFunc
 	if encodedTimeout, has := authHdrs["grpc-timeout"]; has && len(encodedTimeout) == 1 {
-		if timeout, err := grpcutil.DecodeTimeout(encodedTimeout[0]); err != nil {
-			r.telemetry.Logger.Debug("grpc-timeout parse error", zap.Error(err))
+		if timeout, decodeErr := grpcutil.DecodeTimeout(encodedTimeout[0]); decodeErr != nil {
+			r.telemetry.Logger.Debug("grpc-timeout parse error", zap.Error(decodeErr))
 		} else {
 			// timeout parsed successfully
 			inflightCtx, callerCancel = context.WithTimeout(inflightCtx, timeout)
@@ -638,19 +639,19 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// immediately if there are too many waiters, or will
 	// otherwise block until timeout or enough memory becomes
 	// available.
-	err = r.boundedQueue.Acquire(inflightCtx, prevAcquiredBytes)
-	if err != nil {
-		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue: %v", err)
+	acquireErr := r.boundedQueue.Acquire(inflightCtx, prevAcquiredBytes)
+	if acquireErr != nil {
+		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue: %v", acquireErr)
 	}
 	flight.numAcquired = prevAcquiredBytes
 
-	data, numItems, uncompSize, err := r.consumeBatch(ac, req)
+	data, numItems, uncompSize, consumeErr := r.consumeBatch(ac, req)
 
-	if err != nil {
-		if errors.Is(err, arrowRecord.ErrConsumerMemoryLimit) {
-			return status.Errorf(codes.ResourceExhausted, "otel-arrow decode: %v", err)
+	if consumeErr != nil {
+		if errors.Is(consumeErr, arrowRecord.ErrConsumerMemoryLimit) {
+			return status.Errorf(codes.ResourceExhausted, "otel-arrow decode: %v", consumeErr)
 		}
-		return status.Errorf(codes.Internal, "otel-arrow decode: %v", err)
+		return status.Errorf(codes.Internal, "otel-arrow decode: %v", consumeErr)
 	}
 
 	flight.uncompSize = uncompSize
@@ -659,11 +660,11 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(inflightCtx, uncompSize)
 	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(inflightCtx, int64(numItems))
 
-	numAcquired, err := r.acquireAdditionalBytes(inflightCtx, prevAcquiredBytes, uncompSize, hrcv.connInfo.Addr, uncompSizeHeaderFound)
+	numAcquired, secondAcquireErr := r.acquireAdditionalBytes(inflightCtx, prevAcquiredBytes, uncompSize, hrcv.connInfo.Addr, uncompSizeHeaderFound)
 
 	flight.numAcquired = numAcquired
-	if err != nil {
-		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue re-acquire: %v", err)
+	if secondAcquireErr != nil {
+		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue re-acquire: %v", secondAcquireErr)
 	}
 
 	// Recognize that the request is still in-flight via consumeAndRespond()

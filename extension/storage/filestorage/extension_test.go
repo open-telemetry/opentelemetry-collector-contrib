@@ -326,7 +326,7 @@ func TestCompaction(t *testing.T) {
 
 	files, err := os.ReadDir(tempDir)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(files))
+	require.Len(t, files, 1)
 
 	file := files[0]
 	path := filepath.Join(tempDir, file.Name())
@@ -417,7 +417,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// check if only db exists in tempDir
 	files, err := os.ReadDir(tempDir)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(files))
+	require.Len(t, files, 1)
 	fileName := files[0].Name()
 
 	// perform compaction in the same directory
@@ -432,7 +432,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// check if only db exists in tempDir
 	files, err = os.ReadDir(tempDir)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(files))
+	require.Len(t, files, 1)
 	require.Equal(t, fileName, files[0].Name())
 
 	// perform compaction in different directory
@@ -449,7 +449,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// check if emptyTempDir is empty after compaction
 	files, err = os.ReadDir(emptyTempDir)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(files))
+	require.Empty(t, files)
 }
 
 func TestCleanupOnStart(t *testing.T) {
@@ -485,7 +485,7 @@ func TestCleanupOnStart(t *testing.T) {
 
 	files, err := os.ReadDir(tempDir)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(files))
+	require.Len(t, files, 1)
 }
 
 func TestCompactionOnStart(t *testing.T) {

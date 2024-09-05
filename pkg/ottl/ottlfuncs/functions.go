@@ -37,6 +37,7 @@ func converters[K any]() []ottl.Factory[K] {
 	return []ottl.Factory[K]{
 		// Converters
 		NewBase64DecodeFactory[K](),
+		NewDecodeFactory[K](),
 		NewConcatFactory[K](),
 		NewConvertCaseFactory[K](),
 		NewDayFactory[K](),
@@ -73,6 +74,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewSHA1Factory[K](),
 		NewSHA256Factory[K](),
 		NewSHA512Factory[K](),
+		NewSortFactory[K](),
 		NewSpanIDFactory[K](),
 		NewSplitFactory[K](),
 		NewFormatFactory[K](),
@@ -88,6 +90,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewUnixSecondsFactory[K](),
 		NewUUIDFactory[K](),
 		NewURLFactory[K](),
+		NewUserAgentFactory[K](),
 		NewAppendFactory[K](),
 		NewYearFactory[K](),
 		NewHexFactory[K](),

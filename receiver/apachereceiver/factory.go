@@ -46,6 +46,10 @@ func createDefaultConfig() component.Config {
 
 func parseResourceAttributes(endpoint string) (string, string, error) {
 	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", "", err
+	}
+
 	serverName := u.Hostname()
 	port := u.Port()
 

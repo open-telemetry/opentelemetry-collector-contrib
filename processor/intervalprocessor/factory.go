@@ -26,6 +26,10 @@ func NewFactory() processor.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Interval: 60 * time.Second,
+		PassThrough: PassThrough{
+			Gauge:   false,
+			Summary: false,
+		},
 	}
 }
 

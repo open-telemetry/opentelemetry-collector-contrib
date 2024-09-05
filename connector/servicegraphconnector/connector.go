@@ -31,6 +31,8 @@ const (
 	clientKind         = "client"
 	serverKind         = "server"
 	virtualNodeLabel   = "virtual_node"
+	millisecondsUnit   = "ms"
+	secondsUnit        = "s"
 )
 
 var (
@@ -522,10 +524,10 @@ func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	// TODO: Remove this once legacy metric names are removed
 	if legacyMetricNamesFeatureGate.IsEnabled() {
-		return p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_duration_seconds")
+		return p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_duration")
 	}
 
-	if err := p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_server_seconds"); err != nil {
+	if err := p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_server"); err != nil {
 		return err
 	}
 
@@ -535,7 +537,11 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	if len(p.reqServerDurationSecondsCount) > 0 {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName("traces_service_graph_request_client_seconds")
+		mDuration.SetName("traces_service_graph_request_client")
+		mDuration.SetUnit(secondsUnit)
+		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+			mDuration.SetUnit(millisecondsUnit)
+		}
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
@@ -545,9 +551,9 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dpDuration.SetTimestamp(timestamp)
 			dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
-			dpDuration.BucketCounts().FromRaw(p.reqServerDurationSecondsBucketCounts[key])
-			dpDuration.SetCount(p.reqServerDurationSecondsCount[key])
-			dpDuration.SetSum(p.reqServerDurationSecondsSum[key])
+			dpDuration.BucketCounts().FromRaw(p.reqClientDurationSecondsBucketCounts[key])
+			dpDuration.SetCount(p.reqClientDurationSecondsCount[key])
+			dpDuration.SetSum(p.reqClientDurationSecondsSum[key])
 
 			// TODO: Support exemplars
 			dimensions, ok := p.dimensionsForSeries(key)
@@ -565,6 +571,10 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 	if len(p.reqServerDurationSecondsCount) > 0 {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName(mName)
+		mDuration.SetUnit(secondsUnit)
+		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+			mDuration.SetUnit(millisecondsUnit)
+		}
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
@@ -575,9 +585,9 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dpDuration.SetTimestamp(timestamp)
 			dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
-			dpDuration.BucketCounts().FromRaw(p.reqClientDurationSecondsBucketCounts[key])
-			dpDuration.SetCount(p.reqClientDurationSecondsCount[key])
-			dpDuration.SetSum(p.reqClientDurationSecondsSum[key])
+			dpDuration.BucketCounts().FromRaw(p.reqServerDurationSecondsBucketCounts[key])
+			dpDuration.SetCount(p.reqServerDurationSecondsCount[key])
+			dpDuration.SetSum(p.reqServerDurationSecondsSum[key])
 
 			// TODO: Support exemplars
 			dimensions, ok := p.dimensionsForSeries(key)
