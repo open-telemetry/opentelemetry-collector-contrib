@@ -292,6 +292,7 @@ func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
 			attrs.PutStr(k, vv)
 		case []string:
 			slice := attrs.PutEmptySlice(k)
+			slice.EnsureCapacity(len(vv))
 			for _, s := range vv {
 				slice.AppendEmpty().SetStr(s)
 			}
