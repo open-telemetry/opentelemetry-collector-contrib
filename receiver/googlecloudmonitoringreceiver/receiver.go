@@ -35,15 +35,14 @@ type monitoringReceiver struct {
 
 func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitoringReceiver {
 	return &monitoringReceiver{
-		config:         cfg,
-		logger:         logger,
-		metricsBuilder: internal.NewMetricsBuilder(logger),
+		config:            cfg,
+		logger:            logger,
+		metricsBuilder:    internal.NewMetricsBuilder(logger),
+		metricDescriptors: make(map[string]*metric.MetricDescriptor),
 	}
 }
 
 func (mr *monitoringReceiver) Start(ctx context.Context, _ component.Host) error {
-	mr.metricDescriptors = make(map[string]*metric.MetricDescriptor)
-
 	// Lock to ensure thread-safe access to mr.client
 	mr.mutex.Lock()
 	defer mr.mutex.Unlock()
