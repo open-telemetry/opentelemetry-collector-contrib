@@ -103,41 +103,12 @@ func mapToXMLElement(m pcommon.Map, tag string) xmlElement {
 
 		switch v.Type() {
 		case pcommon.ValueTypeMap:
-			childMap := v.Map()
-			arrayTag := k
-			// it the child is a flattened array, we need to handle it here
-			var flattenedAttr pcommon.Value
-			flattenedAttr, flattened = childMap.Get(xmlFlattenedArrayKey)
-			if !flattened {
-				// typical case
-				elem.children = append(elem.children, mapToXMLElement(childMap, k))
-			} else {
-				// handle the flattened array
-				childMap.Range(func(k string, v pcommon.Value) bool {
-					switch k {
-					case xmlFlattenedArrayKey:
-						return true
-					case xmlOrderingKey:
-						orderKey = v.Str()
-						return true
-					}
-					child := xmlElement{tag: arrayTag, attributes: []xml.Attr{newXMLAttribute(flattenedAttr.Str(), k)}}
-
-					switch v.Type() {
-					case pcommon.ValueTypeStr:
-						child.text = v.Str()
-					case pcommon.ValueTypeMap:
-						// TODO test this case
-						child.children = append(child.children, mapToXMLElement(v.Map(), k))
-					default:
-						// TODO -- handle this case
-					}
-
-					elem.children = append(elem.children, child)
-
-					return true
-				})
+			children, childFlattened, childOrderKey := handleChildMap(v.Map(), k)
+			elem.children = append(elem.children, children...)
+			if childOrderKey != "" {
+				orderKey = childOrderKey
 			}
+			flattened = childFlattened
 		case pcommon.ValueTypeSlice:
 			slice := v.Slice()
 			for i := 0; i < slice.Len(); i++ {
@@ -163,6 +134,46 @@ func mapToXMLElement(m pcommon.Map, tag string) xmlElement {
 	sortByOrderKey(elem.children, orderKey, flattened)
 
 	return elem
+}
+
+func handleChildMap(childMap pcommon.Map, arrayTag string) ([]xmlElement, bool, string) {
+
+	orderKey := ""
+	var children []xmlElement
+	// it the child is a flattened array, we need to handle it here
+	flattenedAttr, flattened := childMap.Get(xmlFlattenedArrayKey)
+	if !flattened {
+		// typical case
+		return []xmlElement{mapToXMLElement(childMap, arrayTag)}, flattened, orderKey
+	}
+
+	// handle the flattened array
+	childMap.Range(func(k string, v pcommon.Value) bool {
+		switch k {
+		case xmlFlattenedArrayKey:
+			return true
+		case xmlOrderingKey:
+			orderKey = v.Str()
+			return true
+		}
+		child := xmlElement{tag: arrayTag, attributes: []xml.Attr{newXMLAttribute(flattenedAttr.Str(), k)}}
+
+		switch v.Type() {
+		case pcommon.ValueTypeStr:
+			child.text = v.Str()
+		case pcommon.ValueTypeMap:
+			// TODO test this case
+			child.children = append(child.children, mapToXMLElement(v.Map(), k))
+		default:
+			// TODO -- handle this case
+		}
+
+		children = append(children, child)
+
+		return true
+	})
+
+	return children, flattened, orderKey
 }
 
 func sortByOrderKey(xml []xmlElement, orderKey string, flattenedArray bool) {
