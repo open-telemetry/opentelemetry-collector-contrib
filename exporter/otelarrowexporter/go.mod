@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/apache/arrow/go/v16 v16.1.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.108.0
 	github.com/open-telemetry/otel-arrow v0.25.0
 	github.com/stretchr/testify v1.9.0
@@ -105,3 +106,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/otela
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver => ../../receiver/otelarrowreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil => ../../internal/grpcutil

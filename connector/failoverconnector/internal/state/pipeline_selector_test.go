@@ -22,8 +22,8 @@ func TestSelectPipeline(t *testing.T) {
 
 	idx, ch := pS.SelectedPipeline()
 
-	require.Equal(t, idx, 0)
-	require.Equal(t, pS.ChannelIndex(ch), 0)
+	require.Equal(t, 0, idx)
+	require.Equal(t, 0, pS.ChannelIndex(ch))
 }
 
 func TestHandlePipelineError(t *testing.T) {
@@ -44,7 +44,7 @@ func TestHandlePipelineError(t *testing.T) {
 	}()
 
 	idx, ch := pS.SelectedPipeline()
-	require.Equal(t, idx, 0)
+	require.Equal(t, 0, idx)
 	ch <- false
 
 	require.Eventually(t, func() bool {

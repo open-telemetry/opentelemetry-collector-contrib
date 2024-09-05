@@ -1768,7 +1768,7 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-	assert.Equal(t, string(respBytes), responseHecHealthy)
+	assert.Equal(t, responseHecHealthy, string(respBytes))
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
