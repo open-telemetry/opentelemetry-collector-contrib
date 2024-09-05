@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -83,6 +84,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Compaction.OnRebound && cfg.Compaction.CheckInterval <= 0 {
 		return errors.New("compaction check interval must be positive when rebound compaction is set")
+	}
+
+	if _, err := strconv.ParseInt(cfg.DirectoryPermissions, 8, 32); err != nil {
+		return errors.New("DirectoryPermissions value must be a valid octal representation of file permissions.")
 	}
 
 	return nil

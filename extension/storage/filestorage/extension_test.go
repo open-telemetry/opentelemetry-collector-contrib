@@ -543,6 +543,7 @@ func TestDirectoryCreation(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Directory = storageDir
 				cfg.CreateDirectory = true
+				cfg.DirectoryPermissions = "0750"
 				require.NoError(t, cfg.Validate())
 				return cfg
 			},
@@ -599,15 +600,33 @@ func TestDirectoryCreation(t *testing.T) {
 				require.NoDirExists(t, cfg.Directory)
 			},
 		},
+		{
+			name: "create directory true - invalid permissions",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				tempDir := t.TempDir()
+				storageDir := filepath.Join(tempDir, uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = false
+				cfg.DirectoryPermissions = "invalid string"
+				require.Error(t, cfg.Validate())
+				return cfg
+			},
+			validate: func(t *testing.T, cfg *Config) {
+				require.NoDirExists(t, cfg.Directory)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := NewFactory()
 			config := tt.config(t, f)
-			ext, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), config)
-			require.NoError(t, err)
-			require.NotNil(t, ext)
-			tt.validate(t, config)
+			if config != nil {
+				ext, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), config)
+				require.NoError(t, err)
+				require.NotNil(t, ext)
+				tt.validate(t, config)
+			}
 		})
 	}
 }
