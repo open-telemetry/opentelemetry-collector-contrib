@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 )
@@ -576,65 +577,94 @@ func TestArrowExporterStreaming(t *testing.T) {
 
 // TestArrowExporterHeaders tests a mix of outgoing context headers.
 func TestArrowExporterHeaders(t *testing.T) {
-	tc := newSingleStreamMetadataTestCase(t)
-	channel := newHealthyTestChannel()
+	for _, withDeadline := range []bool{true, false} {
+		t.Run(fmt.Sprint("with_deadline=", withDeadline), func(t *testing.T) {
 
-	tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
+			tc := newSingleStreamMetadataTestCase(t)
+			channel := newHealthyTestChannel()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	require.NoError(t, tc.exporter.Start(ctx))
+			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-	var expectOutput []metadata.MD
-	var actualOutput []metadata.MD
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		md := metadata.MD{}
-		hpd := hpack.NewDecoder(4096, func(f hpack.HeaderField) {
-			md[f.Name] = append(md[f.Name], f.Value)
-		})
-		for data := range channel.sendChannel() {
-			if len(data.Headers) == 0 {
-				actualOutput = append(actualOutput, nil)
-			} else {
-				_, err := hpd.Write(data.Headers)
+			require.NoError(t, tc.exporter.Start(ctx))
+
+			var expectOutput []metadata.MD
+			var actualOutput []metadata.MD
+
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				md := metadata.MD{}
+				hpd := hpack.NewDecoder(4096, func(f hpack.HeaderField) {
+					md[f.Name] = append(md[f.Name], f.Value)
+				})
+				for data := range channel.sendChannel() {
+					if len(data.Headers) == 0 {
+						actualOutput = append(actualOutput, nil)
+					} else {
+						_, err := hpd.Write(data.Headers)
+						require.NoError(t, err)
+						actualOutput = append(actualOutput, md)
+						md = metadata.MD{}
+					}
+					channel.recv <- statusOKFor(data.BatchId)
+				}
+			}()
+
+			for times := 0; times < 10; times++ {
+				input := testdata.GenerateTraces(2)
+
+				if times%2 == 1 {
+					md := metadata.MD{
+						"expected1":       []string{"metadata1"},
+						"expected2":       []string{fmt.Sprint(times)},
+						"otlp-pdata-size": []string{"329"},
+					}
+					expectOutput = append(expectOutput, md)
+				} else {
+					expectOutput = append(expectOutput, metadata.MD{
+						"otlp-pdata-size": []string{"329"},
+					})
+				}
+
+				sendCtx := ctx
+				if withDeadline {
+					var sendCancel context.CancelFunc
+					sendCtx, sendCancel = context.WithTimeout(sendCtx, time.Second)
+					defer sendCancel()
+				}
+
+				sent, err := tc.exporter.SendAndWait(sendCtx, input)
 				require.NoError(t, err)
-				actualOutput = append(actualOutput, md)
-				md = metadata.MD{}
+				require.True(t, sent)
 			}
-			channel.recv <- statusOKFor(data.BatchId)
-		}
-	}()
+			// Stop the test conduit started above.
+			cancel()
+			wg.Wait()
 
-	for times := 0; times < 10; times++ {
-		input := testdata.GenerateTraces(2)
-
-		if times%2 == 1 {
-			md := metadata.MD{
-				"expected1":       []string{"metadata1"},
-				"expected2":       []string{fmt.Sprint(times)},
-				"otlp-pdata-size": []string{"329"},
+			// Manual check for proper deadline propagation.  Since the test
+			// is timed we don't expect an exact match.
+			if withDeadline {
+				for _, out := range actualOutput {
+					dead := out.Get("grpc-timeout")
+					require.Len(t, dead, 1)
+					require.NotEmpty(t, dead[0])
+					to, err := grpcutil.DecodeTimeout(dead[0])
+					require.NoError(t, err)
+					// Allow the test to lapse for 0.5s.
+					require.Less(t, time.Second/2, to)
+					require.GreaterOrEqual(t, time.Second, to)
+					out.Delete("grpc-timeout")
+				}
 			}
-			expectOutput = append(expectOutput, md)
-		} else {
-			expectOutput = append(expectOutput, metadata.MD{
-				"otlp-pdata-size": []string{"329"},
-			})
-		}
 
-		sent, err := tc.exporter.SendAndWait(context.Background(), input)
-		require.NoError(t, err)
-		require.True(t, sent)
+			require.Equal(t, expectOutput, actualOutput)
+			require.NoError(t, tc.exporter.Shutdown(ctx))
+		})
 	}
-	// Stop the test conduit started above.
-	cancel()
-	wg.Wait()
-
-	require.Equal(t, expectOutput, actualOutput)
-	require.NoError(t, tc.exporter.Shutdown(ctx))
 }
 
 // TestArrowExporterIsTraced tests whether trace and span ID are
