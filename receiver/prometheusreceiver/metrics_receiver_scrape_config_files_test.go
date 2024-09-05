@@ -40,12 +40,12 @@ func TestScrapeConfigFiles(t *testing.T) {
 	testComponent(t, targets, func(cfg *Config) {
 		// take the generated scrape config and move it into a file instead
 		marshalledScrapeConfigs, err := yaml.Marshal(cfg.PrometheusConfig.ScrapeConfigs)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		tmpDir := t.TempDir()
 		cfgFileName := fmt.Sprintf("%s/test-scrape-config.yaml", tmpDir)
 		scrapeConfigFileContent := fmt.Sprintf("scrape_configs:\n%s", string(marshalledScrapeConfigs))
 		err = os.WriteFile(cfgFileName, []byte(scrapeConfigFileContent), 0400)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		cfg.PrometheusConfig.ScrapeConfigs = []*config.ScrapeConfig{}
 		cfg.PrometheusConfig.ScrapeConfigFiles = []string{cfgFileName}
 	})
