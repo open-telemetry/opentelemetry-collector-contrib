@@ -65,7 +65,7 @@ func (cfg *Config) Validate() error {
 	for _, dir := range dirs {
 		if info, err := os.Stat(dir); err != nil {
 			if !cfg.CreateDirectory && os.IsNotExist(err) {
-				return fmt.Errorf("directory must exist: %w", err)
+				return fmt.Errorf("directory must exist: %w. You can enable the create_directory option to automatically create it.", err)
 			}
 
 			fsErr := &fs.PathError{}
