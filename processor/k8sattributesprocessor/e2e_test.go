@@ -896,7 +896,7 @@ func scanTracesForAttributes(t *testing.T, ts *consumertest.TracesSink, expected
 		for i := 0; i < traces.ResourceSpans().Len(); i++ {
 			resource := traces.ResourceSpans().At(i).Resource()
 			service, exist := resource.Attributes().Get("service.name")
-			assert.Equal(t, true, exist, "span do not has 'service.name' attribute in resource")
+			assert.True(t, exist, "span do not has 'service.name' attribute in resource")
 			if service.AsString() != expectedService {
 				continue
 			}
@@ -917,7 +917,7 @@ func scanMetricsForAttributes(t *testing.T, ms *consumertest.MetricsSink, expect
 		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 			resource := metrics.ResourceMetrics().At(i).Resource()
 			service, exist := resource.Attributes().Get("service.name")
-			assert.Equal(t, true, exist, "metric do not has 'service.name' attribute in resource")
+			assert.True(t, exist, "metric do not has 'service.name' attribute in resource")
 			if service.AsString() != expectedService {
 				continue
 			}
@@ -938,7 +938,7 @@ func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedServ
 		for i := 0; i < logs.ResourceLogs().Len(); i++ {
 			resource := logs.ResourceLogs().At(i).Resource()
 			service, exist := resource.Attributes().Get("service.name")
-			assert.Equal(t, true, exist, "log do not has 'service.name' attribute in resource")
+			assert.True(t, exist, "log do not has 'service.name' attribute in resource")
 			if service.AsString() != expectedService {
 				continue
 			}

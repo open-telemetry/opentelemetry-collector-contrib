@@ -56,7 +56,7 @@ resourceMetrics:
                     - 1
                     - 10
                   startTimeUnixNano: "1000000"
-                  sum: 0.000001
+                  sum: 0
                   timeUnixNano: "2000000"
             name: traces_service_graph_request_server_seconds
           - histogram:
@@ -89,7 +89,7 @@ resourceMetrics:
                     - 1
                     - 10
                   startTimeUnixNano: "1000000"
-                  sum: 0.000000
+                  sum: 1e-06
                   timeUnixNano: "2000000"
             name: traces_service_graph_request_client_seconds
         scope:

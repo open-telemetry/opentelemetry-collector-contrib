@@ -104,7 +104,7 @@ func TestReception(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create the Jaeger OpenCensus exporter")
 
 	gotTraces := sink.AllTraces()
-	assert.Equal(t, 1, len(gotTraces))
+	assert.Len(t, gotTraces, 1)
 
 	assert.EqualValues(t, td, gotTraces[0])
 }
@@ -178,7 +178,7 @@ func TestGRPCReception(t *testing.T) {
 	assert.NotNil(t, resp, "response should not have been nil")
 
 	gotTraces := sink.AllTraces()
-	assert.Equal(t, 1, len(gotTraces))
+	assert.Len(t, gotTraces, 1)
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
 	assert.Len(t, req.Batch.Spans, want.SpanCount(), "got a conflicting amount of spans")
@@ -238,7 +238,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	assert.NotNil(t, resp, "response should not have been nil")
 
 	gotTraces := sink.AllTraces()
-	assert.Equal(t, 1, len(gotTraces))
+	assert.Len(t, gotTraces, 1)
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
 	assert.Len(t, req.Batch.Spans, want.SpanCount(), "got a conflicting amount of spans")

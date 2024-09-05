@@ -162,7 +162,7 @@ func TestMetricsExporterShutdown(t *testing.T) {
 	res := p.Shutdown(context.Background())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 // loadMetricsMap will parse the given yaml file into a map[string]pmetric.Metrics
