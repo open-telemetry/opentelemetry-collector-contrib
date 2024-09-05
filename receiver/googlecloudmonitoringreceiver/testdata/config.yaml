@@ -3,6 +3,4 @@ googlecloudmonitoring:
   project_id: my-project-id
   metrics_list:
     - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
-      fetch_delay: 1m # Can be specified in seconds (s), minutes (m), or hours (h)
     - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
-      fetch_delay: 60s # Can be specified in seconds (s), minutes (m), or hours (h)

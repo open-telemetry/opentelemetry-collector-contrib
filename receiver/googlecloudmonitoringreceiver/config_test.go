@@ -37,11 +37,9 @@ func TestLoadConfig(t *testing.T) {
 			MetricsList: []MetricConfig{
 				{
 					MetricName: "compute.googleapis.com/instance/cpu/usage_time",
-					FetchDelay: 60 * time.Second,
 				},
 				{
 					MetricName: "connectors.googleapis.com/flex/instance/cpu/usage_time",
-					FetchDelay: 60 * time.Second,
 				},
 			},
 		},
@@ -57,17 +55,10 @@ func TestValidateService(t *testing.T) {
 		"Valid Service": {
 			MetricConfig{
 				MetricName: "metric_name",
-				FetchDelay: 0 * time.Second,
 			}, false},
 		"Empty MetricName": {
 			MetricConfig{
 				MetricName: "",
-				FetchDelay: 0,
-			}, true},
-		"Negative FetchDelay": {
-			MetricConfig{
-				MetricName: "metric_name",
-				FetchDelay: -1 * time.Second,
 			}, true},
 	}
 
@@ -86,7 +77,6 @@ func TestValidateService(t *testing.T) {
 func TestValidateConfig(t *testing.T) {
 	validMetric := MetricConfig{
 		MetricName: "metric_name",
-		FetchDelay: 0 * time.Second,
 	}
 
 	testCases := map[string]struct {

@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	defaultCollectionInterval = 60 * time.Second // Default value for collection interval
-	defaultFetchDelay         = 60 * time.Second // Default value for fetch delay
+	defaultCollectionInterval = 300 * time.Second // Default value for collection interval
+	defaultFetchDelay         = 60 * time.Second  // Default value for fetch delay
 )
 
 type Config struct {
@@ -24,8 +24,7 @@ type Config struct {
 }
 
 type MetricConfig struct {
-	MetricName string        `mapstructure:"metric_name"`
-	FetchDelay time.Duration `mapstructure:"fetch_delay"`
+	MetricName string `mapstructure:"metric_name"`
 }
 
 func (config *Config) Validate() error {
@@ -49,10 +48,6 @@ func (config *Config) Validate() error {
 func (metric MetricConfig) Validate() error {
 	if metric.MetricName == "" {
 		return errors.New("field \"metric_name\" is required and cannot be empty for metric configuration")
-	}
-
-	if metric.FetchDelay < 0 {
-		return errors.New("field \"fetch_delay\" cannot be negative for metric configuration")
 	}
 
 	return nil

@@ -106,7 +106,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 			gInternal = defaultCollectionInterval
 		}
 
-		gDelay = metric.FetchDelay
+		gDelay = metricDesc.GetMetadata().GetIngestDelay().AsDuration()
 		if gDelay <= 0 {
 			gDelay = defaultFetchDelay
 		}
@@ -220,14 +220,22 @@ func (mr *monitoringReceiver) metricDescriptorAPI(ctx context.Context) error {
 }
 
 // calculateStartEndTime calculates the start and end times based on the current time, interval, and delay.
+// It enforces a maximum interval of 23 hours to avoid querying data older than 24 hours.
 func calculateStartEndTime(interval, delay time.Duration) (time.Time, time.Time) {
+	const maxInterval = 23 * time.Hour // Maximum allowed interval is 23 hours
+
 	// Get the current time
 	now := time.Now()
+
+	// Cap the interval at 23 hours if it exceeds that
+	if interval > maxInterval {
+		interval = maxInterval
+	}
 
 	// Calculate end time by subtracting delay
 	endTime := now.Add(-delay)
 
-	// Calculate start time by subtracting interval from end time
+	// Calculate start time by subtracting the interval from the end time
 	startTime := endTime.Add(-interval)
 
 	// Return start and end times
