@@ -24,7 +24,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 
 	buf, err := e.MarshalLogs(ld)
 	assert.NoError(t, err)
-	assert.True(t, len(buf) > 0)
+	assert.NotEmpty(t, buf)
 	assert.Equal(t, json, string(buf))
 }
 

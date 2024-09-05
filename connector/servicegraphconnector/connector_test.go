@@ -479,7 +479,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 		p.keyToMetric[key] = metric
 	}
 	p.cleanCache()
-	assert.Len(t, p.keyToMetric, 0)
+	assert.Empty(t, p.keyToMetric)
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
@@ -539,7 +539,7 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	// for dimensions from that series. It's important that it happens this way around,
 	// instead of deleting it from `keyToMetric`, otherwise the metrics collector will try
 	// and fail to find dimensions for a series that is about to be removed.
-	assert.Len(t, p.reqTotal, 0)
+	assert.Empty(t, p.reqTotal)
 	assert.Len(t, p.keyToMetric, 1)
 
 	p.metricMutex.RUnlock()
@@ -574,7 +574,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 		p.keyToMetric[key] = metric
 	}
 	p.cleanCache()
-	assert.Len(t, p.keyToMetric, 0)
+	assert.Empty(t, p.keyToMetric)
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
