@@ -32,7 +32,7 @@ const (
 	defaultAddFullPodNameMetricLabel = false
 
 	// Don't use controller name for StatefulSet metrics by default
-	defaultPrefContollerNameForStatefulSet = false
+	defaultPrefControllerNameForStatefulSet = false
 )
 
 // NewFactory creates a factory for AWS container insight receiver
@@ -46,12 +46,12 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig returns a default config for the receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		CollectionInterval:              defaultCollectionInterval,
-		ContainerOrchestrator:           defaultContainerOrchestrator,
-		TagService:                      defaultTagService,
-		PrefFullPodName:                 defaultPrefFullPodName,
-		AddFullPodNameMetricLabel:       defaultAddFullPodNameMetricLabel,
-		PrefContollerNameForStatefulSet: defaultPrefContollerNameForStatefulSet,
+		CollectionInterval:               defaultCollectionInterval,
+		ContainerOrchestrator:            defaultContainerOrchestrator,
+		TagService:                       defaultTagService,
+		PrefFullPodName:                  defaultPrefFullPodName,
+		AddFullPodNameMetricLabel:        defaultAddFullPodNameMetricLabel,
+		PrefControllerNameForStatefulSet: defaultPrefControllerNameForStatefulSet,
 	}
 }
 

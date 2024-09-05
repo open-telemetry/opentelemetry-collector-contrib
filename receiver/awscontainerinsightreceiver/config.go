@@ -32,5 +32,5 @@ type Config struct {
 	// By default a StatefulSet will always use its full "PodName" when storing metrics.
 	// If true this will instead use the name of the relevant controller instead to match Deployment, Daemonset, Job, ...
 	// The default value is false
-	PrefContollerNameForStatefulSet bool `mapstructure:"prefer_controller_name_for_stateful_set"`
+	PrefControllerNameForStatefulSet bool `mapstructure:"prefer_controller_name_for_stateful_set"`
 }
