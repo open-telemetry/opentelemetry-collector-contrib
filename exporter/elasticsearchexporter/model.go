@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -350,6 +351,25 @@ func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
 	m := vm.Map()
 	m.PutDouble("sum", dp.Sum())
 	m.PutInt("value_count", int64(dp.Count()))
+	return vm
+}
+
+func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) pcommon.Value {
+	counts, values := exphistogram.ToTDigest(dp)
+
+	vm := pcommon.NewValueMap()
+	m := vm.Map()
+	vmCounts := m.PutEmptySlice("counts")
+	vmCounts.EnsureCapacity(len(counts))
+	for _, c := range counts {
+		vmCounts.AppendEmpty().SetInt(c)
+	}
+	vmValues := m.PutEmptySlice("values")
+	vmValues.EnsureCapacity(len(values))
+	for _, v := range values {
+		vmValues.AppendEmpty().SetDouble(v)
+	}
+
 	return vm
 }
 
