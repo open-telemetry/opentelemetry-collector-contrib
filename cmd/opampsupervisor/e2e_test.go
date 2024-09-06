@@ -1290,7 +1290,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 	s := newSupervisor(t, "report_status", map[string]string{
 		"url":                      server.addr,
 		"successful_health_checks": "2",
-		"config_apply_timeout":     "10s",
+		"config_apply_timeout":     "5s",
 	})
 	require.Nil(t, s.Start())
 	defer s.Shutdown()

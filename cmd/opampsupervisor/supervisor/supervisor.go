@@ -117,11 +117,11 @@ type Supervisor struct {
 
 	// A channel to indicate there is a new config to apply.
 	hasNewConfig           chan struct{}
-	waitingForHealthCheck  atomic.Bool
-	successfulHealthChecks atomic.Int32
+	waitingForHealthCheck  bool
+	successfulHealthChecks int32
 	requiredHealthChecks   int32
 	configApplyTimeout     time.Duration
-	lastConfigChangeTime   atomic.Value // stores time.Time
+	lastConfigChangeTime   time.Time
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -1019,11 +1019,11 @@ func (s *Supervisor) healthCheck() {
 	err := s.healthChecker.Check(ctx)
 	cancel()
 
-	if s.waitingForHealthCheck.Load() {
-		timeSinceChange := time.Since(s.lastConfigChangeTime.Load().(time.Time))
+	if s.waitingForHealthCheck {
+		timeSinceChange := time.Since(s.lastConfigChangeTime)
 		if timeSinceChange > s.configApplyTimeout {
 			s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
-			s.waitingForHealthCheck.Store(false)
+			s.waitingForHealthCheck = false
 		}
 	}
 
@@ -1033,8 +1033,8 @@ func (s *Supervisor) healthCheck() {
 	}
 
 	if err != nil {
-		if s.waitingForHealthCheck.Load() {
-			s.successfulHealthChecks.Store(0) // Reset successful checks on error
+		if s.waitingForHealthCheck {
+			s.successfulHealthChecks = 0 // Reset successful checks on error
 		}
 
 		if !s.agentHasStarted && s.agentStartHealthCheckAttempts < 10 {
@@ -1045,11 +1045,11 @@ func (s *Supervisor) healthCheck() {
 			s.logger.Error("Agent is not healthy", zap.Error(err))
 		}
 	} else {
-		if s.waitingForHealthCheck.Load() {
-			count := s.successfulHealthChecks.Add(1)
-			if count >= s.requiredHealthChecks {
+		if s.waitingForHealthCheck {
+			s.successfulHealthChecks++
+			if s.successfulHealthChecks >= s.requiredHealthChecks {
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
-				s.waitingForHealthCheck.Store(false)
+				s.waitingForHealthCheck = false
 			}
 		}
 
@@ -1080,6 +1080,10 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
+			s.waitingForHealthCheck = true
+			s.successfulHealthChecks = 0
+			s.lastConfigChangeTime = time.Now()
+
 			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 			s.stopAgentApplyConfig()
@@ -1234,9 +1238,6 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 	// Update the agent config if any messages have touched the config
 	if configChanged {
-		s.waitingForHealthCheck.Store(true)
-		s.successfulHealthChecks.Store(0)
-		s.lastConfigChangeTime.Store(time.Now())
 
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
