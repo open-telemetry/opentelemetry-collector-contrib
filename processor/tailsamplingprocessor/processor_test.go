@@ -114,7 +114,7 @@ func TestTraceIntegrity(t *testing.T) {
 	span.SetTraceID(pcommon.TraceID([16]byte{13, 14, 15, 16}))
 	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
 
-	require.Equal(t, spanCount, len(spans))
+	require.Len(t, spans, spanCount)
 
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
@@ -157,7 +157,7 @@ func TestTraceIntegrity(t *testing.T) {
 	require.EqualValues(t, 4, mpe1.EvaluationCount)
 
 	consumed := nextConsumer.AllTraces()
-	require.Equal(t, 4, len(consumed))
+	require.Len(t, consumed, 4)
 	for _, trace := range consumed {
 		require.Equal(t, 1, trace.SpanCount())
 		require.Equal(t, 1, trace.ResourceSpans().Len())
@@ -410,7 +410,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
 	tsp.policyTicker.OnTick()
 
-	require.EqualValues(t, 3, len(msp.AllTraces()), "There should be three batches, one for each trace")
+	require.Len(t, msp.AllTraces(), 3, "There should be three batches, one for each trace")
 
 	expectedSpanIDs := make(map[int][]pcommon.SpanID)
 	expectedSpanIDs[0] = []pcommon.SpanID{

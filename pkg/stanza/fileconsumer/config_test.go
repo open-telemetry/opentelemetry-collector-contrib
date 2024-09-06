@@ -456,7 +456,7 @@ func TestBuild(t *testing.T) {
 			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{
@@ -665,7 +665,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{

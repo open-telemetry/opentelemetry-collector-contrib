@@ -685,7 +685,7 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
 func TestStopExporters(t *testing.T) {

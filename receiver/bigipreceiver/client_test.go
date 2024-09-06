@@ -118,7 +118,7 @@ func TestGetNewToken(t *testing.T) {
 				err := tc.GetNewToken(context.Background())
 				require.EqualError(t, err, "non 200 code returned 401")
 				hasToken := tc.HasToken()
-				require.Equal(t, hasToken, false)
+				require.False(t, hasToken)
 			},
 		},
 		{
@@ -136,7 +136,7 @@ func TestGetNewToken(t *testing.T) {
 				err := tc.GetNewToken(context.Background())
 				require.Contains(t, err.Error(), "failed to decode response payload")
 				hasToken := tc.HasToken()
-				require.Equal(t, hasToken, false)
+				require.False(t, hasToken)
 			},
 		},
 		{
@@ -156,7 +156,7 @@ func TestGetNewToken(t *testing.T) {
 				err := tc.GetNewToken(context.Background())
 				require.NoError(t, err)
 				hasToken := tc.HasToken()
-				require.Equal(t, hasToken, true)
+				require.True(t, hasToken)
 			},
 		},
 	}

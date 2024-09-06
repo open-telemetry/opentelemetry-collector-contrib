@@ -72,58 +72,6 @@ resourceMetrics:
                         stringValue: ""
                     - key: failed
                       value:
-                        boolValue: true
-                    - key: server
-                      value:
-                        stringValue: bar
-                  bucketCounts:
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "1"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                  count: "1"
-                  explicitBounds:
-                    - 0.002
-                    - 0.004
-                    - 0.006
-                    - 0.008
-                    - 0.01
-                    - 0.05
-                    - 0.1
-                    - 0.2
-                    - 0.4
-                    - 0.8
-                    - 1
-                    - 1.4
-                    - 2
-                    - 5
-                    - 10
-                    - 15
-                  startTimeUnixNano: "1000000"
-                  sum: 1
-                  timeUnixNano: "2000000"
-                - attributes:
-                    - key: client
-                      value:
-                        stringValue: foo
-                    - key: connection_type
-                      value:
-                        stringValue: ""
-                    - key: failed
-                      value:
                         boolValue: false
                     - key: server
                       value:
@@ -167,7 +115,60 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   sum: 2
                   timeUnixNano: "2000000"
-            name: traces_service_graph_request_server_seconds
+                - attributes:
+                    - key: client
+                      value:
+                        stringValue: foo
+                    - key: connection_type
+                      value:
+                        stringValue: ""
+                    - key: failed
+                      value:
+                        boolValue: true
+                    - key: server
+                      value:
+                        stringValue: bar
+                  bucketCounts:
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                  count: "1"
+                  explicitBounds:
+                    - 0.002
+                    - 0.004
+                    - 0.006
+                    - 0.008
+                    - 0.01
+                    - 0.05
+                    - 0.1
+                    - 0.2
+                    - 0.4
+                    - 0.8
+                    - 1
+                    - 1.4
+                    - 2
+                    - 5
+                    - 10
+                    - 15
+                  startTimeUnixNano: "1000000"
+                  sum: 1
+                  timeUnixNano: "2000000"
+            name: traces_service_graph_request_server
+            unit: s
           - histogram:
               aggregationTemporality: 2
               dataPoints:
@@ -180,58 +181,6 @@ resourceMetrics:
                         stringValue: ""
                     - key: failed
                       value:
-                        boolValue: true
-                    - key: server
-                      value:
-                        stringValue: bar
-                  bucketCounts:
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "1"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                  count: "1"
-                  explicitBounds:
-                    - 0.002
-                    - 0.004
-                    - 0.006
-                    - 0.008
-                    - 0.01
-                    - 0.05
-                    - 0.1
-                    - 0.2
-                    - 0.4
-                    - 0.8
-                    - 1
-                    - 1.4
-                    - 2
-                    - 5
-                    - 10
-                    - 15
-                  startTimeUnixNano: "1000000"
-                  sum: 1
-                  timeUnixNano: "2000000"
-                - attributes:
-                    - key: client
-                      value:
-                        stringValue: foo
-                    - key: connection_type
-                      value:
-                        stringValue: ""
-                    - key: failed
-                      value:
                         boolValue: false
                     - key: server
                       value:
@@ -275,6 +224,59 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   sum: 2
                   timeUnixNano: "2000000"
-            name: traces_service_graph_request_client_seconds
+                - attributes:
+                    - key: client
+                      value:
+                        stringValue: foo
+                    - key: connection_type
+                      value:
+                        stringValue: ""
+                    - key: failed
+                      value:
+                        boolValue: true
+                    - key: server
+                      value:
+                        stringValue: bar
+                  bucketCounts:
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                  count: "1"
+                  explicitBounds:
+                    - 0.002
+                    - 0.004
+                    - 0.006
+                    - 0.008
+                    - 0.01
+                    - 0.05
+                    - 0.1
+                    - 0.2
+                    - 0.4
+                    - 0.8
+                    - 1
+                    - 1.4
+                    - 2
+                    - 5
+                    - 10
+                    - 15
+                  startTimeUnixNano: "1000000"
+                  sum: 1
+                  timeUnixNano: "2000000"
+            name: traces_service_graph_request_client
+            unit: s
         scope:
           name: traces_service_graph

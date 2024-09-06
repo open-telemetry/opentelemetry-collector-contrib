@@ -123,11 +123,16 @@ type Agent struct {
 	Description             AgentDescription `mapstructure:"description"`
 	SuccessfulHealthChecks  int32            `mapstructure:"successful_health_checks"`
 	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
+	HealthCheckPort         int              `mapstructure:"health_check_port"`
 }
 
 func (a Agent) Validate() error {
 	if a.OrphanDetectionInterval <= 0 {
 		return errors.New("agent::orphan_detection_interval must be positive")
+	}
+
+	if a.HealthCheckPort < 0 || a.HealthCheckPort > 65535 {
+		return errors.New("agent::health_check_port must be a valid port number")
 	}
 
 	if a.Executable == "" {

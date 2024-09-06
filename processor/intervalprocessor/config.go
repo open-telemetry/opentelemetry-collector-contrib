@@ -18,8 +18,20 @@ var _ component.Config = (*Config)(nil)
 
 // Config defines the configuration for the processor.
 type Config struct {
-	// Interval is the time
+	// Interval is the time interval at which the processor will aggregate metrics.
 	Interval time.Duration `mapstructure:"interval"`
+	// PassThrough is a configuration that determines whether gauge and summary metrics should be passed through
+	// as they are or aggregated.
+	PassThrough PassThrough `mapstructure:"pass_through"`
+}
+
+type PassThrough struct {
+	// Gauge is a flag that determines whether gauge metrics should be passed through
+	// as they are or aggregated.
+	Gauge bool `mapstructure:"gauge"`
+	// Summary is a flag that determines whether summary metrics should be passed through
+	// as they are or aggregated.
+	Summary bool `mapstructure:"summary"`
 }
 
 // Validate checks whether the input configuration has all of the required fields for the processor.

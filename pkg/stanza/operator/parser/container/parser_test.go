@@ -91,7 +91,7 @@ func TestInternalRecombineCfg(t *testing.T) {
 	expected.CombineWith = ""
 	expected.SourceIdentifier = entry.NewAttributeField("log.file.path")
 	expected.MaxLogSize = 102400
-	require.Equal(t, cfg, expected)
+	require.Equal(t, expected, cfg)
 }
 
 func TestProcess(t *testing.T) {
