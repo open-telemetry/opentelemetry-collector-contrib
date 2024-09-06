@@ -58,6 +58,7 @@ type Parser[K any] struct {
 	pathParser        PathExpressionParser[K]
 	enumParser        EnumParser
 	telemetrySettings component.TelemetrySettings
+	pathContextNames  map[string]struct{}
 }
 
 func NewParser[K any](
@@ -88,6 +89,22 @@ type Option[K any] func(*Parser[K])
 func WithEnumParser[K any](parser EnumParser) Option[K] {
 	return func(p *Parser[K]) {
 		p.enumParser = parser
+	}
+}
+
+// WithPathContextNames sets the context names to be considered when parsing a Path value.
+// When this option is empty or nil, all Path segments are considered fields, and the
+// Path.Context value is always empty.
+// When this option is configured, and the path's context is empty or is not present in
+// this context names list, it results into an error.
+func WithPathContextNames[K any](contexts []string) Option[K] {
+	return func(p *Parser[K]) {
+		pathContextNames := make(map[string]struct{}, len(contexts))
+		for _, ctx := range contexts {
+			pathContextNames[ctx] = struct{}{}
+		}
+
+		p.pathContextNames = pathContextNames
 	}
 }
 
