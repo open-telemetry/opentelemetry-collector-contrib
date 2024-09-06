@@ -146,9 +146,9 @@ func TestHandleSketchPayload(t *testing.T) {
 			mt := createMetricsTranslator()
 			metrics, err := mt.HandleSketchesPayload(req)
 			require.NoError(t, err)
-			require.Equal(t, tt.expectedSketchesCount, len(metrics))
+			require.Len(t, metrics, tt.expectedSketchesCount)
 			for i, metric := range metrics {
-				require.Equal(t, tt.expectedDogsketchesCounts[i], len(metric.Dogsketches))
+				require.Len(t, metric.Dogsketches, tt.expectedDogsketchesCounts[i])
 			}
 		})
 	}
