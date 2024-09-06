@@ -19,9 +19,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
@@ -30,7 +30,7 @@ import (
 
 const (
 	maxWaiters = 10
-	maxBytes = int64(250)
+	maxBytes   = int64(250)
 )
 
 func TestExport(t *testing.T) {
@@ -93,7 +93,7 @@ func TestExport_TooManyWaiters(t *testing.T) {
 		_, err = metricsClient.Export(bg, req)
 		mtx.Lock()
 		errs = multierr.Append(errs, err)
-		numResponses+=1
+		numResponses += 1
 		mtx.Unlock()
 	}()
 
@@ -102,7 +102,7 @@ func TestExport_TooManyWaiters(t *testing.T) {
 			_, err := metricsClient.Export(bg, req)
 			mtx.Lock()
 			errs = multierr.Append(errs, err)
-			numResponses+=1
+			numResponses += 1
 			mtx.Unlock()
 		}()
 	}
@@ -117,7 +117,7 @@ func TestExport_TooManyWaiters(t *testing.T) {
 		defer mtx.Unlock()
 		errSlice := multierr.Errors(errs)
 		return numResponses == maxWaiters+2 && len(errSlice) == 1
-	}, 3 * time.Second, 10 * time.Millisecond)
+	}, 3*time.Second, 10*time.Millisecond)
 
 	assert.ErrorContains(t, errs, "too many waiters")
 }
