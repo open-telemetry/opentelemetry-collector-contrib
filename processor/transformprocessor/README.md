@@ -379,6 +379,8 @@ The `aggregate_on_attributes` function aggregates all datapoints in the metric b
 
 `aggregate_on_attributes` function removes all attributes that are present in datapoints except the ones that are specified in the `attributes` parameter. If `attributes` parameter is not set, all attributes are removed from datapoints. Afterwards all datapoints are aggregated depending on the attributes left (none or the ones present in the list).
 
+**NOTE:** This function is supported only in `metric` context.
+
 The following metric types can be aggregated:
 
 - sum
@@ -421,6 +423,8 @@ To aggregate only using a specified set of attributes, you can use `keep_matchin
 `aggregate_on_attribute_value(function, attribute, values, newValue)`
 
 The `aggregate_on_attribute_value` function aggregates all datapoints in the metric containing the attribute `attribute` (type string) with one of the values present in the `values` parameter (list of strings) into a single datapoint where the attribute has the value `newValue` (type string). `function` is a case-sensitive string that represents the aggregation function.
+
+**NOTE:** This function is supported only in `metric` context.
 
 The following metric types can be aggregated:
 
