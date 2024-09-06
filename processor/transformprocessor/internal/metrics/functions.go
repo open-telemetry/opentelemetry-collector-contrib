@@ -51,6 +51,7 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		newCopyMetricFactory(),
 		newScaleMetricFactory(),
 		newAggregateOnAttributesFactory(),
+		newAggregateOnAttributeValueFactory(),
 	)
 
 	if UseConvertBetweenSumAndGaugeMetricContext.IsEnabled() {
