@@ -217,6 +217,7 @@ func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption 
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[ContextStatements, consumer.Metrics]{
 		withCommonContextParsers[consumer.Metrics](),
+		ottl.WithParserCollectionContextRewriteLog[ContextStatements, consumer.Metrics](true),
 	}
 
 	for _, option := range options {

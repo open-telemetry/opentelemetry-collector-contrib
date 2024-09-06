@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 )
 
 var _ ottlParser[any] = (*Parser[any])(nil)
@@ -77,10 +78,11 @@ type contextParserWrapper[S StatementsGetter] struct {
 }
 
 type ParserCollection[S StatementsGetter, R any] struct {
-	contextParsers  map[string]*contextParserWrapper[S]
-	contextInferrer ContextInferrer
-	Settings        component.TelemetrySettings
-	ErrorMode       ErrorMode
+	contextParsers           map[string]*contextParserWrapper[S]
+	contextInferrer          ContextInferrer
+	contextRewriteLogEnabled bool
+	Settings                 component.TelemetrySettings
+	ErrorMode                ErrorMode
 }
 
 type ParserCollectionOption[S StatementsGetter, R any] func(*ParserCollection[S, R]) error
@@ -158,6 +160,13 @@ func WithParserCollectionContextInferrer[S StatementsGetter, R any](contextInfer
 	}
 }
 
+func WithParserCollectionContextRewriteLog[S StatementsGetter, R any](enabled bool) ParserCollectionOption[S, R] {
+	return func(tp *ParserCollection[S, R]) error {
+		tp.contextRewriteLogEnabled = enabled
+		return nil
+	}
+}
+
 func (pc *ParserCollection[S, R]) ParseStatements(statements S) (R, error) {
 	zero := *new(R)
 	statementsValues := statements.GetStatements()
@@ -176,7 +185,6 @@ func (pc *ParserCollection[S, R]) ParseStatements(statements S) (R, error) {
 
 func (pc *ParserCollection[S, R]) ParseStatementsWithContext(context string, statements S, appendPathsContext bool) (R, error) {
 	zero := *new(R)
-
 	contextParser, ok := pc.contextParsers[context]
 	if !ok {
 		return zero, fmt.Errorf(`unknown context "%s" for stataments: %v`, context, statements.GetStatements())
@@ -184,12 +192,16 @@ func (pc *ParserCollection[S, R]) ParseStatementsWithContext(context string, sta
 
 	var statementsValues []string
 	if appendPathsContext {
-		for _, s := range statements.GetStatements() {
+		originalStatements := statements.GetStatements()
+		for _, s := range originalStatements {
 			ctxStatement, err := contextParser.ottlParser.AppendStatementPathsContext(context, s)
 			if err != nil {
 				return zero, err
 			}
 			statementsValues = append(statementsValues, ctxStatement)
+		}
+		if pc.contextRewriteLogEnabled {
+			pc.logRewrittenStatements(originalStatements, statementsValues)
 		}
 	} else {
 		statementsValues = statements.GetStatements()
@@ -215,4 +227,21 @@ func (pc *ParserCollection[S, R]) ParseStatementsWithContext(context string, sta
 	}
 
 	return result.Interface().(R), nil
+}
+
+func (pc *ParserCollection[S, R]) logRewrittenStatements(originalStatements, rewrittenStatements []string) {
+	var fields []zap.Field
+	for i, original := range originalStatements {
+		if rewrittenStatements[i] != original {
+			statementKey := fmt.Sprintf("[%v]", i)
+			fields = append(fields, zap.Dict(
+				statementKey,
+				zap.String("original", original),
+				zap.String("modified", rewrittenStatements[i])),
+			)
+		}
+	}
+	if len(fields) > 0 {
+		pc.Settings.Logger.Info("one or more statements were modified to include their paths context, please rewrite them accordingly", zap.Dict("statements", fields...))
+	}
 }
