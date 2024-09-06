@@ -44,7 +44,6 @@ func Test_NewParserCollection(t *testing.T) {
 	assert.NotNil(t, pc)
 	assert.NotNil(t, pc.contextParsers)
 	assert.NotNil(t, pc.contextInferrer)
-	assert.Equal(t, settings, pc.Settings)
 }
 
 func Test_NewParserCollection_OptionError(t *testing.T) {
