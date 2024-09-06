@@ -1314,19 +1314,19 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 	require.Eventually(t, func() bool {
 		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
-	}, 5*time.Second, 500*time.Millisecond, "Remote config status was not set to APPLYING")
+	}, 5*time.Second, 100*time.Millisecond, "Remote config status was not set to APPLYING")
 
 	// Wait for the required number of successful health checks
 	require.Eventually(t, func() bool {
 		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
 		return ok && health.Healthy
-	}, 30*time.Second, 500*time.Millisecond, "Collector did not become healthy")
+	}, 30*time.Second, 10*time.Millisecond, "Collector did not become healthy")
 
 	// Check that the status is set to APPLIED after successful health checks
 	require.Eventually(t, func() bool {
 		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
-	}, 5*time.Second, 500*time.Millisecond, "Remote config status was not set to APPLIED")
+	}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED")
 
 	require.Eventually(t, func() bool {
 		cfg, ok := agentConfig.Load().(string)
@@ -1338,7 +1338,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 		}
 
 		return false
-	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
+	}, 5*time.Second, 10*time.Millisecond, "Collector was not started with remote config")
 
 	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
 	require.NotZero(t, n, "Could not write to input file")
@@ -1349,7 +1349,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 		n, _ := outputFile.Read(logRecord)
 
 		return n != 0
-	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+	}, 10*time.Second, 100*time.Millisecond, "Log never appeared in output")
 
 	// Test with bad configuration
 	badCfg, badHash := createBadCollectorConf(t)
@@ -1369,19 +1369,19 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 	require.Eventually(t, func() bool {
 		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
-	}, 5*time.Second, 500*time.Millisecond, "Remote config status was not set to APPLYING for bad config")
+	}, 5*time.Second, 200*time.Millisecond, "Remote config status was not set to APPLYING for bad config")
 
 	// Wait for the health checks to fail
 	require.Eventually(t, func() bool {
 		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
 		return ok && !health.Healthy
-	}, 30*time.Second, 500*time.Millisecond, "Collector did not become unhealthy with bad config")
+	}, 30*time.Second, 100*time.Millisecond, "Collector did not become unhealthy with bad config")
 
 	// Check that the status is set to FAILED after failed health checks
 	require.Eventually(t, func() bool {
 		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
-	}, 15*time.Second, 500*time.Millisecond, "Remote config status was not set to FAILED for bad config")
+	}, 15*time.Second, 100*time.Millisecond, "Remote config status was not set to FAILED for bad config")
 }
 
 func findRandomPort() (int, error) {
