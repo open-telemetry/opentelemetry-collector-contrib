@@ -18,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -61,15 +62,16 @@ func TestExporterLogs(t *testing.T) {
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
 		})
-		logs := newLogsWithAttributeAndResourceMap(
+		logs := newLogsWithAttributes(
 			// record attrs
-			map[string]string{
+			map[string]any{
 				"application":          "myapp",
 				"service.name":         "myservice",
 				"exception.stacktrace": "no no no no",
 			},
+			nil,
 			// resource attrs
-			map[string]string{
+			map[string]any{
 				"attrKey1": "abc",
 				"attrKey2": "def",
 			},
@@ -94,8 +96,9 @@ func TestExporterLogs(t *testing.T) {
 			cfg.Mapping.Mode = "ecs"
 			cfg.Mapping.Dedot = true
 		})
-		logs := newLogsWithAttributeAndResourceMap(
-			map[string]string{"attr.key": "value"},
+		logs := newLogsWithAttributes(
+			map[string]any{"attr.key": "value"},
+			nil,
 			nil,
 		)
 		mustSendLogs(t, exporter, logs)
@@ -114,10 +117,11 @@ func TestExporterLogs(t *testing.T) {
 			cfg.Mapping.Mode = "raw"
 			// dedup is the default
 		})
-		logs := newLogsWithAttributeAndResourceMap(
+		logs := newLogsWithAttributes(
 			// Scope collides with the top-level "Scope" field,
 			// so will be removed during deduplication.
-			map[string]string{"Scope": "value"},
+			map[string]any{"Scope": "value"},
+			nil,
 			nil,
 		)
 		mustSendLogs(t, exporter, logs)
@@ -190,12 +194,13 @@ func TestExporterLogs(t *testing.T) {
 			cfg.LogsIndex = index
 			cfg.LogsDynamicIndex.Enabled = true
 		})
-		logs := newLogsWithAttributeAndResourceMap(
-			map[string]string{
+		logs := newLogsWithAttributes(
+			map[string]any{
 				indexPrefix: "attrprefix-",
 				indexSuffix: suffix,
 			},
-			map[string]string{
+			nil,
+			map[string]any{
 				indexPrefix: prefix,
 			},
 		)
@@ -218,11 +223,12 @@ func TestExporterLogs(t *testing.T) {
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.LogsDynamicIndex.Enabled = true
 		})
-		logs := newLogsWithAttributeAndResourceMap(
-			map[string]string{
+		logs := newLogsWithAttributes(
+			map[string]any{
 				dataStreamDataset: "record.dataset",
 			},
-			map[string]string{
+			nil,
+			map[string]any{
 				dataStreamDataset:   "resource.dataset",
 				dataStreamNamespace: "resource.namespace",
 			},
@@ -247,7 +253,7 @@ func TestExporterLogs(t *testing.T) {
 			cfg.LogstashFormat.Enabled = true
 			cfg.LogsIndex = "not-used-index"
 		})
-		mustSendLogs(t, exporter, newLogsWithAttributeAndResourceMap(nil, nil))
+		mustSendLogs(t, exporter, newLogsWithAttributes(nil, nil, nil))
 
 		rec.WaitItems(1)
 	})
@@ -273,12 +279,13 @@ func TestExporterLogs(t *testing.T) {
 			cfg.LogsDynamicIndex.Enabled = true
 			cfg.LogstashFormat.Enabled = true
 		})
-		mustSendLogs(t, exporter, newLogsWithAttributeAndResourceMap(
-			map[string]string{
+		mustSendLogs(t, exporter, newLogsWithAttributes(
+			map[string]any{
 				indexPrefix: "attrprefix-",
 				indexSuffix: suffix,
 			},
-			map[string]string{
+			nil,
+			map[string]any{
 				indexPrefix: prefix,
 			},
 		))
@@ -296,12 +303,13 @@ func TestExporterLogs(t *testing.T) {
 			cfg.LogsDynamicIndex.Enabled = true
 			cfg.Mapping.Mode = "otel"
 		})
-		mustSendLogs(t, exporter, newLogsWithAttributeAndResourceMap(
-			map[string]string{
+		mustSendLogs(t, exporter, newLogsWithAttributes(
+			map[string]any{
 				"data_stream.dataset": "attr.dataset",
 				"attr.foo":            "attr.foo.value",
 			},
-			map[string]string{
+			nil,
+			map[string]any{
 				"data_stream.dataset":   "resource.attribute.dataset",
 				"data_stream.namespace": "resource.attribute.namespace",
 				"resource.attr.foo":     "resource.attr.foo.value",
@@ -486,6 +494,34 @@ func TestExporterLogs(t *testing.T) {
 
 		assert.Equal(t, [3]int{1, 2, 1}, attempts)
 	})
+
+	t.Run("otel mode attribute array value", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		mustSendLogs(t, exporter, newLogsWithAttributes(map[string]any{
+			"some.record.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.scope.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.resource.attribute": []string{"foo", "bar"},
+		}))
+
+		rec.WaitItems(1)
+
+		assert.Len(t, rec.Items(), 1)
+		doc := rec.Items()[0].Document
+		assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
 }
 
 func TestExporterMetrics(t *testing.T) {
@@ -523,11 +559,12 @@ func TestExporterMetrics(t *testing.T) {
 			cfg.MetricsIndex = "metrics.index"
 			cfg.Mapping.Mode = "ecs"
 		})
-		metrics := newMetricsWithAttributeAndResourceMap(
-			map[string]string{
+		metrics := newMetricsWithAttributes(
+			map[string]any{
 				indexSuffix: "-data.point.suffix",
 			},
-			map[string]string{
+			nil,
+			map[string]any{
 				indexPrefix: "resource.prefix-",
 				indexSuffix: "-resource.suffix",
 			},
@@ -554,11 +591,12 @@ func TestExporterMetrics(t *testing.T) {
 			cfg.MetricsIndex = "metrics.index"
 			cfg.Mapping.Mode = "ecs"
 		})
-		metrics := newMetricsWithAttributeAndResourceMap(
-			map[string]string{
+		metrics := newMetricsWithAttributes(
+			map[string]any{
 				dataStreamNamespace: "data.point.namespace",
 			},
-			map[string]string{
+			nil,
+			map[string]any{
 				dataStreamDataset:   "resource.dataset",
 				dataStreamNamespace: "resource.namespace",
 			},
@@ -588,7 +626,7 @@ func TestExporterMetrics(t *testing.T) {
 			fooDp := fooDps.AppendEmpty()
 			fooDp.SetIntValue(1)
 			fooOtherDp := fooDps.AppendEmpty()
-			fillResourceAttributeMap(fooOtherDp.Attributes(), map[string]string{
+			fillAttributeMap(fooOtherDp.Attributes(), map[string]any{
 				"dp.attribute": "dp.attribute.value",
 			})
 			fooOtherDp.SetDoubleValue(1.0)
@@ -599,12 +637,12 @@ func TestExporterMetrics(t *testing.T) {
 			barDp := barDps.AppendEmpty()
 			barDp.SetDoubleValue(1.0)
 			barOtherDp := barDps.AppendEmpty()
-			fillResourceAttributeMap(barOtherDp.Attributes(), map[string]string{
+			fillAttributeMap(barOtherDp.Attributes(), map[string]any{
 				"dp.attribute": "dp.attribute.value",
 			})
 			barOtherDp.SetDoubleValue(1.0)
 			barOtherIndexDp := barDps.AppendEmpty()
-			fillResourceAttributeMap(barOtherIndexDp.Attributes(), map[string]string{
+			fillAttributeMap(barOtherIndexDp.Attributes(), map[string]any{
 				"dp.attribute":      "dp.attribute.value",
 				dataStreamNamespace: "bar",
 			})
@@ -620,14 +658,14 @@ func TestExporterMetrics(t *testing.T) {
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-		fillResourceAttributeMap(resourceMetrics.Resource().Attributes(), map[string]string{
+		fillAttributeMap(resourceMetrics.Resource().Attributes(), map[string]any{
 			dataStreamNamespace: "resource.namespace",
 		})
 		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
 		addToMetricSlice(scopeA.Metrics())
 
 		scopeB := resourceMetrics.ScopeMetrics().AppendEmpty()
-		fillResourceAttributeMap(scopeB.Scope().Attributes(), map[string]string{
+		fillAttributeMap(scopeB.Scope().Attributes(), map[string]any{
 			dataStreamDataset: "scope.b",
 		})
 		addToMetricSlice(scopeB.Metrics())
@@ -880,6 +918,35 @@ func TestExporterMetrics(t *testing.T) {
 		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
+	t.Run("otel mode attribute array value", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		mustSendMetrics(t, exporter, newMetricsWithAttributes(map[string]any{
+			"some.record.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.scope.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.resource.attribute": []string{"foo", "bar"},
+		}))
+
+		rec.WaitItems(1)
+
+		assert.Len(t, rec.Items(), 1)
+		doc := rec.Items()[0].Document
+		// Workaround TSDB limitation by stringifying array values
+		assert.Equal(t, `{"some.record.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.Equal(t, `{"some.scope.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.Equal(t, `{"some.resource.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
+
 	t.Run("publish summary", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -972,12 +1039,13 @@ func TestExporterTraces(t *testing.T) {
 			cfg.TracesDynamicIndex.Enabled = true
 		})
 
-		mustSendTraces(t, exporter, newTracesWithAttributeAndResourceMap(
-			map[string]string{
+		mustSendTraces(t, exporter, newTracesWithAttributes(
+			map[string]any{
 				indexPrefix: "attrprefix-",
 				indexSuffix: suffix,
 			},
-			map[string]string{
+			nil,
+			map[string]any{
 				indexPrefix: prefix,
 			},
 		))
@@ -1002,11 +1070,12 @@ func TestExporterTraces(t *testing.T) {
 			cfg.TracesDynamicIndex.Enabled = true
 		})
 
-		mustSendTraces(t, exporter, newTracesWithAttributeAndResourceMap(
-			map[string]string{
+		mustSendTraces(t, exporter, newTracesWithAttributes(
+			map[string]any{
 				dataStreamDataset: "span.dataset",
 			},
-			map[string]string{
+			nil,
+			map[string]any{
 				dataStreamDataset: "resource.dataset",
 			},
 		))
@@ -1032,7 +1101,7 @@ func TestExporterTraces(t *testing.T) {
 			defaultCfg = *cfg
 		})
 
-		mustSendTraces(t, exporter, newTracesWithAttributeAndResourceMap(nil, nil))
+		mustSendTraces(t, exporter, newTracesWithAttributes(nil, nil, nil))
 
 		rec.WaitItems(1)
 	})
@@ -1060,12 +1129,13 @@ func TestExporterTraces(t *testing.T) {
 			cfg.LogstashFormat.Enabled = true
 		})
 
-		mustSendTraces(t, exporter, newTracesWithAttributeAndResourceMap(
-			map[string]string{
+		mustSendTraces(t, exporter, newTracesWithAttributes(
+			map[string]any{
 				indexPrefix: "attrprefix-",
 				indexSuffix: suffix,
 			},
-			map[string]string{
+			nil,
+			map[string]any{
 				indexPrefix: prefix,
 			},
 		))
@@ -1106,12 +1176,12 @@ func TestExporterTraces(t *testing.T) {
 		event.SetDroppedAttributesCount(1)
 
 		scopeAttr := span.Attributes()
-		fillResourceAttributeMap(scopeAttr, map[string]string{
+		fillAttributeMap(scopeAttr, map[string]any{
 			"attr.foo": "attr.bar",
 		})
 
 		resAttr := rs.Resource().Attributes()
-		fillResourceAttributeMap(resAttr, map[string]string{
+		fillAttributeMap(resAttr, map[string]any{
 			"resource.foo": "resource.bar",
 		})
 
@@ -1121,7 +1191,7 @@ func TestExporterTraces(t *testing.T) {
 		spanLink.SetFlags(10)
 		spanLink.SetDroppedAttributesCount(11)
 		spanLink.TraceState().FromRaw("bar")
-		fillResourceAttributeMap(spanLink.Attributes(), map[string]string{
+		fillAttributeMap(spanLink.Attributes(), map[string]any{
 			"link.attr.foo": "link.attr.bar",
 		})
 
@@ -1141,6 +1211,41 @@ func TestExporterTraces(t *testing.T) {
 		}
 
 		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("otel mode attribute array value", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		traces := newTracesWithAttributes(map[string]any{
+			"some.record.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.scope.attribute": []string{"foo", "bar"},
+		}, map[string]any{
+			"some.resource.attribute": []string{"foo", "bar"},
+		})
+		spanEventAttrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty().Attributes()
+		fillAttributeMap(spanEventAttrs, map[string]any{
+			"some.record.attribute": []string{"foo", "bar"},
+		})
+		mustSendTraces(t, exporter, traces)
+
+		rec.WaitItems(2)
+
+		assert.Len(t, rec.Items(), 2)
+		for _, item := range rec.Items() {
+			doc := item.Document
+			assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+			assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+			assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+		}
 	})
 }
 

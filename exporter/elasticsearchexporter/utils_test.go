@@ -247,50 +247,56 @@ func itemsHasError(resp []itemResponse) bool {
 	return false
 }
 
-func newLogsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) plog.Logs {
+func newLogsWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]any) plog.Logs {
 	logs := plog.NewLogs()
-	resourceSpans := logs.ResourceLogs()
-	rs := resourceSpans.AppendEmpty()
-
-	scopeAttr := rs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes()
-	fillResourceAttributeMap(scopeAttr, attrMp)
-
-	resAttr := rs.Resource().Attributes()
-	fillResourceAttributeMap(resAttr, resMp)
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+	fillAttributeMap(resourceLog.Resource().Attributes(), resourceAttrs)
+	fillAttributeMap(scopeLog.Scope().Attributes(), scopeAttrs)
+	fillAttributeMap(scopeLog.LogRecords().AppendEmpty().Attributes(), recordAttrs)
 
 	return logs
 }
 
-func newMetricsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) pmetric.Metrics {
+func newMetricsWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]any) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+	scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
 
-	fillResourceAttributeMap(resourceMetrics.Resource().Attributes(), resMp)
-	dp := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+	fillAttributeMap(resourceMetric.Resource().Attributes(), resourceAttrs)
+	fillAttributeMap(scopeMetric.Scope().Attributes(), scopeAttrs)
+	dp := scopeMetric.Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
 	dp.SetIntValue(0)
-	fillResourceAttributeMap(dp.Attributes(), attrMp)
+	fillAttributeMap(dp.Attributes(), recordAttrs)
 
 	return metrics
 }
 
-func newTracesWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) ptrace.Traces {
+func newTracesWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]any) ptrace.Traces {
 	traces := ptrace.NewTraces()
-	resourceSpans := traces.ResourceSpans()
-	rs := resourceSpans.AppendEmpty()
+	resourceSpan := traces.ResourceSpans().AppendEmpty()
+	scopeSpan := resourceSpan.ScopeSpans().AppendEmpty()
 
-	scopeAttr := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes()
-	fillResourceAttributeMap(scopeAttr, attrMp)
-
-	resAttr := rs.Resource().Attributes()
-	fillResourceAttributeMap(resAttr, resMp)
+	fillAttributeMap(resourceSpan.Resource().Attributes(), resourceAttrs)
+	fillAttributeMap(scopeSpan.Scope().Attributes(), scopeAttrs)
+	fillAttributeMap(scopeSpan.Spans().AppendEmpty().Attributes(), recordAttrs)
 
 	return traces
 }
 
-func fillResourceAttributeMap(attrs pcommon.Map, mp map[string]string) {
-	attrs.EnsureCapacity(len(mp))
-	for k, v := range mp {
-		attrs.PutStr(k, v)
+func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
+	attrs.EnsureCapacity(len(m))
+	for k, v := range m {
+		switch vv := v.(type) {
+		case string:
+			attrs.PutStr(k, vv)
+		case []string:
+			slice := attrs.PutEmptySlice(k)
+			slice.EnsureCapacity(len(vv))
+			for _, s := range vv {
+				slice.AppendEmpty().SetStr(s)
+			}
+		}
 	}
 }
 
