@@ -91,7 +91,7 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
 	// Check the Scope
 	v, ok := scopeLogs.Scope().Attributes().Get(semconvOtelEntityEventAsScope)
 	assert.True(t, ok)
-	assert.Equal(t, true, v.Bool())
+	assert.True(t, v.Bool())
 
 	records := scopeLogs.LogRecords()
 	assert.Equal(t, 2, records.Len())

@@ -13,7 +13,7 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	vmsgp "github.com/vmihailenco/msgpack/v4"
+	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"google.golang.org/protobuf/proto"
@@ -121,11 +121,11 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodPost, "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
 
 	translatedPayloads, _ := HandleTracesPayload(req)
-	assert.Equal(t, len(translatedPayloads), 1, "Expected one translated payload")
+	assert.Len(t, translatedPayloads, 1, "Expected one translated payload")
 	translated := translatedPayloads[0]
 	span := translated.GetChunks()[0].GetSpans()[0]
 	assert.NotNil(t, span)
-	assert.Equal(t, 5, len(span.GetMeta()), "missing attributes")
+	assert.Len(t, span.GetMeta(), 5, "missing attributes")
 	value, exists := span.GetMeta()["service.name"]
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value, "service.name attribute value incorrect")
@@ -157,15 +157,15 @@ func TestTracePayloadApiV02Unmarshalling(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodPost, "/api/v0.2/traces", io.NopCloser(bytes.NewReader(bytez)))
 
 	translatedPayloads, _ := HandleTracesPayload(req)
-	assert.Equal(t, len(translatedPayloads), 2, "Expected two translated payload")
+	assert.Len(t, translatedPayloads, 2, "Expected two translated payload")
 	for _, translated := range translatedPayloads {
 		assert.NotNil(t, translated)
-		assert.Equal(t, 1, len(translated.Chunks))
-		assert.Equal(t, 1, len(translated.Chunks[0].Spans))
+		assert.Len(t, translated.Chunks, 1)
+		assert.Len(t, translated.Chunks[0].Spans, 1)
 		span := translated.Chunks[0].Spans[0]
 
 		assert.NotNil(t, span)
-		assert.Equal(t, 5, len(span.Meta), "missing attributes")
+		assert.Len(t, span.Meta, 5, "missing attributes")
 		assert.Equal(t, "my-service", span.Meta["service.name"])
 		assert.Equal(t, "my-name", span.Name)
 		assert.Equal(t, "my-resource", span.Resource)

@@ -34,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 	}, cfg, "failed to create default config")
 
-	assert.Nil(t, componenttest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -147,8 +147,8 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.Nil(t, sub.Unmarshal(cfg))
-			if assert.Nil(t, component.ValidateConfig(cfg)) {
+			require.NoError(t, sub.Unmarshal(cfg))
+			if assert.NoError(t, component.ValidateConfig(cfg)) {
 				assert.Equal(t, tt.expected, cfg)
 			}
 		})

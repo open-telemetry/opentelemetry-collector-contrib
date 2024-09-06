@@ -295,7 +295,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
-	require.Equal(t, string(body), "OK", "Expected response to be 'OK', got %s", string(body))
+	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	mds := sink.AllMetrics()
@@ -308,7 +308,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
 	assert.Equal(t, "system.load.1", metric.Name())
 	assert.Equal(t, pmetric.AggregationTemporalityDelta, metric.Sum().AggregationTemporality())
-	assert.Equal(t, false, metric.Sum().IsMonotonic())
+	assert.False(t, metric.Sum().IsMonotonic())
 	assert.Equal(t, pcommon.Timestamp(1636629071*1_000_000_000), metric.Sum().DataPoints().At(0).Timestamp())
 	assert.Equal(t, 0.7, metric.Sum().DataPoints().At(0).DoubleValue())
 	expectedEnvironment, _ := metric.Sum().DataPoints().At(0).Attributes().Get("environment")
@@ -373,7 +373,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
-	require.Equal(t, string(body), "OK", "Expected response to be 'OK', got %s", string(body))
+	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	mds := sink.AllMetrics()
@@ -386,7 +386,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
 	assert.Equal(t, "system.load.1", metric.Name())
 	assert.Equal(t, pmetric.AggregationTemporalityDelta, metric.Sum().AggregationTemporality())
-	assert.Equal(t, false, metric.Sum().IsMonotonic())
+	assert.False(t, metric.Sum().IsMonotonic())
 	assert.Equal(t, pcommon.Timestamp(1636629071*1_000_000_000), metric.Sum().DataPoints().At(0).Timestamp())
 	assert.Equal(t, 1.5, metric.Sum().DataPoints().At(0).DoubleValue())
 	assert.Equal(t, pcommon.Timestamp(0), metric.Sum().DataPoints().At(0).StartTimestamp())
@@ -464,7 +464,7 @@ func TestStats_EndToEnd(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
-	require.Equal(t, string(body), "OK", "Expected response to be 'OK', got %s", string(body))
+	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	mds := sink.AllMetrics()

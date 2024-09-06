@@ -93,5 +93,5 @@ func TestMetricData(t *testing.T) {
 
 	logger := zap.NewNop()
 	md := MetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(md))
+	require.NotEmpty(t, md)
 }

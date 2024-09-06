@@ -130,12 +130,12 @@ transform:
     - context: metric
       statements:
         - set(description, "Sum") where type == "Sum"
+        - convert_sum_to_gauge() where name == "system.processes.count"
+        - convert_gauge_to_sum("cumulative", false) where name == "prometheus_metric"
     - context: datapoint
       statements:
         - limit(attributes, 100, ["host.name"])
         - truncate_all(attributes, 4096)
-        - convert_sum_to_gauge() where metric.name == "system.processes.count"
-        - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
         
   log_statements:
     - context: resource
