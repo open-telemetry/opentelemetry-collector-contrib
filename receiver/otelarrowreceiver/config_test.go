@@ -88,6 +88,30 @@ func TestUnmarshalConfig(t *testing.T) {
 
 }
 
+// Tests that a deprecated config validation sets AdmissionLimitMiB and WaiterLimit in the correct config block.
+func TestValidateDeprecatedConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "deprecated.yaml"))
+	require.NoError(t, err)
+	cfg := &Config{}
+	assert.NoError(t, cm.Unmarshal(cfg))
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t,
+		&Config{
+			Protocols: Protocols{
+				Arrow: ArrowConfig{
+					MemoryLimitMiB:              123,
+					DeprecatedAdmissionLimitMiB: 80,
+					DeprecatedWaiterLimit:       100,
+				},
+				Admission: AdmissionConfig{
+					// cfg.Validate should now set these fields.
+					AdmissionLimitMiB: 80,
+					WaiterLimit:       100,
+				},
+			},
+		}, cfg)
+}
+
 func TestUnmarshalConfigUnix(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "uds.yaml"))
 	require.NoError(t, err)

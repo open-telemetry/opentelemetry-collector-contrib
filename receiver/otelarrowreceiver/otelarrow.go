@@ -181,15 +181,15 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 }
 
 func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) {
-	r.tracesReceiver = trace.New(tc, r.obsrepGRPC, r.boundedQueue)
+	r.tracesReceiver = trace.New(r.settings.Logger, tc, r.obsrepGRPC, r.boundedQueue)
 }
 
 func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) {
-	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC, r.boundedQueue)
+	r.metricsReceiver = metrics.New(r.settings.Logger, mc, r.obsrepGRPC, r.boundedQueue)
 }
 
 func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) {
-	r.logsReceiver = logs.New(lc, r.obsrepGRPC, r.boundedQueue)
+	r.logsReceiver = logs.New(r.settings.Logger, lc, r.obsrepGRPC, r.boundedQueue)
 }
 
 var _ arrow.Consumers = &otelArrowReceiver{}

@@ -39,10 +39,10 @@ type ArrowConfig struct {
 	MemoryLimitMiB uint64 `mapstructure:"memory_limit_mib"`
 
 	// Deprecated: This field is no longer supported, use cfg.Admission.AdmissionLimitMiB instead.
-	AdmissionLimitMiB uint64 `mapstructure:"admission_limit_mib"`
+	DeprecatedAdmissionLimitMiB uint64 `mapstructure:"admission_limit_mib"`
 
 	// Deprecated: This field is no longer supported, use cfg.Admission.WaiterLimit instead.
-	WaiterLimit int64 `mapstructure:"waiter_limit"`
+	DeprecatedWaiterLimit int64 `mapstructure:"waiter_limit"`
 
 	// Zstd settings apply to OTel-Arrow use of gRPC specifically.
 	Zstd zstd.DecoderConfig `mapstructure:"zstd"`
@@ -71,11 +71,11 @@ func (cfg *Config) Validate() error {
 	if err := cfg.Arrow.Validate(); err != nil {
 		return err
 	}
-	if cfg.Arrow.AdmissionLimitMiB != 0 {
-		cfg.Admission.AdmissionLimitMiB = cfg.Arrow.AdmissionLimitMiB
+	if cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
+		cfg.Admission.AdmissionLimitMiB = cfg.Arrow.DeprecatedAdmissionLimitMiB
 	}
-	if cfg.Arrow.WaiterLimit != 0 {
-		cfg.Admission.WaiterLimit = cfg.Arrow.WaiterLimit
+	if cfg.Arrow.DeprecatedWaiterLimit != 0 {
+		cfg.Admission.WaiterLimit = cfg.Arrow.DeprecatedWaiterLimit
 	}
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
 )
@@ -23,15 +24,17 @@ type Receiver struct {
 	obsrecv      *receiverhelper.ObsReport
 	boundedQueue *admission.BoundedQueue
 	sizer        *plog.ProtoMarshaler
+	logger       *zap.Logger
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Logs, obsrecv *receiverhelper.ObsReport, bq *admission.BoundedQueue) *Receiver {
+func New(logger *zap.Logger, nextConsumer consumer.Logs, obsrecv *receiverhelper.ObsReport, bq *admission.BoundedQueue) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
 		boundedQueue: bq,
 		sizer:        &plog.ProtoMarshaler{},
+		logger:       logger,
 	}
 }
 
@@ -51,7 +54,8 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 		return plogotlp.NewExportResponse(), err
 	}
 	defer func() {
-		err = r.boundedQueue.Release(sizeBytes)
+		releaseErr := r.boundedQueue.Release(sizeBytes)
+		r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
 	}()
 
 	err = r.nextConsumer.ConsumeLogs(ctx, ld)
