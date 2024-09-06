@@ -52,10 +52,11 @@ func TestAuthentication(t *testing.T) {
 	require.NoError(t, err)
 	saramaTLSCfg.Net.TLS.Config = tlscfg
 
+	ctx := context.Background()
 	saramaSASLAWSIAMOATUHConfig := &sarama.Config{}
 	saramaSASLAWSIAMOATUHConfig.Net.SASL.Enable = true
 	saramaSASLAWSIAMOATUHConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
-	saramaSASLAWSIAMOATUHConfig.Net.SASL.TokenProvider = &AWSMSKConfig{Region: "region"}
+	saramaSASLAWSIAMOATUHConfig.Net.SASL.TokenProvider = &AWSMSKConfig{Region: "region", ctx: ctx}
 
 	tlsConfig := tls.Config{}
 	saramaSASLAWSIAMOATUHConfig.Net.TLS.Enable = true
