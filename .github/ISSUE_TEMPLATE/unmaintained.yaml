@@ -51,6 +51,7 @@ body:
       - exporter/coralogix
       - exporter/datadog
       - exporter/dataset
+      - exporter/doris
       - exporter/elasticsearch
       - exporter/file
       - exporter/googlecloud
@@ -125,6 +126,7 @@ body:
       - internal/docker
       - internal/exp/metrics
       - internal/filter
+      - internal/grpcutil
       - internal/k8sconfig
       - internal/k8stest
       - internal/kafka
@@ -132,6 +134,7 @@ body:
       - internal/metadataproviders
       - internal/otelarrow
       - internal/pdatautil
+      - internal/rabbitmq
       - internal/sharedcomponent
       - internal/splunk
       - internal/sqlquery
@@ -158,6 +161,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
+      - processor/coralogix
       - processor/cumulativetodelta
       - processor/deltatocumulative
       - processor/deltatorate
@@ -167,6 +171,7 @@ body:
       - processor/groupbytrace
       - processor/interval
       - processor/k8sattributes
+      - processor/logdedup
       - processor/logstransform
       - processor/metricsgeneration
       - processor/metricstransform
@@ -224,7 +229,8 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
-      - receiver/gitprovider
+      - receiver/github
+      - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy

@@ -38,7 +38,7 @@ func TestS3Key(t *testing.T) {
 	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+).json`)
 	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "json", "")
 	matched := re.MatchString(s3Key)
-	assert.Equal(t, true, matched)
+	assert.True(t, matched)
 }
 
 func TestS3KeyEmptyFileFormat(t *testing.T) {
@@ -52,7 +52,7 @@ func TestS3KeyEmptyFileFormat(t *testing.T) {
 	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+)`)
 	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "", "")
 	matched := re.MatchString(s3Key)
-	assert.Equal(t, true, matched)
+	assert.True(t, matched)
 }
 
 func TestS3KeyOfCompressedFile(t *testing.T) {
@@ -66,7 +66,7 @@ func TestS3KeyOfCompressedFile(t *testing.T) {
 	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+).json.gz`)
 	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "json", "gzip")
 	matched := re.MatchString(s3Key)
-	assert.Equal(t, true, matched)
+	assert.True(t, matched)
 }
 
 func TestS3KeyOfCompressedFileEmptyFileFormat(t *testing.T) {
@@ -80,7 +80,7 @@ func TestS3KeyOfCompressedFileEmptyFileFormat(t *testing.T) {
 	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+).gz`)
 	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "", "gzip")
 	matched := re.MatchString(s3Key)
-	assert.Equal(t, true, matched)
+	assert.True(t, matched)
 }
 
 func TestGetSessionConfigWithEndpoint(t *testing.T) {
@@ -126,7 +126,7 @@ func TestGetSessionConfigWithRoleArn(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, sessionConfig.Region, aws.String(region))
-	assert.Equal(t, creds.ProviderName, "AssumeRoleProvider")
+	assert.Equal(t, "AssumeRoleProvider", creds.ProviderName)
 }
 
 func TestGetSessionConfigWithoutRoleArn(t *testing.T) {
@@ -144,5 +144,5 @@ func TestGetSessionConfigWithoutRoleArn(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, sessionConfig.Region, aws.String(region))
-	assert.NotEqual(t, creds.ProviderName, "AssumeRoleProvider")
+	assert.NotEqual(t, "AssumeRoleProvider", creds.ProviderName)
 }

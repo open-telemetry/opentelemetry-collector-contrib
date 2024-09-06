@@ -29,7 +29,7 @@ func TestBuildPipelineSuccess(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	pipe, err := cfg.Build(set)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(pipe.Operators()))
+	require.Len(t, pipe.Operators(), 1)
 }
 
 func TestBuildPipelineNoLogger(t *testing.T) {
@@ -86,22 +86,22 @@ func TestBuildAPipelineDefaultOperator(t *testing.T) {
 	require.NoError(t, err)
 
 	ops := pipe.Operators()
-	require.Equal(t, 3, len(ops))
+	require.Len(t, ops, 3)
 
 	exists := make(map[string]bool)
 
 	for _, op := range ops {
 		switch op.ID() {
 		case "noop":
-			require.Equal(t, 1, len(op.GetOutputIDs()))
+			require.Len(t, op.GetOutputIDs(), 1)
 			require.Equal(t, "noop1", op.GetOutputIDs()[0])
 			exists["noop"] = true
 		case "noop1":
-			require.Equal(t, 1, len(op.GetOutputIDs()))
+			require.Len(t, op.GetOutputIDs(), 1)
 			require.Equal(t, "fake", op.GetOutputIDs()[0])
 			exists["noop1"] = true
 		case "fake":
-			require.Equal(t, 0, len(op.GetOutputIDs()))
+			require.Empty(t, op.GetOutputIDs())
 			exists["fake"] = true
 		}
 	}
@@ -243,7 +243,7 @@ func TestDeduplicateIDs(t *testing.T) {
 		t.Run("Deduplicate/"+tc.name, func(t *testing.T) {
 			ops := tc.ops()
 			dedeplucateIDs(ops)
-			require.Equal(t, ops, tc.expectedOps)
+			require.Equal(t, tc.expectedOps, ops)
 		})
 	}
 }
@@ -375,7 +375,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 			if tc.defaultOut != nil {
 				expectedNumOps++
 			}
-			require.Equal(t, expectedNumOps, len(ops))
+			require.Len(t, ops, expectedNumOps)
 
 			for i := 0; i < len(ops); i++ {
 				id := ops[i].ID()

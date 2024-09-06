@@ -62,54 +62,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.congestions`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.operations`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.cache.hit_rate`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.congestions`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.operations`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.operations`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -144,15 +96,19 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterClusterVMTemplateCountDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanCongestionsDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 
@@ -248,18 +204,23 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1, "object_name-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCacheHitRateDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCongestionsDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 
@@ -359,12 +320,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1, "object_name-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 
@@ -409,7 +373,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.", ms.At(i).Description())
-					assert.Equal(t, "{MHz}", ms.At(i).Unit())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -423,7 +387,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of CPU available to the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{MHz}", ms.At(i).Unit())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -513,7 +477,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The congestions of IOs generated by all vSAN clients in the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{congestions/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{congestions/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -540,7 +504,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The vSAN IOPs of a cluster.", ms.At(i).Description())
-					assert.Equal(t, "{operations/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{operations/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -587,7 +551,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The total amount of CPU available to the datacenter.", ms.At(i).Description())
-					assert.Equal(t, "{MHz}", ms.At(i).Unit())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -851,7 +815,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of packets dropped across each physical NIC (network interface controller) instance on the host.", ms.At(i).Description())
-					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -869,7 +833,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of packet errors transmitted or received on the host network.", ms.At(i).Description())
-					assert.Equal(t, "{errors/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{errors/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -887,7 +851,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.", ms.At(i).Description())
-					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -954,7 +918,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The congestions of IOs generated by all vSAN clients in the host.", ms.At(i).Description())
-					assert.Equal(t, "{congestions/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{congestions/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -981,7 +945,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The vSAN IOPs of a host.", ms.At(i).Description())
-					assert.Equal(t, "{operations/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{operations/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1025,7 +989,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The usage of the CPU used by the resource pool.", ms.At(i).Description())
-					assert.Equal(t, "{MHz}", ms.At(i).Unit())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -1304,7 +1268,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1322,7 +1286,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1340,7 +1304,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of data that was transmitted or received over the network of the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "By/sec", ms.At(i).Unit())
+					assert.Equal(t, "By/s", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -1392,7 +1356,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The vSAN IOPs of a virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{operations/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{operations/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

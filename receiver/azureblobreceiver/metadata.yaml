@@ -1,5 +1,4 @@
 type: azureblob
-scope_name: otelcol/azureblobreceiver
 
 status:
   class: receiver

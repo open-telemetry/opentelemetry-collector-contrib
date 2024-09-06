@@ -1,5 +1,4 @@
 type: signalfx
-scope_name: otelcol/signalfxreceiver
 
 status:
   class: receiver
@@ -11,5 +10,3 @@ status:
     emeritus:
 
 tests:
-  goleak:
-    skip: true  

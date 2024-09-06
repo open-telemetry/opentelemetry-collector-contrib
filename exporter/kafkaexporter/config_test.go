@@ -59,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
@@ -114,6 +115,7 @@ func TestLoadConfig(t *testing.T) {
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
@@ -168,6 +170,7 @@ func TestLoadConfig(t *testing.T) {
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				ResolveCanonicalBootstrapServersOnly: true,
@@ -332,8 +335,8 @@ func Test_saramaProducerCompressionCodec(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			c, err := saramaProducerCompressionCodec(test.compression)
-			assert.Equal(t, c, test.expectedCompression)
-			assert.Equal(t, err, test.expectedError)
+			assert.Equal(t, test.expectedCompression, c)
+			assert.Equal(t, test.expectedError, err)
 		})
 	}
 }

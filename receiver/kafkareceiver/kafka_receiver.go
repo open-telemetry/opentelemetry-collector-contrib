@@ -12,6 +12,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -48,6 +49,9 @@ type kafkaTracesConsumer struct {
 	messageMarking    MessageMarking
 	headerExtraction  bool
 	headers           []string
+	minFetchSize      int32
+	defaultFetchSize  int32
+	maxFetchSize      int32
 }
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
@@ -66,6 +70,9 @@ type kafkaMetricsConsumer struct {
 	messageMarking    MessageMarking
 	headerExtraction  bool
 	headers           []string
+	minFetchSize      int32
+	defaultFetchSize  int32
+	maxFetchSize      int32
 }
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
@@ -84,6 +91,9 @@ type kafkaLogsConsumer struct {
 	messageMarking    MessageMarking
 	headerExtraction  bool
 	headers           []string
+	minFetchSize      int32
+	defaultFetchSize  int32
+	maxFetchSize      int32
 }
 
 var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
@@ -111,6 +121,9 @@ func newTracesReceiver(config Config, set receiver.Settings, unmarshaler TracesU
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 		telemetryBuilder:  telemetryBuilder,
+		minFetchSize:      config.MinFetchSize,
+		defaultFetchSize:  config.DefaultFetchSize,
+		maxFetchSize:      config.MaxFetchSize,
 	}, nil
 }
 
@@ -124,6 +137,9 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
 	saramaConfig.Consumer.Group.Session.Timeout = config.SessionTimeout
 	saramaConfig.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
+	saramaConfig.Consumer.Fetch.Min = config.MinFetchSize
+	saramaConfig.Consumer.Fetch.Default = config.DefaultFetchSize
+	saramaConfig.Consumer.Fetch.Max = config.MaxFetchSize
 
 	var err error
 	if saramaConfig.Consumer.Offsets.Initial, err = toSaramaInitialOffset(config.InitialOffset); err != nil {
@@ -143,7 +159,7 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
 }
 
-func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -179,7 +195,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, consumerGroup); !errors.Is(err, context.Canceled) {
-			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	<-consumerGroup.ready
@@ -234,10 +250,13 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler Metric
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 		telemetryBuilder:  telemetryBuilder,
+		minFetchSize:      config.MinFetchSize,
+		defaultFetchSize:  config.DefaultFetchSize,
+		maxFetchSize:      config.MaxFetchSize,
 	}, nil
 }
 
-func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -273,7 +292,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error 
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
-			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	<-metricsConsumerGroup.ready
@@ -328,10 +347,13 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmar
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 		telemetryBuilder:  telemetryBuilder,
+		minFetchSize:      config.MinFetchSize,
+		defaultFetchSize:  config.DefaultFetchSize,
+		maxFetchSize:      config.MaxFetchSize,
 	}, nil
 }
 
-func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -367,7 +389,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
-			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	<-logsConsumerGroup.ready

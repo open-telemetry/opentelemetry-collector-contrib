@@ -410,10 +410,12 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 
 - [Base64Decode](#base64decode)
+- [Decode](#decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Day](#day)
 - [ExtractPatterns](#extractpatterns)
+- [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
 - [Format](#format)
 - [Hex](#hex)
@@ -432,6 +434,7 @@ Available Converters:
 - [IsString](#isstring)
 - [Len](#len)
 - [Log](#log)
+- [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
 - [Minute](#minute)
@@ -446,6 +449,8 @@ Available Converters:
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
+- [SHA512](#sha512)
+- [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
 - [String](#string)
@@ -458,10 +463,13 @@ Available Converters:
 - [UnixMilli](#unixmilli)
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
+- [UserAgent](#useragent)
 - [UUID](#UUID)
 - [Year](#year)
 
-### Base64Decode
+### Base64Decode (Deprecated)
+
+*This function has been deprecated. Please use the [Decode](#decode) function instead.*
 
 `Base64Decode(value)`
 
@@ -475,6 +483,22 @@ Examples:
 
 
 - `Base64Decode(attributes["encoded field"])`
+
+### Decode
+
+`Decode(value, encoding)`
+
+The `Decode` Converter takes a string or byte array encoded with the specified encoding and returns the decoded string.
+
+`value` is a valid encoded string or byte array.
+`encoding` is a valid encoding name included in the [IANA encoding index](https://www.iana.org/assignments/character-sets/character-sets.xhtml).
+
+Examples:
+
+- `Decode("aGVsbG8gd29ybGQ=", "base64")`
+
+
+- `Decode(attributes["encoded field"], "us-ascii")`
 
 ### Concat
 
@@ -587,6 +611,97 @@ Examples:
 - `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
 
 - `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+
+### ExtractGrokPatterns
+
+`ExtractGrokPatterns(target, pattern, Optional[namedCapturesOnly], Optional[patternDefinitions])`
+
+The `ExtractGrokPatterns` Converter parses unstructured data into a format that is structured and queryable. 
+It returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If no matches are found then an empty `pcommon.Map` is returned.
+
+- `target` is a Getter that returns a string. 
+- `pattern` is a grok pattern string. 
+- `namedCapturesOnly` (optional) specifies if non-named captures should be returned. 
+- `patternDefinitions` (optional) is a list of custom pattern definition strings used inside `pattern` in the form of `PATTERN_NAME=PATTERN`. 
+This parameter lets you define your own custom patterns to improve readability when the extracted `pattern` is not part of the default set or when you need custom naming. 
+
+If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` errors on startup.
+
+Parsing is done using [Elastic Go-Grok](https://github.com/elastic/go-grok?tab=readme-ov-file) library.
+Grok is a regular expression dialect that supports reusable aliased expressions. It sits on `re2` regex library so any valid `re2` expressions are valid in grok.
+Grok uses this regular expression language to allow naming existing patterns and combining them into more complex patterns that match your fields
+
+Pattern can be specified in either of these forms:
+ - `%{SYNTAX}` - e.g {NUMBER}
+ - `%{SYNTAX:ID}` - e.g {NUMBER:MY_AGE}
+ - `%{SYNTAX:ID:TYPE}` - e.g {NUMBER:MY_AGE:INT}
+
+Where `SYNTAX` is a pattern that will match your text, `ID` is identifier you give to the piece of text being matched and `TYPE` data type you want to cast your named field.
+Supported types are `int`, `long`, `double`, `float` and boolean
+
+The [Elastic Go-Grok](https://github.com/elastic/go-grok) ships with numerous predefined grok patterns that simplify working with grok.
+In collector Complete set is included consisting of a default set and all additional sets adding product/tool specific capabilities (like [aws](https://github.com/elastic/go-grok/blob/main/patterns/aws.go) or [java](https://github.com/elastic/go-grok/blob/main/patterns/java.go) patterns).
+
+
+Default set consists of:
+
+| Name | Example |
+|-----|-----|
+| WORD |  "hello", "world123", "test_data" |
+| NOTSPACE | "example", "text-with-dashes", "12345" |
+| SPACE | " ", "\t", "  " |
+| INT | "123", "-456", "+789" |
+| NUMBER | "123", "456.789", "-0.123" |
+| BOOL |"true", "false", "true" |
+| BASE10NUM | "123", "-123.456", "0.789" |
+| BASE16NUM | "1a2b", "0x1A2B", "-0x1a2b3c" |
+| BASE16FLOAT |  "0x1.a2b3", "-0x1A2B3C.D" |
+| POSINT | "123", "456", "789" |
+| NONNEGINT | "0", "123", "456" |
+| GREEDYDATA |"anything goes", "literally anything", "123 #@!" |
+| QUOTEDSTRING | "\"This is a quote\"", "'single quoted'" |
+| UUID |"123e4567-e89b-12d3-a456-426614174000" |
+| URN | "urn:isbn:0451450523", "urn:ietf:rfc:2648" |
+
+and many more. Complete list can be found [here](https://github.com/elastic/go-grok/blob/main/patterns/default.go).
+
+Examples:
+
+- _Uses regex pattern with named captures to extract_:
+
+  `ExtractGrokPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+
+- _Uses regex pattern with named captures to extract_:
+
+  `ExtractGrokPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+
+- _Uses `URI` from default set to extract URI and includes only named captures_:
+
+  `ExtractGrokPatterns(body, "%{URI}", true)`
+
+- _Uses more complex pattern consisting of elements from default set and includes only named captures_:
+  
+  `ExtractGrokPatterns(body, "%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}", true)`
+
+- _Uses `LOGLINE` pattern defined in `patternDefinitions` passed as last argument_:
+  
+  `ExtractGrokPatterns(body, "%{LOGLINE}", true, ["LOGLINE=%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}"])`
+
+- Add custom patterns to parse the password from `/etc/passwd` and making `pattern` readable:
+
+  - `pattern`: `%{USERNAME:user.name}:%{PASSWORD:user.password}:%{USERINFO}`
+  - `patternDefinitions`:
+    - `PASSWORD=%{WORD}`
+    - `USERINFO=%{GREEDYDATA}`
+
+    Note that `USERNAME` is in the default pattern set and does not need to be redefined.
+
+  - Target: `smith:pass123:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh` 
+
+  - Return values: 
+     - `user.name`: smith
+     - `user.password`: pass123
+
 
 ### FNV
 
@@ -897,6 +1012,26 @@ Examples:
 
 - `Int(Log(attributes["duration_ms"])`
 
+### MD5
+
+`MD5(value)`
+
+The `MD5` Converter converts the `value` to a md5 hash/digest.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `MD5(attributes["device.name"])`
+
+- `MD5("name")`
+
+**Note:** According to the National Institute of Standards and Technology (NIST), MD5 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer a SHA-2 family function (e.g. SHA-256, SHA-512) whenever possible.
+
 ### Microseconds
 
 `Microseconds(value)`
@@ -1203,8 +1338,52 @@ Examples:
 
 - `SHA256(attributes["device.name"])`
 
-
 - `SHA256("name")`
+
+### SHA512
+
+`SHA512(input)`
+
+The `SHA512` converter calculates sha512 hash value/digest of the `input`.
+
+The returned type is string.
+
+`input` is either a path expression to a string telemetry field or a literal string. If `input` is another type, converter raises an error.
+If an error occurs during hashing, the error will be returned.
+
+Examples:
+
+- `SHA512(attributes["device.name"])`
+
+- `SHA512("name")`
+
+### Sort
+
+`Sort(target, Optional[order])`
+
+The `Sort` Converter sorts the `target` array in either ascending or descending order.
+
+`target` is an array or `pcommon.Slice` typed field containing the elements to be sorted. 
+
+`order` is a string specifying the sort order. Must be either `asc` or `desc`. The default value is `asc`.
+
+The Sort Converter preserves the data type of the original elements while sorting. 
+The behavior varies based on the types of elements in the target slice:
+
+| Element Types | Sorting Behavior                    | Return Value |
+|---------------|-------------------------------------|--------------|
+| Integers | Sorts as integers                   | Sorted array of integers |
+| Doubles | Sorts as doubles                    | Sorted array of doubles |
+| Integers and doubles | Converts all to doubles, then sorts | Sorted array of integers and doubles |
+| Strings | Sorts as strings                    | Sorted array of strings |
+| Booleans | Converts all to strings, then sorts | Sorted array of booleans |
+| Mix of integers, doubles, booleans, and strings | Converts all to strings, then sorts | Sorted array of mixed types |
+| Any other types | N/A                                 | Returns an error |
+
+Examples:
+
+- `Sort(attributes["device.tags"])`
+- `Sort(attributes["device.tags"], "desc")`
 
 ### SpanID
 
@@ -1436,6 +1615,34 @@ The returned type is `int64`.
 Examples:
 
 - `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UserAgent
+
+`UserAgent(value)`
+
+The `UserAgent` Converter parses the string argument trying to match it against well-known user-agent strings.
+
+`value` is a string or a path to a string.  If `value` is not a string an error is returned.
+
+The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version` and `user_agent.original`
+as defined in semconv v1.25.0.
+
+Parsing is done using the [uap-go package](https://github.com/ua-parser/uap-go). The specific formats it recognizes can be found [here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
+
+Examples:
+
+- `UserAgent("curl/7.81.0")`
+  ```yaml
+  "user_agent.name": "curl"
+  "user_agent.version": "7.81.0"
+  "user_agent.original": "curl/7.81.0"
+  ```
+- `Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0`
+  ```yaml
+  "user_agent.name": "Firefox"
+  "user_agent.version": "126.0"
+  "user_agent.original": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0"
+  ```
 
 ### URL
 

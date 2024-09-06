@@ -1,10 +1,10 @@
 type: redaction
-scope_name: otelcol/redaction
 
 status:
   class: processor
   stability:
     beta: [traces]
+    alpha: [logs,metrics]
   distributions: [contrib]
   codeowners:
     active: [dmitryax, mx-psi, TylerHelmuth]

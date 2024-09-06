@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.uber.org/zap"
@@ -29,12 +28,6 @@ var _ component.Component = (*traceToMetricConnectorNative)(nil) // testing that
 
 // create test to create a connector, check that basic code compiles
 func TestNewConnectorNative(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
-	assert.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	}()
-
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopSettings()
@@ -48,12 +41,6 @@ func TestNewConnectorNative(t *testing.T) {
 }
 
 func TestTraceToTraceConnectorNative(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
-	assert.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	}()
-
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopSettings()
@@ -73,17 +60,12 @@ func creteConnectorNative(t *testing.T) (*traceToMetricConnectorNative, *consume
 }
 
 func creteConnectorNativeWithCfg(t *testing.T, cfg *Config) (*traceToMetricConnectorNative, *consumertest.MetricsSink) {
-	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
-	assert.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	}()
-
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopSettings()
 	metricsSink := &consumertest.MetricsSink{}
 
+	cfg.Traces.BucketInterval = 1 * time.Second
 	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
 	assert.NoError(t, err)
 
@@ -122,7 +104,7 @@ func TestContainerTagsNative(t *testing.T) {
 
 	// check if the container tags are added to the metrics
 	metrics := metricsSink.AllMetrics()
-	assert.Equal(t, 1, len(metrics))
+	assert.Len(t, metrics, 1)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
@@ -135,7 +117,7 @@ func TestContainerTagsNative(t *testing.T) {
 	require.NoError(t, err)
 
 	tags := sp.Stats[0].Tags
-	assert.Equal(t, 3, len(tags))
+	assert.Len(t, tags, 3)
 	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
 }
 
@@ -205,7 +187,7 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	}
 
 	metrics := metricsSink.AllMetrics()
-	require.Equal(t, 1, len(metrics))
+	require.Len(t, metrics, 1)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
