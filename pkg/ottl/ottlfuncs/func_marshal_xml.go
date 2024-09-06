@@ -16,7 +16,8 @@ import (
 )
 
 type MarshalXMLArguments[K any] struct {
-	Target ottl.PMapGetter[K]
+	Target  ottl.PMapGetter[K]
+	Version ottl.Optional[ottl.IntGetter[K]]
 }
 
 func NewMarshalXMLFactory[K any]() ottl.Factory[K] {
@@ -30,22 +31,52 @@ func createMarshalXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 		return nil, fmt.Errorf("MarshalXMLFactory args must be of type *MarshalXMLArguments[K]")
 	}
 
-	return marshalXML(args.Target), nil
+	return marshalXML(args.Target, args.Version), nil
 }
 
 // marshalXML returns a string that is a result of marshaling the target `pcommon.Map` as XML
-func marshalXML[K any](target ottl.PMapGetter[K]) ottl.ExprFunc[K] {
+func marshalXML[K any](target ottl.PMapGetter[K], version ottl.Optional[ottl.IntGetter[K]]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
+		versionVal := int64(1)
+
+		if !version.IsEmpty() {
+			getter := version.Get()
+			getterVal, getterErr := getter.Get(ctx, tCtx)
+			if getterErr != nil {
+				return nil, getterErr
+			}
+			switch getterVal {
+			case 1, 2:
+				versionVal = getterVal
+			default:
+				return nil, fmt.Errorf("version must be 1 or 2, got %d", getterVal)
+			}
+		}
+
 		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
+		}
+
+		var root xmlElement
+		if versionVal == 1 {
+			root, err = mapToLegacyXMLElement(targetVal)
+
+			if err != nil {
+				return nil, err
+			}
+
+			bytes, marshalErr := xml.MarshalIndent(&root, "", "\t")
+			if marshalErr != nil {
+				return nil, fmt.Errorf("marshal xml: %w", marshalErr)
+			}
+			return string(bytes), nil
 		}
 
 		// this map should have a single key, which is the root element
 		if targetVal.Len() != 1 {
 			return nil, errors.New("target map must have a single key")
 		}
-		var root xmlElement
 
 		targetVal.Range(func(k string, v pcommon.Value) bool {
 
@@ -73,6 +104,56 @@ func marshalXML[K any](target ottl.PMapGetter[K]) ottl.ExprFunc[K] {
 		}
 		return string(bytes), nil
 	}
+}
+
+// mapToXMLElement takes a pcommon.Map and converts it to an xmlElement
+func mapToLegacyXMLElement(m pcommon.Map) (xmlElement, error) {
+	var root xmlElement
+	var err error
+	m.Range(func(k string, v pcommon.Value) bool {
+
+		switch k {
+		case "tag":
+			root.tag = v.Str()
+		case "children":
+			children := v.Slice()
+			for i := 0; i < children.Len(); i++ {
+				child := children.At(i)
+				if child.Type() != pcommon.ValueTypeMap {
+					// error
+					err = errors.New("child must be a map")
+					return false
+				}
+				childMap := child.Map()
+				xmlChild, xmlErr := mapToLegacyXMLElement(childMap)
+				if xmlErr != nil {
+					err = xmlErr
+					return false
+				}
+				root.children = append(root.children, xmlChild)
+			}
+		case "attributes":
+			if v.Type() != pcommon.ValueTypeMap {
+				// error
+				err = errors.New("attributes must be a map")
+				return false
+			}
+			v.Map().Range(func(k string, v pcommon.Value) bool {
+				root.attributes = append(root.attributes, newXMLAttribute(k, v.Str()))
+				return true
+			})
+
+		case "content":
+			if v.Type() != pcommon.ValueTypeStr {
+				// error
+				err = errors.New("content must be a string")
+				return false
+			}
+			root.text = v.Str()
+		}
+		return true
+	})
+	return root, err
 }
 
 func newXMLAttribute(name, value string) xml.Attr {

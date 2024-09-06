@@ -29,6 +29,7 @@ var (
 
 type ParseXMLArguments[K any] struct {
 	Target        ottl.StringGetter[K]
+	Version       ottl.Optional[ottl.IntGetter[K]]
 	FlattenArrays ottl.Optional[ottl.BoolGetter[K]]
 }
 
@@ -43,15 +44,31 @@ func createParseXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, fmt.Errorf("ParseXMLFactory args must be of type *ParseXMLArguments[K]")
 	}
 
-	return parseXML(args.Target, args.FlattenArrays), nil
+	return parseXML(args.Target, args.Version, args.FlattenArrays), nil
 }
 
 // parseXML returns a `pcommon.Map` struct that is a result of parsing the target string as XML
-func parseXML[K any](target ottl.StringGetter[K], flatten ottl.Optional[ottl.BoolGetter[K]]) ottl.ExprFunc[K] {
+func parseXML[K any](target ottl.StringGetter[K], version ottl.Optional[ottl.IntGetter[K]], flatten ottl.Optional[ottl.BoolGetter[K]]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
+		}
+
+		versionVal := int64(1)
+		if !version.IsEmpty() {
+			getter := version.Get()
+			getterVal, getterErr := getter.Get(ctx, tCtx)
+			if getterErr != nil {
+				return nil, getterErr
+			}
+			switch getterVal {
+			case 1, 2:
+				versionVal = getterVal
+			default:
+				return nil, fmt.Errorf("version must be 1 or 2, got %d", getterVal)
+			}
+
 		}
 
 		flattenArrays := false
@@ -77,8 +94,11 @@ func parseXML[K any](target ottl.StringGetter[K], flatten ottl.Optional[ottl.Boo
 		}
 
 		parsedMap := pcommon.NewMap()
-		parsedXML.intoMap(parsedMap, flattenArrays)
-
+		if versionVal == 1 {
+			parsedXML.intoMapLegacy(parsedMap)
+		} else {
+			parsedXML.intoMap(parsedMap, flattenArrays)
+		}
 		return parsedMap, nil
 	}
 }
@@ -123,6 +143,35 @@ func (a *xmlElement) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error 
 		case xml.Directive: // ignore directives
 		default:
 			return fmt.Errorf("unexpected token type %T", t)
+		}
+	}
+}
+
+// intoMap converts and adds the xmlElement into the provided pcommon.Map.
+func (a xmlElement) intoMapLegacy(m pcommon.Map) {
+	m.EnsureCapacity(4)
+
+	m.PutStr("tag", a.tag)
+
+	if a.text != "" {
+		m.PutStr("content", a.text)
+	}
+
+	if len(a.attributes) > 0 {
+		attrs := m.PutEmptyMap("attributes")
+		attrs.EnsureCapacity(len(a.attributes))
+
+		for _, attr := range a.attributes {
+			attrs.PutStr(attr.Name.Local, attr.Value)
+		}
+	}
+
+	if len(a.children) > 0 {
+		children := m.PutEmptySlice("children")
+		children.EnsureCapacity(len(a.children))
+
+		for _, child := range a.children {
+			child.intoMapLegacy(children.AppendEmpty().SetEmptyMap())
 		}
 	}
 }
