@@ -6,7 +6,7 @@ require (
 	github.com/apache/arrow/go/v16 v16.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.108.0
-	github.com/open-telemetry/otel-arrow v0.25.0
+	github.com/open-telemetry/otel-arrow v0.26.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/client v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/component v0.108.2-0.20240904075637-48b11ba1c5f8
