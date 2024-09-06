@@ -392,7 +392,7 @@ func TestHandleInvalidBuckets(t *testing.T) {
 			require.Equal(t, pmetric.MetricTypeExponentialHistogram, metric.At(0).Type())
 
 			// While the input was 3 sketches, the result should exclude the 2nd input due to an invalid bucket
-			require.Equal(t, metric.At(0).ExponentialHistogram().DataPoints().Len(), 2)
+			require.Equal(t, 2, metric.At(0).ExponentialHistogram().DataPoints().Len())
 
 			var lastTimestamp pcommon.Timestamp
 			for i := 0; i < metric.At(0).ExponentialHistogram().DataPoints().Len(); i++ {
