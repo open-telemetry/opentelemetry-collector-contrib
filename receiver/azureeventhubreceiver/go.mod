@@ -40,6 +40,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/devigned/tab v0.1.1 // indirect
+	github.com/elastic/lunes v0.1.0 // indirect
 	github.com/expr-lang/expr v1.16.9 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -60,6 +61,7 @@ require (
 	github.com/leodido/go-syslog/v4 v4.1.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect

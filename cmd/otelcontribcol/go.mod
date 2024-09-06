@@ -439,7 +439,7 @@ require (
 	github.com/containerd/ttrpc v1.2.4 // indirect
 	github.com/coreos/go-oidc/v3 v3.11.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
-	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
+	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dennwc/varint v1.0.0 // indirect
@@ -464,6 +464,7 @@ require (
 	github.com/elastic/go-structform v0.0.12 // indirect
 	github.com/elastic/go-sysinfo v1.7.1 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
+	github.com/elastic/lunes v0.1.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/envoyproxy/go-control-plane v0.12.1-0.20240621013728-1eb8caab5155 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
