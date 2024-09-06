@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -152,7 +153,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 	require.NoError(t, err)
 
 	bq := admission.NewBoundedQueue(maxBytes, maxWaiters)
-	r := New(mc, obsrecv, bq)
+	r := New(zap.NewNop(), mc, obsrecv, bq)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	pmetricotlp.RegisterGRPCServer(srv, r)
