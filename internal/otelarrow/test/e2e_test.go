@@ -45,9 +45,12 @@ import (
 )
 
 type testParams struct {
-	threadCount    int
-	requestUntil   func(*testConsumer) bool
-	expectDeadline bool
+	threadCount  int
+	requestUntil func(*testConsumer) bool
+
+	// missingDeadline is configured so the zero value implies a deadline,
+	// which is the default.
+	missingDeadline bool
 }
 
 type testConsumer struct {
@@ -162,7 +165,7 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 		recvSpans: recvSpans,
 		expSpans:  expSpans,
 
-		expectDeadline: tp.expectDeadline,
+		expectDeadline: !tp.missingDeadline,
 	}
 
 	receiver, err := rfact.CreateTracesReceiver(ctx, receiver.Settings{
@@ -461,7 +464,7 @@ func TestIntegrationDeadlinePropagation(t *testing.T) {
 				requestUntil: func(test *testConsumer) bool {
 					return test.sink.SpanCount() < 1
 				},
-				expectDeadline: hasDeadline,
+				missingDeadline: !hasDeadline,
 			}
 
 			testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, _ *RecvConfig) {
