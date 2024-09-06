@@ -140,18 +140,8 @@ func (s *azureScraper) getArmClientOptions() *arm.ClientOptions {
 	return &options
 }
 
-func (s *azureScraper) getArmClient() (armClient, error) {
-	client, err := s.armClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
-	return client, err
-}
-
 type metricsDefinitionsClientInterface interface {
 	NewListPager(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse]
-}
-
-func (s *azureScraper) getMetricsDefinitionsClient() (metricsDefinitionsClientInterface, error) {
-	client, err := s.armMonitorDefinitionsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
-	return client, err
 }
 
 type metricsValuesClient interface {
@@ -160,26 +150,27 @@ type metricsValuesClient interface {
 	)
 }
 
-func (s *azureScraper) GetMetricsValuesClient() (metricsValuesClient, error) {
-	client, err := s.armMonitorMetricsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
-	return client, err
-}
-
 func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 	if err = s.loadCredentials(); err != nil {
 		return err
 	}
 
 	s.armClientOptions = s.getArmClientOptions()
-	s.clientResources, err = s.getArmClient()
+	s.clientResources, err = s.armClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	if err != nil {
 		return err
 	}
-	s.clientMetricsDefinitions, err = s.getMetricsDefinitionsClient()
+
+	s.clientMetricsDefinitions, err = s.armMonitorDefinitionsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	if err != nil {
 		return err
 	}
-	s.clientMetricsValues, err = s.GetMetricsValuesClient()
+
+	s.clientMetricsValues, err = s.armMonitorMetricsClientFunc(
+		s.cfg.SubscriptionID,
+		s.cred,
+		s.armClientOptions,
+	)
 	if err != nil {
 		return err
 	}
