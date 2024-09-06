@@ -1509,7 +1509,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().Len())
 			},
 		},
@@ -1523,8 +1523,8 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
-				require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
+				require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 			},
 		},

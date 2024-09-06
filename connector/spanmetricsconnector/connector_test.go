@@ -1647,7 +1647,7 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 					assert.Greater(t, dps.Len(), 0)
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, 1, dp.Exemplars().Len())
 						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
 					}
 				case pmetric.MetricTypeHistogram:
@@ -1655,7 +1655,7 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 					assert.Greater(t, dps.Len(), 0)
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, 1, dp.Exemplars().Len())
 						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
@@ -1663,7 +1663,7 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 					assert.Greater(t, dps.Len(), 0)
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, 1, dp.Exemplars().Len())
 						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
 					}
 				default:

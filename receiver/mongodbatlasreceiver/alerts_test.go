@@ -515,7 +515,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return testClient()
 			},
 			validateEntries: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.LogRecordCount(), 1)
+				require.Equal(t, 1, logs.LogRecordCount())
 			},
 		},
 		{
@@ -572,7 +572,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return tc
 			},
 			validateEntries: func(t *testing.T, l plog.Logs) {
-				require.Equal(t, l.LogRecordCount(), 1)
+				require.Equal(t, 1, l.LogRecordCount())
 				rl := l.ResourceLogs().At(0)
 				sl := rl.ScopeLogs().At(0)
 				lr := sl.LogRecords().At(0)

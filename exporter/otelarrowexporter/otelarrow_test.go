@@ -566,7 +566,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, md, rcv.getLastRequest())
 
 	mdata := rcv.getMetadata()
-	require.EqualValues(t, mdata.Get("header"), expectedHeader)
+	require.EqualValues(t, expectedHeader, mdata.Get("header"))
 	require.Len(t, mdata.Get("User-Agent"), 1)
 	require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
 

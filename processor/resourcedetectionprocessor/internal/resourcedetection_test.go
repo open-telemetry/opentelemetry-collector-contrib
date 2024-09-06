@@ -281,7 +281,7 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.False(t, ok)
 
-	assert.EqualValues(t, droppedAttributes, []string{"host.name", "host.id"})
+	assert.EqualValues(t, []string{"host.name", "host.id"}, droppedAttributes)
 }
 
 func TestFilterAttributes_NilAttributes(t *testing.T) {
