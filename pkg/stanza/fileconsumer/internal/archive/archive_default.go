@@ -22,7 +22,7 @@ func (a *defaultArchive) SetStorageClient(_ operator.Persister) {
 }
 
 func (a *defaultArchive) Match(unmatchedFiles []*ArchiveFileRecord) ([]*reader.Reader, error) {
-	// Deafult archiving mode creates new readers for unmatched files
+	// Default archiving mode creates new readers for unmatched files
 	readers := make([]*reader.Reader, 0)
 	var combinedError error
 	for _, record := range unmatchedFiles {
