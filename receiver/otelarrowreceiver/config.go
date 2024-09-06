@@ -14,9 +14,9 @@ import (
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC  configgrpc.ServerConfig `mapstructure:"grpc"`
-	Arrow ArrowConfig             `mapstructure:"arrow"`
-	Admission AdmissionConfig     `mapstructure:"admission"`
+	GRPC      configgrpc.ServerConfig `mapstructure:"grpc"`
+	Arrow     ArrowConfig             `mapstructure:"arrow"`
+	Admission AdmissionConfig         `mapstructure:"admission"`
 }
 
 type AdmissionConfig struct {

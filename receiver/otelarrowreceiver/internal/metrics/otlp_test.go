@@ -93,7 +93,7 @@ func TestExport_TooManyWaiters(t *testing.T) {
 		_, err = metricsClient.Export(bg, req)
 		mtx.Lock()
 		errs = multierr.Append(errs, err)
-		numResponses += 1
+		numResponses++
 		mtx.Unlock()
 	}()
 
@@ -102,7 +102,7 @@ func TestExport_TooManyWaiters(t *testing.T) {
 			_, err := metricsClient.Export(bg, req)
 			mtx.Lock()
 			errs = multierr.Append(errs, err)
-			numResponses += 1
+			numResponses++
 			mtx.Unlock()
 		}()
 	}
