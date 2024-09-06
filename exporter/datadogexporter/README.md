@@ -72,3 +72,7 @@ To get the service field correctly populated in your logs, you can specify servi
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [AWS]:https://aws-otel.github.io/docs/partners/datadog
+
+### How to add custom log source
+
+In order to add a custom source to your OTLP logs, set log attribute or resource attribute `datadog.log.source`.
