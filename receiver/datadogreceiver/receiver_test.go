@@ -524,7 +524,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
-	require.Equal(t, string(body), "OK", "Expected response to be 'OK', got %s", string(body))
+	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	mds := sink.AllMetrics()
