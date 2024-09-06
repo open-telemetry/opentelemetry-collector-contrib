@@ -15,13 +15,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 type logsConnector struct {
 	config Config
 
 	// Additional dimensions to add to logs.
-	dimensions []dimension
+	dimensions []pdatautil.Dimension
 
 	logsConsumer consumer.Logs
 	component.StartFunc
@@ -113,20 +114,13 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 
 	// Add configured dimension attributes to the log record.
 	for _, d := range c.dimensions {
-		if v, ok := getDimensionValue(d, spanAttrs, eventAttrs, resourceAttrs); ok {
-			logRecord.Attributes().PutStr(d.name, v.Str())
+		if v, ok := pdatautil.GetDimensionValue(d, spanAttrs, eventAttrs, resourceAttrs); ok {
+			logRecord.Attributes().PutStr(d.Name, v.Str())
 		}
 	}
 
 	// Add stacktrace to the log record.
-	logRecord.Attributes().PutStr(exceptionStacktraceKey, getValue(eventAttrs, exceptionStacktraceKey))
+	attrVal, _ := pdatautil.GetAttributeValue(exceptionStacktraceKey, eventAttrs)
+	logRecord.Attributes().PutStr(exceptionStacktraceKey, attrVal)
 	return logRecord
-}
-
-// getValue returns the value of the attribute with the given key.
-func getValue(attr pcommon.Map, key string) string {
-	if attrVal, ok := attr.Get(key); ok {
-		return attrVal.Str()
-	}
-	return ""
 }
