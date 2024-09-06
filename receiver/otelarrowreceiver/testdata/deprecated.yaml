@@ -1,0 +1,6 @@
+protocols:
+  arrow:
+    memory_limit_mib: 123
+    # these fields are deprecated and should populate cfg.Admission.AdmissionLimitMiB and cfg.Admission.WaiterLimit instead.
+    admission_limit_mib: 80
+    waiter_limit: 100
