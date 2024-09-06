@@ -47,8 +47,9 @@ func TestLoadConfig(t *testing.T) {
 					CheckInterval:              time.Second * 5,
 					CleanupOnStart:             true,
 				},
-				Timeout: 2 * time.Second,
-				FSync:   true,
+				Timeout:              2 * time.Second,
+				FSync:                true,
+				DirectoryPermissions: "0750",
 			},
 		},
 	}
