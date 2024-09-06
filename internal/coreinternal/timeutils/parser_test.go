@@ -163,5 +163,5 @@ func TestParseLocalizedStrptimeInvalidType(t *testing.T) {
 	value := time.Now().UnixNano()
 	_, err := ParseLocalizedStrptime("%c", value, time.Local, "en")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "cannot be parsed as a time")
+	require.ErrorContains(t, err, "cannot be parsed as a time")
 }
