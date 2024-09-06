@@ -22,17 +22,17 @@ func NewBlockingConsumer() *BlockingConsumer {
 	}
 }
 
-func (bc *BlockingConsumer) ConsumeTraces(ctx context.Context, _ ptrace.Traces) error {
+func (bc *BlockingConsumer) ConsumeTraces(_ context.Context, _ ptrace.Traces) error {
 	<-bc.block
 	return nil
 }
 
-func (bc *BlockingConsumer) ConsumeMetrics(ctx context.Context, _ pmetric.Metrics) error {
+func (bc *BlockingConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
 	<-bc.block
 	return nil
 }
 
-func (bc *BlockingConsumer) ConsumeLogs(ctx context.Context, _ plog.Logs) error {
+func (bc *BlockingConsumer) ConsumeLogs(_ context.Context, _ plog.Logs) error {
 	<-bc.block
 	return nil
 }
