@@ -25,7 +25,7 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: self-hosted
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Load') || github.event_name == 'push')}}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Load Tests') || github.event_name == 'push')}}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
