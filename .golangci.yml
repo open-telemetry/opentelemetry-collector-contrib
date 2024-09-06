@@ -137,7 +137,6 @@ linters-settings:
       - float-compare
       - formatter
       - go-require
-      - negative-positive
       - require-error
       - suite-dont-use-pkg
       - suite-subtest-run
