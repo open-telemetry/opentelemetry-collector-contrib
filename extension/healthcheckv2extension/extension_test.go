@@ -35,7 +35,7 @@ func TestComponentStatus(t *testing.T) {
 	// Status before Start will be StatusNone
 	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 	require.True(t, ok)
-	assert.Equal(t, st.Status(), componentstatus.StatusNone)
+	assert.Equal(t, componentstatus.StatusNone, st.Status())
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 

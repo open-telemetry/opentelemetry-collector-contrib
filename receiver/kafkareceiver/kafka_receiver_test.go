@@ -1080,7 +1080,7 @@ func TestLogsConsumerGroupHandler_unmarshal_text(t *testing.T) {
 			groupClaim.messageChan <- &sarama.ConsumerMessage{Value: encoded}
 			close(groupClaim.messageChan)
 			wg.Wait()
-			require.Equal(t, sink.LogRecordCount(), 1)
+			require.Equal(t, 1, sink.LogRecordCount())
 			log := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 			assert.Equal(t, log.Body().Str(), test.text)
 			assert.LessOrEqual(t, t1, log.ObservedTimestamp().AsTime())

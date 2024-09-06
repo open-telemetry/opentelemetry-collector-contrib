@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -66,6 +67,7 @@ var resourceAttrsToPreserve = map[string]bool{
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
+	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document
 	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint, pcommon.Value) error
 	encodeDocument(objmodel.Document) ([]byte, error)
 }
@@ -148,9 +150,9 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
-	m.encodeAttributesOTelMode(&document, record.Attributes())
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+	m.encodeAttributesOTelMode(&document, record.Attributes(), false)
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, false)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, false)
 
 	// Body
 	setOTelLogBody(&document, record.Body())
@@ -284,9 +286,9 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		}
 		document.AddString("unit", metric.Unit())
 
-		m.encodeAttributesOTelMode(&document, dp.Attributes())
-		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+		m.encodeAttributesOTelMode(&document, dp.Attributes(), true)
+		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, true)
+		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, true)
 	}
 
 	switch value.Type() {
@@ -350,6 +352,25 @@ func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
 	m := vm.Map()
 	m.PutDouble("sum", dp.Sum())
 	m.PutInt("value_count", int64(dp.Count()))
+	return vm
+}
+
+func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) pcommon.Value {
+	counts, values := exphistogram.ToTDigest(dp)
+
+	vm := pcommon.NewValueMap()
+	m := vm.Map()
+	vmCounts := m.PutEmptySlice("counts")
+	vmCounts.EnsureCapacity(len(counts))
+	for _, c := range counts {
+		vmCounts.AppendEmpty().SetInt(c)
+	}
+	vmValues := m.PutEmptySlice("values")
+	vmValues.EnsureCapacity(len(values))
+	for _, v := range values {
+		vmValues.AppendEmpty().SetDouble(v)
+	}
+
 	return vm
 }
 
@@ -417,7 +438,7 @@ func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
 	return pcommon.Value{}, errInvalidNumberDataPoint
 }
 
-func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string) {
+func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, stringifyArrayValues bool) {
 	resourceMapVal := pcommon.NewValueMap()
 	resourceMap := resourceMapVal.Map()
 	if resourceSchemaURL != "" {
@@ -433,11 +454,13 @@ func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resour
 		}
 		return false
 	})
-
+	if stringifyArrayValues {
+		mapStringifyArrayValues(resourceAttrMap)
+	}
 	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
 }
 
-func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pcommon.InstrumentationScope, scopeSchemaURL string) {
+func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pcommon.InstrumentationScope, scopeSchemaURL string, stringifyArrayValues bool) {
 	scopeMapVal := pcommon.NewValueMap()
 	scopeMap := scopeMapVal.Map()
 	if scope.Name() != "" {
@@ -459,11 +482,16 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 		}
 		return false
 	})
+	if stringifyArrayValues {
+		mapStringifyArrayValues(scopeAttrMap)
+	}
 	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
 }
 
-func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
-	attributeMap.RemoveIf(func(key string, val pcommon.Value) bool {
+func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map, stringifyArrayValues bool) {
+	attrsCopy := pcommon.NewMap() // Copy to avoid mutating original map
+	attributeMap.CopyTo(attrsCopy)
+	attrsCopy.RemoveIf(func(key string, val pcommon.Value) bool {
 		switch key {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
 			// At this point the data_stream attributes are expected to be in the record attributes,
@@ -474,7 +502,22 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 		}
 		return false
 	})
-	document.AddAttributes("attributes", attributeMap)
+	if stringifyArrayValues {
+		mapStringifyArrayValues(attrsCopy)
+	}
+	document.AddAttributes("attributes", attrsCopy)
+}
+
+// mapStringifyArrayValues replaces all slice values within an attribute map to their string representation.
+// It is useful to workaround Elasticsearch TSDB not supporting arrays as dimensions.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35004
+func mapStringifyArrayValues(m pcommon.Map) {
+	m.Range(func(_ string, v pcommon.Value) bool {
+		if v.Type() == pcommon.ValueTypeSlice {
+			v.SetStr(v.AsString())
+		}
+		return true
+	})
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
@@ -502,7 +545,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddString("kind", span.Kind().String())
 	document.AddInt("duration", int64(span.EndTimestamp()-span.StartTimestamp()))
 
-	m.encodeAttributesOTelMode(&document, span.Attributes())
+	m.encodeAttributesOTelMode(&document, span.Attributes(), false)
 
 	document.AddInt("dropped_attributes_count", int64(span.DroppedAttributesCount()))
 	document.AddInt("dropped_events_count", int64(span.DroppedEventsCount()))
@@ -526,10 +569,8 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddString("status.message", span.Status().Message())
 	document.AddString("status.code", span.Status().Code().String())
 
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
-
-	// TODO: add span events to log data streams
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, false)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, false)
 
 	return document
 }
@@ -552,6 +593,26 @@ func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptra
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 	return document
+}
+
+func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document {
+	if m.mode != MappingOTel {
+		// Currently span events are stored separately only in OTel mapping mode.
+		// In other modes, they are stored within the span document.
+		return nil
+	}
+	var document objmodel.Document
+	document.AddTimestamp("@timestamp", spanEvent.Timestamp())
+	document.AddString("attributes.event.name", spanEvent.Name())
+	document.AddSpanID("span_id", span.SpanID())
+	document.AddTraceID("trace_id", span.TraceID())
+	document.AddInt("dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
+
+	m.encodeAttributesOTelMode(&document, spanEvent.Attributes(), false)
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, false)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, false)
+
+	return &document
 }
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {

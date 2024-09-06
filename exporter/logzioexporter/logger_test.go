@@ -17,7 +17,7 @@ func TestLoggerConfigs(tester *testing.T) {
 		name: loggerName,
 	}
 
-	assert.Equal(tester, exporterLogger.Name(), loggerName)
+	assert.Equal(tester, loggerName, exporterLogger.Name())
 	assert.NotNil(tester, exporterLogger.Named("logger"))
 	assert.NotNil(tester, exporterLogger.With("key", "val"))
 	assert.NotNil(tester, exporterLogger.ResetNamed(loggerName))

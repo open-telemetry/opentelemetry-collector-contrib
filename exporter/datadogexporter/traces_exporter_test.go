@@ -328,7 +328,7 @@ func TestPushTraceData(t *testing.T) {
 	assert.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
 func simpleTraces() ptrace.Traces {
