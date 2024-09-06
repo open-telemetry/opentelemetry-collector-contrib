@@ -25,7 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/testconsumer"
 )
 
 const (
@@ -78,7 +78,7 @@ func TestExport_AdmissionLimitBytesExceeded(t *testing.T) {
 }
 
 func TestExport_TooManyWaiters(t *testing.T) {
-	bc := common.NewBlockingConsumer()
+	bc := testconsumer.NewBlockingConsumer()
 
 	traceClient := makeTraceServiceClient(t, bc)
 	bg := context.Background()
