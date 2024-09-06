@@ -8,6 +8,7 @@ require (
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.108.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.108.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.108.2-0.20240904075637-48b11ba1c5f8
@@ -81,3 +82,5 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
