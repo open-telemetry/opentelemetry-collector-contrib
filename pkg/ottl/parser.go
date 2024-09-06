@@ -67,7 +67,7 @@ type Parser[K any] struct {
 	pathParser        PathExpressionParser[K]
 	enumParser        EnumParser
 	telemetrySettings component.TelemetrySettings
-	pathContextNames  map[string]bool
+	pathContextNames  map[string]struct{}
 }
 
 func NewParser[K any](
@@ -108,9 +108,9 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 // this context names list, it results into an error.
 func WithPathContextNames[K any](contexts []string) Option[K] {
 	return func(p *Parser[K]) {
-		pathContextNames := make(map[string]bool, len(contexts))
+		pathContextNames := make(map[string]struct{}, len(contexts))
 		for _, ctx := range contexts {
-			pathContextNames[ctx] = true
+			pathContextNames[ctx] = struct{}{}
 		}
 
 		p.pathContextNames = pathContextNames
