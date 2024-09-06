@@ -108,5 +108,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/share
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter => ../../exporter/otelarrowexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil => ../../internal/grpcutil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/internal/testconsumer => ./internal/testconsumer
