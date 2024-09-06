@@ -5,7 +5,6 @@ package trace // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -47,7 +46,6 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	ctx = r.obsrecv.StartTracesOp(ctx)
 
 	sizeBytes := int64(r.sizer.TracesSize(req.Traces()))
-	fmt.Println(sizeBytes)
 	err := r.boundedQueue.Acquire(ctx, sizeBytes)
 	if err != nil {
 		return ptraceotlp.NewExportResponse(), err

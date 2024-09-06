@@ -14,9 +14,9 @@ import (
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC      configgrpc.ServerConfig `mapstructure:"grpc"`
-	Arrow     ArrowConfig             `mapstructure:"arrow"`
-	Admission AdmissionConfig         `mapstructure:"admission"`
+	GRPC  configgrpc.ServerConfig `mapstructure:"grpc"`
+	Arrow ArrowConfig             `mapstructure:"arrow"`
+	Admission AdmissionConfig     `mapstructure:"admission"`
 }
 
 type AdmissionConfig struct {
@@ -38,6 +38,12 @@ type ArrowConfig struct {
 	// passing through, they will see ResourceExhausted errors.
 	MemoryLimitMiB uint64 `mapstructure:"memory_limit_mib"`
 
+	// Deprecated: This field is no longer supported, use cfg.Admission.AdmissionLimitMiB instead.
+	AdmissionLimitMiB uint64 `mapstructure:"admission_limit_mib"`
+
+	// Deprecated: This field is no longer supported, use cfg.Admission.WaiterLimit instead.
+	WaiterLimit int64 `mapstructure:"waiter_limit"`
+
 	// Zstd settings apply to OTel-Arrow use of gRPC specifically.
 	Zstd zstd.DecoderConfig `mapstructure:"zstd"`
 }
@@ -54,6 +60,22 @@ var _ component.ConfigValidator = (*ArrowConfig)(nil)
 func (cfg *ArrowConfig) Validate() error {
 	if err := cfg.Zstd.Validate(); err != nil {
 		return fmt.Errorf("zstd decoder: invalid configuration: %w", err)
+	}
+	return nil
+}
+
+func (cfg *Config) Validate() error {
+	if err := cfg.GRPC.Validate(); err != nil {
+		return err
+	}
+	if err := cfg.Arrow.Validate(); err != nil {
+		return err
+	}
+	if cfg.Arrow.AdmissionLimitMiB != 0 {
+		cfg.Admission.AdmissionLimitMiB = cfg.Arrow.AdmissionLimitMiB
+	}
+	if cfg.Arrow.WaiterLimit != 0 {
+		cfg.Admission.WaiterLimit = cfg.Arrow.WaiterLimit
 	}
 	return nil
 }
