@@ -741,7 +741,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			return &literal[K]{value: *i}, nil
 		}
 		if eL.Path != nil {
-			np, err := newPath[K](eL.Path.Fields)
+			np, err := p.newPath(eL.Path)
 			if err != nil {
 				return nil, err
 			}
