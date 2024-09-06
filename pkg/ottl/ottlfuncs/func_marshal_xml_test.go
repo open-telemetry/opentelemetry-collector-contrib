@@ -204,14 +204,10 @@ func Test_MarshalXML(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			oArgs := &ParseXMLArguments[any]{
-				FlattenArrays: ottl.NewTestingOptional[ottl.BoolGetter[any]](ottl.StandardBoolGetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						return tt.flatten, nil
-					},
-				}),
 
+		// v1 legacy
+		t.Run(tt.name+" legacy", func(t *testing.T) {
+			oArgs := &ParseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
 						return tt.xml, nil
@@ -247,6 +243,82 @@ func Test_MarshalXML(t *testing.T) {
 						return resultMap, nil
 					},
 				},
+			}
+			exprFunc, err = createMarshalXMLFunction[any](ottl.FunctionContext{}, marshalArgs)
+			require.NoError(t, err)
+
+			result, err = exprFunc(context.Background(), nil)
+			require.NoError(t, err)
+
+			resultXML, ok := result.(string)
+			require.True(t, ok)
+
+			// remove new lines and tabs from the expected and actual XML
+			tt.xml = strings.ReplaceAll(tt.xml, "\n", "")
+			tt.xml = strings.ReplaceAll(tt.xml, "\t", "")
+
+			resultXML = strings.ReplaceAll(resultXML, "\n", "")
+			resultXML = strings.ReplaceAll(resultXML, "\t", "")
+
+			assert.Equal(t, tt.xml, resultXML)
+
+		})
+
+		// v2
+		t.Run(tt.name, func(t *testing.T) {
+			oArgs := &ParseXMLArguments[any]{
+				FlattenArrays: ottl.NewTestingOptional[ottl.BoolGetter[any]](ottl.StandardBoolGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return tt.flatten, nil
+					},
+				}),
+
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return tt.xml, nil
+					},
+				},
+
+				Version: ottl.NewTestingOptional[ottl.IntGetter[any]](ottl.StandardIntGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return int64(2), nil
+					},
+				}),
+			}
+			exprFunc, err := createParseXMLFunction[any](ottl.FunctionContext{}, oArgs)
+			if tt.createError != "" {
+				require.ErrorContains(t, err, tt.createError)
+				return
+			}
+
+			require.NoError(t, err)
+
+			result, err := exprFunc(context.Background(), nil)
+			if tt.parseError != "" {
+				require.ErrorContains(t, err, tt.parseError)
+				return
+			}
+
+			assert.NoError(t, err)
+
+			resultMap, ok := result.(pcommon.Map)
+			require.True(t, ok)
+
+			rawMap := resultMap.AsRaw()
+			require.NotNil(t, rawMap)
+
+			// re-marshal the result to compare the output
+			marshalArgs := &MarshalXMLArguments[any]{
+				Target: ottl.StandardPMapGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return resultMap, nil
+					},
+				},
+				Version: ottl.NewTestingOptional[ottl.IntGetter[any]](ottl.StandardIntGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return int64(2), nil
+					},
+				}),
 			}
 			exprFunc, err = createMarshalXMLFunction[any](ottl.FunctionContext{}, marshalArgs)
 			require.NoError(t, err)
