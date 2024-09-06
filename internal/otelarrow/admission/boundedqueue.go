@@ -38,7 +38,7 @@ func NewBoundedQueue(tp trace.TracerProvider, maxLimitBytes, maxLimitWaiters int
 		maxLimitBytes:   maxLimitBytes,
 		maxLimitWaiters: maxLimitWaiters,
 		waiters:         orderedmap.New[uuid.UUID, waiter](),
-		tracer:          tp.Tracer("otel-arrow/admission"),
+		tracer:          tp.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow"),
 	}
 }
 
