@@ -238,7 +238,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler Metric
 	}, nil
 }
 
-func (c *kafkaMetricsConsumer) Start(ctx context.Context, host component.Host) error {
+func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -332,7 +332,7 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmar
 	}, nil
 }
 
-func (c *kafkaLogsConsumer) Start(ctx context.Context, host component.Host) error {
+func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
