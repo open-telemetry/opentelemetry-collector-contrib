@@ -50,7 +50,9 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	if err != nil {
 		return pmetricotlp.NewExportResponse(), err
 	}
-	defer r.boundedQueue.Release(sizeBytes)
+	defer func() {
+		err = r.boundedQueue.Release(sizeBytes)
+	}()
 
 	err = r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)

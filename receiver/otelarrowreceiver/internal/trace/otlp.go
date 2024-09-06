@@ -50,7 +50,9 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	if err != nil {
 		return ptraceotlp.NewExportResponse(), err
 	}
-	defer r.boundedQueue.Release(sizeBytes)
+	defer func() {
+		err = r.boundedQueue.Release(sizeBytes)
+	}()
 
 	err = r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)

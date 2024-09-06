@@ -50,7 +50,9 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	if err != nil {
 		return plogotlp.NewExportResponse(), err
 	}
-	defer r.boundedQueue.Release(sizeBytes)
+	defer func() {
+		err = r.boundedQueue.Release(sizeBytes)
+	}()
 
 	err = r.nextConsumer.ConsumeLogs(ctx, ld)
 	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)

@@ -1,9 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package testconsumer
+package testconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/testconsumer"
 
-import(
+import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -12,7 +12,7 @@ import(
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type BlockingConsumer struct{
+type BlockingConsumer struct {
 	block chan struct{}
 }
 
