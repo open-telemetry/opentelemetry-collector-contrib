@@ -116,7 +116,7 @@ func TestStart(t *testing.T) {
 
 			if testCase.expectError {
 				require.Error(t, err)
-				assert.Len(t, receiver.projectReaders, 0)
+				assert.Empty(t, receiver.projectReaders)
 			} else {
 				require.NoError(t, err)
 				assert.Len(t, receiver.projectReaders, 1)
@@ -189,7 +189,7 @@ func TestInitializeProjectReaders(t *testing.T) {
 
 			if testCase.expectError {
 				require.Error(t, err)
-				assert.Len(t, receiver.projectReaders, 0)
+				assert.Empty(t, receiver.projectReaders)
 			} else {
 				require.NoError(t, err)
 				assert.Len(t, receiver.projectReaders, 1)

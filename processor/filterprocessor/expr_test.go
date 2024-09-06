@@ -41,7 +41,7 @@ func testMatchError(t *testing.T, mdType pmetric.MetricType, mvType pmetric.Numb
 		err := proc.ConsumeMetrics(context.Background(), testData("", 1, mdType, mvType))
 		assert.Error(t, err)
 		// assert that metrics not be filtered as a result
-		assert.Len(t, next.AllMetrics(), 0)
+		assert.Empty(t, next.AllMetrics())
 	})
 }
 

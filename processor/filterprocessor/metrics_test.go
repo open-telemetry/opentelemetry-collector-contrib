@@ -345,11 +345,11 @@ func TestFilterMetricProcessor(t *testing.T) {
 			assert.NoError(t, fmp.Start(ctx, nil))
 
 			cErr := fmp.ConsumeMetrics(context.Background(), test.inMetrics)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
 			if len(test.outMN) == 0 {
-				require.Len(t, got, 0)
+				require.Empty(t, got)
 				return
 			}
 

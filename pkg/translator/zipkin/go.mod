@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.108.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/semconv v0.108.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/semconv v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.uber.org/goleak v1.3.0
 )
 
@@ -28,7 +28,7 @@ require (
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
-	google.golang.org/grpc v1.65.0 // indirect
+	google.golang.org/grpc v1.66.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
