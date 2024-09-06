@@ -16,17 +16,17 @@ const _ = "knownFiles"
 
 type Archive interface {
 	SetStorageClient(operator.Persister)
-	Match([]*ArchiveFileRecord) ([]*reader.Reader, error)
+	Match([]*FileRecord) ([]*reader.Reader, error)
 	Write([]*reader.Metadata) error
 }
 
-type ArchiveFileRecord struct {
+type FileRecord struct {
 	file *os.File
 	fp   *fingerprint.Fingerprint
 }
 
-func NewArchiveRecord(file *os.File, fp *fingerprint.Fingerprint) *ArchiveFileRecord {
-	return &ArchiveFileRecord{
+func NewArchiveRecord(file *os.File, fp *fingerprint.Fingerprint) *FileRecord {
+	return &FileRecord{
 		file: file,
 		fp:   fp,
 	}
@@ -48,7 +48,7 @@ func (a *archive) SetStorageClient(persister operator.Persister) {
 	a.persister = persister
 }
 
-func (a *archive) Match(_ []*ArchiveFileRecord) ([]*reader.Reader, error) {
+func (a *archive) Match(_ []*FileRecord) ([]*reader.Reader, error) {
 	// Arguments:
 	//		unmatched files
 	// Returns:

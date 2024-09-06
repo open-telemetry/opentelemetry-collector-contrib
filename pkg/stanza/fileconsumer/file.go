@@ -41,7 +41,7 @@ type Manager struct {
 
 	telemetryBuilder *metadata.TelemetryBuilder
 
-	unmatchedFiles []*archive.ArchiveFileRecord
+	unmatchedFiles []*archive.FileRecord
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -203,7 +203,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
 func (m *Manager) makeReaders(ctx context.Context, paths []string) {
-	m.unmatchedFiles = make([]*archive.ArchiveFileRecord, 0)
+	m.unmatchedFiles = make([]*archive.FileRecord, 0)
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
