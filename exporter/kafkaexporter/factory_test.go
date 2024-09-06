@@ -39,7 +39,7 @@ func TestCreateMetricExporter(t *testing.T) {
 		name       string
 		conf       *Config
 		marshalers []MetricsMarshaler
-		err        error
+		err        *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -104,7 +104,7 @@ func TestCreateLogExporter(t *testing.T) {
 		name       string
 		conf       *Config
 		marshalers []LogsMarshaler
-		err        error
+		err        *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -169,7 +169,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		name       string
 		conf       *Config
 		marshalers []TracesMarshaler
-		err        error
+		err        *net.DNSError
 	}{
 		{
 			name: "valid config (no validating brokers)",

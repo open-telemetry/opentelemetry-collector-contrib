@@ -5,7 +5,6 @@ package ecsmock
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -28,10 +27,10 @@ func TestCluster_ListTasksWithContext(t *testing.T) {
 		_, err := c.ListTasksWithContext(ctx, req)
 		require.Error(t, err)
 		var aerr awserr.Error
-		assert.True(t, errors.As(err, &aerr))
+		assert.ErrorAs(t, err, &aerr)
 		assert.Equal(t, ecs.ErrCodeClusterNotFoundException, aerr.Code())
 		assert.Equal(t, "code "+ecs.ErrCodeClusterNotFoundException+" message "+aerr.Message(), aerr.Error())
-		assert.Nil(t, aerr.OrigErr())
+		assert.NoError(t, aerr.OrigErr())
 	})
 
 	t.Run("get all", func(t *testing.T) {
@@ -78,7 +77,7 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 		res, err := c.DescribeTasksWithContext(ctx, req)
 		require.NoError(t, err)
 		assert.Len(t, res.Tasks, 2)
-		assert.Len(t, res.Failures, 0)
+		assert.Empty(t, res.Failures)
 		assert.Equal(t, "running", aws.StringValue(res.Tasks[0].LastStatus))
 	})
 
@@ -158,7 +157,7 @@ func TestCluster_DescribeInstancesWithContext(t *testing.T) {
 		req := &ec2.DescribeInstancesInput{InstanceIds: ids}
 		res, err := c.DescribeInstancesWithContext(ctx, req)
 		require.NoError(t, err)
-		assert.Equal(t, nIDs, len(res.Reservations[0].Instances))
+		assert.Len(t, res.Reservations[0].Instances, nIDs)
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
@@ -198,8 +197,8 @@ func TestCluster_DescribeContainerInstancesWithContext(t *testing.T) {
 		req := &ecs.DescribeContainerInstancesInput{ContainerInstances: ids}
 		res, err := c.DescribeContainerInstancesWithContext(ctx, req)
 		require.NoError(t, err)
-		assert.Equal(t, nIDs, len(res.ContainerInstances))
-		assert.Equal(t, 0, len(res.Failures))
+		assert.Len(t, res.ContainerInstances, nIDs)
+		assert.Empty(t, res.Failures)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -272,7 +271,7 @@ func TestCluster_DescribeServicesWithContext(t *testing.T) {
 		res, err := c.DescribeServicesWithContext(ctx, req)
 		require.NoError(t, err)
 		assert.Len(t, res.Services, 2)
-		assert.Len(t, res.Failures, 0)
+		assert.Empty(t, res.Failures)
 	})
 
 	t.Run("not found", func(t *testing.T) {

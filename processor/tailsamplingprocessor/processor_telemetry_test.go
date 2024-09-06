@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
@@ -37,7 +38,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -211,6 +212,102 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	assert.Len(t, cs.AllTraces(), 1)
 }
 
+func TestMetricsWithComponentID(t *testing.T) {
+	// prepare
+	s := setupTestTelemetry()
+	b := newSyncIDBatcher()
+	syncBatcher := b.(*syncIDBatcher)
+
+	cfg := Config{
+		DecisionWait: 1,
+		NumTraces:    100,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "always",
+					Type: AlwaysSample,
+				},
+			},
+		},
+	}
+	cs := &consumertest.TracesSink{}
+	ct := s.NewSettings()
+	ct.ID = component.MustNewIDWithName("tail_sampling", "unique_id") // e.g tail_sampling/unique_id
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	require.NoError(t, err)
+	defer func() {
+		err = proc.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// test
+	err = proc.ConsumeTraces(context.Background(), simpleTraces())
+	require.NoError(t, err)
+
+	tsp := proc.(*tailSamplingSpanProcessor)
+	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
+	tsp.policyTicker.OnTick()
+
+	// verify
+	var md metricdata.ResourceMetrics
+	require.NoError(t, s.reader.Collect(context.Background(), &md))
+	require.Equal(t, 8, s.len(md))
+
+	for _, tt := range []struct {
+		opts []metricdatatest.Option
+		m    metricdata.Metrics
+	}{
+		{
+			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
+			m: metricdata.Metrics{
+				Name:        "otelcol_processor_tail_sampling_count_traces_sampled",
+				Description: "Count of traces that were sampled or not per sampling policy",
+				Unit:        "{traces}",
+				Data: metricdata.Sum[int64]{
+					IsMonotonic: true,
+					Temporality: metricdata.CumulativeTemporality,
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Attributes: attribute.NewSet(
+								attribute.String("policy", "unique_id.always"),
+								attribute.String("sampled", "true"),
+							),
+							Value: 1,
+						},
+					},
+				},
+			},
+		},
+		{
+			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
+			m: metricdata.Metrics{
+				Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
+				Description: "Latency (in microseconds) of a given sampling policy",
+				Unit:        "µs",
+				Data: metricdata.Histogram[int64]{
+					Temporality: metricdata.CumulativeTemporality,
+					DataPoints: []metricdata.HistogramDataPoint[int64]{
+						{
+							Attributes: attribute.NewSet(
+								attribute.String("policy", "unique_id.always"),
+							),
+						},
+					},
+				},
+			},
+		},
+	} {
+		got := s.getMetric(tt.m.Name, md)
+		metricdatatest.AssertEqual(t, tt.m, got, tt.opts...)
+	}
+
+	// sanity check
+	assert.Len(t, cs.AllTraces(), 1)
+}
+
 func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.metricstatcountspanssampled", true)
 	require.NoError(t, err)
@@ -238,7 +335,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -303,7 +400,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -364,7 +461,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {

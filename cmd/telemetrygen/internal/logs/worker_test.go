@@ -86,9 +86,9 @@ func TestRateOfLogs(t *testing.T) {
 
 	// verify
 	// the minimum acceptable number of logs for the rate of 10/sec for half a second
-	assert.True(t, len(m.logs) >= 5, "there should have been 5 or more logs, had %d", len(m.logs))
+	assert.GreaterOrEqual(t, len(m.logs), 5, "there should have been 5 or more logs, had %d", len(m.logs))
 	// the maximum acceptable number of logs for the rate of 10/sec for half a second
-	assert.True(t, len(m.logs) <= 20, "there should have been less than 20 logs, had %d", len(m.logs))
+	assert.LessOrEqual(t, len(m.logs), 20, "there should have been less than 20 logs, had %d", len(m.logs))
 }
 
 func TestUnthrottled(t *testing.T) {
@@ -109,7 +109,7 @@ func TestUnthrottled(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	require.NoError(t, Run(cfg, expFunc, logger))
 
-	assert.True(t, len(m.logs) > 100, "there should have been more than 100 logs, had %d", len(m.logs))
+	assert.Greater(t, len(m.logs), 100, "there should have been more than 100 logs, had %d", len(m.logs))
 }
 
 func TestCustomBody(t *testing.T) {
@@ -177,7 +177,7 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 
 		l.WalkAttributes(func(attr log.KeyValue) bool {
 			if attr.Key == telemetryAttrKeyOne {
-				assert.EqualValues(t, attr.Value.AsString(), telemetryAttrValueOne)
+				assert.EqualValues(t, telemetryAttrValueOne, attr.Value.AsString())
 			}
 			return true
 		})

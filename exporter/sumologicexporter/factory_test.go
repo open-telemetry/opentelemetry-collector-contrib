@@ -29,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	qs := exporterhelper.NewDefaultQueueSettings()
 	qs.Enabled = false
 
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		MaxRequestBodySize: 1_048_576,
 		LogFormat:          "otlp",
 		MetricFormat:       "otlp",
@@ -44,7 +44,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: qs,
-	})
+	}, cfg)
 
 	assert.NoError(t, component.ValidateConfig(cfg))
 }

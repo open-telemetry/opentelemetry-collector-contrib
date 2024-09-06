@@ -80,6 +80,8 @@ type mockProducer struct {
 	name  string
 }
 
+var _ pulsar.Producer = (*mockProducer)(nil)
+
 func (c *mockProducer) Topic() string {
 	return c.topic
 }
@@ -101,6 +103,10 @@ func (c *mockProducer) LastSequenceID() int64 {
 }
 
 func (c *mockProducer) Flush() error {
+	return nil
+}
+
+func (c *mockProducer) FlushWithCtx(context.Context) error {
 	return nil
 }
 

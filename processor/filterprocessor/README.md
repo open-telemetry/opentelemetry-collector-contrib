@@ -32,7 +32,7 @@ See the table below for details on each context and the fields it exposes.
 | `logs.log_record`   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md)             |
 
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
-See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
+See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for more details.
 
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked for that span.
