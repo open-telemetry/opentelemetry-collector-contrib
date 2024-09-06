@@ -200,19 +200,29 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 				if err != nil {
 					return err
 				}
-				err := rev.logsRenameAttributes.Apply(log.Attributes())
-				if err != nil {
-					return err
-				}
+				//err := rev.logsRenameAttributes.Apply(log.Attributes())
+				//if err != nil {
+				//	return err
+				//}
 			case Revert:
 				err = rev.all.Rollback(log.Attributes())
 				if err != nil {
 					return err
 				}
-				err := rev.logsRenameAttributes.Rollback(log.Attributes())
-				if err != nil {
-					return err
-				}
+				//err := rev.logsRenameAttributes.Rollback(log.Attributes())
+				//if err != nil {
+				//	return err
+				//}
+			}
+		}
+		switch status {
+		case Update:
+			if err := rev.logsRenameAttributes.Apply(in); err != nil {
+				return err
+			}
+		case Revert:
+			if err := rev.logsRenameAttributes.Rollback(in); err != nil {
+				return err
 			}
 		}
 	}

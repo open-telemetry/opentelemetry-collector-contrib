@@ -4,10 +4,13 @@
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 
 import (
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/changelist"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
 )
 
 // RevisionV1 represents all changes that are to be
@@ -22,7 +25,8 @@ type RevisionV1 struct {
 	spanEventsRenameAttributesOnSpanEvent *migrate.ConditionalLambdaAttributeSetSlice[ptrace.Span]
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
 	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
-	logsRenameAttributes              *migrate.AttributeChangeSetSlice
+	//logsRenameAttributes              *migrate.AttributeChangeSetSlice
+	logsRenameAttributes              *changelist.ChangeList[plog.ScopeLogs]
 }
 
 // NewRevision processes the VersionDef and assigns the version to this revision
@@ -46,12 +50,26 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		spanEventsRenameAttributesOnSpanEvent: newSpanEventsRenameAttributesOnSpanEventEvent(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
 		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
-		logsRenameAttributes:              newAttributeChangeSetSliceFromChanges(logChanges),
+		//logsRenameAttributes:              newAttributeChangeSetSliceFromChanges(logChanges,
+		logsRenameAttributes: newLogsChangelist(def.Logs),
 	}
+
 }
 
 func (r RevisionV1) Version() *Version {
 	return r.ver
+}
+
+func newLogsChangelist(logs ast.Logs) *changelist.ChangeList[plog.ScopeLogs]{
+	values := make([]migrate.Migrator[plog.ScopeLogs], 0)
+	for _, at := range logs.Changes {
+		if renamed := at.RenameAttributes; renamed != nil {
+			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
+			attr := operator.LogAttributeOperator{AttributeChange: *attributeChangeSet}
+			values = append(values, attr)
+		}
+	}
+	return &changelist.ChangeList[plog.ScopeLogs]{Migrators: values}
 }
 
 func newAttributeChangeSetSliceFromChanges(attrs ast.Attributes) *migrate.AttributeChangeSetSlice {
@@ -100,6 +118,7 @@ func newMetricConditionalSlice(metrics ast.Metrics) *migrate.ConditionalAttribut
 func newMetricNameSignalSlice(metrics ast.Metrics) *migrate.SignalNameChangeSlice {
 	values := make([]*migrate.SignalNameChange, 0, 10)
 	for _, ch := range metrics.Changes {
+		//todo check nil?
 		values = append(values, migrate.NewSignalNameChange(ch.RenameMetrics))
 	}
 	return migrate.NewSignalNameChangeSlice(values...)

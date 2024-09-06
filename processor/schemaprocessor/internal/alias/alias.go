@@ -30,6 +30,10 @@ type NamedSignal interface {
 	SetName(name string)
 }
 
+type Attributed interface {
+	Attributes() pcommon.Map
+}
+
 var (
 	_ Resource = (*plog.ResourceLogs)(nil)
 	_ Resource = (*pmetric.ResourceMetrics)(nil)
