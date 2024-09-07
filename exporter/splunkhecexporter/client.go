@@ -205,6 +205,10 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 				} else {
 					// Parsing log record to Splunk event.
 					event := mapLogRecordToSplunkEvent(rl.Resource(), logRecord, c.config)
+					if event == nil {
+						// TODO record this drop as a metric
+						continue
+					}
 
 					// JSON encoding event and writing to buffer.
 					var err error

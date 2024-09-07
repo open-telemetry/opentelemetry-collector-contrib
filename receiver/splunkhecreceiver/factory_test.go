@@ -28,12 +28,12 @@ func TestCreateReceiver(t *testing.T) {
 
 	mockLogsConsumer := consumertest.NewNop()
 	lReceiver, err := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockLogsConsumer)
-	assert.Nil(t, err, "receiver creation failed")
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
 	mockMetricsConsumer := consumertest.NewNop()
 	mReceiver, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockMetricsConsumer)
-	assert.Nil(t, err, "receiver creation failed")
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 }
 

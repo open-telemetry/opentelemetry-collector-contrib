@@ -80,11 +80,11 @@ func TestHostObserver(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hostPorts, notifier := tt.setup()
 			if tt.errorListingConnections {
-				require.Equal(t, len(notifier.endpointsMap), 0)
+				require.Empty(t, notifier.endpointsMap)
 				return
 			}
 
-			require.True(t, len(notifier.endpointsMap) >= len(hostPorts))
+			require.GreaterOrEqual(t, len(notifier.endpointsMap), len(hostPorts))
 
 			for _, hp := range hostPorts {
 				require.NoError(t, hp.err, "Failed to et host and port")

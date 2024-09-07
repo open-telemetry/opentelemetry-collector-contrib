@@ -131,7 +131,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 		assert.Equal(t, ingestionState.expectedCode, errStatus.Code())
 	}
 
-	require.Equal(t, expectedReceivedBatches, len(sink.AllTraces()))
+	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
 	expectedIngestionBlockedRPCs := 1
 	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
@@ -710,7 +710,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, ocr.Shutdown(context.Background()))
 
-	assert.Equal(t, 0, len(sink.AllTraces()))
+	assert.Empty(t, sink.AllTraces())
 }
 
 func TestConcurrentArrowReceiver(t *testing.T) {
@@ -789,7 +789,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 	// Two spans per stream/item.
 	require.Equal(t, itemsPerStream*numStreams*2, sink.SpanCount())
-	require.Equal(t, itemsPerStream*numStreams, len(sink.Metadatas()))
+	require.Len(t, sink.Metadatas(), itemsPerStream*numStreams)
 
 	for _, md := range sink.Metadatas() {
 		val, err := strconv.Atoi(md.Get("seq")[0])
