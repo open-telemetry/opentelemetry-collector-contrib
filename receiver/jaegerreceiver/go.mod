@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/config/confighttp v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/config/confignet v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/config/configtls v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/confmap v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/consumer v0.108.2-0.20240904075637-48b11ba1c5f8
@@ -22,6 +23,9 @@ require (
 	go.opentelemetry.io/collector/pdata v1.14.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/receiver v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/semconv v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/otel/metric v1.29.0
+	go.opentelemetry.io/otel/sdk/metric v1.29.0
+	go.opentelemetry.io/otel/trace v1.29.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -65,7 +69,6 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.14.2-0.20240904075637-48b11ba1c5f8 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240904075637-48b11ba1c5f8 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
 	go.opentelemetry.io/collector/config/internal v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
 	go.opentelemetry.io/collector/extension v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
@@ -76,10 +79,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
-	go.opentelemetry.io/otel/metric v1.29.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.29.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.29.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
