@@ -456,6 +456,35 @@ func TestScraper_StartAndTS_ErrorOnColumnNotFound(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestScraper_CollectRowToMetricsErrors(t *testing.T) {
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{{
+			{
+				"mycol": "42",
+			},
+		}},
+	}
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:       "my.name",
+				ValueColumn:      "mycol_na",
+				TsColumn:         "Ts",
+				StartTsColumn:    "StartTs",
+				AttributeColumns: []string{"attr_na"},
+				DataType:         MetricTypeSum,
+				Aggregation:      MetricAggregationCumulative,
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	assert.ErrorContains(t, err, "rowToMetric: start_ts_column not found")
+	assert.ErrorContains(t, err, "rowToMetric: ts_column not found")
+	assert.ErrorContains(t, err, "rowToMetric: value_column 'mycol_na' not found in result set")
+	assert.ErrorContains(t, err, "rowToMetric: attribute_column 'attr_na' not found in result set")
+}
+
 func TestScraper_StartAndTS_ErrorOnParse(t *testing.T) {
 	client := &FakeDBClient{
 		StringMaps: [][]StringMap{{

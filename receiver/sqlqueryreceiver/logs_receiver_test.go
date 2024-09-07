@@ -52,7 +52,7 @@ func TestLogsQueryReceiver_Collect(t *testing.T) {
 	)
 }
 
-func TestLogsQueryReceiver_MissingColumnInResultSetForAttributeColumn(t *testing.T) {
+func TestLogsQueryReceiver_MissingColumnInResultSet(t *testing.T) {
 	fakeClient := &sqlquery.FakeDBClient{
 		StringMaps: [][]sqlquery.StringMap{
 			{{"col1": "42"}},
@@ -63,12 +63,14 @@ func TestLogsQueryReceiver_MissingColumnInResultSetForAttributeColumn(t *testing
 		query: sqlquery.Query{
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn:       "col1",
-					AttributeColumns: []string{"expected_column"},
+					BodyColumn:       "expected_body_column",
+					AttributeColumns: []string{"expected_column", "expected_column_2"},
 				},
 			},
 		},
 	}
 	_, err := queryReceiver.collect(context.Background())
-	assert.ErrorContains(t, err, "rowToLog: attribute_column not found: 'expected_column'")
+	assert.ErrorContains(t, err, "rowToLog: attribute_column 'expected_column' not found in result set")
+	assert.ErrorContains(t, err, "rowToLog: attribute_column 'expected_column_2' not found in result set")
+	assert.ErrorContains(t, err, "rowToLog: body_column 'expected_body_column' not found in result set")
 }
