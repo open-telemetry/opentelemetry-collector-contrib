@@ -48,13 +48,15 @@ func newProcessor(cfg *Config, log *zap.Logger, telb *metadata.TelemetryBuilder,
 
 	tel := telemetry.New(telb)
 	proc := Processor{
-		log:         log,
-		ctx:         ctx,
-		cancel:      cancel,
-		next:        next,
-		sums:        pipeline[data.Number](cfg, &tel),
-		expo:        pipeline[data.ExpHistogram](cfg, &tel),
-		hist:        pipeline[data.Histogram](cfg, &tel),
+		log:    log,
+		ctx:    ctx,
+		cancel: cancel,
+		next:   next,
+
+		sums: pipeline[data.Number](cfg, &tel),
+		expo: pipeline[data.ExpHistogram](cfg, &tel),
+		hist: pipeline[data.Histogram](cfg, &tel),
+
 		expoMaxSize: cfg.MaxExpHistogramBuckets,
 	}
 
