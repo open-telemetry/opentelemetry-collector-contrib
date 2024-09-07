@@ -85,13 +85,14 @@ Generally, when designing a test for new exporter and receiver components, devel
     		},
     		...
     	}
-    
-    	processors := map[string]string{
-    		"batch": `
-      batch:
+    	processors := []ProcessorNameAndConfigBody{
+    		{
+    			Name: "batch",
+    			Body: `
+	  batch:
     `,
+			},
     	}
-    
     	for _, test := range tests {
     		t.Run(test.name, func(t *testing.T) {
     			Scenario10kItemsPerSecond(
