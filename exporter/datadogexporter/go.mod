@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
 
-go 1.22.0
+go 1.22.4
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.131
@@ -89,6 +89,8 @@ require (
 	k8s.io/apimachinery v0.31.0
 	k8s.io/client-go v0.31.0
 )
+
+require github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.0.0-00010101000000-000000000000
 
 require (
 	cloud.google.com/go/auth v0.7.0 // indirect
@@ -465,3 +467,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling =
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../pkg/datadog
