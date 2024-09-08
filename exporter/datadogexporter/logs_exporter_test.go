@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 const timeFormatString = "2006-01-02T15:04:05.000Z07:00"
@@ -218,7 +219,7 @@ func TestLogsExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := testutil.DatadogLogServerMock()
 			defer server.Close()
-			cfg := &Config{
+			cfg := &datadog.Config{
 				Metrics: MetricsConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: server.URL,
@@ -547,7 +548,7 @@ func TestLogsAgentExporter(t *testing.T) {
 				}
 			})
 			defer server.Close()
-			cfg := &Config{
+			cfg := &datadog.Config{
 				Logs: LogsConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: server.URL,

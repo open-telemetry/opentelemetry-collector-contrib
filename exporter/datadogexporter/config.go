@@ -5,7 +5,6 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"encoding"
-	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"go.opentelemetry.io/collector/component"
@@ -153,41 +152,8 @@ type HostMetadataConfig = datadog.HostMetadataConfig
 
 // Deprecated: Use `datadog.Config` instead.
 // Config defines configuration for the Datadog exporter.
-type Config struct {
-	*datadog.Config `mapstructure:",squash"`
-}
+type Config = datadog.Config
 
 var _ component.Config = (*Config)(nil)
 
 var _ confmap.Unmarshaler = (*Config)(nil)
-
-// Unmarshal a configuration map into the configuration struct.
-func (c *Config) Unmarshal(configMap *confmap.Conf) error {
-	err := configMap.Unmarshal(c)
-	if err != nil {
-		return err
-	}
-	logsExporterSettings := []struct {
-		setting string
-		valid   bool
-	}{
-		{setting: "logs::dump_payloads", valid: !isLogsAgentExporterEnabled()},
-		{setting: "logs::use_compression", valid: isLogsAgentExporterEnabled()},
-		{setting: "logs::compression_level", valid: isLogsAgentExporterEnabled()},
-		{setting: "logs::batch_wait", valid: isLogsAgentExporterEnabled()},
-	}
-	for _, logsExporterSetting := range logsExporterSettings {
-		if configMap.IsSet(logsExporterSetting.setting) && !logsExporterSetting.valid {
-			enabledText := "enabled"
-			if !isLogsAgentExporterEnabled() {
-				enabledText = "disabled"
-			}
-			return fmt.Errorf("%v is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is %v", logsExporterSetting.setting, enabledText)
-		}
-		if logsExporterSetting.setting == "logs::dump_payloads" && logsExporterSetting.valid && configMap.IsSet(logsExporterSetting.setting) {
-			c.Warnings = append(c.Warnings, fmt.Errorf("%v is deprecated and will raise an error if set when the Datadog Agent logs pipeline is enabled by default in collector version v0.108.0", logsExporterSetting.setting))
-		}
-	}
-
-	return nil
-}

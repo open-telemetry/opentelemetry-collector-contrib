@@ -19,6 +19,7 @@ import (
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -123,7 +124,7 @@ func TestTracesSource(t *testing.T) {
 	}))
 	defer tracesServer.Close()
 
-	cfg := Config{
+	cfg := datadog.Config{
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
@@ -238,7 +239,7 @@ func TestTraceExporter(t *testing.T) {
 	}))
 
 	defer server.Close()
-	cfg := Config{
+	cfg := datadog.Config{
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
@@ -255,7 +256,7 @@ func TestTraceExporter(t *testing.T) {
 				Endpoint: server.URL,
 			},
 			IgnoreResources: []string{},
-			flushInterval:   0.1,
+			FlushInterval:   0.1,
 			TraceBuffer:     2,
 		},
 	}
@@ -297,7 +298,7 @@ func TestNewTracesExporter(t *testing.T) {
 func TestPushTraceData(t *testing.T) {
 	server := testutil.DatadogServerMock()
 	defer server.Close()
-	cfg := &Config{
+	cfg := &datadog.Config{
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},

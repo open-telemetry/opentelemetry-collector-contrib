@@ -27,7 +27,6 @@ func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs.IdleConnTimeout = &idleConnTimeout
 	cfgWithHTTPConfigs.DisableKeepAlives = true
 	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
-	cfgWithHTTPConfigs.Warnings = nil
 
 	tests := []struct {
 		name      string
@@ -125,7 +124,7 @@ func TestUnmarshal(t *testing.T) {
 					"endpoint": "",
 				},
 			}),
-			err: errEmptyEndpoint.Error(),
+			err: datadog.ErrEmptyEndpoint.Error(),
 		},
 		{
 			name: "Empty trace endpoint",
@@ -134,7 +133,7 @@ func TestUnmarshal(t *testing.T) {
 					"endpoint": "",
 				},
 			}),
-			err: errEmptyEndpoint.Error(),
+			err: datadog.ErrEmptyEndpoint.Error(),
 		},
 		{
 			name: "Empty log endpoint",

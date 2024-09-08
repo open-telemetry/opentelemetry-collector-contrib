@@ -186,7 +186,7 @@ func defaultClientConfig() confighttp.ClientConfig {
 
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
-	return datadog.CreateDefaultConfig()
+	return datadog.CreateDefaultConfig().(*datadog.Config)
 }
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to
@@ -351,6 +351,12 @@ func (f *factory) createTracesExporter(
 			zap.String("feature gate ID", noAPMStatsFeatureGate.ID()),
 		)
 	}
+	if cfg.Traces.ResourceAttributesAsContainerTags != nil {
+		set.Logger.Warn("resource_attributes_as_container_tags is not supported by the Datadog Exporter.")
+	}
+	if cfg.Traces.BucketInterval != 0 {
+		set.Logger.Warn("bucket_interval is not supported by the Datadog Exporter.")
+	}
 
 	var (
 		pusher consumer.ConsumeTracesFunc
@@ -442,6 +448,19 @@ func (f *factory) createLogsExporter(
 	c component.Config,
 ) (exporter.Logs, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
+
+	if cfg.Logs.DumpPayloads && isLogsAgentExporterEnabled() {
+		set.Logger.Warn("logs::dump_payloads is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is enabled")
+	}
+	if cfg.Logs.UseCompression && !isLogsAgentExporterEnabled() {
+		set.Logger.Warn("logs::use_compression is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is disabled")
+	}
+	if cfg.Logs.CompressionLevel != 0 && !isLogsAgentExporterEnabled() {
+		set.Logger.Warn("logs::compression_level is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is disabled")
+	}
+	if cfg.Logs.BatchWait != 0 && !isLogsAgentExporterEnabled() {
+		set.Logger.Warn("logs::batch_wait is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is disabled")
+	}
 
 	var pusher consumer.ConsumeLogsFunc
 	var logsAgent logsagentpipeline.LogsAgent

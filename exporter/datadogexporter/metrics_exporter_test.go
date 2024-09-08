@@ -21,6 +21,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -40,7 +41,7 @@ func TestNewExporter(t *testing.T) {
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
-	cfg := &Config{
+	cfg := &datadog.Config{
 		API: APIConfig{
 			Key: "ddog_32_characters_long_api_key1",
 		},
@@ -58,7 +59,7 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 		HostMetadata: HostMetadataConfig{
-			sourceTimeout: 50 * time.Millisecond,
+			SourceTimeout: 50 * time.Millisecond,
 		},
 	}
 	params := exportertest.NewNopSettings()
@@ -292,9 +293,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			)
 			defer server.Close()
 
-			var (
-				once sync.Once
-			)
+			var once sync.Once
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
@@ -677,9 +676,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			)
 			defer server.Close()
 
-			var (
-				once sync.Once
-			)
+			var once sync.Once
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)

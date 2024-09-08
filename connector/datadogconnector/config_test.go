@@ -11,7 +11,6 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -30,14 +29,14 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{Traces: TracesConfig{
 				SpanNameRemappings: map[string]string{"oldname": ""},
 			}},
-			err: "\"\" is not valid value for span name remapping",
+			err: "'' is not valid value for span name remapping",
 		},
 		{
 			name: "span name remapping empty key",
 			cfg: &Config{Traces: TracesConfig{
 				SpanNameRemappings: map[string]string{"": "newname"},
 			}},
-			err: "\"\" is not valid key for span name remapping",
+			err: "'' is not valid key for span name remapping",
 		},
 		{
 			name: "ignore resources valid",
@@ -50,7 +49,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{Traces: TracesConfig{
 				IgnoreResources: []string{"[123"},
 			}},
-			err: "\"[123\" is not valid resource filter regular expression",
+			err: "'[123' is not valid resource filter regular expression",
 		},
 		{
 			name: "With trace_buffer",

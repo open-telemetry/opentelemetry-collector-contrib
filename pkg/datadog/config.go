@@ -6,7 +6,6 @@ package datadog // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -105,9 +104,9 @@ func (c *Config) LogWarnings(logger *zap.Logger) {
 	}
 }
 
-// AddWarnings appends warnings to the configuration.
-func (c *Config) AddWarnings(warnings []error) {
-	c.warnings = append(c.warnings, warnings...)
+// AddWarning appends to warnings in the configuration.
+func (c *Config) AddWarning(warning error) {
+	c.warnings = append(c.warnings, warning)
 }
 
 var _ component.Config = (*Config)(nil)
@@ -130,24 +129,8 @@ func (c *Config) Validate() error {
 		return ErrUnsetAPIKey
 	}
 
-	if c.Traces.IgnoreResources != nil {
-		for _, entry := range c.Traces.IgnoreResources {
-			_, err := regexp.Compile(entry)
-			if err != nil {
-				return fmt.Errorf("'%s' is not valid resource filter regular expression", entry)
-			}
-		}
-	}
-
-	if c.Traces.SpanNameRemappings != nil {
-		for key, value := range c.Traces.SpanNameRemappings {
-			if value == "" {
-				return fmt.Errorf("'%s' is not valid value for span name remapping", value)
-			}
-			if key == "" {
-				return fmt.Errorf("'%s' is not valid key for span name remapping", key)
-			}
-		}
+	if err := c.Traces.Validate(); err != nil {
+		return err
 	}
 
 	err := c.Metrics.HistConfig.validate()
