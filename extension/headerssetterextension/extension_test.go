@@ -218,6 +218,42 @@ var (
 				"header_name": "",
 			},
 		},
+		{
+			cfg: &Config{
+				HeadersConfig: []HeaderConfig{
+					{
+						Key:          &header,
+						Action:       INSERT,
+						FromContext:  stringp("tenant"),
+						DefaultValue: stringp("default_tenant"),
+					},
+				},
+			},
+			metadata: client.NewMetadata(
+				map[string][]string{},
+			),
+			expectedHeaders: map[string]string{
+				"header_name": "default_tenant",
+			},
+		},
+		{
+			cfg: &Config{
+				HeadersConfig: []HeaderConfig{
+					{
+						Key:          &header,
+						Action:       INSERT,
+						FromContext:  stringp("tenant"),
+						DefaultValue: stringp("default_tenant"),
+					},
+				},
+			},
+			metadata: client.NewMetadata(
+				map[string][]string{"tenant": {"acme"}},
+			),
+			expectedHeaders: map[string]string{
+				"header_name": "acme",
+			},
+		},
 	}
 )
 
