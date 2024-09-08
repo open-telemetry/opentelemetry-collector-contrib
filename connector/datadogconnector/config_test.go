@@ -62,7 +62,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{Traces: TracesConfig{
 				TraceBuffer: -10,
 			}},
-			err: "Trace buffer must be non-negative",
+			err: "trace buffer must be non-negative",
 		},
 		{
 			name: "With peer_tags",
