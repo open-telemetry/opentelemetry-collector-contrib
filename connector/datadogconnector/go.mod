@@ -187,7 +187,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.108.0 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0-rc.3 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
-	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
+	github.com/openshift/client-go v0.0.2-0.20240906181530-b2f7c4ab0984 // indirect
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
