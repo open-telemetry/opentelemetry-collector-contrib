@@ -6,9 +6,10 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 const (

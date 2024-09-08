@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/confmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 func TestUnmarshal(t *testing.T) {

@@ -4,8 +4,9 @@
 package datadogconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 var _ component.Config = (*Config)(nil)

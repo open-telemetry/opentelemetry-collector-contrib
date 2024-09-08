@@ -19,7 +19,6 @@ import (
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -27,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 func setupTestMain(m *testing.M) {
