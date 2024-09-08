@@ -23,8 +23,11 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultControllerConfig()
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		ControllerConfig: cfg,
 	}
 }
 

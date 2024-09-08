@@ -157,7 +157,7 @@ func TestSyslogExportSuccess(t *testing.T) {
 	defer conn.Close()
 	b, err := io.ReadAll(conn)
 	require.NoError(t, err, "could not read all")
-	assert.Equal(t, string(b), expectedForm)
+	assert.Equal(t, expectedForm, string(b))
 }
 
 func TestSyslogExportFail(t *testing.T) {

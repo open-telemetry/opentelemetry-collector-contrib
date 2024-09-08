@@ -126,7 +126,7 @@ func TestGetSessionConfigWithRoleArn(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, sessionConfig.Region, aws.String(region))
-	assert.Equal(t, creds.ProviderName, "AssumeRoleProvider")
+	assert.Equal(t, "AssumeRoleProvider", creds.ProviderName)
 }
 
 func TestGetSessionConfigWithoutRoleArn(t *testing.T) {
@@ -144,5 +144,5 @@ func TestGetSessionConfigWithoutRoleArn(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, sessionConfig.Region, aws.String(region))
-	assert.NotEqual(t, creds.ProviderName, "AssumeRoleProvider")
+	assert.NotEqual(t, "AssumeRoleProvider", creds.ProviderName)
 }
