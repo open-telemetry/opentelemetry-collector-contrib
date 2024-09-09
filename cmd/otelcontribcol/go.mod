@@ -4,6 +4,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.22.0
 
+toolchain go1.22.7
+
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.108.0
@@ -218,25 +220,25 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/connector v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/connector/forwardconnector v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/connector/forwardconnector v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/exporter v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/exporter/debugexporter v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/exporter/nopexporter v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/exporter/nopexporter v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/extension v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/extension/zpagesextension v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/extension/zpagesextension v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/otelcol v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/pdata v1.14.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/processor v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/processor/batchprocessor v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/receiver v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/receiver/nopreceiver v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.108.2-0.20240909182537-32cff9f7f331
 	golang.org/x/sys v0.24.0
 )
@@ -790,7 +792,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909180850-6ea5b698d0c0 // indirect
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909212104-b18f7cd99909 // indirect
 	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/filter v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.2-0.20240909182537-32cff9f7f331 // indirect
