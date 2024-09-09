@@ -17,5 +17,5 @@ func TestEvaluate_AlwaysSample(t *testing.T) {
 	decision, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
 		16}), newTraceStringAttrs(nil, "example", "value"))
 	assert.NoError(t, err)
-	assert.Equal(t, decision, Sampled)
+	assert.Equal(t, Sampled, decision)
 }

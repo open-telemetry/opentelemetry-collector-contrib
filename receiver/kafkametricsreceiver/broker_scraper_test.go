@@ -49,7 +49,7 @@ func TestBrokerShutdown_closed(t *testing.T) {
 
 func TestBrokerScraper_Name(t *testing.T) {
 	s := brokerScraper{}
-	assert.Equal(t, s.Name(), brokersScraperName)
+	assert.Equal(t, brokersScraperName, s.Name())
 }
 
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
