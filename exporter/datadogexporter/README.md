@@ -75,4 +75,14 @@ To get the service field correctly populated in your logs, you can specify servi
 
 ### How to add custom log source
 
-In order to add a custom source to your OTLP logs, set log attribute or resource attribute `datadog.log.source`.
+In order to add a custom source to your OTLP logs, set log attribute or resource attribute `datadog.log.source`. This feature requires `exporter.datadogexporter.UseLogsAgentExporter` feature flag to be enabled (now enabled by default).
+
+Example:
+```
+processors:
+  transform/logs:
+    log_statements:
+      - context: resource
+        statements:
+          - set(attributes["datadog.log.source"], "otel")
+```
