@@ -33,7 +33,7 @@ func TestSpanLinkSimple(t *testing.T) {
 	assert.Len(t, segment.Links, 1)
 	assert.Equal(t, spanLink.SpanID().String(), *segment.Links[0].SpanID)
 	assert.Equal(t, convertedTraceID, *segment.Links[0].TraceID)
-	assert.Len(t, segment.Links[0].Attributes, 0)
+	assert.Empty(t, segment.Links[0].Attributes)
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
@@ -52,7 +52,7 @@ func TestSpanLinkEmpty(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
-	assert.Len(t, segment.Links, 0)
+	assert.Empty(t, segment.Links)
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
@@ -78,11 +78,11 @@ func TestOldSpanLinkError(t *testing.T) {
 
 	_, error1 := MakeSegment(span, resource, nil, false, nil, false)
 
-	assert.NotNil(t, error1)
+	assert.Error(t, error1)
 
 	_, error2 := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
-	assert.NotNil(t, error2)
+	assert.Error(t, error2)
 }
 
 func TestTwoSpanLinks(t *testing.T) {

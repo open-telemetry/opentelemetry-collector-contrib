@@ -508,7 +508,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 			for i, batch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthTraces != 0 {
-					require.True(t, int(test.conf.MaxContentLengthTraces) > len(got[i].body))
+					require.Greater(t, int(test.conf.MaxContentLengthTraces), len(got[i].body))
 				}
 				if test.conf.DisableCompression {
 					for _, expected := range batch {
@@ -791,7 +791,7 @@ func TestReceiveLogs(t *testing.T) {
 			for i, wantBatch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthLogs != 0 {
-					require.True(t, int(test.conf.MaxContentLengthLogs) > len(got[i].body))
+					require.Greater(t, int(test.conf.MaxContentLengthLogs), len(got[i].body))
 				}
 				if test.conf.DisableCompression {
 					for _, expected := range wantBatch {
@@ -1163,7 +1163,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				for i, batch := range test.want.batches {
 					require.NotZero(t, got[i])
 					if test.conf.MaxContentLengthMetrics != 0 {
-						require.True(t, int(test.conf.MaxContentLengthMetrics) > len(got[i].body))
+						require.Greater(t, int(test.conf.MaxContentLengthMetrics), len(got[i].body))
 					}
 					if test.want.compressed {
 						validateCompressedContains(t, batch, got[i].body)
@@ -1181,7 +1181,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				}
 
 				if test.want.numBatches == 0 {
-					assert.Len(t, got, 0)
+					assert.Empty(t, got)
 					return
 				}
 
@@ -1509,7 +1509,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().Len())
 			},
 		},
@@ -1523,8 +1523,8 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
-				require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
+				require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 			},
 		},

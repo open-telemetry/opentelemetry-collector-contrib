@@ -35,7 +35,7 @@ default behavior of the connector.
 | [Exporter Pipeline Type] | Description                         | Default Metric Names                         |
 | ------------------------ | ----------------------------------- | -------------------------------------------- |
 | traces                   | Counts all spans and span events.   | `trace.span.count`, `trace.span.event.count` |
-| metrics                  | Counts all metrics and data points. | `metric.count`, `metric.data_point.count`    |
+| metrics                  | Counts all metrics and data points. | `metric.count`, `metric.datapoint.count`    |
 | logs                     | Counts all log records.             | `log.record.count`                           |
 
 For example, in the following configuration the connector will count spans and span events from the `traces/in`

@@ -703,7 +703,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			providers := discoveryManager.Providers()
 			if tc.want.empty {
 				// if no base config is supplied and the job retrieval fails then no configuration should be found
-				require.Len(t, providers, 0)
+				require.Empty(t, providers)
 				return
 			}
 

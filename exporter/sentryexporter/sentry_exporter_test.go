@@ -461,13 +461,13 @@ func TestGenerateTagsFromAttributes(t *testing.T) {
 	tags := generateTagsFromAttributes(attrs)
 
 	stringVal := tags["string-key"]
-	assert.Equal(t, stringVal, "string-value")
+	assert.Equal(t, "string-value", stringVal)
 	boolVal := tags["bool-key"]
-	assert.Equal(t, boolVal, "true")
+	assert.Equal(t, "true", boolVal)
 	doubleVal := tags["double-key"]
-	assert.Equal(t, doubleVal, "123.123")
+	assert.Equal(t, "123.123", doubleVal)
 	intVal := tags["int-key"]
-	assert.Equal(t, intVal, "321")
+	assert.Equal(t, "321", intVal)
 }
 
 type SpanStatusCase struct {
@@ -600,7 +600,7 @@ func TestClassifyOrphanSpans(t *testing.T) {
 			transactionMap: generateEmptyTransactionMap(rootSpan1),
 			spans:          generateOrphanSpansFromSpans(childChildSpan1, childSpan1, childSpan2),
 			assertion: func(t *testing.T, orphanSpans []*sentry.Span) {
-				assert.Len(t, orphanSpans, 0)
+				assert.Empty(t, orphanSpans)
 			},
 		},
 		{
@@ -628,7 +628,7 @@ func TestClassifyOrphanSpans(t *testing.T) {
 			transactionMap: generateEmptyTransactionMap(rootSpan1, rootSpan2),
 			spans:          generateOrphanSpansFromSpans(childChildSpan1, childSpan1, root2childSpan, childSpan2),
 			assertion: func(t *testing.T, orphanSpans []*sentry.Span) {
-				assert.Len(t, orphanSpans, 0)
+				assert.Empty(t, orphanSpans)
 			},
 		},
 	}

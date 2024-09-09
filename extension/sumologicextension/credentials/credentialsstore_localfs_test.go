@@ -62,7 +62,7 @@ func TestCredentialsStoreLocalFs(t *testing.T) {
 			},
 		),
 	)
-	require.EqualValues(t, fileCounter, 0)
+	require.EqualValues(t, 0, fileCounter)
 }
 
 func TestCredentialsStoreValidate(t *testing.T) {
