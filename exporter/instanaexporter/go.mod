@@ -1,3 +1,4 @@
+// Deprecated: [v0.109.0] This package is deprecated and will be removed in the next release.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter
 
 go 1.22.0
