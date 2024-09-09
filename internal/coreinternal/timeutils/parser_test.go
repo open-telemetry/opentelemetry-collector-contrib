@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -104,4 +105,63 @@ func TestValidateGotime(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseLocalizedStrptime(t *testing.T) {
+	tests := []struct {
+		name     string
+		format   string
+		value    any
+		language string
+		expected time.Time
+		location *time.Location
+	}{
+		{
+			name:     "Foreign language",
+			format:   "%B %d %A, %Y, %r",
+			value:    "Febrero 25 jueves, 1993, 02:03:04 p.m.",
+			expected: time.Date(1993, 2, 25, 14, 3, 4, 0, time.Local),
+			location: time.Local,
+			language: "es-ES",
+		},
+		{
+			name:     "Foreign language with location",
+			format:   "%A %h %e %Y",
+			value:    "mercoledì set 4 2024",
+			expected: time.Date(2024, 9, 4, 0, 0, 0, 0, time.UTC),
+			location: time.UTC,
+			language: "it-IT",
+		},
+		{
+			name:     "String value",
+			format:   "%B %d %A, %Y, %I:%M:%S %p",
+			value:    "March 12 Friday, 2004, 02:03:04 AM",
+			expected: time.Date(2004, 3, 12, 2, 3, 4, 0, time.Local),
+			location: time.Local,
+			language: "en",
+		},
+		{
+			name:     "Bytes value",
+			format:   "%h %d %a, %y, %I:%M:%S %p",
+			value:    []byte("Jun 10 Fri, 04, 02:03:04 AM"),
+			expected: time.Date(2004, 6, 10, 2, 3, 4, 0, time.Local),
+			location: time.Local,
+			language: "en-US",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseLocalizedStrptime(tt.format, tt.value, tt.location, tt.language)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected.UnixNano(), result.UnixNano())
+		})
+	}
+}
+
+func TestParseLocalizedStrptimeInvalidType(t *testing.T) {
+	value := time.Now().UnixNano()
+	_, err := ParseLocalizedStrptime("%c", value, time.Local, "en")
+	require.Error(t, err)
+	require.ErrorContains(t, err, "cannot be parsed as a time")
 }

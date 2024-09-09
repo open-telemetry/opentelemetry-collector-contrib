@@ -32,7 +32,7 @@ func TestNewScraper(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings())
-	require.Len(t, scraper.resources, 0)
+	require.Empty(t, scraper.resources)
 }
 
 func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error) {

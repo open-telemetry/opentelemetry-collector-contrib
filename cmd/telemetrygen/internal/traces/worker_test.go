@@ -93,16 +93,16 @@ func TestRateOfSpans(t *testing.T) {
 	}
 
 	// sanity check
-	require.Len(t, syncer.spans, 0)
+	require.Empty(t, syncer.spans)
 
 	// test
 	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of spans for the rate of 10/sec for half a second
-	assert.True(t, len(syncer.spans) >= 6, "there should have been more than 6 spans, had %d", len(syncer.spans))
+	assert.GreaterOrEqual(t, len(syncer.spans), 6, "there should have been more than 6 spans, had %d", len(syncer.spans))
 	// the maximum acceptable number of spans for the rate of 10/sec for half a second
-	assert.True(t, len(syncer.spans) <= 20, "there should have been less than 20 spans, had %d", len(syncer.spans))
+	assert.LessOrEqual(t, len(syncer.spans), 20, "there should have been less than 20 spans, had %d", len(syncer.spans))
 }
 
 func TestSpanDuration(t *testing.T) {
@@ -125,7 +125,7 @@ func TestSpanDuration(t *testing.T) {
 	}
 
 	// sanity check
-	require.Len(t, syncer.spans, 0)
+	require.Empty(t, syncer.spans)
 
 	// test
 	require.NoError(t, Run(cfg, zap.NewNop()))
@@ -154,14 +154,14 @@ func TestUnthrottled(t *testing.T) {
 	}
 
 	// sanity check
-	require.Len(t, syncer.spans, 0)
+	require.Empty(t, syncer.spans)
 
 	// test
 	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of spans -- the real number should be > 10k, but CI env might be slower
-	assert.True(t, len(syncer.spans) > 100, "there should have been more than 100 spans, had %d", len(syncer.spans))
+	assert.Greater(t, len(syncer.spans), 100, "there should have been more than 100 spans, had %d", len(syncer.spans))
 }
 
 func TestSpanKind(t *testing.T) {
@@ -185,7 +185,7 @@ func TestSpanKind(t *testing.T) {
 
 	// verify that the default Span Kind is being overridden
 	for _, span := range syncer.spans {
-		assert.NotEqual(t, span.SpanKind(), trace.SpanKindInternal)
+		assert.NotEqual(t, trace.SpanKindInternal, span.SpanKind())
 	}
 }
 

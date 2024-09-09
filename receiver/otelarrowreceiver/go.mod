@@ -5,22 +5,22 @@ go 1.22.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.108.0
-	github.com/open-telemetry/otel-arrow v0.25.0
+	github.com/open-telemetry/otel-arrow v0.26.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/component v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/component/componentstatus v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/config/configauth v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/config/configgrpc v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/config/confignet v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/config/configtls v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/confmap v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/consumer v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/pdata v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/receiver v0.108.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/client v1.14.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/component v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/component/componentstatus v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/config/configauth v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/config/configgrpc v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/config/confignet v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/config/configtls v1.14.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/confmap v1.14.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/consumer v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/pdata v1.14.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/receiver v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/otel v1.29.0
 	go.opentelemetry.io/otel/metric v1.29.0
 	go.opentelemetry.io/otel/sdk/metric v1.29.0
@@ -30,7 +30,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.28.0
-	google.golang.org/grpc v1.65.0
+	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
 )
 
@@ -72,21 +72,21 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.20.2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.56.0 // indirect
+	github.com/prometheus/common v0.57.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.14.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/config/internal v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/exporter v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/extension v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.108.2-0.20240829190554-7da6b618a7ee // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.1 // indirect
+	go.opentelemetry.io/collector v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.14.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/config/internal v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/exporter v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/extension v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.108.2-0.20240904075637-48b11ba1c5f8 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.29.0 // indirect
@@ -106,3 +106,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/otela
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter => ../../exporter/otelarrowexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil => ../../internal/grpcutil

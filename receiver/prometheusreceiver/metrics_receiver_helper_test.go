@@ -626,7 +626,7 @@ func compareDoubleValue(doubleVal float64) numberPointComparator {
 
 func assertNormalNan() numberPointComparator {
 	return func(t *testing.T, numberDataPoint pmetric.NumberDataPoint) {
-		assert.True(t, math.Float64bits(numberDataPoint.DoubleValue()) == value.NormalNaN,
+		assert.Equal(t, value.NormalNaN, math.Float64bits(numberDataPoint.DoubleValue()),
 			"Metric double value is not normalNaN as expected")
 	}
 }
@@ -663,7 +663,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 				assert.Equal(t, quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile(),
 					"Summary quantile do not match")
 				if math.IsNaN(quantiles[i][1]) {
-					assert.True(t, math.Float64bits(summaryDataPoint.QuantileValues().At(i).Value()) == value.NormalNaN,
+					assert.Equal(t, value.NormalNaN, math.Float64bits(summaryDataPoint.QuantileValues().At(i).Value()),
 						"Summary quantile value is not normalNaN as expected")
 				} else {
 					assert.Equal(t, quantiles[i][1], summaryDataPoint.QuantileValues().At(i).Value(),
@@ -702,7 +702,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 		// verify state after shutdown is called
 		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
 		require.NoError(t, receiver.Shutdown(context.Background()))
-		assert.Len(t, flattenTargets(receiver.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
+		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
 	})
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
