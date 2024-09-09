@@ -1055,10 +1055,10 @@ go.opentelemetry.io/collector/extension v0.108.2-0.20240909182537-32cff9f7f331 h
 go.opentelemetry.io/collector/extension v0.108.2-0.20240909182537-32cff9f7f331/go.mod h1:SxPII5TwWGCP7/2tXaYDzK6S1WOLuAhIKUjCbyCh59E=
 go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240909182537-32cff9f7f331 h1:M0Asvk7iiHj3TXGqi/fnAo8YcwUZjhbSUH4qBZzR7Ak=
 go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240909182537-32cff9f7f331/go.mod h1:kcunNfv6/caTApx3C7A/kjWCdP0HUOv8Kdy2maMIUE4=
-go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909174942-46d04a512989 h1:yxalYTi0bn19jFg/OEVwjJg1DYnYRNKPWqG2neTrGFU=
-go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909174942-46d04a512989/go.mod h1:oJq+h5cGpKhEBu29xMRXD2fF3cxHRSY2v2W2dhWNu8g=
-go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909160516-e5999578ad90 h1:qL5T6p4u1fK/q2PJ0hyBFwJPp1AZyBkGjhgfX4sILsQ=
-go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909160516-e5999578ad90/go.mod h1:fzUbvPib293GLn4hzlVNLWEHwvsdI9Wq4dsFDZPEAp8=
+go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909182537-32cff9f7f331 h1:gk2Re5dBF651yRxa9s4gMKIoj+zavQKI0BkN3E6Brc8=
+go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909182537-32cff9f7f331/go.mod h1:oJq+h5cGpKhEBu29xMRXD2fF3cxHRSY2v2W2dhWNu8g=
+go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909180850-6ea5b698d0c0 h1:kpub+t0U7eLTzZeiJ9HIfcl/bi3+pIWvSB/ELDu4mOo=
+go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909180850-6ea5b698d0c0/go.mod h1:fzUbvPib293GLn4hzlVNLWEHwvsdI9Wq4dsFDZPEAp8=
 go.opentelemetry.io/collector/extension/zpagesextension v0.108.1 h1:OH250Z/bXJTZjkeMwUERbLZiNPETlOxE3q4n536Kc4s=
 go.opentelemetry.io/collector/extension/zpagesextension v0.108.1/go.mod h1:3QSnFvGq5jXXwSPi94x2ggBGPZxdtD0lxpPOpV3RZRc=
 go.opentelemetry.io/collector/featuregate v1.14.2-0.20240909182537-32cff9f7f331 h1:RDmpijg7MyKzhLnYXRFrU18QvpJ/LMtsje+NBB7k3FM=

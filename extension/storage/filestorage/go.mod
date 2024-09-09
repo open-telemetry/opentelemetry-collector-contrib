@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/component v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap v1.14.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/extension v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909174942-46d04a512989
+	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909182537-32cff9f7f331
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )

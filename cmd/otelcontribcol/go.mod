@@ -4,8 +4,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.22.0
 
-toolchain go1.22.7
-
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.108.0
@@ -791,8 +789,8 @@ require (
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909174942-46d04a512989 // indirect
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909160516-e5999578ad90 // indirect
+	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909182537-32cff9f7f331 // indirect
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909180850-6ea5b698d0c0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/filter v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.2-0.20240909182537-32cff9f7f331 // indirect

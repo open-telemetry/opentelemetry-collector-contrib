@@ -4,8 +4,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbed
 
 go 1.22.0
 
-toolchain go1.22.7
-
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.108.0
@@ -35,7 +33,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.108.0
 	go.opentelemetry.io/collector/component v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap v1.14.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.2-0.20240909182537-32cff9f7f331
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.108.2-0.20240904075637-48b11ba1c5f8
@@ -252,8 +250,8 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.108.2-0.20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909174942-46d04a512989 // indirect
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909160516-e5999578ad90 // indirect
+	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909182537-32cff9f7f331 // indirect
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909180850-6ea5b698d0c0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/pdata v1.14.2-0.20240909182537-32cff9f7f331 // indirect
