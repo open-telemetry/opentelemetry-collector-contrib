@@ -418,6 +418,36 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:        "otelcol_processor_incoming_metric_points",
+			Description: "Number of metric points passed to the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      0,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_metric_points",
+			Description: "Number of metric points emitted from the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      0,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
+				},
+			},
+		},
 	}
 
 	tel.assertMetrics(t, want)
