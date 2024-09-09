@@ -35,7 +35,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.108.0
 	go.opentelemetry.io/collector/component v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap v1.14.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.2-0.20240904075637-48b11ba1c5f8
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.2-0.20240904075637-48b11ba1c5f8
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.108.2-0.20240904075637-48b11ba1c5f8
