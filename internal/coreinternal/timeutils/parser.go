@@ -4,6 +4,7 @@
 package timeutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -153,6 +154,22 @@ func ValidateGotime(layout string) error {
 	}
 
 	return nil
+}
+
+// ValidateLocale checks the given locale and returns an error if the language tag
+// is not supported by the localized parser functions.
+func ValidateLocale(locale string) error {
+	_, err := lunes.NewDefaultLocale(locale)
+	if err == nil {
+		return nil
+	}
+
+	var e *lunes.ErrUnsupportedLocale
+	if errors.As(err, &e) {
+		return fmt.Errorf("unsupported locale '%s', value must be a supported BCP 47 language tag", locale)
+	}
+
+	return fmt.Errorf("invalid locale '%s': %w", locale, err)
 }
 
 // Allows tests to override with deterministic value

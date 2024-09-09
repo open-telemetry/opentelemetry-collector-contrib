@@ -165,3 +165,14 @@ func TestParseLocalizedStrptimeInvalidType(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorContains(t, err, "cannot be parsed as a time")
 }
+
+func TestValidateLocale(t *testing.T) {
+	require.NoError(t, ValidateLocale("es"))
+	require.NoError(t, ValidateLocale("en-US"))
+	require.NoError(t, ValidateLocale("ca-ES-valencia"))
+}
+
+func TestValidateLocaleUnsupported(t *testing.T) {
+	err := ValidateLocale("foo-bar")
+	require.ErrorContains(t, err, "unsupported locale 'foo-bar'")
+}
