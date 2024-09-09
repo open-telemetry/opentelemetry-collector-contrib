@@ -39,7 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func Test_signalfxeceiver_New(t *testing.T) {
+func Test_signalfxreceiver_New(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
@@ -78,11 +78,14 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			}
 			err = got.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantStartErr, err)
+			if err == nil {
+				assert.NoError(t, got.Shutdown(context.Background()))
+			}
 		})
 	}
 }
 
-func Test_signalfxeceiver_EndToEnd(t *testing.T) {
+func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
@@ -879,7 +882,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			assert.Equal(t, responseOK, bodyStr)
 
 			got := sink.AllLogs()
-			require.Equal(t, 1, len(got))
+			require.Len(t, got, 1)
 
 			tokenLabel := ""
 			if accessTokenAttr, ok := got[0].ResourceLogs().At(0).Resource().Attributes().Get("com.splunk.signalfx.access_token"); ok {

@@ -89,7 +89,7 @@ func TestRoundTrip(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, res.StatusCode, 200)
+			assert.Equal(t, 200, res.StatusCode)
 		})
 	}
 }

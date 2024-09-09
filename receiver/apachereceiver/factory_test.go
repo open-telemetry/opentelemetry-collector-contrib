@@ -49,6 +49,7 @@ func TestPortValidate(t *testing.T) {
 		desc         string
 		endpoint     string
 		expectedPort string
+		expectError  bool
 	}{
 		{
 			desc:         "http with specified port",
@@ -80,6 +81,12 @@ func TestPortValidate(t *testing.T) {
 			endpoint:     "abc://localhost/server-status?auto",
 			expectedPort: "",
 		},
+		{
+			desc:         "invalid endpoint",
+			endpoint:     ":missing-schema",
+			expectedPort: "",
+			expectError:  true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -87,7 +94,12 @@ func TestPortValidate(t *testing.T) {
 			cfg.Endpoint = tc.endpoint
 			_, port, err := parseResourceAttributes(tc.endpoint)
 
-			require.NoError(t, err)
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
 			require.Equal(t, tc.expectedPort, port)
 		})
 	}

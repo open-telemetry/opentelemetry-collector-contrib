@@ -72,7 +72,7 @@ func TestNewExporter(t *testing.T) {
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	assert.Equal(t, len(server.MetadataChan), 0)
+	assert.Empty(t, server.MetadataChan)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
@@ -81,7 +81,7 @@ func TestNewExporter(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
@@ -393,7 +393,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	assert.Equal(t, len(server.MetadataChan), 0)
+	assert.Empty(t, server.MetadataChan)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
@@ -402,7 +402,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {

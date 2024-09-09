@@ -703,7 +703,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			providers := discoveryManager.Providers()
 			if tc.want.empty {
 				// if no base config is supplied and the job retrieval fails then no configuration should be found
-				require.Len(t, providers, 0)
+				require.Empty(t, providers)
 				return
 			}
 
@@ -775,8 +775,8 @@ func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assert.Equal(t, false, httpSD.HTTPClientConfig.FollowRedirects)
-	assert.Equal(t, true, httpSD.HTTPClientConfig.TLSConfig.InsecureSkipVerify)
+	assert.False(t, httpSD.HTTPClientConfig.FollowRedirects)
+	assert.True(t, httpSD.HTTPClientConfig.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "test.server", httpSD.HTTPClientConfig.TLSConfig.ServerName)
 	assert.Equal(t, "/path/to/ca", httpSD.HTTPClientConfig.TLSConfig.CAFile)
 	assert.Equal(t, "/path/to/cert", httpSD.HTTPClientConfig.TLSConfig.CertFile)

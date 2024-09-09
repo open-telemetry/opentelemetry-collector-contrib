@@ -49,7 +49,7 @@ func TestBrokerShutdown_closed(t *testing.T) {
 
 func TestBrokerScraper_Name(t *testing.T) {
 	s := brokerScraper{}
-	assert.Equal(t, s.Name(), brokersScraperName)
+	assert.Equal(t, brokersScraperName, s.Name())
 }
 
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
@@ -110,7 +110,7 @@ func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	_, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias")
-	require.Equal(t, false, ok)
+	require.False(t, ok)
 }
 
 func TestBrokerScraper_scrape(t *testing.T) {

@@ -31,8 +31,8 @@ func TestReceiver(t *testing.T) {
 	require.Same(t, params.Logger, receiver.logger)
 	require.Same(t, config, receiver.config)
 
-	require.Nil(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
-	require.Nil(t, receiver.Shutdown(context.Background()))
+	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, receiver.Shutdown(context.Background()))
 }
 
 func TestBuildJMXMetricGathererConfig(t *testing.T) {
