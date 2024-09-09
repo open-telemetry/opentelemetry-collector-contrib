@@ -5,7 +5,9 @@ package geoipprocessor // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -16,14 +18,28 @@ func (g *geoIPProcessor) processLogs(ctx context.Context, ls plog.Logs) (plog.Lo
 		case resource:
 			err := g.processAttributes(ctx, rl.At(i).Resource().Attributes())
 			if err != nil {
-				return ls, err
+				switch g.cfg.ErrorMode {
+				case ottl.IgnoreError:
+					g.logger.Error(fmt.Errorf("could not process log attributes: %w", err).Error())
+				case ottl.PropagateError:
+					return ls, err
+				case ottl.SilentError:
+				}
+				continue
 			}
 		case record:
 			for j := 0; j < rl.At(i).ScopeLogs().Len(); j++ {
 				for k := 0; k < rl.At(i).ScopeLogs().At(j).LogRecords().Len(); k++ {
 					err := g.processAttributes(ctx, rl.At(i).ScopeLogs().At(j).LogRecords().At(k).Attributes())
 					if err != nil {
-						return ls, err
+						switch g.cfg.ErrorMode {
+						case ottl.IgnoreError:
+							g.logger.Error(fmt.Errorf("could not process log attributes: %w", err).Error())
+						case ottl.PropagateError:
+							return ls, err
+						case ottl.SilentError:
+						}
+						continue
 					}
 				}
 			}

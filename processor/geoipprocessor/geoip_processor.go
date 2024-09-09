@@ -10,7 +10,9 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
@@ -27,14 +29,16 @@ type geoIPProcessor struct {
 	providers          []provider.GeoIPProvider
 	resourceAttributes []attribute.Key
 
-	cfg *Config
+	cfg    *Config
+	logger *zap.Logger
 }
 
-func newGeoIPProcessor(processorConfig *Config, resourceAttributes []attribute.Key, providers []provider.GeoIPProvider) *geoIPProcessor {
+func newGeoIPProcessor(processorConfig *Config, params processor.Settings, resourceAttributes []attribute.Key, providers []provider.GeoIPProvider) *geoIPProcessor {
 	return &geoIPProcessor{
 		resourceAttributes: resourceAttributes,
 		providers:          providers,
 		cfg:                processorConfig,
+		logger:             params.Logger,
 	}
 }
 
