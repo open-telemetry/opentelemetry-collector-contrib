@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.14.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/confmap v1.14.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/extension v0.108.2-0.20240909182537-32cff9f7f331
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.0.0-20240909182537-32cff9f7f331
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
