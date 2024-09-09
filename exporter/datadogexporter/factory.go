@@ -53,6 +53,12 @@ var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegis
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
 )
 
+var metricRemappingEnabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricremappingenabled",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When set the Datadog Exporter does not remap Opentelemetry metrics to Datadog semantics."),
+)
+
 // noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
 var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.DisableAPMStats",
@@ -63,6 +69,11 @@ var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
 	return metricExportNativeClientFeatureGate.IsEnabled()
+}
+
+// isMetricRemappingEnabled returns true if the datadogexporter should generate Datadog-compliant metrics from OpenTelemetry metrics
+func isMetricRemappingEnabled() bool {
+	return metricRemappingEnabledFeatureGate.IsEnabled()
 }
 
 func isLogsAgentExporterEnabled() bool {
