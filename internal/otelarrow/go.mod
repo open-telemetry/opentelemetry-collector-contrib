@@ -7,7 +7,7 @@ require (
 	github.com/klauspost/compress v1.17.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.108.0
-	github.com/open-telemetry/otel-arrow v0.25.0
+	github.com/open-telemetry/otel-arrow v0.26.0
 	github.com/stretchr/testify v1.9.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.opentelemetry.io/collector/component v0.108.2-0.20240904075637-48b11ba1c5f8
