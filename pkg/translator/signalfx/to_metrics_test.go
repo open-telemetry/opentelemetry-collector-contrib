@@ -19,7 +19,7 @@ import (
 
 func TestNumMetricTypes(t *testing.T) {
 	// Assert that all values for the metric types are less than numMetricTypes.
-	assert.Equal(t, len(sfxpb.MetricType_value), numMetricTypes)
+	assert.Len(t, sfxpb.MetricType_value, numMetricTypes)
 	for _, v := range sfxpb.MetricType_value {
 		assert.Less(t, v, int32(numMetricTypes))
 	}

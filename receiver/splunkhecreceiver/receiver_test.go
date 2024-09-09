@@ -297,7 +297,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				assert.Len(t, sink.AllLogs(), 1)
 			},
 			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
-				assert.Len(t, sink.AllMetrics(), 0)
+				assert.Empty(t, sink.AllMetrics())
 			},
 		},
 		{
@@ -312,7 +312,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				assertHecSuccessResponse(t, resp, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Len(t, sink.AllLogs(), 0)
+				assert.Empty(t, sink.AllLogs())
 			},
 			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
 				assert.Len(t, sink.AllMetrics(), 1)
@@ -1614,7 +1614,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assert.Equal(t, map[string]any{"code": float64(10), "text": "Data channel is missing"}, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Len(t, sink.AllLogs(), 0)
+				assert.Empty(t, sink.AllLogs())
 			},
 		},
 		{
@@ -1635,7 +1635,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assert.Equal(t, map[string]any{"text": "Invalid data channel", "code": float64(11)}, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Len(t, sink.AllLogs(), 0)
+				assert.Empty(t, sink.AllLogs())
 			},
 		},
 		{
@@ -1768,7 +1768,7 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-	assert.Equal(t, string(respBytes), responseHecHealthy)
+	assert.Equal(t, responseHecHealthy, string(respBytes))
 	assert.Equal(t, 200, resp.StatusCode)
 }
 

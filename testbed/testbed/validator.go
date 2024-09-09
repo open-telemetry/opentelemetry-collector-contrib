@@ -42,7 +42,7 @@ func (v *LogPresentValidator) Validate(tc *TestCase) {
 		successMsg = fmt.Sprintf("Log '%s' not found", logMsg)
 	}
 
-	if assert.True(tc.t, tc.AgentLogsContains(logMsg) == v.Present, errorMsg) {
+	if assert.Equal(tc.t, tc.AgentLogsContains(logMsg), v.Present, errorMsg) {
 		log.Print(successMsg)
 	}
 }
@@ -130,7 +130,7 @@ func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 	if len(tc.MockBackend.ReceivedTraces) > 0 {
 		v.assertSentRecdTracingDataEqual(append(tc.MockBackend.ReceivedTraces, tc.MockBackend.DroppedTraces...))
 	}
-	assert.Len(tc.t, v.assertionFailures, 0, "There are span data mismatches.")
+	assert.Empty(tc.t, v.assertionFailures, "There are span data mismatches.")
 }
 
 func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {

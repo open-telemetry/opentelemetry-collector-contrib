@@ -506,7 +506,7 @@ func TestAMQPSubstituteVariables(t *testing.T) {
 // It is not a perfect comparison but will perform well differentiating between anonymous
 // functions and the amqp named functinos
 func testFunctionEquality(t *testing.T, f1, f2 any) {
-	assert.True(t, (f1 == nil) == (f2 == nil))
+	assert.Equal(t, (f1 == nil), (f2 == nil))
 	if f1 == nil {
 		return
 	}

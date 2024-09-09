@@ -464,12 +464,12 @@ func TestDefaultDiskTranslations(t *testing.T) {
 	require.True(t, ok)
 	require.Len(t, du[0].Dimensions, 4)
 	// cheap test for pct conversion
-	require.True(t, *du[0].Value.DoubleValue > 1)
+	require.Greater(t, *du[0].Value.DoubleValue, 1.0)
 
 	dsu, ok := m["disk.summary_utilization"]
 	require.True(t, ok)
 	require.Len(t, dsu[0].Dimensions, 3)
-	require.True(t, *dsu[0].Value.DoubleValue > 1)
+	require.Greater(t, *dsu[0].Value.DoubleValue, 1.0)
 }
 
 func testGetTranslator(t *testing.T) *translation.MetricTranslator {
@@ -603,7 +603,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	md := getMetrics(metrics)
 	require.Equal(t, 69, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
-	require.Len(t, dps, 0)
+	require.Empty(t, dps)
 }
 
 // Benchmark test for default translation rules on an example hostmetrics dataset.
