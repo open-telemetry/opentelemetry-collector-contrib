@@ -5,9 +5,6 @@ datadog/api:
     site: datadoghq.eu
     fail_on_invalid_key: true
 
-  metrics:
-    remap_metrics: false
-
   traces:
     span_name_remappings:
       "old_name1": "new_name1"
@@ -27,7 +24,6 @@ datadog/api2:
 
   metrics:
     endpoint: https://api.datadoghq.test
-    remap_metrics: true
 
   traces:
     span_name_remappings:

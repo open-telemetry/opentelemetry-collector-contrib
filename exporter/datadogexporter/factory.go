@@ -199,8 +199,7 @@ func (f *factory) createDefaultConfig() component.Config {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://api.datadoghq.com",
 			},
-			DeltaTTL:     3600,
-			RemapMetrics: true,
+			DeltaTTL: 3600,
 			ExporterConfig: MetricsExporterConfig{
 				ResourceAttributesAsTags:           false,
 				InstrumentationScopeMetadataAsTags: false,
