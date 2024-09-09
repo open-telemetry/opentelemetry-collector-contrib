@@ -38,8 +38,8 @@ func newMetricsReceiver(
 	cfg := rCfg.(*Config)
 
 	expVar := newExpVarScraper(cfg, set)
-	scraper, err := scraperhelper.NewScraper(
-		metadata.Type.String(),
+	scraper, err := scraperhelper.NewScraperWithComponentType(
+		metadata.Type,
 		expVar.scrape,
 		scraperhelper.WithStart(expVar.start),
 	)

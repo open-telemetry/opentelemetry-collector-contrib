@@ -38,10 +38,6 @@ const (
 	retentionBytes   = "retention.bytes"
 )
 
-func (s *topicScraper) Name() string {
-	return topicsScraperName
-}
-
 func (s *topicScraper) shutdown(context.Context) error {
 	if s.client != nil && !s.client.Closed() {
 		return s.client.Close()
@@ -184,8 +180,8 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		saramaConfig: saramaConfig,
 		config:       cfg,
 	}
-	return scraperhelper.NewScraper(
-		s.Name(),
+	return scraperhelper.NewScraperWithComponentType(
+		topicsScraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 		scraperhelper.WithShutdown(s.shutdown),
