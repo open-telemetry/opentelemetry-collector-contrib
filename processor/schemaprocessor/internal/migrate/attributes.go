@@ -39,6 +39,8 @@ func NewAttributeChangeSet(mappings ast.AttributeMap) *AttributeChangeSet {
 	return attr
 }
 
+func (a AttributeChangeSet) IsMigrator() {}
+
 func (a *AttributeChangeSet) Apply(attrs pcommon.Map) error {
 	return a.do(StateSelectorApply, attrs)
 }

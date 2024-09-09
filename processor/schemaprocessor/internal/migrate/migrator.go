@@ -1,11 +1,11 @@
 package migrate
 
-type Migrator[T any] interface {
-	Apply(data T) error
-	Rollback(data T) error
+type Migrator interface {
+	IsMigrator()
 }
 
 
 var (
-	//_ Migrator[plog.ScopeLogs] = (*operator.LogAttributeOperator)(nil)
+	_ Migrator = (*AttributeChangeSet)(nil)
+	_ Migrator = (*MultiConditionalAttributeSet)(nil)
 )

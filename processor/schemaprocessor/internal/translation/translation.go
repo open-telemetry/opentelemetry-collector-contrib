@@ -200,31 +200,31 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 				if err != nil {
 					return err
 				}
-				//err := rev.logsRenameAttributes.Apply(log.Attributes())
-				//if err != nil {
-				//	return err
-				//}
+				err := rev.logsRenameAttributes.Apply(log)
+				if err != nil {
+					return err
+				}
 			case Revert:
 				err = rev.all.Rollback(log.Attributes())
 				if err != nil {
 					return err
 				}
-				//err := rev.logsRenameAttributes.Rollback(log.Attributes())
-				//if err != nil {
-				//	return err
-				//}
+				err := rev.logsRenameAttributes.Rollback(log)
+				if err != nil {
+					return err
+				}
 			}
 		}
-		switch status {
-		case Update:
-			if err := rev.logsRenameAttributes.Apply(in); err != nil {
-				return err
-			}
-		case Revert:
-			if err := rev.logsRenameAttributes.Rollback(in); err != nil {
-				return err
-			}
-		}
+		//switch status {
+		//case Update:
+		//	if err := rev.logsRenameAttributes.Apply(in); err != nil {
+		//		return err
+		//	}
+		//case Revert:
+		//	if err := rev.logsRenameAttributes.Rollback(in); err != nil {
+		//		return err
+		//	}
+		//}
 	}
 	in.SetSchemaUrl(t.schemaURL)
 	return nil
@@ -255,13 +255,19 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					if err != nil {
 						return err
 					}
-					if err := rev.spanEventsRenameAttributesOnSpanEvent.Apply(event.Attributes(), span); err != nil {
-						return err
-					}
-
-					rev.spanEventsRenameEvents.Apply(event)
+					//if err := rev.spanEventsRenameAttributesOnSpanEvent.Apply(event.Attributes(), span); err != nil {
+					//	return err
+					//}
+					//
+					//rev.spanEventsRenameEvents.Apply(event)
+				}
+				if err := rev.spanEvents.Apply(span); err != nil {
+					return err
 				}
 			case Revert:
+				if err := rev.spanEvents.Rollback(span); err != nil {
+					return err
+				}
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
 					rev.spanEventsRenameEvents.Rollback(event)

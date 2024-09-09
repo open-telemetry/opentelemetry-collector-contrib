@@ -4,7 +4,6 @@
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 
 import (
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
 
@@ -21,12 +20,13 @@ type RevisionV1 struct {
 	all                               *migrate.AttributeChangeSetSlice
 	resources                         *migrate.AttributeChangeSetSlice
 	spans                             *migrate.ConditionalAttributeSetSlice
+	spanEvents          	*changelist.ChangeList
 	spanEventsRenameEvents            *migrate.SignalNameChangeSlice
 	spanEventsRenameAttributesOnSpanEvent *migrate.ConditionalLambdaAttributeSetSlice[ptrace.Span]
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
 	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
 	//logsRenameAttributes              *migrate.AttributeChangeSetSlice
-	logsRenameAttributes              *changelist.ChangeList[plog.ScopeLogs]
+	logsRenameAttributes              *changelist.ChangeList
 }
 
 // NewRevision processes the VersionDef and assigns the version to this revision
@@ -46,8 +46,9 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		all:                               newAttributeChangeSetSliceFromChanges(def.All),
 		resources:                         newAttributeChangeSetSliceFromChanges(def.Resources),
 		spans:                             newSpanConditionalAttributeSlice(def.Spans),
-		spanEventsRenameEvents:            newSpanEventSignalSlice(def.SpanEvents),
-		spanEventsRenameAttributesOnSpanEvent: newSpanEventsRenameAttributesOnSpanEventEvent(def.SpanEvents),
+		spanEvents:						   newSpanEventChangeList(def.SpanEvents),
+		//spanEventsRenameEvents:            newSpanEventSignalSlice(def.SpanEvents),
+		//spanEventsRenameAttributesOnSpanEvent: newSpanEventsRenameAttributesOnSpanEventEvent(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
 		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
 		//logsRenameAttributes:              newAttributeChangeSetSliceFromChanges(logChanges,
@@ -60,16 +61,57 @@ func (r RevisionV1) Version() *Version {
 	return r.ver
 }
 
-func newLogsChangelist(logs ast.Logs) *changelist.ChangeList[plog.ScopeLogs]{
-	values := make([]migrate.Migrator[plog.ScopeLogs], 0)
+
+//func newAllChangeList(all ast.Attributes) *changelist.ChangeList[any]{
+//	values := make([]migrate.Migrator[any], 0)
+//	for _, at := range all.Changes {
+//		if renamed := at.RenameAttributes; renamed != nil {
+//			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
+//			values = append(values, operator.LogAttributeOperator{AttributeChange: attributeChangeSet})
+//			values = append(values, operator.SpanAttributeOperator{AttributeChange: attributeChangeSet})
+//		}
+//	}
+//	return &changelist.ChangeList[any]{Migrators: values}
+//}
+
+func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
+	values := make([]migrate.Migrator, 0)
+	for _, at := range spanEvents.Changes {
+		if renamedEvent := at.RenameEvents; renamedEvent != nil {
+			signalNameChange := migrate.NewSignalNameChange(renamedEvent.EventNameMap)
+			values = append(values, signalNameChange)
+		} else if renamedAttribute := at.RenameAttributes; renamedAttribute != nil {
+			acceptableSpanNames := make([]string, 0)
+			for _, spanName := range renamedAttribute.ApplyToSpans {
+				acceptableSpanNames = append(acceptableSpanNames, string(spanName))
+			}
+			acceptableEventNames := make([]string, 0)
+			for _, eventName := range renamedAttribute.ApplyToEvents {
+				acceptableEventNames = append(acceptableEventNames, string(eventName))
+			}
+
+			attributeChangeSet := migrate.NewMultiConditionalAttributeSet(renamedAttribute.AttributeMap, map[string][]string{
+				"span.name": acceptableSpanNames,
+				"event.name": acceptableEventNames,
+			})
+			spanEventAttributeChangeSet := operator.NewSpanEventConditionalAttributeOperator(*attributeChangeSet)
+			values = append(values, spanEventAttributeChangeSet)
+		} else {
+			panic("spanEvents change must have either RenameEvents or RenameAttributes")
+		}
+	}
+	return &changelist.ChangeList{Migrators: values}
+}
+
+func newLogsChangelist(logs ast.Logs) *changelist.ChangeList{
+	values := make([]migrate.Migrator, 0)
 	for _, at := range logs.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
 			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
-			attr := operator.LogAttributeOperator{AttributeChange: *attributeChangeSet}
-			values = append(values, attr)
+			values = append(values, attributeChangeSet)
 		}
 	}
-	return &changelist.ChangeList[plog.ScopeLogs]{Migrators: values}
+	return &changelist.ChangeList{Migrators: values}
 }
 
 func newAttributeChangeSetSliceFromChanges(attrs ast.Attributes) *migrate.AttributeChangeSetSlice {
