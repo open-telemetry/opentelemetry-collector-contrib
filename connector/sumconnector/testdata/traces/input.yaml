@@ -37,7 +37,7 @@ resourceSpans:
                       stringValue: bar
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attrs-foo-bar
                 timeUnixNano: "1581452773000000123"
               - attributes:
@@ -49,7 +49,7 @@ resourceSpans:
                       stringValue: notbar
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attrs-foo-notbar
                 timeUnixNano: "1581452773000000123"
               - attributes:
@@ -58,7 +58,7 @@ resourceSpans:
                       stringValue: notfoo
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attr-notfoo
                 timeUnixNano: "1581452773000000123"
               - name: event-with-no-attrs
@@ -112,7 +112,7 @@ resourceSpans:
                       stringValue: notfoo
                   - key: beep
                     value:
-                      doubleValue: 2
+                      stringValue: "2"
                 name: event-with-attr-notfoo
                 timeUnixNano: "1581452773000000123"
               - name: event-with-no-attrs
@@ -142,7 +142,7 @@ resourceSpans:
                       stringValue: bar
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attrs-foo-bar
                 timeUnixNano: "1581452773000000123"
               - attributes:
@@ -154,7 +154,7 @@ resourceSpans:
                       stringValue: notbar
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attrs-foo-notbar
                 timeUnixNano: "1581452773000000123"
               - attributes:
@@ -163,7 +163,7 @@ resourceSpans:
                       stringValue: notfoo
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attr-notfoo
                 timeUnixNano: "1581452773000000123"
               - name: event-with-no-attrs
@@ -187,7 +187,7 @@ resourceSpans:
                       stringValue: bar
                   - key: beep
                     value:
-                      doubleValue: 1
+                      doubleValue: 1.1
                 name: event-with-attrs-foo-bar
                 timeUnixNano: "1581452773000000123"
               - attributes:
@@ -199,7 +199,7 @@ resourceSpans:
                       stringValue: notbar
                   - key: beep
                     value:
-                      doubleValue: 1
+                      doubleValue: 1.1
                 name: event-with-attrs-foo-notbar
                 timeUnixNano: "1581452773000000123"
               - attributes:
@@ -208,7 +208,7 @@ resourceSpans:
                       stringValue: notfoo
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attr-notfoo
                 timeUnixNano: "1581452773000000123"
               - name: event-with-no-attrs
@@ -252,7 +252,7 @@ resourceSpans:
                       stringValue: bar
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attrs-foo-bar
                 timeUnixNano: "1581452773000000123"
               - attributes:
@@ -264,7 +264,7 @@ resourceSpans:
                       stringValue: notbar
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attrs-foo-notbar
                 timeUnixNano: "1581452773000000123"
               - attributes:
@@ -273,7 +273,7 @@ resourceSpans:
                       stringValue: notfoo
                   - key: beep
                     value:
-                      doubleValue: 2
+                      doubleValue: 2.1
                 name: event-with-attr-notfoo
                 timeUnixNano: "1581452773000000123"
               - name: event-with-no-attrs

@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 	"time"
 
@@ -133,11 +132,6 @@ func (c *summer[K]) increment(metricName string, sumVal float64, attrs pcommon.M
 	return nil
 }
 
-// Addresses issues with float precision smaller than 6 decimal places
-func reduceFloatPrecision(val float64) float64 {
-	return math.Round(val*100000) / 100000
-}
-
 func (c *summer[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 	for name, md := range c.metricDefs {
 		if len(c.sums[name]) == 0 {
@@ -153,7 +147,7 @@ func (c *summer[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 		for _, dpSum := range c.sums[name] {
 			dp := sum.DataPoints().AppendEmpty()
 			dpSum.attrs.CopyTo(dp.Attributes())
-			dp.SetDoubleValue(reduceFloatPrecision(dpSum.sum))
+			dp.SetDoubleValue(dpSum.sum)
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(c.timestamp))
 		}
 	}

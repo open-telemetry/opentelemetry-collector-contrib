@@ -22,7 +22,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 1
               dataPoints:
-                - asDouble: "23"
+                - asDouble: "23.9"
                   timeUnixNano: "1678392127920605000"
               isMonotonic: true
 
@@ -49,7 +49,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 1
               dataPoints:
-                - asDouble: "23"
+                - asDouble: "23.3"
                   timeUnixNano: "1678392127920632000"
               isMonotonic: true
 
