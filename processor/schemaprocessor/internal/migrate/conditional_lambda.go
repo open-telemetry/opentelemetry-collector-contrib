@@ -56,14 +56,14 @@ func NewConditionalLambdaAttributeSetSlice[T any](conditions ...*ConditionalLamb
 }
 
 func (slice *ConditionalLambdaAttributeSetSlice[T]) Apply(attrs pcommon.Map, resource T) error {
-	return slice.do(StateSelectorApply, attrs, resource)
+	return slice.Do(StateSelectorApply, attrs, resource)
 }
 
 func (slice *ConditionalLambdaAttributeSetSlice[T]) Rollback(attrs pcommon.Map, resource T) error {
-	return slice.do(StateSelectorRollback, attrs, resource)
+	return slice.Do(StateSelectorRollback, attrs, resource)
 }
 
-func (slice *ConditionalLambdaAttributeSetSlice[T]) do(ss StateSelector, attrs pcommon.Map, resource T) (errs error) {
+func (slice *ConditionalLambdaAttributeSetSlice[T]) Do(ss StateSelector, attrs pcommon.Map, resource T) (errs error) {
 	for i := 0; i < len((*slice)); i++ {
 		switch ss {
 		case StateSelectorApply:

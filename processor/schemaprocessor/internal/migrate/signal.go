@@ -38,14 +38,14 @@ func (s SignalNameChange) IsMigrator() {}
 
 
 func (s *SignalNameChange) Apply(signal alias.NamedSignal) {
-	s.do(StateSelectorApply, signal)
+	s.Do(StateSelectorApply, signal)
 }
 
 func (s *SignalNameChange) Rollback(signal alias.NamedSignal) {
-	s.do(StateSelectorRollback, signal)
+	s.Do(StateSelectorRollback, signal)
 }
 
-func (s *SignalNameChange) do(ss StateSelector, signal alias.NamedSignal) {
+func (s *SignalNameChange) Do(ss StateSelector, signal alias.NamedSignal) {
 	var (
 		name    string
 		matched bool
@@ -71,14 +71,14 @@ func NewSignalNameChangeSlice(changes ...*SignalNameChange) *SignalNameChangeSli
 
 // todo make this return an err
 func (slice *SignalNameChangeSlice) Apply(signal alias.NamedSignal) {
-	slice.do(StateSelectorApply, signal)
+	slice.Do(StateSelectorApply, signal)
 }
 
 func (slice *SignalNameChangeSlice) Rollback(signal alias.NamedSignal) {
-	slice.do(StateSelectorRollback, signal)
+	slice.Do(StateSelectorRollback, signal)
 }
 
-func (slice *SignalNameChangeSlice) do(ss StateSelector, signal alias.NamedSignal) {
+func (slice *SignalNameChangeSlice) Do(ss StateSelector, signal alias.NamedSignal) {
 	for i := 0; i < len((*slice)); i++ {
 		switch ss {
 		case StateSelectorApply:

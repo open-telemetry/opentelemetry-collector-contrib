@@ -32,19 +32,23 @@ func NewConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, mat
 		attrs: NewAttributeChangeSet(mappings),
 	}
 }
-
-func (ca *ConditionalAttributeSet) Apply(attrs pcommon.Map, values ...string) (errs error) {
+func (ca *ConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, values ...string) (errs error) {
 	if ca.check(values...) {
-		errs = ca.attrs.Apply(attrs)
+		switch ss {
+		case StateSelectorApply:
+			errs = ca.attrs.Apply(attrs)
+		case StateSelectorRollback:
+			errs = ca.attrs.Rollback(attrs)
+		}
 	}
 	return errs
 }
+func (ca *ConditionalAttributeSet) Apply(attrs pcommon.Map, values ...string) (errs error) {
+	return ca.Do(StateSelectorApply, attrs, values...)
+}
 
 func (ca *ConditionalAttributeSet) Rollback(attrs pcommon.Map, values ...string) (errs error) {
-	if ca.check(values...) {
-		errs = ca.attrs.Rollback(attrs)
-	}
-	return errs
+	return ca.Do(StateSelectorRollback, attrs, values...)
 }
 
 // todo make it harder to misuse this!  diff between no values and 0 values
@@ -69,14 +73,14 @@ func NewConditionalAttributeSetSlice(conditions ...*ConditionalAttributeSet) *Co
 }
 
 func (slice *ConditionalAttributeSetSlice) Apply(attrs pcommon.Map, values ...string) error {
-	return slice.do(StateSelectorApply, attrs, values)
+	return slice.Do(StateSelectorApply, attrs, values)
 }
 
 func (slice *ConditionalAttributeSetSlice) Rollback(attrs pcommon.Map, values ...string) error {
-	return slice.do(StateSelectorRollback, attrs, values)
+	return slice.Do(StateSelectorRollback, attrs, values)
 }
 
-func (slice *ConditionalAttributeSetSlice) do(ss StateSelector, attrs pcommon.Map, values []string) (errs error) {
+func (slice *ConditionalAttributeSetSlice) Do(ss StateSelector, attrs pcommon.Map, values []string) (errs error) {
 	for i := 0; i < len((*slice)); i++ {
 		switch ss {
 		case StateSelectorApply:

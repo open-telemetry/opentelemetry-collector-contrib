@@ -42,14 +42,14 @@ func NewAttributeChangeSet(mappings ast.AttributeMap) *AttributeChangeSet {
 func (a AttributeChangeSet) IsMigrator() {}
 
 func (a *AttributeChangeSet) Apply(attrs pcommon.Map) error {
-	return a.do(StateSelectorApply, attrs)
+	return a.Do(StateSelectorApply, attrs)
 }
 
 func (a *AttributeChangeSet) Rollback(attrs pcommon.Map) error {
-	return a.do(StateSelectorRollback, attrs)
+	return a.Do(StateSelectorRollback, attrs)
 }
 
-func (a *AttributeChangeSet) do(ss StateSelector, attrs pcommon.Map) (errs error) {
+func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error) {
 	var (
 		updated = make(map[string]struct{})
 		results = pcommon.NewMap()
@@ -95,14 +95,14 @@ func NewAttributeChangeSetSlice(changes ...*AttributeChangeSet) *AttributeChange
 }
 
 func (slice *AttributeChangeSetSlice) Apply(attrs pcommon.Map) error {
-	return slice.do(StateSelectorApply, attrs)
+	return slice.Do(StateSelectorApply, attrs)
 }
 
 func (slice *AttributeChangeSetSlice) Rollback(attrs pcommon.Map) error {
-	return slice.do(StateSelectorRollback, attrs)
+	return slice.Do(StateSelectorRollback, attrs)
 }
 
-func (slice *AttributeChangeSetSlice) do(ss StateSelector, attrs pcommon.Map) (errs error) {
+func (slice *AttributeChangeSetSlice) Do(ss StateSelector, attrs pcommon.Map) (errs error) {
 	for i := 0; i < len(*slice); i++ {
 		switch ss {
 		case StateSelectorApply:
