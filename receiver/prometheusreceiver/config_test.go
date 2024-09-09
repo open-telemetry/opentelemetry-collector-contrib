@@ -41,11 +41,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	r1 := cfg.(*Config)
-	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
-	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
+	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
+	assert.Equal(t, 5*time.Second, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval))
 	assert.True(t, r1.UseStartTimeMetric)
 	assert.True(t, r1.TrimMetricSuffixes)
-	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
+	assert.Equal(t, "^(.+_)*process_start_time_seconds$", r1.StartTimeMetricRegex)
 	assert.True(t, r1.ReportExtraScrapeMetrics)
 
 	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)

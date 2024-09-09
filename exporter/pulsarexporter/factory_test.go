@@ -18,19 +18,19 @@ import (
 
 func Test_createDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		Endpoint:        defaultBroker,
-		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
+
 		Topic:                   "",
 		Encoding:                defaultEncoding,
 		Authentication:          Authentication{},
 		MaxConnectionsPerBroker: 1,
 		ConnectionTimeout:       5 * time.Second,
 		OperationTimeout:        30 * time.Second,
-	})
+	}, cfg)
 }
 
 func TestWithTracesMarshalers_err(t *testing.T) {
