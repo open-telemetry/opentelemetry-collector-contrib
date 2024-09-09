@@ -115,7 +115,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			return err
 		}
 	}
-	bq := admission.NewBoundedQueue(int64(r.cfg.Arrow.AdmissionLimitMiB<<20), r.cfg.Arrow.WaiterLimit)
+	bq := admission.NewBoundedQueue(r.settings.TracerProvider, int64(r.cfg.Arrow.AdmissionLimitMiB<<20), r.cfg.Arrow.WaiterLimit)
 
 	r.arrowReceiver, err = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
 		var opts []arrowRecord.Option
