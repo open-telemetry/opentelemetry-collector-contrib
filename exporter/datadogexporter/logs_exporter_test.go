@@ -295,6 +295,7 @@ func TestLogsAgentExporter(t *testing.T) {
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("attr", "hello")
 					ldd.Attributes().PutStr("service.name", "service")
+					ldd.Attributes().PutStr("host.name", "test-host")
 					return lrr
 				}(),
 				retry: false,
@@ -318,6 +319,8 @@ func TestLogsAgentExporter(t *testing.T) {
 						"attr":                 "hello",
 						"service":              "service",
 						"service.name":         "service",
+						"host.name":            "test-host",
+						"hostname":             "test-host",
 					},
 					"ddsource": "otlp_log_ingestion",
 					"ddtags":   "otel_source:datadog_exporter",
