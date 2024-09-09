@@ -485,3 +485,63 @@ func TestStats_EndToEnd(t *testing.T) {
 
 	assert.NoError(t, err)
 }
+
+func TestDatadogServices_EndToEnd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	sink := new(consumertest.MetricsSink)
+
+	dd, err := newDataDogReceiver(
+		cfg,
+		receivertest.NewNopSettings(),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	dd.(*datadogReceiver).nextMetricsConsumer = sink
+
+	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, dd.Shutdown(context.Background()))
+	}()
+
+	servicesPayload := []byte(`[
+		{
+			"check": "app.working",
+			"host_name": "hosta",
+			"status": 2,
+			"tags": ["environment:test"]
+		}
+	]`)
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/api/v1/check_run", dd.(*datadogReceiver).address),
+		io.NopCloser(bytes.NewReader(servicesPayload)),
+	)
+	require.NoError(t, err, "Must not error when creating request")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Must not error performing request")
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	got := mds[0]
+	require.Equal(t, 1, got.ResourceMetrics().Len())
+	metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	assert.Equal(t, 1, metrics.Len())
+	metric := metrics.At(0)
+	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+	dps := metric.Gauge().DataPoints()
+	assert.Equal(t, 1, dps.Len())
+	dp := dps.At(0)
+	assert.Equal(t, int64(2), dp.IntValue())
+	assert.Equal(t, 1, dp.Attributes().Len())
+	environment, _ := dp.Attributes().Get("environment")
+	assert.Equal(t, "test", environment.AsString())
+	hostName, _ := got.ResourceMetrics().At(0).Resource().Attributes().Get("host.name")
+	assert.Equal(t, "hosta", hostName.AsString())
+}
