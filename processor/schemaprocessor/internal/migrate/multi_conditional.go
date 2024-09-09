@@ -39,23 +39,21 @@ func NewMultiConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap
 func (ca MultiConditionalAttributeSet) IsMigrator() {}
 
 func (ca *MultiConditionalAttributeSet) Apply(attrs pcommon.Map, keyToCheckVals map[string]string) (errs error) {
-	match, err := ca.check(keyToCheckVals)
-	if err != nil {
-		return err
-	}
-	if match {
-		errs = ca.attrs.Apply(attrs)
-	}
-	return errs
+	return ca.Do(StateSelectorApply, attrs, keyToCheckVals)
 }
 
 func (ca *MultiConditionalAttributeSet) Rollback(attrs pcommon.Map, keyToCheckVals map[string]string) (errs error) {
+	return ca.Do(StateSelectorRollback, attrs, keyToCheckVals)
+}
+
+// Do function applies the attribute changes if the values match the expected values.  Uses the Do method of the embedded AttributeChangeSet
+func (ca *MultiConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, keyToCheckVals map[string]string) (errs error) {
 	match, err := ca.check(keyToCheckVals)
 	if err != nil {
 		return err
 	}
 	if match {
-		errs = ca.attrs.Rollback(attrs)
+		errs = ca.attrs.Do(ss, attrs)
 	}
 	return errs
 }

@@ -177,22 +177,22 @@ func TestTransformerSchemaBySections(t *testing.T) {
 				expected := plogsFromJson(t, outDataPath)
 
 				logs, err := transform.processLogs(context.Background(), inLogs)
-				assert.NoError(t, err)
-				assert.NoError(t, plogtest.CompareLogs(expected, logs), "Must match the expected values")
+				require.NoError(t, err)
+				require.NoError(t, plogtest.CompareLogs(expected, logs), "Must match the expected values")
 			case component.DataTypeMetrics:
 				inMetrics := pmetricsFromJson(t, inDataPath)
 				expected := pmetricsFromJson(t, outDataPath)
 
 				metrics, err := transform.processMetrics(context.Background(), inMetrics)
-				assert.NoError(t, err)
-				assert.NoError(t, pmetrictest.CompareMetrics(expected, metrics), "Must match the expected values")
+				require.NoError(t, err)
+				require.NoError(t, pmetrictest.CompareMetrics(expected, metrics), "Must match the expected values")
 			case component.DataTypeTraces:
 				inTraces := ptracesFromJson(t, inDataPath)
 				expected := ptracesFromJson(t, outDataPath)
 
 				traces, err := transform.processTraces(context.Background(), inTraces)
-				assert.NoError(t, err)
-				assert.NoError(t, ptracetest.CompareTraces(expected, traces), "Must match the expected values")
+				require.NoError(t, err)
+				require.NoError(t, ptracetest.CompareTraces(expected, traces), "Must match the expected values")
 			default:
 				require.FailNow(t, "unrecognized data type")
 				return

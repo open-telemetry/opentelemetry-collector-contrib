@@ -17,23 +17,11 @@ func NewSpanEventConditionalAttributeOperator(migrator migrate.MultiConditionalA
 }
 
 func (o SpanEventConditionalAttributeOperator) IsMigrator() {}
-func (o SpanEventConditionalAttributeOperator) Apply(span ptrace.Span) error {
+
+func (o SpanEventConditionalAttributeOperator) Do(ss migrate.StateSelector, span ptrace.Span) error {
 	for e := 0; e < span.Events().Len(); e++ {
 		event := span.Events().At(e)
-		if err := o.migrator.Apply(event.Attributes(),
-			map[string]string{
-				"event.name": event.Name(),
-				"span.name":  span.Name(),
-			}); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-func (o SpanEventConditionalAttributeOperator) Rollback(span ptrace.Span) error {
-	for e := 0; e < span.Events().Len(); e++ {
-		event := span.Events().At(e)
-		if err := o.migrator.Rollback(event.Attributes(),
+		if err := o.migrator.Do(ss, event.Attributes(),
 			map[string]string{
 				"event.name": event.Name(),
 				"span.name":  span.Name(),

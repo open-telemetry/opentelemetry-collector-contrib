@@ -270,10 +270,10 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 				}
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
-					rev.spanEventsRenameEvents.Rollback(event)
-					if err := rev.spanEventsRenameAttributesOnSpanEvent.Rollback(event.Attributes(), span); err != nil {
-						return err
-					}
+					//rev.spanEventsRenameEvents.Rollback(event)
+					//if err := rev.spanEventsRenameAttributesOnSpanEvent.Rollback(event.Attributes(), span); err != nil {
+					//	return err
+					//}
 					err = rev.all.Rollback(event.Attributes())
 					if err != nil {
 						return err
