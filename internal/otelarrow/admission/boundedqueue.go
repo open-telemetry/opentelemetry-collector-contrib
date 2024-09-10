@@ -10,6 +10,9 @@ import (
 
 	"github.com/google/uuid"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var ErrTooManyWaiters = fmt.Errorf("rejecting request, too many waiters")
@@ -21,6 +24,7 @@ type BoundedQueue struct {
 	currentWaiters  int64
 	lock            sync.Mutex
 	waiters         *orderedmap.OrderedMap[uuid.UUID, waiter]
+	tracer          trace.Tracer
 }
 
 type waiter struct {
@@ -29,11 +33,12 @@ type waiter struct {
 	ID           uuid.UUID
 }
 
-func NewBoundedQueue(maxLimitBytes, maxLimitWaiters int64) *BoundedQueue {
+func NewBoundedQueue(tp trace.TracerProvider, maxLimitBytes, maxLimitWaiters int64) *BoundedQueue {
 	return &BoundedQueue{
 		maxLimitBytes:   maxLimitBytes,
 		maxLimitWaiters: maxLimitWaiters,
 		waiters:         orderedmap.New[uuid.UUID, waiter](),
+		tracer:          tp.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow"),
 	}
 }
 
@@ -87,7 +92,9 @@ func (bq *BoundedQueue) Acquire(ctx context.Context, pendingBytes int64) error {
 	}
 
 	bq.lock.Unlock()
-	// @@@ instrument this code path
+	ctx, span := bq.tracer.Start(ctx, "admission_blocked",
+		trace.WithAttributes(attribute.Int64("pending", pendingBytes)))
+	defer span.End()
 
 	select {
 	case <-curWaiter.readyCh:
@@ -97,6 +104,7 @@ func (bq *BoundedQueue) Acquire(ctx context.Context, pendingBytes int64) error {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()
 		err = fmt.Errorf("context canceled: %w ", ctx.Err())
+		span.SetStatus(codes.Error, "context canceled")
 
 		_, found := bq.waiters.Delete(curWaiter.ID)
 		if !found {
