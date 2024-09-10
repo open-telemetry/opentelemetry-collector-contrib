@@ -42,7 +42,6 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 }
 
 func newSAPMExporter(cfg *Config, params exporter.Settings) (sapmExporter, error) {
-
 	client, err := sapmclient.New(cfg.clientOptions()...)
 	if err != nil {
 		return sapmExporter{}, err
@@ -71,7 +70,6 @@ func newSAPMTracesExporter(cfg *Config, set exporter.Settings) (exporter.Traces,
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +93,9 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 		return nil
 	}
 
-	// All metrics in the pmetric.Metrics will have the same access token because of the BatchPerResourceMetrics.
-	accessToken := se.retrieveAccessToken(rss.At(0))
+	var accessToken string
+	accessToken = se.accessToken(ctx, rss.At(0))
+
 	batches, err := jaeger.ProtoFromTraces(td)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -126,12 +125,20 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 	return nil
 }
 
-func (se *sapmExporter) retrieveAccessToken(md ptrace.ResourceSpans) string {
+func (se *sapmExporter) accessToken(ctx context.Context, md ptrace.ResourceSpans) string {
 	if !se.config.AccessTokenPassthrough {
 		// Nothing to do if token is pass through not configured or resource is nil.
 		return ""
 	}
 
+	if ctxAccessToken, ok := ctx.Value("X-SF-TOKEN").(string); ok {
+		return ctxAccessToken
+	} else {
+		return se.retrieveAccessToken(md)
+	}
+}
+
+func (se *sapmExporter) retrieveAccessToken(md ptrace.ResourceSpans) string {
 	attrs := md.Resource().Attributes()
 	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
 		return accessToken.Str()

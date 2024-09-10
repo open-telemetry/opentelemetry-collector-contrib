@@ -215,6 +215,75 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 	}
 }
 
+func TestSAPMClientTokenAccess(t *testing.T) {
+	tests := []struct {
+		name                   string
+		inContext              bool
+		accessTokenPassthrough bool
+	}{
+		{
+			name:                   "Token in context with passthrough",
+			inContext:              true,
+			accessTokenPassthrough: true,
+		},
+		{
+			name:                   "Token in attributes with passthrough",
+			inContext:              false,
+			accessTokenPassthrough: true,
+		},
+		{
+			name:                   "Token in config wihout passthrough",
+			inContext:              false,
+			accessTokenPassthrough: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tracesReceived := false
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectedToken := "ClientAccessToken"
+				if tt.accessTokenPassthrough && tt.inContext {
+					expectedToken = "SplunkAccessToken"
+				} else if tt.accessTokenPassthrough && !tt.inContext {
+					expectedToken = "TraceAccessToken0"
+				}
+				assert.Contains(t, r.Header.Get("x-sf-token"), expectedToken)
+				status := 200
+				w.WriteHeader(status)
+				tracesReceived = true
+			}))
+			defer func() {
+				assert.True(t, tracesReceived, "Test server never received traces.")
+			}()
+			defer server.Close()
+
+			cfg := &Config{
+				Endpoint:    server.URL,
+				AccessToken: "ClientAccessToken",
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: tt.accessTokenPassthrough,
+				},
+			}
+			params := exportertest.NewNopSettings()
+
+			se, err := newSAPMExporter(cfg, params)
+			assert.NoError(t, err)
+			assert.NotNil(t, se, "failed to create trace exporter")
+
+			trace, testTraceErr := buildTestTrace()
+			require.NoError(t, testTraceErr)
+			var ctx context.Context
+			if tt.inContext {
+				ctx = context.WithValue(context.Background(), "X-SF-TOKEN", "SplunkAccessToken")
+			} else {
+				ctx = context.Background()
+			}
+			err = se.pushTraceData(ctx, trace)
+			require.NoError(t, err)
+		})
+	}
+}
+
 func decompress(body io.Reader, compression string) ([]byte, error) {
 	switch compression {
 	case "":
