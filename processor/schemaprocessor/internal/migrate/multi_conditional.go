@@ -72,6 +72,10 @@ func (ca *MultiConditionalAttributeSet) check(keyToCheckVals map[string]string) 
 		if !ok {
 			return false, errors.New("passed in a key that doesn't exist in MultiConditionalAttributeSet")
 		}
+		// if there's nothing in here, match all values
+		if len(valToMatch) == 0 {
+			continue
+		}
 		if _, ok := valToMatch[inVal]; !ok {
 			return false,  nil
 		}

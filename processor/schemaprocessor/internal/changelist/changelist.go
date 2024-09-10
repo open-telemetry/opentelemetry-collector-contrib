@@ -32,7 +32,7 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			default:
 				return errors.New("unsupported signal type")
 			}
-		case *operator.SpanEventConditionalAttributeOperator:
+		case operator.SpanEventConditionalAttributeOperator:
 			if span, ok := signal.(ptrace.Span); ok {
 				if err := thisMigrator.Do(ss, span); err != nil {
 					return err
