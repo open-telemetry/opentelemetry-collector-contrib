@@ -95,3 +95,76 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, file.Name()+" is not a directory")
 }
+
+func TestCompactionDirectory(t *testing.T) {
+	tests := []struct {
+		name     string
+		validate func(*testing.T)
+	}{
+		{
+			name: "directory-must-exists-error",
+			validate: func(t *testing.T) {
+				f := NewFactory()
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()             // actual directory
+				cfg.Compaction.Directory = "/not/a/dir" // not a directory
+				cfg.Compaction.OnRebound = true
+				cfg.Compaction.OnStart = true
+
+				err := component.ValidateConfig(cfg)
+				require.Error(t, err)
+				require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
+			},
+		},
+		{
+			name: "directory-must-exists-error-on-start",
+			validate: func(t *testing.T) {
+				f := NewFactory()
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()             // actual directory
+				cfg.Compaction.Directory = "/not/a/dir" // not a directory
+				cfg.Compaction.OnRebound = false
+				cfg.Compaction.OnStart = true
+
+				err := component.ValidateConfig(cfg)
+				require.Error(t, err)
+				require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
+			},
+		},
+		{
+			name: "directory-must-exists-error-on-rebound",
+			validate: func(t *testing.T) {
+				f := NewFactory()
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()             // actual directory
+				cfg.Compaction.Directory = "/not/a/dir" // not a directory
+				cfg.Compaction.OnRebound = true
+				cfg.Compaction.OnStart = false
+
+				err := component.ValidateConfig(cfg)
+				require.Error(t, err)
+				require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
+			},
+		},
+		{
+			name: "compaction-disabled-no-error",
+			validate: func(t *testing.T) {
+				f := NewFactory()
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()             // actual directory
+				cfg.Compaction.Directory = "/not/a/dir" // not a directory
+				cfg.Compaction.OnRebound = false
+				cfg.Compaction.OnStart = false
+
+				err := component.ValidateConfig(cfg)
+				require.NoError(t, err)
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.validate(t)
+		})
+	}
+
+}
