@@ -55,6 +55,11 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			}
 		case *migrate.SignalNameChange:
 			switch namedSignal := signal.(type) {
+			case ptrace.Span:
+				for e := 0; e < namedSignal.Events().Len(); e++ {
+					event := namedSignal.Events().At(e)
+					thisMigrator.Do(ss, event)
+				}
 			case alias.NamedSignal:
 				thisMigrator.Do(ss, namedSignal)
 			}

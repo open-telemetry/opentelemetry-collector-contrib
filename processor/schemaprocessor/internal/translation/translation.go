@@ -245,7 +245,6 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					if err != nil {
 						return err
 					}
-					rev.spanEventsRenameEvents.Apply(event)
 				}
 				if err := rev.spanEvents.Apply(span); err != nil {
 					return err
@@ -256,7 +255,6 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 				}
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
-					rev.spanEventsRenameEvents.Rollback(event)
 					err = rev.all.Rollback(event.Attributes())
 					if err != nil {
 						return err

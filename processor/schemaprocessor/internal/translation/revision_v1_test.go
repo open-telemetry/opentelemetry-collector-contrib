@@ -39,7 +39,6 @@ func TestNewRevisionV1(t *testing.T) {
 				resources:                             migrate.NewAttributeChangeSetSlice(),
 				spans:                                 migrate.NewConditionalAttributeSetSlice(),
 				spanEvents: 				           &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				spanEventsRenameEvents:                migrate.NewSignalNameChangeSlice(),
 				metricsRenameAttributes:               migrate.NewConditionalAttributeSetSlice(),
 				metricsRenameMetrics:                  migrate.NewSignalNameChangeSlice(),
 				logs:									&changelist.ChangeList{make([]migrate.Migrator, 0)},
@@ -192,11 +191,6 @@ func TestNewRevisionV1(t *testing.T) {
 						),
 					),
 				}},
-				spanEventsRenameEvents: migrate.NewSignalNameChangeSlice(
-					migrate.NewSignalNameChange(map[string]string{
-						"started": "application started",
-					}),
-				),
 				metricsRenameAttributes: migrate.NewConditionalAttributeSetSlice(
 					migrate.NewConditionalAttributeSet(
 						map[string]string{
