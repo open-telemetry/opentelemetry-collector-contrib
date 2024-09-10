@@ -10,27 +10,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 )
 
-type logsUnmarshaler interface {
-	UnmarshalLogs([]byte) (plog.Logs, error)
-}
-
 type AzureResourceLogsEventUnmarshaler struct {
-	unmarshaler logsUnmarshaler
+	unmarshaler *azure.ResourceLogsUnmarshaler
 }
 
-func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, applySemanticConventions bool) eventLogsUnmarshaler {
-
-	if applySemanticConventions {
-		return AzureResourceLogsEventUnmarshaler{
-			unmarshaler: &azurelogs.ResourceLogsUnmarshaler{
-				Version: buildInfo.Version,
-				Logger:  logger,
-			},
-		}
-	}
+func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventLogsUnmarshaler {
 
 	return AzureResourceLogsEventUnmarshaler{
 		unmarshaler: &azure.ResourceLogsUnmarshaler{
@@ -38,7 +24,6 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 			Logger:  logger,
 		},
 	}
-
 }
 
 // UnmarshalLogs takes a byte array containing a JSON-encoded
