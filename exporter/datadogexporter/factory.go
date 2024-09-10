@@ -186,7 +186,7 @@ func defaultClientConfig() confighttp.ClientConfig {
 
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
-	return datadogconfig.CreateDefaultConfig().(*datadogconfig.Config)
+	return datadogconfig.CreateDefaultConfig()
 }
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to

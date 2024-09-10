@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: datadogexporter
+component: pkg/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: |
@@ -26,4 +26,4 @@ subtext: |
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [api]
