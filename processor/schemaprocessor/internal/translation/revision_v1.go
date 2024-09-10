@@ -23,7 +23,6 @@ type RevisionV1 struct {
 	spanEvents          			  *changelist.ChangeList
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
 	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
-	logsRenameAttributes              *migrate.AttributeChangeSetSlice
 	logs 							  *changelist.ChangeList
 }
 
