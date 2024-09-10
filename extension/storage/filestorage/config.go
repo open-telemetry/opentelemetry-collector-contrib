@@ -91,13 +91,13 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.CreateDirectory {
-		if permissions, err := strconv.ParseInt(cfg.DirectoryPermissions, 8, 32); err != nil {
+		permissions, err := strconv.ParseInt(cfg.DirectoryPermissions, 8, 32)
+		if err != nil {
 			return errInvalidOctal
 		} else if permissions&int64(os.ModePerm) != permissions {
 			return errInvalidPermissionBits
-		} else {
-			cfg.directoryPermissionsParsed = permissions
 		}
+		cfg.directoryPermissionsParsed = permissions
 	}
 
 	return nil
