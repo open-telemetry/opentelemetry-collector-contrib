@@ -65,54 +65,54 @@ func (dp Histogram) Add(in Histogram) Histogram {
 	return dp
 }
 
-type highLow struct {
-	low  int32
-	high int32
+type bounds struct {
+	lower int32
+	upper int32
 }
 
 // with is an accessory for Merge() to calculate ideal combined scale.
-func (h *highLow) with(o highLow) highLow {
+func (b bounds) with(o bounds) bounds {
 	if o.empty() {
-		return *h
+		return b
 	}
-	if h.empty() {
+	if b.empty() {
 		return o
 	}
-	return highLow{
-		low:  min(h.low, o.low),
-		high: max(h.high, o.high),
+	return bounds{
+		lower: min(b.lower, o.lower),
+		upper: max(b.upper, o.upper),
 	}
 }
 
-// empty indicates whether there are any values in a highLow.
-func (h *highLow) empty() bool {
-	return h.low > h.high
+// empty indicates whether there are any values in a bounds.
+func (b bounds) empty() bool {
+	return b.lower > b.upper
 }
 
-// highLowAtScale is an accessory for Merge() to calculate ideal combined scale.
-func (dp ExpHistogram) highLowAtScale(b expo.Buckets, scale int32) highLow {
+// boundsAtScale is an accessory for Add() to calculate ideal combined scale.
+func (dp ExpHistogram) boundsAtScale(b expo.Buckets, scale int32) bounds {
 	if b.BucketCounts().Len() == 0 {
-		return highLow{
-			low:  0,
-			high: -1,
+		return bounds{
+			lower: 0,
+			upper: -1,
 		}
 	}
 	shift := dp.Scale() - scale
 	a := expo.Abs(b)
-	return highLow{
-		low:  int32(a.Lower()) >> shift,
-		high: int32(a.Upper()) >> shift,
+	return bounds{
+		lower: int32(a.Lower()) >> shift,
+		upper: int32(a.Upper()) >> shift,
 	}
 }
 
-// changeScale computes how much downscaling is needed by shifting the
-// high and low values until they are separated by no more than size.
-func changeScale(hl highLow, size int) int32 {
+// downscaleNeeded computes how much downscaling is needed by shifting the
+// upper and lower bounds until they are separated by no more than size.
+func downscaleNeeded(b bounds, size int) int32 {
 	var change int32
 
-	for hl.high-hl.low > int32(size) {
-		hl.high >>= 1
-		hl.low >>= 1
+	for b.upper-b.lower > int32(size) {
+		b.upper >>= 1
+		b.lower >>= 1
 		change++
 	}
 	return change
@@ -128,15 +128,15 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	// first, calculate the highest and lowest indices for each bucket, given the candidate min scale.
 	// then, calculate how much downscaling is needed to fit the merged range within max bucket count.
 	// finally, perform the actual downscaling.
-	hlp := dp.highLowAtScale(dp.Positive(), minScale)
-	hlp = hlp.with(in.highLowAtScale(in.Positive(), minScale))
+	posBounds := dp.boundsAtScale(dp.Positive(), minScale)
+	posBounds = posBounds.with(in.boundsAtScale(in.Positive(), minScale))
 
-	hln := dp.highLowAtScale(dp.Negative(), minScale)
-	hln = hln.with(in.highLowAtScale(in.Negative(), minScale))
+	negBounds := dp.boundsAtScale(dp.Negative(), minScale)
+	negBounds = negBounds.with(in.boundsAtScale(in.Negative(), minScale))
 
 	minScale = min(
-		minScale-changeScale(hlp, dp.MaxSize),
-		minScale-changeScale(hln, dp.MaxSize),
+		minScale-downscaleNeeded(posBounds, dp.MaxSize),
+		minScale-downscaleNeeded(negBounds, dp.MaxSize),
 	)
 
 	from, to := expo.Scale(dp.Scale()), expo.Scale(minScale)
