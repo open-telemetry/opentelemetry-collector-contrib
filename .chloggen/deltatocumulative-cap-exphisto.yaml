@@ -7,7 +7,7 @@ change_type: enhancement
 component: deltatocumulativeprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: support a maximum size parameter for exp histograms to cap the number of buckets
+note: cap the number of exponential histogram buckets to 160
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [33277]
