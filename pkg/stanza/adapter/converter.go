@@ -60,7 +60,7 @@ type Converter struct {
 
 	stopOnce sync.Once
 
-	// converterChan is an internal communication channel signalling stop was called
+	// converterChan is an internal communication channel signaling stop was called
 	// prevents sending to closed channels
 	converterChan chan struct{}
 
