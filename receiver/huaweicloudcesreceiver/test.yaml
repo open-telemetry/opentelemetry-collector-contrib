@@ -14,38 +14,38 @@ resourceMetrics:
           value:
             stringValue: SYS.ECS
     scopeMetrics:
-      - scope:
-          name: huawei_cloud_ces
-          version: v1
-        metrics:
-          - name: cpu_util
-            gauge:
+      - metrics:
+          - gauge:
               dataPoints:
                 - asDouble: 10
-                  timeUnixNano: "1556625610000000000"
+                  timeUnixNano: "1000000"
                 - asDouble: 20
-                  timeUnixNano: "1556625715000000000"                  
-            unit: "%"
+                  timeUnixNano: "2000000"
             metadata:
               - key: instance_id
                 value:
                   stringValue: faea5b75-e390-4e2b-8733-9226a9026070
-      - scope:
+            name: cpu_util
+            unit: '%'
+        scope:
           name: huawei_cloud_ces
-          version: v1                  
-        metrics:
-          - name: mem_util
-            gauge:
+          version: v1
+      - metrics:
+          - gauge:
               dataPoints:
-                - asDouble: 30
-                  timeUnixNano: "1556625610000000000"
-                - asDouble: 40
-                  timeUnixNano: "1556625715000000000"                  
-            unit: "%"
+                - asDouble: 10
+                  timeUnixNano: "1000000"
+                - asDouble: 20
+                  timeUnixNano: "2000000"
             metadata:
               - key: instance_id
                 value:
                   stringValue: abcea5b75-e390-4e2b-8733-9226a9026070
+            name: mem_util
+            unit: '%'
+        scope:
+          name: huawei_cloud_ces
+          version: v1
   - resource:
       attributes:
         - key: cloud.provider
@@ -59,21 +59,21 @@ resourceMetrics:
             stringValue: us-east-2
         - key: service.namespace
           value:
-            stringValue: SYS.VPC            
+            stringValue: SYS.VPC
     scopeMetrics:
-      - scope:
-          name: huawei_cloud_ces
-          version: v1
-        metrics:
-          - name: upstream_bandwidth_usage
-            gauge:
+      - metrics:
+          - gauge:
               dataPoints:
-                - asDouble: 50
-                  timeUnixNano: "1556625610000000000"
-                - asDouble: 60
-                  timeUnixNano: "1556625715000000000"                  
-            unit: "%"
+                - asDouble: 10
+                  timeUnixNano: "1000000"
+                - asDouble: 20
+                  timeUnixNano: "2000000"
             metadata:
               - key: publicip_id
                 value:
                   stringValue: faea5b75-e390-4e2b-8733-9226a9026070
+            name: upstream_bandwidth_usage
+            unit: '%'
+        scope:
+          name: huawei_cloud_ces
+          version: v1
