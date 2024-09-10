@@ -616,6 +616,22 @@ func TestDirectoryCreation(t *testing.T) {
 				require.NoDirExists(t, cfg.Directory)
 			},
 		},
+		{
+			name: "create directory true - rwxr--r-- (should be octal string)",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				tempDir := t.TempDir()
+				storageDir := filepath.Join(tempDir, uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = false
+				cfg.DirectoryPermissions = "rwxr--r--"
+				require.Error(t, cfg.Validate())
+				return cfg
+			},
+			validate: func(t *testing.T, cfg *Config) {
+				require.NoDirExists(t, cfg.Directory)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
