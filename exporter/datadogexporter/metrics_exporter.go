@@ -60,7 +60,7 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 	if isMetricRemappingEnabled() {
 		options = append(options, otlpmetrics.WithRemapping())
 	} else {
-		set.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog metrics.")
+		set.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics.")
 	}
 
 	if cfg.Metrics.HistConfig.SendAggregations {
