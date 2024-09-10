@@ -4,6 +4,7 @@ awskinesis:
   max_record_size: 1000
   aws:
     stream_name: test-stream
+    stream_arn: arn:aws:kinesis:mars-1:123456789012:stream/test-stream
     region: mars-1
     role: arn:test-role
     kinesis_endpoint: awskinesis.mars-1.aws.galactic

@@ -18,6 +18,7 @@ import (
 
 type batcher struct {
 	stream *string
+	arn    *string
 
 	client Kinesis
 	log    *zap.Logger
@@ -32,12 +33,20 @@ var (
 	permanentErrInvalidArgument  = new(*types.InvalidArgumentException)
 )
 
-func NewBatcher(kinesisAPI Kinesis, stream string, opts ...BatcherOptions) (Batcher, error) {
+func NewBatcher(kinesisAPI Kinesis, stream string, arn string, opts ...BatcherOptions) (Batcher, error) {
 	be := &batcher{
-		stream: aws.String(stream),
 		client: kinesisAPI,
 		log:    zap.NewNop(),
 	}
+
+	if stream != "" {
+		be.stream = aws.String(stream)
+	}
+
+	if arn != "" {
+		be.arn = aws.String(arn)
+	}
+
 	for _, opt := range opts {
 		if err := opt(be); err != nil {
 			return nil, err
@@ -50,6 +59,7 @@ func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
 	for _, records := range bt.Chunk() {
 		out, err := b.client.PutRecords(ctx, &kinesis.PutRecordsInput{
 			StreamName: b.stream,
+			StreamARN:  b.arn,
 			Records:    records,
 		})
 
@@ -75,6 +85,7 @@ func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
 func (b *batcher) Ready(ctx context.Context) error {
 	_, err := b.client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
 		StreamName: b.stream,
+		StreamARN:  b.arn,
 	})
 	return err
 }

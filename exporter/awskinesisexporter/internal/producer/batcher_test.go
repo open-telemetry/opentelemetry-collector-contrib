@@ -68,13 +68,32 @@ func TestBatchedExporter(t *testing.T) {
 
 	cases := []struct {
 		name         string
+		arn          string
 		PutRecordsOP func(*kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error)
 		shouldErr    bool
 		isPermanent  bool
 	}{
-		{name: "Successful put to kinesis", PutRecordsOP: SuccessfulPutRecordsOperation, shouldErr: false, isPermanent: false},
-		{name: "Invalid kinesis configuration", PutRecordsOP: HardFailedPutRecordsOperation, shouldErr: true, isPermanent: true},
-		{name: "Test throttled kinesis operation", PutRecordsOP: TransiantPutRecordsOperation(2), shouldErr: true, isPermanent: false},
+		{
+			name:         "Successful put to kinesis",
+			arn:          "arn:aws:kinesis:mars-1:123456789012:stream/test-stream",
+			PutRecordsOP: SuccessfulPutRecordsOperation,
+			shouldErr:    false,
+			isPermanent:  false,
+		},
+		{
+			name:         "Invalid kinesis configuration",
+			arn:          "arn:aws:kinesis:mars-1:123456789012:stream/test-stream",
+			PutRecordsOP: HardFailedPutRecordsOperation,
+			shouldErr:    true,
+			isPermanent:  true,
+		},
+		{
+			name:         "Test throttled kinesis operation",
+			arn:          "arn:aws:kinesis:mars-1:123456789012:stream/test-stream",
+			PutRecordsOP: TransiantPutRecordsOperation(2),
+			shouldErr:    true,
+			isPermanent:  false,
+		},
 	}
 
 	bt := batch.New()
@@ -88,6 +107,7 @@ func TestBatchedExporter(t *testing.T) {
 			be, err := producer.NewBatcher(
 				SetPutRecordsOperation(tc.PutRecordsOP),
 				tc.name,
+				tc.arn,
 				producer.WithLogger(zaptest.NewLogger(t)),
 			)
 			require.NoError(t, err, "Must not error when creating BatchedExporter")
