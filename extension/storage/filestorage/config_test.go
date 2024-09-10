@@ -97,73 +97,64 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 }
 
 func TestCompactionDirectory(t *testing.T) {
+	f := NewFactory()
 	tests := []struct {
-		name     string
-		validate func(*testing.T)
+		name   string
+		config func(*testing.T) *Config
+		err    error
 	}{
 		{
 			name: "directory-must-exists-error",
-			validate: func(t *testing.T) {
-				f := NewFactory()
+			config: func(t *testing.T) *Config {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Directory = t.TempDir()             // actual directory
 				cfg.Compaction.Directory = "/not/a/dir" // not a directory
 				cfg.Compaction.OnRebound = true
 				cfg.Compaction.OnStart = true
-
-				err := component.ValidateConfig(cfg)
-				require.Error(t, err)
-				require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
+				return cfg
 			},
+			err: os.ErrNotExist,
 		},
 		{
 			name: "directory-must-exists-error-on-start",
-			validate: func(t *testing.T) {
-				f := NewFactory()
+			config: func(t *testing.T) *Config {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Directory = t.TempDir()             // actual directory
 				cfg.Compaction.Directory = "/not/a/dir" // not a directory
 				cfg.Compaction.OnRebound = false
 				cfg.Compaction.OnStart = true
-
-				err := component.ValidateConfig(cfg)
-				require.Error(t, err)
-				require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
+				return cfg
 			},
+			err: os.ErrNotExist,
 		},
 		{
 			name: "directory-must-exists-error-on-rebound",
-			validate: func(t *testing.T) {
-				f := NewFactory()
+			config: func(t *testing.T) *Config {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Directory = t.TempDir()             // actual directory
 				cfg.Compaction.Directory = "/not/a/dir" // not a directory
 				cfg.Compaction.OnRebound = true
 				cfg.Compaction.OnStart = false
-
-				err := component.ValidateConfig(cfg)
-				require.Error(t, err)
-				require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
+				return cfg
 			},
+			err: os.ErrNotExist,
 		},
 		{
 			name: "compaction-disabled-no-error",
-			validate: func(t *testing.T) {
-				f := NewFactory()
+			config: func(t *testing.T) *Config {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Directory = t.TempDir()             // actual directory
 				cfg.Compaction.Directory = "/not/a/dir" // not a directory
 				cfg.Compaction.OnRebound = false
 				cfg.Compaction.OnStart = false
-
-				err := component.ValidateConfig(cfg)
-				require.NoError(t, err)
+				return cfg
 			},
+			err: nil,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			test.validate(t)
+			require.ErrorIs(t, component.ValidateConfig(test.config(t)), test.err)
 		})
 	}
 
