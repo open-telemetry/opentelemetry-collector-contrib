@@ -10,10 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/metadata"
 )
@@ -49,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Timeout:              2 * time.Second,
 				FSync:                true,
-				CreateDirectory: true,
+				CreateDirectory:      false,
 				DirectoryPermissions: "0750",
 			},
 		},
@@ -96,4 +98,114 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 	err = component.ValidateConfig(cfg)
 	require.Error(t, err)
 	require.EqualError(t, err, file.Name()+" is not a directory")
+}
+
+func TestDirectoryCreateConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		config func(*testing.T, extension.Factory) *Config
+		err    error
+	}{
+		{
+			name: "create directory true - no error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				storageDir := filepath.Join(t.TempDir(), uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = true
+				return cfg
+			},
+			err: nil,
+		},
+		{
+			name: "create directory true - no error - 0700 permissions",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				storageDir := filepath.Join(t.TempDir(), uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = true
+				cfg.DirectoryPermissions = "0700"
+				return cfg
+			},
+			err: nil,
+		},
+		{
+			name: "create directory false - error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				storageDir := filepath.Join(t.TempDir(), uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = false
+				return cfg
+			},
+			err: os.ErrNotExist,
+		},
+		{
+			name: "create directory true - invalid permissions",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				storageDir := filepath.Join(t.TempDir(), uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = true
+				cfg.DirectoryPermissions = "invalid string"
+				return cfg
+			},
+			err: errInvalidOctal,
+		},
+		{
+			name: "create directory true - rwxr--r-- (should be octal string)",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				storageDir := filepath.Join(t.TempDir(), uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = true
+				cfg.DirectoryPermissions = "rwxr--r--"
+				return cfg
+			},
+			err: errInvalidOctal,
+		},
+		{
+			name: "create directory true - 0778 (invalid octal)",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				storageDir := filepath.Join(t.TempDir(), uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = true
+				cfg.DirectoryPermissions = "0778"
+				return cfg
+			},
+			err: errInvalidOctal,
+		},
+		{
+			name: "create directory true - 07771 (invalid permission bits)",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				storageDir := filepath.Join(t.TempDir(), uuid.NewString())
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = storageDir
+				cfg.CreateDirectory = true
+				cfg.DirectoryPermissions = "07771"
+				return cfg
+			},
+			err: errInvalidPermissionBits,
+		},
+		{
+			name: "create directory false - 07771 (invalid string) - no error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.CreateDirectory = false
+				cfg.DirectoryPermissions = "07771"
+				return cfg
+
+			},
+			err: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := NewFactory()
+			config := tt.config(t, f)
+			require.ErrorIs(t, config.Validate(), tt.err)
+		})
+	}
 }

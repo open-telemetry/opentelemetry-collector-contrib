@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,14 +33,8 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 		} else {
 			dirs = []string{config.Directory}
 		}
-		perm, err := strconv.ParseInt(config.DirectoryPermissions, 8, 32)
-		if err != nil {
-			// This shouldn’t happen, but as a precautionary step.
-			logger.Debug("Error while parsing permissions, switching to default mode (0750)", zap.String("DirectoryPerms", config.DirectoryPermissions))
-			perm = 0750
-		}
 		for _, dir := range dirs {
-			if err := createDirectory(dir, os.FileMode(perm)); err != nil {
+			if err := createDirectory(dir, os.FileMode(config.directoryPermissionsParsed)); err != nil {
 				return nil, err
 			}
 		}

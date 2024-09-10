@@ -12,6 +12,9 @@ import (
 	"time"
 )
 
+var errInvalidOctal = errors.New("directory_permissions value must be a valid octal representation")
+var errInvalidPermissionBits = errors.New("directory_permissions contain invalid bits for file access")
+
 // Config defines configuration for file storage extension.
 type Config struct {
 	Directory string        `mapstructure:"directory,omitempty"`
@@ -23,8 +26,9 @@ type Config struct {
 	FSync bool `mapstructure:"fsync,omitempty"`
 
 	// CreateDirectory specifies that the directory should be created automatically by the extension on start
-	CreateDirectory      bool   `mapstructure:"create_directory,omitempty"`
-	DirectoryPermissions string `mapstructure:"directory_permissions,omitempty"`
+	CreateDirectory            bool   `mapstructure:"create_directory,omitempty"`
+	DirectoryPermissions       string `mapstructure:"directory_permissions,omitempty"`
+	directoryPermissionsParsed int64  `mapstructure:"-,omitempty"`
 }
 
 // CompactionConfig defines configuration for optional file storage compaction.
@@ -86,8 +90,14 @@ func (cfg *Config) Validate() error {
 		return errors.New("compaction check interval must be positive when rebound compaction is set")
 	}
 
-	if _, err := strconv.ParseInt(cfg.DirectoryPermissions, 8, 32); err != nil {
-		return errors.New("directory_permissions value must be a valid octal representation of file permissions")
+	if cfg.CreateDirectory {
+		if permissions, err := strconv.ParseInt(cfg.DirectoryPermissions, 8, 32); err != nil {
+			return errInvalidOctal
+		} else if permissions&int64(os.ModePerm) != permissions {
+			return errInvalidPermissionBits
+		} else {
+			cfg.directoryPermissionsParsed = permissions
+		}
 	}
 
 	return nil
