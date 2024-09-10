@@ -132,6 +132,18 @@ linters-settings:
   predeclared:
     ignore: copy
 
+  testifylint:
+    disable:
+      - float-compare
+      - formatter
+      - go-require
+      - negative-positive
+      - require-error
+      - suite-dont-use-pkg
+      - suite-subtest-run
+      - useless-assert
+    enable-all: true
+
 linters:
   enable:
     - decorder
@@ -152,6 +164,7 @@ linters:
     - revive
     - staticcheck
     - tenv
+    - testifylint
     - unconvert
     - unparam
     - unused

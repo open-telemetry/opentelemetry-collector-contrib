@@ -218,7 +218,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 
 			for tenant, request := range requests {
 				want, ok := tt.expected[tenant]
-				assert.Equal(t, ok, true)
+				assert.True(t, ok)
 
 				streams := request.Streams
 				for s := 0; s < len(streams); s++ {

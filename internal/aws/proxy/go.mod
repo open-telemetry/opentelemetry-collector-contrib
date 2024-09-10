@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.108.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/config/confignet v0.108.1
-	go.opentelemetry.io/collector/config/configtls v1.14.1
+	go.opentelemetry.io/collector/config/confignet v0.108.2-0.20240909182537-32cff9f7f331
+	go.opentelemetry.io/collector/config/configtls v1.14.2-0.20240909182537-32cff9f7f331
 	go.uber.org/zap v1.27.0
 )
 
@@ -17,8 +17,8 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.14.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.14.1 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240909182537-32cff9f7f331 // indirect
+	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240909182537-32cff9f7f331 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

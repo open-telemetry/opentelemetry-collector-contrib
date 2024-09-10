@@ -1,13 +1,93 @@
 solarwindsapmsettings:
 solarwindsapmsettings/1:
-  endpoint: "apm.collector.apj-01.cloud.solarwinds.com:443"
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
   key: "something:name"
   interval: 10s
 solarwindsapmsettings/2:
-  endpoint: "apm.collector.eu-01.cloud.solarwinds.com"
-  key: "something"
-  interval: "4s"
+  endpoint: "apm.collector.na-02.cloud.solarwinds.com:443"
+  key: "something:name"
+  interval: 10s
 solarwindsapmsettings/3:
+  endpoint: "apm.collector.eu-01.cloud.solarwinds.com:443"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/4:
+  endpoint: "apm.collector.apj-01.cloud.solarwinds.com:443"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/5:
+  endpoint: "apm.collector.na-01.st-ssp.solarwinds.com:443"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/6:
+  endpoint: "apm.collector.na-01.dev-ssp.solarwinds.com:443"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/7:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/8:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:a:b"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/9:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:port"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/10:
+  endpoint: "apm.collector..cloud.solarwinds.com:443"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/11:
+  endpoint: ":443"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/12:
+  endpoint: ":"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/13:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/14:
+  endpoint: "::"
+  key: "something:name"
+  interval: 10s
+solarwindsapmsettings/15:
   endpoint: ""
   key: "something:name"
+  interval: 10s
+solarwindsapmsettings/16:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+  key: ""
+  interval: 10s
+solarwindsapmsettings/17:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+  key: ":"
+  interval: 10s
+solarwindsapmsettings/18:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+  key: "::"
+  interval: 10s
+solarwindsapmsettings/19:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+  key: ":name"
+  interval: 10s
+solarwindsapmsettings/20:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+  key: "token:"
+  interval: 10s
+solarwindsapmsettings/21:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+  key: "token:name"
+  interval: 4s
+solarwindsapmsettings/22:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+  key: "token:name"
   interval: 61s
+solarwindsapmsettings/23:
+  endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+  key: "token:name"
+  interval: 30

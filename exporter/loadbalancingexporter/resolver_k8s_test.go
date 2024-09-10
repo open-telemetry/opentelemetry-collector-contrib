@@ -245,7 +245,7 @@ func Test_newK8sResolver(t *testing.T) {
 			_, tb := getTelemetryAssets(t)
 			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout, tb)
 			if tt.wantErr != nil {
-				require.Error(t, err, tt.wantErr)
+				require.ErrorIs(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.wantNil, got == nil)

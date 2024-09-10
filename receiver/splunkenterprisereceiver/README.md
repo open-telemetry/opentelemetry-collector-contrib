@@ -59,15 +59,15 @@ receivers:
             timeout: 45s
 
 exporters:
-  logging:
-    loglevel: info
+  debug:
+    verbosity: basic
 
 service:
   extensions: [basicauth/indexer, basicauth/cluster_master]
   pipelines:
     metrics:
       receivers: [splunkenterprise]
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 For a full list of settings exposed by this receiver please look [here](./config.go) with a detailed configuration [here](./testdata/config.yaml).
