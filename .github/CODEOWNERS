@@ -236,7 +236,7 @@ receiver/filelogreceiver/                                           @open-teleme
 receiver/filestatsreceiver/                                         @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                                      @open-telemetry/collector-contrib-approvers @JonathanWamsley @djaglowski
 receiver/fluentforwardreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/githubreceiver/                                            @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel @crobert-1
+receiver/githubreceiver/                                            @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel @crobert-1 @TylerHelmuth
 receiver/googlecloudmonitoringreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth @abhishek-at-cloudwerx
 receiver/googlecloudpubsubreceiver/                                 @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/haproxyreceiver/                                           @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy

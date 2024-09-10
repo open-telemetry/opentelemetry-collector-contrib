@@ -25,7 +25,7 @@ var transformFuncWithError = func(v any) (any, error) {
 
 func TestResync(t *testing.T) {
 	o := NewObjStore(transformFunc, zap.NewNop())
-	assert.Nil(t, o.Resync())
+	assert.NoError(t, o.Resync())
 }
 
 func TestGet(t *testing.T) {

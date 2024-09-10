@@ -46,11 +46,6 @@ func TestTopicShutdown_closed(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
-func TestTopicScraper_Name(t *testing.T) {
-	s := topicScraper{}
-	assert.Equal(t, s.Name(), topicsScraperName)
-}
-
 func TestTopicScraper_createsScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient

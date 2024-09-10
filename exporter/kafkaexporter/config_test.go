@@ -335,8 +335,8 @@ func Test_saramaProducerCompressionCodec(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			c, err := saramaProducerCompressionCodec(test.compression)
-			assert.Equal(t, c, test.expectedCompression)
-			assert.Equal(t, err, test.expectedError)
+			assert.Equal(t, test.expectedCompression, c)
+			assert.Equal(t, test.expectedError, err)
 		})
 	}
 }
