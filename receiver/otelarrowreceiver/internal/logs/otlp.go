@@ -55,7 +55,9 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	}
 	defer func() {
 		releaseErr := r.boundedQueue.Release(sizeBytes)
-		r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
+		if releaseErr != nil {
+			r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
+		}
 	}()
 
 	err = r.nextConsumer.ConsumeLogs(ctx, ld)

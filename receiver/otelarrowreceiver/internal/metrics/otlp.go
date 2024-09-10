@@ -55,7 +55,9 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	}
 	defer func() {
 		releaseErr := r.boundedQueue.Release(sizeBytes)
-		r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
+		if releaseErr != nil {
+			r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
+		}
 	}()
 
 	err = r.nextConsumer.ConsumeMetrics(ctx, md)
