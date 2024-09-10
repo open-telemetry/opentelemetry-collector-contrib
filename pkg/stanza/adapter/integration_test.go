@@ -151,7 +151,10 @@ func TestEmitterToConsumer(t *testing.T) {
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer func() { require.NoError(t, logsReceiver.Shutdown(context.Background())) }()
+	defer func() {
+		require.NoError(t, logsReceiver.emitter.Stop())
+		require.NoError(t, logsReceiver.Shutdown(context.Background()))
+	}()
 
 	go func() {
 		ctx := context.Background()
