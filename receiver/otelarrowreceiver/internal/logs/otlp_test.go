@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -151,7 +152,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 	})
 	require.NoError(t, err)
 
-	bq := admission.NewBoundedQueue(maxBytes, maxWaiters)
+	bq := admission.NewBoundedQueue(noop.NewTracerProvider(), maxBytes, maxWaiters)
 	r := New(zap.NewNop(), lc, obsrecv, bq)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
