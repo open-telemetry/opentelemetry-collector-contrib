@@ -17,7 +17,7 @@ type Config struct {
 	Traces TracesConfig `mapstructure:"traces"`
 }
 
-// Deprecated: [v0.109.0] Use `datadog.TracesConnectorConfig` instead.
+// Deprecated: [v0.110.0] Use `datadog.TracesConnectorConfig` instead.
 // TracesConfig defines the traces specific configuration options
 type TracesConfig = datadogconfig.TracesConnectorConfig
 

@@ -57,11 +57,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.109.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.0
-	go.opentelemetry.io/collector/config/configauth v0.109.0
+	go.opentelemetry.io/collector/config/configauth v0.109.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.15.0
 	go.opentelemetry.io/collector/config/confighttp v0.109.0
 	go.opentelemetry.io/collector/config/confignet v0.109.0
-	go.opentelemetry.io/collector/config/configopaque v1.15.0
+	go.opentelemetry.io/collector/config/configopaque v1.15.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.15.0
 	go.opentelemetry.io/collector/config/configtls v1.15.0
 	go.opentelemetry.io/collector/confmap v1.15.0
