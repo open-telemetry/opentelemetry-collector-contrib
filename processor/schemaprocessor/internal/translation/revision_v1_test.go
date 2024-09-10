@@ -35,8 +35,8 @@ func TestNewRevisionV1(t *testing.T) {
 			inDefinition: ast.VersionDef{},
 			expect: &RevisionV1{
 				ver:                                   &Version{1, 1, 1},
-				all:                                   migrate.NewAttributeChangeSetSlice(),
-				resources:                             migrate.NewAttributeChangeSetSlice(),
+				all:                                   &changelist.ChangeList{make([]migrate.Migrator, 0)},
+				resources:                             &changelist.ChangeList{make([]migrate.Migrator, 0)},
 				spans:                                 migrate.NewConditionalAttributeSetSlice(),
 				spanEvents: 				           &changelist.ChangeList{make([]migrate.Migrator, 0)},
 				metricsRenameAttributes:               migrate.NewConditionalAttributeSetSlice(),
@@ -155,19 +155,19 @@ func TestNewRevisionV1(t *testing.T) {
 			},
 			expect: &RevisionV1{
 				ver: &Version{1, 0, 0},
-				all: migrate.NewAttributeChangeSetSlice(
+				all: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					migrate.NewAttributeChangeSet(map[string]string{
 						"state": "status",
 					}),
 					migrate.NewAttributeChangeSet(map[string]string{
 						"status": "state",
 					}),
-				),
-				resources: migrate.NewAttributeChangeSetSlice(
+				}},
+				resources: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					migrate.NewAttributeChangeSet(map[string]string{
 						"service_name": "service.name",
 					}),
-				),
+				}},
 				spans: migrate.NewConditionalAttributeSetSlice(
 					migrate.NewConditionalAttributeSet(
 						map[string]string{"service_version": "service.version"},

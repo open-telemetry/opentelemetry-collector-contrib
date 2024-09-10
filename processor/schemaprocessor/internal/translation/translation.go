@@ -159,20 +159,20 @@ func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias
 	for rev, more := it(); more; rev, more = it() {
 		switch status {
 		case Update:
-			err = rev.all.Apply(resource.Resource().Attributes())
+			err = rev.all.Apply(resource.Resource())
 			if err != nil {
 				return err
 			}
-			err = rev.resources.Apply(resource.Resource().Attributes())
+			err = rev.resources.Apply(resource.Resource())
 			if err != nil {
 				return err
 			}
 		case Revert:
-			err = rev.resources.Rollback(resource.Resource().Attributes())
+			err = rev.resources.Rollback(resource.Resource())
 			if err != nil {
 				return err
 			}
-			err = rev.all.Rollback(resource.Resource().Attributes())
+			err = rev.all.Rollback(resource.Resource())
 			if err != nil {
 				return err
 			}
@@ -196,7 +196,7 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 			log := in.LogRecords().At(l)
 			switch status {
 			case Update:
-				err = rev.all.Apply(log.Attributes())
+				err = rev.all.Apply(log)
 				if err != nil {
 					return err
 				}
@@ -205,7 +205,7 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 					return err
 				}
 			case Revert:
-				err = rev.all.Rollback(log.Attributes())
+				err = rev.all.Rollback(log)
 				if err != nil {
 					return err
 				}
@@ -231,7 +231,7 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 			span := scopeSpans.Spans().At(i)
 			switch status {
 			case Update:
-				err = rev.all.Apply(span.Attributes())
+				err = rev.all.Apply(span)
 				if err != nil {
 					return err
 				}
@@ -241,7 +241,7 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 				}
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
-					err = rev.all.Apply(event.Attributes())
+					err = rev.all.Apply(event)
 					if err != nil {
 						return err
 					}
@@ -255,7 +255,7 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 				}
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
-					err = rev.all.Rollback(event.Attributes())
+					err = rev.all.Rollback(event)
 					if err != nil {
 						return err
 					}
@@ -266,7 +266,7 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 				if err != nil {
 					return err
 				}
-				err = rev.all.Rollback(span.Attributes())
+				err = rev.all.Rollback(span)
 				if err != nil {
 					return err
 				}
@@ -293,7 +293,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeExponentialHistogram:
 					for dp := 0; dp < metric.ExponentialHistogram().DataPoints().Len(); dp++ {
 						datam := metric.ExponentialHistogram().DataPoints().At(dp)
-						err = rev.all.Apply(datam.Attributes())
+						err = rev.all.Apply(datam)
 						if err != nil {
 							return err
 						}
@@ -305,7 +305,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeHistogram:
 					for dp := 0; dp < metric.Histogram().DataPoints().Len(); dp++ {
 						datam := metric.Histogram().DataPoints().At(dp)
-						err = rev.all.Apply(datam.Attributes())
+						err = rev.all.Apply(datam)
 						if err != nil {
 							return err
 						}
@@ -317,7 +317,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeGauge:
 					for dp := 0; dp < metric.Gauge().DataPoints().Len(); dp++ {
 						datam := metric.Gauge().DataPoints().At(dp)
-						err = rev.all.Apply(datam.Attributes())
+						err = rev.all.Apply(datam)
 						if err != nil {
 							return err
 						}
@@ -329,7 +329,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeSum:
 					for dp := 0; dp < metric.Sum().DataPoints().Len(); dp++ {
 						datam := metric.Sum().DataPoints().At(dp)
-						err = rev.all.Apply(datam.Attributes())
+						err = rev.all.Apply(datam)
 						if err != nil {
 							return err
 						}
@@ -341,7 +341,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeSummary:
 					for dp := 0; dp < metric.Summary().DataPoints().Len(); dp++ {
 						datam := metric.Summary().DataPoints().At(dp)
-						err = rev.all.Apply(datam.Attributes())
+						err = rev.all.Apply(datam)
 						if err != nil {
 							return err
 						}
@@ -358,7 +358,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeExponentialHistogram:
 					for dp := 0; dp < metric.ExponentialHistogram().DataPoints().Len(); dp++ {
 						datam := metric.ExponentialHistogram().DataPoints().At(dp)
-						err = rev.all.Rollback(datam.Attributes())
+						err = rev.all.Rollback(datam)
 						if err != nil {
 							return err
 						}
@@ -370,7 +370,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeHistogram:
 					for dp := 0; dp < metric.Histogram().DataPoints().Len(); dp++ {
 						datam := metric.Histogram().DataPoints().At(dp)
-						err = rev.all.Rollback(datam.Attributes())
+						err = rev.all.Rollback(datam)
 						if err != nil {
 							return err
 						}
@@ -382,7 +382,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeGauge:
 					for dp := 0; dp < metric.Gauge().DataPoints().Len(); dp++ {
 						datam := metric.Gauge().DataPoints().At(dp)
-						err = rev.all.Rollback(datam.Attributes())
+						err = rev.all.Rollback(datam)
 						if err != nil {
 							return err
 						}
@@ -394,7 +394,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeSum:
 					for dp := 0; dp < metric.Sum().DataPoints().Len(); dp++ {
 						datam := metric.Sum().DataPoints().At(dp)
-						err = rev.all.Rollback(datam.Attributes())
+						err = rev.all.Rollback(datam)
 						if err != nil {
 							return err
 						}
@@ -406,7 +406,7 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 				case pmetric.MetricTypeSummary:
 					for dp := 0; dp < metric.Summary().DataPoints().Len(); dp++ {
 						datam := metric.Summary().DataPoints().At(dp)
-						err = rev.all.Rollback(datam.Attributes())
+						err = rev.all.Rollback(datam)
 						if err != nil {
 							return err
 						}

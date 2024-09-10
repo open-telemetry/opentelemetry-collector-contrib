@@ -17,8 +17,8 @@ import (
 // todo(ankit) implement split and rest of otel schema
 type RevisionV1 struct {
 	ver                               *Version
-	all                               *migrate.AttributeChangeSetSlice
-	resources                         *migrate.AttributeChangeSetSlice
+	all                               *changelist.ChangeList
+	resources                         *changelist.ChangeList
 	spans                             *migrate.ConditionalAttributeSetSlice
 	spanEvents          			  *changelist.ChangeList
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
@@ -41,8 +41,8 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 	}
 	return &RevisionV1{
 		ver:                               ver,
-		all:                               newAttributeChangeSetSliceFromChanges(def.All),
-		resources:                         newAttributeChangeSetSliceFromChanges(def.Resources),
+		all:                               newAllChangeList(def.All),
+		resources:                         newResourceChangeList(def.Resources),
 		spans:                             newSpanConditionalAttributeSlice(def.Spans),
 		spanEvents:						   newSpanEventChangeList(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
@@ -57,17 +57,27 @@ func (r RevisionV1) Version() *Version {
 }
 
 
-//func newAllChangeList(all ast.Attributes) *changelist.ChangeList[any]{
-//	values := make([]migrate.Migrator[any], 0)
-//	for _, at := range all.Changes {
-//		if renamed := at.RenameAttributes; renamed != nil {
-//			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
-//			values = append(values, operator.LogAttributeOperator{AttributeChange: attributeChangeSet})
-//			values = append(values, operator.SpanAttributeOperator{AttributeChange: attributeChangeSet})
-//		}
-//	}
-//	return &changelist.ChangeList[any]{Migrators: values}
-//}
+func newAllChangeList(all ast.Attributes) *changelist.ChangeList{
+	values := make([]migrate.Migrator, 0)
+	for _, at := range all.Changes {
+		if renamed := at.RenameAttributes; renamed != nil {
+			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
+			values = append(values, attributeChangeSet)
+		}
+	}
+	return &changelist.ChangeList{Migrators: values}
+}
+
+func newResourceChangeList(resource ast.Attributes) *changelist.ChangeList{
+	values := make([]migrate.Migrator, 0)
+	for _, at := range resource.Changes {
+		if renamed := at.RenameAttributes; renamed != nil {
+			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
+			values = append(values, attributeChangeSet)
+		}
+	}
+	return &changelist.ChangeList{Migrators: values}
+}
 
 func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
 	values := make([]migrate.Migrator, 0)
