@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.108.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/config/confignet v0.108.2-0.20240909182537-32cff9f7f331
+	go.opentelemetry.io/collector/config/confignet v0.109.0
 	go.opentelemetry.io/collector/config/configtls v1.15.0
 	go.uber.org/zap v1.27.0
 )
