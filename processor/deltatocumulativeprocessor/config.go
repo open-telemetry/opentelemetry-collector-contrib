@@ -13,9 +13,8 @@ import (
 var _ component.ConfigValidator = (*Config)(nil)
 
 type Config struct {
-	MaxStale               time.Duration `mapstructure:"max_stale"`
-	MaxStreams             int           `mapstructure:"max_streams"`
-	MaxExpHistogramBuckets int           `mapstructure:"max_exponential_histogram_buckets"`
+	MaxStale   time.Duration `mapstructure:"max_stale"`
+	MaxStreams int           `mapstructure:"max_streams"`
 }
 
 func (c *Config) Validate() error {
@@ -24,9 +23,6 @@ func (c *Config) Validate() error {
 	}
 	if c.MaxStreams < 0 {
 		return fmt.Errorf("max_streams must be a positive number (got %d)", c.MaxStreams)
-	}
-	if c.MaxExpHistogramBuckets <= 0 {
-		return fmt.Errorf("max_exponential_histogram_buckets must be a positive number (got %d)", c.MaxExpHistogramBuckets)
 	}
 	return nil
 }
@@ -38,9 +34,5 @@ func createDefaultConfig() component.Config {
 		// disable. TODO: find good default
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31603
 		MaxStreams: 0,
-
-		// 160 is the recommended default
-		// https://opentelemetry.io/docs/specs/otel/metrics/sdk/#base2-exponential-bucket-histogram-aggregation
-		MaxExpHistogramBuckets: 160,
 	}
 }

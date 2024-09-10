@@ -29,33 +29,22 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all"),
 			expected: &Config{
-				MaxStale:               1 * time.Minute,
-				MaxStreams:             10,
-				MaxExpHistogramBuckets: 160,
+				MaxStale:   1 * time.Minute,
+				MaxStreams: 10,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "set-valid-max_stale"),
 			expected: &Config{
-				MaxStale:               2 * time.Minute,
-				MaxStreams:             0,
-				MaxExpHistogramBuckets: 160,
+				MaxStale:   2 * time.Minute,
+				MaxStreams: 0,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "set-valid-max_streams"),
 			expected: &Config{
-				MaxStale:               5 * time.Minute,
-				MaxStreams:             20,
-				MaxExpHistogramBuckets: 160,
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "set-exphisto-max-size"),
-			expected: &Config{
-				MaxStale:               5 * time.Minute,
-				MaxStreams:             0,
-				MaxExpHistogramBuckets: 40,
+				MaxStale:   5 * time.Minute,
+				MaxStreams: 20,
 			},
 		},
 	}
