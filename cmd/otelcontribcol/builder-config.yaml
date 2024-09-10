@@ -221,6 +221,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.108.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver v0.108.0
 
 connectors:
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.108.2-0.20240909182537-32cff9f7f331
@@ -500,4 +501,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter => ../../exporter/rabbitmqexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver => ../../receiver/githubreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil => ../../internal/grpcutil
-
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver => ../../receiver/googlecloudmonitoringreceiver

@@ -149,6 +149,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver v0.108.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.108.0
@@ -1376,3 +1377,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbi
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver => ../../receiver/githubreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil => ../../internal/grpcutil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver => ../../receiver/googlecloudmonitoringreceiver
