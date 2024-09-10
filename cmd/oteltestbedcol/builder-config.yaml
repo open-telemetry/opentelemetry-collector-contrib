@@ -11,14 +11,14 @@ dist:
   otelcol_version: 0.108.1
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.108.2-0.20240904075637-48b11ba1c5f8
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.108.2-0.20240909182537-32cff9f7f331
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.108.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.108.2-0.20240904075637-48b11ba1c5f8
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.108.2-0.20240904075637-48b11ba1c5f8
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.108.2-0.20240904075637-48b11ba1c5f8
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.108.2-0.20240909182537-32cff9f7f331
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.108.2-0.20240909182537-32cff9f7f331
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.108.2-0.20240909182537-32cff9f7f331
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.108.0
@@ -30,13 +30,13 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.108.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.108.2-0.20240904075637-48b11ba1c5f8
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.108.2-0.20240904075637-48b11ba1c5f8
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.108.2-0.20240909182537-32cff9f7f331
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.108.2-0.20240909182537-32cff9f7f331
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.108.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.108.2-0.20240904075637-48b11ba1c5f8
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.108.2-0.20240909182537-32cff9f7f331
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.108.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.108.0
@@ -52,11 +52,11 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.108.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.2-0.20240904075637-48b11ba1c5f8
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.2-0.20240904075637-48b11ba1c5f8
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.2-0.20240904075637-48b11ba1c5f8
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.108.2-0.20240904075637-48b11ba1c5f8
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.108.2-0.20240904075637-48b11ba1c5f8
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.2-0.20240909182537-32cff9f7f331
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.2-0.20240909182537-32cff9f7f331
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.2-0.20240909182537-32cff9f7f331
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.108.2-0.20240909182537-32cff9f7f331
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.108.2-0.20240909182537-32cff9f7f331
 
 replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
