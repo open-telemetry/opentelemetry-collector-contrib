@@ -44,7 +44,6 @@ func TestNewRevisionV1(t *testing.T) {
 				metricsRenameAttributes:               migrate.NewConditionalAttributeSetSlice(),
 				metricsRenameMetrics:                  migrate.NewSignalNameChangeSlice(),
 				logs:									&changelist.ChangeList{make([]migrate.Migrator, 0)},
-				logsRenameAttributes:                                  migrate.NewAttributeChangeSetSlice(),
 			},
 		},
 		{
@@ -225,11 +224,6 @@ func TestNewRevisionV1(t *testing.T) {
 						"ERROR": "error",
 					}),
 				}},
-				logsRenameAttributes: migrate.NewAttributeChangeSetSlice(
-					migrate.NewAttributeChangeSet(map[string]string{
-						"ERROR": "error",
-					}),
-				),
 			},
 		},
 	} {

@@ -51,7 +51,6 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		spanEventsRenameAttributesOnSpanEvent: newSpanEventsRenameAttributesOnSpanEventEvent(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
 		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
-		logsRenameAttributes:              newAttributeChangeSetSliceFromChanges(logChanges),
 		logs: newLogsChangelist(def.Logs),
 	}
 
