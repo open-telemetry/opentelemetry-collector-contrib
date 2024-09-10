@@ -31,45 +31,6 @@ The Datadog connector can also forward the traces passed into it into another tr
 
 ## Usage
 
-The functionality of this connector used to be provided by a processor. The "Before" column below shows what an equivalent configuration using it looked like.
-
-<table>
-<tr>
-<td> Before </td> <td> After </td>
-</tr>
-<tr>
-<td valign="top">
-
-```yaml
-# ...
-processors:
-  # ...
-  probabilistic_sampler:
-    sampling_percentage: 20
-  # add the "datadog" processor definition
-  datadog:
-
-exporters:
-  datadog:
-    api:
-      key: ${env:DD_API_KEY}
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      # prepend it to the sampler in your pipeline:
-      processors: [batch, datadog, probabilistic_sampler]
-      exporters: [datadog]
-
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [datadog]
-```
-
-</td><td valign="top">
-
 ```yaml
 # ...
 processors:
@@ -103,7 +64,6 @@ service:
       processors: [batch]
       exporters: [datadog]
 ```
-</tr></table>
 
 In this example configuration, incoming traces are received through OTLP, and processed by the Datadog connector in the `traces` pipeline. The traces are then forwarded to the `traces/2` pipeline, where a sample of them is exported to Datadog. In parallel, the APM stats computed from the full stream of traces are sent to the `metrics` pipeline, where they are exported to Datadog as well.
 
