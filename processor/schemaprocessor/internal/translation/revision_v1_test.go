@@ -11,7 +11,9 @@ import (
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
 	"go.opentelemetry.io/otel/schema/v1.0/types"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/changelist"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
 )
 
 func compareFuncs(f1, f2 migrate.ResourceTestFunc[ptrace.Span]) bool {
@@ -32,15 +34,17 @@ func TestNewRevisionV1(t *testing.T) {
 			inVersion:    &Version{1, 1, 1},
 			inDefinition: ast.VersionDef{},
 			expect: &RevisionV1{
-				ver:                               &Version{1, 1, 1},
-				all:                               migrate.NewAttributeChangeSetSlice(),
-				resources:                         migrate.NewAttributeChangeSetSlice(),
-				spans:                             migrate.NewConditionalAttributeSetSlice(),
-				spanEventsRenameEvents:            migrate.NewSignalNameChangeSlice(),
+				ver:                                   &Version{1, 1, 1},
+				all:                                   migrate.NewAttributeChangeSetSlice(),
+				resources:                             migrate.NewAttributeChangeSetSlice(),
+				spans:                                 migrate.NewConditionalAttributeSetSlice(),
+				spanEvents: 				           &changelist.ChangeList{make([]migrate.Migrator, 0)},
+				spanEventsRenameEvents:                migrate.NewSignalNameChangeSlice(),
 				spanEventsRenameAttributesOnSpanEvent: migrate.NewConditionalLambdaAttributeSetSlice[ptrace.Span](),
-				metricsRenameAttributes:           migrate.NewConditionalAttributeSetSlice(),
-				metricsRenameMetrics:              migrate.NewSignalNameChangeSlice(),
-				logsRenameAttributes:              migrate.NewAttributeChangeSetSlice(),
+				metricsRenameAttributes:               migrate.NewConditionalAttributeSetSlice(),
+				metricsRenameMetrics:                  migrate.NewSignalNameChangeSlice(),
+				logs:									&changelist.ChangeList{make([]migrate.Migrator, 0)},
+				logsRenameAttributes:                                  migrate.NewAttributeChangeSetSlice(),
 			},
 		},
 		{
@@ -105,6 +109,8 @@ func TestNewRevisionV1(t *testing.T) {
 									"started": "application started",
 								},
 							},
+						},
+						{
 							RenameAttributes: &ast.RenameSpanEventAttributes{
 								ApplyToSpans: []types.SpanName{
 									"service running",
@@ -136,6 +142,8 @@ func TestNewRevisionV1(t *testing.T) {
 							RenameMetrics: map[types.MetricName]types.MetricName{
 								"service.computed.uptime": "service.uptime",
 							},
+						},
+						{
 							RenameAttributes: &ast.AttributeMapForMetrics{
 								ApplyToMetrics: []types.MetricName{
 									"service.runtime",
@@ -172,6 +180,20 @@ func TestNewRevisionV1(t *testing.T) {
 						map[string]string{"deployment.environment": "service.deployment.environment"},
 					),
 				),
+				spanEvents: &changelist.ChangeList{Migrators: []migrate.Migrator{
+					migrate.NewSignalNameChange(map[string]string{
+						"started": "application started",
+					}),
+					operator.NewSpanEventConditionalAttributeOperator(
+						*migrate.NewMultiConditionalAttributeSet(
+							map[string]string{"service.app.name": "service.name"},
+							map[string][]string{
+								"span.name": {"service running"},
+								"event.name": {"service errored"},
+							},
+						),
+					),
+				}},
 				spanEventsRenameEvents: migrate.NewSignalNameChangeSlice(
 					migrate.NewSignalNameChange(map[string]string{
 						"started": "application started",
@@ -196,7 +218,13 @@ func TestNewRevisionV1(t *testing.T) {
 					migrate.NewSignalNameChange(map[string]string{
 						"service.computed.uptime": "service.uptime",
 					}),
+					migrate.NewSignalNameChange(map[string]string{}),
 				),
+				logs: &changelist.ChangeList{Migrators: []migrate.Migrator{
+					migrate.NewAttributeChangeSet(map[string]string{
+						"ERROR": "error",
+					}),
+				}},
 				logsRenameAttributes: migrate.NewAttributeChangeSetSlice(
 					migrate.NewAttributeChangeSet(map[string]string{
 						"ERROR": "error",
@@ -218,7 +246,7 @@ func TestNewRevisionV1(t *testing.T) {
 			}
 
 			// use go-cmp to compare tc.expect and rev and fail the test if there's a difference
-			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, migrate.ConditionalLambdaAttributeSet[ptrace.Span]{}), cmp.Comparer(compareFuncs)); diff != "" {
+			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, migrate.ConditionalLambdaAttributeSet[ptrace.Span]{}, operator.SpanEventConditionalAttributeOperator{}, migrate.MultiConditionalAttributeSet{}), cmp.Comparer(compareFuncs)); diff != "" {
 				t.Errorf("NewRevisionV1() mismatch (-want +got):\n%s", diff)
 			}
 		})

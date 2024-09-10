@@ -200,7 +200,7 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 				if err != nil {
 					return err
 				}
-				err := rev.logsRenameAttributes.Apply(log)
+				err := rev.logs.Apply(log)
 				if err != nil {
 					return err
 				}
@@ -209,7 +209,7 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 				if err != nil {
 					return err
 				}
-				err := rev.logsRenameAttributes.Rollback(log)
+				err := rev.logs.Rollback(log)
 				if err != nil {
 					return err
 				}
@@ -259,7 +259,7 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					//	return err
 					//}
 					//
-					//rev.spanEventsRenameEvents.Apply(event)
+					rev.spanEventsRenameEvents.Apply(event)
 				}
 				if err := rev.spanEvents.Apply(span); err != nil {
 					return err
@@ -270,7 +270,7 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 				}
 				for e := 0; e < span.Events().Len(); e++ {
 					event := span.Events().At(e)
-					//rev.spanEventsRenameEvents.Rollback(event)
+					rev.spanEventsRenameEvents.Rollback(event)
 					//if err := rev.spanEventsRenameAttributesOnSpanEvent.Rollback(event.Attributes(), span); err != nil {
 					//	return err
 					//}

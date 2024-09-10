@@ -20,13 +20,13 @@ type RevisionV1 struct {
 	all                               *migrate.AttributeChangeSetSlice
 	resources                         *migrate.AttributeChangeSetSlice
 	spans                             *migrate.ConditionalAttributeSetSlice
-	spanEvents          	*changelist.ChangeList
+	spanEvents          			  *changelist.ChangeList
 	spanEventsRenameEvents            *migrate.SignalNameChangeSlice
 	spanEventsRenameAttributesOnSpanEvent *migrate.ConditionalLambdaAttributeSetSlice[ptrace.Span]
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
 	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
-	//logsRenameAttributes              *migrate.AttributeChangeSetSlice
-	logsRenameAttributes              *changelist.ChangeList
+	logsRenameAttributes              *migrate.AttributeChangeSetSlice
+	logs 							  *changelist.ChangeList
 }
 
 // NewRevision processes the VersionDef and assigns the version to this revision
@@ -47,12 +47,12 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		resources:                         newAttributeChangeSetSliceFromChanges(def.Resources),
 		spans:                             newSpanConditionalAttributeSlice(def.Spans),
 		spanEvents:						   newSpanEventChangeList(def.SpanEvents),
-		//spanEventsRenameEvents:            newSpanEventSignalSlice(def.SpanEvents),
-		//spanEventsRenameAttributesOnSpanEvent: newSpanEventsRenameAttributesOnSpanEventEvent(def.SpanEvents),
+		spanEventsRenameEvents:            newSpanEventSignalSlice(def.SpanEvents),
+		spanEventsRenameAttributesOnSpanEvent: newSpanEventsRenameAttributesOnSpanEventEvent(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
 		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
-		//logsRenameAttributes:              newAttributeChangeSetSliceFromChanges(logChanges,
-		logsRenameAttributes: newLogsChangelist(def.Logs),
+		logsRenameAttributes:              newAttributeChangeSetSliceFromChanges(logChanges),
+		logs: newLogsChangelist(def.Logs),
 	}
 
 }
@@ -79,7 +79,7 @@ func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
 	for _, at := range spanEvents.Changes {
 		if renamedEvent := at.RenameEvents; renamedEvent != nil {
 			signalNameChange := migrate.NewSignalNameChange(renamedEvent.EventNameMap)
-			values = append(values, signalNameChange)
+			values	 = append(values, signalNameChange)
 		} else if renamedAttribute := at.RenameAttributes; renamedAttribute != nil {
 			acceptableSpanNames := make([]string, 0)
 			for _, spanName := range renamedAttribute.ApplyToSpans {
