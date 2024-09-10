@@ -4,7 +4,7 @@ change_type: enhancement
 component: datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Adds stable featuregate that enables renaming metrics to match Datadog semantics"
+note: "Adds a featuregate that controls remapping metrics to match Datadog semantics"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [35025]
