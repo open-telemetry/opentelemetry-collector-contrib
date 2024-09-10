@@ -58,7 +58,7 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 	if err != nil {
 		return nil, err
 	}
-	bq := admission.NewBoundedQueue(int64(cfg.Admission.AdmissionLimitMiB<<20), cfg.Admission.WaiterLimit)
+	bq := admission.NewBoundedQueue(set.TracerProvider, int64(cfg.Admission.AdmissionLimitMiB<<20), cfg.Admission.WaiterLimit)
 	r := &otelArrowReceiver{
 		cfg:          cfg,
 		settings:     set,
@@ -118,7 +118,6 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			return err
 		}
 	}
-	bq := admission.NewBoundedQueue(r.settings.TracerProvider, int64(r.cfg.Arrow.AdmissionLimitMiB<<20), r.cfg.Arrow.WaiterLimit)
 
 	r.arrowReceiver, err = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
 		var opts []arrowRecord.Option
