@@ -95,3 +95,67 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, file.Name()+" is not a directory")
 }
+
+func TestCompactionDirectory(t *testing.T) {
+	f := NewFactory()
+	tests := []struct {
+		name   string
+		config func(*testing.T) *Config
+		err    error
+	}{
+		{
+			name: "directory-must-exists-error",
+			config: func(t *testing.T) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()             // actual directory
+				cfg.Compaction.Directory = "/not/a/dir" // not a directory
+				cfg.Compaction.OnRebound = true
+				cfg.Compaction.OnStart = true
+				return cfg
+			},
+			err: os.ErrNotExist,
+		},
+		{
+			name: "directory-must-exists-error-on-start",
+			config: func(t *testing.T) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()             // actual directory
+				cfg.Compaction.Directory = "/not/a/dir" // not a directory
+				cfg.Compaction.OnRebound = false
+				cfg.Compaction.OnStart = true
+				return cfg
+			},
+			err: os.ErrNotExist,
+		},
+		{
+			name: "directory-must-exists-error-on-rebound",
+			config: func(t *testing.T) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()             // actual directory
+				cfg.Compaction.Directory = "/not/a/dir" // not a directory
+				cfg.Compaction.OnRebound = true
+				cfg.Compaction.OnStart = false
+				return cfg
+			},
+			err: os.ErrNotExist,
+		},
+		{
+			name: "compaction-disabled-no-error",
+			config: func(t *testing.T) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()             // actual directory
+				cfg.Compaction.Directory = "/not/a/dir" // not a directory
+				cfg.Compaction.OnRebound = false
+				cfg.Compaction.OnStart = false
+				return cfg
+			},
+			err: nil,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.ErrorIs(t, component.ValidateConfig(test.config(t)), test.err)
+		})
+	}
+
+}
