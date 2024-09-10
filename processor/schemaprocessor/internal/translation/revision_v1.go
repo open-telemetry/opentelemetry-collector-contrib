@@ -22,7 +22,6 @@ type RevisionV1 struct {
 	spans                             *migrate.ConditionalAttributeSetSlice
 	spanEvents          			  *changelist.ChangeList
 	spanEventsRenameEvents            *migrate.SignalNameChangeSlice
-	spanEventsRenameAttributesOnSpanEvent *migrate.ConditionalLambdaAttributeSetSlice[ptrace.Span]
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
 	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
 	logsRenameAttributes              *migrate.AttributeChangeSetSlice
@@ -48,7 +47,6 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		spans:                             newSpanConditionalAttributeSlice(def.Spans),
 		spanEvents:						   newSpanEventChangeList(def.SpanEvents),
 		spanEventsRenameEvents:            newSpanEventSignalSlice(def.SpanEvents),
-		spanEventsRenameAttributesOnSpanEvent: newSpanEventsRenameAttributesOnSpanEventEvent(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
 		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
 		logs: newLogsChangelist(def.Logs),

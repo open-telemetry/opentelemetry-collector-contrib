@@ -40,7 +40,6 @@ func TestNewRevisionV1(t *testing.T) {
 				spans:                                 migrate.NewConditionalAttributeSetSlice(),
 				spanEvents: 				           &changelist.ChangeList{make([]migrate.Migrator, 0)},
 				spanEventsRenameEvents:                migrate.NewSignalNameChangeSlice(),
-				spanEventsRenameAttributesOnSpanEvent: migrate.NewConditionalLambdaAttributeSetSlice[ptrace.Span](),
 				metricsRenameAttributes:               migrate.NewConditionalAttributeSetSlice(),
 				metricsRenameMetrics:                  migrate.NewSignalNameChangeSlice(),
 				logs:									&changelist.ChangeList{make([]migrate.Migrator, 0)},
@@ -198,13 +197,6 @@ func TestNewRevisionV1(t *testing.T) {
 						"started": "application started",
 					}),
 				),
-				spanEventsRenameAttributesOnSpanEvent: migrate.NewConditionalLambdaAttributeSetSlice(
-					migrate.NewConditionalLambdaAttributeSet[ptrace.Span](map[string]string{
-							"service.app.name": "service.name",
-						},
-						nil,
-					),
-				),
 				metricsRenameAttributes: migrate.NewConditionalAttributeSetSlice(
 					migrate.NewConditionalAttributeSet(
 						map[string]string{
@@ -233,11 +225,6 @@ func TestNewRevisionV1(t *testing.T) {
 			t.Parallel()
 
 			rev := NewRevision(tc.inVersion, tc.inDefinition)
-			// set expected spanEventsRenameAttributesOnSpanEvent testFunc to the actual revision's testFunc
-			if len(*tc.expect.spanEventsRenameAttributesOnSpanEvent) != 0 {
-				element := (*tc.expect.spanEventsRenameAttributesOnSpanEvent)[0]
-				element.TestFunc = (*rev.spanEventsRenameAttributesOnSpanEvent)[0].TestFunc
-			}
 
 			// use go-cmp to compare tc.expect and rev and fail the test if there's a difference
 			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, migrate.ConditionalLambdaAttributeSet[ptrace.Span]{}, operator.SpanEventConditionalAttributeOperator{}, migrate.MultiConditionalAttributeSet{}), cmp.Comparer(compareFuncs)); diff != "" {
