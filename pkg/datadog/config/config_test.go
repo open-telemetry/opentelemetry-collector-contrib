@@ -63,14 +63,14 @@ func TestValidate(t *testing.T) {
 			name: "span name remapping valid",
 			cfg: &Config{
 				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}},
+				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}},
 			},
 		},
 		{
 			name: "span name remapping empty val",
 			cfg: &Config{
 				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}},
+				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}},
 			},
 			err: "'' is not valid value for span name remapping",
 		},
@@ -78,7 +78,7 @@ func TestValidate(t *testing.T) {
 			name: "span name remapping empty key",
 			cfg: &Config{
 				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}},
+				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}}},
 			},
 			err: "'' is not valid key for span name remapping",
 		},
@@ -86,14 +86,14 @@ func TestValidate(t *testing.T) {
 			name: "ignore resources valid",
 			cfg: &Config{
 				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{IgnoreResources: []string{"[123]"}},
+				Traces: TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123]"}}},
 			},
 		},
 		{
 			name: "ignore resources missing bracket",
 			cfg: &Config{
 				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{IgnoreResources: []string{"[123"}},
+				Traces: TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123"}}},
 			},
 			err: "'[123' is not valid resource filter regular expression",
 		},
@@ -125,14 +125,18 @@ func TestValidate(t *testing.T) {
 			name: "With trace_buffer",
 			cfg: &Config{
 				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{TraceBuffer: 10},
+				Traces: TracesExporterConfig{TraceBuffer: 10},
 			},
 		},
 		{
 			name: "With peer_tags",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
+				API: APIConfig{Key: "notnull"},
+				Traces: TracesExporterConfig{
+					TracesConfig: TracesConfig{
+						PeerTags: []string{"tag1", "tag2"},
+					},
+				},
 			},
 		},
 		{
@@ -402,11 +406,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 			},
 		},
 
-		Traces: TracesConfig{
+		Traces: TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
-			IgnoreResources: []string{},
+			TracesConfig: TracesConfig{
+				IgnoreResources: []string{},
+			},
 		},
 		Logs: LogsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
@@ -469,11 +475,13 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 
-				Traces: TracesConfig{
+				Traces: TracesExporterConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
-					IgnoreResources: []string{},
+					TracesConfig: TracesConfig{
+						IgnoreResources: []string{},
+					},
 				},
 				Logs: LogsConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
@@ -521,17 +529,19 @@ func TestLoadConfig(t *testing.T) {
 						Mode: SummaryModeGauges,
 					},
 				},
-				Traces: TracesConfig{
+				Traces: TracesExporterConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://trace.agent.datadoghq.eu",
 					},
-					SpanNameRemappings: map[string]string{
-						"old_name1": "new_name1",
-						"old_name2": "new_name2",
+					TracesConfig: TracesConfig{
+						SpanNameRemappings: map[string]string{
+							"old_name1": "new_name1",
+							"old_name2": "new_name2",
+						},
+						SpanNameAsResourceName: true,
+						IgnoreResources:        []string{},
 					},
-					SpanNameAsResourceName: true,
-					IgnoreResources:        []string{},
-					TraceBuffer:            10,
+					TraceBuffer: 10,
 				},
 				Logs: LogsConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
@@ -579,15 +589,17 @@ func TestLoadConfig(t *testing.T) {
 						Mode: SummaryModeGauges,
 					},
 				},
-				Traces: TracesConfig{
+				Traces: TracesExporterConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://trace.agent.datadoghq.test",
 					},
-					SpanNameRemappings: map[string]string{
-						"old_name3": "new_name3",
-						"old_name4": "new_name4",
+					TracesConfig: TracesConfig{
+						SpanNameRemappings: map[string]string{
+							"old_name3": "new_name3",
+							"old_name4": "new_name4",
+						},
+						IgnoreResources: []string{},
 					},
-					IgnoreResources: []string{},
 				},
 				Logs: LogsConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{

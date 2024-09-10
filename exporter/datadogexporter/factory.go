@@ -351,12 +351,6 @@ func (f *factory) createTracesExporter(
 			zap.String("feature gate ID", noAPMStatsFeatureGate.ID()),
 		)
 	}
-	if cfg.Traces.ResourceAttributesAsContainerTags != nil {
-		set.Logger.Warn("resource_attributes_as_container_tags is not supported by the Datadog Exporter.")
-	}
-	if cfg.Traces.BucketInterval != 0 {
-		set.Logger.Warn("bucket_interval is not supported by the Datadog Exporter.")
-	}
 
 	var (
 		pusher consumer.ConsumeTracesFunc

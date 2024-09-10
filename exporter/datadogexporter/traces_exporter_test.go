@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func setupTestMain(m *testing.M) {
@@ -134,8 +136,10 @@ func TestTracesSource(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: metricsServer.URL},
 		},
 		Traces: TracesConfig{
-			TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: tracesServer.URL},
-			IgnoreResources: []string{},
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: tracesServer.URL},
+			TracesConfig: datadogconfig.TracesConfig{
+				IgnoreResources: []string{},
+			},
 		},
 	}
 
@@ -254,9 +258,11 @@ func TestTraceExporter(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
-			IgnoreResources: []string{},
-			FlushInterval:   0.1,
-			TraceBuffer:     2,
+			TracesConfig: datadogconfig.TracesConfig{
+				IgnoreResources: []string{},
+			},
+			FlushInterval: 0.1,
+			TraceBuffer:   2,
 		},
 	}
 

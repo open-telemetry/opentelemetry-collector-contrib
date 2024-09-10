@@ -76,7 +76,7 @@ type Config struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 
 	// Traces defines the Traces exporter specific configuration
-	Traces TracesConfig `mapstructure:"traces"`
+	Traces TracesExporterConfig `mapstructure:"traces"`
 
 	// Logs defines the Logs exporter specific configuration
 	Logs LogsConfig `mapstructure:"logs"`
@@ -325,11 +325,13 @@ func CreateDefaultConfig() component.Config {
 			},
 		},
 
-		Traces: TracesConfig{
+		Traces: TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
-			IgnoreResources: []string{},
+			TracesConfig: TracesConfig{
+				IgnoreResources: []string{},
+			},
 		},
 
 		Logs: LogsConfig{

@@ -110,9 +110,9 @@ type SummaryConfig = datadogconfig.SummaryConfig
 // metrics exporter
 type MetricsExporterConfig = datadogconfig.MetricsExporterConfig
 
-// Deprecated: [v0.109.0] Use `datadogconfig.TracesConfig` instead.
+// Deprecated: [v0.109.0] Use `datadogconfig.TracesExporterConfig` instead.
 // TracesConfig defines the traces exporter specific configuration options
-type TracesConfig = datadogconfig.TracesConfig
+type TracesConfig = datadogconfig.TracesExporterConfig
 
 // Deprecated: [v0.109.0] Use `datadogconfig.LogsConfig` instead.
 // LogsConfig defines logs exporter specific configuration
