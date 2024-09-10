@@ -14,16 +14,15 @@ import (
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC      configgrpc.ServerConfig `mapstructure:"grpc"`
-	Arrow     ArrowConfig             `mapstructure:"arrow"`
-	Admission AdmissionConfig         `mapstructure:"admission"`
+	GRPC  configgrpc.ServerConfig `mapstructure:"grpc"`
+	Arrow ArrowConfig             `mapstructure:"arrow"`
 }
 
 type AdmissionConfig struct {
-	// AdmissionLimitMiB limits the number of requests that are received by the stream based on
+	// RequestLimitMiB limits the number of requests that are received by the stream based on
 	// request size information available. Request size is used to control how much traffic we admit
 	// for processing, but does not control how much memory is used during request processing.
-	AdmissionLimitMiB uint64 `mapstructure:"admission_limit_mib"`
+	RequestLimitMiB uint64 `mapstructure:"request_limit_mib"`
 
 	// WaiterLimit is the limit on the number of waiters waiting to be processed and consumed.
 	// This is a dimension of memory limiting to ensure waiters are not consuming an
@@ -38,7 +37,7 @@ type ArrowConfig struct {
 	// passing through, they will see ResourceExhausted errors.
 	MemoryLimitMiB uint64 `mapstructure:"memory_limit_mib"`
 
-	// Deprecated: This field is no longer supported, use cfg.Admission.AdmissionLimitMiB instead.
+	// Deprecated: This field is no longer supported, use cfg.Admission.RequestLimitMiB instead.
 	DeprecatedAdmissionLimitMiB uint64 `mapstructure:"admission_limit_mib"`
 
 	// Deprecated: This field is no longer supported, use cfg.Admission.WaiterLimit instead.
@@ -52,6 +51,8 @@ type ArrowConfig struct {
 type Config struct {
 	// Protocols is the configuration for gRPC and Arrow.
 	Protocols `mapstructure:"protocols"`
+	// Admission is the configuration for controlling amount of request memory entering the receiver.
+	Admission AdmissionConfig `mapstructure:"admission"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -72,7 +73,7 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 	if cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
-		cfg.Admission.AdmissionLimitMiB = cfg.Arrow.DeprecatedAdmissionLimitMiB
+		cfg.Admission.RequestLimitMiB = cfg.Arrow.DeprecatedAdmissionLimitMiB
 	}
 	if cfg.Arrow.DeprecatedWaiterLimit != 0 {
 		cfg.Admission.WaiterLimit = cfg.Arrow.DeprecatedWaiterLimit
