@@ -7,32 +7,32 @@ go 1.22.0
 toolchain go1.22.7
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.108.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.108.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.109.0
 	go.opentelemetry.io/collector/component v0.109.0
 	go.opentelemetry.io/collector/confmap v1.15.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.0
