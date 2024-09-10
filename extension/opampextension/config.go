@@ -10,6 +10,7 @@ import (
 
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
@@ -70,6 +71,7 @@ type commonFields struct {
 	Endpoint   string                         `mapstructure:"endpoint"`
 	TLSSetting configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
+	Auth       component.ID                   `mapstructure:"auth,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {
