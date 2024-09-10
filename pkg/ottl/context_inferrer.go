@@ -56,10 +56,7 @@ func (s *defaultContextInferrer) Infer(statements []string) (string, error) {
 				pathContextPriority = len(s.contextPriority) // Lowest priority
 			}
 
-			if inferredContext == "" {
-				inferredContext = p.Context
-				inferredContextPriority = pathContextPriority
-			} else if pathContextPriority < inferredContextPriority {
+			if inferredContext == "" || pathContextPriority < inferredContextPriority {
 				inferredContext = p.Context
 				inferredContextPriority = pathContextPriority
 			}
