@@ -272,11 +272,10 @@ func TestSAPMClientTokenAccess(t *testing.T) {
 
 			trace, testTraceErr := buildTestTrace()
 			require.NoError(t, testTraceErr)
-			var ctx context.Context
+
+			ctx := context.Background()
 			if tt.inContext {
-				ctx = context.WithValue(context.Background(), "X-SF-TOKEN", "SplunkAccessToken")
-			} else {
-				ctx = context.Background()
+				ctx = context.WithValue(ctx, sapmAccessTokenContextKey, "SplunkAccessToken")
 			}
 			err = se.pushTraceData(ctx, trace)
 			require.NoError(t, err)

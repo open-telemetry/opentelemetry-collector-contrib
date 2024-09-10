@@ -23,6 +23,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
+type contextKey string
+
+const sapmAccessTokenContextKey contextKey = splunk.SFxAccessTokenHeader
+
+func (k contextKey) String() string {
+	return string(k)
+}
+
 // TODO: Find a place for this to be shared.
 type baseTracesExporter struct {
 	component.Component
@@ -93,8 +101,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 		return nil
 	}
 
-	var accessToken string
-	accessToken = se.accessToken(ctx, rss.At(0))
+	accessToken := se.retrieveAccessToken(ctx, rss.At(0))
 
 	batches, err := jaeger.ProtoFromTraces(td)
 	if err != nil {
@@ -125,25 +132,23 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 	return nil
 }
 
-func (se *sapmExporter) accessToken(ctx context.Context, md ptrace.ResourceSpans) string {
+func (se *sapmExporter) retrieveAccessToken(ctx context.Context, md ptrace.ResourceSpans) string {
 	if !se.config.AccessTokenPassthrough {
 		// Nothing to do if token is pass through not configured or resource is nil.
 		return ""
 	}
 
-	if ctxAccessToken, ok := ctx.Value("X-SF-TOKEN").(string); ok {
-		return ctxAccessToken
+	var token string
+	if ctxAccessToken, ok := ctx.Value(sapmAccessTokenContextKey).(string); ok {
+		token = ctxAccessToken
 	} else {
-		return se.retrieveAccessToken(md)
+		attrs := md.Resource().Attributes()
+		if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
+			token = accessToken.Str()
+		}
 	}
-}
 
-func (se *sapmExporter) retrieveAccessToken(md ptrace.ResourceSpans) string {
-	attrs := md.Resource().Attributes()
-	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
-		return accessToken.Str()
-	}
-	return ""
+	return token
 }
 
 // filterToken filters the access token from the batch processor to avoid leaking credentials to the backend.
