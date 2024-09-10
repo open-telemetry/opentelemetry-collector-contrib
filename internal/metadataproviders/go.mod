@@ -8,9 +8,9 @@ require (
 	github.com/docker/docker v26.1.5+incompatible
 	github.com/hashicorp/consul/api v1.29.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.108.0
-	github.com/shirou/gopsutil/v4 v4.24.7
+	github.com/shirou/gopsutil/v4 v4.24.8
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/semconv v0.108.1
+	go.opentelemetry.io/collector/semconv v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/otel v1.29.0
 	go.opentelemetry.io/otel/sdk v1.29.0
 	go.uber.org/goleak v1.3.0

@@ -72,6 +72,56 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 	require.Error(t, err, "receiver creation should fail if given invalid input config")
 }
 
+// BenchmarkReadWindowsEventLogger benchmarks the performance of reading Windows Event Log events.
+// This benchmark is not good to measure time performance since it uses a "eventually" construct
+// to wait for the logs to be read. However, it is good to evaluate memory usage.
+func BenchmarkReadWindowsEventLogger(b *testing.B) {
+	b.StopTimer()
+
+	tests := []struct {
+		name  string
+		count int
+	}{
+		{
+			name:  "10",
+			count: 10,
+		},
+		{
+			name:  "100",
+			count: 100,
+		},
+		{
+			name:  "1_000",
+			count: 1_000,
+		},
+	}
+	for _, tt := range tests {
+		b.Run(tt.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				// Set up the receiver and sink.
+				ctx := context.Background()
+				factory := newFactoryAdapter()
+				createSettings := receivertest.NewNopSettings()
+				cfg := createTestConfig()
+				cfg.InputConfig.StartAt = "beginning"
+				cfg.InputConfig.MaxReads = tt.count
+				sink := new(consumertest.LogsSink)
+
+				receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+				require.NoError(b, err)
+
+				_ = receiver.Start(ctx, componenttest.NewNopHost())
+				b.StartTimer()
+				assert.Eventually(b, func() bool {
+					return sink.LogRecordCount() >= tt.count
+				}, 20*time.Second, 250*time.Millisecond)
+				b.StopTimer()
+				_ = receiver.Shutdown(ctx)
+			}
+		})
+	}
+}
+
 func TestReadWindowsEventLogger(t *testing.T) {
 	logMessage := "Test log"
 	src := "otel-windowseventlogreceiver-test"
@@ -272,7 +322,7 @@ func requireExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expect
 	// logs sometimes take a while to be written, so a substantial wait buffer is needed
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		actualLogRecords = filterAllLogRecordsBySource(t, sink, expectedEventSrc)
-		assert.Equal(c, expectedEventCount, len(actualLogRecords))
+		assert.Len(c, actualLogRecords, expectedEventCount)
 	}, 10*time.Second, 250*time.Millisecond)
 
 	return actualLogRecords
