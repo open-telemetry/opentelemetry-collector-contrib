@@ -14,13 +14,13 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/yusufpapurcu/wmi v1.2.4
 	go.opentelemetry.io/collector/component v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/confmap v1.14.2-0.20240909182537-32cff9f7f331
+	go.opentelemetry.io/collector/confmap v1.15.0
 	go.opentelemetry.io/collector/consumer v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/consumer/consumertest v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240909182537-32cff9f7f331
+	go.opentelemetry.io/collector/featuregate v1.15.0
 	go.opentelemetry.io/collector/filter v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/pdata v1.14.2-0.20240909182537-32cff9f7f331
+	go.opentelemetry.io/collector/pdata v1.15.0
 	go.opentelemetry.io/collector/receiver v0.108.2-0.20240909182537-32cff9f7f331
 	go.opentelemetry.io/collector/semconv v0.108.2-0.20240909182537-32cff9f7f331
 	go.uber.org/goleak v1.3.0
@@ -100,8 +100,8 @@ require (
 	go.opentelemetry.io/collector/component/componentprofiles v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.108.2-0.20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.108.2-0.20240909182537-32cff9f7f331 // indirect
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.108.2-0.20240909182537-32cff9f7f331 // indirect
 	go.opentelemetry.io/collector/connector v0.108.2-0.20240909182537-32cff9f7f331 // indirect
