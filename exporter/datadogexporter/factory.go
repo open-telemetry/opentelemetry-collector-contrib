@@ -36,7 +36,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -186,7 +186,7 @@ func defaultClientConfig() confighttp.ClientConfig {
 
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
-	return datadog.CreateDefaultConfig().(*datadog.Config)
+	return datadogconfig.CreateDefaultConfig().(*datadogconfig.Config)
 }
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to

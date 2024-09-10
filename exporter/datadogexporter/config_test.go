@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/confmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -125,7 +125,7 @@ func TestUnmarshal(t *testing.T) {
 					"endpoint": "",
 				},
 			}),
-			err: datadog.ErrEmptyEndpoint.Error(),
+			err: datadogconfig.ErrEmptyEndpoint.Error(),
 		},
 		{
 			name: "Empty trace endpoint",
@@ -134,7 +134,7 @@ func TestUnmarshal(t *testing.T) {
 					"endpoint": "",
 				},
 			}),
-			err: datadog.ErrEmptyEndpoint.Error(),
+			err: datadogconfig.ErrEmptyEndpoint.Error(),
 		},
 		{
 			name: "Empty log endpoint",
@@ -143,7 +143,7 @@ func TestUnmarshal(t *testing.T) {
 					"endpoint": "",
 				},
 			}),
-			err: datadog.ErrEmptyEndpoint.Error(),
+			err: datadogconfig.ErrEmptyEndpoint.Error(),
 		},
 		{
 			name: "invalid initial cumulative monotonic value mode",

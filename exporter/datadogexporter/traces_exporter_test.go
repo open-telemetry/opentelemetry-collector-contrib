@@ -26,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 func setupTestMain(m *testing.M) {
@@ -125,7 +123,7 @@ func TestTracesSource(t *testing.T) {
 	}))
 	defer tracesServer.Close()
 
-	cfg := datadog.Config{
+	cfg := Config{
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
@@ -240,7 +238,7 @@ func TestTraceExporter(t *testing.T) {
 	}))
 
 	defer server.Close()
-	cfg := datadog.Config{
+	cfg := Config{
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
@@ -299,7 +297,7 @@ func TestNewTracesExporter(t *testing.T) {
 func TestPushTraceData(t *testing.T) {
 	server := testutil.DatadogServerMock()
 	defer server.Close()
-	cfg := &datadog.Config{
+	cfg := &Config{
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},

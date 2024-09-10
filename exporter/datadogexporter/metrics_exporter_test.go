@@ -30,8 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -42,7 +40,7 @@ func TestNewExporter(t *testing.T) {
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
-	cfg := &datadog.Config{
+	cfg := &Config{
 		API: APIConfig{
 			Key: "ddog_32_characters_long_api_key1",
 		},

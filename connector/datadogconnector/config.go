@@ -6,7 +6,7 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 var _ component.Config = (*Config)(nil)
@@ -19,7 +19,7 @@ type Config struct {
 
 // Deprecated: Use `datadog.TracesConfig` instead.
 // TracesConfig defines the traces specific configuration options
-type TracesConfig = datadog.TracesConfig
+type TracesConfig = datadogconfig.TracesConfig
 
 // Validate checks if the configuration is valid
 func (c *Config) Validate() error {
