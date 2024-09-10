@@ -243,6 +243,166 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	assert.NoError(t, res)
 }
 
+func TestAttributeBasedRouting(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		attributes []string
+		batch      ptrace.Traces
+		res        map[string]bool
+	}{
+		{
+			name: "service name",
+			attributes: []string{
+				"service.name",
+			},
+			batch: simpleTracesWithServiceName(),
+
+			res: map[string]bool{
+				"service-name-1": true,
+				"service-name-2": true,
+				"service-name-3": true,
+			},
+		},
+		{
+			name: "span name",
+			attributes: []string{
+				"span.name",
+			},
+			batch: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				traces.ResourceSpans().EnsureCapacity(1)
+
+				span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetName("/foo/bar/baz")
+
+				return traces
+			}(),
+			res: map[string]bool{
+				"/foo/bar/baz": true,
+			},
+		},
+		{
+			name: "span kind",
+			attributes: []string{
+				"span.kind",
+			},
+			batch: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				traces.ResourceSpans().EnsureCapacity(1)
+
+				span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetKind(ptrace.SpanKindClient)
+
+				return traces
+			}(),
+			res: map[string]bool{
+				"Client": true,
+			},
+		},
+		{
+			name: "composite; name & span kind",
+			attributes: []string{
+				"service.name",
+				"span.kind",
+			},
+			batch: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				traces.ResourceSpans().EnsureCapacity(1)
+
+				res := traces.ResourceSpans().AppendEmpty()
+				res.Resource().Attributes().PutStr("service.name", "service-name-1")
+
+				span := res.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetKind(ptrace.SpanKindClient)
+
+				return traces
+			}(),
+			res: map[string]bool{
+				"service-name-1Client": true,
+			},
+		},
+		{
+			name: "composite, but missing attr",
+			attributes: []string{
+				"missing.attribute",
+				"span.kind",
+			},
+			batch: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				traces.ResourceSpans().EnsureCapacity(1)
+
+				span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetKind(ptrace.SpanKindServer)
+
+				return traces
+			}(),
+			res: map[string]bool{
+				"Server": true,
+			},
+		},
+		{
+			name: "span attribute",
+			attributes: []string{
+				"http.path",
+			},
+			batch: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				traces.ResourceSpans().EnsureCapacity(1)
+
+				span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.Attributes().PutStr("http.path", "/foo/bar/baz")
+
+				return traces
+			}(),
+			res: map[string]bool{
+				"/foo/bar/baz": true,
+			},
+		},
+		{
+			name: "composite pseudo, resource and span attributes",
+			attributes: []string{
+				"service.name",
+				"span.kind",
+				"http.path",
+			},
+			batch: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				traces.ResourceSpans().EnsureCapacity(1)
+
+				res := traces.ResourceSpans().AppendEmpty()
+				res.Resource().Attributes().PutStr("service.name", "service-name-1")
+
+				span := res.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetKind(ptrace.SpanKindClient)
+				span.Attributes().PutStr("http.path", "/foo/bar/baz")
+
+				return traces
+			}(),
+			res: map[string]bool{
+				"service-name-1Client/foo/bar/baz": true,
+			},
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := routingIdentifiersFromTraces(tc.batch, attrRouting, tc.attributes)
+			assert.NoError(t, err)
+			assert.Equal(t, res, tc.res)
+		})
+	}
+}
+
+func TestUnsupportedRoutingKeyInRouting(t *testing.T) {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().EnsureCapacity(1)
+
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetKind(ptrace.SpanKindServer)
+
+	_, err := routingIdentifiersFromTraces(traces, 38, []string{})
+	assert.Equal(t, "unsupported routing_key: 38", err.Error())
+}
+
 func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 	b := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	for _, tt := range []struct {
@@ -261,11 +421,12 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 			"same trace id and different services - trace id routing",
 			twoServicesWithSameTraceID(),
 			traceIDRouting,
+
 			map[string]bool{string(b[:]): true},
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
+			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey, []string{})
 			assert.NoError(t, err)
 			assert.Equal(t, res, tt.res)
 		})
@@ -378,15 +539,17 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 func TestNoTracesInBatch(t *testing.T) {
 	for _, tt := range []struct {
-		desc       string
-		batch      ptrace.Traces
-		routingKey routingKey
-		err        error
+		desc         string
+		batch        ptrace.Traces
+		routingKey   routingKey
+		routingAttrs []string
+		err          error
 	}{
 		{
 			"no resource spans",
 			ptrace.NewTraces(),
 			traceIDRouting,
+			[]string{},
 			errors.New("empty resource spans"),
 		},
 		{
@@ -397,6 +560,7 @@ func TestNoTracesInBatch(t *testing.T) {
 				return batch
 			}(),
 			traceIDRouting,
+			[]string{},
 			errors.New("empty scope spans"),
 		},
 		{
@@ -407,11 +571,12 @@ func TestNoTracesInBatch(t *testing.T) {
 				return batch
 			}(),
 			svcRouting,
+			[]string{},
 			errors.New("empty spans"),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
+			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey, tt.routingAttrs)
 			assert.Equal(t, err, tt.err)
 			assert.Equal(t, res, map[string]bool(nil))
 		})
