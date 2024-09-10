@@ -2255,7 +2255,7 @@ func Test_basePath_Keys(t *testing.T) {
 		},
 	}
 	ks := bp.Keys()
-	assert.Equal(t, 1, len(ks))
+	assert.Len(t, ks, 1)
 	assert.Equal(t, k, ks[0])
 }
 

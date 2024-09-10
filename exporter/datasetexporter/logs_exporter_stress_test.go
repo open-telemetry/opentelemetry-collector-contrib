@@ -144,7 +144,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 
 	assert.True(t, wasSuccessful.Load())
 
-	assert.Equal(t, seenKeys, expectedKeys)
+	assert.Equal(t, expectedKeys, seenKeys)
 	assert.Equal(t, expectedLogs, processedEvents.Load(), "processed items")
 	assert.Equal(t, expectedLogs, uint64(len(seenKeys)), "unique items")
 }

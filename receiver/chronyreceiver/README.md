@@ -25,7 +25,7 @@ By default, the `chrony` receiver will default to the following configuration:
 
 ```yaml
 chrony/defaults:
-  address: unix:///var/run/chrony/chronyd.sock # The default port by chronyd to allow cmd access
+  endpoint: unix:///var/run/chrony/chronyd.sock # The default port by chronyd to allow cmd access
   timeout: 10s # Allowing at least 10s for chronyd to respond before giving up
 
 chrony:
@@ -36,7 +36,7 @@ chrony:
 
 The following options can be customised:
 
-- address (required) - the address on where to communicate to `chronyd`
+- endpoint (required) - the address on where to communicate to `chronyd`
   - The allowed formats are the following
     - udp://hostname:port
     - unix:///path/to/chrony.sock (Please note the triple slash)
@@ -55,7 +55,7 @@ An example of the configuration is:
 ```yaml
 receivers:
   chrony:
-    address: unix:///var/run/chrony/chronyd.sock
+    endpoint: unix:///var/run/chrony/chronyd.sock
     timeout: 10s
     collection_interval: 30s
     metrics:

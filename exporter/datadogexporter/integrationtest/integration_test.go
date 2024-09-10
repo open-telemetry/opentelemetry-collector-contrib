@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -508,12 +509,12 @@ func TestIntegrationLogs(t *testing.T) {
 		if s.Metric == "otelcol_receiver_accepted_log_records" {
 			numAcceptedLogRecords++
 			assert.Len(t, s.Points, 1)
-			assert.Equal(t, s.Points[0].Value, 5.0)
+			assert.Equal(t, 5.0, s.Points[0].Value)
 		}
 		if s.Metric == "otelcol_exporter_sent_log_records" {
 			numSentLogRecords++
 			assert.Len(t, s.Points, 1)
-			assert.Equal(t, s.Points[0].Value, 5.0)
+			assert.Equal(t, 5.0, s.Points[0].Value)
 		}
 	}
 	assert.Equal(t, 2, numAcceptedLogRecords)
@@ -529,6 +530,10 @@ func sendLogs(t *testing.T, numLogs int) {
 }
 
 func TestIntegrationInternalMetrics(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("flaky test on windows https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34836")
+	}
+
 	// 1. Set up mock Datadog server
 	seriesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.MetricV2Endpoint, ReqChan: make(chan []byte, 100)}
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte, 100)}

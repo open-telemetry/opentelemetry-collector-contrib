@@ -103,12 +103,12 @@ exporters:
 ## Replacing unsafe characters in component names
 
 The extension uses the type and name of the component using the extension to create a file where the component's data is stored.
-For example, if a Filelog receiver named `filelog/logs` uses the extension, its data is stored in a file named `receiver_filelog_logs`.
+For example, if a file log receiver named `filelog/logs` uses the extension, its data is stored in a file named `receiver_filelog_logs`.
 
 Sometimes the component name contains characters that either have special meaning in paths - like `/` - or are problematic or even forbidden in file names (depending on the host operating system), like `?` or `|`.
 To prevent surprising or erroneous behavior, some characters in the component names are replaced before creating the file name to store data by the extension.
 
-For example, for a Filelog receiver named `filelog/logs/container`, the component name `logs/container` is sanitized into `logs~007Econtainer` and the data is stored in a file named `receiver_filelog_logs~007Econtainer`.
+For example, for a file log receiver named `filelog/logs/container`, the component name `logs/container` is sanitized into `logs~007Econtainer` and the data is stored in a file named `receiver_filelog_logs~007Econtainer`.
 
 Every unsafe character is replaced with a tilde `~` and the character's [Unicode number][unicode_chars] in hex.
 The only safe characters are: uppercase and lowercase ASCII letters `A-Z` and `a-z`, digits `0-9`, dot `.`, hyphen `-`, underscore `_`.

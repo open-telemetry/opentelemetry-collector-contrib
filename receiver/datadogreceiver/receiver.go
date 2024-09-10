@@ -11,7 +11,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
@@ -20,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
 type datadogReceiver struct {
@@ -31,6 +34,7 @@ type datadogReceiver struct {
 	nextMetricsConsumer consumer.Metrics
 
 	metricsTranslator *translator.MetricsTranslator
+	statsTranslator   *translator.StatsTranslator
 
 	server    *http.Server
 	tReceiver *receiverhelper.ObsReport
@@ -111,6 +115,10 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 				Pattern: "/api/v1/distribution_points",
 				Handler: ddr.handleDistributionPoints,
 			},
+			{
+				Pattern: "/v0.6/stats",
+				Handler: ddr.handleStats,
+			},
 		}...)
 	}
 
@@ -138,6 +146,7 @@ func newDataDogReceiver(config *Config, params receiver.Settings) (component.Com
 		},
 		tReceiver:         instance,
 		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
+		statsTranslator:   translator.NewStatsTranslator(),
 	}, nil
 }
 
@@ -316,9 +325,35 @@ func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Requ
 		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
 	}(&metricsCount)
 
-	err = fmt.Errorf("service checks endpoint not implemented")
-	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
-	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+	buf := translator.GetBuffer()
+	defer translator.PutBuffer(buf)
+	if _, err = io.Copy(buf, req.Body); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	var services []translator.ServiceCheck
+
+	err = json.Unmarshal(buf.Bytes(), &services)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.TranslateServices(services)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	_, _ = w.Write([]byte("OK"))
 }
 
 // handleSketches handles sketches, the underlying data structure of distributions https://docs.datadoghq.com/metrics/distributions/
@@ -330,9 +365,26 @@ func (ddr *datadogReceiver) handleSketches(w http.ResponseWriter, req *http.Requ
 		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
 	}(&metricsCount)
 
-	err = fmt.Errorf("sketches endpoint not implemented")
-	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
-	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+	var ddSketches []gogen.SketchPayload_Sketch
+	ddSketches, err = ddr.metricsTranslator.HandleSketchesPayload(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.TranslateSketches(ddSketches)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	_, _ = w.Write([]byte("OK"))
 }
 
 // handleIntake handles operational calls made by the agent to submit host tags and other metadata to the backend.
@@ -361,4 +413,43 @@ func (ddr *datadogReceiver) handleDistributionPoints(w http.ResponseWriter, req 
 	err = fmt.Errorf("distribution points endpoint not implemented")
 	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+}
+
+// handleStats handles incoming stats payloads.
+func (ddr *datadogReceiver) handleStats(w http.ResponseWriter, req *http.Request) {
+	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
+	var err error
+	var metricsCount = 0
+	defer func(metricsCount *int) {
+		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
+	}(&metricsCount)
+
+	req.Header.Set("Accept", "application/msgpack")
+	clientStats := &pb.ClientStatsPayload{}
+
+	err = msgp.Decode(req.Body, clientStats)
+	if err != nil {
+		ddr.params.Logger.Error("Error decoding pb.ClientStatsPayload", zap.Error(err))
+		http.Error(w, "Error decoding pb.ClientStatsPayload", http.StatusBadRequest)
+		return
+	}
+
+	metrics, err := ddr.statsTranslator.TranslateStats(clientStats, req.Header.Get(header.Lang), req.Header.Get(header.TracerVersion))
+
+	if err != nil {
+		ddr.params.Logger.Error("Error translating stats", zap.Error(err))
+		http.Error(w, "Error translating stats", http.StatusBadRequest)
+		return
+	}
+
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		ddr.params.Logger.Error("Metrics consumer errored out", zap.Error(err))
+		http.Error(w, "Metrics consumer errored out", http.StatusInternalServerError)
+		return
+	}
+
+	_, _ = w.Write([]byte("OK"))
 }

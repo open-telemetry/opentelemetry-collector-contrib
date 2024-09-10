@@ -70,7 +70,7 @@ func TestParserCache(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as regex")
 	require.NotNil(t, parser.cache, "expected cache to be configured")
-	require.Equal(t, parser.cache.maxSize(), uint16(200))
+	require.Equal(t, uint16(200), parser.cache.maxSize())
 }
 
 func TestParserRegex(t *testing.T) {

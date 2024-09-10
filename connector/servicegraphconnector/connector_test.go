@@ -81,7 +81,7 @@ func TestConnectorConsume(t *testing.T) {
 				},
 			},
 			sampleTraces:  buildSampleTrace(t, "val"),
-			verifyMetrics: verifyHappyCaseMetrics,
+			verifyMetrics: verifyHappyCaseMetricsWithDuration(2, 1),
 		},
 		{
 			name: "test fix failed label not work",
@@ -163,7 +163,7 @@ func TestConnectorConsume(t *testing.T) {
 			},
 			sampleTraces:  buildSampleTrace(t, "val"),
 			gates:         []*featuregate.Gate{legacyLatencyUnitMsFeatureGate},
-			verifyMetrics: verifyHappyCaseMetricsWithDuration(1000),
+			verifyMetrics: verifyHappyCaseLatencyMetrics(),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -209,11 +209,7 @@ func getGoldenTraces(t *testing.T, file string) ptrace.Traces {
 	return td
 }
 
-func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
-	verifyHappyCaseMetricsWithDuration()(t, md)
-}
-
-func verifyHappyCaseMetricsWithDuration() func(t *testing.T, md pmetric.Metrics) {
+func verifyHappyCaseMetricsWithDuration(serverDurationSum, clientDurationSum float64) func(t *testing.T, md pmetric.Metrics) {
 	return func(t *testing.T, md pmetric.Metrics) {
 		assert.Equal(t, 3, md.MetricCount())
 
@@ -230,12 +226,19 @@ func verifyHappyCaseMetricsWithDuration() func(t *testing.T, md pmetric.Metrics)
 		verifyCount(t, mCount)
 
 		mServerDuration := ms.At(1)
-		assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
-		verifyDuration(t, mServerDuration, 2, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0})
+		assert.Equal(t, "traces_service_graph_request_server", mServerDuration.Name())
+		verifyDuration(t, mServerDuration, serverDurationSum, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0})
 
 		mClientDuration := ms.At(2)
-		assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
-		verifyDuration(t, mClientDuration, 1, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
+		assert.Equal(t, "traces_service_graph_request_client", mClientDuration.Name())
+		verifyDuration(t, mClientDuration, clientDurationSum, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
+	}
+}
+
+func verifyHappyCaseLatencyMetrics() func(t *testing.T, md pmetric.Metrics) {
+	return func(t *testing.T, md pmetric.Metrics) {
+		verifyHappyCaseMetricsWithDuration(2000, 1000)(t, md)
+		verifyUnit(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Unit(), millisecondsUnit)
 	}
 }
 
@@ -283,6 +286,10 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	v, ok := attrs.Get(k)
 	assert.True(t, ok)
 	assert.Equal(t, expected, v.AsString())
+}
+
+func verifyUnit(t *testing.T, expected, actual string) {
+	assert.Equal(t, expected, actual)
 }
 
 func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
@@ -483,7 +490,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 		p.keyToMetric[key] = metric
 	}
 	p.cleanCache()
-	assert.Equal(t, 0, len(p.keyToMetric))
+	assert.Empty(t, p.keyToMetric)
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
@@ -529,8 +536,8 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	go p.cleanCache()
 
 	// Since everything is locked, nothing has happened, so both should still have length 1
-	assert.Equal(t, 1, len(p.reqTotal))
-	assert.Equal(t, 1, len(p.keyToMetric))
+	assert.Len(t, p.reqTotal, 1)
+	assert.Len(t, p.keyToMetric, 1)
 
 	// Now we pretend that we have stopped collecting metrics, by unlocking seriesMutex
 	p.seriesMutex.Unlock()
@@ -543,8 +550,8 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	// for dimensions from that series. It's important that it happens this way around,
 	// instead of deleting it from `keyToMetric`, otherwise the metrics collector will try
 	// and fail to find dimensions for a series that is about to be removed.
-	assert.Equal(t, 0, len(p.reqTotal))
-	assert.Equal(t, 1, len(p.keyToMetric))
+	assert.Empty(t, p.reqTotal)
+	assert.Len(t, p.keyToMetric, 1)
 
 	p.metricMutex.RUnlock()
 	p.seriesMutex.Unlock()
@@ -578,7 +585,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 		p.keyToMetric[key] = metric
 	}
 	p.cleanCache()
-	assert.Equal(t, 0, len(p.keyToMetric))
+	assert.Empty(t, p.keyToMetric)
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
