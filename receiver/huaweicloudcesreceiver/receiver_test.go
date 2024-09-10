@@ -88,7 +88,7 @@ func TestListMetricDefinitionsFailure(t *testing.T) {
 	metrics, err := receiver.listMetricDefinitions(context.Background())
 
 	assert.Error(t, err)
-	assert.Len(t, metrics, 0)
+	assert.Empty(t, metrics)
 	assert.Equal(t, "failed to list metrics", err.Error())
 	mockCes.AssertExpectations(t)
 }
@@ -277,7 +277,7 @@ func TestStartReadingMetrics(t *testing.T) {
 func TestCreateHTTPConfigNoVerifySSL(t *testing.T) {
 	cfg, err := createHTTPConfig(HuaweiSessionConfig{NoVerifySSL: true})
 	require.NoError(t, err)
-	assert.Equal(t, cfg.IgnoreSSLVerification, true)
+	assert.True(t, cfg.IgnoreSSLVerification)
 }
 
 func TestCreateHTTPConfigWithProxy(t *testing.T) {
@@ -289,9 +289,8 @@ func TestCreateHTTPConfigWithProxy(t *testing.T) {
 		SecretKey:     "secret",
 	})
 	require.NoError(t, err)
-	assert.Equal(t, cfg.HttpProxy.Schema, "https")
-	assert.Equal(t, cfg.HttpProxy.Host, "127.0.0.1")
-	assert.Equal(t, cfg.HttpProxy.Port, 8888)
-	assert.Equal(t, cfg.IgnoreSSLVerification, false)
-
+	assert.Equal(t, "https", cfg.HttpProxy.Schema)
+	assert.Equal(t, "127.0.0.1", cfg.HttpProxy.Host)
+	assert.Equal(t, 8888, cfg.HttpProxy.Port)
+	assert.False(t, cfg.IgnoreSSLVerification)
 }
