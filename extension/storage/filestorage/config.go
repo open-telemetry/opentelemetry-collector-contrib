@@ -53,7 +53,7 @@ type CompactionConfig struct {
 
 func (cfg *Config) Validate() error {
 	var dirs []string
-	if cfg.Compaction.OnStart {
+	if cfg.Compaction.OnStart || cfg.Compaction.OnRebound {
 		dirs = []string{cfg.Directory, cfg.Compaction.Directory}
 	} else {
 		dirs = []string{cfg.Directory}
