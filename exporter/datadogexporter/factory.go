@@ -56,7 +56,7 @@ var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegis
 var metricRemappingEnabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricremappingenabled",
 	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When set the Datadog Exporter does not remap Opentelemetry metrics to Datadog semantics."),
+	featuregate.WithRegisterDescription("When enabled the Datadog Exporter remaps Opentelemetry metrics to Datadog semantics."),
 )
 
 // noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
