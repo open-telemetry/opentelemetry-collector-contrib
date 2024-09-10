@@ -203,5 +203,5 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 		return rcv.totalItems.Load() == int32(cardLimit)
 	}, 1*time.Second, 5*time.Millisecond)
 
-	require.Equal(t, cardLimit, len(rcv.spanCountByMetadata))
+	require.Len(t, rcv.spanCountByMetadata, cardLimit)
 }
