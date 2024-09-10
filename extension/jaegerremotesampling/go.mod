@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.14.2-0.20240909182537-32cff9f7f331
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.66.0
+	google.golang.org/grpc v1.66.1
 )
 
 require (
