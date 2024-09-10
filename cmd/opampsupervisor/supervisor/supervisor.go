@@ -10,6 +10,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -241,11 +242,7 @@ func (s *Supervisor) Start() error {
 
 	s.startHealthCheckTicker()
 
-	s.agentWG.Add(1)
-	go func() {
-		defer s.agentWG.Done()
-		s.runAgentProcess()
-	}()
+	s.startAgentProcess()
 
 	s.customMessageWG.Add(1)
 	go func() {
@@ -1005,7 +1002,7 @@ func (s *Supervisor) handleRestartCommand() error {
 	return err
 }
 
-func (s *Supervisor) startAgent() (agentStartStatus, error) {
+func (s *Supervisor) startAgentCommand() (agentStartStatus, error) {
 	if s.cfgState.Load().(*configState).configMapIsEmpty {
 		// Don't start the agent if there is no config to run
 		s.logger.Info("No config present, not starting agent.")
@@ -1097,11 +1094,27 @@ func (s *Supervisor) healthCheck() {
 	s.lastHealthCheckErr = err
 }
 
+func (s *Supervisor) startAgentProcess() {
+	s.agentWG.Add(1)
+	go func() {
+		defer s.agentWG.Done()
+		s.runAgentProcess()
+	}()
+}
+
+func (s *Supervisor) stopAgentProcess(ctx context.Context) {
+	err := s.commander.Stop(ctx)
+	if err != nil {
+		s.logger.Error("Error stopping commander", zap.Error(err))
+	}
+	s.agentWG.Wait()
+}
+
 func (s *Supervisor) runAgentProcess() {
 	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.logger.Debug("Effective config found, starting agent initial time")
-		_, err := s.startAgent()
+		_, err := s.startAgentCommand()
 		if err != nil {
 			s.logger.Error("starting agent failed", zap.Error(err))
 			s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
@@ -1129,7 +1142,7 @@ func (s *Supervisor) runAgentProcess() {
 			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 			s.stopAgentApplyConfig()
-			status, err := s.startAgent()
+			status, err := s.startAgentCommand()
 			if err != nil {
 				s.logger.Error("starting agent with new config failed", zap.Error(err))
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
@@ -1171,7 +1184,7 @@ func (s *Supervisor) runAgentProcess() {
 
 		case <-restartTimer.C:
 			s.logger.Debug("Agent starting after start backoff")
-			_, err := s.startAgent()
+			_, err := s.startAgentCommand()
 			if err != nil {
 				s.logger.Error("restarting agent failed", zap.Error(err))
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
@@ -1299,6 +1312,10 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		configChanged = s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings) || configChanged
 	}
 
+	if msg.PackagesAvailable != nil {
+		s.processPackagesAvailableMessage(ctx, msg.PackagesAvailable)
+	}
+
 	// Update the agent config if any messages have touched the config
 	if configChanged {
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
@@ -1403,10 +1420,87 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 	return configChanged
 }
 
-func (s *Supervisor) processesPackageAvailableMessage(msg *protobufs.PackageAvailable) error {
-	if msg.Type != protobufs.PackageType_PackageType_TopLevel {
-		s.logger.Debug("Got non-top-level PackageAvailable message, ignoring...")
+func (s *Supervisor) processPackagesAvailableMessage(ctx context.Context, msg *protobufs.PackagesAvailable) error {
+	var topLevelPkg *protobufs.PackageAvailable
+	// TODO: Revisit and figure out the most sensible way to choose a package
+	// We might want a defined name for the package(s) we care about (e.g. otel_contrib_col and otel_col)
+	for _, v := range msg.GetPackages() {
+		if v.Type == protobufs.PackageType_PackageType_TopLevel {
+			topLevelPkg = v
+			break
+		}
+	}
+
+	if topLevelPkg == nil {
+		s.logger.Debug("No top-level package in PackagesAvailable message, ignoring...")
 		return nil
+	}
+
+	// TODO: Check the hash of what we have vs the hash of the package
+
+	b, err := downloadPackageContent(ctx, topLevelPkg.File.DownloadUrl)
+	if err != nil {
+		return fmt.Errorf("download package: %w", err)
+	}
+
+	err = verifyPackageIntegrity(b, topLevelPkg.File.ContentHash)
+	if err != nil {
+		return fmt.Errorf("verify package integrity: %w", err)
+	}
+
+	// We expect the file signature to be two space separated b64 payloads.
+	// The first part will be the certificate, and the second will be the signature.
+	parts := bytes.SplitN(topLevelPkg.File.Signature, []byte(" "), 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid format for package signature")
+	}
+
+	err = verifyPackageSignature(b, parts[0], parts[1])
+	if err != nil {
+		return fmt.Errorf("verify package signature: %w", err)
+	}
+
+	s.stopAgentProcess(ctx)
+	// We always want to start the agent process again, even if we fail to write the agent file
+	defer s.startAgentProcess()
+
+	agentBackupPath := filepath.Join(s.config.Storage.Directory, "collector.bak")
+	err = os.WriteFile(agentBackupPath, b, 0600)
+	if err != nil {
+		return fmt.Errorf("create agent backup: %w", err)
+	}
+
+	// TODO: Should we remove the backup file when returning from this function?
+
+	f, err := os.OpenFile(s.config.Agent.Executable, os.O_WRONLY|os.O_TRUNC, 0700)
+	if err != nil {
+		return fmt.Errorf("open file: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, bytes.NewBuffer(b)); err != nil {
+		restoreErr := restoreBackup(agentBackupPath, s.config.Agent.Executable)
+		return errors.Join(fmt.Errorf("write package to file: %w", err), restoreErr)
+	}
+
+	return nil
+}
+
+func restoreBackup(backupPath, restorePath string) error {
+	backupFile, err := os.Open(backupPath)
+	if err != nil {
+		return fmt.Errorf("open backup file: %w", err)
+	}
+	defer backupFile.Close()
+
+	restoreFile, err := os.OpenFile(restorePath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
+	if err != nil {
+		return fmt.Errorf("open restore file: %w", err)
+	}
+	defer restoreFile.Close()
+
+	if _, err := io.Copy(restoreFile, backupFile); err != nil {
+		return fmt.Errorf("copy backup file to restore file: %w", err)
 	}
 
 	return nil
