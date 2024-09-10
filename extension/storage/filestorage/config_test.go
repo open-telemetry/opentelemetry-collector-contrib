@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Timeout:              2 * time.Second,
 				FSync:                true,
+				CreateDirectory: true,
 				DirectoryPermissions: "0750",
 			},
 		},
