@@ -433,8 +433,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		assert.Len(t, firstExp.AllMetrics(), 1)
 		assert.Len(t, secondExp.AllMetrics(), 1)
 
-		assert.Equal(t, firstExp.AllMetrics()[0].MetricCount(), 2)
-		assert.Equal(t, secondExp.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, 2, firstExp.AllMetrics()[0].MetricCount())
+		assert.Equal(t, 2, secondExp.AllMetrics()[0].MetricCount())
 		assert.Equal(t, firstExp.AllMetrics(), secondExp.AllMetrics())
 	})
 
