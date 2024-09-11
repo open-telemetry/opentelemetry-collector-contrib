@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
@@ -79,6 +80,28 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 			},
 		},
 		{
+			name:         "convert_summary_count_val_to_sum (custom_metric_suffix)",
+			input:        getTestSummaryMetric(),
+			suffix:       ottl.NewTestingOptional[string](".count_value"),
+			temporality:  "cumulative",
+			monotonicity: false,
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sumMetric.Sum().SetIsMonotonic(false)
+
+				sumMetric.SetName("summary_metric.count_value")
+				dp := sumMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(100)
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
 			name:         "convert_summary_count_val_to_sum (no op)",
 			input:        getTestGaugeMetric(),
 			temporality:  "cumulative",
@@ -94,7 +117,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := convertSummaryCountValToSum(tt.temporality, tt.monotonicity)
+			evaluate, err := convertSummaryCountValToSum(tt.temporality, tt.monotonicity, tt.suffix)
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
@@ -111,16 +134,28 @@ func Test_ConvertSummaryCountValToSum_validation(t *testing.T) {
 	tests := []struct {
 		name          string
 		stringAggTemp string
+		suffix        ottl.Optional[string]
+		errorMsg      string
 	}{
 		{
 			name:          "invalid aggregation temporality",
 			stringAggTemp: "not a real aggregation temporality",
+			errorMsg:      "unknown aggregation temporality",
+		},
+		{
+			name:          "valid",
+			suffix:        ottl.NewTestingOptional[string](".count"),
+			stringAggTemp: "delta",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := convertSummaryCountValToSum(tt.stringAggTemp, true)
-			assert.Error(t, err, "unknown aggregation temporality: not a real aggregation temporality")
+			_, err := convertSummaryCountValToSum(tt.stringAggTemp, true, tt.suffix)
+			if tt.errorMsg != "" {
+				assert.ErrorContains(t, err, tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
