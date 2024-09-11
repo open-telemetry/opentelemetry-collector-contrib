@@ -24,13 +24,12 @@ The following configuration options are supported:
   * `logs` (default = otel_logs) The table name for logs.
   * `traces` (default = otel_traces) The table name for traces.
   * `metrics` (default = otel_metrics) The table name for metrics.
-* `create_schema` (default = true) Whether databases and tables are created automatically.
-* `mysql_endpoint` The mysql protocol address to create the schema; ignored if `create_schema` is false.
+* `create_schema` (default = true) Whether databases and tables are created automatically in doris.
+* `mysql_endpoint` The mysql protocol address of doris. Only use to create the schema; ignored if `create_schema` is false.
 * `history_days` (default = 0) Data older than these days will be deleted; ignored if `create_schema` is false. If set to 0, historical data will not be deleted.
 * `create_history_days` (default = 0) The number of days in the history partition that was created when the table was created; ignored if `create_schema` is false. If `history_days` is not 0, `create_history_days` needs to be less than or equal to `history_days`.
 * `replication_num` (default = 1) The number of replicas of the table; ignored if `create_schema` is false.
 * `timezone` (default is the time zone of the opentelemetry collector) The time zone of doris.
-* `timeout` (default = 5s) Time to wait per individual attempt to send data to a backend.
 * `sending_queue`  [details here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
   * `enabled` (default = true)
   * `num_consumers` (default = 10) Number of consumers that dequeue batches; ignored if `enabled` is false.
@@ -40,6 +39,10 @@ The following configuration options are supported:
   * `initial_interval` (default = 5s) Time to wait after the first failure before retrying; ignored if `enabled` is false.
   * `max_interval` (default = 30s) The upper bound on backoff; ignored if `enabled` is false.
   * `max_elapsed_time` (default = 300s) The maximum amount of time spent trying to send a batch; ignored if `enabled` is false. If set to 0, the retries are never stopped.
+
+The Doris exporter supports common [HTTP Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#http-configuration-settings), except for compression (all requests are uncompressed). As a consequence of supporting [confighttp](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#http-configuration-settings), the Doris exporter also supports common [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings).
+
+The Doris exporter sets `timeout` (HTTP request timeout) to 60s by default. All other defaults are as defined by [confighttp](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#http-configuration-settings).
 
 Example:
 ```yaml
