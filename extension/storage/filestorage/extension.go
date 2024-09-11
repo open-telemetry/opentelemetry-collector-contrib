@@ -34,7 +34,7 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 			dirs = []string{config.Directory}
 		}
 		for _, dir := range dirs {
-			if err := createDirectory(dir, os.FileMode(config.directoryPermissionsParsed)); err != nil {
+			if err := ensureDirectoryExists(dir, os.FileMode(config.directoryPermissionsParsed)); err != nil {
 				return nil, err
 			}
 		}
@@ -142,7 +142,7 @@ func isSafe(character rune) bool {
 	return false
 }
 
-func createDirectory(path string, perm os.FileMode) error {
+func ensureDirectoryExists(path string, perm os.FileMode) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return os.MkdirAll(path, perm)
 	}
