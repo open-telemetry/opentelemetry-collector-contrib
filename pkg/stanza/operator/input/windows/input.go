@@ -216,6 +216,22 @@ func (i *Input) read(ctx context.Context) int {
 	events, err := i.subscription.Read(i.maxReads)
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
+		i.Logger().Info("The error is:")
+		i.Logger().Info(err.Error())
+		if err.Error() == "The remote procedure call was cancelled." {
+			i.Logger().Info("Attempting to restart remote session due to RPC cancellation")
+			if stopErr := i.stopRemoteSession(); stopErr != nil {
+				i.Logger().Error("Failed to stop remote session", zap.Error(stopErr))
+				return 0
+			}
+			for {
+				if startErr := i.startRemoteSession(); startErr != nil {
+					i.Logger().Error("Failed to start remote session", zap.Error(startErr))
+					continue // Retry until the connection is re-established
+				}
+				break
+			}
+		}
 		return 0
 	}
 
