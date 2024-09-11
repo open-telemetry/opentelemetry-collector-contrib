@@ -37,7 +37,9 @@ func TestPushTraceData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
-	server := &http.Server{}
+	server := &http.Server{
+		ReadTimeout: 5 * time.Second,
+	}
 	go func() {
 		http.HandleFunc("/api/otel/otel_traces/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
