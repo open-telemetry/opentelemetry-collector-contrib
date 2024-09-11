@@ -104,11 +104,6 @@ func (c *Config) LogWarnings(logger *zap.Logger) {
 	}
 }
 
-// AddWarning appends to warnings in the configuration.
-func (c *Config) AddWarning(warning error) {
-	c.warnings = append(c.warnings, warning)
-}
-
 var _ component.Config = (*Config)(nil)
 
 // Validate the configuration for errors. This is required by component.Config.
