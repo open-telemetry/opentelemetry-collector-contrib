@@ -49,13 +49,16 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			} else {
 				return errors.New("unsupported signal type")
 			}
+		case *operator.SpanEventSignalNameChange:
+			if span, ok := signal.(ptrace.Span); ok {
+				if err := thisMigrator.Do(ss, span); err != nil {
+					return err
+				}
+			} else {
+				return errors.New("unsupported signal type")
+			}
 		case *migrate.SignalNameChange:
 			switch namedSignal := signal.(type) {
-			case ptrace.Span:
-				for e := 0; e < namedSignal.Events().Len(); e++ {
-					event := namedSignal.Events().At(e)
-					thisMigrator.Do(ss, event)
-				}
 			case alias.NamedSignal:
 				thisMigrator.Do(ss, namedSignal)
 			}

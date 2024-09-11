@@ -109,7 +109,8 @@ func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
 	for _, at := range spanEvents.Changes {
 		if renamedEvent := at.RenameEvents; renamedEvent != nil {
 			signalNameChange := migrate.NewSignalNameChange(renamedEvent.EventNameMap)
-			values	 = append(values, signalNameChange)
+			spanEventSignalNameChange := &operator.SpanEventSignalNameChange{SignalNameChange: *signalNameChange}
+			values	 = append(values, spanEventSignalNameChange)
 		} else if renamedAttribute := at.RenameAttributes; renamedAttribute != nil {
 			acceptableSpanNames := make([]string, 0)
 			for _, spanName := range renamedAttribute.ApplyToSpans {

@@ -177,9 +177,11 @@ func TestNewRevisionV1(t *testing.T) {
 					),
 				}},
 				spanEvents: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					migrate.NewSignalNameChange(map[string]string{
-						"started": "application started",
-					}),
+					&operator.SpanEventSignalNameChange{
+						SignalNameChange: *migrate.NewSignalNameChange(map[string]string{
+							"started": "application started",
+						}),
+					},
 					operator.NewSpanEventConditionalAttributeOperator(
 						*migrate.NewMultiConditionalAttributeSet(
 							map[string]string{"service.app.name": "service.name"},
