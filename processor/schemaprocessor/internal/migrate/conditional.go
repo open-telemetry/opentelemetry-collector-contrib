@@ -15,19 +15,19 @@ type ValueMatch interface {
 }
 
 type ConditionalAttributeSet struct {
-	on    *map[string]struct{}
-	attrs *AttributeChangeSet
+	on    map[string]struct{}
+	attrs AttributeChangeSet
 }
 
 type ConditionalAttributeSetSlice []*ConditionalAttributeSet
 
-func NewConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, matches ...Match) *ConditionalAttributeSet {
+func NewConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, matches ...Match) ConditionalAttributeSet {
 	on := make(map[string]struct{})
 	for _, m := range matches {
 		on[string(m)] = struct{}{}
 	}
-	return &ConditionalAttributeSet{
-		on:    &on,
+	return ConditionalAttributeSet{
+		on:    on,
 		attrs: NewAttributeChangeSet(mappings),
 	}
 }
@@ -55,11 +55,11 @@ func (ca *ConditionalAttributeSet) Rollback(attrs pcommon.Map, values ...string)
 
 // todo make it harder to misuse this!  diff between no values and 0 values
 func (ca *ConditionalAttributeSet) check(values ...string) bool {
-	if len(*ca.on) == 0 {
+	if len(ca.on) == 0 {
 		return true
 	}
 	for _, v := range values {
-		if _, ok := (*ca.on)[v]; !ok {
+		if _, ok := (ca.on)[v]; !ok {
 			return false
 		}
 	}

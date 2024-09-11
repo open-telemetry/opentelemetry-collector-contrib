@@ -15,7 +15,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		cond   *ConditionalAttributeSet
+		cond   ConditionalAttributeSet
 		check  string
 		attr   pcommon.Map
 		expect pcommon.Map
@@ -95,7 +95,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		cond   *ConditionalAttributeSet
+		cond   ConditionalAttributeSet
 		check  string
 		attr   pcommon.Map
 		expect pcommon.Map

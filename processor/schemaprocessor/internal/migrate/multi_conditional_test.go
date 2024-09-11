@@ -13,7 +13,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		cond       *MultiConditionalAttributeSet
+		cond       MultiConditionalAttributeSet
 		inCondData map[string]string
 		inAttr     pcommon.Map
 		expect pcommon.Map

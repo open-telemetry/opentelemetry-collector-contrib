@@ -27,8 +27,8 @@ type AttributeChangeSetSlice []*AttributeChangeSet
 
 // NewAttributeChangeSet allows for typed strings to be used as part
 // of the invocation that will be converted into the default string type.
-func NewAttributeChangeSet(mappings ast.AttributeMap) *AttributeChangeSet {
-	attr := &AttributeChangeSet{
+func NewAttributeChangeSet(mappings ast.AttributeMap) AttributeChangeSet {
+	attr := AttributeChangeSet{
 		updates:  make(map[string]string, len(mappings)),
 		rollback: make(map[string]string, len(mappings)),
 	}

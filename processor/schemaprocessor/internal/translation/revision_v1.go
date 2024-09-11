@@ -91,12 +91,12 @@ func newMetricChangeList(metrics ast.Metrics) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range metrics.Changes {
 		if renameAttributes := at.RenameAttributes; renameAttributes != nil {
-			attributeChangeSet := &operator.MetricAttributeOperator{
+			attributeChangeSet := operator.MetricAttributeOperator{
 				ConditionalAttributeChange: migrate.NewConditionalAttributeSet(renameAttributes.AttributeMap, renameAttributes.ApplyToMetrics...),
 			}
 			values = append(values, attributeChangeSet)
 		} else if renamedMetrics := at.RenameMetrics; renamedMetrics != nil {
-			signalNameChange := operator.MetricSignalNameChange{SignalNameChange: *migrate.NewSignalNameChange(renamedMetrics)}
+			signalNameChange := operator.MetricSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(renamedMetrics)}
 			values = append(values, signalNameChange)
 		}
 	}
@@ -108,7 +108,7 @@ func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
 	for _, at := range spanEvents.Changes {
 		if renamedEvent := at.RenameEvents; renamedEvent != nil {
 			signalNameChange := migrate.NewSignalNameChange(renamedEvent.EventNameMap)
-			spanEventSignalNameChange := &operator.SpanEventSignalNameChange{SignalNameChange: *signalNameChange}
+			spanEventSignalNameChange := operator.SpanEventSignalNameChange{SignalNameChange: signalNameChange}
 			values	 = append(values, spanEventSignalNameChange)
 		} else if renamedAttribute := at.RenameAttributes; renamedAttribute != nil {
 			acceptableSpanNames := make([]string, 0)
@@ -124,7 +124,7 @@ func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
 				"span.name": acceptableSpanNames,
 				"event.name": acceptableEventNames,
 			})
-			spanEventAttributeChangeSet := operator.NewSpanEventConditionalAttributeOperator(*attributeChangeSet)
+			spanEventAttributeChangeSet := operator.NewSpanEventConditionalAttributeOperator(attributeChangeSet)
 			values = append(values, spanEventAttributeChangeSet)
 		} else {
 			panic("spanEvents change must have either RenameEvents or RenameAttributes")

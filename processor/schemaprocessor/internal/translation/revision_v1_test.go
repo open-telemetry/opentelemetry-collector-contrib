@@ -171,13 +171,13 @@ func TestNewRevisionV1(t *testing.T) {
 					),
 				}},
 				spanEvents: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					&operator.SpanEventSignalNameChange{
-						SignalNameChange: *migrate.NewSignalNameChange(map[string]string{
+					operator.SpanEventSignalNameChange{
+						SignalNameChange: migrate.NewSignalNameChange(map[string]string{
 							"started": "application started",
 						}),
 					},
 					operator.NewSpanEventConditionalAttributeOperator(
-						*migrate.NewMultiConditionalAttributeSet(
+						migrate.NewMultiConditionalAttributeSet(
 							map[string]string{"service.app.name": "service.name"},
 							map[string][]string{
 								"span.name": {"service running"},
@@ -187,10 +187,10 @@ func TestNewRevisionV1(t *testing.T) {
 					),
 				}},
 				metrics: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					operator.MetricSignalNameChange{SignalNameChange: *migrate.NewSignalNameChange(map[string]string{
+					operator.MetricSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(map[string]string{
 						"service.computed.uptime": "service.uptime",
 					})},
-					&operator.MetricAttributeOperator{ConditionalAttributeChange: migrate.NewConditionalAttributeSet(
+					operator.MetricAttributeOperator{ConditionalAttributeChange: migrate.NewConditionalAttributeSet(
 						map[string]string{"runtime": "service.language"},
 						"service.runtime",
 					)},

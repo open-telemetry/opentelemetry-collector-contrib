@@ -12,7 +12,7 @@ import (
 )
 
 type MetricAttributeOperator struct{
-	ConditionalAttributeChange *migrate.ConditionalAttributeSet
+	ConditionalAttributeChange migrate.ConditionalAttributeSet
 }
 
 func (o MetricAttributeOperator) IsMigrator() {}
@@ -64,7 +64,7 @@ func (o MetricAttributeOperator) Do(ss migrate.StateSelector, metric pmetric.Met
 }
 
 type LogAttributeOperator struct {
-	AttributeChange *migrate.AttributeChangeSet
+	AttributeChange migrate.AttributeChangeSet
 }
 
 func (o LogAttributeOperator) Apply(data any) error {
@@ -98,7 +98,7 @@ func (o LogAttributeOperator) Rollback(data any) error {
 }
 
 type SpanAttributeOperator struct {
-	AttributeChange *migrate.AttributeChangeSet
+	AttributeChange migrate.AttributeChangeSet
 }
 
 func (o SpanAttributeOperator) Apply(data any) error {

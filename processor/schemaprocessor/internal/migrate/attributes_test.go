@@ -27,7 +27,7 @@ func TestNewAttributeChangeSet(t *testing.T) {
 			"hello": "world",
 		})
 
-		expect := &AttributeChangeSet{
+		expect := AttributeChangeSet{
 			updates: map[string]string{
 				"hello": "world",
 			},
@@ -45,7 +45,7 @@ func TestAttributeChangeSetApply(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		acs    *AttributeChangeSet
+		acs    AttributeChangeSet
 		attrs  pcommon.Map
 		expect pcommon.Map
 		errVal string
@@ -120,7 +120,7 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		acs    *AttributeChangeSet
+		acs    AttributeChangeSet
 		attrs  pcommon.Map
 		expect pcommon.Map
 		errVal string

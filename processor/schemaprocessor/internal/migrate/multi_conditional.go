@@ -15,13 +15,13 @@ type set = map[string]struct{}
 // MultiConditionalAttributeSet maps from string keys to possible values for each of those keys.  If a valid key is passed for each value, the conditional returns true
 type MultiConditionalAttributeSet struct {
 	// map from string keys (in the intended case "event.name" and "span.name" to a set of acceptable values)
-	keysToPossibleValues    *map[string]set
-	attrs *AttributeChangeSet
+	keysToPossibleValues    map[string]set
+	attrs AttributeChangeSet
 }
 
 type MultiConditionalAttributeSetSlice []*MultiConditionalAttributeSet
 
-func NewMultiConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, matches map[string][]Match) *MultiConditionalAttributeSet {
+func NewMultiConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, matches map[string][]Match) MultiConditionalAttributeSet {
 	keysToPossibleValues := make(map[string]set)
 	for k, values := range matches {
 		on := make(map[string]struct{})
@@ -30,8 +30,8 @@ func NewMultiConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap
 		}
 		keysToPossibleValues[k] = on
 	}
-	return &MultiConditionalAttributeSet{
-		keysToPossibleValues:    &keysToPossibleValues,
+	return MultiConditionalAttributeSet{
+		keysToPossibleValues:    keysToPossibleValues,
 		attrs: NewAttributeChangeSet(mappings),
 	}
 }
@@ -59,16 +59,16 @@ func (ca *MultiConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, 
 }
 
 func (ca *MultiConditionalAttributeSet) check(keyToCheckVals map[string]string) (bool, error) {
-	if len(*ca.keysToPossibleValues) == 0 {
+	if len(ca.keysToPossibleValues) == 0 {
 		return true, nil
 	}
-	if len(*ca.keysToPossibleValues) != len(keyToCheckVals) {
+	if len(ca.keysToPossibleValues) != len(keyToCheckVals) {
 		return false, errors.New("passed in wrong number of matchers to MultiConditionalAttributeSet")
 	}
 	for k, inVal := range keyToCheckVals {
 		// We must already have a key matching the input key!  If not, return an error
 		// indicates a programming error, should be impossible if using the class correctly
-		valToMatch, ok := (*ca.keysToPossibleValues)[k]
+		valToMatch, ok := (ca.keysToPossibleValues)[k]
 		if !ok {
 			return false, errors.New("passed in a key that doesn't exist in MultiConditionalAttributeSet")
 		}

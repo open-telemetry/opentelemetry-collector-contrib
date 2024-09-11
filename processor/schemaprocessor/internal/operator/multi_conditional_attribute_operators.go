@@ -12,8 +12,8 @@ type SpanEventConditionalAttributeOperator struct {
 
 var _ migrate.Migrator = SpanEventConditionalAttributeOperator{}
 
-func NewSpanEventConditionalAttributeOperator(migrator migrate.MultiConditionalAttributeSet) *SpanEventConditionalAttributeOperator {
-	return &SpanEventConditionalAttributeOperator{migrator: migrator}
+func NewSpanEventConditionalAttributeOperator(migrator migrate.MultiConditionalAttributeSet) SpanEventConditionalAttributeOperator {
+	return SpanEventConditionalAttributeOperator{migrator: migrator}
 }
 
 func (o SpanEventConditionalAttributeOperator) IsMigrator() {}
