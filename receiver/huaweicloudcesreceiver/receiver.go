@@ -190,20 +190,16 @@ func (rcvr *cesReceiver) listMetricDefinitions(ctx context.Context) ([]model.Met
 //
 // Returns:
 //   - A map where each key is a unique metric identifier and each value is the associated MetricData.
-func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions []model.MetricInfoList) map[string]internal.MetricData {
+func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions []model.MetricInfoList) map[string][]*internal.MetricData {
 	// TODO: Implement deduplication: There may be a need for deduplication, possibly using a Processor to ensure unique metrics are processed.
 	to := time.Now()
-	metrics := make(map[string]internal.MetricData)
+	metrics := make(map[string][]*internal.MetricData)
 	for _, metricDefinition := range metricDefinitions {
 		if len(metricDefinition.Dimensions) == 0 {
 			rcvr.logger.Warn("metric has 0 dimensions. skipping it", zap.String("metricName", metricDefinition.MetricName))
 			continue
 		}
 		key := internal.GetMetricKey(metricDefinition)
-		if _, ok := metrics[key]; ok {
-			rcvr.logger.Warn("metric key found on multiple metric definitions", zap.String("key", key))
-			continue
-		}
 		from, ok := rcvr.lastSeenTs[key]
 		if !ok {
 			from = to.Add(-1 * rcvr.config.CollectionInterval)
@@ -227,13 +223,13 @@ func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions [
 			}
 
 		}
-		metrics[key] = internal.MetricData{
+		metrics[metricDefinition.Namespace] = append(metrics[metricDefinition.Namespace], &internal.MetricData{
 			MetricName: metricDefinition.MetricName,
 			Dimensions: metricDefinition.Dimensions,
 			Namespace:  metricDefinition.Namespace,
 			Unit:       metricDefinition.Unit,
 			Datapoints: datapoints,
-		}
+		})
 	}
 	return metrics
 }

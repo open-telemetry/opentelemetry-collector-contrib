@@ -97,27 +97,30 @@ Before running the application, you need to set the environment variables `HUAWE
     ```
 
 ## Error handling
-If you encounter any CES errors, please refer to the [Huawei Cloud Error Codes](https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-errorcode.html).
+If you encounter any errors, please refer to: 
+- [Huawei Cloud Error Codes](https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-errorcode.html)
+- [CES Error Codes](https://support.huaweicloud.com/intl/en-us/api-ces/ErrorCode.html)
+- [Quota management](https://support.huaweicloud.com/intl/en-us/usermanual-ces/en-us_topic_0154940152.html)
+
 
 ## Converting CES metric representation to Open Telementery metric representation
 
 
-| Source Field                                | Target Field                                           | Description                                                                                           |
-|---------------------------------------------|--------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| **metric_name**                             | `metrics.name`                                          | The name of the metric.                                                                                |
-| **unit**                                    | `metrics.unit`                                          | The unit of the metric, e.g., `%`, `bit/s`.                                                           |
-| **datapoints.value**                      | `metrics.gauge.dataPoints.asDouble`                     | The value of the metric at the specified timestamp.                                           |
-| **datapoints.timestamp**                    | `metrics.gauge.dataPoints.timeUnixNano`                 | The timestamp of the metric in nanoseconds. Converted from milliseconds by multiplying by 1,000,000.  |
-| **namespace**                               | `metrics.metadata`                                    | The namespace of the metric, e.g., `SYS.VPC` is stored in the metadata map using the key `namespace`.                                                         |
-| **dimensions.name**         | key of `metrics.metadata`                                  | The dimension name stored as metadata key.                                                     |
-| **dimensions.value**         | value of `metrics.metadata`                                  | The dimension value stored as metadata value.                                                     |
-| **Receiver Config**                                       | `resource.attributes.project.id`                        | The project id used in the configuration file of the receiver.                                                               |
-| **Receiver Config**                                       | `resource.attributes.region.id`                        | The region id used in the configuration file of the receiver.                                                               |
-| *N/A*                                       | `resource.attributes.cloud.provider`                    | Set to `"huawei_cloud"` as the cloud provider.                                                        |
-| *N/A*                                       | `resource.attributes.service.name`                      | Set to `"ces_service"` to indicate the service name.                                                  |
-| *N/A*                                       | `resource.attributes.service.version`                   | Set to `"v1"` as the service version.                                                                 |
-| *N/A*                                       | `scopeMetrics.scope.name`                               | Set to `"huawei_cloud_ces"` as the scope name.                                                        |
-| *N/A*                                       | `scopeMetrics.scope.version`                            | Set to `"v1"` as the scope version.                                                                   |
+| Source Field             | Target Field                                 | Description                                                                                           |
+|--------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| **metric_name**           | `scoped_metric.metric.name`                                | The name of the metric.                                                                                |
+| **unit**                  | `scoped_metric.metric.unit`                                | The unit of the metric, e.g., `%`, `bit/s`.                                                           |
+| **datapoints.value**      | `scoped_metric.metric.gauge.data_points.value`             | The value of the metric at the specified timestamp.                                                    |
+| **datapoints.timestamp**  | `scoped_metric.metric.gauge.data_points.timestamp`         | The timestamp of the metric in nanoseconds. Converted from milliseconds by multiplying by 1,000,000.  |
+| **dimensions.name**       | `key of scoped_metric.metric.metadata`        | The dimension name stored as an attribute.                                                             |
+| **dimensions.value**      | `value of scoped_metric.metric.metadata`       | The dimension value stored as an attribute.                                                            |
+| **Receiver Config**       | `resource.attributes["project.id"]`          | The project ID used in the configuration file of the receiver.                                         |
+| **Receiver Config**       | `resource.attributes["region.id"]`           | The region ID used in the configuration file of the receiver.                                          |
+| **namespace**             | `resource.attributes["service.namespace"]`             | The namespace of the metric, e.g., `SYS.VPC`, stored as an attribute with the key `service.namespace`.         |
+| *N/A*                     | `resource.attributes["cloud.provider"]`      | Set to `"huawei_cloud"` as the cloud provider.                                                         |
+| *N/A*                     | `scoped_metric.scope.name`                                 | Set to `"huawei_cloud_ces"` as the scope name.                                                         |
+| *N/A*                     | `scoped_metric.scope.version`                              | Set to `"v1"` as the scope version.                                                                    |
+                                                                  |
 
 ### Notes
 
@@ -134,12 +137,27 @@ If you encounter any CES errors, please refer to the [Huawei Cloud Error Codes](
         { "average": 10, "timestamp": 1722580500000 },
         { "average": 20, "timestamp": 1722580800000 }
       ],
-      "namespace": "SYS.VPC",
-      "metric_name": "upstream_bandwidth_usage",
+      "namespace": "SYS.ECS",
+      "metric_name": "cpu_util",
       "dimensions": [
         {
-          "name": "publicip_id",
-          "value": "test-baae-4dd9-ad3f-1234"
+          "name": "instance_id",
+          "value": "faea5b75-e390-4e2b-8733-9226a9026070"
+        }
+      ]
+    },
+    {
+      "unit": "%",
+      "datapoints": [
+        { "average": 30, "timestamp": 1722580500000 },
+        { "average": 40, "timestamp": 1722580800000 }
+      ],
+      "namespace": "SYS.ECS",
+      "metric_name": "mem_util",
+      "dimensions": [
+        {
+          "name": "instance_id",
+          "value": "abcea5b75-e390-4e2b-8733-9226a9026070"
         }
       ]
     },
@@ -150,7 +168,7 @@ If you encounter any CES errors, please refer to the [Huawei Cloud Error Codes](
         { "average": 2048, "timestamp": 1722580800000}
       ],
       "namespace": "SYS.VPC",
-      "metric_name": "downstream_bandwidth",
+      "metric_name": "upstream_bandwidth_usage",
       "dimensions": [
         {
           "name": "publicip_id",
@@ -171,7 +189,8 @@ converts to
         "attributes": {
             "cloud.provider": "huawei_cloud",
             "project.id": "project_1",
-            "region.id": "eu-west-101"
+            "region.id": "eu-west-101",
+            "system.namespace": "SYS.ECS",
           }
       },
       "scopeMetrics": [
@@ -179,7 +198,7 @@ converts to
           "scope": { "name": "huawei_cloud_ces", "version": "v1" },
           "metrics": [
             {
-              "name": "upstream_bandwidth_usage",
+              "name": "cpu_util",
               "unit": "%",
               "gauge": {
                 "dataPoints": [
@@ -188,8 +207,7 @@ converts to
                 ]
               },
               "metadata": {
-                    "publicip_id":  "test-baae-4dd9-ad3f-1234",
-                    "system.namespace" : "SYS.VPC"
+                    "instance_id":  "faea5b75-e390-4e2b-8733-9226a9026070",
                 }
             }
           ]
@@ -198,8 +216,38 @@ converts to
           "scope": { "name": "huawei_cloud_ces", "version": "v1" },
           "metrics": [
             {
-              "name": "downstream_bandwidth_usage",
+              "name": "mem_util",
               "unit": "%",
+              "gauge": {
+                "dataPoints": [
+                  { "timeUnixNano": "1722580500000000000", "asDouble": 30 },
+                  { "timeUnixNano": "1722580800000000000", "asDouble": 40 }
+                ]
+              },
+              "metadata": {
+                  "instance_id": "abcea5b75-e390-4e2b-8733-9226a9026070",
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": {
+            "cloud.provider": "huawei_cloud",
+            "project.id": "project_1",
+            "region.id": "eu-west-101",
+            "system.namespace": "SYS.VPC",
+          }
+      },
+      "scopeMetrics": [
+        {
+          "scope": { "name": "huawei_cloud_ces", "version": "v1" },
+          "metrics": [
+            {
+              "name": "upstream_bandwidth_usage",
+              "unit": "bits/s",
               "gauge": {
                 "dataPoints": [
                   { "timeUnixNano": "1722580500000000000", "asDouble": 1024 },
@@ -207,9 +255,8 @@ converts to
                 ]
               },
               "metadata": {
-                  "publicip_id": "test-baae-4dd9-ad3f-1234",
-                  "system.namespace":"SYS.VPC"
-              }
+                    "publicip_id":  "test-baae-4dd9-ad3f-1234",
+                }
             }
           ]
         }

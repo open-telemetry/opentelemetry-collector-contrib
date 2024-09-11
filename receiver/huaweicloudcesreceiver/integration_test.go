@@ -39,6 +39,28 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 				},
 				Unit: "%",
 			},
+			{
+				Namespace:  "SYS.ECS",
+				MetricName: "mem_util",
+				Dimensions: []model.MetricsDimension{
+					{
+						Name:  "instance_id",
+						Value: "abcea5b75-e390-4e2b-8733-9226a9026070",
+					},
+				},
+				Unit: "%",
+			},
+			{
+				Namespace:  "SYS.VPC",
+				MetricName: "upstream_bandwidth_usage",
+				Dimensions: []model.MetricsDimension{
+					{
+						Name:  "publicip_id",
+						Value: "faea5b75-e390-4e2b-8733-9226a9026070",
+					},
+				},
+				Unit: "%",
+			},
 		},
 	}, nil)
 
@@ -46,15 +68,41 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 		MetricName: stringPtr("cpu_util"),
 		Datapoints: &[]model.Datapoint{
 			{
-				Average:   float64Ptr(45.67),
+				Average:   float64Ptr(10),
 				Timestamp: 1556625610000,
 			},
 			{
-				Average:   float64Ptr(89.01),
+				Average:   float64Ptr(20),
 				Timestamp: 1556625715000,
 			},
 		},
-	}, nil)
+	}, nil).Times(1)
+	mc.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
+		MetricName: stringPtr("mem_util"),
+		Datapoints: &[]model.Datapoint{
+			{
+				Average:   float64Ptr(30),
+				Timestamp: 1556625610000,
+			},
+			{
+				Average:   float64Ptr(40),
+				Timestamp: 1556625715000,
+			},
+		},
+	}, nil).Times(1)
+	mc.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
+		MetricName: stringPtr("upstream_bandwidth_usage"),
+		Datapoints: &[]model.Datapoint{
+			{
+				Average:   float64Ptr(50),
+				Timestamp: 1556625610000,
+			},
+			{
+				Average:   float64Ptr(60),
+				Timestamp: 1556625715000,
+			},
+		},
+	}, nil).Times(1)
 
 	sink := &consumertest.MetricsSink{}
 	cfg := createDefaultConfig().(*Config)
@@ -89,5 +137,5 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 
 	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "golden", "metrics_golden.yaml"))
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreResourceMetricsOrder()))
 }
