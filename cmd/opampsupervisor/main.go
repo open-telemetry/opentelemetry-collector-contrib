@@ -15,6 +15,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func runInteractive() error {
 	configFlag := flag.String("config", "", "Path to a supervisor configuration file")
 	flag.Parse()
 
@@ -32,7 +38,6 @@ func main() {
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(-1)
-		return
 	}
 
 	err = supervisor.Start()
@@ -44,4 +49,6 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt)
 	<-interrupt
 	supervisor.Shutdown()
+
+	return nil
 }
