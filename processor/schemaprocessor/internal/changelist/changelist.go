@@ -57,10 +57,13 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			} else {
 				return errors.New("unsupported signal type")
 			}
-		case *migrate.SignalNameChange:
-			switch namedSignal := signal.(type) {
-			case alias.NamedSignal:
-				thisMigrator.Do(ss, namedSignal)
+		case operator.MetricSignalNameChange:
+			if metric, ok := signal.(pmetric.Metric); ok {
+				if err := thisMigrator.Do(ss, metric); err != nil {
+					return err
+				}
+			} else {
+				return errors.New("unsupported signal type")
 			}
 		case *migrate.ConditionalAttributeSet:
 			if span, ok := signal.(ptrace.Span); ok {

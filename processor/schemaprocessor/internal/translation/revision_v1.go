@@ -91,13 +91,13 @@ func newSpanChangeList(spans ast.Spans) *changelist.ChangeList{
 func newMetricChangeList(metrics ast.Metrics) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range metrics.Changes {
-		if renamed := at.RenameAttributes; renamed != nil {
+		if renameAttributes := at.RenameAttributes; renameAttributes != nil {
 			attributeChangeSet := &operator.MetricAttributeOperator{
-				ConditionalAttributeChange: migrate.NewConditionalAttributeSet(renamed.AttributeMap, renamed.ApplyToMetrics...),
+				ConditionalAttributeChange: migrate.NewConditionalAttributeSet(renameAttributes.AttributeMap, renameAttributes.ApplyToMetrics...),
 			}
 			values = append(values, attributeChangeSet)
-		} else if renamed := at.RenameMetrics; renamed != nil {
-			signalNameChange := migrate.NewSignalNameChange(renamed)
+		} else if renamedMetrics := at.RenameMetrics; renamedMetrics != nil {
+			signalNameChange := operator.MetricSignalNameChange{SignalNameChange: *migrate.NewSignalNameChange(renamedMetrics)}
 			values = append(values, signalNameChange)
 		}
 	}

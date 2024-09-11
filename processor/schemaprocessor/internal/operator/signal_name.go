@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
@@ -17,5 +18,17 @@ func (c SpanEventSignalNameChange) Do(ss migrate.StateSelector, span ptrace.Span
 		event := span.Events().At(e)
 		c.SignalNameChange.Do(ss, event)
 	}
+	return nil
+}
+
+// a similar type as SpanEventSignalNameChange, but for metrics
+type MetricSignalNameChange struct {
+	SignalNameChange migrate.SignalNameChange
+}
+
+func (c MetricSignalNameChange) IsMigrator() {}
+
+func (c MetricSignalNameChange) Do(ss migrate.StateSelector, metric pmetric.Metric) error {
+	c.SignalNameChange.Do(ss, metric)
 	return nil
 }

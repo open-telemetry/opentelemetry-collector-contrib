@@ -193,9 +193,9 @@ func TestNewRevisionV1(t *testing.T) {
 					),
 				}},
 				metrics: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					migrate.NewSignalNameChange(map[string]string{
+					operator.MetricSignalNameChange{SignalNameChange: *migrate.NewSignalNameChange(map[string]string{
 						"service.computed.uptime": "service.uptime",
-					}),
+					})},
 					&operator.MetricAttributeOperator{ConditionalAttributeChange: migrate.NewConditionalAttributeSet(
 						map[string]string{"runtime": "service.language"},
 						"service.runtime",
