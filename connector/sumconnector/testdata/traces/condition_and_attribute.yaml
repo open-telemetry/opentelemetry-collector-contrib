@@ -32,13 +32,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 1
               dataPoints:
-                - asDouble: "15"
+                - asDouble: "15.6"
                   attributes:
                     - key: event.required
                       value:
                         stringValue: foo
                   timeUnixNano: "1678392127929006000"
-                - asDouble: "8"
+                - asDouble: "8.3"
                   attributes:
                     - key: event.required
                       value:
@@ -79,13 +79,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 1
               dataPoints:
-                - asDouble: "15"
+                - asDouble: "15.2"
                   attributes:
                     - key: event.required
                       value:
                         stringValue: foo
                   timeUnixNano: "1678392127929018000"
-                - asDouble: "8"
+                - asDouble: "8.1"
                   attributes:
                     - key: event.required
                       value:

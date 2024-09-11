@@ -38,7 +38,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 1
               dataPoints:
-                - asDouble: "14"
+                - asDouble: "14.6"
                   attributes:
                     - key: event.required
                       value:
@@ -47,7 +47,7 @@ resourceMetrics:
                       value:
                         stringValue: bar
                   timeUnixNano: "1678392127926637000"
-                - asDouble: "16"
+                - asDouble: "16.6"
                   attributes:
                     - key: event.required
                       value:
@@ -97,7 +97,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 1
               dataPoints:
-                - asDouble: "14"
+                - asDouble: "14.2"
                   attributes:
                     - key: event.required
                       value:
@@ -106,7 +106,7 @@ resourceMetrics:
                       value:
                         stringValue: bar
                   timeUnixNano: "1678392127926647000"
-                - asDouble: "16"
+                - asDouble: "16.2"
                   attributes:
                     - key: event.required
                       value:

@@ -264,6 +264,7 @@ func TestTracesToMetrics(t *testing.T) {
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreMetricFloatPrecision(3),
 				pmetrictest.IgnoreMetricDataPointsOrder()))
 		})
 	}
