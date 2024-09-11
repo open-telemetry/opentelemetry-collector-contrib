@@ -106,9 +106,19 @@ type TracesExporterConfig struct {
 	// The default value is 0, meaning the Datadog Agent TracerPayloads are unbuffered.
 	TraceBuffer int `mapstructure:"trace_buffer"`
 
-	// FlushInterval defines the interval in seconds at which the writer flushes traces
+	// flushInterval defines the interval in seconds at which the writer flushes traces
 	// to the intake; used in tests.
-	FlushInterval float64 `mapstructure:"flush_interval"`
+	flushInterval float64
+}
+
+// SetFlushInterval sets the interval in seconds at which the writer flushes traces
+func (c *TracesExporterConfig) SetFlushInterval(interval float64) {
+	c.flushInterval = interval
+}
+
+// GetFlushInterval returns the interval in seconds at which the writer flushes traces
+func (c *TracesExporterConfig) GetFlushInterval() float64 {
+	return c.flushInterval
 }
 
 func (c *TracesExporterConfig) Validate() error {

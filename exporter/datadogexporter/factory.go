@@ -238,7 +238,7 @@ func (f *factory) createMetricsExporter(
 	c component.Config,
 ) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.SourceTimeout)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.GetSourceTimeout())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -358,7 +358,7 @@ func (f *factory) createTracesExporter(
 		wg     sync.WaitGroup // waits for agent to exit
 	)
 
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.SourceTimeout)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.GetSourceTimeout())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -458,7 +458,7 @@ func (f *factory) createLogsExporter(
 
 	var pusher consumer.ConsumeLogsFunc
 	var logsAgent logsagentpipeline.LogsAgent
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.SourceTimeout)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.GetSourceTimeout())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}

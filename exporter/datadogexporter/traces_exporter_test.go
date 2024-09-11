@@ -261,10 +261,10 @@ func TestTraceExporter(t *testing.T) {
 			TracesConfig: datadogconfig.TracesConfig{
 				IgnoreResources: []string{},
 			},
-			FlushInterval: 0.1,
-			TraceBuffer:   2,
+			TraceBuffer: 2,
 		},
 	}
+	cfg.Traces.SetFlushInterval(0.1)
 
 	params := exportertest.NewNopSettings()
 	f := NewFactory()

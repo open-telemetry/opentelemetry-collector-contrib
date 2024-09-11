@@ -226,7 +226,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 			return clientutil.NewHTTPClient(cfg.ClientConfig)
 		}
 	}
-	if v := cfg.Traces.FlushInterval; v > 0 {
+	if v := cfg.Traces.GetFlushInterval(); v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}
 	if v := cfg.Traces.TraceBuffer; v > 0 {

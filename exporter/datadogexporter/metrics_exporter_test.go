@@ -57,10 +57,9 @@ func TestNewExporter(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
-		HostMetadata: HostMetadataConfig{
-			SourceTimeout: 50 * time.Millisecond,
-		},
+		HostMetadata: HostMetadataConfig{},
 	}
+	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
 

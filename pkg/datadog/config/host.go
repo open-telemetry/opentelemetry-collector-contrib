@@ -70,8 +70,18 @@ type HostMetadataConfig struct {
 	// To attach tags to telemetry signals regardless of the host, use a processor instead.
 	Tags []string `mapstructure:"tags"`
 
-	// SourceTimeout is the timeout to fetch from each provider - for example AWS IMDS.
+	// sourceTimeout is the timeout to fetch from each provider - for example AWS IMDS.
 	// If unset, or set to zero duration, there will be no timeout applied.
 	// Default is no timeout.
-	SourceTimeout time.Duration `mapstructure:"source_timeout"`
+	sourceTimeout time.Duration
+}
+
+// SetSourceTimeout sets the timeout to fetch from each provider - for example AWS IMDS.
+func (h *HostMetadataConfig) SetSourceTimeout(t time.Duration) {
+	h.sourceTimeout = t
+}
+
+// GetSourceTimeout returns the timeout to fetch from each provider - for example AWS IMDS.
+func (h *HostMetadataConfig) GetSourceTimeout() time.Duration {
+	return h.sourceTimeout
 }
