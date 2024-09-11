@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.109.0
 	github.com/signalfx/sapm-proto v0.14.0
 	github.com/stretchr/testify v1.9.0
+	go.opentelemetry.io/collector/client v1.15.0
 	go.opentelemetry.io/collector/component v0.109.0
 	go.opentelemetry.io/collector/config/configopaque v1.15.0
 	go.opentelemetry.io/collector/config/configretry v1.15.0
