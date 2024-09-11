@@ -106,6 +106,19 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
 }
 
+func TestValidateConfigWithScrapeConfigFiles(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_scrape_config_files.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	require.NoError(t, component.ValidateConfig(cfg))
+}
+
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-section.yaml"))
 	require.NoError(t, err)
