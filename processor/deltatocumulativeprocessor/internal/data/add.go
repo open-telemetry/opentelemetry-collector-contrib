@@ -86,16 +86,13 @@ func (b bounds) with(o bounds) bounds {
 
 // empty indicates whether there are any values in a bounds.
 func (b bounds) empty() bool {
-	return b.lower > b.upper
+	return b == bounds{}
 }
 
 // boundsAtScale is an accessory for Add() to calculate ideal combined scale.
 func (dp ExpHistogram) boundsAtScale(b expo.Buckets, scale int32) bounds {
 	if b.BucketCounts().Len() == 0 {
-		return bounds{
-			lower: 0,
-			upper: -1,
-		}
+		return bounds{}
 	}
 	shift := dp.Scale() - scale
 	a := expo.Abs(b)
