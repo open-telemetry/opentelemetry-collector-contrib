@@ -107,7 +107,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.57.0 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.2 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.57.0 // indirect
@@ -118,10 +118,10 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/sender v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.0-devel.0.20240830155027-f44a9da12951 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.57.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.56.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.57.0 // indirect
