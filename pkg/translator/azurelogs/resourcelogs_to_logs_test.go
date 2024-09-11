@@ -308,6 +308,10 @@ func TestExtractRawAttributes(t *testing.T) {
 		"d": "ok",
 	})
 
+	stringProperties := any("str")
+	intProperties := any(1)
+	jsonProperties := any("{\"a\": 1, \"b\": true, \"c\": 1.23, \"d\": \"ok\"}")
+
 	tests := []struct {
 		name     string
 		log      azureLogRecord
@@ -375,6 +379,69 @@ func TestExtractRawAttributes(t *testing.T) {
 				azureIdentity:                    "someone",
 				conventions.AttributeCloudRegion: "location",
 				azureProperties:                  properties,
+			},
+		},
+		{
+			name: "nil properties",
+			log: azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+				Properties:    nil,
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+			},
+		},
+		{
+			name: "string properties",
+			log: azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+				Properties:    &stringProperties,
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				azureProperties:    "str",
+			},
+		},
+		{
+			name: "int properties",
+			log: azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+				Properties:    &intProperties,
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				azureProperties:    1,
+			},
+		},
+		{
+			name: "json properties",
+			log: azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+				Properties:    &jsonProperties,
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				azureProperties:    "{\"a\": 1, \"b\": true, \"c\": 1.23, \"d\": \"ok\"}",
 			},
 		},
 	}

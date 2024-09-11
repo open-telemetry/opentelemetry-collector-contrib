@@ -216,27 +216,37 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 }
 
 func copyPropertiesAndApplySemanticConventions(category string, properties *any, attrs map[string]any) {
-
-	pmap := (*properties).(map[string]any)
-	attrsProps := map[string]any{}
-
-	for k, v := range pmap {
-		// Check for a complex conversion, e.g. AppServiceHTTPLogs.Protocol
-		if complexConversion, ok := tryGetComplexConversion(category, k); ok {
-			if complexConversion(k, v, attrs) {
-				continue
-			}
-		}
-		// Check for an equivalent Semantic Convention key
-		if otelKey, ok := resourceLogKeyToSemConvKey(k, category); ok {
-			attrs[otelKey] = normalizeValue(otelKey, v)
-		} else {
-			attrsProps[k] = v
-		}
+	if properties == nil {
+		return
 	}
 
-	if len(attrsProps) > 0 {
-		attrs[azureProperties] = attrsProps
+	// TODO: check if this is a valid JSON string and parse it?
+	switch p := (*properties).(type) {
+	case map[string]any:
+		attrsProps := map[string]any{}
+
+		for k, v := range p {
+			// Check for a complex conversion, e.g. AppServiceHTTPLogs.Protocol
+			if complexConversion, ok := tryGetComplexConversion(category, k); ok {
+				if complexConversion(k, v, attrs) {
+					continue
+				}
+			}
+			// Check for an equivalent Semantic Convention key
+			if otelKey, ok := resourceLogKeyToSemConvKey(k, category); ok {
+				attrs[otelKey] = normalizeValue(otelKey, v)
+			} else {
+				attrsProps[k] = v
+			}
+		}
+
+		if len(attrsProps) > 0 {
+			attrs[azureProperties] = attrsProps
+		}
+		break
+	default:
+		// otherwise, just add the properties as-is
+		attrs[azureProperties] = *properties
 	}
 }
 
