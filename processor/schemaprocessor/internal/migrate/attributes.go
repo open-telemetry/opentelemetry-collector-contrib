@@ -83,33 +83,3 @@ func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error
 	results.CopyTo(attrs)
 	return errs
 }
-
-// NewAttributeChangeSetSlice combines all the provided `AttributeChangeSets`
-// and allows them to be executed in the provided order.
-func NewAttributeChangeSetSlice(changes ...*AttributeChangeSet) *AttributeChangeSetSlice {
-	values := new(AttributeChangeSetSlice)
-	for _, c := range changes {
-		(*values) = append((*values), c)
-	}
-	return values
-}
-
-func (slice *AttributeChangeSetSlice) Apply(attrs pcommon.Map) error {
-	return slice.Do(StateSelectorApply, attrs)
-}
-
-func (slice *AttributeChangeSetSlice) Rollback(attrs pcommon.Map) error {
-	return slice.Do(StateSelectorRollback, attrs)
-}
-
-func (slice *AttributeChangeSetSlice) Do(ss StateSelector, attrs pcommon.Map) (errs error) {
-	for i := 0; i < len(*slice); i++ {
-		switch ss {
-		case StateSelectorApply:
-			errs = multierr.Append(errs, (*slice)[i].Apply(attrs))
-		case StateSelectorRollback:
-			errs = multierr.Append(errs, (*slice)[len(*slice)-1-i].Rollback(attrs))
-		}
-	}
-	return errs
-}

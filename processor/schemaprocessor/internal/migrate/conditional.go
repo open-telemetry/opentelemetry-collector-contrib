@@ -6,7 +6,6 @@ package migrate // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
-	"go.uber.org/multierr"
 )
 
 // ValueMatch defines the expected match type
@@ -65,32 +64,4 @@ func (ca *ConditionalAttributeSet) check(values ...string) bool {
 		}
 	}
 	return true
-}
-
-func NewConditionalAttributeSetSlice(conditions ...*ConditionalAttributeSet) *ConditionalAttributeSetSlice {
-	values := new(ConditionalAttributeSetSlice)
-	for _, c := range conditions {
-		(*values) = append((*values), c)
-	}
-	return values
-}
-
-func (slice *ConditionalAttributeSetSlice) Apply(attrs pcommon.Map, values ...string) error {
-	return slice.Do(StateSelectorApply, attrs, values)
-}
-
-func (slice *ConditionalAttributeSetSlice) Rollback(attrs pcommon.Map, values ...string) error {
-	return slice.Do(StateSelectorRollback, attrs, values)
-}
-
-func (slice *ConditionalAttributeSetSlice) Do(ss StateSelector, attrs pcommon.Map, values []string) (errs error) {
-	for i := 0; i < len((*slice)); i++ {
-		switch ss {
-		case StateSelectorApply:
-			errs = multierr.Append(errs, (*slice)[i].Apply(attrs, values...))
-		case StateSelectorRollback:
-			errs = multierr.Append(errs, (*slice)[len((*slice))-i-1].Rollback(attrs, values...))
-		}
-	}
-	return errs
 }

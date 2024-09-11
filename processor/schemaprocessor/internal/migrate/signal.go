@@ -60,31 +60,3 @@ func (s *SignalNameChange) Do(ss StateSelector, signal alias.NamedSignal) {
 		signal.SetName(name)
 	}
 }
-
-func NewSignalNameChangeSlice(changes ...*SignalNameChange) *SignalNameChangeSlice {
-	values := new(SignalNameChangeSlice)
-	for _, c := range changes {
-		(*values) = append((*values), c)
-	}
-	return values
-}
-
-// todo make this return an err
-func (slice *SignalNameChangeSlice) Apply(signal alias.NamedSignal) {
-	slice.Do(StateSelectorApply, signal)
-}
-
-func (slice *SignalNameChangeSlice) Rollback(signal alias.NamedSignal) {
-	slice.Do(StateSelectorRollback, signal)
-}
-
-func (slice *SignalNameChangeSlice) Do(ss StateSelector, signal alias.NamedSignal) {
-	for i := 0; i < len((*slice)); i++ {
-		switch ss {
-		case StateSelectorApply:
-			(*slice)[i].Apply(signal)
-		case StateSelectorRollback:
-			(*slice)[len((*slice))-i-1].Rollback(signal)
-		}
-	}
-}

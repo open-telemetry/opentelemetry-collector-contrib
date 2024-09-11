@@ -3,11 +3,9 @@
 package translation
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
 	"go.opentelemetry.io/otel/schema/v1.0/types"
 
@@ -15,10 +13,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
 )
-
-func compareFuncs(f1, f2 migrate.ResourceTestFunc[ptrace.Span]) bool {
-	return fmt.Sprintf("%p", f1) == fmt.Sprintf("%p", f2)
-}
 
 func TestNewRevisionV1(t *testing.T) {
 	t.Parallel()
@@ -217,7 +211,7 @@ func TestNewRevisionV1(t *testing.T) {
 			rev := NewRevision(tc.inVersion, tc.inDefinition)
 
 			// use go-cmp to compare tc.expect and rev and fail the test if there's a difference
-			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, migrate.ConditionalLambdaAttributeSet[ptrace.Span]{}, operator.SpanEventConditionalAttributeOperator{}, migrate.MultiConditionalAttributeSet{}), cmp.Comparer(compareFuncs)); diff != "" {
+			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, operator.SpanEventConditionalAttributeOperator{}, migrate.MultiConditionalAttributeSet{})); diff != "" {
 				t.Errorf("NewRevisionV1() mismatch (-want +got):\n%s", diff)
 			}
 		})
