@@ -90,8 +90,8 @@ func newKubletScraper(
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
 	}
 
-	return scraperhelper.NewScraper(
-		metadata.Type.String(),
+	return scraperhelper.NewScraperWithComponentType(
+		metadata.Type,
 		ks.scrape,
 		scraperhelper.WithStart(ks.start),
 		scraperhelper.WithShutdown(ks.shutdown),

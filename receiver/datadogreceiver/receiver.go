@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
@@ -324,9 +325,35 @@ func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Requ
 		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
 	}(&metricsCount)
 
-	err = fmt.Errorf("service checks endpoint not implemented")
-	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
-	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+	buf := translator.GetBuffer()
+	defer translator.PutBuffer(buf)
+	if _, err = io.Copy(buf, req.Body); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	var services []translator.ServiceCheck
+
+	err = json.Unmarshal(buf.Bytes(), &services)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.TranslateServices(services)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	_, _ = w.Write([]byte("OK"))
 }
 
 // handleSketches handles sketches, the underlying data structure of distributions https://docs.datadoghq.com/metrics/distributions/
@@ -338,9 +365,26 @@ func (ddr *datadogReceiver) handleSketches(w http.ResponseWriter, req *http.Requ
 		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
 	}(&metricsCount)
 
-	err = fmt.Errorf("sketches endpoint not implemented")
-	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
-	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+	var ddSketches []gogen.SketchPayload_Sketch
+	ddSketches, err = ddr.metricsTranslator.HandleSketchesPayload(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.TranslateSketches(ddSketches)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	_, _ = w.Write([]byte("OK"))
 }
 
 // handleIntake handles operational calls made by the agent to submit host tags and other metadata to the backend.
