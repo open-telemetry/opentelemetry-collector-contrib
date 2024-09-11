@@ -10,6 +10,7 @@ import (
 
 	"github.com/jaegertracing/jaeger/model"
 	sapmclient "github.com/signalfx/sapm-proto/client"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -22,14 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
-
-type contextKey string
-
-const sapmAccessTokenContextKey contextKey = splunk.SFxAccessTokenHeader
-
-func (k contextKey) String() string {
-	return string(k)
-}
 
 // TODO: Find a place for this to be shared.
 type baseTracesExporter struct {
@@ -138,17 +131,17 @@ func (se *sapmExporter) retrieveAccessToken(ctx context.Context, md ptrace.Resou
 		return ""
 	}
 
-	var token string
-	if ctxAccessToken, ok := ctx.Value(sapmAccessTokenContextKey).(string); ok {
-		token = ctxAccessToken
-	} else {
-		attrs := md.Resource().Attributes()
-		if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
-			token = accessToken.Str()
-		}
+	cl := client.FromContext(ctx)
+	ss := cl.Metadata.Get(splunk.SFxAccessTokenHeader)
+	if len(ss) > 0 {
+		return ss[0]
 	}
 
-	return token
+	attrs := md.Resource().Attributes()
+	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
+		return accessToken.Str()
+	}
+	return ""
 }
 
 // filterToken filters the access token from the batch processor to avoid leaking credentials to the backend.

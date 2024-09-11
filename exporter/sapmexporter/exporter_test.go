@@ -18,6 +18,7 @@ import (
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -275,7 +276,12 @@ func TestSAPMClientTokenAccess(t *testing.T) {
 
 			ctx := context.Background()
 			if tt.inContext {
-				ctx = context.WithValue(ctx, sapmAccessTokenContextKey, "SplunkAccessToken")
+				ctx = client.NewContext(
+					ctx,
+					client.Info{Metadata: client.NewMetadata(
+						map[string][]string{splunk.SFxAccessTokenHeader: {"SplunkAccessToken"}},
+					)},
+				)
 			}
 			err = se.pushTraceData(ctx, trace)
 			require.NoError(t, err)
