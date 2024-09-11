@@ -5,7 +5,6 @@ go 1.22.0
 require (
 	code.cloudfoundry.org/garden v0.0.0-20240828205541-a750c1e932f1
 	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-alpha.9
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.108.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.109.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.0
@@ -48,7 +47,6 @@ require (
 	github.com/prometheus/common v0.57.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/tedsuo/rata v1.0.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.108.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
