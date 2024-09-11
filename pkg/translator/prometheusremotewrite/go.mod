@@ -6,7 +6,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.109.0
-	github.com/prometheus/common v0.57.0
+	github.com/prometheus/common v0.59.1
 	github.com/prometheus/prometheus v0.54.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/pdata v1.15.0
