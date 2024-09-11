@@ -166,29 +166,30 @@ func Test_opampNotifier_SendStatus(t *testing.T) {
 	unmarshaler := plog.ProtoUnmarshaler{}
 	logs, err := unmarshaler.UnmarshalLogs(registry.sentMessages[0].message)
 	require.NoError(t, err)
-	require.Equal(t, logs.ResourceLogs().Len(), 1)
-	require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
-	require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(), 1)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
+	require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 	log := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	require.Equal(t, log.Body().Str(), "status")
+	require.Equal(t, "status", log.Body().Str())
 	attr := log.Attributes()
 	v, b := attr.Get("telemetry_type")
 	require.True(t, b)
-	require.Equal(t, v.Str(), "telemetry")
+	require.Equal(t, "telemetry", v.Str())
 
 	v, b = attr.Get("ingest_status")
 	require.True(t, b)
-	require.Equal(t, v.Str(), IngestStatusIngesting)
+	require.Equal(t, IngestStatusIngesting, v.Str())
 
-	require.Equal(t, log.Timestamp(), pcommon.NewTimestampFromTime(ingestTime))
+	require.Equal(t, pcommon.NewTimestampFromTime(ingestTime), log.Timestamp())
 
+	expectedTimestamp := int64(pcommon.NewTimestampFromTime(ingestTime))
 	v, b = attr.Get("start_time")
 	require.True(t, b)
-	require.Equal(t, v.Int(), int64(pcommon.NewTimestampFromTime(ingestTime)))
+	require.Equal(t, expectedTimestamp, v.Int())
 
 	v, b = attr.Get("end_time")
 	require.True(t, b)
-	require.Equal(t, v.Int(), int64(pcommon.NewTimestampFromTime(ingestTime)))
+	require.Equal(t, expectedTimestamp, v.Int())
 
 	_, b = attr.Get("failure_message")
 	require.False(t, b)
@@ -242,7 +243,7 @@ func Test_opampNotifier_SendStatus_Error(t *testing.T) {
 
 	notifier.SendStatus(context.Background(), toSend)
 	require.Empty(t, registry.sentMessages)
-	require.Equal(t, registry.sendMessageCalls, 1)
+	require.Equal(t, 1, registry.sendMessageCalls)
 }
 
 func Test_opampNotifier_SendStatus_MaxRetries(t *testing.T) {
@@ -274,5 +275,5 @@ func Test_opampNotifier_SendStatus_MaxRetries(t *testing.T) {
 
 	require.True(t, completionTime.After(now))
 	require.Empty(t, registry.sentMessages)
-	require.Equal(t, registry.sendMessageCalls, maxNotificationAttempts)
+	require.Equal(t, maxNotificationAttempts, registry.sendMessageCalls)
 }
