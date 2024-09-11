@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestTranslationSupportedVersion(t *testing.T) {
@@ -447,8 +449,8 @@ func TestTranslationEquvialance_Metrics(t *testing.T) {
 		}
 	}
 	expect := NewExampleMetrics(t, Version{1, 4, 0})
-	assert.EqualValues(t, expect, a, "Must match the expected value when upgrading versions")
-	assert.EqualValues(t, expect, b, "Must match the expected value when reverting versions")
+	assert.NoError(t, pmetrictest.CompareMetrics(expect, a), "Must match the expected value when upgrading versions")
+	assert.NoError(t, pmetrictest.CompareMetrics(expect, b), "Must match the expected value when reverting versions")
 }
 
 func TestTranslationEquvialance_Traces(t *testing.T) {

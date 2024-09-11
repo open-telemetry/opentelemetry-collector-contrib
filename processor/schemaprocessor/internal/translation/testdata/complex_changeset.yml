@@ -74,7 +74,7 @@ versions:
             container-exit-code: container.exit.status
           apply_to_metrics:
           - container.stop
-          - container.respawn
+          - container.restart
     logs:
       changes:
       - rename_attributes:
