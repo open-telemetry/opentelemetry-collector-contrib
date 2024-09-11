@@ -28,7 +28,7 @@ var _ storage.Extension = (*localFileStorage)(nil)
 func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extension, error) {
 	if config.CreateDirectory {
 		var dirs []string
-		if config.Compaction.OnStart {
+		if config.Compaction.OnStart || config.Compaction.OnRebound {
 			dirs = []string{config.Directory, config.Compaction.Directory}
 		} else {
 			dirs = []string{config.Directory}
