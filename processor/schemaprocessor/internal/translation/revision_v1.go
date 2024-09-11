@@ -19,7 +19,7 @@ type RevisionV1 struct {
 	ver                               *Version
 	all                               *changelist.ChangeList
 	resources                         *changelist.ChangeList
-	spans                             *migrate.ConditionalAttributeSetSlice
+	spans                             *changelist.ChangeList
 	spanEvents          			  *changelist.ChangeList
 	metricsRenameMetrics              *migrate.SignalNameChangeSlice
 	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
@@ -42,7 +42,7 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		ver:                               ver,
 		all:                               newAllChangeList(def.All),
 		resources:                         newResourceChangeList(def.Resources),
-		spans:                             newSpanConditionalAttributeSlice(def.Spans),
+		spans:                             newSpanChangeList(def.Spans),
 		spanEvents:						   newSpanEventChangeList(def.SpanEvents),
 		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
 		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
@@ -78,6 +78,17 @@ func newResourceChangeList(resource ast.Attributes) *changelist.ChangeList{
 	return &changelist.ChangeList{Migrators: values}
 }
 
+func newSpanChangeList(spans ast.Spans) *changelist.ChangeList{
+	values := make([]migrate.Migrator, 0)
+	for _, at := range spans.Changes {
+		if renamed := at.RenameAttributes; renamed != nil {
+			conditionalAttributeChangeSet := migrate.NewConditionalAttributeSet(renamed.AttributeMap, renamed.ApplyToSpans...)
+			values = append(values, conditionalAttributeChangeSet)
+		}
+	}
+	return &changelist.ChangeList{Migrators: values}
+
+}
 func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
 	values := make([]migrate.Migrator, 0)
 	for _, at := range spanEvents.Changes {

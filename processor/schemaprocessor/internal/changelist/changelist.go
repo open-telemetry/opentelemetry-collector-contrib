@@ -32,26 +32,13 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			default:
 				return errors.New("unsupported signal type")
 			}
-		case operator.SpanEventConditionalAttributeOperator:
+		case *operator.SpanEventConditionalAttributeOperator:
 			if span, ok := signal.(ptrace.Span); ok {
 				if err := thisMigrator.Do(ss, span); err != nil {
 					return err
 				}
 			} else {
 				return errors.New("unsupported signal type")
-			}
-		case *migrate.MultiConditionalAttributeSet:
-			switch typedSignal := signal.(type) {
-			case ptrace.Span:
-				if err := thisMigrator.Do(ss, typedSignal.Attributes(), map[string]string{"span.name": typedSignal.Name()}); err != nil {
-					return err
-				}
-			//case DataPoint:
-			//	if err := thisMigrator.Apply(typedSignal.Attributes(), map[string][]string{"metric.name": {typedsignal.name()}}); err != nil {
-			//		return err
-			//	}
-			default:
-				return errors.New("unsupported signal type for Conditional Attribute Change")
 			}
 		case *migrate.SignalNameChange:
 			switch namedSignal := signal.(type) {
@@ -63,6 +50,15 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			case alias.NamedSignal:
 				thisMigrator.Do(ss, namedSignal)
 			}
+		case *migrate.ConditionalAttributeSet:
+			if span, ok := signal.(ptrace.Span); ok {
+				if err := thisMigrator.Do(ss, span.Attributes(), span.Name()); err != nil {
+					return err
+				}
+			} else {
+				return errors.New("unsupported signal type")
+			}
+
 		default:
 			return errors.New("unsupported migrator type")
 		}

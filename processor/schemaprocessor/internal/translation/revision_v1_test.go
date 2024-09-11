@@ -37,7 +37,7 @@ func TestNewRevisionV1(t *testing.T) {
 				ver:                                   &Version{1, 1, 1},
 				all:                                   &changelist.ChangeList{make([]migrate.Migrator, 0)},
 				resources:                             &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				spans:                                 migrate.NewConditionalAttributeSetSlice(),
+				spans:                                 &changelist.ChangeList{make([]migrate.Migrator, 0)},
 				spanEvents: 				           &changelist.ChangeList{make([]migrate.Migrator, 0)},
 				metricsRenameAttributes:               migrate.NewConditionalAttributeSetSlice(),
 				metricsRenameMetrics:                  migrate.NewSignalNameChangeSlice(),
@@ -168,7 +168,7 @@ func TestNewRevisionV1(t *testing.T) {
 						"service_name": "service.name",
 					}),
 				}},
-				spans: migrate.NewConditionalAttributeSetSlice(
+				spans: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					migrate.NewConditionalAttributeSet(
 						map[string]string{"service_version": "service.version"},
 						"application start",
@@ -176,7 +176,7 @@ func TestNewRevisionV1(t *testing.T) {
 					migrate.NewConditionalAttributeSet[string](
 						map[string]string{"deployment.environment": "service.deployment.environment"},
 					),
-				),
+				}},
 				spanEvents: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					migrate.NewSignalNameChange(map[string]string{
 						"started": "application started",

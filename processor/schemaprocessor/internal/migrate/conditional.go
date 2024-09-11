@@ -32,6 +32,9 @@ func NewConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, mat
 		attrs: NewAttributeChangeSet(mappings),
 	}
 }
+
+func (ca ConditionalAttributeSet) IsMigrator() {}
+
 func (ca *ConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, values ...string) (errs error) {
 	if ca.check(values...) {
 		switch ss {
