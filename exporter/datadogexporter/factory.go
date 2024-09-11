@@ -56,7 +56,7 @@ var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegis
 var metricRemappingDisableddFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricremappingdisabled",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled the Datadog Exporter remaps Opentelemetry metrics to Datadog semantics."),
+	featuregate.WithRegisterDescription("When enabled the Datadog Exporter remaps OpenTelemetry semantic conventions to Datadog semantic conventions."),
 	featuregate.WithRegisterReferenceURL("https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/"),
 )
 
