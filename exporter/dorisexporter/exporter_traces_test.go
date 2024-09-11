@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 
 func TestPushTraceData(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.Endpoint = "http://127.0.0.1:0000"
+	config.Endpoint = "http://127.0.0.1:18030"
 	config.CreateSchema = false
 
 	err := config.Validate()
@@ -36,9 +37,22 @@ func TestPushTraceData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
+	server := &http.Server{}
+	go func() {
+		http.HandleFunc("/api/otel/otel_traces/_stream_load", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"Status":"Success"}`))
+		})
+		server.Addr = ":18030"
+		server.ListenAndServe()
+	}()
+
+	time.Sleep(1 * time.Second)
+
 	err = exporter.pushTraceData(ctx, simpleTraces(10))
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "Put \"http://127.0.0.1:0000/api/otel/otel_traces/_stream_load\": dial tcp 127.0.0.1:0: connect: connection refused")
+	require.NoError(t, err)
+
+	server.Shutdown(ctx)
 }
 
 func simpleTraces(count int) ptrace.Traces {
