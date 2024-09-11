@@ -39,7 +39,7 @@ func TestPushTraceData(t *testing.T) {
 
 	server := &http.Server{}
 	go func() {
-		http.HandleFunc("/api/otel/otel_traces/_stream_load", func(w http.ResponseWriter, r *http.Request) {
+		http.HandleFunc("/api/otel/otel_traces/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"Status":"Success"}`))
 		})
