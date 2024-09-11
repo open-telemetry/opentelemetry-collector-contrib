@@ -16,6 +16,6 @@ versions:
             attribute_map:
               docker.image.name: d4r.image.name
             apply_to_metrics:
-              - testSpan2
+              - testMetricTwo
   #  this has to be here
   1.0.0:

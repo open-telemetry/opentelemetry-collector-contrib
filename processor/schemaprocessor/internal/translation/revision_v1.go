@@ -21,8 +21,7 @@ type RevisionV1 struct {
 	resources                         *changelist.ChangeList
 	spans                             *changelist.ChangeList
 	spanEvents          			  *changelist.ChangeList
-	metricsRenameMetrics              *migrate.SignalNameChangeSlice
-	metricsRenameAttributes           *migrate.ConditionalAttributeSetSlice
+	metrics 						  *changelist.ChangeList
 	logs 							  *changelist.ChangeList
 }
 
@@ -44,8 +43,7 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		resources:                         newResourceChangeList(def.Resources),
 		spans:                             newSpanChangeList(def.Spans),
 		spanEvents:						   newSpanEventChangeList(def.SpanEvents),
-		metricsRenameAttributes:           newMetricConditionalSlice(def.Metrics),
-		metricsRenameMetrics:              newMetricNameSignalSlice(def.Metrics),
+	    metrics: 						   newMetricChangeList(def.Metrics),
 		logs: newLogsChangelist(def.Logs),
 	}
 
@@ -89,6 +87,23 @@ func newSpanChangeList(spans ast.Spans) *changelist.ChangeList{
 	return &changelist.ChangeList{Migrators: values}
 
 }
+
+func newMetricChangeList(metrics ast.Metrics) *changelist.ChangeList {
+	values := make([]migrate.Migrator, 0)
+	for _, at := range metrics.Changes {
+		if renamed := at.RenameAttributes; renamed != nil {
+			attributeChangeSet := &operator.MetricAttributeOperator{
+				ConditionalAttributeChange: migrate.NewConditionalAttributeSet(renamed.AttributeMap, renamed.ApplyToMetrics...),
+			}
+			values = append(values, attributeChangeSet)
+		} else if renamed := at.RenameMetrics; renamed != nil {
+			signalNameChange := migrate.NewSignalNameChange(renamed)
+			values = append(values, signalNameChange)
+		}
+	}
+	return &changelist.ChangeList{Migrators: values}
+}
+
 func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
 	values := make([]migrate.Migrator, 0)
 	for _, at := range spanEvents.Changes {

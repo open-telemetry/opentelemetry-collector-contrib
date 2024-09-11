@@ -10,24 +10,42 @@
                 "dataPoints": [
                   {
                     "timeUnixNano": "1725146753842860000",
-                    "asInt": "100"
+                    "asInt": "100",
+                    "attributes": [
+                      {
+                        "key": "k8s.cluster.name",
+                        "value": {
+                          "stringValue": "value"
+                        }
+                      },
+                      {
+                        "key": "d4r.image.name",
+                        "value": {
+                          "doubleValue": 1.1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "120",
+                    "attributes": [
+                      {
+                        "key": "kubernetes.cluster.name",
+                        "value": {
+                          "stringValue": "value"
+                        }
+                      },
+                      {
+                        "key": "d4r.image.name",
+                        "value": {
+                          "doubleValue": 1.1
+                        }
+                      }
+                    ]
                   }
                 ]
-              },
-              "attributes": [
-                {
-                  "key": "k8s.cluster.name",
-                  "value": {
-                    "stringValue": "value"
-                  }
-                },
-                {
-                  "key": "d4r.image.name",
-                  "value": {
-                    "doubleValue": 1.1
-                  }
-                }
-              ]
+              }
             },
             {
               "name": "testMetricTwo",
@@ -35,24 +53,42 @@
                 "dataPoints": [
                   {
                     "timeUnixNano": "1725146753842860000",
-                    "asInt": "100"
+                    "asInt": "100",
+                    "attributes": [
+                      {
+                        "key": "k8s.cluster.name",
+                        "value": {
+                          "stringValue": "value"
+                        }
+                      },
+                      {
+                        "key": "d4r.image.name",
+                        "value": {
+                          "doubleValue": 1.1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "120",
+                    "attributes": [
+                      {
+                        "key": "k8s.cluster.name",
+                        "value": {
+                          "stringValue": "value"
+                        }
+                      },
+                      {
+                        "key": "d4r.image.name",
+                        "value": {
+                          "doubleValue": 1.1
+                        }
+                      }
+                    ]
                   }
                 ]
-              },
-              "attributes": [
-                {
-                  "key": "k8s.cluster.name",
-                  "value": {
-                    "stringValue": "value"
-                  }
-                },
-                {
-                  "key": "d4r.image.name",
-                  "value": {
-                    "doubleValue": 1.1
-                  }
-                }
-              ]
+              }
             },
             {
               "name": "testMetricThree",

@@ -3,6 +3,7 @@ package changelist
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
@@ -30,6 +31,14 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 					return err
 				}
 			default:
+				return errors.New("unsupported signal type")
+			}
+		case *operator.MetricAttributeOperator:
+			if metric, ok := signal.(pmetric.Metric); ok {
+				if err := thisMigrator.Do(ss, metric); err != nil {
+					return err
+				}
+			} else {
 				return errors.New("unsupported signal type")
 			}
 		case *operator.SpanEventConditionalAttributeOperator:

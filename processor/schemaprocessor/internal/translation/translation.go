@@ -297,19 +297,11 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
-						if err != nil {
-							return err
-						}
 					}
 				case pmetric.MetricTypeHistogram:
 					for dp := 0; dp < metric.Histogram().DataPoints().Len(); dp++ {
 						datam := metric.Histogram().DataPoints().At(dp)
 						err = rev.all.Apply(datam)
-						if err != nil {
-							return err
-						}
-						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -321,19 +313,11 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
-						if err != nil {
-							return err
-						}
 					}
 				case pmetric.MetricTypeSum:
 					for dp := 0; dp < metric.Sum().DataPoints().Len(); dp++ {
 						datam := metric.Sum().DataPoints().At(dp)
 						err = rev.all.Apply(datam)
-						if err != nil {
-							return err
-						}
-						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -345,15 +329,15 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsRenameAttributes.Apply(datam.Attributes(), metric.Name())
-						if err != nil {
-							return err
-						}
 					}
 				}
-				rev.metricsRenameMetrics.Apply(metric)
+				if err := rev.metrics.Apply(metric); err != nil {
+					return err
+				}
 			case Revert:
-				rev.metricsRenameMetrics.Rollback(metric)
+				if err := rev.metrics.Rollback(metric); err != nil {
+					return err
+				}
 				switch metric.Type() {
 				case pmetric.MetricTypeExponentialHistogram:
 					for dp := 0; dp < metric.ExponentialHistogram().DataPoints().Len(); dp++ {
@@ -362,19 +346,11 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
-						if err != nil {
-							return err
-						}
 					}
 				case pmetric.MetricTypeHistogram:
 					for dp := 0; dp < metric.Histogram().DataPoints().Len(); dp++ {
 						datam := metric.Histogram().DataPoints().At(dp)
 						err = rev.all.Rollback(datam)
-						if err != nil {
-							return err
-						}
-						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}
@@ -386,10 +362,6 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
-						if err != nil {
-							return err
-						}
 					}
 				case pmetric.MetricTypeSum:
 					for dp := 0; dp < metric.Sum().DataPoints().Len(); dp++ {
@@ -398,19 +370,11 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						if err != nil {
 							return err
 						}
-						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
-						if err != nil {
-							return err
-						}
 					}
 				case pmetric.MetricTypeSummary:
 					for dp := 0; dp < metric.Summary().DataPoints().Len(); dp++ {
 						datam := metric.Summary().DataPoints().At(dp)
 						err = rev.all.Rollback(datam)
-						if err != nil {
-							return err
-						}
-						err = rev.metricsRenameAttributes.Rollback(datam.Attributes(), metric.Name())
 						if err != nil {
 							return err
 						}

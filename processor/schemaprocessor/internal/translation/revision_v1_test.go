@@ -39,8 +39,7 @@ func TestNewRevisionV1(t *testing.T) {
 				resources:                             &changelist.ChangeList{make([]migrate.Migrator, 0)},
 				spans:                                 &changelist.ChangeList{make([]migrate.Migrator, 0)},
 				spanEvents: 				           &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				metricsRenameAttributes:               migrate.NewConditionalAttributeSetSlice(),
-				metricsRenameMetrics:                  migrate.NewSignalNameChangeSlice(),
+				metrics: &changelist.ChangeList{make([]migrate.Migrator, 0)},
 				logs:									&changelist.ChangeList{make([]migrate.Migrator, 0)},
 			},
 		},
@@ -191,20 +190,15 @@ func TestNewRevisionV1(t *testing.T) {
 						),
 					),
 				}},
-				metricsRenameAttributes: migrate.NewConditionalAttributeSetSlice(
-					migrate.NewConditionalAttributeSet(
-						map[string]string{
-							"runtime": "service.language",
-						},
-						"service.runtime",
-					),
-				),
-				metricsRenameMetrics: migrate.NewSignalNameChangeSlice(
+				metrics: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					migrate.NewSignalNameChange(map[string]string{
 						"service.computed.uptime": "service.uptime",
 					}),
-					migrate.NewSignalNameChange(map[string]string{}),
-				),
+					&operator.MetricAttributeOperator{ConditionalAttributeChange: migrate.NewConditionalAttributeSet(
+						map[string]string{"runtime": "service.language"},
+						"service.runtime",
+					)},
+				}},
 				logs: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					migrate.NewAttributeChangeSet(map[string]string{
 						"ERROR": "error",
