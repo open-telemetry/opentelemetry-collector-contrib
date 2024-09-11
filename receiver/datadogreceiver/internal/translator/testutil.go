@@ -68,3 +68,16 @@ func requireDp(t *testing.T, dp pmetric.NumberDataPoint, expectedAttrs pcommon.M
 	require.Equal(t, expectedValue, dp.DoubleValue())
 	require.Equal(t, expectedAttrs, dp.Attributes())
 }
+
+func totalHistBucketCounts(hist pmetric.ExponentialHistogramDataPoint) uint64 {
+	var totalCount uint64
+	for i := 0; i < hist.Negative().BucketCounts().Len(); i++ {
+		totalCount += hist.Negative().BucketCounts().At(i)
+	}
+
+	totalCount += hist.ZeroCount()
+	for i := 0; i < hist.Positive().BucketCounts().Len(); i++ {
+		totalCount += hist.Positive().BucketCounts().At(i)
+	}
+	return totalCount
+}
