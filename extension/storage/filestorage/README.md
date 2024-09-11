@@ -124,7 +124,7 @@ following troubleshooting method works for bbolt-managed files. As such, there i
 
 When troubleshooting components that use the File Storage extension, it is sometimes helpful to read the raw contents of
 files created by the extension for the component.  The simplest way to read files
-created by the File Storage extension is to use the strings utility ([Linux](https://linux.die.net/man/1/strings),
+created by the File Storage extension is to use the strings utility ([Linux](https://man7.org/linux/man-pages/man1/strings.1.html),
 [Windows](https://learn.microsoft.com/en-us/sysinternals/downloads/strings)).
 
 For example, here are the contents of the file created by the File Storage extension when it's configured as the storage
