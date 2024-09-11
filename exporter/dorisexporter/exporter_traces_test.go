@@ -41,10 +41,10 @@ func TestPushTraceData(t *testing.T) {
 	go func() {
 		http.HandleFunc("/api/otel/otel_traces/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"Status":"Success"}`))
+			_, _ = w.Write([]byte(`{"Status":"Success"}`))
 		})
 		server.Addr = ":18030"
-		server.ListenAndServe()
+		_ = server.ListenAndServe()
 	}()
 
 	time.Sleep(1 * time.Second)
@@ -52,7 +52,7 @@ func TestPushTraceData(t *testing.T) {
 	err = exporter.pushTraceData(ctx, simpleTraces(10))
 	require.NoError(t, err)
 
-	server.Shutdown(ctx)
+	_ = server.Shutdown(ctx)
 }
 
 func simpleTraces(count int) ptrace.Traces {
