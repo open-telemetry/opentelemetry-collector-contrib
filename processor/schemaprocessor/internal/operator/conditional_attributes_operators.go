@@ -13,7 +13,7 @@ type SpanConditionalAttributeOperator struct {
 	Migrator migrate.ConditionalAttributeSet
 }
 
-func (o SpanConditionalAttributeOperator) IsMigrator()  {}
+func (o SpanConditionalAttributeOperator) IsMigrator() {}
 
 func (o SpanConditionalAttributeOperator) Do(ss migrate.StateSelector, span ptrace.Span) error {
 	return o.Migrator.Do(ss, span.Attributes(), span.Name())

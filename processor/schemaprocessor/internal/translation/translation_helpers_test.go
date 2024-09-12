@@ -27,7 +27,6 @@ const (
 //go:embed testdata
 var testdataFiles embed.FS
 
-
 func LoadTranslationVersion(tb testing.TB, name string) io.Reader {
 	tb.Helper()
 

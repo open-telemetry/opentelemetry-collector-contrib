@@ -16,7 +16,7 @@ import (
 )
 
 // MetricDataPointAttributeOperator is an Operator that acts on Metric DataPoints' attributes
-type MetricDataPointAttributeOperator struct{
+type MetricDataPointAttributeOperator struct {
 	ConditionalAttributeChange migrate.ConditionalAttributeSet
 }
 
@@ -87,7 +87,6 @@ func (o LogAttributeOperator) Apply(data any) error {
 	return nil
 }
 
-
 func (o LogAttributeOperator) Rollback(data any) error {
 	logs, ok := data.(plog.ScopeLogs)
 	if !ok {
@@ -120,7 +119,6 @@ func (o SpanAttributeOperator) Apply(data any) error {
 	}
 	return nil
 }
-
 
 func (o SpanAttributeOperator) Rollback(data any) error {
 	traces, ok := data.(ptrace.ScopeSpans)

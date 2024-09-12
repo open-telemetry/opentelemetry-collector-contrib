@@ -26,7 +26,7 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 		if ss == migrate.StateSelectorApply {
 			migrator = c.Migrators[i]
 		} else {
-			migrator = c.Migrators[len(c.Migrators) - 1 -i]
+			migrator = c.Migrators[len(c.Migrators)-1-i]
 		}
 		// switch between operator types - what do the operators act on?
 		switch thisMigrator := migrator.(type) {
@@ -63,7 +63,7 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			return fmt.Errorf("unsupported migrator type %T", thisMigrator)
 		}
 	}
-		return nil
+	return nil
 }
 
 func (c ChangeList) Apply(signal any) error {

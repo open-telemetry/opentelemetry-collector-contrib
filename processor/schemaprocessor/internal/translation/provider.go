@@ -1,7 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 
 import (
@@ -63,12 +62,12 @@ func NewTestProvider(fs *embed.FS) Provider {
 	return &testProvider{fs: fs}
 }
 
-func (tp testProvider) Lookup(_ context.Context, schemaURL string) (io.Reader, error)  {
+func (tp testProvider) Lookup(_ context.Context, schemaURL string) (io.Reader, error) {
 	parsedPath, err := url.Parse(schemaURL)
 	if err != nil {
 		return nil, err
 	}
-	f, err := tp.fs.Open(parsedPath.Path[1:]);
+	f, err := tp.fs.Open(parsedPath.Path[1:])
 	if err != nil {
 		return nil, err
 	}

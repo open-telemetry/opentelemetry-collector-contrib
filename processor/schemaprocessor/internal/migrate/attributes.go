@@ -17,7 +17,7 @@ import (
 type AttributeChangeSet struct {
 	// The keys are the old attribute name used in the previous version, the values are the
 	// new attribute name starting from this version (comment from ast.AttributeMap)
-	updates  ast.AttributeMap
+	updates ast.AttributeMap
 	// the inverse of the updates map
 	rollback ast.AttributeMap
 }

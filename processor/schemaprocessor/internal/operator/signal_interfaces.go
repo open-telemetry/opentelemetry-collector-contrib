@@ -11,7 +11,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-
 type LogOperator interface {
 	migrate.Migrator
 	Do(ss migrate.StateSelector, log plog.LogRecord) error

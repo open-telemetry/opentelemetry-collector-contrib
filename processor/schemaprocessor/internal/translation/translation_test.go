@@ -1,7 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-
 package translation
 
 import (
@@ -96,7 +95,7 @@ func TestTranslationIteratorExact(t *testing.T) {
 				{1, 9, 0},
 				{1, 8, 0},
 				{1, 7, 0},
-			},		},
+			}},
 		{
 			scenario: "Unsupported / Unknown version",
 			target:   "https://opentelemetry.io/schemas/1.6.1",
@@ -149,7 +148,6 @@ func TestTranslationIterator(t *testing.T) {
 	}
 	assert.EqualValues(t, &Version{1, 7, 0}, ver, "Must match the expected version number")
 }
-
 
 func TestTranslationSpanChanges(t *testing.T) {
 	t.Parallel()

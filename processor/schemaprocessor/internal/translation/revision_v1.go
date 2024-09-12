@@ -15,13 +15,13 @@ import (
 // applied to a signal at a given version.
 // todo(ankit) implement split and rest of otel schema
 type RevisionV1 struct {
-	ver                               *Version
-	all                               *changelist.ChangeList
-	resources                         *changelist.ChangeList
-	spans                             *changelist.ChangeList
-	spanEvents          			  *changelist.ChangeList
-	metrics 						  *changelist.ChangeList
-	logs 							  *changelist.ChangeList
+	ver        *Version
+	all        *changelist.ChangeList
+	resources  *changelist.ChangeList
+	spans      *changelist.ChangeList
+	spanEvents *changelist.ChangeList
+	metrics    *changelist.ChangeList
+	logs       *changelist.ChangeList
 }
 
 // NewRevision processes the VersionDef and assigns the version to this revision
@@ -37,13 +37,13 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		logChanges.Changes = append(logChanges.Changes, ast.AttributeChange{RenameAttributes: change.RenameAttributes})
 	}
 	return &RevisionV1{
-		ver:                               ver,
-		all:                               newAllChangeList(def.All),
-		resources:                         newResourceChangeList(def.Resources),
-		spans:                             newSpanChangeList(def.Spans),
-		spanEvents:						   newSpanEventChangeList(def.SpanEvents),
-	    metrics: 						   newMetricChangeList(def.Metrics),
-		logs: newLogsChangelist(def.Logs),
+		ver:        ver,
+		all:        newAllChangeList(def.All),
+		resources:  newResourceChangeList(def.Resources),
+		spans:      newSpanChangeList(def.Spans),
+		spanEvents: newSpanEventChangeList(def.SpanEvents),
+		metrics:    newMetricChangeList(def.Metrics),
+		logs:       newLogsChangelist(def.Logs),
 	}
 
 }
@@ -52,8 +52,7 @@ func (r RevisionV1) Version() *Version {
 	return r.ver
 }
 
-
-func newAllChangeList(all ast.Attributes) *changelist.ChangeList{
+func newAllChangeList(all ast.Attributes) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range all.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
@@ -64,7 +63,7 @@ func newAllChangeList(all ast.Attributes) *changelist.ChangeList{
 	return &changelist.ChangeList{Migrators: values}
 }
 
-func newResourceChangeList(resource ast.Attributes) *changelist.ChangeList{
+func newResourceChangeList(resource ast.Attributes) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range resource.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
@@ -75,7 +74,7 @@ func newResourceChangeList(resource ast.Attributes) *changelist.ChangeList{
 	return &changelist.ChangeList{Migrators: values}
 }
 
-func newSpanChangeList(spans ast.Spans) *changelist.ChangeList{
+func newSpanChangeList(spans ast.Spans) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range spans.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
@@ -103,13 +102,13 @@ func newMetricChangeList(metrics ast.Metrics) *changelist.ChangeList {
 	return &changelist.ChangeList{Migrators: values}
 }
 
-func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
+func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range spanEvents.Changes {
 		if renamedEvent := at.RenameEvents; renamedEvent != nil {
 			signalNameChange := migrate.NewSignalNameChange(renamedEvent.EventNameMap)
 			spanEventSignalNameChange := operator.SpanEventSignalNameChange{SignalNameChange: signalNameChange}
-			values	 = append(values, spanEventSignalNameChange)
+			values = append(values, spanEventSignalNameChange)
 		} else if renamedAttribute := at.RenameAttributes; renamedAttribute != nil {
 			acceptableSpanNames := make([]string, 0)
 			for _, spanName := range renamedAttribute.ApplyToSpans {
@@ -121,7 +120,7 @@ func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
 			}
 
 			attributeChangeSet := migrate.NewMultiConditionalAttributeSet(renamedAttribute.AttributeMap, map[string][]string{
-				"span.name": acceptableSpanNames,
+				"span.name":  acceptableSpanNames,
 				"event.name": acceptableEventNames,
 			})
 			spanEventAttributeChangeSet := operator.NewSpanEventConditionalAttributeOperator(attributeChangeSet)
@@ -133,7 +132,7 @@ func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList{
 	return &changelist.ChangeList{Migrators: values}
 }
 
-func newLogsChangelist(logs ast.Logs) *changelist.ChangeList{
+func newLogsChangelist(logs ast.Logs) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range logs.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {

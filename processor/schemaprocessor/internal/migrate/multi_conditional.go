@@ -4,10 +4,10 @@
 package migrate // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 
 import (
-"errors"
+	"errors"
 
-"go.opentelemetry.io/collector/pdata/pcommon"
-"go.opentelemetry.io/otel/schema/v1.0/ast"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/schema/v1.0/ast"
 )
 
 type set = map[string]struct{}
@@ -15,8 +15,8 @@ type set = map[string]struct{}
 // MultiConditionalAttributeSet maps from string keys to possible values for each of those keys.  If a valid key is passed for each value, the conditional returns true
 type MultiConditionalAttributeSet struct {
 	// map from string keys (in the intended case "event.name" and "span.name" to a set of acceptable values)
-	keysToPossibleValues    map[string]set
-	attrs AttributeChangeSet
+	keysToPossibleValues map[string]set
+	attrs                AttributeChangeSet
 }
 
 type MultiConditionalAttributeSetSlice []*MultiConditionalAttributeSet
@@ -31,8 +31,8 @@ func NewMultiConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap
 		keysToPossibleValues[k] = on
 	}
 	return MultiConditionalAttributeSet{
-		keysToPossibleValues:    keysToPossibleValues,
-		attrs: NewAttributeChangeSet(mappings),
+		keysToPossibleValues: keysToPossibleValues,
+		attrs:                NewAttributeChangeSet(mappings),
 	}
 }
 
@@ -77,7 +77,7 @@ func (ca *MultiConditionalAttributeSet) check(keyToCheckVals map[string]string) 
 			continue
 		}
 		if _, ok := valToMatch[inVal]; !ok {
-			return false,  nil
+			return false, nil
 		}
 
 		//for _, v := range inVals {

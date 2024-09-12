@@ -1,7 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 
 import (
@@ -26,7 +25,8 @@ import (
 // it will convert from the given input, to the configured target.
 //
 // Note: as an optimisation, once a Translation is returned from the manager,
-//       there is no checking the incoming signals if the schema family is a match.
+//
+//	there is no checking the incoming signals if the schema family is a match.
 type Translation interface {
 	// SupportedVersions checks to see if the provided version is defined as part
 	// of this translation since it is useful to know it the translation is missing
@@ -119,7 +119,6 @@ func newTranslatorFromReader(log *zap.Logger, schemaURL string, content io.Reade
 	}
 	return t, nil
 }
-
 
 func (t *translator) Len() int {
 	return len(t.revisions)
@@ -385,7 +384,8 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 // then the iterator will wait til the update has been made
 //
 // Note: Once an iterator has been made, the passed context MUST cancel or run to completion
-//       in order for the read lock to be released if either Revert or Upgrade has been returned.
+//
+//	in order for the read lock to be released if either Revert or Upgrade has been returned.
 func (t *translator) iterator(ctx context.Context, from *Version) (iterator, int) {
 	status := from.Compare(t.target)
 	if status == NoChange || !t.SupportedVersion(from) {

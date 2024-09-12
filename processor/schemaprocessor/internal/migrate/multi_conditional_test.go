@@ -15,11 +15,11 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name   string
+		name       string
 		cond       MultiConditionalAttributeSet
 		inCondData map[string]string
 		inAttr     pcommon.Map
-		expect pcommon.Map
+		expect     pcommon.Map
 	}{
 		{
 			name:       "No changes defined",
@@ -108,7 +108,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 				},
 				map[string][]string{
 					"trace.name": {"application start"},
-					"span.name": {"application end"},
+					"span.name":  {"application end"},
 				},
 			),
 			inCondData: map[string]string{"span.name": "application start", "trace.name": "application end"},
@@ -126,7 +126,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 					"service.version": "application.version",
 				},
 				map[string][]string{
-					"span.name": {"application start"},
+					"span.name":  {"application start"},
 					"trace.name": {"application end"},
 				},
 			),

@@ -99,7 +99,7 @@ func pmetricsFromJson(t *testing.T, path string) pmetric.Metrics {
 	return inSignals
 }
 
-func buildTestTransformer(t *testing.T, targetUrl string)  *transformer {
+func buildTestTransformer(t *testing.T, targetUrl string) *transformer {
 	t.Helper()
 	defaultConfig := newDefaultConfiguration()
 	castedConfig := defaultConfig.(*Config)
@@ -117,53 +117,52 @@ func buildTestTransformer(t *testing.T, targetUrl string)  *transformer {
 
 func TestTransformerSchemaBySections(t *testing.T) {
 	tests := []struct {
-		name            string
-		section           string
-		dataType       component.DataType
+		name     string
+		section  string
+		dataType component.DataType
 	}{
 		{
 			// todo(ankit) do i need to test all data types here?
-			name: "all_logs",
-			section: "all",
+			name:     "all_logs",
+			section:  "all",
 			dataType: component.DataTypeLogs,
 		},
 		{
 			// todo(ankit) do i need to test all data types here?
-			name: "resources_logs",
-			section: "resources",
+			name:     "resources_logs",
+			section:  "resources",
 			dataType: component.DataTypeLogs,
 		},
 		{
-			name: "spans",
-			section: "spans",
+			name:     "spans",
+			section:  "spans",
 			dataType: component.DataTypeTraces,
 		},
 		{
-			name: "span_events_rename_spans",
-			section: "span_events_rename_spans",
+			name:     "span_events_rename_spans",
+			section:  "span_events_rename_spans",
 			dataType: component.DataTypeTraces,
 		},
 		{
-			name: "span_events_rename_attributes",
-			section: "span_events_rename_attributes",
+			name:     "span_events_rename_attributes",
+			section:  "span_events_rename_attributes",
 			dataType: component.DataTypeTraces,
 		},
 		{
-			name: "metrics_rename_metrics",
-			section: "metrics_rename_metrics",
+			name:     "metrics_rename_metrics",
+			section:  "metrics_rename_metrics",
 			dataType: component.DataTypeMetrics,
 		},
 		{
-			name: "metrics_rename_attributes",
-			section: "metrics_rename_attributes",
+			name:     "metrics_rename_attributes",
+			section:  "metrics_rename_attributes",
 			dataType: component.DataTypeMetrics,
 		},
 		{
-			name: "logs_rename_attributes",
-			section: "logs_rename_attributes",
+			name:     "logs_rename_attributes",
+			section:  "logs_rename_attributes",
 			dataType: component.DataTypeLogs,
 		},
-
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -198,10 +197,7 @@ func TestTransformerSchemaBySections(t *testing.T) {
 				return
 			}
 
-
-
 		})
-
 
 	}
 }
@@ -258,8 +254,6 @@ func TestTransformerProcessing(t *testing.T) {
 	})
 }
 
-
-
 type SchemaUsed int
 
 const (
@@ -281,17 +275,17 @@ func GenerateLogForTest() plog.Logs {
 //go:embed testdata/testschemas
 var testdataFiles embed.FS
 
- // case 1: resource schema set, scope schema not set, use resource schema
- // case 2: resource schema not set, scope schema set, use scope schema inside
- // case 3: resource schema set, scope schema set, use scope schema
- // case 4: resource schema not set, scope schema not set, noop translation
+// case 1: resource schema set, scope schema not set, use resource schema
+// case 2: resource schema not set, scope schema set, use scope schema inside
+// case 3: resource schema set, scope schema set, use scope schema
+// case 4: resource schema not set, scope schema not set, noop translation
 func TestTransformerScopeLogSchemaPrecedence(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name    string
-		input   func() plog.Logs
-		whichSchemaUsed    SchemaUsed
-		wantErr assert.ErrorAssertionFunc
+		name            string
+		input           func() plog.Logs
+		whichSchemaUsed SchemaUsed
+		wantErr         assert.ErrorAssertionFunc
 	}{
 		{
 			name: "resourcesetscopeunset",
@@ -301,41 +295,41 @@ func TestTransformerScopeLogSchemaPrecedence(t *testing.T) {
 				return log
 			},
 			whichSchemaUsed: ResourceSchemaVersionUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 		{
-		    name: "resourceunsetscopeset",
-		    input: func() plog.Logs {
-		            log := GenerateLogForTest()
-		            log.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
-		            return log
-		    },
+			name: "resourceunsetscopeset",
+			input: func() plog.Logs {
+				log := GenerateLogForTest()
+				log.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
+				return log
+			},
 			whichSchemaUsed: ScopeSchemaVersionUsed,
-		    wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 		{
-		    name: "resourcesetscopeset",
-		    input: func() plog.Logs {
-		            log := GenerateLogForTest()
-		            log.ResourceLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.0.0")
-					 log.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
+			name: "resourcesetscopeset",
+			input: func() plog.Logs {
+				log := GenerateLogForTest()
+				log.ResourceLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.0.0")
+				log.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl("https://example.com/testdata/testschemas/schemaprecedence/1.1.0")
 
-				 return log
-		    },
+				return log
+			},
 			whichSchemaUsed: ScopeSchemaVersionUsed,
-		    wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 		{
-		     name: "resourceunsetscopeunset",
-		     input: func() plog.Logs {
-		             log := GenerateLogForTest()
-		             return log
-		     },
-		     //want: "https://example.com/testdata/testschemas/schemaprecedence/1.0.0",
+			name: "resourceunsetscopeunset",
+			input: func() plog.Logs {
+				log := GenerateLogForTest()
+				return log
+			},
+			//want: "https://example.com/testdata/testschemas/schemaprecedence/1.0.0",
 			whichSchemaUsed: NoopSchemaUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
-		}
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			defaultConfig := newDefaultConfiguration()
@@ -389,10 +383,10 @@ func GenerateTraceForTest() ptrace.Traces {
 func TestTransformerScopeTraceSchemaPrecedence(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name    string
-		input   func() ptrace.Traces
-		whichSchemaUsed    SchemaUsed
-		wantErr assert.ErrorAssertionFunc
+		name            string
+		input           func() ptrace.Traces
+		whichSchemaUsed SchemaUsed
+		wantErr         assert.ErrorAssertionFunc
 	}{
 		{
 			name: "resourcesetscopeunset",
@@ -402,7 +396,7 @@ func TestTransformerScopeTraceSchemaPrecedence(t *testing.T) {
 				return trace
 			},
 			whichSchemaUsed: ResourceSchemaVersionUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 		{
 			name: "resourceunsetscopeset",
@@ -412,7 +406,7 @@ func TestTransformerScopeTraceSchemaPrecedence(t *testing.T) {
 				return trace
 			},
 			whichSchemaUsed: ScopeSchemaVersionUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 		{
 			name: "resourcesetscopeset",
@@ -424,7 +418,7 @@ func TestTransformerScopeTraceSchemaPrecedence(t *testing.T) {
 				return trace
 			},
 			whichSchemaUsed: ScopeSchemaVersionUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 		{
 			name: "resourceunsetscopeunset",
@@ -434,7 +428,7 @@ func TestTransformerScopeTraceSchemaPrecedence(t *testing.T) {
 			},
 			//want: "https://example.com/testdata/testschemas/schemaprecedence/1.0.0",
 			whichSchemaUsed: NoopSchemaUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 	}
 	for _, tt := range tests {
@@ -472,7 +466,6 @@ func TestTransformerScopeTraceSchemaPrecedence(t *testing.T) {
 	}
 }
 
-
 // returns a test metric with no schema versions set
 func GenerateMetricForTest() pmetric.Metrics {
 	in := pmetric.NewMetrics()
@@ -490,10 +483,10 @@ func GenerateMetricForTest() pmetric.Metrics {
 func TestTransformerScopeMetricSchemaPrecedence(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name    string
-		input   func() pmetric.Metrics
-		whichSchemaUsed    SchemaUsed
-		wantErr assert.ErrorAssertionFunc
+		name            string
+		input           func() pmetric.Metrics
+		whichSchemaUsed SchemaUsed
+		wantErr         assert.ErrorAssertionFunc
 	}{
 		{
 			name: "resourcesetscopeunset",
@@ -503,7 +496,7 @@ func TestTransformerScopeMetricSchemaPrecedence(t *testing.T) {
 				return metric
 			},
 			whichSchemaUsed: ResourceSchemaVersionUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 		{
 			name: "resourceunsetscopeset",
@@ -513,7 +506,7 @@ func TestTransformerScopeMetricSchemaPrecedence(t *testing.T) {
 				return metric
 			},
 			whichSchemaUsed: ScopeSchemaVersionUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 		{
 			name: "resourcesetscopeset",
@@ -525,7 +518,7 @@ func TestTransformerScopeMetricSchemaPrecedence(t *testing.T) {
 				return metric
 			},
 			whichSchemaUsed: ScopeSchemaVersionUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 		{
 			name: "resourceunsetscopeunset",
@@ -535,7 +528,7 @@ func TestTransformerScopeMetricSchemaPrecedence(t *testing.T) {
 			},
 			//want: "https://example.com/testdata/testschemas/schemaprecedence/1.0.0",
 			whichSchemaUsed: NoopSchemaUsed,
-			wantErr: assert.NoError,
+			wantErr:         assert.NoError,
 		},
 	}
 	for _, tt := range tests {

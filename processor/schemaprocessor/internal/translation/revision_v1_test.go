@@ -28,13 +28,13 @@ func TestNewRevisionV1(t *testing.T) {
 			inVersion:    &Version{1, 1, 1},
 			inDefinition: ast.VersionDef{},
 			expect: &RevisionV1{
-				ver:                                   &Version{1, 1, 1},
-				all:                                   &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				resources:                             &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				spans:                                 &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				spanEvents: 				           &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				metrics: &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				logs:									&changelist.ChangeList{make([]migrate.Migrator, 0)},
+				ver:        &Version{1, 1, 1},
+				all:        &changelist.ChangeList{make([]migrate.Migrator, 0)},
+				resources:  &changelist.ChangeList{make([]migrate.Migrator, 0)},
+				spans:      &changelist.ChangeList{make([]migrate.Migrator, 0)},
+				spanEvents: &changelist.ChangeList{make([]migrate.Migrator, 0)},
+				metrics:    &changelist.ChangeList{make([]migrate.Migrator, 0)},
+				logs:       &changelist.ChangeList{make([]migrate.Migrator, 0)},
 			},
 		},
 		{
@@ -180,7 +180,7 @@ func TestNewRevisionV1(t *testing.T) {
 						migrate.NewMultiConditionalAttributeSet(
 							map[string]string{"service.app.name": "service.name"},
 							map[string][]string{
-								"span.name": {"service running"},
+								"span.name":  {"service running"},
 								"event.name": {"service errored"},
 							},
 						),
