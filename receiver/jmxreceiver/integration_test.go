@@ -52,13 +52,13 @@ func (suite *JMXIntegrationSuite) SetupSuite() {
 	for version, url := range jmxJarReleases {
 		jarPath, err := downloadJMXMetricGathererJAR(url)
 		suite.VersionToJar[version] = jarPath
-		require.NoError(suite.T(), err)
+		suite.Require().NoError(err)
 	}
 }
 
 func (suite *JMXIntegrationSuite) TearDownSuite() {
 	for _, path := range suite.VersionToJar {
-		require.NoError(suite.T(), os.Remove(path))
+		suite.Require().NoError(os.Remove(path))
 	}
 }
 
