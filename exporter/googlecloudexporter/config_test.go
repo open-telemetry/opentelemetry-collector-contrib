@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&Config{
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 20 * time.Second,
 			},
 			Config: collector.Config{

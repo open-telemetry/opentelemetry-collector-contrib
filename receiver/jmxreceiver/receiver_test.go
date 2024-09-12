@@ -50,7 +50,7 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "https://myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 234 * time.Second,
 					},
 					Headers: map[string]string{
@@ -62,7 +62,7 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 				// multiline handling in place to reduce the attack surface of the
 				// interface to the JMX metrics gatherer
 				Username: "myuser\nname",
-				Password: `mypass 
+				Password: `mypass
 word`,
 				Realm:              "myrealm",
 				RemoteProfile:      "myprofile",
@@ -105,7 +105,7 @@ otel.resource.attributes = abc=123,one=two`,
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 234 * time.Second,
 					},
 				},
@@ -120,7 +120,7 @@ otel.resource.attributes = abc=123,one=two`,
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 234 * time.Second,
 					},
 				},
@@ -135,7 +135,7 @@ otel.resource.attributes = abc=123,one=two`,
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 234 * time.Second,
 					},
 				},

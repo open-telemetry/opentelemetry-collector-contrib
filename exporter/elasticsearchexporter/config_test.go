@@ -55,8 +55,8 @@ func TestConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      false,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
 				Index:     "",
@@ -125,8 +125,8 @@ func TestConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				Index:     "",
@@ -195,8 +195,8 @@ func TestConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				Index:     "",

@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 				// intentionally left blank so we use default config
 			},
 			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 				}
 			},
 			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -150,7 +150,7 @@ func TestLoadConfig(t *testing.T) {
 				conf.ResolveCanonicalBootstrapServersOnly = true
 			},
 			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{

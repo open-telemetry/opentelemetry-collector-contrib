@@ -41,7 +41,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			MaxInterval:         30 * time.Second,
 			MaxElapsedTime:      5 * time.Minute,
 		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{
+		TimeoutSettings: exporterhelper.TimeoutConfig{
 			Timeout: 5 * time.Second,
 		},
 	}, cfg)
