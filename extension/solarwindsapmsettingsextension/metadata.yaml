@@ -3,8 +3,8 @@ type: solarwindsapmsettings
 status:
   class: extension
   stability:
-    development: [extension]
-  distributions: []
+    alpha: [extension]
+  distributions: [contrib]
   codeowners:
     active: [jerrytfleung, cheempz]
 
