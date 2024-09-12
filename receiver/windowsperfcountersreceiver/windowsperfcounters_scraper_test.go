@@ -550,7 +550,7 @@ func TestScrape(t *testing.T) {
 
 					assert.Equal(t, len(counterValues), dps.Len())
 					for dpIdx, val := range counterValues {
-						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
+						assert.InDelta(t, val.Value, dps.At(dpIdx).DoubleValue(), 0.01)
 						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++

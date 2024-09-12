@@ -143,7 +143,7 @@ func TestAlertManagerExporterEventNameAttributes(t *testing.T) {
 	assert.Equal(t, "unittest-baz", attr.AsString())
 	attr, b = got[0].spanEvent.Attributes().Get("attr3")
 	assert.True(t, b)
-	assert.Equal(t, 5.14, attr.Double())
+	assert.InDelta(t, 5.14, attr.Double(), 0.01)
 }
 
 func TestAlertManagerExporterSeverity(t *testing.T) {

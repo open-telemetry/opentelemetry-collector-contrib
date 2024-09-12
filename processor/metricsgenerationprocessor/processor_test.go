@@ -314,7 +314,7 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 					for j := 0; j < eDataPoints.Len(); j++ {
 						switch eDataPoints.At(j).ValueType() {
 						case pmetric.NumberDataPointValueTypeDouble:
-							require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
+							require.InDelta(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue(), 0.01)
 						case pmetric.NumberDataPointValueTypeInt:
 							require.Equal(t, eDataPoints.At(j).IntValue(), aDataPoints.At(j).IntValue())
 						}

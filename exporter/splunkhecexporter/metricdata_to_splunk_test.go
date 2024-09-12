@@ -683,17 +683,17 @@ func commonSplunkMetric(
 
 func TestTimestampFormat(t *testing.T) {
 	ts := pcommon.Timestamp(32001000345)
-	assert.Equal(t, 32.001, timestampToSecondsWithMillisecondPrecision(ts))
+	assert.InDelta(t, 32.001, timestampToSecondsWithMillisecondPrecision(ts), 0.01)
 }
 
 func TestTimestampFormatRounding(t *testing.T) {
 	ts := pcommon.Timestamp(32001999345)
-	assert.Equal(t, 32.002, timestampToSecondsWithMillisecondPrecision(ts))
+	assert.InDelta(t, 32.002, timestampToSecondsWithMillisecondPrecision(ts), 0.01)
 }
 
 func TestTimestampFormatRoundingWithNanos(t *testing.T) {
 	ts := pcommon.Timestamp(9999999999991500001)
-	assert.Equal(t, 9999999999.992, timestampToSecondsWithMillisecondPrecision(ts))
+	assert.InDelta(t, 9999999999.992, timestampToSecondsWithMillisecondPrecision(ts), 0.01)
 }
 
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {

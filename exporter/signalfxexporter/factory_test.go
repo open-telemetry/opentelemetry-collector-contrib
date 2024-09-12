@@ -136,7 +136,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	dps, ok := metrics["memory.utilization"]
 	require.True(t, ok, "memory.utilization metric not found")
 	require.Len(t, dps, 1)
-	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
+	require.InDelta(t, 40.0, *dps[0].Value.DoubleValue, 0.01)
 
 	// system.disk.operations.total new metric calculation
 	dps, ok = metrics["system.disk.operations.total"]

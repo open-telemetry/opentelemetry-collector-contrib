@@ -12,10 +12,10 @@ import (
 func TestParseLatencyStats(t *testing.T) {
 	ls, err := parseLatencyStats("p50=181.247,p55=182.271,p99=309.247,p99.9=1023.999")
 	require.NoError(t, err)
-	require.Equal(t, 181.247, ls["p50"])
-	require.Equal(t, 182.271, ls["p55"])
-	require.Equal(t, 309.247, ls["p99"])
-	require.Equal(t, 1023.999, ls["p99.9"])
+	require.InDelta(t, 181.247, ls["p50"], 0.01)
+	require.InDelta(t, 182.271, ls["p55"], 0.01)
+	require.InDelta(t, 309.247, ls["p99"], 0.01)
+	require.InDelta(t, 1023.999, ls["p99.9"], 0.01)
 }
 
 func TestParseMalformedLatencyStats(t *testing.T) {

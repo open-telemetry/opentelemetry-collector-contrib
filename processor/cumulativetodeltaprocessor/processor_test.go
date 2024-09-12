@@ -485,7 +485,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
 
 					for j := 0; j < eDataPoints.Len(); j++ {
-						require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
+						require.InDelta(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue(), 0.01)
 					}
 				}
 
@@ -500,7 +500,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						if math.IsNaN(eDataPoints.At(j).DoubleValue()) {
 							assert.True(t, math.IsNaN(aDataPoints.At(j).DoubleValue()))
 						} else {
-							require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
+							require.InDelta(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue(), 0.01)
 						}
 						require.Equal(t, eDataPoints.At(j).Flags(), aDataPoints.At(j).Flags())
 					}
@@ -521,7 +521,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						if math.IsNaN(eDataPoints.At(j).Sum()) {
 							require.True(t, math.IsNaN(aDataPoints.At(j).Sum()))
 						} else {
-							require.Equal(t, eDataPoints.At(j).Sum(), aDataPoints.At(j).Sum())
+							require.InDelta(t, eDataPoints.At(j).Sum(), aDataPoints.At(j).Sum(), 0.01)
 						}
 						require.Equal(t, eDataPoints.At(j).BucketCounts(), aDataPoints.At(j).BucketCounts())
 						require.Equal(t, eDataPoints.At(j).Flags(), aDataPoints.At(j).Flags())

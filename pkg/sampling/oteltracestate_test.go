@@ -48,7 +48,7 @@ func TestOpenTelemetryTraceStateTValueSerialize(t *testing.T) {
 	require.Equal(t, "3", otts.TValue())
 	tv, hasTv := otts.TValueThreshold()
 	require.True(t, hasTv)
-	require.Equal(t, 1-0x3p-4, tv.Probability())
+	require.InDelta(t, 1-0x3p-4, tv.Probability(), 0.01)
 
 	require.NotEqual(t, "", otts.RValue())
 	require.Equal(t, "10000000000000", otts.RValue())
@@ -70,7 +70,7 @@ func TestOpenTelemetryTraceStateZero(t *testing.T) {
 	require.Equal(t, "0", otts.TValue())
 	tv, hasTv := otts.TValueThreshold()
 	require.True(t, hasTv)
-	require.Equal(t, 1.0, tv.Probability())
+	require.InDelta(t, 1.0, tv.Probability(), 0.01)
 
 	var w strings.Builder
 	require.NoError(t, otts.Serialize(&w))
@@ -109,7 +109,7 @@ func TestOpenTelemetryTraceStateTValueUpdate(t *testing.T) {
 	require.Equal(t, "3", otts.TValue())
 	tv, hasTv := otts.TValueThreshold()
 	require.True(t, hasTv)
-	require.Equal(t, 1-0x3p-4, tv.Probability())
+	require.InDelta(t, 1-0x3p-4, tv.Probability(), 0.01)
 
 	const updated = "rv:abcdefabcdefab;th:3"
 	var w strings.Builder
@@ -323,7 +323,7 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			require.Equal(t, test.adjCountIn, otts.AdjustedCount())
+			require.InDelta(t, test.adjCountIn, otts.AdjustedCount(), 0.01)
 
 			newTh, err := ProbabilityToThreshold(test.prob)
 			require.NoError(t, err)
@@ -337,7 +337,7 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, test.out, outData.String())
 
-			require.Equal(t, test.adjCountOut, otts.AdjustedCount())
+			require.InDelta(t, test.adjCountOut, otts.AdjustedCount(), 0.01)
 		})
 	}
 }

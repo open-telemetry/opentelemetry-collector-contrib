@@ -61,7 +61,7 @@ func TestFrontDoorHealthProbeLogDNSLatencyMicroseconds(t *testing.T) {
 	assert.True(t, ok)
 	duration, ok := attrs["dns.lookup.duration"].(float64)
 	assert.True(t, ok)
-	assert.Equal(t, 0.123456, duration)
+	assert.InDelta(t, 0.123456, duration, 1e-6)
 }
 
 func TestFrontDoorHealthProbeLogTotalLatencyMilliseconds(t *testing.T) {
@@ -72,5 +72,5 @@ func TestFrontDoorHealthProbeLogTotalLatencyMilliseconds(t *testing.T) {
 	assert.True(t, ok)
 	duration, ok := attrs["http.request.duration"].(float64)
 	assert.True(t, ok)
-	assert.Equal(t, 0.123, duration)
+	assert.InDelta(t, 0.123, duration, 1e-4)
 }

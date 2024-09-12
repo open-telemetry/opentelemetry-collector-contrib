@@ -183,7 +183,7 @@ func TestNewStartedAtomicLimiter(t *testing.T) {
 				// default
 				tc.interval = 5
 			}
-			require.Equal(t, float64(tc.interval), l.interval.Seconds())
+			require.InDelta(t, float64(tc.interval), l.interval.Seconds(), 0.01)
 			require.Equal(t, uint64(0), l.currentCount())
 		})
 	}
@@ -245,7 +245,7 @@ func TestThrottledCache(t *testing.T) {
 	defer c.stop()
 	require.False(t, c.limiter.throttled())
 	require.Equal(t, 4, int(c.limiter.limit()), "expected limit be cache size + 1")
-	require.Equal(t, float64(120), c.limiter.resetInterval().Seconds(), "expected reset interval to be 120 seconds")
+	require.InDelta(t, float64(120), c.limiter.resetInterval().Seconds(), 0.01, "expected reset interval to be 120 seconds")
 
 	// fill the cache and cause 100% evictions
 	for i := 1; i <= 6; i++ {

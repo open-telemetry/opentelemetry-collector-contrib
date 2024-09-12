@@ -1114,7 +1114,7 @@ func Test_StandardFloatGetter(t *testing.T) {
 			val, err := tt.getter.Get(context.Background(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want, val)
+				assert.InDelta(t, tt.want, val, 0.01)
 			} else {
 				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
@@ -1290,7 +1290,7 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 				if tt.want == nil {
 					assert.Nil(t, val)
 				} else {
-					assert.Equal(t, tt.want, *val)
+					assert.InDelta(t, tt.want, *val, 0.01)
 				}
 			} else {
 				assert.IsType(t, TypeError(""), err)

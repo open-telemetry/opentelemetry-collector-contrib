@@ -206,19 +206,19 @@ func Test_convertValueAtQuantile(t *testing.T) {
 func Test_getValue(t *testing.T) {
 	SetLogger(zaptest.NewLogger(t))
 	t.Run("set int64 value with NumberDataPointValueType", func(t *testing.T) {
-		require.Equal(t, 10.0, getValue(int64(10), 0, pmetric.NumberDataPointValueTypeInt))
+		require.InDelta(t, 10.0, getValue(int64(10), 0, pmetric.NumberDataPointValueTypeInt), 0.01)
 	})
 	t.Run("set float64 value with NumberDataPointValueType", func(t *testing.T) {
-		require.Equal(t, 20.0, getValue(0, 20.0, pmetric.NumberDataPointValueTypeDouble))
+		require.InDelta(t, 20.0, getValue(0, 20.0, pmetric.NumberDataPointValueTypeDouble), 0.01)
 	})
 	t.Run("set int64 value with ExemplarValueType", func(t *testing.T) {
-		require.Equal(t, 10.0, getValue(int64(10), 0, pmetric.ExemplarValueTypeInt))
+		require.InDelta(t, 10.0, getValue(int64(10), 0, pmetric.ExemplarValueTypeInt), 0.01)
 	})
 	t.Run("set float64 value with ExemplarValueType", func(t *testing.T) {
-		require.Equal(t, 20.0, getValue(0, 20.0, pmetric.ExemplarValueTypeDouble))
+		require.InDelta(t, 20.0, getValue(0, 20.0, pmetric.ExemplarValueTypeDouble), 0.01)
 	})
 	t.Run("set a unsupport dataType", func(t *testing.T) {
-		require.Equal(t, 0.0, getValue(int64(10), 0, pmetric.MetricTypeHistogram))
+		require.InDelta(t, 0.0, getValue(int64(10), 0, pmetric.MetricTypeHistogram), 0.01)
 	})
 }
 

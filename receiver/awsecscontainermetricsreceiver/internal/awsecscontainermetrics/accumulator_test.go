@@ -230,25 +230,25 @@ func TestCalculateDuration(t *testing.T) {
 	startTime := "2020-10-02T00:15:07.620912337Z"
 	endTime := "2020-10-03T15:14:06.620913372Z"
 	result, err := calculateDuration(startTime, endTime)
-	require.EqualValues(t, 140339.000001035, result)
+	require.InDelta(t, 140339.000001035, result, 0.01)
 	require.NoError(t, err)
 
 	startTime = "2010-10-02T00:15:07.620912337Z"
 	endTime = "2020-10-03T15:14:06.620913372Z"
 	result, err = calculateDuration(startTime, endTime)
-	require.EqualValues(t, 3.15759539000001e+08, result)
+	require.InDelta(t, 3.15759539000001e+08, result, 0.01)
 	require.NoError(t, err)
 
 	startTime = "2010-10-02 00:15:07"
 	endTime = "2020-10-03T15:14:06.620913372Z"
 	result, err = calculateDuration(startTime, endTime)
 	require.Error(t, err)
-	require.EqualValues(t, 0, result)
+	require.InDelta(t, 0, result, 0.01)
 
 	startTime = "2010-10-02T00:15:07.620912337Z"
 	endTime = "2020-10-03 15:14:06 +800"
 	result, err = calculateDuration(startTime, endTime)
 	require.Error(t, err)
-	require.EqualValues(t, 0, result)
+	require.InDelta(t, 0, result, 0.01)
 
 }

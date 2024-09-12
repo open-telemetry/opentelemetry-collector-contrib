@@ -366,20 +366,20 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	for _, span := range spans {
 		switch {
 		case span.Meta["span.kind"] == apitrace.SpanKindInternal.String():
-			assert.EqualValues(t, 0, span.Metrics["_top_level"])
-			assert.EqualValues(t, 0, span.Metrics["_dd.measured"])
+			assert.InDelta(t, 0.0, span.Metrics["_top_level"], 0.01)
+			assert.InDelta(t, 0.0, span.Metrics["_dd.measured"], 0.01)
 		case span.Meta["span.kind"] == apitrace.SpanKindServer.String():
-			assert.EqualValues(t, 1, span.Metrics["_top_level"])
-			assert.EqualValues(t, 0, span.Metrics["_dd.measured"])
+			assert.InDelta(t, 1.0, span.Metrics["_top_level"], 0.01)
+			assert.InDelta(t, 0.0, span.Metrics["_dd.measured"], 0.01)
 		case span.Meta["span.kind"] == apitrace.SpanKindClient.String():
-			assert.EqualValues(t, 0, span.Metrics["_top_level"])
-			assert.EqualValues(t, 1, span.Metrics["_dd.measured"])
+			assert.InDelta(t, 0.0, span.Metrics["_top_level"], 0.01)
+			assert.InDelta(t, 1.0, span.Metrics["_dd.measured"], 0.01)
 		case span.Meta["span.kind"] == apitrace.SpanKindProducer.String():
-			assert.EqualValues(t, 0, span.Metrics["_top_level"])
-			assert.EqualValues(t, 1, span.Metrics["_dd.measured"])
+			assert.InDelta(t, 0.0, span.Metrics["_top_level"], 0.01)
+			assert.InDelta(t, 1, span.Metrics["_dd.measured"], 0.01)
 		case span.Meta["span.kind"] == apitrace.SpanKindConsumer.String():
-			assert.EqualValues(t, 1, span.Metrics["_top_level"])
-			assert.EqualValues(t, 0, span.Metrics["_dd.measured"])
+			assert.InDelta(t, 1.0, span.Metrics["_top_level"], 0.01)
+			assert.InDelta(t, 0.0, span.Metrics["_dd.measured"], 0.01)
 		}
 	}
 }
@@ -508,12 +508,12 @@ func TestIntegrationLogs(t *testing.T) {
 		if s.Metric == "otelcol_receiver_accepted_log_records" {
 			numAcceptedLogRecords++
 			assert.Len(t, s.Points, 1)
-			assert.Equal(t, 5.0, s.Points[0].Value)
+			assert.InDelta(t, 5.0, s.Points[0].Value, 0.01)
 		}
 		if s.Metric == "otelcol_exporter_sent_log_records" {
 			numSentLogRecords++
 			assert.Len(t, s.Points, 1)
-			assert.Equal(t, 5.0, s.Points[0].Value)
+			assert.InDelta(t, 5.0, s.Points[0].Value, 0.01)
 		}
 	}
 	assert.Equal(t, 2, numAcceptedLogRecords)

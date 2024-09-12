@@ -103,7 +103,7 @@ func assertPoints(t *testing.T, dpts pmetric.NumberDataPointSlice, pts []point) 
 	for i, expected := range pts {
 		got := dpts.At(i)
 		assert.Equal(t, got.IntValue(), int64(expected.intVal))
-		assert.Equal(t, expected.doubleVal, got.DoubleValue())
+		assert.InDelta(t, expected.doubleVal, got.DoubleValue(), 0.01)
 		for k, expectedV := range expected.attributes {
 			gotV, exists := got.Attributes().Get(k)
 			assert.True(t, exists)

@@ -216,7 +216,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 					if !ttt.noOut {
 						require.True(t, valid)
 						assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
-						assert.Equal(t, ttt.wantOut.FloatValue, gotOut.FloatValue)
+						assert.InDelta(t, ttt.wantOut.FloatValue, gotOut.FloatValue, 0.01)
 					}
 
 					gotOut, valid = m.Convert(intPoint)

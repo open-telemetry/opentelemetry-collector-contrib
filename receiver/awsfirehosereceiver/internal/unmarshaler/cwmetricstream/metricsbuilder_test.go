@@ -64,7 +64,7 @@ func TestMetricBuilder(t *testing.T) {
 		require.Equal(t, 1, gotDps.Len())
 		gotDp := gotDps.At(0)
 		require.Equal(t, uint64(metric.Value.Count), gotDp.Count())
-		require.Equal(t, metric.Value.Sum, gotDp.Sum())
+		require.InDelta(t, metric.Value.Sum, gotDp.Sum(), 0.01)
 		gotQv := gotDp.QuantileValues()
 		require.Equal(t, 2, gotQv.Len())
 		require.Equal(t, []float64{metric.Value.Min, metric.Value.Max}, []float64{gotQv.At(0).Value(), gotQv.At(1).Value()})
@@ -103,7 +103,7 @@ func TestMetricBuilder(t *testing.T) {
 		require.Equal(t, 1, gotDps.Len())
 		gotDp := gotDps.At(0)
 		require.Equal(t, uint64(metrics[0].Value.Count), gotDp.Count())
-		require.Equal(t, metrics[0].Value.Sum, gotDp.Sum())
+		require.InDelta(t, metrics[0].Value.Sum, gotDp.Sum(), 0.01)
 		require.Equal(t, 3, gotDp.Attributes().Len())
 	})
 }

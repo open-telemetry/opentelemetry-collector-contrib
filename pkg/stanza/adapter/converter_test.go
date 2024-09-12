@@ -586,7 +586,7 @@ func TestConvertMetadata(t *testing.T) {
 
 	attVal, ok = atts.Get("double")
 	require.True(t, ok)
-	require.Equal(t, 12.34, attVal.Double())
+	require.InDelta(t, 12.34, attVal.Double(), 0.01)
 
 	attVal, ok = atts.Get("string")
 	require.True(t, ok)
@@ -608,7 +608,7 @@ func TestConvertMetadata(t *testing.T) {
 
 	attVal, ok = mapVal.Get("double")
 	require.True(t, ok)
-	require.Equal(t, 12.34, attVal.Double())
+	require.InDelta(t, 12.34, attVal.Double(), 0.01)
 
 	attVal, ok = mapVal.Get("string")
 	require.True(t, ok)
@@ -642,8 +642,8 @@ func TestConvertSimpleBody(t *testing.T) {
 	require.Equal(t, int64(1), anyToBody(uint32(1)).Int())
 	require.Equal(t, int64(1), anyToBody(uint64(1)).Int())
 
-	require.Equal(t, float64(1), anyToBody(float32(1)).Double())
-	require.Equal(t, float64(1), anyToBody(float64(1)).Double())
+	require.InDelta(t, float64(1), anyToBody(float32(1)).Double(), 0.01)
+	require.InDelta(t, float64(1), anyToBody(float64(1)).Double(), 0.01)
 }
 
 func TestConvertMapBody(t *testing.T) {
@@ -687,7 +687,7 @@ func TestConvertMapBody(t *testing.T) {
 	}
 	for _, k := range []string{"float32", "float64"} {
 		v, _ = result.Get(k)
-		require.Equal(t, float64(1), v.Double())
+		require.InDelta(t, float64(1), v.Double(), 0.01)
 	}
 }
 
@@ -731,8 +731,8 @@ func TestConvertArrayBody(t *testing.T) {
 	require.Equal(t, int64(1), result.At(12).Int()) // uint32
 	require.Equal(t, int64(1), result.At(13).Int()) // uint64
 
-	require.Equal(t, float64(1), result.At(14).Double()) // float32
-	require.Equal(t, float64(1), result.At(15).Double()) // float64
+	require.InDelta(t, float64(1), result.At(14).Double(), 0.01) // float32
+	require.InDelta(t, float64(1), result.At(15).Double(), 0.01) // float64
 
 	nestedArr := result.At(16).Slice()
 	require.Equal(t, "string", nestedArr.At(0).Str())

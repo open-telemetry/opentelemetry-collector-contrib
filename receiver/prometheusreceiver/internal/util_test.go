@@ -172,7 +172,7 @@ func TestGetBoundary(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			assert.Equal(t, tt.wantValue, value)
+			assert.InDelta(t, tt.wantValue, value, 0.01)
 		})
 	}
 }

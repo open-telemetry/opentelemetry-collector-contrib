@@ -13,28 +13,28 @@ import (
 
 func TestCalculateValue(t *testing.T) {
 	value := calculateValue(100.0, 5.0, "add", zap.NewNop(), "test_metric")
-	require.Equal(t, 105.0, value)
+	require.InDelta(t, 105.0, value, 0.01)
 
 	value = calculateValue(100.0, 5.0, "subtract", zap.NewNop(), "test_metric")
-	require.Equal(t, 95.0, value)
+	require.InDelta(t, 95.0, value, 0.01)
 
 	value = calculateValue(100.0, 5.0, "multiply", zap.NewNop(), "test_metric")
-	require.Equal(t, 500.0, value)
+	require.InDelta(t, 500.0, value, 0.01)
 
 	value = calculateValue(100.0, 5.0, "divide", zap.NewNop(), "test_metric")
-	require.Equal(t, 20.0, value)
+	require.InDelta(t, 20.0, value, 0.01)
 
 	value = calculateValue(10.0, 200.0, "percent", zap.NewNop(), "test_metric")
-	require.Equal(t, 5.0, value)
+	require.InDelta(t, 5.0, value, 0.01)
 
 	value = calculateValue(100.0, 0, "divide", zap.NewNop(), "test_metric")
-	require.Equal(t, 0.0, value)
+	require.InDelta(t, 0.0, value, 0.01)
 
 	value = calculateValue(100.0, 0, "percent", zap.NewNop(), "test_metric")
-	require.Equal(t, 0.0, value)
+	require.InDelta(t, 0.0, value, 0.01)
 
 	value = calculateValue(100.0, 0, "invalid", zap.NewNop(), "test_metric")
-	require.Equal(t, 0.0, value)
+	require.InDelta(t, 0.0, value, 0.01)
 }
 
 func TestGetMetricValueWithNoDataPoint(t *testing.T) {
@@ -47,5 +47,5 @@ func TestGetMetricValueWithNoDataPoint(t *testing.T) {
 	m.SetEmptyGauge()
 
 	value := getMetricValue(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
-	require.Equal(t, 0.0, value)
+	require.InDelta(t, 0.0, value, 0.01)
 }

@@ -65,7 +65,7 @@ func requireGauge(t *testing.T, metric pmetric.Metric, expectedName string, expe
 
 func requireDp(t *testing.T, dp pmetric.NumberDataPoint, expectedAttrs pcommon.Map, expectedTime int64, expectedValue float64) {
 	require.Equal(t, expectedTime, dp.Timestamp().AsTime().Unix())
-	require.Equal(t, expectedValue, dp.DoubleValue())
+	require.InDelta(t, expectedValue, dp.DoubleValue(), 0.01)
 	require.Equal(t, expectedAttrs, dp.Attributes())
 }
 

@@ -134,7 +134,6 @@ linters-settings:
 
   testifylint:
     disable:
-      - float-compare
       - require-error
       - suite-subtest-run
     enable-all: true

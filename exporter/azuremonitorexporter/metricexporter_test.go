@@ -36,7 +36,7 @@ func TestDoubleGaugeEnvelopes(t *testing.T) {
 	dataPoint := getDataPoint(t, gaugeMetric)
 
 	assert.Equal(t, "Gauge", dataPoint.Name)
-	assert.Equal(t, float64(1), dataPoint.Value)
+	assert.InDelta(t, float64(1), dataPoint.Value, 0.01)
 	assert.Equal(t, 1, dataPoint.Count)
 	assert.Equal(t, contracts.Measurement, dataPoint.Kind)
 }
@@ -46,7 +46,7 @@ func TestIntGaugeEnvelopes(t *testing.T) {
 	dataPoint := getDataPoint(t, gaugeMetric)
 
 	assert.Equal(t, "Gauge", dataPoint.Name)
-	assert.Equal(t, float64(1), dataPoint.Value)
+	assert.InDelta(t, float64(1), dataPoint.Value, 0.01)
 	assert.Equal(t, 1, dataPoint.Count)
 	assert.Equal(t, contracts.Measurement, dataPoint.Kind)
 }
@@ -56,7 +56,7 @@ func TestDoubleSumEnvelopes(t *testing.T) {
 	dataPoint := getDataPoint(t, sumMetric)
 
 	assert.Equal(t, "Sum", dataPoint.Name)
-	assert.Equal(t, float64(2), dataPoint.Value)
+	assert.InDelta(t, float64(2), dataPoint.Value, 0.01)
 	assert.Equal(t, 1, dataPoint.Count)
 	assert.Equal(t, contracts.Measurement, dataPoint.Kind)
 }
@@ -66,7 +66,7 @@ func TestIntSumEnvelopes(t *testing.T) {
 	dataPoint := getDataPoint(t, sumMetric)
 
 	assert.Equal(t, "Sum", dataPoint.Name)
-	assert.Equal(t, float64(2), dataPoint.Value)
+	assert.InDelta(t, float64(2), dataPoint.Value, 0.01)
 	assert.Equal(t, 1, dataPoint.Count)
 	assert.Equal(t, contracts.Measurement, dataPoint.Kind)
 }
@@ -76,10 +76,10 @@ func TestHistogramEnvelopes(t *testing.T) {
 	dataPoint := getDataPoint(t, histogramMetric)
 
 	assert.Equal(t, "Histogram", dataPoint.Name)
-	assert.Equal(t, float64(3), dataPoint.Value)
+	assert.InDelta(t, float64(3), dataPoint.Value, 0.01)
 	assert.Equal(t, 3, dataPoint.Count)
-	assert.Equal(t, float64(0), dataPoint.Min)
-	assert.Equal(t, float64(2), dataPoint.Max)
+	assert.InDelta(t, float64(0), dataPoint.Min, 0.01)
+	assert.InDelta(t, float64(2), dataPoint.Max, 0.01)
 	assert.Equal(t, contracts.Aggregation, dataPoint.Kind)
 }
 
@@ -88,10 +88,10 @@ func TestExponentialHistogramEnvelopes(t *testing.T) {
 	dataPoint := getDataPoint(t, exponentialHistogramMetric)
 
 	assert.Equal(t, "ExponentialHistogram", dataPoint.Name)
-	assert.Equal(t, float64(4), dataPoint.Value)
+	assert.InDelta(t, float64(4), dataPoint.Value, 0.01)
 	assert.Equal(t, 4, dataPoint.Count)
-	assert.Equal(t, float64(1), dataPoint.Min)
-	assert.Equal(t, float64(3), dataPoint.Max)
+	assert.InDelta(t, float64(1), dataPoint.Min, 0.01)
+	assert.InDelta(t, float64(3), dataPoint.Max, 0.01)
 	assert.Equal(t, contracts.Aggregation, dataPoint.Kind)
 }
 
@@ -100,7 +100,7 @@ func TestSummaryEnvelopes(t *testing.T) {
 	dataPoint := getDataPoint(t, summaryMetric)
 
 	assert.Equal(t, "Summary", dataPoint.Name)
-	assert.Equal(t, float64(5), dataPoint.Value)
+	assert.InDelta(t, float64(5), dataPoint.Value, 0.01)
 	assert.Equal(t, 5, dataPoint.Count)
 	assert.Equal(t, contracts.Aggregation, dataPoint.Kind)
 }

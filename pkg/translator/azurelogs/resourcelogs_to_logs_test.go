@@ -612,7 +612,7 @@ func TestFrontDoorAccessLog(t *testing.T) {
 	assert.Equal(t, "42.42.42.42", record["client.address"])
 	assert.Equal(t, "0", record["client.port"])
 	assert.Equal(t, "23.23.23.23", record["network.peer.address"])
-	assert.Equal(t, float64(0.23), record["http.server.request.duration"])
+	assert.InDelta(t, float64(0.23), record["http.server.request.duration"], 1e-3)
 	assert.Equal(t, "https", record["network.protocol.name"])
 	assert.Equal(t, "tls", record["tls.protocol.name"])
 	assert.Equal(t, "1.3", record["tls.protocol.version"])
@@ -634,8 +634,8 @@ func TestFrontDoorHealthProbeLog(t *testing.T) {
 	assert.Equal(t, int64(200), record["http.response.status_code"])
 	assert.Equal(t, "https://probe.net/health", record["url.full"])
 	assert.Equal(t, "42.42.42.42", record["server.address"])
-	assert.Equal(t, 0.042, record["http.request.duration"])
-	assert.Equal(t, 0.00023, record["dns.lookup.duration"])
+	assert.InDelta(t, 0.042, record["http.request.duration"], 1e-4)
+	assert.InDelta(t, 0.00023, record["dns.lookup.duration"], 1e-6)
 }
 
 func TestFrontDoorWAFLog(t *testing.T) {
@@ -704,7 +704,7 @@ func TestAppServiceHTTPLog(t *testing.T) {
 	assert.Equal(t, "/api/test/", record["url.path"])
 	assert.Equal(t, "foo=42", record["url.query"])
 	assert.Equal(t, "GET", record["http.request.method"])
-	assert.Equal(t, 0.42, record["http.server.request.duration"])
+	assert.InDelta(t, 0.42, record["http.server.request.duration"], 1e-3)
 	assert.Equal(t, int64(200), record["http.response.status_code"])
 	assert.Equal(t, int64(4242), record["http.request.body.size"])
 	assert.Equal(t, int64(42), record["http.response.body.size"])

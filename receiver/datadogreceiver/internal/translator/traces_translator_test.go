@@ -107,7 +107,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%f", 1.0), spanResource1.Str())
 	numericAttributeValue, _ := span.Attributes().Get("numeric_attribute")
 	numericAttributeFloat, _ := strconv.ParseFloat(numericAttributeValue.AsString(), 64)
-	assert.Equal(t, 1.2, numericAttributeFloat)
+	assert.InDelta(t, 1.2, numericAttributeFloat, 0.01)
 }
 
 func TestTracePayloadV07Unmarshalling(t *testing.T) {

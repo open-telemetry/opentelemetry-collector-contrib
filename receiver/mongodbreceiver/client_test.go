@@ -124,7 +124,7 @@ func TestRunCommands(t *testing.T) {
 			cmd:      dbStatsType,
 			response: loadedDbStats,
 			validate: func(t *testing.T, m bson.M) {
-				require.Equal(t, float64(16384), m["indexSize"])
+				require.InDelta(t, float64(16384), m["indexSize"], 0.01)
 			},
 		},
 		{

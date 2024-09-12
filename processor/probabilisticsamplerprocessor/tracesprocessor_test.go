@@ -889,7 +889,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					require.NoError(t, err)
 					switch {
 					case expectCount == 0:
-						assert.Equal(t, 0.0, gotTs.OTelValue().AdjustedCount())
+						assert.InDelta(t, 0.0, gotTs.OTelValue().AdjustedCount(), 0.01)
 					case cfg.SamplingPrecision == 0:
 						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-9,
 							"compare %v %v", expectCount, gotTs.OTelValue().AdjustedCount())

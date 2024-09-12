@@ -268,7 +268,7 @@ func verifyDuration(t *testing.T, m pmetric.Metric, durationSum float64, bs []ui
 	assert.Equal(t, 1, dps.Len())
 
 	dp := dps.At(0)
-	assert.Equal(t, durationSum, dp.Sum()) // Duration: client is 1sec, server is 2sec
+	assert.InDelta(t, durationSum, dp.Sum(), 0.01) // Duration: client is 1sec, server is 2sec
 	assert.Equal(t, uint64(1), dp.Count())
 	buckets := pcommon.NewUInt64Slice()
 	buckets.FromRaw(bs)

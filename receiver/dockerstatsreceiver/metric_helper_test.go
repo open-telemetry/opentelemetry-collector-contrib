@@ -83,7 +83,7 @@ func Test_calculateCPULimit1(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			want, err := calculateCPULimit(tt.args)
-			assert.Equalf(t, tt.want, want, "calculateCPULimit(%v)", tt.args)
+			assert.InDeltaf(t, tt.want, want, 0.01, "calculateCPULimit(%v)", tt.args)
 			assert.Equalf(t, tt.err, err, "calculateCPULimit(%v)", tt.args)
 		})
 	}

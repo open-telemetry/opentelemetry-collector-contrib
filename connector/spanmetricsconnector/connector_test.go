@@ -221,10 +221,11 @@ func verifyExplicitHistogramDataPoints(t testing.TB, dps pmetric.HistogramDataPo
 	require.Equal(t, numDataPoints, dps.Len())
 	for dpi := 0; dpi < numDataPoints; dpi++ {
 		dp := dps.At(dpi)
-		assert.Equal(
+		assert.InDelta(
 			t,
 			sampleDuration*float64(numCumulativeConsumptions),
 			dp.Sum(),
+			0.01,
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
@@ -260,10 +261,11 @@ func verifyExponentialHistogramDataPoints(t testing.TB, dps pmetric.ExponentialH
 	require.Equal(t, numDataPoints, dps.Len())
 	for dpi := 0; dpi < numDataPoints; dpi++ {
 		dp := dps.At(dpi)
-		assert.Equal(
+		assert.InDelta(
 			t,
 			sampleDuration*float64(numCumulativeConsumptions),
 			dp.Sum(),
+			0.01,
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
 		assert.Equal(t, uint64(numCumulativeConsumptions), dp.Count())
 		assert.Equal(t, []uint64{uint64(numCumulativeConsumptions)}, dp.Positive().BucketCounts().AsRaw())

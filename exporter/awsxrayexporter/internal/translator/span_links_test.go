@@ -178,7 +178,7 @@ func TestSpanLinkComplexAttributes(t *testing.T) {
 	assert.Equal(t, "myValue", segment.Links[0].Attributes["myKey1"])
 	assert.Equal(t, true, segment.Links[0].Attributes["myKey2"])
 	assert.Equal(t, int64(112233), segment.Links[0].Attributes["myKey3"])
-	assert.Equal(t, 3.1415, segment.Links[0].Attributes["myKey4"])
+	assert.InDelta(t, 3.1415, segment.Links[0].Attributes["myKey4"], 0.01)
 
 	assert.Equal(t, "apple", segment.Links[0].Attributes["myKey5"].([]any)[0])
 	assert.Equal(t, "pear", segment.Links[0].Attributes["myKey5"].([]any)[1])
@@ -193,8 +193,8 @@ func TestSpanLinkComplexAttributes(t *testing.T) {
 	assert.Equal(t, int64(5678), segment.Links[0].Attributes["myKey7"].([]any)[1])
 	assert.Equal(t, int64(9012), segment.Links[0].Attributes["myKey7"].([]any)[2])
 
-	assert.Equal(t, 2.718, segment.Links[0].Attributes["myKey8"].([]any)[0])
-	assert.Equal(t, 1.618, segment.Links[0].Attributes["myKey8"].([]any)[1])
+	assert.InDelta(t, 2.718, segment.Links[0].Attributes["myKey8"].([]any)[0], 0.01)
+	assert.InDelta(t, 1.618, segment.Links[0].Attributes["myKey8"].([]any)[1], 0.01)
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 

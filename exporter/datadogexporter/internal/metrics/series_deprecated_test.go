@@ -20,9 +20,9 @@ func TestNewZorkianMetric(t *testing.T) {
 
 	assert.Equal(t, "test.metric", *metric.Metric)
 	// Assert timestamp conversion from uint64 ns to float64 s
-	assert.Equal(t, 1.0, *metric.Points[0][0])
+	assert.InDelta(t, 1.0, *metric.Points[0][0], 0.01)
 	// Assert value
-	assert.Equal(t, 2.0, *metric.Points[0][1])
+	assert.InDelta(t, 2.0, *metric.Points[0][1], 0.01)
 	// Assert tags
 	assert.Equal(t, []string{"tag:value"}, metric.Tags)
 }
@@ -53,9 +53,9 @@ func TestDefaultZorkianMetrics(t *testing.T) {
 	// Assert metrics list length (should be 1)
 	assert.Len(t, ms, 1)
 	// Assert timestamp
-	assert.Equal(t, 2.0, *ms[0].Points[0][0])
+	assert.InDelta(t, 2.0, *ms[0].Points[0][0], 0.01)
 	// Assert value (should always be 1.0)
-	assert.Equal(t, 1.0, *ms[0].Points[0][1])
+	assert.InDelta(t, 1.0, *ms[0].Points[0][1], 0.01)
 	// Assert hostname tag is set
 	assert.Equal(t, "test-host", *ms[0].Host)
 	// Assert no other tags are set

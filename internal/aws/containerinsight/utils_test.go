@@ -170,7 +170,7 @@ func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string
 				dp := dps.At(0)
 				switch dp.ValueType() {
 				case pmetric.NumberDataPointValueTypeDouble:
-					assert.Equal(t, convertToFloat64(fields[metricName]), dp.DoubleValue())
+					assert.InDelta(t, convertToFloat64(fields[metricName]), dp.DoubleValue(), 0.01)
 				case pmetric.NumberDataPointValueTypeInt:
 					assert.Equal(t, convertToInt64(fields[metricName]), dp.IntValue())
 				}

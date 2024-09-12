@@ -52,7 +52,7 @@ func TestConvertCountEnvelope(t *testing.T) {
 	dataPoint := dataPoints.At(0)
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
-	assert.Equal(t, 10.0, dataPoint.DoubleValue())
+	assert.InDelta(t, 10.0, dataPoint.DoubleValue(), 0.01)
 
 	assertAttributes(t, map[string]string{
 		"org.cloudfoundry.source_id":  "uaa",
@@ -129,7 +129,7 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	dataPoint := metric.Gauge().DataPoints().At(0)
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
-	assert.Equal(t, 17046641.0, dataPoint.DoubleValue())
+	assert.InDelta(t, 17046641.0, dataPoint.DoubleValue(), 0.01)
 	assertAttributes(t, expectedAttributes, dataPoint.Attributes())
 
 	metric = metricSlice.At(1 - memoryMetricPosition)
@@ -139,7 +139,7 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	dataPoint = metric.Gauge().DataPoints().At(0)
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
-	assert.Equal(t, 10231808.0, dataPoint.DoubleValue())
+	assert.InDelta(t, 10231808.0, dataPoint.DoubleValue(), 0.01)
 	assertAttributes(t, expectedAttributes, dataPoint.Attributes())
 }
 

@@ -97,9 +97,9 @@ func TestSampleLoad(t *testing.T) {
 		samplerInstance.sampleLoad()
 	}
 
-	assert.Equal(t, calcExpectedLoad(counterReturnValues, loadAvgFactor1m), samplerInstance.loadAvg1m)
-	assert.Equal(t, calcExpectedLoad(counterReturnValues, loadAvgFactor5m), samplerInstance.loadAvg5m)
-	assert.Equal(t, calcExpectedLoad(counterReturnValues, loadAvgFactor15m), samplerInstance.loadAvg15m)
+	assert.InDelta(t, calcExpectedLoad(counterReturnValues, loadAvgFactor1m), samplerInstance.loadAvg1m, 0.01)
+	assert.InDelta(t, calcExpectedLoad(counterReturnValues, loadAvgFactor5m), samplerInstance.loadAvg5m, 0.01)
+	assert.InDelta(t, calcExpectedLoad(counterReturnValues, loadAvgFactor15m), samplerInstance.loadAvg15m, 0.01)
 }
 
 func calcExpectedLoad(scrapedValues []int64, loadAvgFactor float64) float64 {

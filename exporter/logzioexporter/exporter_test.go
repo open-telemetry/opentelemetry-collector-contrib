@@ -295,11 +295,11 @@ func TestPushLogsData(tester *testing.T) {
 	assert.Equal(tester, testHost, jsonLog["host.name"])
 	assert.Equal(tester, testService, jsonLog["service.name"])
 	assert.Equal(tester, "server", jsonLog["app"])
-	assert.Equal(tester, 1.0, jsonLog["instance_num"])
+	assert.InDelta(tester, 1.0, jsonLog["instance_num"], 0.01)
 	assert.Equal(tester, "logScopeName", jsonLog["scopeName"])
 	assert.Equal(tester, "hello there", jsonLog["message"])
 	assert.Equal(tester, "bar", jsonLog["foo"])
-	assert.Equal(tester, 45.0, jsonLog["23"])
+	assert.InDelta(tester, 45.0, jsonLog["23"], 0.01)
 }
 
 func TestMergeMapEntries(tester *testing.T) {

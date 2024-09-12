@@ -317,9 +317,9 @@ func TestTranslateSketches(t *testing.T) {
 					m := metric.ExponentialHistogram().DataPoints().At(i)
 					require.Equal(t, pcommon.Timestamp(dogsketch.Ts*time.Second.Nanoseconds()), m.Timestamp())
 					require.Equal(t, uint64(dogsketch.Cnt), m.Count())
-					require.Equal(t, dogsketch.Sum, m.Sum())
-					require.Equal(t, dogsketch.Min, m.Min())
-					require.Equal(t, dogsketch.Max, m.Max())
+					require.InDelta(t, dogsketch.Sum, m.Sum(), 0.01)
+					require.InDelta(t, dogsketch.Min, m.Min(), 0.01)
+					require.InDelta(t, dogsketch.Max, m.Max(), 0.01)
 					require.Equal(t, m.Count(), totalHistBucketCounts(m)) // Ensure that buckets contain same number of counts as total count
 				}
 			}

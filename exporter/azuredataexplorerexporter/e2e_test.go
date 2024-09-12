@@ -223,7 +223,7 @@ func TestCreateMetricsExporterE2E(t *testing.T) {
 	for i := 0; i < len(recs); i++ {
 		crec := recs[i]
 		assert.Equal(t, metricName, crec.MetricName)
-		assert.Equal(t, float64(metricValue), crec.MetricValue)
+		assert.InDelta(t, float64(metricValue), crec.MetricValue, 0.01)
 		assert.Equal(t, attrs, crec.MetricAttributes)
 		assert.Equal(t, metricDescription, crec.MetricDescription)
 		assert.Equal(t, metricUnit, crec.MetricUnit)

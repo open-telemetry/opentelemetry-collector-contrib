@@ -60,10 +60,10 @@ func check(t *testing.T, in SketchPoint, pb gogen.SketchPayload_Sketch_Dogsketch
 
 	// summary
 	require.Equal(t, b.Cnt, pb.Cnt)
-	require.Equal(t, b.Min, pb.Min)
-	require.Equal(t, b.Max, pb.Max)
-	require.Equal(t, b.Avg, pb.Avg)
-	require.Equal(t, b.Sum, pb.Sum)
+	require.InDelta(t, b.Min, pb.Min, 0.01)
+	require.InDelta(t, b.Max, pb.Max, 0.01)
+	require.InDelta(t, b.Avg, pb.Avg, 0.01)
+	require.InDelta(t, b.Sum, pb.Sum, 0.01)
 }
 
 func TestSketchSeriesListMarshal(t *testing.T) {

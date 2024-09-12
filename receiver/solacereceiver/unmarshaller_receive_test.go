@@ -769,7 +769,7 @@ func TestReceiveUnmarshallerInsertUserProperty(t *testing.T) {
 			&receive_v1.SpanData_UserPropertyValue_DoubleValue{DoubleValue: 12.34},
 			pcommon.ValueTypeDouble,
 			func(val pcommon.Value) {
-				assert.Equal(t, float64(12.34), val.Double())
+				assert.InDelta(t, float64(12.34), val.Double(), 0.01)
 			},
 		},
 		{
@@ -783,7 +783,7 @@ func TestReceiveUnmarshallerInsertUserProperty(t *testing.T) {
 			&receive_v1.SpanData_UserPropertyValue_FloatValue{FloatValue: 12.34},
 			pcommon.ValueTypeDouble,
 			func(val pcommon.Value) {
-				assert.Equal(t, float64(float32(12.34)), val.Double())
+				assert.InDelta(t, float64(float32(12.34)), val.Double(), 0.01)
 			},
 		},
 		{

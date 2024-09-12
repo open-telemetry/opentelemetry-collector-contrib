@@ -340,7 +340,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 func assertUp(t *testing.T, expected float64, metrics []pmetric.Metric) {
 	for _, m := range metrics {
 		if m.Name() == "up" {
-			assert.Equal(t, expected, m.Gauge().DataPoints().At(0).DoubleValue()) // (assumed up will not have multiple datapoints)
+			assert.InDelta(t, expected, m.Gauge().DataPoints().At(0).DoubleValue(), 0.01) // (assumed up will not have multiple datapoints)
 			return
 		}
 	}
@@ -620,7 +620,7 @@ func compareSummaryStartTimestamp(timeStamp pcommon.Timestamp) summaryPointCompa
 
 func compareDoubleValue(doubleVal float64) numberPointComparator {
 	return func(t *testing.T, numberDataPoint pmetric.NumberDataPoint) {
-		assert.Equal(t, doubleVal, numberDataPoint.DoubleValue(), "Metric double value does not match")
+		assert.InDelta(t, doubleVal, numberDataPoint.DoubleValue(), 0.01, "Metric double value does not match")
 	}
 }
 
@@ -634,7 +634,7 @@ func assertNormalNan() numberPointComparator {
 func compareHistogram(count uint64, sum float64, upperBounds []float64, buckets []uint64) histogramPointComparator {
 	return func(t *testing.T, histogramDataPoint pmetric.HistogramDataPoint) {
 		assert.Equal(t, count, histogramDataPoint.Count(), "Histogram count value does not match")
-		assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match")
+		assert.InDelta(t, sum, histogramDataPoint.Sum(), 0.01, "Histogram sum value does not match")
 		assert.Equal(t, upperBounds, histogramDataPoint.ExplicitBounds().AsRaw(), "Histogram upper bounds values do not match")
 		assert.Equal(t, buckets, histogramDataPoint.BucketCounts().AsRaw(), "Histogram bucket count values do not match")
 	}
@@ -644,7 +644,7 @@ func compareExponentialHistogram(scale int32, count uint64, sum float64, zeroCou
 	return func(t *testing.T, exponentialHistogramDataPoint pmetric.ExponentialHistogramDataPoint) {
 		assert.Equal(t, scale, exponentialHistogramDataPoint.Scale(), "Exponential Histogram scale value does not match")
 		assert.Equal(t, count, exponentialHistogramDataPoint.Count(), "Exponential Histogram count value does not match")
-		assert.Equal(t, sum, exponentialHistogramDataPoint.Sum(), "Exponential Histogram sum value does not match")
+		assert.InDelta(t, sum, exponentialHistogramDataPoint.Sum(), 0.01, "Exponential Histogram sum value does not match")
 		assert.Equal(t, zeroCount, exponentialHistogramDataPoint.ZeroCount(), "Exponential Histogram zero count value does not match")
 		assert.Equal(t, negativeOffset, exponentialHistogramDataPoint.Negative().Offset(), "Exponential Histogram negative offset value does not match")
 		assert.Equal(t, negativeBuckets, exponentialHistogramDataPoint.Negative().BucketCounts().AsRaw(), "Exponential Histogram negative bucket count values do not match")
@@ -656,18 +656,18 @@ func compareExponentialHistogram(scale int32, count uint64, sum float64, zeroCou
 func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint pmetric.SummaryDataPoint) {
 		assert.Equal(t, count, summaryDataPoint.Count(), "Summary count value does not match")
-		assert.Equal(t, sum, summaryDataPoint.Sum(), "Summary sum value does not match")
+		assert.InDelta(t, sum, summaryDataPoint.Sum(), 0.01, "Summary sum value does not match")
 		req := assert.Equal(t, len(quantiles), summaryDataPoint.QuantileValues().Len())
 		if req {
 			for i := 0; i < summaryDataPoint.QuantileValues().Len(); i++ {
-				assert.Equal(t, quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile(),
-					"Summary quantile do not match")
+				assert.InDelta(t, quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile(),
+					0.01, "Summary quantile do not match")
 				if math.IsNaN(quantiles[i][1]) {
 					assert.Equal(t, value.NormalNaN, math.Float64bits(summaryDataPoint.QuantileValues().At(i).Value()),
 						"Summary quantile value is not normalNaN as expected")
 				} else {
-					assert.Equal(t, quantiles[i][1], summaryDataPoint.QuantileValues().At(i).Value(),
-						"Summary quantile values do not match")
+					assert.InDelta(t, quantiles[i][1], summaryDataPoint.QuantileValues().At(i).Value(),
+						0.01, "Summary quantile values do not match")
 				}
 			}
 		}

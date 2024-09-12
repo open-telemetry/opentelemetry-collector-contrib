@@ -53,17 +53,17 @@ func TestDoubleHistogramFunctions(t *testing.T) {
 
 	addDoubleHistogramVal(pt, 1)
 	require.EqualValues(t, 1, pt.Count())
-	require.EqualValues(t, 1, pt.Sum())
+	require.InDelta(t, 1.0, pt.Sum(), 0.01)
 	require.EqualValues(t, 1, pt.BucketCounts().At(0))
 
 	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 2, pt.Count())
-	require.EqualValues(t, 3, pt.Sum())
+	require.InDelta(t, 3.0, pt.Sum(), 0.01)
 	require.EqualValues(t, 1, pt.BucketCounts().At(1))
 
 	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 3, pt.Count())
-	require.EqualValues(t, 5, pt.Sum())
+	require.InDelta(t, 5.0, pt.Sum(), 0.01)
 	require.EqualValues(t, 2, pt.BucketCounts().At(1))
 }
 
@@ -87,7 +87,7 @@ func TestGenDoubleGauge(t *testing.T) {
 	pts := metric.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
-	require.EqualValues(t, float64(1), pt.IntValue())
+	require.EqualValues(t, 1, pt.IntValue())
 }
 
 func getMetric(md pmetric.Metrics) pmetric.Metric {

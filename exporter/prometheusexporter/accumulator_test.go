@@ -256,7 +256,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				return true
 			})
 			require.Equal(t, m2Labels.Len(), vLabels.Len())
-			require.Equal(t, m2Value, vValue)
+			require.InDelta(t, m2Value, vValue, 0.01)
 			require.Equal(t, ts2.Unix(), vTS.Unix())
 			require.Greater(t, v.updated.Unix(), vTS.Unix())
 			require.Equal(t, m2Temporality, vTemporality)
@@ -280,7 +280,7 @@ func TestAccumulateMetrics(t *testing.T) {
 			v = m.(*accumulatedValue)
 			_, vTS, vValue, _, _ = getMetricProperties(v.value)
 
-			require.Equal(t, m3Value, vValue)
+			require.InDelta(t, m3Value, vValue, 0.01)
 			require.Equal(t, ts3.Unix(), vTS.Unix())
 		})
 	}
@@ -370,8 +370,8 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 				return true
 			})
 			require.Equal(t, mLabels.Len(), vLabels.Len())
-			require.Equal(t, mValue, vValue)
-			require.Equal(t, dataPointValue1+dataPointValue2, vValue)
+			require.InDelta(t, mValue, vValue, 0.01)
+			require.InDelta(t, dataPointValue1+dataPointValue2, vValue, 0.01)
 			require.Equal(t, pmetric.AggregationTemporalityCumulative, vTemporality)
 			require.True(t, vIsMonotonic)
 
@@ -419,7 +419,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
 		require.True(t, ok)
 
-		require.Equal(t, m1.Sum()+m2.Sum(), v.Sum())
+		require.InDelta(t, m1.Sum()+m2.Sum(), v.Sum(), 0.01)
 		require.Equal(t, m1.Count()+m2.Count(), v.Count())
 
 		for i := 0; i < v.BucketCounts().Len(); i++ {
@@ -427,7 +427,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		}
 
 		for i := 0; i < v.ExplicitBounds().Len(); i++ {
-			require.Equal(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+			require.InDelta(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i), 0.01)
 		}
 	})
 	t.Run("ResetBuckets/Ignore", func(t *testing.T) {
@@ -453,7 +453,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
 		require.True(t, ok)
 
-		require.Equal(t, m1.Sum(), v.Sum())
+		require.InDelta(t, m1.Sum(), v.Sum(), 0.01)
 		require.Equal(t, m1.Count(), v.Count())
 
 		for i := 0; i < v.BucketCounts().Len(); i++ {
@@ -461,7 +461,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		}
 
 		for i := 0; i < v.ExplicitBounds().Len(); i++ {
-			require.Equal(t, m1.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+			require.InDelta(t, m1.ExplicitBounds().At(i), v.ExplicitBounds().At(i), 0.01)
 		}
 	})
 	t.Run("ResetBuckets/Perform", func(t *testing.T) {
@@ -487,7 +487,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
 		require.True(t, ok)
 
-		require.Equal(t, m2.Sum(), v.Sum())
+		require.InDelta(t, m2.Sum(), v.Sum(), 0.01)
 		require.Equal(t, m2.Count(), v.Count())
 
 		for i := 0; i < v.BucketCounts().Len(); i++ {
@@ -495,7 +495,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		}
 
 		for i := 0; i < v.ExplicitBounds().Len(); i++ {
-			require.Equal(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+			require.InDelta(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i), 0.01)
 		}
 	})
 	t.Run("MisalignedTimestamps/Drop", func(t *testing.T) {
@@ -521,7 +521,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
 		require.True(t, ok)
 
-		require.Equal(t, m1.Sum(), v.Sum())
+		require.InDelta(t, m1.Sum(), v.Sum(), 0.01)
 		require.Equal(t, m1.Count(), v.Count())
 
 		for i := 0; i < v.BucketCounts().Len(); i++ {
@@ -529,7 +529,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		}
 
 		for i := 0; i < v.ExplicitBounds().Len(); i++ {
-			require.Equal(t, m1.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+			require.InDelta(t, m1.ExplicitBounds().At(i), v.ExplicitBounds().At(i), 0.01)
 		}
 	})
 	t.Run("MisalignedTimestamps/Reset", func(t *testing.T) {
@@ -555,7 +555,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
 		require.True(t, ok)
 
-		require.Equal(t, m2.Sum(), v.Sum())
+		require.InDelta(t, m2.Sum(), v.Sum(), 0.01)
 		require.Equal(t, m2.Count(), v.Count())
 
 		for i := 0; i < v.BucketCounts().Len(); i++ {
@@ -563,7 +563,7 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		}
 
 		for i := 0; i < v.ExplicitBounds().Len(); i++ {
-			require.Equal(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+			require.InDelta(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i), 0.01)
 		}
 	})
 }

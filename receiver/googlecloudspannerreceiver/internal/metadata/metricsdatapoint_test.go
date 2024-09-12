@@ -272,7 +272,7 @@ func assertMetricValue(t *testing.T, metricValue MetricValue, dataPoint pmetric.
 	case int64MetricValue:
 		assert.Equal(t, metricValue.Value(), dataPoint.IntValue())
 	case float64MetricValue:
-		assert.Equal(t, metricValue.Value(), dataPoint.DoubleValue())
+		assert.InDelta(t, metricValue.Value(), dataPoint.DoubleValue(), 0.01)
 	}
 }
 

@@ -62,7 +62,7 @@ func Test_Hours(t *testing.T) {
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			assert.InDelta(t, tt.expected, result, 0.01)
 		})
 	}
 }

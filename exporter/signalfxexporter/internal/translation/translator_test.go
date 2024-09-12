@@ -2488,10 +2488,10 @@ func TestDeltaMetricDouble(t *testing.T) {
 
 	pts1, pts2 := requireDeltaMetricOk(t, md1, md2, md3)
 	for _, pt := range pts1 {
-		require.EqualValues(t, delta1, *pt.Value.DoubleValue)
+		require.InDelta(t, delta1, *pt.Value.DoubleValue, 0.01)
 	}
 	for _, pt := range pts2 {
-		require.EqualValues(t, delta2, *pt.Value.DoubleValue)
+		require.InDelta(t, delta2, *pt.Value.DoubleValue, 0.01)
 	}
 }
 

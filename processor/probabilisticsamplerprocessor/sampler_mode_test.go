@@ -57,7 +57,7 @@ func TestHashSeedRoundingDown(t *testing.T) {
 	// would round up, but it does not.
 	const pct = 0x3p-16 * 100
 
-	require.Equal(t, 1.0, math.Round((pct/100)*numHashBuckets))
+	require.InDelta(t, 1.0, math.Round((pct/100)*numHashBuckets), 0.01)
 
 	for _, isLogs := range []bool{false, true} {
 		cfg := Config{

@@ -219,7 +219,7 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rmetric := defaultSink.AllMetrics()[0].ResourceMetrics().At(0)
 		attr, ok := rmetric.Resource().Attributes().Get("value")
 		assert.True(t, ok, "routing attribute must exist")
-		assert.Equal(t, attr.Double(), float64(-1.0))
+		assert.InDelta(t, attr.Double(), float64(-1.0), 0.01)
 	})
 
 	t.Run("metric matched by one expression, multiple pipelines", func(t *testing.T) {
@@ -386,7 +386,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		rmetric := defaultSink.AllMetrics()[0].ResourceMetrics().At(0)
 		attr, ok := rmetric.Resource().Attributes().Get("value")
 		assert.True(t, ok, "routing attribute must exist")
-		assert.Equal(t, attr.Double(), float64(-1.0))
+		assert.InDelta(t, attr.Double(), float64(-1.0), 0.01)
 	})
 
 	t.Run("metric matched by one expression, multiple pipelines", func(t *testing.T) {

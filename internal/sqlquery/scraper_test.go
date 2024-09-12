@@ -304,7 +304,7 @@ func TestScraper_Float(t *testing.T) {
 	metrics, err := scrpr.Scrape(context.Background())
 	require.NoError(t, err)
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	assert.Equal(t, 123.4, metric.Gauge().DataPoints().At(0).DoubleValue())
+	assert.InDelta(t, 123.4, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.01)
 }
 
 func TestScraper_DescriptionAndUnit(t *testing.T) {

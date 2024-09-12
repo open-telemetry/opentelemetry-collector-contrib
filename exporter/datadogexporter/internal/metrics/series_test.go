@@ -23,7 +23,7 @@ func TestNewMetricSeries(t *testing.T) {
 	// Assert timestamp conversion from uint64 ns to int64 s
 	assert.Equal(t, int64(1), *metric.Points[0].Timestamp)
 	// Assert value
-	assert.Equal(t, 2.0, *metric.Points[0].Value)
+	assert.InDelta(t, 2.0, *metric.Points[0].Value, 0.01)
 	// Assert tags
 	assert.Equal(t, []string{"tag:value"}, metric.Tags)
 }
@@ -55,7 +55,7 @@ func TestDefaultMetrics(t *testing.T) {
 	// Assert timestamp
 	assert.Equal(t, int64(2), *ms[0].Points[0].Timestamp)
 	// Assert value (should always be 1.0)
-	assert.Equal(t, 1.0, *ms[0].Points[0].Value)
+	assert.InDelta(t, 1.0, *ms[0].Points[0].Value, 0.01)
 	// Assert hostname tag is set
 	assert.Equal(t, "test-host", *ms[0].Resources[0].Name)
 	// Assert no other tags are set
@@ -77,7 +77,7 @@ func TestDefaultMetricsWithRuntimeMetrics(t *testing.T) {
 	// Assert timestamp
 	assert.Equal(t, int64(2), *ms[0].Points[0].Timestamp)
 	// Assert value (should always be 1.0)
-	assert.Equal(t, 1.0, *ms[0].Points[0].Value)
+	assert.InDelta(t, 1.0, *ms[0].Points[0].Value, 0.01)
 	// Assert hostname tag is set
 	assert.Equal(t, "test-host", *ms[0].Resources[0].Name)
 	// Assert no other tags are set

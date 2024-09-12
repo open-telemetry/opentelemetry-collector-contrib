@@ -20,7 +20,7 @@ func TestFloat64RateCalculator(t *testing.T) {
 	c := newFloat64RateCalculator()
 	r, ok := c.Calculate(mKey, float64(50), initTime)
 	assert.False(t, ok)
-	assert.Equal(t, float64(0), r)
+	assert.InDelta(t, float64(0), r, 0.01)
 
 	nextTime := initTime.Add(100 * time.Millisecond)
 	r, ok = c.Calculate(mKey, float64(100), nextTime)
@@ -35,14 +35,14 @@ func TestFloat64RateCalculatorWithTooFrequentUpdate(t *testing.T) {
 	c := newFloat64RateCalculator()
 	r, ok := c.Calculate(mKey, float64(50), initTime)
 	assert.False(t, ok)
-	assert.Equal(t, float64(0), r)
+	assert.InDelta(t, float64(0), r, 0.01)
 
 	nextTime := initTime
 	for i := 0; i < 10; i++ {
 		nextTime = nextTime.Add(5 * time.Millisecond)
 		r, ok = c.Calculate(mKey, float64(105), nextTime)
 		assert.False(t, ok)
-		assert.Equal(t, float64(0), r)
+		assert.InDelta(t, float64(0), r, 0.01)
 	}
 
 	nextTime = nextTime.Add(5 * time.Millisecond)
@@ -75,7 +75,7 @@ func TestFloat64DeltaCalculator(t *testing.T) {
 		r, ok := c.Calculate(mKey, f, initTime)
 		assert.Equal(t, i > 0, ok)
 		if i == 0 {
-			assert.Equal(t, float64(0), r)
+			assert.InDelta(t, float64(0), r, 0.01)
 		} else {
 			assert.InDelta(t, f-testCases[i-1], r, f/10)
 		}
@@ -93,7 +93,7 @@ func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
 		r, ok := c.Calculate(mKey, f, initTime)
 		assert.Equal(t, i > 0, ok)
 		if ok {
-			assert.Equal(t, testCases[i]-testCases[i-1], r)
+			assert.InDelta(t, testCases[i]-testCases[i-1], r, 0.01)
 		}
 	}
 	require.NoError(t, c.Shutdown())
@@ -107,7 +107,7 @@ func TestMapWithExpiryAdd(t *testing.T) {
 	val, ok := store.Get(Key{MetricMetadata: "key1"})
 	store.Unlock()
 	assert.True(t, ok)
-	assert.Equal(t, value1, val.RawValue)
+	assert.InDelta(t, value1, val.RawValue, 0.01)
 
 	store.Lock()
 	defer store.Unlock()
@@ -135,7 +135,7 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	val, ok := store.Get(Key{MetricMetadata: "key1"})
 
 	assert.True(t, ok)
-	assert.Equal(t, value1, val.RawValue.(float64))
+	assert.InDelta(t, value1, val.RawValue.(float64), 0.01)
 	assert.Equal(t, 1, store.Size())
 	store.Unlock()
 

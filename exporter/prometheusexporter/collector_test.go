@@ -126,7 +126,7 @@ func exemplarsEqual(t *testing.T, otelExemplar pmetric.Exemplar, promExemplar *i
 		t.Error("Unexpected value type for OTel exemplar", otelExemplar.ValueType())
 	}
 
-	require.Equal(t, givenValue, promExemplar.GetValue())
+	require.InDelta(t, givenValue, promExemplar.GetValue(), 0.01)
 	require.Len(t, promExemplar.GetLabel(), 2)
 	ml := make(map[string]string)
 	for _, l := range promExemplar.GetLabel() {
@@ -177,7 +177,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	require.Len(t, buckets, 3)
 
-	require.Equal(t, 3.0, buckets[0].GetExemplar().GetValue())
+	require.InDelta(t, 3.0, buckets[0].GetExemplar().GetValue(), 0.01)
 	exemplarsEqual(t, promExporterExemplars, buckets[0].GetExemplar())
 }
 
@@ -216,7 +216,7 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 	}
 
 	promCounter := outMetric.GetCounter()
-	require.Equal(t, 1.0, promCounter.GetValue())
+	require.InDelta(t, 1.0, promCounter.GetValue(), 0.01)
 	exemplarsEqual(t, exemplar, promCounter.GetExemplar())
 }
 
@@ -518,12 +518,12 @@ func TestCollectMetrics(t *testing.T) {
 
 					switch tt.metricType {
 					case prometheus.CounterValue:
-						require.Equal(t, tt.value, *pbMetric.Counter.Value)
+						require.InDelta(t, tt.value, *pbMetric.Counter.Value, 0.01)
 						require.Nil(t, pbMetric.Gauge)
 						require.Nil(t, pbMetric.Histogram)
 						require.Nil(t, pbMetric.Summary)
 					case prometheus.GaugeValue:
-						require.Equal(t, tt.value, *pbMetric.Gauge.Value)
+						require.InDelta(t, tt.value, *pbMetric.Gauge.Value, 0.01)
 						require.Nil(t, pbMetric.Counter)
 						require.Nil(t, pbMetric.Histogram)
 						require.Nil(t, pbMetric.Summary)
@@ -627,7 +627,7 @@ func TestAccumulateHistograms(t *testing.T) {
 
 					h := pbMetric.Histogram
 					require.Equal(t, tt.histogramCount, h.GetSampleCount())
-					require.Equal(t, tt.histogramSum, h.GetSampleSum())
+					require.InDelta(t, tt.histogramSum, h.GetSampleSum(), 0.01)
 					require.Equal(t, len(tt.histogramPoints), len(h.Bucket))
 
 					for _, b := range h.Bucket {
@@ -738,7 +738,7 @@ func TestAccumulateSummary(t *testing.T) {
 
 					s := pbMetric.Summary
 					require.Equal(t, tt.wantCount, *s.SampleCount)
-					require.Equal(t, tt.wantSum, *s.SampleSum)
+					require.InDelta(t, tt.wantSum, *s.SampleSum, 0.01)
 					// To ensure that we can compare quantiles, we need to just extract their values.
 					gotQuantiles := make(map[float64]float64)
 					for _, q := range s.Quantile {

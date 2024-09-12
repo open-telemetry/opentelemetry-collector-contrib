@@ -1473,7 +1473,7 @@ func TestGetDataPoints(t *testing.T) {
 				dp := convertedDPS.NumberDataPointSlice.At(0)
 				switch dp.ValueType() {
 				case pmetric.NumberDataPointValueTypeDouble:
-					assert.Equal(t, 0.1, dp.DoubleValue())
+					assert.InDelta(t, 0.1, dp.DoubleValue(), 0.01)
 				case pmetric.NumberDataPointValueTypeInt:
 					assert.Equal(t, int64(1), dp.IntValue())
 				}
@@ -1481,14 +1481,14 @@ func TestGetDataPoints(t *testing.T) {
 			case histogramDataPointSlice:
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.HistogramDataPointSlice.At(0)
-				assert.Equal(t, 35.0, dp.Sum())
+				assert.InDelta(t, 35.0, dp.Sum(), 0.01)
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds().AsRaw())
 				assert.Equal(t, tc.expectedAttributes, dp.Attributes().AsRaw())
 			case exponentialHistogramDataPointSlice:
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.ExponentialHistogramDataPointSlice.At(0)
-				assert.Equal(t, float64(0), dp.Sum())
+				assert.InDelta(t, float64(0), dp.Sum(), 0.01)
 				assert.Equal(t, uint64(4), dp.Count())
 				assert.Equal(t, []uint64{1, 0, 1}, dp.Positive().BucketCounts().AsRaw())
 				assert.Equal(t, []uint64{1, 0, 1}, dp.Negative().BucketCounts().AsRaw())
@@ -1499,11 +1499,11 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.SummaryDataPointSlice.At(0)
-				assert.Equal(t, 15.0, dp.Sum())
+				assert.InDelta(t, 15.0, dp.Sum(), 0.01)
 				assert.Equal(t, uint64(5), dp.Count())
 				assert.Equal(t, 2, dp.QuantileValues().Len())
-				assert.Equal(t, float64(1), dp.QuantileValues().At(0).Value())
-				assert.Equal(t, float64(5), dp.QuantileValues().At(1).Value())
+				assert.InDelta(t, float64(1), dp.QuantileValues().At(0).Value(), 0.01)
+				assert.InDelta(t, float64(5), dp.QuantileValues().At(1).Value(), 0.01)
 				assert.Equal(t, tc.expectedAttributes, dp.Attributes().AsRaw())
 			}
 		})

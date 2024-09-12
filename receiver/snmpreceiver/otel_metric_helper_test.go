@@ -383,7 +383,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				attributes := map[string]string{"key1": "val1"}
 				actual, err := helper.addMetricDataPoint("r1", "m1", &metricCfg, data, attributes)
 				require.NoError(t, err)
-				require.Equal(t, data.value, actual.DoubleValue())
+				require.InDelta(t, data.value, actual.DoubleValue(), 0.01)
 				val, exists := actual.Attributes().Get("key1")
 				require.True(t, exists)
 				require.Equal(t, "val1", val.AsString())
@@ -455,7 +455,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				attributes := map[string]string{"key1": "val1"}
 				actual, err := helper.addMetricDataPoint("r1", "m1", &metricCfg, data, attributes)
 				require.NoError(t, err)
-				require.Equal(t, float64(10.0), actual.DoubleValue())
+				require.InDelta(t, float64(10.0), actual.DoubleValue(), 0.01)
 				val, exists := actual.Attributes().Get("key1")
 				require.True(t, exists)
 				require.Equal(t, "val1", val.AsString())

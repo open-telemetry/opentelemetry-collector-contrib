@@ -468,7 +468,7 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		rmetric := defaultExp.AllMetrics()[0].ResourceMetrics().At(0)
 		attr, ok := rmetric.Resource().Attributes().Get("value")
 		assert.True(t, ok, "routing attribute must exists")
-		assert.Equal(t, attr.Double(), float64(-1.0))
+		assert.InDelta(t, attr.Double(), float64(-1.0), 0.01)
 	})
 }
 

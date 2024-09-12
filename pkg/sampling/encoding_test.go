@@ -101,9 +101,9 @@ func TestInvalidprobabilityToTValue(t *testing.T) {
 }
 
 func TestTValueToProbability(t *testing.T) {
-	require.Equal(t, 0.5, must(tValueToProbability("8")))
-	require.Equal(t, 1-0x444p-12, must(tValueToProbability("444")))
-	require.Equal(t, 1.0, must(tValueToProbability("0")))
+	require.InDelta(t, 0.5, must(tValueToProbability("8")), 0.01)
+	require.InDelta(t, 1-0x444p-12, must(tValueToProbability("444")), 0.01)
+	require.InDelta(t, 1.0, must(tValueToProbability("0")), 0.01)
 
 	// 0x55555554p-32 is very close to 1/3
 	require.InEpsilon(t, 1-1/3., must(tValueToProbability("55555554")), 1e-9)
