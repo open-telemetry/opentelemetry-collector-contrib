@@ -21,7 +21,8 @@ import (
 
 	"github.com/Showmax/go-fqdn"
 	"github.com/cenkalti/backoff/v4"
-	ps "github.com/mitchellh/go-ps"
+
+	"github.com/shirou/gopsutil/process"
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -699,7 +700,7 @@ var sumoAppProcesses = map[string]string{
 	"apache":                "apache",
 	"apache2":               "apache",
 	"httpd":                 "apache",
-	"docker":                "docker",
+	"docker":                "docker", // docker cli
 	"elasticsearch":         "elasticsearch",
 	"mysql-server":          "mysql",
 	"mysqld":                "mysql",
@@ -710,21 +711,63 @@ var sumoAppProcesses = map[string]string{
 	"redis":                 "redis",
 	"tomcat":                "tomcat",
 	"kafka-server-start.sh": "kafka", // Need to test this, most common shell wrapper.
+	"redis-server":          "redis",
+	"mongod":                "mongodb",
+	"cassandra":             "cassandra",
+	"jmx":                   "jmx",
+	"activemq":              "activemq",
+	"memcached":             "memcached",
+	"haproxy":               "haproxy",
+	"dockerd":               "docker-ce", // docker engine, for when process runs natively
+	"com.docker.backend":    "docker-ce", // since docker daemon runs on a VM in Docker Desktop, process won't show on mac
+	"sqlservr":              "mssql",     // linux SQL Server process
 }
 
 func filteredProcessList() ([]string, error) {
 	var pl []string
 
-	p, err := ps.Processes()
+	processes, err := process.Processes()
 	if err != nil {
 		return pl, err
 	}
 
-	for _, v := range p {
-		e := strings.ToLower(v.Executable())
+	for _, v := range processes {
+		// Get the process executable name
+		e, err := v.Name()
+		if err != nil {
+			continue
+		}
+		e = strings.ToLower(e)
+
 		if a, i := sumoAppProcesses[e]; i {
 			pl = append(pl, a)
 		}
+
+		// handling for Docker Desktop
+		if e == "com.docker.backend" {
+			pl = append(pl, "docker-ce")
+		}
+
+		// handling for Java background processes
+		if e == "java" {
+			cmdline, err := v.Cmdline()
+			if err != nil {
+				continue
+			}
+
+			if strings.Contains(cmdline, "org.apache.cassandra.service.CassandraDaemon") {
+				pl = append(pl, "cassandra")
+			}
+
+			if strings.Contains(cmdline, "com.sun.management.jmxremote") {
+				pl = append(pl, "jmx")
+			}
+
+			if strings.Contains(cmdline, "activemq.jar") {
+				pl = append(pl, "activemq")
+			}
+		}
+
 	}
 
 	return pl, nil
