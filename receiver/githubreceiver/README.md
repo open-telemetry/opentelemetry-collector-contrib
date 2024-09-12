@@ -97,6 +97,6 @@ see the [Scraping README][ghsread].
 
 ### Logs
 
-The GitHub Receiver supports GitHub audit logs for both Enterprise and Organization entities. GitHub provides comprehensive audit logs, which include detailed information about various events, such as repository changes, user activities, security settings, and access management. While GitHub does not provide dedicated audit logs for individual User accounts, events related to user activities can still be captured through existing log types (like repository, actions, and security events). This ensures that all log types - enterprise, organization, and user, are available for analysis.
+The GitHub Receiver supports GitHub audit logs for both Enterprise and Organization entities. GitHub provides comprehensive audit logs, which include detailed information about various events, such as repository changes, user activities, security settings, and access management. Although GitHub does not provide dedicated audit logs for individual User accounts, events related to user activities can still be captured through existing log types (like repository, actions, and security events). This ensures that all log types - enterprise, organization, and user, are available for analysis.
 
 <!-- TODO: Finish logs documentation -->
