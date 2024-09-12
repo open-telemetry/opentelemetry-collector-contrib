@@ -8,6 +8,7 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -62,6 +63,21 @@ func DefaultMetrics(exporterType string, hostname string, timestamp uint64, tags
 				Name: datadog.PtrString(hostname),
 				Type: datadog.PtrString("host"),
 			},
+		})
+
+		// datadog-api-client-go does not support `origin_product`, `origin_sub_product` or `origin_product_detail`.
+		// We add them as 'AdditionalProperties'. This is undocumented; it adds the fields to the JSON output as-is:
+		// https://github.com/DataDog/datadog-api-client-go/blob/f692d3/api/datadogV2/model_metric_origin.go#L153-L155
+		// To make things more fun, the `MetricsOrigin` struct has references to deprecated `product` and `service` fields,
+		// so to avoid sending these we use `MetricMetadata`'s `AdditionalProperties` field instead of `MetricsOrigin`'s.
+		// Should be kept in sync with `Consumer.ConsumeTimeSeries`.
+		metrics[i].SetMetadata(datadogV2.MetricMetadata{
+			AdditionalProperties: map[string]any{
+				"origin": map[string]any{
+					"origin_product":        int(otlpmetrics.OriginProductDatadogExporter),
+					"origin_sub_product":    int(otlpmetrics.OriginSubProductOTLP),
+					"origin_product_detail": int(otlpmetrics.OriginProductDetailUnknown),
+				}},
 		})
 	}
 	return metrics
