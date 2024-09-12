@@ -220,12 +220,14 @@ func (i *Input) read(ctx context.Context) int {
 		i.Logger().Info(err.Error())
 		if err.Error() == "The remote procedure call was cancelled." {
 			i.Logger().Info("Attempting to restart remote session due to RPC cancellation")
-			if stopErr := i.stopRemoteSession(); stopErr != nil {
+			if stopErr := i.Stop(); stopErr != nil {
 				i.Logger().Error("Failed to stop remote session", zap.Error(stopErr))
 				return 0
 			}
 			for {
-				if startErr := i.startRemoteSession(); startErr != nil {
+				i.Logger().Info("Waiting 30 seconds before retrying remote session")
+				time.Sleep(30 * time.Second)
+				if startErr := i.Start(i.persister); startErr != nil {
 					i.Logger().Error("Failed to start remote session", zap.Error(startErr))
 					continue // Retry until the connection is re-established
 				}
