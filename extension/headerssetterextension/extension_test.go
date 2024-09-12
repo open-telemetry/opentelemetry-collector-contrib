@@ -218,6 +218,82 @@ var (
 				"header_name": "",
 			},
 		},
+		// Default Value test - INSERT
+		{
+			// when "TenantID" exists in the context, use the value as header_name
+			cfg: &Config{
+				HeadersConfig: []HeaderConfig{
+					{
+						Key:         &header,
+						Action:      INSERT,
+						FromContext: stringp("TenantID"),
+					},
+				},
+			},
+			metadata: client.NewMetadata(
+				map[string][]string{"TenantID": {"12345"}},
+			),
+			expectedHeaders: map[string]string{
+				"header_name": "12345",
+			},
+		},
+		{
+			// even when "TenantID" doesn't exist in the context, use the DefaultValue
+			cfg: &Config{
+				HeadersConfig: []HeaderConfig{
+					{
+						Key:          &header,
+						Action:       INSERT,
+						FromContext:  stringp("TenantID"),
+						DefaultValue: stringp("hoge"),
+					},
+				},
+			},
+			metadata: client.NewMetadata(
+				map[string][]string{"foo": {"bar"}},
+			),
+			expectedHeaders: map[string]string{
+				"header_name": "hoge",
+			},
+		},
+		{
+			// when DefaultValue and "TenantID" exist in the context, the context takes the precedence
+			cfg: &Config{
+				HeadersConfig: []HeaderConfig{
+					{
+						Key:          &header,
+						Action:       INSERT,
+						FromContext:  stringp("TenantID"),
+						DefaultValue: stringp("hoge"),
+					},
+				},
+			},
+			metadata: client.NewMetadata(
+				map[string][]string{"TenantID": {"12345"}},
+			),
+			expectedHeaders: map[string]string{
+				"header_name": "12345",
+			},
+		},
+		{
+			// when "TenantID" and DefaultValue don't exist, set the header = ""
+			cfg: &Config{
+				HeadersConfig: []HeaderConfig{
+					{
+						Key:         &header,
+						Action:      INSERT,
+						FromContext: stringp("TenantID"),
+					},
+				},
+			},
+			metadata: client.NewMetadata(
+				map[string][]string{"foo": {"bar"}},
+			),
+			expectedHeaders: map[string]string{
+				"header_name": "",
+			},
+		},
+		// Default Value test - UPSERT ... should behave as same as INSERT
 	}
 )
 

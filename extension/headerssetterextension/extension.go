@@ -30,13 +30,20 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, er
 	headers := make([]Header, 0, len(cfg.HeadersConfig))
 	for _, header := range cfg.HeadersConfig {
 		var s source.Source
+
 		if header.Value != nil {
 			s = &source.StaticSource{
 				Value: *header.Value,
 			}
 		} else if header.FromContext != nil {
+			DefaultValue := ""
+			if header.DefaultValue != nil {
+				DefaultValue = *header.DefaultValue
+			}
+
 			s = &source.ContextSource{
-				Key: *header.FromContext,
+				Key:          *header.FromContext,
+				DefaultValue: DefaultValue,
 			}
 		}
 

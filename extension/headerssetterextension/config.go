@@ -19,10 +19,11 @@ type Config struct {
 }
 
 type HeaderConfig struct {
-	Action      ActionValue `mapstructure:"action"`
-	Key         *string     `mapstructure:"key"`
-	Value       *string     `mapstructure:"value"`
-	FromContext *string     `mapstructure:"from_context"`
+	Action       ActionValue `mapstructure:"action"`
+	Key          *string     `mapstructure:"key"`
+	Value        *string     `mapstructure:"value"`
+	FromContext  *string     `mapstructure:"from_context"`
+	DefaultValue *string     `mapstructure:"default_value"`
 }
 
 // ActionValue is the enum to capture the four types of actions to perform on a header
