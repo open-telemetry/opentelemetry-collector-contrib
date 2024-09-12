@@ -79,7 +79,7 @@ func newSpanChangeList(spans ast.Spans) *changelist.ChangeList{
 	values := make([]migrate.Migrator, 0)
 	for _, at := range spans.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
-			conditionalAttributeChangeSet := migrate.NewConditionalAttributeSet(renamed.AttributeMap, renamed.ApplyToSpans...)
+			conditionalAttributeChangeSet := operator.SpanConditionalAttributeOperator{Migrator: migrate.NewConditionalAttributeSet(renamed.AttributeMap, renamed.ApplyToSpans...)}
 			values = append(values, conditionalAttributeChangeSet)
 		}
 	}

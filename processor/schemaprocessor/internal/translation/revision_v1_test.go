@@ -162,13 +162,13 @@ func TestNewRevisionV1(t *testing.T) {
 					}),
 				}},
 				spans: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					migrate.NewConditionalAttributeSet(
+					operator.SpanConditionalAttributeOperator{Migrator: migrate.NewConditionalAttributeSet(
 						map[string]string{"service_version": "service.version"},
 						"application start",
-					),
-					migrate.NewConditionalAttributeSet[string](
+					)},
+					operator.SpanConditionalAttributeOperator{Migrator: migrate.NewConditionalAttributeSet[string](
 						map[string]string{"deployment.environment": "service.deployment.environment"},
-					),
+					)},
 				}},
 				spanEvents: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					operator.SpanEventSignalNameChange{

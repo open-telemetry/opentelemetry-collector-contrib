@@ -10,8 +10,6 @@ type SpanEventConditionalAttributeOperator struct {
 	migrator migrate.MultiConditionalAttributeSet
 }
 
-var _ migrate.Migrator = SpanEventConditionalAttributeOperator{}
-
 func NewSpanEventConditionalAttributeOperator(migrator migrate.MultiConditionalAttributeSet) SpanEventConditionalAttributeOperator {
 	return SpanEventConditionalAttributeOperator{migrator: migrator}
 }
