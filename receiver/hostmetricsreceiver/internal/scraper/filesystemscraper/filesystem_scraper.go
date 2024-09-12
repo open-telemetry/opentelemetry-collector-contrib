@@ -6,6 +6,7 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -162,5 +163,8 @@ func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 
 // translateMountsRootPath translates a mountpoint from the host perspective to the chrooted perspective.
 func translateMountpoint(rootPath, mountpoint string) string {
+	if mountInfo := os.Getenv("HOST_PROC_MOUNTINFO"); mountInfo != "" {
+		return mountpoint
+	}
 	return filepath.Join(rootPath, mountpoint)
 }

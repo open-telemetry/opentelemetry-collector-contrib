@@ -147,6 +147,7 @@ internal/tools/                                                     @open-teleme
 pkg/batchperresourceattr/                                           @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                                                 @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/experimentalmetricmetadata/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick
+pkg/datadog/                                                        @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96
 pkg/golden/                                                         @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 pkg/ottl/                                                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/pdatatest/                                                      @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
@@ -236,7 +237,7 @@ receiver/filelogreceiver/                                           @open-teleme
 receiver/filestatsreceiver/                                         @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                                      @open-telemetry/collector-contrib-approvers @JonathanWamsley @djaglowski
 receiver/fluentforwardreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/githubreceiver/                                            @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel @crobert-1
+receiver/githubreceiver/                                            @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel @crobert-1 @TylerHelmuth
 receiver/googlecloudmonitoringreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth @abhishek-at-cloudwerx
 receiver/googlecloudpubsubreceiver/                                 @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/haproxyreceiver/                                           @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy

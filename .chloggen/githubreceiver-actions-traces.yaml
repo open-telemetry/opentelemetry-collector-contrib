@@ -16,7 +16,7 @@ issues: [27640]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
-  This PR adds a skeleton implementation that will ultimately translate GitHub Actions webhook events into OpenTelemetry
+  This PR adds a skeleton implementation that will ultimately translate GitHub Actions traces events into OpenTelemetry
   traces.
 
 # If your change doesn't affect end users or the exported elements of any package,

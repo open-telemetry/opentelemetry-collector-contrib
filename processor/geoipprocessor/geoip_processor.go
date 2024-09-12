@@ -69,7 +69,7 @@ func ipFromAttributes(attributes []attribute.Key, resource pcommon.Map) (net.IP,
 // geoLocation fetches geolocation information for the given IP address using the configured providers.
 // It returns a set of attributes containing the geolocation data, or an error if the location could not be determined.
 func (g *geoIPProcessor) geoLocation(ctx context.Context, ip net.IP) (attribute.Set, error) {
-	allAttributes := attribute.EmptySet()
+	allAttributes := &attribute.Set{}
 	for _, provider := range g.providers {
 		geoAttributes, err := provider.Location(ctx, ip)
 		if err != nil {

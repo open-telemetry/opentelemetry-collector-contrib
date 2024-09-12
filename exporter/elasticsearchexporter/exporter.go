@@ -222,7 +222,6 @@ func (e *elasticsearchExporter) pushMetricsData(
 					return nil
 				}
 
-				// TODO: support exponential histogram
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
@@ -247,6 +246,16 @@ func (e *elasticsearchExporter) pushMetricsData(
 							errs = append(errs, err)
 							continue
 						}
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val := exponentialHistogramToValue(dp)
 						if err := upsertDataPoint(dp, val); err != nil {
 							errs = append(errs, err)
 							continue
@@ -361,6 +370,12 @@ func (e *elasticsearchExporter) pushTraceData(
 					}
 					errs = append(errs, err)
 				}
+				for ii := 0; ii < span.Events().Len(); ii++ {
+					spanEvent := span.Events().At(ii)
+					if err := e.pushSpanEvent(ctx, resource, il.SchemaUrl(), span, spanEvent, scope, scopeSpan.SchemaUrl(), session); err != nil {
+						errs = append(errs, err)
+					}
+				}
 			}
 		}
 	}
@@ -401,4 +416,38 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
+}
+
+func (e *elasticsearchExporter) pushSpanEvent(
+	ctx context.Context,
+	resource pcommon.Resource,
+	resourceSchemaURL string,
+	span ptrace.Span,
+	spanEvent ptrace.SpanEvent,
+	scope pcommon.InstrumentationScope,
+	scopeSchemaURL string,
+	bulkIndexerSession bulkIndexerSession,
+) error {
+	fIndex := e.index
+	if e.dynamicIndex {
+		fIndex = routeSpanEvent(spanEvent, scope, resource, fIndex, e.otel)
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
+		if err != nil {
+			return err
+		}
+		fIndex = formattedIndex
+	}
+
+	document := e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL)
+	if document == nil {
+		return nil
+	}
+	docBytes, err := e.model.encodeDocument(*document)
+	if err != nil {
+		return err
+	}
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(docBytes), nil)
 }

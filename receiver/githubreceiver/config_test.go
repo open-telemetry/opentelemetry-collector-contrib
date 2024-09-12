@@ -4,6 +4,9 @@
 package githubreceiver
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/traces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"path/filepath"
 	"testing"
 	"time"
@@ -11,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -19,8 +21,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/scraper/githubscraper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/traces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,9 +39,9 @@ func TestLoadConfig(t *testing.T) {
 	assert.Len(t, cfg.Receivers, 2)
 
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
-	defaultConfigGitHubReceiver := factory.CreateDefaultConfig()
-	defaultConfigGitHubReceiver.(*Config).Scrapers = map[string]internal.Config{
-		githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
+	defaultConfigGitHubScraper := factory.CreateDefaultConfig()
+	defaultConfigGitHubScraper.(*Config).Scrapers = map[string]internal.Config{
+		metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
 	defaultConfigGitHubReceiver.(*Config).Traces = traces.Config{
 		WebhookReceiver: webhookeventreceiver.Config{
@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 			InitialDelay:       1 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
+			metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 		},
 		Traces: traces.Config{
 			WebhookReceiver: webhookeventreceiver.Config{

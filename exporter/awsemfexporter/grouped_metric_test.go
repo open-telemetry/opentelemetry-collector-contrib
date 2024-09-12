@@ -389,7 +389,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			emfCalcs,
 		)
 		assert.NoError(t, err)
-		assert.Len(t, groupedMetrics, 0)
+		assert.Empty(t, groupedMetrics)
 
 		// Test output warning logs
 		expectedLogs := []observer.LoggedEntry{
@@ -462,7 +462,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 		for i := 0; i < numMetrics; i++ {
 			metadata := generateTestMetricMetadata("namespace", int64(1596151098037), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
 			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, nil, testCfg, emfCalcs)
-			assert.Nil(b, err)
+			assert.NoError(b, err)
 		}
 	}
 }
