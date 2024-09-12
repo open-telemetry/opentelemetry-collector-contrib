@@ -171,26 +171,6 @@ func (i *Input) Stop() error {
 	return i.stopRemoteSession()
 }
 
-func (i *Input) Restart() error {
-	i.wg.Wait()
-
-	if err := i.subscription.Close(); err != nil {
-		return fmt.Errorf("failed to close subscription: %w", err)
-	}
-
-	if err := i.bookmark.Close(); err != nil {
-		return fmt.Errorf("failed to close bookmark: %w", err)
-	}
-
-	if err := i.publisherCache.evictAll(); err != nil {
-		return fmt.Errorf("failed to close publishers: %w", err)
-	}
-
-	defer i.Start(i.persister)
-
-	return i.stopRemoteSession()
-}
-
 // readOnInterval will read events with respect to the polling interval.
 func (i *Input) readOnInterval(ctx context.Context) {
 	defer i.wg.Done()
@@ -240,10 +220,19 @@ func (i *Input) read(ctx context.Context) int {
 		i.Logger().Info(err.Error())
 		if err.Error() == "The remote procedure call was cancelled." {
 			i.Logger().Info("Attempting to restart remote session due to RPC cancellation")
+			if err := i.stopRemoteSession(); err != nil {
+				i.Logger().Error("Failed to stop remote session", zap.Error(err))
+				return 0
+			}
 			for {
 				i.Logger().Info("Waiting 30 seconds before attempting to restart remote session")
 				time.Sleep(30 * time.Second)
-				i.Restart()
+				i.Logger().Info("Attempting to start remote session")
+				if err := i.startRemoteSession(); err != nil {
+					i.Logger().Error("Failed to start remote session", zap.Error(err))
+					continue
+				}
+				return 0
 			}
 		}
 		return 0
