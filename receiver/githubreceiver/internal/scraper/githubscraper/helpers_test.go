@@ -262,10 +262,10 @@ func TestGetAge(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			min := time.Now()
-			max := min.Add(tc.hrsAdd).Add(tc.minsAdd)
+			_min := time.Now()
+			_max := _min.Add(tc.hrsAdd).Add(tc.minsAdd)
 
-			actual := getAge(min, max)
+			actual := getAge(_min, _max)
 
 			assert.Equal(t, int64(tc.expected), actual)
 		})

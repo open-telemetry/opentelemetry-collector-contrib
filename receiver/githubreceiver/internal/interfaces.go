@@ -17,7 +17,13 @@ type ScraperFactory interface {
 	CreateMetricsScraper(ctx context.Context, params receiver.Settings, cfg Config) (scraperhelper.Scraper, error)
 }
 
+type WebhookFactory interface {
+	// Create the default configuration for the sub sccraper.
+	CreateDefaultConfig() Config
+}
+
 type Config any
 
 type ScraperConfig struct {
 }
+type WebhookConfig struct{}

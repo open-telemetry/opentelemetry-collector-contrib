@@ -5,6 +5,7 @@ sem_conv_version: 1.27.0
 status:
   class: receiver
   stability:
+    # TODO: update this to include "traces" when the implementation is complete
     development: [metrics]
   distributions: []
   codeowners:
