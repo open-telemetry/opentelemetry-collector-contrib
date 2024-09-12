@@ -28,7 +28,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Port:     514,
 		Network:  "tcp",
 		Protocol: "rfc5424",
-		QueueSettings: exporterhelper.QueueSettings{
+		QueueSettings: exporterhelper.QueueConfig{
 			Enabled:      false,
 			NumConsumers: 10,
 			QueueSize:    1000,

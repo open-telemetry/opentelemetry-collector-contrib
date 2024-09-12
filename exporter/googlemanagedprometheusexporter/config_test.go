@@ -79,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
-		QueueSettings: exporterhelper.QueueSettings{
+		QueueSettings: exporterhelper.QueueConfig{
 			Enabled:      true,
 			NumConsumers: 2,
 			QueueSize:    10,

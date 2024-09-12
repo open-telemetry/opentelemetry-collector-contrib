@@ -64,7 +64,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{
+		exporterhelper.WithQueue(exporterhelper.QueueConfig{
 			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,

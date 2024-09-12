@@ -128,7 +128,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:         12 * time.Nanosecond,
 					MaxElapsedTime:      13 * time.Nanosecond,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 14,
 					QueueSize:    15,
