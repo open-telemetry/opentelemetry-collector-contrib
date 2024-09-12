@@ -138,7 +138,6 @@ linters-settings:
       - formatter
       - go-require
       - require-error
-      - suite-dont-use-pkg
       - suite-subtest-run
       - useless-assert
     enable-all: true
