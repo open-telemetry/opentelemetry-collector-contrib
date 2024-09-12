@@ -2,7 +2,6 @@
 
 CREATE TABLE IF NOT EXISTS otel_traces (
     Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
-    TimestampTime DateTime DEFAULT toDateTime(Timestamp),
     TraceId String CODEC(ZSTD(1)),
     SpanId String CODEC(ZSTD(1)),
     ParentSpanId String CODEC(ZSTD(1)),
@@ -35,10 +34,9 @@ CREATE TABLE IF NOT EXISTS otel_traces (
     INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_duration Duration TYPE minmax GRANULARITY 1
 ) ENGINE = MergeTree()
-PARTITION BY toDate(TimestampTime)
-PRIMARY KEY (ServiceName, SpanName, TimestampTime)
-ORDER BY (ServiceName, SpanName, TimestampTime, Timestamp, TraceId)
-TTL TimestampTime + toIntervalDay(180)
+PARTITION BY toDate(Timestamp)
+ORDER BY (ServiceName, SpanName, Timestamp)
+TTL toDateTime(Timestamp) + toIntervalDay(180)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 
 
@@ -48,9 +46,10 @@ CREATE TABLE IF NOT EXISTS otel_traces_trace_id_ts (
      End DateTime64(9) CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE = MergeTree()
-ORDER BY (TraceId, toUnixTimestamp(Start))
+PARTITION BY toDate(Start)
+ORDER BY (Start)
 TTL toDateTime(Start) + toIntervalDay(180)
-SETTINGS index_granularity=8192;
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS otel_traces_trace_id_ts_mv

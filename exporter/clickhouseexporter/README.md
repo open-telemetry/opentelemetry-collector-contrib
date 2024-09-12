@@ -196,7 +196,7 @@ SELECT Timestamp as log_time,
        toString(Links.TraceId)
 FROM otel_traces
 WHERE ServiceName = 'clickhouse-exporter'
-  AND StatusCode = 'STATUS_CODE_ERROR'
+  AND StatusCode = 'Error'
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```

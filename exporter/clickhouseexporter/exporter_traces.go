@@ -164,7 +164,6 @@ const (
 	createTracesTableSQL = `
 CREATE TABLE IF NOT EXISTS %s %s (
 	Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
-	TimestampTime DateTime DEFAULT toDateTime(Timestamp),
 	TraceId String CODEC(ZSTD(1)),
 	SpanId String CODEC(ZSTD(1)),
 	ParentSpanId String CODEC(ZSTD(1)),
@@ -197,9 +196,9 @@ CREATE TABLE IF NOT EXISTS %s %s (
 	INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_duration Duration TYPE minmax GRANULARITY 1
 ) ENGINE = %s
-PARTITION BY toDate(TimestampTime)
-PRIMARY KEY (ServiceName, SpanName, TimestampTime)
-ORDER BY (ServiceName, SpanName, TimestampTime, Timestamp, TraceId)
+PARTITION BY toDate(Timestamp)
+PRIMARY KEY (ServiceName, SpanName, Timestamp)
+ORDER BY (ServiceName, SpanName, Timestamp)
 %s
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
@@ -255,26 +254,27 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 
 const (
 	createTraceIDTsTableSQL = `
-create table IF NOT EXISTS %s_trace_id_ts %s (
+CREATE TABLE IF NOT EXISTS %s_trace_id_ts %s (
      TraceId String CODEC(ZSTD(1)),
      Start DateTime64(9) CODEC(Delta, ZSTD(1)),
      End DateTime64(9) CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE = %s
+PARTITION BY toDate(Start)
+ORDER BY (TraceId, Start)
 %s
-ORDER BY (TraceId, toUnixTimestamp(Start))
-SETTINGS index_granularity=8192;
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	createTraceIDTsMaterializedViewSQL = `
 CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv %s
 TO %s.%s_trace_id_ts
 AS SELECT
-TraceId,
-min(Timestamp) as Start,
-max(Timestamp) as End
+	TraceId,
+	min(Timestamp) as Start,
+	max(Timestamp) as End
 FROM
 %s.%s
-WHERE TraceId!=''
+WHERE TraceId != ''
 GROUP BY TraceId;
 `
 )
@@ -284,10 +284,10 @@ func createTracesTable(ctx context.Context, cfg *Config, db *sql.DB) error {
 		return fmt.Errorf("exec create traces table sql: %w", err)
 	}
 	if _, err := db.ExecContext(ctx, renderCreateTraceIDTsTableSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create traceIDTs table sql: %w", err)
+		return fmt.Errorf("exec create traceID timestamp table sql: %w", err)
 	}
 	if _, err := db.ExecContext(ctx, renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create traceIDTs view sql: %w", err)
+		return fmt.Errorf("exec create traceID timestamp view sql: %w", err)
 	}
 	return nil
 }
