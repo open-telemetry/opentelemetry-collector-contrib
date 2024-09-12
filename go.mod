@@ -36,7 +36,7 @@ exclude github.com/DataDog/agent-payload/v5 v5.0.59
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
-replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
+replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.2-0.20240906181530-b2f7c4ab0984
 
 // It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
