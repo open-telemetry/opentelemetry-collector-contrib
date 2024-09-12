@@ -24,6 +24,9 @@ The default timeout is `1s`.
 
 `fsync` when set, will force the database to perform an fsync after each write.  This helps to ensure database integrity if there is an interruption to the database process, but at the cost of performance.  See [DB.NoSync](https://pkg.go.dev/go.etcd.io/bbolt#DB) for more information.
 
+`create_directory` when set, will create the data storage and compaction directory if it does not already exist. The directory will be created with `0750 (rwxr-x--)` permissions, by default. Use `directory_permissions` to customize directory creation permissions.
+
+
 ## Compaction
 `compaction` defines how and when files should be compacted. There are two modes of compaction available (both of which can be set concurrently):
 - `compaction.on_start` (default: false), which happens when collector starts
@@ -124,7 +127,7 @@ following troubleshooting method works for bbolt-managed files. As such, there i
 
 When troubleshooting components that use the File Storage extension, it is sometimes helpful to read the raw contents of
 files created by the extension for the component.  The simplest way to read files
-created by the File Storage extension is to use the strings utility ([Linux](https://linux.die.net/man/1/strings),
+created by the File Storage extension is to use the strings utility ([Linux](https://man7.org/linux/man-pages/man1/strings.1.html),
 [Windows](https://learn.microsoft.com/en-us/sysinternals/downloads/strings)).
 
 For example, here are the contents of the file created by the File Storage extension when it's configured as the storage
