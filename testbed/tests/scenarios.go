@@ -542,7 +542,7 @@ func ScenarioLong(
 
 	tc.StopLoad()
 
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, "all logs received")
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, 60*time.Second, "all logs received")
 
 	tc.ValidateData()
 }
