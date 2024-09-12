@@ -197,10 +197,17 @@ func (i *Input) readToEnd(ctx context.Context) {
 		default:
 			if count := i.read(ctx); count == 0 {
 				if i.isRemote() {
+					i.Logger().Info("Stopping remote session", zap.String("server", i.remote.Server))
+					if err := i.stopRemoteSession(); err != nil {
+						i.Logger().Error("Failed to stop remote session", zap.String("server", i.remote.Server), zap.Error(err))
+						return
+					}
+					i.Logger().Info("Start remote session", zap.String("server", i.remote.Server))
 					if err := i.startRemoteSession(); err != nil {
 						i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
 						return
 					}
+					i.Logger().Info("Open")
 					if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
 						i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 					}
