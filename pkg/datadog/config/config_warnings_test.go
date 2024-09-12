@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogexporter
+package config // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 
 import (
 	"testing"
@@ -77,8 +77,7 @@ func TestSendAggregations(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			f := NewFactory()
-			cfg := f.CreateDefaultConfig().(*Config)
+			cfg := CreateDefaultConfig().(*Config)
 			err := testInstance.cfgMap.Unmarshal(cfg)
 			if err != nil || testInstance.err != "" {
 				assert.ErrorContains(t, err, testInstance.err)
@@ -92,7 +91,6 @@ func TestSendAggregations(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestPeerTags(t *testing.T) {
@@ -154,8 +152,7 @@ func TestPeerTags(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			f := NewFactory()
-			cfg := f.CreateDefaultConfig().(*Config)
+			cfg := CreateDefaultConfig().(*Config)
 			err := testInstance.cfgMap.Unmarshal(cfg)
 			if err != nil || testInstance.err != "" {
 				assert.ErrorContains(t, err, testInstance.err)
@@ -169,5 +166,4 @@ func TestPeerTags(t *testing.T) {
 			}
 		})
 	}
-
 }

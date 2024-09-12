@@ -30,6 +30,8 @@ import (
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
+
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func setupTestMain(m *testing.M) {
@@ -138,8 +140,10 @@ func TestTracesSource(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: metricsServer.URL},
 		},
 		Traces: TracesConfig{
-			TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: tracesServer.URL},
-			IgnoreResources: []string{},
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: tracesServer.URL},
+			TracesConfig: datadogconfig.TracesConfig{
+				IgnoreResources: []string{},
+			},
 		},
 	}
 
@@ -258,11 +262,13 @@ func TestTraceExporter(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
-			IgnoreResources: []string{},
-			flushInterval:   0.1,
-			TraceBuffer:     2,
+			TracesConfig: datadogconfig.TracesConfig{
+				IgnoreResources: []string{},
+			},
+			TraceBuffer: 2,
 		},
 	}
+	cfg.Traces.SetFlushInterval(0.1)
 
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
@@ -351,9 +357,9 @@ func TestPushTraceData_NewEnvConvention(t *testing.T) {
 		},
 		Traces: TracesConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
-			flushInterval: 0.1,
 		},
 	}
+	cfg.Traces.SetFlushInterval(0.1)
 
 	params := exportertest.NewNopSettings()
 	f := NewFactory()

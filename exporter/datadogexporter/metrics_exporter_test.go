@@ -58,10 +58,9 @@ func TestNewExporter(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
-		HostMetadata: HostMetadataConfig{
-			sourceTimeout: 50 * time.Millisecond,
-		},
+		HostMetadata: HostMetadataConfig{},
 	}
+	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
@@ -351,9 +350,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			)
 			defer server.Close()
 
-			var (
-				once sync.Once
-			)
+			var once sync.Once
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
@@ -794,9 +791,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			)
 			defer server.Close()
 
-			var (
-				once sync.Once
-			)
+			var once sync.Once
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
