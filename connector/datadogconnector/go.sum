@@ -148,8 +148,8 @@ github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.57.0 h1:Eva4HkFvDgE7Aa
 github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.57.0/go.mod h1:p2NTG+cIhVGlKELJfRteGCec37ICptIpeB2x/MsRkbw=
 github.com/DataDog/datadog-agent/pkg/logs/util/testutils v0.57.0 h1:0pLKObDzamFpFDJrdxBhQd7bqxMepfcQ35OQs94A+kc=
 github.com/DataDog/datadog-agent/pkg/logs/util/testutils v0.57.0/go.mod h1:R5MP3l673Jqi3sbpXMgjnwsT+qLn6x1RxwGYDHHC6OY=
-github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.0-devel.0.20240830155027-f44a9da12951 h1:qcg03KcP2v/dkFnuEy+qC0jWgZi1SP4jfx/BOpL0ayY=
-github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.0-devel.0.20240830155027-f44a9da12951/go.mod h1:icOxQ1JBek3L0WCQXsKD+VhRc3S0rn71/bUkt6tKVSY=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.59.0-devel.0.20240911192058-0c2181220f85 h1:+jlg745q9znKME0F2Y51QuPT9crQ02oIjUj3qVtV8IU=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.59.0-devel.0.20240911192058-0c2181220f85/go.mod h1:MfDvphBMmEMwE3a30h27AtPO7OzmvdoVTiGY1alEmo4=
 github.com/DataDog/datadog-agent/pkg/proto v0.57.0 h1:6Yys68K+pzr+/sV7xYUptS6POZVVWF+hDUksx1+NwHY=
 github.com/DataDog/datadog-agent/pkg/proto v0.57.0/go.mod h1:sRjG8CCK1sei7qR9vLLNZ3hx3fcZ1IzroLkpfLNDuDA=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.57.0 h1:LplNAmMgZvGU7kKA0+4c1xWOjz828xweW5TCi8Mw9Q0=
@@ -158,8 +158,8 @@ github.com/DataDog/datadog-agent/pkg/status/health v0.57.0 h1:kPAij96+yH3cqx/uj6
 github.com/DataDog/datadog-agent/pkg/status/health v0.57.0/go.mod h1:EkC/SgFR03BKwBitVV4dIuP+ofwPlUCkVi5K5k1Dh2Y=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.57.0 h1:rczdF3VVpYjcBAHqPRN+SoWaBqjkxmJEElgJRGiHJA4=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.57.0/go.mod h1:ydRQtflWJbhL3q9WjrmPs7lSX2G5z/KOzDoOVp/7nGo=
-github.com/DataDog/datadog-agent/pkg/trace v0.58.0-devel.0.20240830155027-f44a9da12951 h1:qEUqimASiw9IfkDKxHqcZ6M6w0TREBGPVlePP3Ng/No=
-github.com/DataDog/datadog-agent/pkg/trace v0.58.0-devel.0.20240830155027-f44a9da12951/go.mod h1:6oieT7MVbPg52r1pHQkiNavDIK7pN1ZKsudT9s0kLzY=
+github.com/DataDog/datadog-agent/pkg/trace v0.59.0-devel.0.20240911192058-0c2181220f85 h1:NenBahnbhBDEMLwR5AfK54VLFidK34xcr61BX/t/8vo=
+github.com/DataDog/datadog-agent/pkg/trace v0.59.0-devel.0.20240911192058-0c2181220f85/go.mod h1:SXT+/FonH8qi6U6YzrBERefqPXuxo4UTu4CEH6dU49M=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.57.0 h1:m02/fGmSImKS4H8mqvMVJPJEqem0dgWDv0Iuu2wCh+s=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.57.0/go.mod h1:2RMfdYkKyeh8hXs6WgaamkkEyK35Xo55C4rFG4dO1k8=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.57.0 h1:SDWaVn+cJ9ChVj2SXdoDw9mGgIcbvSFf1vXuj539qLI=
@@ -204,8 +204,8 @@ github.com/DataDog/datadog-go/v5 v5.5.0 h1:G5KHeB8pWBNXT4Jtw0zAkhdxEAWSpWH00geHI
 github.com/DataDog/datadog-go/v5 v5.5.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240419161837-f1b2f553edfe h1:efzxujZ7VHWFxjmWjcJyUEpPrN8qdiZPYb+dBw547Wo=
 github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240419161837-f1b2f553edfe/go.mod h1:TX7CTOQ3LbQjfAi4SwqUoR5gY1zfUk7VRBDTuArjaDc=
-github.com/DataDog/go-sqllexer v0.0.13 h1:9mKfe+3s73GI/7dWBxi2Ds7+xZynJqMKK9cIUBrutak=
-github.com/DataDog/go-sqllexer v0.0.13/go.mod h1:KwkYhpFEVIq+BfobkTC1vfqm4gTi65skV/DpDBXtexc=
+github.com/DataDog/go-sqllexer v0.0.14 h1:xUQh2tLr/95LGxDzLmttLgTo/1gzFeOyuwrQa/Iig4Q=
+github.com/DataDog/go-sqllexer v0.0.14/go.mod h1:KwkYhpFEVIq+BfobkTC1vfqm4gTi65skV/DpDBXtexc=
 github.com/DataDog/go-tuf v1.1.0-0.5.2 h1:4CagiIekonLSfL8GMHRHcHudo1fQnxELS9g4tiAupQ4=
 github.com/DataDog/go-tuf v1.1.0-0.5.2/go.mod h1:zBcq6f654iVqmkk8n2Cx81E1JnNTMOAx1UEO/wZR+P0=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee h1:tXibLZk3G6HncIFJKaNItsdzcrk4YqILNDZlXPTNt4k=
