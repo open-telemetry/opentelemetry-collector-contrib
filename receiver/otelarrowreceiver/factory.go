@@ -20,7 +20,7 @@ const (
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 
 	defaultMemoryLimitMiB  = 128
-	defaultRequestLimitMiB = defaultMemoryLimitMiB / 2
+	defaultRequestLimitMiB = 128
 	defaultWaiterLimit     = 1000
 )
 

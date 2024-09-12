@@ -54,8 +54,7 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 		return plogotlp.NewExportResponse(), err
 	}
 	defer func() {
-		releaseErr := r.boundedQueue.Release(sizeBytes)
-		if releaseErr != nil {
+		if releaseErr := r.boundedQueue.Release(sizeBytes); releaseErr != nil {
 			r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
 		}
 	}()
