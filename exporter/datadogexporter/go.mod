@@ -25,7 +25,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.57.0
 	github.com/DataDog/datadog-agent/pkg/status/health v0.57.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.58.0-devel.0.20240830155027-f44a9da12951
+	github.com/DataDog/datadog-agent/pkg/trace v0.59.0-devel.0.20240911192058-0c2181220f85
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.57.0
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.57.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.30.0
@@ -117,7 +117,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/processor v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/sender v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.57.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.0-devel.0.20240830155027-f44a9da12951 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.59.0-devel.0.20240911192058-0c2181220f85 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.57.0 // indirect
@@ -136,7 +136,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.57.0 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240419161837-f1b2f553edfe // indirect
-	github.com/DataDog/go-sqllexer v0.0.13 // indirect
+	github.com/DataDog/go-sqllexer v0.0.14 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/viper v1.13.5 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
