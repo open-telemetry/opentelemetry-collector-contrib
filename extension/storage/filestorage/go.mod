@@ -3,12 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/stora
 go 1.22.0
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	go.etcd.io/bbolt v1.3.11
-	go.opentelemetry.io/collector/component v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/confmap v1.14.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/extension v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/extension/experimental/storage v0.0.0-20240909182537-32cff9f7f331
+	go.opentelemetry.io/collector/component v0.109.0
+	go.opentelemetry.io/collector/confmap v1.15.0
+	go.opentelemetry.io/collector/extension v0.109.0
+	go.opentelemetry.io/collector/extension/experimental/storage v0.109.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -22,7 +23,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -35,8 +35,8 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.57.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/pdata v1.14.2-0.20240909182537-32cff9f7f331 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.109.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
 	go.opentelemetry.io/otel/metric v1.29.0 // indirect
