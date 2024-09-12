@@ -11,8 +11,8 @@ require (
 	go.opentelemetry.io/collector/consumer v0.109.0
 	go.opentelemetry.io/collector/receiver v0.109.0
 	go.opentelemetry.io/collector/semconv v0.109.0 // indirect
-	go.opentelemetry.io/otel/metric v1.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.29.0 // indirect
+	go.opentelemetry.io/otel/metric v1.30.0 // indirect
+	go.opentelemetry.io/otel/trace v1.30.0 // indirect
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.25.0
 )
@@ -63,10 +63,10 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.15.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.109.0 // indirect
-	go.opentelemetry.io/otel v1.29.0 // indirect
+	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.29.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.29.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.30.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
