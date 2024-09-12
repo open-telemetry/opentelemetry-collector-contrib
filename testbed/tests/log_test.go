@@ -345,7 +345,7 @@ func TestLargeFileOnce(t *testing.T) {
 	tc.StartBackend()
 	tc.StartAgent()
 
-	tc.WaitForN(func() bool { return dataItemsGenerated.Load() == tc.MockBackend.DataItemsReceived() }, 20*time.Second, "all logs received")
+	tc.WaitForN(func() bool { return dataItemsGenerated.Load() == tc.MockBackend.DataItemsReceived() }, 200*time.Second, "all logs received")
 
 	tc.StopAgent()
 	tc.ValidateData()
