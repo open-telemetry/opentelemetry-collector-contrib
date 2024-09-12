@@ -76,6 +76,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   Adds the ability to tune the minumum, default and maximum fetch sizes for the Kafka Receiver
 - `solarwindsapmsettingsextension`: Added logic for refresh function (#27668)
 - `githubreceiver`: Promote GitHub receiver metrics to alpha status. (#34960)
+- `githubreceiver`: Add audit log implementation for GitHub Receiver to support user, organization, or enterprise logs. (#35015)
 - `googlecloudmonitoringreceiver`: Enhancing the Google Cloud monitoring receiver to establish a client connection, scrape GCP Cloud Metrics, and transform them into an OpenTelemetry compatible format for pipeline processing. (#33762)
   - Implements client connection to Google Cloud Monitoring API.
   - Scrapes timeseries data based on configured metrics.

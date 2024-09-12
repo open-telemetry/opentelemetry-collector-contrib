@@ -40,6 +40,10 @@ func TestLoadConfig(t *testing.T) {
 	defaultConfigGitHubScraper.(*Config).Scrapers = map[string]internal.Config{
 		metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
+	defaultConfigGitHubScraper.(*Config).AccessToken = "my_token"
+    defaultConfigGitHubScraper.(*Config).LogType = "user"
+    defaultConfigGitHubScraper.(*Config).Name = "github"
+    defaultConfigGitHubScraper.(*Config).PollInterval = 60 * time.Second
 
 	assert.Equal(t, defaultConfigGitHubScraper, r0)
 
@@ -52,6 +56,10 @@ func TestLoadConfig(t *testing.T) {
 		Scrapers: map[string]internal.Config{
 			metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 		},
+		AccessToken:  "my_token",
+		LogType:      "user",
+		Name:         "github",
+		PollInterval: time.Second * 60,
 	}
 
 	assert.Equal(t, expectedConfig, r1)
@@ -117,6 +125,150 @@ func TestConfig_Unmarshal(t *testing.T) {
 			if err := cfg.Unmarshal(test.args.componentParser); (err != nil) != test.wantErr {
 				t.Errorf("Config.Unmarshal() error = %v, wantErr %v", err, test.wantErr)
 			}
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		errExpected bool
+		errText     string
+		config      Config
+	}{
+		{
+			desc:        "pass simple",
+			errExpected: false,
+			config: Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 30 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				Scrapers: map[string]internal.Config{
+					metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+				},
+				AccessToken:  "AccessToken",
+				LogType:      "user",
+				Name:         "testName",
+				PollInterval: 60 * time.Second,
+			},
+		},
+		{
+			desc:        "fail no access token",
+			errExpected: true,
+			errText:     "missing access_token; required",
+			config: Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 30 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				Scrapers: map[string]internal.Config{
+					metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+				},
+				LogType:      "user",
+				Name:         "testName",
+				PollInterval: 60 * time.Second,
+			},
+		},
+		{
+			desc:        "fail no log type",
+			errExpected: true,
+			errText:     "missing log_type; required",
+			config: Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 30 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				Scrapers: map[string]internal.Config{
+					metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+				},
+				AccessToken:  "AccessToken",
+				Name:         "testName",
+				PollInterval: 60 * time.Second,
+			},
+		},
+		{
+			desc:        "fail no name",
+			errExpected: true,
+			errText:     "missing name; required",
+			config: Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 30 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				Scrapers: map[string]internal.Config{
+					metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+				},
+				AccessToken:  "AccessToken",
+				LogType:      "user",
+				PollInterval: 60 * time.Second,
+			},
+		},
+		{
+			desc:        "fail no name",
+			errExpected: true,
+			errText:     "missing name; required",
+			config: Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 30 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				Scrapers: map[string]internal.Config{
+					metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+				},
+				AccessToken:  "AccessToken",
+				LogType:      "user",
+				PollInterval: 60 * time.Second,
+			},
+		},
+		{
+			desc:        "fail with no poll interval",
+			errExpected: true,
+			errText:     "missing poll_interval; required",
+			config: Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 30 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				Scrapers: map[string]internal.Config{
+					metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+				},
+				AccessToken: "AccessToken",
+				LogType:     "user",
+				Name:        "testName",
+			},
+		},
+		{
+			desc:        "fail invalid poll interval short",
+			errExpected: true,
+			errText:     "invalid poll_interval; must be at least 0.72 seconds",
+			config: Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 30 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				Scrapers: map[string]internal.Config{
+					metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+				},
+				AccessToken:  "AccessToken",
+				LogType:      "user",
+				Name:         "testName",
+				PollInterval: 700 * time.Millisecond,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+
+			err := component.ValidateConfig(tc.config)
+
+			if tc.errExpected {
+				require.EqualError(t, err, tc.errText)
+				return
+			}
+
+			require.NoError(t, err)
 		})
 	}
 }

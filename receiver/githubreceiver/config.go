@@ -6,8 +6,10 @@ package githubreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -24,6 +26,10 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Scrapers                       map[string]internal.Config `mapstructure:"scrapers"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	AccessToken                    configopaque.String `mapstructure:"access_token"`
+	LogType                        string              `mapstructure:"log_type"`                // "user", "organization", or "enterprise"
+	Name                           string              `mapstructure:"name"`                    // The name of the user, organization, or enterprise
+	PollInterval                   time.Duration       `mapstructure:"poll_interval,omitempty"` // The interval at which to poll the GitHub API
 }
 
 var _ component.Config = (*Config)(nil)
@@ -33,6 +39,21 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if len(cfg.Scrapers) == 0 {
 		return errors.New("must specify at least one scraper")
+	}
+	if cfg.AccessToken == "" {
+		return fmt.Errorf("missing access_token; required")
+	}
+	if cfg.LogType == "" {
+		return fmt.Errorf("missing log_type; required")
+	}
+	if cfg.Name == "" {
+		return fmt.Errorf("missing name; required")
+	}
+	if cfg.PollInterval == 0 {
+		return fmt.Errorf("missing poll_interval; required")
+	}
+	if cfg.PollInterval < time.Duration(float64(time.Second)*0.72) {
+		return fmt.Errorf("invalid poll_interval; must be at least 0.72 seconds")
 	}
 	return nil
 }

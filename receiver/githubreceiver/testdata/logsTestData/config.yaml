@@ -1,19 +1,11 @@
 receivers:
   github:
-    initial_delay: 1s
-    collection_interval: 60s
-    scrapers:
-      github:
     access_token: "my_token"
     log_type: "user"
     name: "github"
     poll_interval: 60s
 
   github/customname:
-    initial_delay: 1s
-    collection_interval: 30s
-    scrapers:
-      github:
     access_token: "my_token"
     log_type: "user"
     name: "github"

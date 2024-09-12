@@ -9,12 +9,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
 var creationSet = receivertest.NewNopSettings()
@@ -26,6 +28,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+func TestType(t *testing.T) {
+	factory := NewFactory()
+	ft := factory.Type()
+	require.EqualValues(t, metadata.Type, ft)
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -41,8 +49,8 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, mReceiver)
 
 	tLogs, err := factory.CreateLogsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
-	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
-	assert.Nil(t, tLogs)
+	assert.NoError(t, err)
+	assert.NotNil(t, tLogs)
 }
 
 func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {

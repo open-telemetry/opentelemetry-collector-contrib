@@ -1,0 +1,31 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: log_type
+          value:
+            stringValue: organization
+        - key: name
+          value:
+            stringValue: Justin-Organization-observIQ
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: action
+                value:
+                  stringValue: hook.destroy
+              - key: actor
+                value:
+                  stringValue: justinianvoss22
+              - key: actor_id
+                value:
+                  intValue: "90650155"
+              - key: created_at
+                value:
+                  intValue: "1725456356934"
+            body:
+              stringValue: '{"@timestamp":1725456356934,"document_id":"","action":"hook.destroy","actor":"justinianvoss22","actor_id":90650155,"actor_location":{"country_code":""},"business":"justin-voss-observiq","business_id":217999,"created_at":1725456356934,"operation_type":"remove","org":"Justin-Organization-observIQ","org_id":179841732,"hook_id":499840283}'
+            observedTimeUnixNano: "1726168843206147000"
+            spanId: ""
+            timeUnixNano: "11651379494838206464"
+            traceId: ""
+        scope: {}
