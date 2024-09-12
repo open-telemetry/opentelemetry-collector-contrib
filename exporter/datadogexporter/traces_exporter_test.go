@@ -29,9 +29,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"google.golang.org/protobuf/proto"
 
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
-	"google.golang.org/protobuf/proto"
 )
 
 func setupTestMain(m *testing.M) {
