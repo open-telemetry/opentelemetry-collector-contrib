@@ -14,6 +14,7 @@ type ValueMatch interface {
 	~string
 }
 
+// ConditionalAttributeSet represents a set of attributes that will
 type ConditionalAttributeSet struct {
 	on    map[string]struct{}
 	attrs AttributeChangeSet

@@ -11,19 +11,16 @@ import (
 	"go.uber.org/multierr"
 )
 
-// AttributeChangeSet represents an unscoped entry that can be applied.
-//
+// AttributeChangeSet represents a rename_attributes type operation.
 // The listed changes are duplicated twice
 // to allow for simplified means of transition to or from a revision.
 type AttributeChangeSet struct {
+	// The keys are the old attribute name used in the previous version, the values are the
+	// new attribute name starting from this version (comment from ast.AttributeMap)
 	updates  ast.AttributeMap
+	// the inverse of the updates map
 	rollback ast.AttributeMap
 }
-
-// AttributeChangeSetSlice allows for `AttributeChangeSet`
-// to be chained together as they are defined within the schema
-// and be applied sequentially to ensure deterministic behavior.
-type AttributeChangeSetSlice []*AttributeChangeSet
 
 // NewAttributeChangeSet allows for typed strings to be used as part
 // of the invocation that will be converted into the default string type.

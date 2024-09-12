@@ -1,3 +1,4 @@
+// Package operator contains various Operators that represent a high level operation - typically a single "change" block from the schema change file.  They rely on Migrators to do the actual work of applying the change to the data.  Operators accept and operate on a specific type of pdata (logs, metrics, etc)
 package operator
 
 import (
@@ -11,13 +12,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-type MetricAttributeOperator struct{
+// MetricDataPointAttributeOperator is an Operator that acts on Metric DataPoints' attributes
+type MetricDataPointAttributeOperator struct{
 	ConditionalAttributeChange migrate.ConditionalAttributeSet
 }
 
-func (o MetricAttributeOperator) IsMigrator() {}
+func (o MetricDataPointAttributeOperator) IsMigrator() {}
 
-func (o MetricAttributeOperator) Do(ss migrate.StateSelector, metric pmetric.Metric) error {
+func (o MetricDataPointAttributeOperator) Do(ss migrate.StateSelector, metric pmetric.Metric) error {
 	// todo(ankit) handle MetricTypeEmpty
 	var datam alias.Attributed
 	switch metric.Type() {
@@ -63,6 +65,7 @@ func (o MetricAttributeOperator) Do(ss migrate.StateSelector, metric pmetric.Met
 	return nil
 }
 
+// LogAttributeOperator is an Operator that acts on LogRecords' attributes
 type LogAttributeOperator struct {
 	AttributeChange migrate.AttributeChangeSet
 }

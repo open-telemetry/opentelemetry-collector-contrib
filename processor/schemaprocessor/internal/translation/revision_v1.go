@@ -91,7 +91,7 @@ func newMetricChangeList(metrics ast.Metrics) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range metrics.Changes {
 		if renameAttributes := at.RenameAttributes; renameAttributes != nil {
-			attributeChangeSet := operator.MetricAttributeOperator{
+			attributeChangeSet := operator.MetricDataPointAttributeOperator{
 				ConditionalAttributeChange: migrate.NewConditionalAttributeSet(renameAttributes.AttributeMap, renameAttributes.ApplyToMetrics...),
 			}
 			values = append(values, attributeChangeSet)

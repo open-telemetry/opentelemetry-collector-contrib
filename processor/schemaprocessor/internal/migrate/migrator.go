@@ -1,5 +1,6 @@
 package migrate
 
+// Migrator is an interface that all migration types must implement.  It is basically a marker interface.  All Operators are also Migrators
 type Migrator interface {
 	IsMigrator()
 }

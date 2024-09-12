@@ -190,7 +190,7 @@ func TestNewRevisionV1(t *testing.T) {
 					operator.MetricSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(map[string]string{
 						"service.computed.uptime": "service.uptime",
 					})},
-					operator.MetricAttributeOperator{ConditionalAttributeChange: migrate.NewConditionalAttributeSet(
+					operator.MetricDataPointAttributeOperator{ConditionalAttributeChange: migrate.NewConditionalAttributeSet(
 						map[string]string{"runtime": "service.language"},
 						"service.runtime",
 					)},

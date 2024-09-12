@@ -11,6 +11,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
 )
 
+// ChangeList represents a list of changes within a section of the schema processor.  It can take in a list of different migrators for a specific section and will apply them in order, based on whether Apply or Rollback is called
 type ChangeList struct {
 	Migrators []migrate.Migrator
 }
@@ -44,7 +45,7 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 				return fmt.Errorf("MetricOperator %T can't act on %T", thisMigrator, signal)
 			}
 		// no log operator because the only log operation is an attribute changeset
-		// this block accepts all signals, and resources.  Is used for logs, and the all section
+		// this block is for the `all` block, the `resource` block, and the `log` block
 		// todo(ankit) switch these to specific typed ones?
 		case migrate.AttributeChangeSet:
 			switch attributeSignal := signal.(type) {
