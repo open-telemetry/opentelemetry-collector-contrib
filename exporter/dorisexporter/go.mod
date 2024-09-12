@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.109.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0
 	go.opentelemetry.io/collector/semconv v0.109.0
-	go.opentelemetry.io/otel/metric v1.29.0
+	go.opentelemetry.io/otel/metric v1.30.0
 )
 
 require (
