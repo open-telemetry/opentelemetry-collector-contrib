@@ -1523,6 +1523,7 @@ Examples:
 ensuring that the function can correctly parse the localized month names, day names, and periods of the day based on the provided language.
 
 The value must be a well-formed BCP 47 language tag, and a known [CLDR](https://cldr.unicode.org) v45 locale.
+If not supplied, English (`en`) is used.
 
 Examples:
 
