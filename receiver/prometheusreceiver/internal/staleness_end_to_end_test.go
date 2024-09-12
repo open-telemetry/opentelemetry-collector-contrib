@@ -225,7 +225,7 @@ service:
 		}
 	}
 
-	require.Greater(t, totalSamples, 0, "Expected at least 1 sample")
+	require.Positive(t, totalSamples, "Expected at least 1 sample")
 	// On every alternative scrape the prior scrape will be reported as sale.
 	// Expect at least:
 	//    * The first scrape will NOT return stale markers

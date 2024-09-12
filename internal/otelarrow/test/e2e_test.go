@@ -368,13 +368,13 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 	rSigs, rMsgs := logSigs(testCon.recvLogs)
 
 	// Test for arrow receiver stream errors on both sides.
-	require.Less(t, 0, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eMsgs)
-	require.Less(t, 0, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
+	require.Positive(t, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eMsgs)
+	require.Positive(t, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
 
 	// Ensure both side's error logs include memory limit errors
 	// one way or another.
-	require.Less(t, 0, countMemoryLimitErrors(rMsgs), "should have memory limit errors: %v", rMsgs)
-	require.Less(t, 0, countMemoryLimitErrors(eMsgs), "should have memory limit errors: %v", eMsgs)
+	require.Positive(t, countMemoryLimitErrors(rMsgs), "should have memory limit errors: %v", rMsgs)
+	require.Positive(t, countMemoryLimitErrors(eMsgs), "should have memory limit errors: %v", eMsgs)
 
 	return nil, nil
 }
