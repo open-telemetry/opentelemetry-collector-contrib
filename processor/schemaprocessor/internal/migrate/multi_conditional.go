@@ -79,14 +79,7 @@ func (ca *MultiConditionalAttributeSet) check(keyToCheckVals map[string]string) 
 		if _, ok := valToMatch[inVal]; !ok {
 			return false, nil
 		}
-
-		//for _, v := range inVals {
-		//	if _, ok := valsToMatch[v]; ok {
-		//		break
-		//	}
-		//	// if we've gone through the whole thing with no matches for the key, return error
-		//	return false, nil
-		//}
+		
 	}
 	// if we've gone through every one of the keys, and they've all generated matches, return true
 	return true, nil

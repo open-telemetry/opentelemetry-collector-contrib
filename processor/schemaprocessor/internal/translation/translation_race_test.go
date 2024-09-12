@@ -32,10 +32,14 @@ func TestRaceTranslationSpanChanges(t *testing.T) {
 			spans := NewExampleSpans(t, *v)
 			for i := 0; i < spans.ResourceSpans().Len(); i++ {
 				rSpan := spans.ResourceSpans().At(i)
-				tn.ApplyAllResourceChanges(ctx, rSpan, rSpan.SchemaUrl())
+				if err := tn.ApplyAllResourceChanges(ctx, rSpan, rSpan.SchemaUrl()); err != nil {
+					return err
+				}
 				for j := 0; j < rSpan.ScopeSpans().Len(); j++ {
 					span := rSpan.ScopeSpans().At(j)
-					tn.ApplyScopeSpanChanges(ctx, span, span.SchemaUrl())
+					if err := tn.ApplyScopeSpanChanges(ctx, span, span.SchemaUrl()); err != nil {
+						return err
+					}
 				}
 			}
 		}
