@@ -27,7 +27,7 @@ const (
 
 var removeOriginalTimeField = featuregate.GlobalRegistry().MustRegister(
 	removeOriginalTimeFieldFeatureFlag,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, deletes the original `time` field from the Log Attributes. Time is parsed to Timestamp field, which should be used instead."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33389"),
 )
