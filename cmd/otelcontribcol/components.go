@@ -333,6 +333,7 @@ func components() (otelcol.Factories, error) {
 		flinkmetricsreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		githubreceiver.NewFactory(),
+		googlecloudmonitoringreceiver.NewFactory(),
 		googlecloudpubsubreceiver.NewFactory(),
 		googlecloudspannerreceiver.NewFactory(),
 		haproxyreceiver.NewFactory(),
@@ -394,7 +395,6 @@ func components() (otelcol.Factories, error) {
 		windowseventlogreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),
-		googlecloudmonitoringreceiver.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -430,6 +430,7 @@ func components() (otelcol.Factories, error) {
 	factories.ReceiverModules[flinkmetricsreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.109.0"
 	factories.ReceiverModules[fluentforwardreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.109.0"
 	factories.ReceiverModules[githubreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver v0.109.0"
+	factories.ReceiverModules[googlecloudmonitoringreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver v0.109.0"
 	factories.ReceiverModules[googlecloudpubsubreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.109.0"
 	factories.ReceiverModules[googlecloudspannerreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.109.0"
 	factories.ReceiverModules[haproxyreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.109.0"
@@ -491,8 +492,6 @@ func components() (otelcol.Factories, error) {
 	factories.ReceiverModules[windowseventlogreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.109.0"
 	factories.ReceiverModules[zipkinreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.109.0"
 	factories.ReceiverModules[zookeeperreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.109.0"
-	factories.ReceiverModules[googlecloudmonitoringreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver v0.109.0"
-
 
 	factories.Exporters, err = exporter.MakeFactoryMap(
 		debugexporter.NewFactory(),
