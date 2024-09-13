@@ -216,9 +216,13 @@ func (i *Input) read(ctx context.Context) int {
 	events, err := i.subscription.Read(i.maxReads)
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
-		i.subscription.Close()
+		closeErr := i.subscription.Close()
+		if closeErr != nil {
+			i.Logger().Error("Failed to close subscription", zap.Error(closeErr))
+			return 0
+		}
+		i.Logger().Info("Recreating subscription")
 		i.subscription = NewRemoteSubscription(i.remote.Server)
-		i.Logger().Info("Reopening subscription")
 		return 0
 	}
 
