@@ -387,7 +387,7 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	require.NoError(t, se.Shutdown(context.Background()))
 	require.FileExists(t, credsPath)
 
-	require.EqualValues(t, atomic.LoadInt32(&reqCount), 2)
+	require.EqualValues(t, 2, atomic.LoadInt32(&reqCount))
 }
 
 func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T) {
@@ -1476,10 +1476,10 @@ func TestWatchCredentialKey(t *testing.T) {
 	ctxc, cancel := context.WithCancel(ctx)
 	cancel()
 	v := se.WatchCredentialKey(ctxc, "")
-	require.Equal(t, v, "")
+	require.Equal(t, "", v)
 
 	v = se.WatchCredentialKey(context.Background(), "foobar")
-	require.Equal(t, v, "")
+	require.Equal(t, "", v)
 
 	go func() {
 		time.Sleep(time.Millisecond * 100)
@@ -1490,7 +1490,7 @@ func TestWatchCredentialKey(t *testing.T) {
 	}()
 
 	v = se.WatchCredentialKey(context.Background(), "")
-	require.Equal(t, v, "test-credential-key")
+	require.Equal(t, "test-credential-key", v)
 }
 
 func TestCreateCredentialsHeader(t *testing.T) {
@@ -1535,11 +1535,11 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 			// @sumo-drosiek: It happened to be empty OsVersion on my machine
 			// require.NotEmpty(t, reqPayload.HostDetails.OsVersion)
 			require.NotEmpty(t, reqPayload.NetworkDetails.HostIPAddress)
-			require.EqualValues(t, reqPayload.HostDetails.Environment, "EKS-1.20.2")
-			require.EqualValues(t, reqPayload.CollectorDetails.RunningVersion, "1.0.0")
-			require.EqualValues(t, reqPayload.TagDetails["team"], "A")
-			require.EqualValues(t, reqPayload.TagDetails["app"], "linux")
-			require.EqualValues(t, reqPayload.TagDetails["sumo.disco.enabled"], "true")
+			require.EqualValues(t, "EKS-1.20.2", reqPayload.HostDetails.Environment)
+			require.EqualValues(t, "1.0.0", reqPayload.CollectorDetails.RunningVersion)
+			require.EqualValues(t, "A", reqPayload.TagDetails["team"])
+			require.EqualValues(t, "linux", reqPayload.TagDetails["app"])
+			require.EqualValues(t, "true", reqPayload.TagDetails["sumo.disco.enabled"])
 
 			_, err := w.Write([]byte(``))
 

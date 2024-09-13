@@ -87,6 +87,7 @@ type Config struct {
 	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
 	Compression             string          `mapstructure:"compression,omitempty"`
+	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -170,6 +171,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		DeleteAtEOF:             c.DeleteAfterRead,
 		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
 		Compression:             c.Compression,
+		AcquireFSLock:           c.AcquireFSLock,
 	}
 
 	var t tracker.Tracker
@@ -208,7 +210,7 @@ func (c Config) validate() error {
 		return fmt.Errorf("'max_log_size' must be positive")
 	}
 
-	if c.MaxConcurrentFiles <= 1 {
+	if c.MaxConcurrentFiles < 1 {
 		return fmt.Errorf("'max_concurrent_files' must be positive")
 	}
 

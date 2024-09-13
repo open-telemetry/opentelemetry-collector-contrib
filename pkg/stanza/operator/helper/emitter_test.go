@@ -63,7 +63,7 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 
 	select {
 	case recv := <-emitter.logChan:
-		require.Equal(t, maxBatchSize, len(recv), "Length of received entries was not the same as max batch size!")
+		require.Len(t, recv, maxBatchSize, "Length of received entries was not the same as max batch size!")
 	case <-timeoutChan:
 		require.FailNow(t, "Failed to receive log entries before timeout")
 	}
@@ -92,7 +92,7 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 
 	select {
 	case recv := <-emitter.logChan:
-		require.Equal(t, 1, len(recv), "Should have received one entry, got %d instead", len(recv))
+		require.Len(t, recv, 1, "Should have received one entry, got %d instead", len(recv))
 	case <-timeoutChan:
 		require.FailNow(t, "Failed to receive log entry before timeout")
 	}

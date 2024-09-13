@@ -5,7 +5,6 @@ package arrow
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -216,7 +215,7 @@ func TestStreamUnknownBatchError(t *testing.T) {
 			// sender should get ErrStreamRestarting
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, ErrStreamRestarting))
+			require.ErrorIs(t, err, ErrStreamRestarting)
 		})
 	}
 }
@@ -321,8 +320,8 @@ func TestStreamUnsupported(t *testing.T) {
 
 			tc.waitForShutdown()
 
-			require.Less(t, 0, len(tc.observedLogs.All()), "should have at least one log: %v", tc.observedLogs.All())
-			require.Equal(t, tc.observedLogs.All()[0].Message, "arrow is not supported")
+			require.NotEmpty(t, tc.observedLogs.All(), "should have at least one log: %v", tc.observedLogs.All())
+			require.Equal(t, "arrow is not supported", tc.observedLogs.All()[0].Message)
 		})
 	}
 }
@@ -347,7 +346,7 @@ func TestStreamSendError(t *testing.T) {
 			// sender should get ErrStreamRestarting
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, ErrStreamRestarting))
+			require.ErrorIs(t, err, ErrStreamRestarting)
 		})
 	}
 }

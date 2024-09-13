@@ -512,7 +512,7 @@ func TestSpanWithEventsToEnvelopes(t *testing.T) {
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, zap.NewNop())
 
 	assert.NotNil(t, envelopes)
-	assert.Equal(t, 3, len(envelopes))
+	assert.Len(t, envelopes, 3)
 
 	validateEnvelope := func(spanEvent ptrace.SpanEvent, envelope *contracts.Envelope, targetEnvelopeName string) {
 		assert.Equal(t, targetEnvelopeName, envelope.Name)

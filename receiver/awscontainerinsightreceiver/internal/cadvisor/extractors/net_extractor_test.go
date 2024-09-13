@@ -152,7 +152,7 @@ func TestNetStats(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(cMetrics), 8)
+	assert.Len(t, cMetrics, 8)
 	for i := range expectedFields {
 		AssertContainsTaggedField(t, cMetrics[i], expectedFields[i], expectedTags[i])
 	}
