@@ -20,7 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
@@ -183,8 +182,6 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
 
-	a := archive.NewDefaultArchive() // TODO: once archiving is set up, update this.
-
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
@@ -198,7 +195,6 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatches:       c.MaxBatches,
 		tracker:          t,
 		telemetryBuilder: telemetryBuilder,
-		archive:          a,
 	}, nil
 }
 

@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
@@ -31,7 +30,6 @@ type Manager struct {
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
-	archive       archive.Archive
 
 	pollInterval   time.Duration
 	persister      operator.Persister
@@ -40,8 +38,6 @@ type Manager struct {
 	pollsToArchive int
 
 	telemetryBuilder *metadata.TelemetryBuilder
-
-	unmatchedFiles []*archive.FileRecord
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -63,7 +59,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 			m.readerFactory.FromBeginning = true
 			m.tracker.LoadMetadata(offsets)
 		}
-		m.archive.SetStorageClient(persister)
+		m.tracker.SetPersister(persister)
 	} else if m.pollsToArchive > 0 {
 		return fmt.Errorf("archiving is not supported in memory, please use a storage extension")
 	}
@@ -149,7 +145,7 @@ func (m *Manager) poll(ctx context.Context) {
 		}
 	}
 	// rotate at end of every poll()
-	m.tracker.EndPoll(m.archive)
+	m.tracker.EndPoll()
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
@@ -203,7 +199,6 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
 func (m *Manager) makeReaders(ctx context.Context, paths []string) {
-	m.unmatchedFiles = make([]*archive.FileRecord, 0)
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
@@ -222,54 +217,17 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 			continue
 		}
 
-		r, matchFound, err := m.newReader(ctx, file, fp)
+		r, err := m.newReader(ctx, file, fp)
 		if err != nil {
 			m.set.Logger.Error("Failed to create reader", zap.Error(err))
 			continue
 		}
-		if matchFound {
-			m.tracker.Add(r)
-		} else {
-			m.unmatchedFiles = append(m.unmatchedFiles, archive.NewFileRecord(file, fp))
-		}
-	}
 
-	records, err := m.archive.Match(m.unmatchedFiles)
-	if err != nil {
-		m.set.Logger.Error("Errors encountered while reading the archive", zap.Error(err))
+		m.tracker.Add(r)
 	}
-INNER:
-	for _, record := range records {
-		// Exclude duplicate paths with the same content. This can happen when files are
-		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
-		if r := m.tracker.GetCurrentFile(record.Fingerprint); r != nil {
-			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", r.GetFileName()))
-			// re-add the reader as Match() removes duplicates
-			m.tracker.Add(r)
-			record.File.Close()
-			continue INNER
-		}
-		var reader *reader.Reader
-		var err error
-		if record.Metadata != nil {
-			// match is found if record.Metadata exists
-			reader, err = m.readerFactory.NewReaderFromMetadata(record.File, record.Metadata)
-		} else {
-			// empty record.Metada i.e. a new file
-			reader, err = m.readerFactory.NewReader(record.File, record.Fingerprint)
-		}
-		if err != nil {
-			m.set.Logger.Error("Failed to create reader", zap.Error(err))
-			continue INNER
-		}
-		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
-		m.tracker.Add(reader)
-		m.set.Logger.Info("Started watching file", zap.String("path", reader.GetFileName()))
-	}
-
 }
 
-func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, bool, error) {
+func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Check previous poll cycle for match
 	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
 		if oldReader.GetFileName() != file.Name() {
@@ -285,19 +243,25 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 					zap.String("rotated_path", file.Name()))
 			}
 		}
-		r, err := m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
-		return r, true, err
+		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
 	}
 
 	// Check for closed files for match
 	if oldMetadata := m.tracker.GetClosedFile(fp); oldMetadata != nil {
 		r, err := m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
-		return r, true, nil
+		return r, nil
 	}
 
-	return nil, false, nil
+	// If we don't match any previously known files, create a new reader from scratch
+	m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+	r, err := m.readerFactory.NewReader(file, fp)
+	if err != nil {
+		return nil, err
+	}
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
+	return r, nil
 }

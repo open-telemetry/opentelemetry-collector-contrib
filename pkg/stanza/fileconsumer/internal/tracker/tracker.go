@@ -7,10 +7,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 // Interface for tracking files that are being consumed.
@@ -24,9 +24,10 @@ type Tracker interface {
 	CurrentPollFiles() []*reader.Reader
 	PreviousPollFiles() []*reader.Reader
 	ClosePreviousFiles() int
-	EndPoll(archive archive.Archive)
+	EndPoll()
 	EndConsume() int
 	TotalReaders() int
+	SetPersister(persister operator.Persister)
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -38,6 +39,10 @@ type fileTracker struct {
 	currentPollFiles  *fileset.Fileset[*reader.Reader]
 	previousPollFiles *fileset.Fileset[*reader.Reader]
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
+
+	// persister is to be used to store offsets older than 3 poll cycles.
+	// These offsets will be stored on disk
+	persister operator.Persister
 }
 
 func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
@@ -111,17 +116,18 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 	return
 }
 
-func (t *fileTracker) EndPoll(archive archive.Archive) {
+func (t *fileTracker) SetPersister(persister operator.Persister) {
+	t.persister = persister
+}
+
+func (t *fileTracker) EndPoll() {
 	// shift the filesets at end of every poll() call
 	// t.knownFiles[0] -> t.knownFiles[1] -> t.knownFiles[2]
-	oldFileset := t.knownFiles[2]
+
+	// Instead of throwing it away, archive it.
+	t.archive(t.knownFiles[2])
 	copy(t.knownFiles[1:], t.knownFiles)
 	t.knownFiles[0] = fileset.New[*reader.Metadata](t.maxBatchFiles)
-
-	err := archive.Write(oldFileset.Get())
-	if err != nil {
-		t.set.Logger.Error("Error faced while archiving", zap.Error(err))
-	}
 }
 
 func (t *fileTracker) TotalReaders() int {
@@ -130,6 +136,13 @@ func (t *fileTracker) TotalReaders() int {
 		total += t.knownFiles[i].Len()
 	}
 	return total
+}
+
+func (t *fileTracker) archive(*fileset.Fileset[*reader.Metadata]) {
+	// TODO; core logic to be implemented in followup PR
+	// We make use of a ring buffer, where each set of files is stored under a specific index.
+	// Instead of discarding knownFiles[2], write it to the next index and eventually roll over.
+	// Separate storage keys knownFilesArchive0, knownFilesArchive1, ..., knownFilesArchiveN, roll over back to knownFilesArchive0
 }
 
 // noStateTracker only tracks the current polled files. Once the poll is
@@ -183,6 +196,8 @@ func (t *noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
 
 func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 
-func (t *noStateTracker) EndPoll(archive.Archive) {}
+func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
+
+func (t *noStateTracker) SetPersister(operator.Persister) {}
