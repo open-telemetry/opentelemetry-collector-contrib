@@ -41,9 +41,9 @@ func TestLoadConfig(t *testing.T) {
 		metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
 	defaultConfigGitHubScraper.(*Config).AccessToken = "my_token"
-    defaultConfigGitHubScraper.(*Config).LogType = "user"
-    defaultConfigGitHubScraper.(*Config).Name = "github"
-    defaultConfigGitHubScraper.(*Config).PollInterval = 60 * time.Second
+	defaultConfigGitHubScraper.(*Config).LogType = "user"
+	defaultConfigGitHubScraper.(*Config).Name = "github"
+	defaultConfigGitHubScraper.(*Config).PollInterval = 60 * time.Second
 
 	assert.Equal(t, defaultConfigGitHubScraper, r0)
 
