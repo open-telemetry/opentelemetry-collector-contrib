@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Exporters[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 	assert.Equal(t, &Config{
-		TimeoutSettings: exporterhelper.TimeoutSettings{
+		TimeoutSettings: exporterhelper.TimeoutConfig{
 			Timeout: 20 * time.Second,
 		},
 		GMPConfig: GMPConfig{
@@ -79,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
-		QueueSettings: exporterhelper.QueueSettings{
+		QueueSettings: exporterhelper.QueueConfig{
 			Enabled:      true,
 			NumConsumers: 2,
 			QueueSize:    10,
