@@ -345,7 +345,7 @@ func TestUnixEndpoint(t *testing.T) {
 
 	n, err := conn.Write(parseHexDump("testdata/message-event"))
 	require.NoError(t, err)
-	require.Greater(t, n, 0)
+	require.Positive(t, n)
 
 	var converted []plog.Logs
 	require.Eventually(t, func() bool {
