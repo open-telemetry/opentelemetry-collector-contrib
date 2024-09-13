@@ -591,8 +591,8 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	mu.Lock()
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	mu.Unlock()
-	require.Greater(t, counter1.Load(), int64(0))
-	require.Greater(t, counter2.Load(), int64(0))
+	require.Positive(t, counter1.Load())
+	require.Positive(t, counter2.Load())
 }
 
 func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
