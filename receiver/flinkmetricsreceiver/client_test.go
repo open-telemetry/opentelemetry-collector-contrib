@@ -544,7 +544,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				var e *models.JobsResponse
 				_ = json.Unmarshal(jobsData, &e)
-				require.EqualValues(t, e.Jobs[0].ID, "54a5c6e527e00e1bb861272a39fe13e4")
+				require.EqualValues(t, "54a5c6e527e00e1bb861272a39fe13e4", e.Jobs[0].ID)
 
 				// Load the valid data into a struct to compare
 				var expected *models.MetricsResponse

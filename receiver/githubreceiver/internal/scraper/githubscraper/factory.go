@@ -18,8 +18,6 @@ import (
 // This file implements factory for the GitHub Scraper as part of the  GitHub Receiver
 
 const (
-	// TypeStr is the value of "type" key in configuration.
-	TypeStr            = "github"
 	defaultHTTPTimeout = 15 * time.Second
 )
 
@@ -42,8 +40,8 @@ func (f *Factory) CreateMetricsScraper(
 	conf := cfg.(*Config)
 	s := newGitHubScraper(ctx, params, conf)
 
-	return scraperhelper.NewScraper(
-		TypeStr,
+	return scraperhelper.NewScraperWithComponentType(
+		metadata.Type,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

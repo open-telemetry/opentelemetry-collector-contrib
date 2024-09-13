@@ -202,7 +202,7 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
 		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
 		actualValue, _ := attr.Value(telemetryAttrKeyOne)
-		assert.Equal(t, actualValue.AsString(), telemetryAttrValueOne, "it should be "+telemetryAttrValueOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
 	}
 }
 
@@ -232,7 +232,7 @@ func TestGaugeSingleTelemetryAttr(t *testing.T) {
 		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes
 		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
 		actualValue, _ := attr.Value(telemetryAttrKeyOne)
-		assert.Equal(t, actualValue.AsString(), telemetryAttrValueOne, "it should be "+telemetryAttrValueOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
 	}
 }
 
