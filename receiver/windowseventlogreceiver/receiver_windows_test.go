@@ -53,8 +53,6 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
-	t.Parallel()
-
 	cfg := &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{},
 		InputConfig: func() windows.Config {
