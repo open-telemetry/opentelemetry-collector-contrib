@@ -313,7 +313,7 @@ func (f *factory) createMetricsExporter(
 		cfg,
 		pushMetricsFn,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		// We use our own custom mechanism for retries, since we hit several endpoints.
 		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		// The metrics remapping code mutates data
@@ -427,7 +427,7 @@ func (f *factory) createTracesExporter(
 		cfg,
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		// We don't do retries on traces because of deduping concerns on APM Events.
 		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
@@ -514,7 +514,7 @@ func (f *factory) createLogsExporter(
 		cfg,
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {

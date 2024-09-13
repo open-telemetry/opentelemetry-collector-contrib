@@ -42,7 +42,7 @@ func TestConsumeMetricsNoServer(t *testing.T) {
 		context.Background(),
 		&Config{
 			TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: testutil.GetAvailableLocalAddress(t)},
-			TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
+			TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 		},
 		exportertest.NewNopSettings())
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
 		context.Background(),
 		&Config{
 			TCPAddrConfig:             confignet.TCPAddrConfig{Endpoint: addr},
-			TimeoutSettings:           exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
+			TimeoutSettings:           exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 			ResourceToTelemetryConfig: resourcetotelemetry.Settings{Enabled: true},
 		},
 		exportertest.NewNopSettings())
@@ -128,7 +128,7 @@ func TestConsumeMetrics(t *testing.T) {
 				&Config{
 					TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: addr},
 					MaxIdleConns:    tt.numProducers,
-					TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
+					TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 				},
 				exportertest.NewNopSettings())
 			require.NoError(t, err)

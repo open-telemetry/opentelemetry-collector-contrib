@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:  500 * time.Millisecond,
 					Headers:  map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Influx"},
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 3,
 					QueueSize:    10,
