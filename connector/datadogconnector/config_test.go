@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func TestValidate(t *testing.T) {
-
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -21,36 +22,46 @@ func TestValidate(t *testing.T) {
 			name: "span name remapping valid",
 			cfg: &Config{
 				Traces: TracesConfig{
-					SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"},
+					TracesConfig: datadogconfig.TracesConfig{
+						SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"},
+					},
 				},
 			},
 		},
 		{
 			name: "span name remapping empty val",
 			cfg: &Config{Traces: TracesConfig{
-				SpanNameRemappings: map[string]string{"oldname": ""},
+				TracesConfig: datadogconfig.TracesConfig{
+					SpanNameRemappings: map[string]string{"oldname": ""},
+				},
 			}},
-			err: "\"\" is not valid value for span name remapping",
+			err: "'' is not valid value for span name remapping",
 		},
 		{
 			name: "span name remapping empty key",
 			cfg: &Config{Traces: TracesConfig{
-				SpanNameRemappings: map[string]string{"": "newname"},
+				TracesConfig: datadogconfig.TracesConfig{
+					SpanNameRemappings: map[string]string{"": "newname"},
+				},
 			}},
-			err: "\"\" is not valid key for span name remapping",
+			err: "'' is not valid key for span name remapping",
 		},
 		{
 			name: "ignore resources valid",
 			cfg: &Config{Traces: TracesConfig{
-				IgnoreResources: []string{"[123]"},
+				TracesConfig: datadogconfig.TracesConfig{
+					IgnoreResources: []string{"[123]"},
+				},
 			}},
 		},
 		{
 			name: "ignore resources missing bracket",
 			cfg: &Config{Traces: TracesConfig{
-				IgnoreResources: []string{"[123"},
+				TracesConfig: datadogconfig.TracesConfig{
+					IgnoreResources: []string{"[123"},
+				},
 			}},
-			err: "\"[123\" is not valid resource filter regular expression",
+			err: "'[123' is not valid resource filter regular expression",
 		},
 		{
 			name: "With trace_buffer",
@@ -63,12 +74,16 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{Traces: TracesConfig{
 				TraceBuffer: -10,
 			}},
-			err: "Trace buffer must be non-negative",
+			err: "trace buffer must be non-negative",
 		},
 		{
 			name: "With peer_tags",
 			cfg: &Config{
-				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
+				Traces: TracesConfig{
+					TracesConfig: datadogconfig.TracesConfig{
+						PeerTags: []string{"tag1", "tag2"},
+					},
+				},
 			},
 		},
 		{

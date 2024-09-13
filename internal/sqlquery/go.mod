@@ -3,16 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlque
 go 1.22.0
 
 require (
-	github.com/SAP/go-hdb v1.12.0
+	github.com/SAP/go-hdb v1.12.1
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.7.2
 	github.com/sijms/go-ora/v2 v2.8.19
 	github.com/snowflakedb/gosnowflake v1.11.1
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.108.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/pdata v1.14.2-0.20240909182537-32cff9f7f331
-	go.opentelemetry.io/collector/receiver v0.108.2-0.20240909182537-32cff9f7f331
+	go.opentelemetry.io/collector/component v0.109.0
+	go.opentelemetry.io/collector/pdata v1.15.0
+	go.opentelemetry.io/collector/receiver v0.109.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )
@@ -80,25 +80,25 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.108.2-0.20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.108.2-0.20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/consumer v0.108.2-0.20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.2-0.20240909182537-32cff9f7f331 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.108.2-0.20240909182537-32cff9f7f331 // indirect
+	go.opentelemetry.io/collector v0.109.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.109.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.109.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.109.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.51.0 // indirect
 	go.opentelemetry.io/otel/metric v1.29.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.29.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.29.0 // indirect
-	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
-	golang.org/x/term v0.23.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/term v0.24.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
