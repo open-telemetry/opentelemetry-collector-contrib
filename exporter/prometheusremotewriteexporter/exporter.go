@@ -70,6 +70,7 @@ type prwExporter struct {
 	exporterSettings     prometheusremotewrite.Settings
 	telemetry            prwTelemetry
 	batchTimeSeriesState batchTimeSeriesState
+	converter            prometheusremotewrite.PrometheusConverter
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -126,6 +127,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		},
 		telemetry:            prwTelemetry,
 		batchTimeSeriesState: newBatchTimeSericesState(),
+		converter:            *prometheusremotewrite.NewPrometheusConverter(),
 	}
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
@@ -173,7 +175,8 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		return errors.New("shutdown has been called")
 	default:
 
-		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
+		tsMap, err := prwe.converter.FromMetrics(md, prwe.exporterSettings)
+		defer prwe.converter.Reset()
 		if err != nil {
 			prwe.telemetry.recordTranslationFailure(ctx)
 			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))

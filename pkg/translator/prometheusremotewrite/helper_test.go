@@ -115,7 +115,7 @@ func TestPrometheusConverter_addSample(t *testing.T) {
 	}
 
 	t.Run("empty_case", func(t *testing.T) {
-		converter := newPrometheusConverter()
+		converter := NewPrometheusConverter()
 		converter.addSample(nil, nil)
 		assert.Empty(t, converter.unique)
 		assert.Empty(t, converter.conflicts)
@@ -159,7 +159,7 @@ func TestPrometheusConverter_addSample(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 			converter.addSample(&tt.testCase[0].sample, tt.testCase[0].labels)
 			converter.addSample(&tt.testCase[1].sample, tt.testCase[1].labels)
 			assert.Exactly(t, tt.want, converter.unique)
@@ -359,8 +359,9 @@ func Test_createLabelSet(t *testing.T) {
 	}
 	// run tests
 	for _, tt := range tests {
+		c := NewPrometheusConverter()
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, tt.extras...))
+			assert.ElementsMatch(t, tt.want, c.createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, tt.extras...))
 		})
 	}
 }
@@ -375,10 +376,15 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	m.PutInt("test-int-key", 123)
 	m.PutBool("test-bool-key", true)
 
+	c := NewPrometheusConverter()
+	// preallocate slice to simulate a fully-grown buffer
+	c.labels = make([]prompb.Label, 0, b.N*m.Len())
+
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
-		createAttributes(r, m, ext, nil, true)
+		c.createAttributes(r, m, ext, nil, true)
 	}
 }
 
@@ -439,7 +445,7 @@ func TestPrometheusConverter_addExemplars(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			converter := &prometheusConverter{
+			converter := &PrometheusConverter{
 				unique: tt.orig,
 			}
 			converter.addExemplars(tt.dataPoint, tt.bucketBounds)
@@ -620,7 +626,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
 
@@ -765,7 +771,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
@@ -875,7 +881,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
@@ -893,7 +899,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 }
 
 func TestPrometheusConverter_getOrCreateTimeSeries(t *testing.T) {
-	converter := newPrometheusConverter()
+	converter := NewPrometheusConverter()
 	lbls := []prompb.Label{
 		{
 			Name:  "key1",
