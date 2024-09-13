@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -301,6 +302,10 @@ func createTestConfig() *WindowsLogConfig {
 // It returns a function that can be used to uninstall the event source, that function is never nil
 func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSource func(), err error) {
 	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
+	if err != nil && strings.HasSuffix(err.Error(), " registry key already exists") {
+		// If the event source already exists ignore the error
+		err = nil
+	}
 	uninstallEventSource = func() {
 		assert.NoError(t, eventlog.Remove(src))
 	}

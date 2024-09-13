@@ -165,7 +165,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
 		assert.Equal(t, 1, rl.ScopeLogs().Len())
 		assert.Equal(t, 1, logRecords.Len())
-		assert.Greater(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), int64(0))
+		assert.Positive(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix())
 		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
 
