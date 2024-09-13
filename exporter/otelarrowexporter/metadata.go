@@ -13,10 +13,8 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -72,17 +70,6 @@ func (e *metadataExporter) getSettings() exporter.Settings {
 
 func (e *metadataExporter) getConfig() component.Config {
 	return e.config
-}
-
-func (e *metadataExporter) helperOptions() []exporterhelper.Option {
-	return []exporterhelper.Option{
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(e.config.TimeoutSettings),
-		exporterhelper.WithRetry(e.config.RetryConfig),
-		exporterhelper.WithQueue(e.config.QueueSettings),
-		exporterhelper.WithStart(e.start),
-		exporterhelper.WithShutdown(e.shutdown),
-	}
 }
 
 func (e *metadataExporter) start(_ context.Context, host component.Host) (err error) {

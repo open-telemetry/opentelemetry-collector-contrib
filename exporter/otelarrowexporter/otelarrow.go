@@ -38,7 +38,6 @@ import (
 )
 
 type exp interface {
-	helperOptions() []exporterhelper.Option
 	getSettings() exporter.Settings
 	getConfig() component.Config
 
