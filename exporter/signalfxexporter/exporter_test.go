@@ -807,7 +807,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 				defer receivedTokens.Unlock()
 				return len(receivedTokens.tokens) == 1
 			}, 1*time.Second, 10*time.Millisecond)
-			assert.Equal(t, receivedTokens.tokens[0], tt.expectedToken)
+			assert.Equal(t, tt.expectedToken, receivedTokens.tokens[0])
 		})
 	}
 }

@@ -24,11 +24,11 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		Port:     514,
 		Network:  "tcp",
 		Protocol: "rfc5424",
-		QueueSettings: exporterhelper.QueueSettings{
+		QueueSettings: exporterhelper.QueueConfig{
 			Enabled:      false,
 			NumConsumers: 10,
 			QueueSize:    1000,
@@ -41,8 +41,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			MaxInterval:         30 * time.Second,
 			MaxElapsedTime:      5 * time.Minute,
 		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{
+		TimeoutSettings: exporterhelper.TimeoutConfig{
 			Timeout: 5 * time.Second,
 		},
-	})
+	}, cfg)
 }

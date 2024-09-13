@@ -52,6 +52,7 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		newScaleMetricFactory(),
 		newAggregateOnAttributesFactory(),
 		newconvertExponentialHistToExplicitHistFactory(),
+		newAggregateOnAttributeValueFactory(),
 	)
 
 	if UseConvertBetweenSumAndGaugeMetricContext.IsEnabled() {

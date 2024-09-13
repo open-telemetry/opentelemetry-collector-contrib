@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,8 +53,6 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
-	t.Parallel()
-
 	cfg := &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{},
 		InputConfig: func() windows.Config {
@@ -301,6 +300,10 @@ func createTestConfig() *WindowsLogConfig {
 // It returns a function that can be used to uninstall the event source, that function is never nil
 func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSource func(), err error) {
 	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
+	if err != nil && strings.HasSuffix(err.Error(), " registry key already exists") {
+		// If the event source already exists ignore the error
+		err = nil
+	}
 	uninstallEventSource = func() {
 		assert.NoError(t, eventlog.Remove(src))
 	}
@@ -322,7 +325,7 @@ func requireExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expect
 	// logs sometimes take a while to be written, so a substantial wait buffer is needed
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		actualLogRecords = filterAllLogRecordsBySource(t, sink, expectedEventSrc)
-		assert.Len(c, actualLogRecords, expectedEventCount)
+		require.Len(c, actualLogRecords, expectedEventCount)
 	}, 10*time.Second, 250*time.Millisecond)
 
 	return actualLogRecords

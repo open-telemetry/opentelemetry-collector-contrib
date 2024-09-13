@@ -70,7 +70,7 @@ func TestDBSQLClient_Nulls(t *testing.T) {
 	}
 	rows, err := cl.QueryRows(context.Background())
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, ErrNullValueWarning))
+	assert.ErrorIs(t, err, ErrNullValueWarning)
 	assert.Len(t, rows, 1)
 	assert.EqualValues(t, map[string]string{
 		"col_0": "42",
@@ -96,7 +96,7 @@ func TestDBSQLClient_Nulls_MultiRow(t *testing.T) {
 		assert.Len(t, uw, 2)
 
 		for _, err := range uw {
-			assert.True(t, errors.Is(err, ErrNullValueWarning))
+			assert.ErrorIs(t, err, ErrNullValueWarning)
 		}
 	}
 	assert.Len(t, rows, 2)

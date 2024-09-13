@@ -210,7 +210,7 @@ func (c Config) validate() error {
 		return fmt.Errorf("'max_log_size' must be positive")
 	}
 
-	if c.MaxConcurrentFiles <= 1 {
+	if c.MaxConcurrentFiles < 1 {
 		return fmt.Errorf("'max_concurrent_files' must be positive")
 	}
 

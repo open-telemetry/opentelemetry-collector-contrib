@@ -186,8 +186,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Len(t, sink0.AllMetrics(), 1)
 		assert.Len(t, sink1.AllMetrics(), 1)
 
-		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 2)
-		assert.Equal(t, sink1.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, 2, sink0.AllMetrics()[0].MetricCount())
+		assert.Equal(t, 2, sink1.AllMetrics()[0].MetricCount())
 		assert.Equal(t, sink0.AllMetrics(), sink1.AllMetrics())
 	})
 
@@ -239,8 +239,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Len(t, sink0.AllMetrics(), 1)
 		assert.Empty(t, sink1.AllMetrics())
 
-		assert.Equal(t, defaultSink.AllMetrics()[0].MetricCount(), 1)
-		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 1)
+		assert.Equal(t, 1, defaultSink.AllMetrics()[0].MetricCount())
+		assert.Equal(t, 1, sink0.AllMetrics()[0].MetricCount())
 		assert.Equal(t, defaultSink.AllMetrics(), sink0.AllMetrics())
 	})
 }
@@ -357,7 +357,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		assert.Len(t, sink0.AllMetrics(), 1)
 		assert.Empty(t, sink1.AllMetrics())
 
-		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, 2, sink0.AllMetrics()[0].MetricCount())
 	})
 
 	t.Run("one metric matched by 2 expressions, others matched by none", func(t *testing.T) {
@@ -406,8 +406,8 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		assert.Len(t, sink0.AllMetrics(), 1)
 		assert.Empty(t, sink1.AllMetrics())
 
-		assert.Equal(t, defaultSink.AllMetrics()[0].MetricCount(), 1)
-		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 1)
+		assert.Equal(t, 1, defaultSink.AllMetrics()[0].MetricCount())
+		assert.Equal(t, 1, sink0.AllMetrics()[0].MetricCount())
 		assert.Equal(t, defaultSink.AllMetrics(), sink0.AllMetrics())
 	})
 }

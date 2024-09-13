@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
 	defaultConfigGitHubScraper := factory.CreateDefaultConfig()
 	defaultConfigGitHubScraper.(*Config).Scrapers = map[string]internal.Config{
-		githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
+		metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
 
 	assert.Equal(t, defaultConfigGitHubScraper, r0)
@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 			InitialDelay:       1 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
+			metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 		},
 	}
 

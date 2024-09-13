@@ -329,7 +329,7 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, settings)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
-	assert.Equal(t, settings.Logger, expCfg.logger)
+	assert.Equal(t, expCfg.logger, settings.Logger)
 }
 
 func TestNewExporterWithMetricDeclarations(t *testing.T) {
@@ -421,5 +421,5 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, settings)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
-	assert.Equal(t, settings.Logger, expCfg.logger)
+	assert.Equal(t, expCfg.logger, settings.Logger)
 }

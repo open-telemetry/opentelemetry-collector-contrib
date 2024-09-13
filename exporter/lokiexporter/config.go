@@ -14,9 +14,9 @@ import (
 
 // Config defines configuration for Loki exporter.
 type Config struct {
-	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig   `mapstructure:",squash"`   // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	DefaultLabelsEnabled map[string]bool `mapstructure:"default_labels_enabled"`
 }
