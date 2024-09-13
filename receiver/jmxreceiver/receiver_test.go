@@ -61,9 +61,8 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 				// While these aren't realistic usernames/passwords, we want to test the
 				// multiline handling in place to reduce the attack surface of the
 				// interface to the JMX metrics gatherer
-				Username: "myuser\nname",
-				Password: `mypass
-word`,
+				Username:           "myuser\nname",
+				Password:           "mypass \nword",
 				Realm:              "myrealm",
 				RemoteProfile:      "myprofile",
 				TruststorePath:     "/1/2/3",
