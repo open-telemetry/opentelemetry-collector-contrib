@@ -7,10 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
 
+	arrowPkg "github.com/apache/arrow/go/v16/arrow"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -21,6 +23,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
 
 var (
@@ -36,6 +40,8 @@ type metadataExporter struct {
 
 	metadataKeys []string
 	exporters    sync.Map
+	
+	userAgent string
 
 	// Guards the size and the storing logic to ensure no more than limit items are stored.
 	// If we are willing to allow "some" extra items than the limit this can be removed and size can be made atomic.
@@ -47,6 +53,15 @@ var _ exp = (*metadataExporter)(nil)
 
 func newMetadataExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory) (exp, error) {
 	oCfg := cfg.(*Config)
+	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
+		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
+
+	if !oCfg.Arrow.Disabled {
+		// Ignoring an error because Validate() was called.
+		_ = zstd.SetEncoderConfig(oCfg.Arrow.Zstd)
+
+		userAgent += fmt.Sprintf(" ApacheArrow/%s (NumStreams/%d)", arrowPkg.PkgVersion, oCfg.Arrow.NumStreams)
+	}
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(oCfg.MetadataKeys))
 	for i, k := range oCfg.MetadataKeys {
@@ -54,7 +69,7 @@ func newMetadataExporter(cfg component.Config, set exporter.Settings, streamClie
 	}
 	sort.Strings(mks)
 	if len(mks) == 0 {
-		return newExporter(cfg, set, streamClientFactory)
+		return newExporter(cfg, set, streamClientFactory, userAgent)
 	}
 	return &metadataExporter{
 		config:       oCfg,
@@ -132,7 +147,7 @@ func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.
 		return nil, errTooManyExporters
 	}
 
-	newExp, err := newExporter(e.config, e.settings, e.scf)
+	newExp, err := newExporter(e.config, e.settings, e.scf, e.userAgent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create exporter: %w", err)
 	}

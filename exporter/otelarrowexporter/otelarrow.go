@@ -6,11 +6,8 @@ package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
-	"fmt"
-	"runtime"
 	"time"
 
-	arrowPkg "github.com/apache/arrow/go/v16/arrow"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -78,7 +75,7 @@ type streamClientFactory func(conn *grpc.ClientConn) arrow.StreamClientFunc
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory) (exp, error) {
+func newExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory, userAgent string) (exp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
@@ -88,15 +85,6 @@ func newExporter(cfg component.Config, set exporter.Settings, streamClientFactor
 	netReporter, err := netstats.NewExporterNetworkReporter(set)
 	if err != nil {
 		return nil, err
-	}
-	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
-		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
-
-	if !oCfg.Arrow.Disabled {
-		// Ignoring an error because Validate() was called.
-		_ = zstd.SetEncoderConfig(oCfg.Arrow.Zstd)
-
-		userAgent += fmt.Sprintf(" ApacheArrow/%s (NumStreams/%d)", arrowPkg.PkgVersion, oCfg.Arrow.NumStreams)
 	}
 
 	return &baseExporter{
