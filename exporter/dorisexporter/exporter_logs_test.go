@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -16,11 +17,14 @@ import (
 )
 
 func TestPushLogData(t *testing.T) {
+	port, err := findRandomPort()
+	require.NoError(t, err)
+
 	config := createDefaultConfig().(*Config)
-	config.Endpoint = "http://127.0.0.1:18031"
+	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
 
-	err := config.Validate()
+	err = config.Validate()
 	require.NoError(t, err)
 
 	exporter := newLogsExporter(nil, config, testTelemetrySettings)
@@ -38,21 +42,24 @@ func TestPushLogData(t *testing.T) {
 	}()
 
 	server := &http.Server{
-		ReadTimeout: 5 * time.Second,
+		ReadTimeout: 3 * time.Second,
+		Addr:        fmt.Sprintf(":%d", port),
 	}
+
 	go func() {
 		http.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"Status":"Success"}`))
 		})
-		server.Addr = ":18031"
-		_ = server.ListenAndServe()
+		err = server.ListenAndServe()
+		require.Equal(t, http.ErrServerClosed, err)
 	}()
 
-	time.Sleep(1 * time.Second)
-
-	err = exporter.pushLogData(ctx, simpleLogs(10))
-	require.NoError(t, err)
+	err0 := fmt.Errorf("Not Started")
+	for err0 != nil { // until server started
+		err0 = exporter.pushLogData(ctx, simpleLogs(10))
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	_ = server.Shutdown(ctx)
 }
