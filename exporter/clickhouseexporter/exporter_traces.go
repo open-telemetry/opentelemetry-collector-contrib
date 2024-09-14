@@ -180,13 +180,13 @@ CREATE TABLE IF NOT EXISTS %s %s (
 	StatusMessage String CODEC(ZSTD(1)),
 	Events Nested (
 		Timestamp DateTime64(9),
-		Name LowCardinality(String) CODEC(ZSTD(1)),
+		Name LowCardinality(String),
 		Attributes Map(LowCardinality(String), String)
 	) CODEC(ZSTD(1)),
 	Links Nested (
-		TraceId String CODEC(ZSTD(1)),
-		SpanId String CODEC(ZSTD(1)),
-		TraceState String CODEC(ZSTD(1)),
+		TraceId String,
+		SpanId String,
+		TraceState String,
 		Attributes Map(LowCardinality(String), String)
 	) CODEC(ZSTD(1)),
 	INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
@@ -197,8 +197,7 @@ CREATE TABLE IF NOT EXISTS %s %s (
 	INDEX idx_duration Duration TYPE minmax GRANULARITY 1
 ) ENGINE = %s
 PARTITION BY toDate(Timestamp)
-PRIMARY KEY (ServiceName, SpanName, Timestamp)
-ORDER BY (ServiceName, SpanName, Timestamp)
+ORDER BY (ServiceName, SpanName, toDateTime(Timestamp))
 %s
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
@@ -256,8 +255,8 @@ const (
 	createTraceIDTsTableSQL = `
 CREATE TABLE IF NOT EXISTS %s_trace_id_ts %s (
      TraceId String CODEC(ZSTD(1)),
-     Start DateTime64(9) CODEC(Delta, ZSTD(1)),
-     End DateTime64(9) CODEC(Delta, ZSTD(1)),
+     Start DateTime CODEC(Delta, ZSTD(1)),
+     End DateTime CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE = %s
 PARTITION BY toDate(Start)
@@ -297,12 +296,12 @@ func renderInsertTracesSQL(cfg *Config) string {
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
+	ttlExpr := generateTTLExpr(cfg.TTL, "toDate(Timestamp)")
 	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTL, "toDateTime(Start)")
+	ttlExpr := generateTTLExpr(cfg.TTL, "toDate(Start)")
 	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 

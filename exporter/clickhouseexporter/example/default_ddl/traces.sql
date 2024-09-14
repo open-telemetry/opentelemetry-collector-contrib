@@ -22,9 +22,9 @@ CREATE TABLE IF NOT EXISTS otel_traces (
         Attributes Map(LowCardinality(String), String)
     ) CODEC(ZSTD(1)),
     Links Nested (
-        TraceId String CODEC(ZSTD(1)),
-        SpanId String CODEC(ZSTD(1)),
-        TraceState String CODEC(ZSTD(1)),
+        TraceId String,
+        SpanId String,
+        TraceState String,
         Attributes Map(LowCardinality(String), String)
     ) CODEC(ZSTD(1)),
     INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
@@ -35,20 +35,20 @@ CREATE TABLE IF NOT EXISTS otel_traces (
     INDEX idx_duration Duration TYPE minmax GRANULARITY 1
 ) ENGINE = MergeTree()
 PARTITION BY toDate(Timestamp)
-ORDER BY (ServiceName, SpanName, Timestamp)
-TTL toDateTime(Timestamp) + toIntervalDay(180)
+ORDER BY (ServiceName, SpanName, toDateTime(Timestamp))
+TTL toDate(Timestamp) + toIntervalDay(180)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 
 
 CREATE TABLE IF NOT EXISTS otel_traces_trace_id_ts (
      TraceId String CODEC(ZSTD(1)),
-     Start DateTime64(9) CODEC(Delta, ZSTD(1)),
-     End DateTime64(9) CODEC(Delta, ZSTD(1)),
+     Start DateTime CODEC(Delta, ZSTD(1)),
+     End DateTime CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE = MergeTree()
 PARTITION BY toDate(Start)
-ORDER BY (Start)
-TTL toDateTime(Start) + toIntervalDay(180)
+ORDER BY (TraceId, Start)
+TTL toDate(Start) + toIntervalDay(180)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 
 
