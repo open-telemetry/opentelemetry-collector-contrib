@@ -32,7 +32,7 @@ func newRowScanner(colTypes []colType) *rowScanner {
 			}
 			format := "%v"
 			if t, isTime := v.(time.Time); isTime {
-				return t.Format(time.RFC3339), nil
+				return t.Format(time.RFC3339Nano), nil
 			}
 			if reflect.TypeOf(v).Kind() == reflect.Slice {
 				// The Postgres driver returns a []uint8 (ascii string) for decimal and numeric types,
