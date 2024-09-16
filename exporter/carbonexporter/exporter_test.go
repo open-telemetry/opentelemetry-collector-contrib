@@ -142,7 +142,7 @@ func TestConsumeMetrics(t *testing.T) {
 					defer writersWG.Done()
 					<-startCh
 					for j := 0; j < tt.writesPerProducer; j++ {
-						require.NoError(t, exp.ConsumeMetrics(context.Background(), tt.md))
+						assert.NoError(t, exp.ConsumeMetrics(context.Background(), tt.md))
 					}
 				}()
 			}
@@ -332,10 +332,10 @@ func (cs *carbonServer) start(t *testing.T, numExpectedReq int) {
 				// Close is expected to cause error.
 				return
 			}
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			go func(conn net.Conn) {
 				defer func() {
-					require.NoError(t, conn.Close())
+					assert.NoError(t, conn.Close())
 				}()
 
 				reader := bufio.NewReader(conn)
@@ -344,7 +344,7 @@ func (cs *carbonServer) start(t *testing.T, numExpectedReq int) {
 					if errors.Is(err, io.EOF) {
 						return
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 
 					if cs.expectedContainsValue != "" {
 						assert.Contains(t, string(buf), cs.expectedContainsValue)
