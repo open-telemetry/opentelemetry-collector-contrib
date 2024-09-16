@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 				TracesTableName:  "otel_traces",
 				MetricsTableName: "otel_metrics",
 				CreateSchema:     true,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 5 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				ConnectionParams: map[string]string{},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 10,
 					QueueSize:    100,

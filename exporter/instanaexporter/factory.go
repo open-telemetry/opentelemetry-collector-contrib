@@ -7,6 +7,7 @@ package instanaexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,9 +17,12 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/metadata"
 )
+
+var once sync.Once
 
 // NewFactory creates an Instana exporter factory
 func NewFactory() exporter.Factory {
@@ -41,6 +45,12 @@ func createDefaultConfig() component.Config {
 	}
 }
 
+func logDeprecation(logger *zap.Logger) {
+	once.Do(func() {
+		logger.Warn("instana exporter is deprecated and will be removed in the next release. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34994 for more details.")
+	})
+}
+
 // createTracesExporter creates a trace exporter based on this configuration
 func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
@@ -48,6 +58,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, config com
 	ctx, cancel := context.WithCancel(ctx)
 
 	instanaExporter := newInstanaExporter(cfg, set)
+	logDeprecation(set.Logger)
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -57,9 +68,9 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, config com
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(instanaExporter.start),
 		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueConfig{Enabled: false}),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil

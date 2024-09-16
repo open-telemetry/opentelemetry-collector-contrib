@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/http2/hpack"
@@ -49,8 +50,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 )
 
+var noopTraces = noop.NewTracerProvider()
+
 func defaultBQ() *admission.BoundedQueue {
-	return admission.NewBoundedQueue(int64(100000), int64(10))
+	return admission.NewBoundedQueue(noopTraces, int64(100000), int64(10))
 }
 
 type compareJSONTraces struct{ ptrace.Traces }
@@ -464,10 +467,10 @@ func TestBoundedQueueWithPdataHeaders(t *testing.T) {
 			var bq *admission.BoundedQueue
 			if tt.rejected {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
-				bq = admission.NewBoundedQueue(int64(sizer.TracesSize(td)-100), 10)
+				bq = admission.NewBoundedQueue(noopTraces, int64(sizer.TracesSize(td)-100), 10)
 			} else {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
-				bq = admission.NewBoundedQueue(defaultBoundedQueueLimit, 10)
+				bq = admission.NewBoundedQueue(noopTraces, defaultBoundedQueueLimit, 10)
 			}
 
 			ctc.start(ctc.newRealConsumer, bq)
@@ -781,7 +784,7 @@ func TestReceiverEOF(t *testing.T) {
 			expectData = append(expectData, td)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -794,7 +797,7 @@ func TestReceiverEOF(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		require.NoError(t, ctc.wait())
+		assert.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -848,7 +851,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 			td := testdata.GenerateTraces(2)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -860,7 +863,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 							Name:  key,
 							Value: val,
 						})
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}
 
@@ -876,7 +879,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Add(1)
 
 	go func() {
-		require.NoError(t, ctc.wait())
+		assert.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -1240,7 +1243,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			td := testdata.GenerateTraces(2)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -1253,7 +1256,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 							Name:  strings.ToLower(key),
 							Value: val,
 						})
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}
 

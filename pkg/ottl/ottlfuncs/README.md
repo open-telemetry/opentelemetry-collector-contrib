@@ -410,6 +410,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 
 - [Base64Decode](#base64decode)
+- [Decode](#decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Day](#day)
@@ -466,7 +467,9 @@ Available Converters:
 - [UUID](#UUID)
 - [Year](#year)
 
-### Base64Decode
+### Base64Decode (Deprecated)
+
+*This function has been deprecated. Please use the [Decode](#decode) function instead.*
 
 `Base64Decode(value)`
 
@@ -480,6 +483,22 @@ Examples:
 
 
 - `Base64Decode(attributes["encoded field"])`
+
+### Decode
+
+`Decode(value, encoding)`
+
+The `Decode` Converter takes a string or byte array encoded with the specified encoding and returns the decoded string.
+
+`value` is a valid encoded string or byte array.
+`encoding` is a valid encoding name included in the [IANA encoding index](https://www.iana.org/assignments/character-sets/character-sets.xhtml).
+
+Examples:
+
+- `Decode("aGVsbG8gd29ybGQ=", "base64")`
+
+
+- `Decode(attributes["encoded field"], "us-ascii")`
 
 ### Concat
 

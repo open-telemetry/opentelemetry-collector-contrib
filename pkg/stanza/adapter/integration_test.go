@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -151,12 +152,15 @@ func TestEmitterToConsumer(t *testing.T) {
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer func() { require.NoError(t, logsReceiver.Shutdown(context.Background())) }()
+	defer func() {
+		require.NoError(t, logsReceiver.emitter.Stop())
+		require.NoError(t, logsReceiver.Shutdown(context.Background()))
+	}()
 
 	go func() {
 		ctx := context.Background()
 		for _, e := range entries {
-			require.NoError(t, logsReceiver.emitter.Process(ctx, e))
+			assert.NoError(t, logsReceiver.emitter.Process(ctx, e))
 		}
 	}()
 

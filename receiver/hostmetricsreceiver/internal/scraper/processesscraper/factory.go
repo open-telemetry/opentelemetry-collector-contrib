@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
@@ -40,8 +41,8 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newProcessesScraper(ctx, settings, cfg)
 
-	return scraperhelper.NewScraper(
-		TypeStr,
+	return scraperhelper.NewScraperWithComponentType(
+		hostmeta.Type,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)
