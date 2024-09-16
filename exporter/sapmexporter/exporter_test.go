@@ -365,11 +365,11 @@ func TestCompression(t *testing.T) {
 							assert.EqualValues(t, compression, tt.receivedCompression)
 
 							payload, err := decompress(r.Body, compression)
-							require.NoError(t, err)
+							assert.NoError(t, err)
 
 							var sapm splunksapm.PostSpansRequest
 							err = sapm.Unmarshal(payload)
-							require.NoError(t, err)
+							assert.NoError(t, err)
 
 							w.WriteHeader(200)
 							tracesReceived = true
