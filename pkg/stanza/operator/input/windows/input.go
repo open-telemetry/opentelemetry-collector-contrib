@@ -217,13 +217,13 @@ func (i *Input) read(ctx context.Context) int {
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
 		if i.isRemote() && (err.Error() == "The handle is invalid." || err.Error() == "subscription handle is not open") {
-			i.Logger().Info("Resubscribing, closing subscription")
+			i.Logger().Info("Resubscribing, closing remote subscription")
 			closeErr := i.subscription.Close()
 			if closeErr != nil {
-				i.Logger().Error("Failed to close subscription", zap.Error(closeErr))
+				i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
 				return 0
 			}
-			i.Logger().Info("Resubscribing, creating subscription")
+			i.Logger().Info("Resubscribing, creating remote subscription")
 			i.subscription = NewRemoteSubscription(i.remote.Server)
 		}
 		return 0
