@@ -659,7 +659,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	for i := 0; i < concurrency; i++ {
 		go func() {
 			err := p.Shutdown(ctx)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			wg.Done()
 		}()
 	}
