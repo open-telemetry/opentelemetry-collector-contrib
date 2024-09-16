@@ -51,7 +51,7 @@ func createMetricsReceiver(
 	}
 	vr := newVmwareVcenterScraper(params.Logger, cfg, params)
 
-	scraper, err := scraperhelper.NewScraperWithComponentType(
+	scraper, err := scraperhelper.NewScraper(
 		metadata.Type,
 		vr.scrape,
 		scraperhelper.WithStart(vr.Start),

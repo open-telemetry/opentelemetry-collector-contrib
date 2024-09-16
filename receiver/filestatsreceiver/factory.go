@@ -38,7 +38,7 @@ func newReceiver(
 	fileStatsConfig := cfg.(*Config)
 
 	mp := newScraper(fileStatsConfig, settings)
-	s, err := scraperhelper.NewScraperWithComponentType(metadata.Type, mp.scrape)
+	s, err := scraperhelper.NewScraper(metadata.Type, mp.scrape)
 	if err != nil {
 		return nil, err
 	}

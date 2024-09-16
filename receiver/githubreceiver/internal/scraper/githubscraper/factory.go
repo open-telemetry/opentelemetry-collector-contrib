@@ -40,7 +40,7 @@ func (f *Factory) CreateMetricsScraper(
 	conf := cfg.(*Config)
 	s := newGitHubScraper(ctx, params, conf)
 
-	return scraperhelper.NewScraperWithComponentType(
+	return scraperhelper.NewScraper(
 		metadata.Type,
 		s.scrape,
 		scraperhelper.WithStart(s.start),

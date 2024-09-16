@@ -43,7 +43,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scraper, err := scraperhelper.NewScraperWithComponentType(
+	scraper, err := scraperhelper.NewScraper(
 		metadata.Type,
 		receiver.scrape,
 		scraperhelper.WithStart(receiver.start),
