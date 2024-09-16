@@ -271,7 +271,7 @@ func (op *kubernetesprocessor) GetResourceUuidUsingPodMoid(ctx context.Context, 
 
 	podMoidKey := podMoid.PodMoid()
 
-	resourceUuid = op.redisClient.GetValueInString(ctx, podMoidKey)
+	resourceUuid = op.redisClient.GetUuidValueInString(ctx, podMoidKey)
 	op.logger.Debug("redis KV ", zap.Any("key", podMoidKey), zap.Any("value", resourceUuid))
 	return
 }
@@ -285,7 +285,7 @@ func (op *kubernetesprocessor) GetResourceUuidUsingResourceNodeMoid(ctx context.
 
 	nodeMoidKey := moid.NewMoid(op.redisConfig.ClusterName).WithNodeName(nodename.Str()).NodeMoid()
 
-	resourceUuid = op.redisClient.GetValueInString(ctx, nodeMoidKey)
+	resourceUuid = op.redisClient.GetUuidValueInString(ctx, nodeMoidKey)
 	op.logger.Debug("redis KV ", zap.Any("key", nodeMoidKey), zap.Any("value", resourceUuid))
 	return
 }
@@ -294,7 +294,7 @@ func (op *kubernetesprocessor) GetResourceUuidUsingCurrentNodeMoid(ctx context.C
 
 	nodeMoidKey := moid.NewMoid(op.redisConfig.ClusterName).WithNodeName(op.redisConfig.NodeName).NodeMoid()
 
-	resourceUuid = op.redisClient.GetValueInString(ctx, nodeMoidKey)
+	resourceUuid = op.redisClient.GetUuidValueInString(ctx, nodeMoidKey)
 	op.logger.Debug("redis KV ", zap.Any("key", nodeMoidKey), zap.Any("value", resourceUuid))
 	return
 }
@@ -303,7 +303,7 @@ func (op *kubernetesprocessor) GetResourceUuidUsingClusterMoid(ctx context.Conte
 
 	nodeMoidKey := moid.NewMoid(op.redisConfig.ClusterName).WithClusterUuid(op.redisConfig.ClusterUid).ClusterMoid()
 
-	resourceUuid = op.redisClient.GetValueInString(ctx, nodeMoidKey)
+	resourceUuid = op.redisClient.GetUuidValueInString(ctx, nodeMoidKey)
 	op.logger.Debug("redis KV ", zap.Any("key", nodeMoidKey), zap.Any("value", resourceUuid))
 	return
 }

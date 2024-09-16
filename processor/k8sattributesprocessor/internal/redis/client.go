@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	lru "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
@@ -95,7 +96,7 @@ func (c *Client) TestConnection(ctx context.Context) error {
 	return err
 }
 
-func (c *Client) GetValueInString(ctx context.Context, key string) string {
+func (c *Client) GetUuidValueInString(ctx context.Context, key string) string {
 	logger := c.logger
 
 	// Try to init the cache if it is firt time
@@ -113,7 +114,17 @@ func (c *Client) GetValueInString(ctx context.Context, key string) string {
 				logger.Error("Failed to fetch the key from redis ", zap.Error(err))
 			} else {
 				logger.Debug("Got value from redis ", zap.Any("key", key), zap.Any("value", value))
-				value = val
+				type RedisData struct {
+					ResourceUuid string `json:"resourceUuid,omitempty"`
+					ResourceHash uint64 `json:"resourceHash,omitempty"`
+				}
+				var redisData RedisData
+				err = json.Unmarshal([]byte(val), &redisData)
+				if err != nil {
+					logger.Error("Could not unmarshal data:", zap.Error(err))
+					return ""
+				}
+				value = redisData.ResourceUuid
 			}
 		}
 
