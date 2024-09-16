@@ -7,12 +7,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"net"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -91,14 +91,20 @@ func (f *SyslogWriter) GenConfigYAMLStr() string {
 func (f *SyslogWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1_000_000_000), int64(lr.Timestamp()%1_000_000_000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
-	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID()))
-	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID()))
+	if lr.TraceID().String() != "" {
+		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID()))
+	}
+	if lr.SpanID().String() != "" {
+		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID()))
+	}
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
-		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))
+		if v.Str() != "" {
+			sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))
+		}
 		return true
 	})
-	msg := fmt.Sprintf("<166> %s 127.0.0.1 - - - [%s] %s\n", ts, sdid.String(), lr.Body().Str())
+	msg := fmt.Sprintf("<166>1 %s 127.0.0.1 - - - [test@12345 %s] %s\n", ts, strings.TrimSpace(sdid.String()), lr.Body().Str())
 
 	f.buf = append(f.buf, msg)
 	return f.SendCheck()
