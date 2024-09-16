@@ -116,7 +116,7 @@ func (c *Client) GetUuidValueInString(ctx context.Context, key string) string {
 				logger.Debug("Got value from redis ", zap.Any("key", key), zap.Any("value", value))
 				type RedisData struct {
 					ResourceUuid string `json:"resourceUuid,omitempty"`
-					ResourceHash string `json:"resourceHash,omitempty"`
+					ResourceHash uint64 `json:"resourceHash,omitempty"`
 				}
 				var redisData RedisData
 				err = json.Unmarshal([]byte(val), &redisData)
