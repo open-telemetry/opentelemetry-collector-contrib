@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -145,13 +146,13 @@ func TestGetNodeStats(t *testing.T) {
 		if strings.Contains(r.URL.Path, "/invalid_json") {
 			w.WriteHeader(200)
 			_, err := w.Write([]byte(`{"}`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		if strings.Contains(r.URL.Path, "/_stats/couchdb") {
 			w.WriteHeader(200)
 			_, err := w.Write([]byte(`{"key":["value"]}`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		w.WriteHeader(404)
