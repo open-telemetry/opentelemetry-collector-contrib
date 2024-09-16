@@ -8,7 +8,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -269,26 +269,26 @@ func sortByOrderKey(xml []xmlElement, orderKey string, flattenedArray bool) {
 	}
 	// sort the children by the order key
 
-	sort.Slice(xml, func(i, j int) bool {
+	slices.SortFunc(xml, func(i, j xmlElement) int {
 		var iKey, jKey string
 		if flattenedArray {
-			iKey = xml[i].attributes[0].Value
-			jKey = xml[j].attributes[0].Value
+			iKey = i.attributes[0].Value
+			jKey = j.attributes[0].Value
 		} else {
-			iKey = xml[i].tag
-			jKey = xml[j].tag
+			iKey = i.tag
+			jKey = j.tag
 		}
 		iOrder, iPresent := keyIndex[iKey]
 		jOrder, jPresent := keyIndex[jKey]
 		if iPresent && jPresent {
-			return iOrder < jOrder
+			return iOrder - jOrder
 		}
 		if iPresent {
-			return true
+			return -1
 		}
 		if jPresent {
-			return false
+			return 1
 		}
-		return i < j
+		return 0
 	})
 }
