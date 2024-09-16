@@ -7,7 +7,6 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -113,10 +112,7 @@ func createLogsExporter(
 	}
 	logConfigDeprecationWarnings(cf, set.Logger)
 
-	exporter, err := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
-	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
-	}
+	exporter := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
@@ -135,10 +131,8 @@ func createMetricsExporter(
 	cf := cfg.(*Config)
 	logConfigDeprecationWarnings(cf, set.Logger)
 
-	exporter, err := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
-	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
-	}
+	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
+
 	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
@@ -150,15 +144,13 @@ func createMetricsExporter(
 
 func createTracesExporter(ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config) (exporter.Traces, error) {
-
+	cfg component.Config,
+) (exporter.Traces, error) {
 	cf := cfg.(*Config)
 	logConfigDeprecationWarnings(cf, set.Logger)
 
-	exporter, err := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
-	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
-	}
+	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
+
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
