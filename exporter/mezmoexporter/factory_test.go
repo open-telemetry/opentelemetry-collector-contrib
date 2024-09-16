@@ -28,7 +28,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		IngestURL: defaultIngestURL,
 		IngestKey: "",
 
@@ -36,8 +36,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Timeout: 5 * time.Second,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-	})
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 

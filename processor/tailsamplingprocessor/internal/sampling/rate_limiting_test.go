@@ -24,7 +24,7 @@ func TestRateLimiter(t *testing.T) {
 	trace.SpanCount = traceSpanCount
 	decision, err := rateLimiter.Evaluate(context.Background(), traceID, trace)
 	assert.NoError(t, err)
-	assert.Equal(t, decision, NotSampled)
+	assert.Equal(t, NotSampled, decision)
 
 	// Trace span count equal to spans per second
 	traceSpanCount = &atomic.Int64{}
@@ -32,7 +32,7 @@ func TestRateLimiter(t *testing.T) {
 	trace.SpanCount = traceSpanCount
 	decision, err = rateLimiter.Evaluate(context.Background(), traceID, trace)
 	assert.NoError(t, err)
-	assert.Equal(t, decision, NotSampled)
+	assert.Equal(t, NotSampled, decision)
 
 	// Trace span count less than spans per second
 	traceSpanCount = &atomic.Int64{}
@@ -40,12 +40,12 @@ func TestRateLimiter(t *testing.T) {
 	trace.SpanCount = traceSpanCount
 	decision, err = rateLimiter.Evaluate(context.Background(), traceID, trace)
 	assert.NoError(t, err)
-	assert.Equal(t, decision, Sampled)
+	assert.Equal(t, Sampled, decision)
 
 	// Trace span count less than spans per second
 	traceSpanCount = &atomic.Int64{}
 	trace.SpanCount = traceSpanCount
 	decision, err = rateLimiter.Evaluate(context.Background(), traceID, trace)
 	assert.NoError(t, err)
-	assert.Equal(t, decision, Sampled)
+	assert.Equal(t, Sampled, decision)
 }

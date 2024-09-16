@@ -84,6 +84,7 @@ components:
         - deltatorate
         - experimental_metricsgeneration
         - filter
+        - geoip
         - groupbyattrs
         - groupbytrace
         - k8sattributes
@@ -126,6 +127,7 @@ components:
         - filestats
         - flinkmetrics
         - fluentforward
+        - github
         - googlecloudmonitoring
         - googlecloudspanner
         - haproxy

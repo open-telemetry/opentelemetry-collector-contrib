@@ -43,6 +43,10 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 		return nil, errors.New("invalid configuration")
 	}
 
+	if prwCfg.RemoteWriteQueue.NumConsumers != 0 {
+		set.Logger.Warn("Currently, remote_write_queue.num_consumers doesn't have any effect due to incompatibility with Prometheus remote write API. The value will be ignored. Please see https://github.com/open-telemetry/opentelemetry-collector/issues/2949 for more information.")
+	}
+
 	prwe, err := newPRWExporter(prwCfg, set)
 	if err != nil {
 		return nil, err
@@ -60,7 +64,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{
+		exporterhelper.WithQueue(exporterhelper.QueueConfig{
 			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
@@ -82,7 +86,7 @@ func createDefaultConfig() component.Config {
 		Namespace:         "",
 		ExternalLabels:    map[string]string{},
 		MaxBatchSizeBytes: 3000000,
-		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:     retrySettings,
 		AddMetricSuffixes: true,
 		SendMetadata:      false,
@@ -91,7 +95,7 @@ func createDefaultConfig() component.Config {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
+			Timeout:         exporterhelper.NewDefaultTimeoutConfig().Timeout,
 			Headers:         map[string]configopaque.String{},
 		},
 		// TODO(jbd): Adjust the default queue size.

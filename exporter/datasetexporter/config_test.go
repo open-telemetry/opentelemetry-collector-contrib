@@ -94,7 +94,7 @@ func TestConfigValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.config.Validate()
 			if err == nil {
-				assert.Nil(t, tt.expected, tt.name)
+				assert.NoError(t, tt.expected, tt.name)
 			} else {
 				assert.Equal(t, tt.expected.Error(), err.Error(), tt.name)
 			}
@@ -135,8 +135,8 @@ func TestConfigString(t *testing.T) {
 			UseHostName: false,
 		},
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 	}
 
 	assert.Equal(t,
@@ -157,7 +157,7 @@ func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 	})
 	err := config.Unmarshal(configMap)
 	assert.NoError(t, err)
-	assert.Equal(t, true, config.LogsSettings.ExportResourceInfo)
+	assert.True(t, config.LogsSettings.ExportResourceInfo)
 }
 
 func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
@@ -172,5 +172,5 @@ func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 	})
 	err := config.Unmarshal(configMap)
 	assert.NoError(t, err)
-	assert.Equal(t, false, config.LogsSettings.ExportScopeInfo)
+	assert.False(t, config.LogsSettings.ExportScopeInfo)
 }

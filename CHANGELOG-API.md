@@ -7,6 +7,29 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.109.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Change the OTTL grammar to support expressing statements context via path names (#29017)
+  The `ottl.Path` interface requires a new method: `Context() string`
+- `prometheusreceiver`: Move the TargetAllocator configuration struct to an internal directory (#33146)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add support for localized time parsing into the coreinternal/timeutils (#32977)
+- `googlecloudmonitoringreceiver`: Enhancing the Google Cloud monitoring receiver to establish a client connection, scrape GCP Cloud Metrics, and transform them into an OpenTelemetry compatible format for pipeline processing. (#33762)
+  - Implements client connection to Google Cloud Monitoring API.
+  - Scrapes timeseries data based on configured metrics.
+  - Converts the data into OpenTelemetry format for use in the pipeline.
+  
+
+## v0.108.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza/operator/input/windows`: Change type name from `EvtRpcLogin` to `EvtRPCLogin`. (#34656)
+
 ## v0.107.0
 
 ### 🚀 New components 🚀

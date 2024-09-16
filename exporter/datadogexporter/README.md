@@ -62,7 +62,9 @@ Note that we are currently migrating the Datadog metrics exporter to use the met
 
 ### Remap OTel’s service.name attribute to service for logs
 
-For Datadog Exporter versions 0.83.0 and later, the `service` field of OTel logs is populated as [OTel semantic convention](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.name`. However, `service.name` is not one of the default [service attributes](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute) in Datadog’s log preprocessing.
+**NOTE** this workaround is only needed when feature gate `exporter.datadogexporter.UseLogsAgentExporter` is disabled. This feature gate is enabled by default starting v0.108.0.
+
+For Datadog Exporter versions 0.83.0 - v0.107.0, the `service` field of OTel logs is populated as [OTel semantic convention](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.name`. However, `service.name` is not one of the default [service attributes](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute) in Datadog’s log preprocessing.
 
 To get the service field correctly populated in your logs, you can specify service.name to be the source of a log’s service by setting a [log service remapper processor](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute).
 
@@ -70,3 +72,17 @@ To get the service field correctly populated in your logs, you can specify servi
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [AWS]:https://aws-otel.github.io/docs/partners/datadog
+
+### How to add custom log source
+
+In order to add a custom source to your OTLP logs, set resource attribute `datadog.log.source`. This feature requires `exporter.datadogexporter.UseLogsAgentExporter` feature flag to be enabled (now enabled by default).
+
+Example:
+```
+processors:
+  transform/logs:
+    log_statements:
+      - context: resource
+        statements:
+          - set(attributes["datadog.log.source"], "otel")
+```

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/grpc"
 
@@ -37,10 +38,14 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg.Enabled = false
+
 	return &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		BatcherConfig:   batcherCfg,
 		ClientConfig: configgrpc.ClientConfig{
 			Headers: map[string]configopaque.String{},
 			// Default to zstd compression
@@ -74,6 +79,7 @@ func (exp *baseExporter) helperOptions() []exporterhelper.Option {
 		exporterhelper.WithRetry(exp.config.RetryConfig),
 		exporterhelper.WithQueue(exp.config.QueueSettings),
 		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithBatcher(exp.config.BatcherConfig),
 		exporterhelper.WithShutdown(exp.shutdown),
 	}
 }
