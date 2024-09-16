@@ -45,7 +45,7 @@ func (cs *CarbonDataSender) Start() error {
 		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: cs.GetEndpoint().String(),
 		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{
+		TimeoutSettings: exporterhelper.TimeoutConfig{
 			Timeout: 5 * time.Second,
 		},
 	}

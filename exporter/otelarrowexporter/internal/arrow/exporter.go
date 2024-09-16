@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
@@ -309,6 +310,10 @@ func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
 		md = make(map[string]string)
 	}
 	md["otlp-pdata-size"] = strconv.Itoa(uncompSize)
+
+	if dead, ok := ctx.Deadline(); ok {
+		md["grpc-timeout"] = grpcutil.EncodeTimeout(time.Until(dead))
+	}
 
 	wri := writeItem{
 		records:     data,

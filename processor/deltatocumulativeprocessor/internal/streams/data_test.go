@@ -24,7 +24,7 @@ func BenchmarkSamples(b *testing.B) {
 		dps := generate(b.N)
 		b.ResetTimer()
 
-		streams.Samples(dps)(func(id streams.Ident, dp data.Number) bool {
+		streams.Datapoints(dps)(func(id streams.Ident, dp data.Number) bool {
 			rdp = dp
 			rid = id
 			return true
