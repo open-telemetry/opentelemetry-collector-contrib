@@ -88,8 +88,8 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 			MaxParallelOutgoing:  bufferMaxParallelOutgoing,
 		},
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		ServerHostSettings: ServerHostSettings{
 			UseHostName: true,
 		},
