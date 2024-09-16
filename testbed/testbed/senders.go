@@ -222,6 +222,7 @@ func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Co
 	cfg.TLSSetting = configtls.ClientConfig{
 		Insecure: true,
 	}
+	cfg.Timeout = 0
 	return cfg
 }
 

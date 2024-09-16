@@ -350,3 +350,34 @@ func TestLargeFileOnce(t *testing.T) {
 	tc.StopAgent()
 	tc.ValidateData()
 }
+
+func TestMemoryLimiterHit(t *testing.T) {
+	otlpreceiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
+	otlpreceiver.WithRetry(`
+    retry_on_failure:
+      enabled: true
+`)
+	otlpreceiver.WithQueue(`
+    sending_queue:
+      enabled: true
+      queue_size: 10000
+`)
+	processors := map[string]string{
+		"memory_limiter": `
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 500
+    spike_limit_mib: 100
+`,
+	}
+	ScenarioMemoryLimiterHit(
+		t,
+		testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		otlpreceiver,
+		testbed.LoadOptions{
+			DataItemsPerSecond: 100000,
+			ItemsPerBatch:      1000,
+			Parallel:           1,
+		},
+		performanceResultsSummary, 100, processors)
+}
