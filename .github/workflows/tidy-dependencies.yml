@@ -34,7 +34,7 @@ jobs:
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools

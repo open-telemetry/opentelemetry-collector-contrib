@@ -39,7 +39,7 @@ jobs:
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
@@ -68,7 +68,7 @@ jobs:
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Download Collector Binary
         uses: actions/download-artifact@v4
         with:
@@ -100,7 +100,7 @@ jobs:
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol
@@ -146,7 +146,7 @@ jobs:
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Create kind cluster
         uses: helm/kind-action@v1.10.0
         with:

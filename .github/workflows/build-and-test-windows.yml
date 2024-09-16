@@ -78,7 +78,7 @@ jobs:
         # specifically to Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34691
         run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
       - name: Run Unit tests
-        run: make -j2 gotest GROUP=${{ matrix.group }}
+        run: make -j4 gotest GROUP=${{ matrix.group }}
   windows-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: windows-latest

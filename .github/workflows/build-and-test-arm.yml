@@ -64,12 +64,12 @@ jobs:
           key: go-build-cache-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Run Unit Tests
-        run: make -j2 gotest GROUP=${{ matrix.group }}
+        run: make -j4 gotest GROUP=${{ matrix.group }}
   arm-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: ubuntu-latest

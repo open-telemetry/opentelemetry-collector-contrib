@@ -42,7 +42,7 @@ jobs:
           key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Install Dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
@@ -80,7 +80,7 @@ jobs:
           key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Install Dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools

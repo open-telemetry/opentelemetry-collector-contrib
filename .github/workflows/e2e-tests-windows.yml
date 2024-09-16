@@ -40,7 +40,7 @@ jobs:
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-mod-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
@@ -70,7 +70,7 @@ jobs:
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-mod-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+        run: make -j4 gomoddownload
       - name: Download Collector Binary
         uses: actions/download-artifact@v4
         with:
