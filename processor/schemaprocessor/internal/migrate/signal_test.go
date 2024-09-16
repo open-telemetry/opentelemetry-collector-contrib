@@ -17,7 +17,7 @@ func TestSignalApply(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		sig    *SignalNameChange
+		sig    SignalNameChange
 		val    alias.NamedSignal
 		expect string
 	}{
@@ -75,7 +75,7 @@ func TestSignalRollback(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		sig    *SignalNameChange
+		sig    SignalNameChange
 		val    alias.NamedSignal
 		expect string
 	}{
