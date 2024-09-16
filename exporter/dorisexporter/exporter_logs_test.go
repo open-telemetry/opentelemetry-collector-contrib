@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -52,7 +53,7 @@ func TestPushLogData(t *testing.T) {
 			_, _ = w.Write([]byte(`{"Status":"Success"}`))
 		})
 		err = server.ListenAndServe()
-		require.Equal(t, http.ErrServerClosed, err)
+		assert.Equal(t, http.ErrServerClosed, err)
 	}()
 
 	err0 := fmt.Errorf("Not Started")
