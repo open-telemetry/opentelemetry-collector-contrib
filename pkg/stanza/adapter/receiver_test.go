@@ -139,12 +139,12 @@ func TestShutdownFlush(t *testing.T) {
 		for {
 			select {
 			case <-closeCh:
-				require.NoError(t, logsReceiver.Shutdown(context.Background()))
+				assert.NoError(t, logsReceiver.Shutdown(context.Background()))
 				fmt.Println(">> Shutdown called")
 				return
 			default:
 				err := stanzaReceiver.emitter.Process(context.Background(), entry.New())
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 			consumedLogCount.Add(1)
 		}
