@@ -34,7 +34,7 @@ func newSapHanaScraper(settings receiver.Settings, cfg *Config, factory sapHanaC
 		mbs:      make(map[string]*metadata.MetricsBuilder),
 		factory:  factory,
 	}
-	return scraperhelper.NewScraperWithComponentType(metadata.Type, rs.scrape)
+	return scraperhelper.NewScraper(metadata.Type, rs.scrape)
 }
 
 func (s *sapHanaScraper) getMetricsBuilder(resourceAttributes map[string]string) (*metadata.MetricsBuilder, error) {
