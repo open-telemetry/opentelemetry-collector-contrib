@@ -86,14 +86,15 @@ exporters:
 
 Depending on your region, you might need to use a different domain. Here are the available domains:
 
-| Region  | Domain                        |
-|---------|---------------------------------|
-| USA1    | `coralogix.us`        |
-| USA2    | `cx498.coralogix.com` |
-| APAC1   | `coralogix.in`        |
-| APAC2   | `coralogixsg.com`     |
-| EUROPE1 | `coralogix.com`       |
-| EUROPE2 | `eu2.coralogix.com`   |
+| Region  | Domain                  |
+|---------|-------------------------|
+| USA1    | `coralogix.us`          |
+| USA2    | `cx498.coralogix.com`   |
+| APAC1   | `coralogix.in`          |
+| APAC2   | `coralogixsg.com`       |
+| APAC3   | `ap3.coralogix.com`     |
+| EUROPE1 | `coralogix.com`         |
+| EUROPE2 | `eu2.coralogix.com`     |
 
 Additionally, Coralogix supports AWS PrivateLink, which provides private connectivity between virtual private clouds (VPCs), supported AWS services, and your on-premises networks without exposing your traffic to the public internet.
 
