@@ -18,9 +18,9 @@ import (
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`

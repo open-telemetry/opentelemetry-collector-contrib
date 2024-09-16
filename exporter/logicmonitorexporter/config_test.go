@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "apitoken"),
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 				},
@@ -117,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "bearertoken"),
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
@@ -130,7 +130,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "resource-mapping-op"),
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{

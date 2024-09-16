@@ -53,7 +53,7 @@ func (suite *SubprocessIntegrationSuite) SetupSuite() {
 }
 
 func (suite *SubprocessIntegrationSuite) TearDownSuite() {
-	require.NoError(suite.T(), os.Remove(suite.scriptPath))
+	suite.Require().NoError(os.Remove(suite.scriptPath))
 }
 
 // prepareSubprocess will create a Subprocess based on a temporary script.

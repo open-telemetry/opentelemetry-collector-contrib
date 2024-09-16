@@ -40,7 +40,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := exporterhelper.NewDefaultQueueSettings()
+	qs := exporterhelper.NewDefaultQueueConfig()
 	qs.Enabled = false
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
@@ -192,7 +192,7 @@ func exporterhelperOptions(
 		//
 		// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
 		// to ensure sending data to the background workers will not block indefinitely.
-		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
+		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
 	}
 	return opts
 }
