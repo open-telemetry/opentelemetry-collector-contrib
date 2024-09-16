@@ -36,7 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Timeout: 5 * time.Second,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }

@@ -53,8 +53,6 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
-	t.Parallel()
-
 	cfg := &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{},
 		InputConfig: func() windows.Config {
@@ -154,7 +152,8 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	err = logger.Info(10, logMessage)
 	require.NoError(t, err)
 
-	records := requireExpectedLogRecords(t, sink, src, 1)
+	records := assertExpectedLogRecords(t, sink, src, 1)
+	require.Len(t, records, 1)
 	record := records[0]
 	body := record.Body().Map().AsRaw()
 
@@ -207,7 +206,8 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	err = logger.Info(10, logMessage)
 	require.NoError(t, err)
 
-	records := requireExpectedLogRecords(t, sink, src, 1)
+	records := assertExpectedLogRecords(t, sink, src, 1)
+	require.Len(t, records, 1)
 	record := records[0]
 	body := record.Body().AsString()
 	bodyStruct := struct {
@@ -274,8 +274,8 @@ func TestExcludeProvider(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			records := requireExpectedLogRecords(t, sink, notExcludedSrc, 1)
-			assert.NotEmpty(t, records)
+			records := assertExpectedLogRecords(t, sink, notExcludedSrc, 1)
+			assert.Len(t, records, 1)
 
 			records = filterAllLogRecordsBySource(t, sink, excludedSrc)
 			assert.Empty(t, records)
@@ -321,11 +321,11 @@ func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSour
 	return
 }
 
-func requireExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expectedEventSrc string, expectedEventCount int) []plog.LogRecord {
+func assertExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expectedEventSrc string, expectedEventCount int) []plog.LogRecord {
 	var actualLogRecords []plog.LogRecord
 
 	// logs sometimes take a while to be written, so a substantial wait buffer is needed
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		actualLogRecords = filterAllLogRecordsBySource(t, sink, expectedEventSrc)
 		assert.Len(c, actualLogRecords, expectedEventCount)
 	}, 10*time.Second, 250*time.Millisecond)

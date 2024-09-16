@@ -12,9 +12,9 @@ import (
 
 // Config defines configuration for OpenCensus exporter.
 type Config struct {
-	configgrpc.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	configgrpc.ClientConfig   `mapstructure:",squash"`   // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// The number of workers that send the gRPC requests.
 	NumWorkers int `mapstructure:"num_workers"`
