@@ -55,7 +55,6 @@ type BaseOTLPDataReceiver struct {
 	compression     string
 	retry           string
 	sendingQueue    string
-	timeout         string
 }
 
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
@@ -99,11 +98,6 @@ func (bor *BaseOTLPDataReceiver) WithQueue(sendingQueue string) *BaseOTLPDataRec
 	return bor
 }
 
-func (bor *BaseOTLPDataReceiver) WithTimeout(timeout string) *BaseOTLPDataReceiver {
-	bor.timeout = timeout
-	return bor
-}
-
 func (bor *BaseOTLPDataReceiver) Stop() error {
 	// we reuse the receiver across signals. Shutting down the log receiver shuts down the metrics and traces receiver.
 	return bor.logReceiver.Shutdown(context.Background())
@@ -124,9 +118,8 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
     endpoint: "%s"
     %s
     %s
-    %s
     tls:
-      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue, bor.timeout)
+      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue)
 	comp := "none"
 	if bor.compression != "" {
 		comp = bor.compression
