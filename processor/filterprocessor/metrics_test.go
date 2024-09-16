@@ -418,6 +418,36 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:        "otelcol_processor_incoming_metric_points",
+			Description: "Number of metric points passed to the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      2,
+						Attributes: attribute.NewSet(attribute.String("processor", "filter")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_metric_points",
+			Description: "Number of metric points emitted from the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      2,
+						Attributes: attribute.NewSet(attribute.String("processor", "filter")),
+					},
+				},
+			},
+		},
 	}
 
 	tel.assertMetrics(t, want)
@@ -448,6 +478,36 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:        "otelcol_processor_incoming_metric_points",
+			Description: "Number of metric points passed to the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      4,
+						Attributes: attribute.NewSet(attribute.String("processor", "filter")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_metric_points",
+			Description: "Number of metric points emitted from the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      3,
+						Attributes: attribute.NewSet(attribute.String("processor", "filter")),
+					},
+				},
+			},
+		},
 	}
 	tel.assertMetrics(t, want)
 
@@ -473,6 +533,36 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 					{
 						Value:      2,
 						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_incoming_metric_points",
+			Description: "Number of metric points passed to the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      4,
+						Attributes: attribute.NewSet(attribute.String("processor", "filter")),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_processor_outgoing_metric_points",
+			Description: "Number of metric points emitted from the processor.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      3,
+						Attributes: attribute.NewSet(attribute.String("processor", "filter")),
 					},
 				},
 			},
