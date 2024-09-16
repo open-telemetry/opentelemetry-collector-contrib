@@ -216,7 +216,9 @@ func (i *Input) read(ctx context.Context) int {
 	events, err := i.subscription.Read(i.maxReads)
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
-		if i.isRemote() {
+		i.Logger().Info("The error is:")
+		i.Logger().Info(err.Error())
+		if i.isRemote() && (err.Error() == "The handle is invalid." || err.Error() == "subscription handle is not open") {
 			i.Logger().Info("Resubscribing, closing subscription")
 			closeErr := i.subscription.Close()
 			if closeErr != nil {
