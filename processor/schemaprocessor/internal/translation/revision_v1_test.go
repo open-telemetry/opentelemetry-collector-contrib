@@ -29,12 +29,12 @@ func TestNewRevisionV1(t *testing.T) {
 			inDefinition: ast.VersionDef{},
 			expect: &RevisionV1{
 				ver:        &Version{1, 1, 1},
-				all:        &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				resources:  &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				spans:      &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				spanEvents: &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				metrics:    &changelist.ChangeList{make([]migrate.Migrator, 0)},
-				logs:       &changelist.ChangeList{make([]migrate.Migrator, 0)},
+				all:        &changelist.ChangeList{Migrators: make([]migrate.Migrator, 0)},
+				resources:  &changelist.ChangeList{Migrators: make([]migrate.Migrator, 0)},
+				spans:      &changelist.ChangeList{Migrators: make([]migrate.Migrator, 0)},
+				spanEvents: &changelist.ChangeList{Migrators: make([]migrate.Migrator, 0)},
+				metrics:    &changelist.ChangeList{Migrators: make([]migrate.Migrator, 0)},
+				logs:       &changelist.ChangeList{Migrators: make([]migrate.Migrator, 0)},
 			},
 		},
 		{

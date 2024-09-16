@@ -35,17 +35,17 @@ type Translation interface {
 
 	// ApplyAllResourceChanges will modify the resource part of the incoming signals
 	// This applies to all telemetry types and should be applied there
-	ApplyAllResourceChanges(ctx context.Context, in alias.Resource, inSchemaUrl string) error
+	ApplyAllResourceChanges(ctx context.Context, in alias.Resource, inSchemaURL string) error
 
 	// ApplyScopeSpanChanges will modify all spans and span events within the incoming signals
-	ApplyScopeSpanChanges(ctx context.Context, in ptrace.ScopeSpans, inSchemaUrl string) error
+	ApplyScopeSpanChanges(ctx context.Context, in ptrace.ScopeSpans, inSchemaURL string) error
 
 	// ApplyScopeLogChanges will modify all logs within the incoming signal
-	ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs, inSchemaUrl string) error
+	ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs, inSchemaURL string) error
 
 	// ApplyScopeMetricChanges will update all metrics including
 	// histograms, exponetial histograms, summarys, sum and gauges
-	ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics, inSchemaUrl string) error
+	ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics, inSchemaURL string) error
 }
 
 type translator struct {
@@ -139,8 +139,8 @@ func (t *translator) SupportedVersion(v *Version) bool {
 	return ok
 }
 
-func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias.Resource, inSchemaUrl string) error {
-	_, ver, err := GetFamilyAndVersion(inSchemaUrl)
+func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias.Resource, inSchemaURL string) error {
+	_, ver, err := GetFamilyAndVersion(inSchemaURL)
 	if err != nil {
 		return err
 	}
@@ -171,8 +171,8 @@ func (t *translator) ApplyAllResourceChanges(ctx context.Context, resource alias
 	return nil
 }
 
-func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs, inSchemaUrl string) error {
-	_, ver, err := GetFamilyAndVersion(inSchemaUrl)
+func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs, inSchemaURL string) error {
+	_, ver, err := GetFamilyAndVersion(inSchemaURL)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 				if err != nil {
 					return err
 				}
-				err := rev.logs.Apply(log)
+				err = rev.logs.Apply(log)
 				if err != nil {
 					return err
 				}
@@ -198,7 +198,7 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 				if err != nil {
 					return err
 				}
-				err := rev.logs.Rollback(log)
+				err = rev.logs.Rollback(log)
 				if err != nil {
 					return err
 				}
@@ -209,8 +209,8 @@ func (t *translator) ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs
 	return nil
 }
 
-func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrace.ScopeSpans, inSchemaUrl string) error {
-	_, ver, err := GetFamilyAndVersion(inSchemaUrl)
+func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrace.ScopeSpans, inSchemaURL string) error {
+	_, ver, err := GetFamilyAndVersion(inSchemaURL)
 	if err != nil {
 		return err
 	}
@@ -235,11 +235,11 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 						return err
 					}
 				}
-				if err := rev.spanEvents.Apply(span); err != nil {
+				if err = rev.spanEvents.Apply(span); err != nil {
 					return err
 				}
 			case Revert:
-				if err := rev.spanEvents.Rollback(span); err != nil {
+				if err = rev.spanEvents.Rollback(span); err != nil {
 					return err
 				}
 				for e := 0; e < span.Events().Len(); e++ {
@@ -250,7 +250,6 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 					}
 
 				}
-				//rev.Spans().RevertSignal(span)
 				err = rev.spans.Rollback(span)
 				if err != nil {
 					return err
@@ -266,8 +265,8 @@ func (t *translator) ApplyScopeSpanChanges(ctx context.Context, scopeSpans ptrac
 	return nil
 }
 
-func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics, inSchemaUrl string) error {
-	_, ver, err := GetFamilyAndVersion(inSchemaUrl)
+func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics, inSchemaURL string) error {
+	_, ver, err := GetFamilyAndVersion(inSchemaURL)
 	if err != nil {
 		return err
 	}
@@ -320,11 +319,11 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 						}
 					}
 				}
-				if err := rev.metrics.Apply(metric); err != nil {
+				if err = rev.metrics.Apply(metric); err != nil {
 					return err
 				}
 			case Revert:
-				if err := rev.metrics.Rollback(metric); err != nil {
+				if err = rev.metrics.Rollback(metric); err != nil {
 					return err
 				}
 				switch metric.Type() {

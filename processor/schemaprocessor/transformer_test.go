@@ -43,27 +43,10 @@ func TestTransformerStart(t *testing.T) {
 	assert.NoError(t, trans.start(context.Background(), componenttest.NewNopHost()))
 }
 
-type SchemaResource interface {
-	SetSchemaUrl(schema string)
-	SchemaUrl() string
-}
-
-type SchemaResourceIterable[T SchemaResource] interface {
-	At(int) T
-	Len() int
-}
-
-func setSchemaForAllItems[T SchemaResource](iterable SchemaResourceIterable[T], schemaURL string) {
-	for i := 0; i < iterable.Len(); i++ {
-		item := iterable.At(i)
-		item.SetSchemaUrl(schemaURL)
-	}
-}
-
 //go:embed testdata
 var f embed.FS
 
-func plogsFromJson(t *testing.T, path string) plog.Logs {
+func plogsFromJSON(t *testing.T, path string) plog.Logs {
 	t.Helper()
 	unmarshaler := plog.JSONUnmarshaler{}
 	signalJSON, err := f.ReadFile(path)
@@ -75,7 +58,7 @@ func plogsFromJson(t *testing.T, path string) plog.Logs {
 	return inSignals
 }
 
-func ptracesFromJson(t *testing.T, path string) ptrace.Traces {
+func ptracesFromJSON(t *testing.T, path string) ptrace.Traces {
 	t.Helper()
 	unmarshaler := ptrace.JSONUnmarshaler{}
 	signalJSON, err := f.ReadFile(path)
@@ -87,7 +70,7 @@ func ptracesFromJson(t *testing.T, path string) ptrace.Traces {
 	return inSignals
 }
 
-func pmetricsFromJson(t *testing.T, path string) pmetric.Metrics {
+func pmetricsFromJSON(t *testing.T, path string) pmetric.Metrics {
 	t.Helper()
 	unmarshaler := pmetric.JSONUnmarshaler{}
 	signalJSON, err := f.ReadFile(path)
@@ -99,11 +82,11 @@ func pmetricsFromJson(t *testing.T, path string) pmetric.Metrics {
 	return inSignals
 }
 
-func buildTestTransformer(t *testing.T, targetUrl string) *transformer {
+func buildTestTransformer(t *testing.T, targetURL string) *transformer {
 	t.Helper()
 	defaultConfig := newDefaultConfiguration()
 	castedConfig := defaultConfig.(*Config)
-	castedConfig.Targets = []string{targetUrl}
+	castedConfig.Targets = []string{targetURL}
 	transform, err := newTransformer(context.Background(), castedConfig, processor.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
@@ -172,22 +155,22 @@ func TestTransformerSchemaBySections(t *testing.T) {
 			outDataPath := fmt.Sprintf("testdata/schema_sections/%s/%s_out.json", tc.section, tc.dataType)
 			switch tc.dataType {
 			case component.DataTypeLogs:
-				inLogs := plogsFromJson(t, inDataPath)
-				expected := plogsFromJson(t, outDataPath)
+				inLogs := plogsFromJSON(t, inDataPath)
+				expected := plogsFromJSON(t, outDataPath)
 
 				logs, err := transform.processLogs(context.Background(), inLogs)
 				require.NoError(t, err)
 				require.NoError(t, plogtest.CompareLogs(expected, logs), "Must match the expected values")
 			case component.DataTypeMetrics:
-				inMetrics := pmetricsFromJson(t, inDataPath)
-				expected := pmetricsFromJson(t, outDataPath)
+				inMetrics := pmetricsFromJSON(t, inDataPath)
+				expected := pmetricsFromJSON(t, outDataPath)
 
 				metrics, err := transform.processMetrics(context.Background(), inMetrics)
 				require.NoError(t, err)
 				require.NoError(t, pmetrictest.CompareMetrics(expected, metrics), "Must match the expected values")
 			case component.DataTypeTraces:
-				inTraces := ptracesFromJson(t, inDataPath)
-				expected := ptracesFromJson(t, outDataPath)
+				inTraces := ptracesFromJSON(t, inDataPath)
+				expected := ptracesFromJSON(t, outDataPath)
 
 				traces, err := transform.processTraces(context.Background(), inTraces)
 				require.NoError(t, err)

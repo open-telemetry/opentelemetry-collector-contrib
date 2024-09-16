@@ -51,23 +51,23 @@ func newTransformer(_ context.Context, conf component.Config, set processor.Sett
 func (t transformer) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	for rl := 0; rl < ld.ResourceLogs().Len(); rl++ {
 		rLog := ld.ResourceLogs().At(rl)
-		resourceSchemaUrl := rLog.SchemaUrl()
+		resourceSchemaURL := rLog.SchemaUrl()
 		err := t.manager.
-			RequestTranslation(ctx, resourceSchemaUrl).
-			ApplyAllResourceChanges(ctx, rLog, resourceSchemaUrl)
+			RequestTranslation(ctx, resourceSchemaURL).
+			ApplyAllResourceChanges(ctx, rLog, resourceSchemaURL)
 		if err != nil {
 			return plog.Logs{}, err
 		}
 		for sl := 0; sl < rLog.ScopeLogs().Len(); sl++ {
 			log := rLog.ScopeLogs().At(sl)
-			logSchemaUrl := log.SchemaUrl()
-			if logSchemaUrl == "" {
-				logSchemaUrl = resourceSchemaUrl
+			logSchemaURL := log.SchemaUrl()
+			if logSchemaURL == "" {
+				logSchemaURL = resourceSchemaURL
 			}
 
 			err := t.manager.
-				RequestTranslation(ctx, logSchemaUrl).
-				ApplyScopeLogChanges(ctx, log, logSchemaUrl)
+				RequestTranslation(ctx, logSchemaURL).
+				ApplyScopeLogChanges(ctx, log, logSchemaURL)
 			if err != nil {
 				return plog.Logs{}, err
 			}
@@ -79,22 +79,22 @@ func (t transformer) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, 
 func (t transformer) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	for rm := 0; rm < md.ResourceMetrics().Len(); rm++ {
 		rMetric := md.ResourceMetrics().At(rm)
-		resourceSchemaUrl := rMetric.SchemaUrl()
+		resourceSchemaURL := rMetric.SchemaUrl()
 		err := t.manager.
-			RequestTranslation(ctx, resourceSchemaUrl).
-			ApplyAllResourceChanges(ctx, rMetric, resourceSchemaUrl)
+			RequestTranslation(ctx, resourceSchemaURL).
+			ApplyAllResourceChanges(ctx, rMetric, resourceSchemaURL)
 		if err != nil {
 			return pmetric.Metrics{}, err
 		}
 		for sm := 0; sm < rMetric.ScopeMetrics().Len(); sm++ {
 			metric := rMetric.ScopeMetrics().At(sm)
-			metricSchemaUrl := metric.SchemaUrl()
-			if metricSchemaUrl == "" {
-				metricSchemaUrl = resourceSchemaUrl
+			metricSchemaURL := metric.SchemaUrl()
+			if metricSchemaURL == "" {
+				metricSchemaURL = resourceSchemaURL
 			}
 			err := t.manager.
-				RequestTranslation(ctx, metricSchemaUrl).
-				ApplyScopeMetricChanges(ctx, metric, metricSchemaUrl)
+				RequestTranslation(ctx, metricSchemaURL).
+				ApplyScopeMetricChanges(ctx, metric, metricSchemaURL)
 			if err != nil {
 				return pmetric.Metrics{}, err
 			}
@@ -107,22 +107,22 @@ func (t transformer) processTraces(ctx context.Context, td ptrace.Traces) (ptrac
 	for rt := 0; rt < td.ResourceSpans().Len(); rt++ {
 		rTrace := td.ResourceSpans().At(rt)
 		// todo(ankit) do i need to check if this is empty?
-		resourceSchemaUrl := rTrace.SchemaUrl()
+		resourceSchemaURL := rTrace.SchemaUrl()
 		err := t.manager.
-			RequestTranslation(ctx, resourceSchemaUrl).
-			ApplyAllResourceChanges(ctx, rTrace, resourceSchemaUrl)
+			RequestTranslation(ctx, resourceSchemaURL).
+			ApplyAllResourceChanges(ctx, rTrace, resourceSchemaURL)
 		if err != nil {
 			return ptrace.Traces{}, err
 		}
 		for ss := 0; ss < rTrace.ScopeSpans().Len(); ss++ {
 			span := rTrace.ScopeSpans().At(ss)
-			spanSchemaUrl := span.SchemaUrl()
-			if spanSchemaUrl == "" {
-				spanSchemaUrl = resourceSchemaUrl
+			spanSchemaURL := span.SchemaUrl()
+			if spanSchemaURL == "" {
+				spanSchemaURL = resourceSchemaURL
 			}
 			err := t.manager.
-				RequestTranslation(ctx, spanSchemaUrl).
-				ApplyScopeSpanChanges(ctx, span, spanSchemaUrl)
+				RequestTranslation(ctx, spanSchemaURL).
+				ApplyScopeSpanChanges(ctx, span, spanSchemaURL)
 			if err != nil {
 				return ptrace.Traces{}, err
 			}

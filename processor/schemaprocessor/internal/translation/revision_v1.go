@@ -34,7 +34,9 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 	// todo(ankit) change logs to be an ast.Attributes type so I dont have to change this
 	var logChanges ast.Attributes
 	for _, change := range def.Logs.Changes {
+		//nolint:gosimple
 		logChanges.Changes = append(logChanges.Changes, ast.AttributeChange{RenameAttributes: change.RenameAttributes})
+
 	}
 	return &RevisionV1{
 		ver:        ver,

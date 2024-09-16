@@ -21,7 +21,7 @@ var exampleTranslation []byte
 
 func TranslationHandler(t *testing.T) http.Handler {
 	assert.NotEmpty(t, exampleTranslation, "SchemaContent MUST not be empty")
-	return http.HandlerFunc(func(wr http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(wr http.ResponseWriter, _ *http.Request) {
 		_, err := wr.Write(exampleTranslation)
 		assert.NoError(t, err, "Must not have issues writing schema content")
 	})

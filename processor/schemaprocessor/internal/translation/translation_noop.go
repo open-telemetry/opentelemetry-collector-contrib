@@ -26,15 +26,15 @@ var (
 func (nopTranslation) SupportedVersion(_ *Version) bool {
 	return false
 }
-func (nopTranslation) ApplyAllResourceChanges(_ context.Context, in alias.Resource, schemaUrl string) error {
+func (nopTranslation) ApplyAllResourceChanges(_ context.Context, _ alias.Resource, _ string) error {
 	return nil
 }
-func (nopTranslation) ApplyScopeSpanChanges(_ context.Context, in ptrace.ScopeSpans, schemaUrl string) error {
+func (nopTranslation) ApplyScopeSpanChanges(_ context.Context, _ ptrace.ScopeSpans, _ string) error {
 	return nil
 }
-func (nopTranslation) ApplyScopeLogChanges(_ context.Context, in plog.ScopeLogs, schemaUrl string) error {
+func (nopTranslation) ApplyScopeLogChanges(_ context.Context, _ plog.ScopeLogs, _ string) error {
 	return nil
 }
-func (nopTranslation) ApplyScopeMetricChanges(_ context.Context, in pmetric.ScopeMetrics, schemaUrl string) error {
+func (nopTranslation) ApplyScopeMetricChanges(_ context.Context, _ pmetric.ScopeMetrics, _ string) error {
 	return nil
 }

@@ -206,15 +206,15 @@ func TestTranslationSpanChanges(t *testing.T) {
 			)
 			require.NoError(t, err, "Must not error creating translator")
 
-			inSchemaUrl := joinSchemaFamilyAndVersion("https://example.com/", &tc.income)
+			inSchemaURL := joinSchemaFamilyAndVersion("https://example.com/", &tc.income)
 			spans := NewExampleSpans(t, tc.income)
 			for i := 0; i < spans.ResourceSpans().Len(); i++ {
 				rSpan := spans.ResourceSpans().At(i)
-				err := tn.ApplyAllResourceChanges(ctx, rSpan, inSchemaUrl)
+				err := tn.ApplyAllResourceChanges(ctx, rSpan, inSchemaURL)
 				require.NoError(t, err, "Must not error when applying resource changes")
 				for j := 0; j < rSpan.ScopeSpans().Len(); j++ {
 					span := rSpan.ScopeSpans().At(j)
-					err = tn.ApplyScopeSpanChanges(ctx, span, inSchemaUrl)
+					err = tn.ApplyScopeSpanChanges(ctx, span, inSchemaURL)
 					require.NoError(t, err, "Must not error when applying scope span changes")
 				}
 			}
@@ -284,15 +284,15 @@ func TestTranslationLogChanges(t *testing.T) {
 			)
 			require.NoError(t, err, "Must not error creating translator")
 
-			inSchemaUrl := joinSchemaFamilyAndVersion("https://example.com/", &tc.income)
+			inSchemaURL := joinSchemaFamilyAndVersion("https://example.com/", &tc.income)
 			logs := NewExampleLogs(t, tc.income)
 			for i := 0; i < logs.ResourceLogs().Len(); i++ {
 				rLogs := logs.ResourceLogs().At(i)
-				err = tn.ApplyAllResourceChanges(ctx, rLogs, inSchemaUrl)
+				err = tn.ApplyAllResourceChanges(ctx, rLogs, inSchemaURL)
 				require.NoError(t, err, "Must not error when applying resource changes")
 				for j := 0; j < rLogs.ScopeLogs().Len(); j++ {
 					log := rLogs.ScopeLogs().At(j)
-					err = tn.ApplyScopeLogChanges(ctx, log, inSchemaUrl)
+					err = tn.ApplyScopeLogChanges(ctx, log, inSchemaURL)
 					require.NoError(t, err, "Must not error when applying scope log changes")
 				}
 			}
@@ -359,15 +359,15 @@ func TestTranslationMetricChanges(t *testing.T) {
 			)
 			require.NoError(t, err, "Must not error creating translator")
 
-			inSchemaUrl := joinSchemaFamilyAndVersion("https://example.com/", &tc.income)
+			inSchemaURL := joinSchemaFamilyAndVersion("https://example.com/", &tc.income)
 			metrics := NewExampleMetrics(t, tc.income)
 			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 				rMetrics := metrics.ResourceMetrics().At(i)
-				err = tn.ApplyAllResourceChanges(ctx, rMetrics, inSchemaUrl)
+				err = tn.ApplyAllResourceChanges(ctx, rMetrics, inSchemaURL)
 				require.NoError(t, err, "Must not error when applying resource changes")
 				for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
 					metric := rMetrics.ScopeMetrics().At(j)
-					err := tn.ApplyScopeMetricChanges(ctx, metric, inSchemaUrl)
+					err := tn.ApplyScopeMetricChanges(ctx, metric, inSchemaURL)
 					require.NoError(t, err, "Must not error when applying scope metric changes")
 				}
 			}
