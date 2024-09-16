@@ -68,7 +68,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/client v1.15.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.109.1-0.20240916171416-d3a171889c53 // indirect
@@ -83,6 +82,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/featuregate v1.15.1-0.20240916171416-d3a171889c53 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.109.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.52.0 // indirect

@@ -64,13 +64,13 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.19.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	go.opentelemetry.io/collector v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/client v1.15.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.15.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/internal v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.109.1-0.20240916171416-d3a171889c53 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.109.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.15.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect

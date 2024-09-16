@@ -74,7 +74,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/internal v0.109.1-0.20240916171416-d3a171889c53 // indirect
@@ -83,6 +82,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/featuregate v1.15.1-0.20240916171416-d3a171889c53 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.109.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/receiver v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.109.1-0.20240916171416-d3a171889c53 // indirect

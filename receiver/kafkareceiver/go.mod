@@ -81,7 +81,6 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.15.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.1-0.20240916171416-d3a171889c53 // indirect
