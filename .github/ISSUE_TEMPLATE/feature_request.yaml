@@ -136,6 +136,7 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
       - pkg/ottl
