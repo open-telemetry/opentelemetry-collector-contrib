@@ -41,6 +41,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
+            ~/.cache/go-build
             ~/go/bin
             ~/go/pkg/mod
           key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
