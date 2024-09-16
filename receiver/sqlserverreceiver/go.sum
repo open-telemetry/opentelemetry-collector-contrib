@@ -212,7 +212,6 @@ github.com/zeebo/assert v1.3.0 h1:g7C04CbJuIDKNPFHmsk4hwZDO5O+kntRxzaUoNXj+IQ=
 github.com/zeebo/assert v1.3.0/go.mod h1:Pq9JiuJQpG8JLJdtkwrJESF0Foym2/D9XMU5ciN/wJ0=
 github.com/zeebo/xxh3 v1.0.2 h1:xZmwmqxHZA8AI603jOQ0tMqmBr9lPeFwGg6d+xy9DC0=
 github.com/zeebo/xxh3 v1.0.2/go.mod h1:5NWz9Sef7zIDm2JHfFlcQvNekmcEl9ekUZQQKCYaDcA=
-go.opentelemetry.io/collector v0.109.1-0.20240916171416-d3a171889c53 h1:QZ72Fq2iVdO+Mjd/Io9Hft8hmwtb9fnnpKLhz0Zehqg=
 go.opentelemetry.io/collector/component v0.109.1-0.20240916171416-d3a171889c53 h1:431Gh5hBCoSLC8XNcPP14SSyk3eakfNUb53pJyO+UZI=
 go.opentelemetry.io/collector/component v0.109.1-0.20240916171416-d3a171889c53/go.mod h1:RsRAgoJl0v90zfIW9/2K8/RwYARBZbNPDf7VO7zGmmQ=
 go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240916171416-d3a171889c53 h1:mCNiB3lDTxdoPIsgDNE9XBPyLP4Usy6QMFgs44VCLMY=

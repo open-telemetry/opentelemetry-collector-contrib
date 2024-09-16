@@ -91,7 +91,6 @@ github.com/valyala/fastjson v1.6.4 h1:uAUNq9Z6ymTgGhcm0UynUAB6tlbakBrz6CQFax3BXV
 github.com/valyala/fastjson v1.6.4/go.mod h1:CLCAqky6SMuOcxStkYQvblddUtoRxhYMGLrsQns1aXY=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector v0.109.1-0.20240916171416-d3a171889c53 h1:QZ72Fq2iVdO+Mjd/Io9Hft8hmwtb9fnnpKLhz0Zehqg=
 go.opentelemetry.io/collector/component v0.109.1-0.20240916171416-d3a171889c53 h1:431Gh5hBCoSLC8XNcPP14SSyk3eakfNUb53pJyO+UZI=
 go.opentelemetry.io/collector/component v0.109.1-0.20240916171416-d3a171889c53/go.mod h1:RsRAgoJl0v90zfIW9/2K8/RwYARBZbNPDf7VO7zGmmQ=
 go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240916171416-d3a171889c53 h1:Sv7LpbAjkK4RJDlaZFiDHhmKYZcVv6/hd7RsEic16fE=

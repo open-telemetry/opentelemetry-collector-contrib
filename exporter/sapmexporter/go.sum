@@ -118,7 +118,7 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
 go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
-go.opentelemetry.io/collector v0.109.1-0.20240916171416-d3a171889c53 h1:QZ72Fq2iVdO+Mjd/Io9Hft8hmwtb9fnnpKLhz0Zehqg=
+go.opentelemetry.io/collector v0.106.1 h1:ZSQMpFGzFP3RILe1/+K80kCCT2ahn3MKt5e3u0Yz7Rs=
 go.opentelemetry.io/collector/client v1.15.1-0.20240916171416-d3a171889c53 h1:b0q6GQ3f9VC9MLxXPVwa3w7GqoIP3nG35UST8NFMn64=
 go.opentelemetry.io/collector/client v1.15.1-0.20240916171416-d3a171889c53/go.mod h1:m0MdKbzRIVgyGu70qbJ6TwBmKtblk7cmPqspM45a5yY=
 go.opentelemetry.io/collector/component v0.109.1-0.20240916171416-d3a171889c53 h1:431Gh5hBCoSLC8XNcPP14SSyk3eakfNUb53pJyO+UZI=
