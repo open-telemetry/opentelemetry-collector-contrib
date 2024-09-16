@@ -244,44 +244,107 @@ exporters:
 
 ### Batching Configuration
 
-This exporter includes a new, experimental `batcher` configuration for
-batching in the `exporterhelper` module, but this mode is disabled by
-default.  This batching support works when combined with
-`queue_sender` functionality.
+### Option 1: Batching with back-pressure
 
-```
+To configure an OpenTelemetry Collector pipeline for both batching and
+back-pressure, use of a custom component, the Concurrent Batch Processor,
+available in the OTel-Arrow project repository, is required. We have not
+included this in the Collector-Contrib repository because equivalent
+functionality is being added as a standard exporter-batcher mechanism and the
+new exporter-batcher functionality is still experimental.
+
+When the [Concurrent Batch Processor](https://github.com/open-telemetry/otel-arrow/blob/main/collector/processor/concurrentbatchprocessor/README.md) is configured, parallel batches of data are
+exported with no limit on concurrency. This configuration requires that
+receivers apply memory limits or admission control. While this is our preferred
+configuration, it is just one of several reasonable setups. As an example
+configuration:
+
+```yaml
 exporters:
   otelarrow:
-    batcher:
-	  enabled: true
-    sending_queue:
-      enabled: true
-      storage: file_storage/otc
-extensions:
-  file_storage/otc:
-    directory: /var/lib/storage/otc
-```
-
-The built-in batcher is only recommended with a persistent queue,
-otherwise it cannot provide back-pressure to the caller.  If building
-a custom build of the OpenTelemetry Collector, we recommend using the
-[Concurrent Batch
-Processor](https://github.com/open-telemetry/otel-arrow/blob/main/collector/processor/concurrentbatchprocessor/README.md)
-to provide simultaneous back-pressure, concurrency, and batching
-functionality.  See [more discussion on this
-issue](https://github.com/open-telemetry/opentelemetry-collector/issues/10368).
-
-```
-exporters:
-  otelarrow:
+    # place gRPC, otel-arrow, retry, and timeout settings here
     batcher:
 	  enabled: false
     sending_queue:
       enabled: false
+receivers:
+  otelarrow:
+    # otelarrow supports OTLP and OTel-Arrow with admission control
+    admission:
+      request_limit_mib: 128
 processors:
   concurrentbatch:
-    send_batch_max_size: 1500
-    send_batch_size: 1000
-    timeout: 1s
-    max_in_flight_size_mib: 128
+service:
+  pipelines:
+    traces:
+      exporters: [otelarrow]
+      processors: [concurrentbatch]
+      receivers: [otelarrow]
+```
+
+### Option 2: Batching with a persistent queue
+
+The OpenTelemetry Collector has a built-in persistent queue mechanism which
+supplies back-pressure corresponding with disk write speed. In this mode,
+batching is done after writing to the persistent queue. In this mode, the
+`num_consumers` field determines how many parallel batches of data are presented
+to the exporter. When the `sending_queue` function is enabled, `num_consumers`
+should be set to at least the number of OTel-Arrow streams, or higher to
+increase throughput.
+
+As an example configuration:
+
+```yaml
+exporters:
+  otelarrow:
+    # place gRPC, otel-arrow, retry, and timeout settings here.
+    batcher:
+	  enabled: true
+    sending_queue:
+      enabled: true
+      num_consumers: 32
+      storage: file_storage/otc
+extensions:
+  file_storage/otc:
+    directory: /var/lib/storage/otc
+receivers:
+  otlp:
+    protocols:
+      grpc:
+service:
+  extensions: [file_storage]
+  pipelines:
+    traces:
+      exporters: [otelarrow]
+      receivers: [otlp]
+```
+
+### Option 3: Batching without back-pressure
+
+Instead of applying back-pressure, another option is to return success as
+quickly as possible to the caller using an in-memory queue. As long as the
+exporter can keep up with the arriving data, none will be dropped in this
+configuration; however, this setup is relatively fragile and more likely to
+cause the loss of telemetry data.
+
+As an example configuration:
+
+```yaml
+exporters:
+  otelarrow:
+    # place gRPC, otel-arrow, retry, and timeout settings here
+    batcher:
+	  enabled: true
+    sending_queue:
+      enabled: true
+      num_consumers: 32
+receivers:
+  otlp:
+    protocols:
+      grpc:
+service:
+  pipelines:
+    traces:
+      exporters: [otelarrow]
+      receivers: [otlp]
 ```
