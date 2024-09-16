@@ -91,7 +91,7 @@ func TestInternalRecombineCfg(t *testing.T) {
 	expected.CombineWith = ""
 	expected.SourceIdentifier = entry.NewAttributeField("log.file.path")
 	expected.MaxLogSize = 102400
-	require.Equal(t, cfg, expected)
+	require.Equal(t, expected, cfg)
 }
 
 func TestProcess(t *testing.T) {
@@ -115,7 +115,6 @@ func TestProcess(t *testing.T) {
 			},
 			&entry.Entry{
 				Attributes: map[string]any{
-					"time":         "2029-03-30T08:31:20.545192187Z",
 					"log.iostream": "stdout",
 				},
 				Body:      "INFO: log line here",
@@ -135,7 +134,6 @@ func TestProcess(t *testing.T) {
 			},
 			&entry.Entry{
 				Attributes: map[string]any{
-					"time":         "2029-03-30T08:31:20.545192187Z",
 					"log.iostream": "stdout",
 				},
 				Body:      "INFO: log line here",
@@ -158,7 +156,6 @@ func TestProcess(t *testing.T) {
 			},
 			&entry.Entry{
 				Attributes: map[string]any{
-					"time":          "2029-03-30T08:31:20.545192187Z",
 					"log.iostream":  "stdout",
 					"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
 				},
@@ -215,7 +212,6 @@ func TestRecombineProcess(t *testing.T) {
 			[]*entry.Entry{
 				{
 					Attributes: map[string]any{
-						"time":          "2024-04-13T07:59:37.505201169-10:00",
 						"log.iostream":  "stdout",
 						"logtag":        "F",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
@@ -251,7 +247,6 @@ func TestRecombineProcess(t *testing.T) {
 			[]*entry.Entry{
 				{
 					Attributes: map[string]any{
-						"time":          "2024-04-13T07:59:37.505201169Z",
 						"log.iostream":  "stdout",
 						"logtag":        "F",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
@@ -293,7 +288,6 @@ func TestRecombineProcess(t *testing.T) {
 			[]*entry.Entry{
 				{
 					Attributes: map[string]any{
-						"time":          "2024-04-13T07:59:37.505201169-10:00",
 						"log.iostream":  "stdout",
 						"logtag":        "P",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
@@ -335,7 +329,6 @@ func TestRecombineProcess(t *testing.T) {
 			[]*entry.Entry{
 				{
 					Attributes: map[string]any{
-						"time":          "2024-04-13T07:59:37.505201169Z",
 						"log.iostream":  "stdout",
 						"logtag":        "P",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
@@ -418,7 +411,6 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 			[]*entry.Entry{
 				{
 					Attributes: map[string]any{
-						"time":          "2024-04-13T07:59:37.505201169-10:00",
 						"log.iostream":  "stdout",
 						"logtag":        "P",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
@@ -435,7 +427,6 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 				},
 				{
 					Attributes: map[string]any{
-						"time":          "2024-04-13T07:59:37.505201169-10:00",
 						"log.iostream":  "stdout",
 						"logtag":        "F",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
@@ -483,7 +474,6 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 			[]*entry.Entry{
 				{
 					Attributes: map[string]any{
-						"time":          "2024-04-13T07:59:37.505201169Z",
 						"log.iostream":  "stdout",
 						"logtag":        "P",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
@@ -500,7 +490,6 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 				},
 				{
 					Attributes: map[string]any{
-						"time":          "2024-04-13T07:59:37.505201169Z",
 						"log.iostream":  "stdout",
 						"logtag":        "F",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
@@ -545,11 +534,11 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 	}
 }
 
-func TestProcessWithTimeRemovalFlag(t *testing.T) {
+func TestProcessWithTimeRemovalFlagDisabled(t *testing.T) {
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(removeOriginalTimeField.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(removeOriginalTimeField.ID(), false))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(removeOriginalTimeField.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(removeOriginalTimeField.ID(), true))
 	})
 
 	cases := []struct {
@@ -572,6 +561,7 @@ func TestProcessWithTimeRemovalFlag(t *testing.T) {
 			},
 			&entry.Entry{
 				Attributes: map[string]any{
+					"time":         "2029-03-30T08:31:20.545192187Z",
 					"log.iostream": "stdout",
 				},
 				Body:      "INFO: log line here",
@@ -591,6 +581,7 @@ func TestProcessWithTimeRemovalFlag(t *testing.T) {
 			},
 			&entry.Entry{
 				Attributes: map[string]any{
+					"time":         "2029-03-30T08:31:20.545192187Z",
 					"log.iostream": "stdout",
 				},
 				Body:      "INFO: log line here",
@@ -614,6 +605,7 @@ func TestProcessWithTimeRemovalFlag(t *testing.T) {
 			&entry.Entry{
 				Attributes: map[string]any{
 					"log.iostream":  "stdout",
+					"time":          "2029-03-30T08:31:20.545192187Z",
 					"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
 				},
 				Body: "INFO: log line here",

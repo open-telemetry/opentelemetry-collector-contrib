@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -30,6 +31,10 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.(*Config).Endpoint = "http://localhost:8030"
 	defaultCfg.(*Config).MySQLEndpoint = "localhost:9030"
 
+	httpClientConfig := confighttp.NewDefaultClientConfig()
+	httpClientConfig.Timeout = 5 * time.Second
+	httpClientConfig.Endpoint = "http://localhost:8030"
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -41,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
+				ClientConfig: httpClientConfig,
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     5 * time.Second,
@@ -50,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 10,
 					QueueSize:    1000,
@@ -60,7 +65,6 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  "otel_traces",
 					Metrics: "otel_metrics",
 				},
-				Endpoint:          "http://localhost:8030",
 				Database:          "otel",
 				Username:          "admin",
 				Password:          configopaque.String("admin"),

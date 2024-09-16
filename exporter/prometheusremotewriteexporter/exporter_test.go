@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -30,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -38,7 +41,7 @@ import (
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPRWExporter(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings: exporterhelper.TimeoutSettings{},
+		TimeoutSettings: exporterhelper.TimeoutConfig{},
 		BackOffConfig:   configretry.BackOffConfig{},
 		Namespace:       "",
 		ExternalLabels:  map[string]string{},
@@ -134,7 +137,7 @@ func Test_NewPRWExporter(t *testing.T) {
 // Test_Start checks if the client is properly created as expected.
 func Test_Start(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings:   exporterhelper.TimeoutSettings{},
+		TimeoutSettings:   exporterhelper.TimeoutConfig{},
 		BackOffConfig:     configretry.BackOffConfig{},
 		MaxBatchSizeBytes: 3000000,
 		Namespace:         "",
@@ -456,7 +459,7 @@ func Test_PushMetrics(t *testing.T) {
 		require.NoError(t, err)
 		wr := &prompb.WriteRequest{}
 		ok := proto.Unmarshal(dest, wr)
-		require.Nil(t, ok)
+		require.NoError(t, ok)
 		assert.Len(t, wr.Timeseries, expected)
 		if isStaleMarker {
 			assert.True(t, value.IsStaleNaN(wr.Timeseries[0].Samples[0].Value))
@@ -734,6 +737,15 @@ func Test_PushMetrics(t *testing.T) {
 					}
 					tel := setupTestTelemetry()
 					set := tel.NewSettings()
+					mp := set.LeveledMeterProvider(configtelemetry.LevelBasic)
+					set.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
+						// detailed level enables otelhttp client instrumentation which we
+						// dont want to test here
+						if level == configtelemetry.LevelDetailed {
+							return noop.MeterProvider{}
+						}
+						return mp
+					}
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)

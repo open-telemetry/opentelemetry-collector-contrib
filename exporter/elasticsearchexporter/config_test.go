@@ -53,10 +53,10 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      false,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
 				Index:     "",
@@ -123,10 +123,10 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				Index:     "",
@@ -193,10 +193,10 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				Index:     "",
