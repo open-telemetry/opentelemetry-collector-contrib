@@ -37,9 +37,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "receiver_settings"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:12345",
-					Transport: "custom_transport",
+					Transport: confignet.TransportTypeUDP6,
 				},
 				AggregationInterval: 70 * time.Second,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
@@ -56,9 +56,9 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						StatsdType:   "distribution",
-						ObserverType: "histogram",
-						Histogram: protocol.HistogramConfig{
-							MaxSize: 170,
+						ObserverType: "summary",
+						Summary: protocol.SummaryConfig{
+							Percentiles: []float64{0, 10, 50, 90, 95, 100},
 						},
 					},
 				},
@@ -73,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -93,6 +93,8 @@ func TestValidate(t *testing.T) {
 		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
 		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
 		observerTypeNotSupportErr      = "observer_type is not supported for histogram and timing metrics: %s"
+		invalidHistogramErr            = "histogram configuration requires observer_type: histogram"
+		invalidSummaryErr              = "summary configuration requires observer_type: summary"
 	)
 
 	tests := []test{
@@ -160,7 +162,23 @@ func TestValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "histogram configuration requires observer_type: histogram",
+			expectedErr: invalidHistogramErr,
+		},
+		{
+			name: "invalidSummary",
+			cfg: &Config{
+				AggregationInterval: 20 * time.Second,
+				TimerHistogramMapping: []protocol.TimerHistogramMapping{
+					{
+						StatsdType:   "timing",
+						ObserverType: "gauge",
+						Summary: protocol.SummaryConfig{
+							Percentiles: []float64{1},
+						},
+					},
+				},
+			},
+			expectedErr: invalidSummaryErr,
 		},
 		{
 			name: "negativeAggregationInterval",
@@ -170,7 +188,7 @@ func TestValidate(t *testing.T) {
 					{StatsdType: "timing", ObserverType: "gauge"},
 				},
 			},
-			expectedErr: "aggregation_interval must be a positive duration",
+			expectedErr: negativeAggregationIntervalErr,
 		},
 	}
 

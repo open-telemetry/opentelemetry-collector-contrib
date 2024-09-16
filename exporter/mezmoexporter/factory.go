@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -26,15 +27,15 @@ func NewFactory() exporter.Factory {
 // Create a default Memzo config
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientSettings: createDefaultHTTPClientSettings(),
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-		IngestURL:          defaultIngestURL,
+		ClientConfig:  createDefaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		IngestURL:     defaultIngestURL,
 	}
 }
 
 // Create a log exporter for exporting to Mezmo
-func createLogsExporter(ctx context.Context, settings exporter.CreateSettings, exporterConfig component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, settings exporter.Settings, exporterConfig component.Config) (exporter.Logs, error) {
 	log := settings.Logger
 
 	if exporterConfig == nil {
@@ -50,8 +51,8 @@ func createLogsExporter(ctx context.Context, settings exporter.CreateSettings, e
 		expCfg,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.stop),

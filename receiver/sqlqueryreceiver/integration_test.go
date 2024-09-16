@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package sqlqueryreceiver
 
@@ -25,11 +24,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -48,14 +49,16 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	}()
 
 	// Start the SQL Query receiver.
-	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
+	receiverCreateSettings := receivertest.NewNopSettings()
+	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -84,14 +87,15 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start new SQL Query receiver with the same configuration.
-	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
+	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -134,15 +138,17 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	storageExtension := storagetest.NewFileBackedStorageExtension("test", storageDir)
 
 	// create SQL Query receiver configured with the File Storage extension
-	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
+	receiverCreateSettings := receivertest.NewNopSettings()
+	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -176,15 +182,16 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	testAllSimpleLogs(t, consumer.AllLogs())
 
 	// start the SQL Query receiver again
-	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
+	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -209,15 +216,16 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	insertPostgresSimpleLogs(t, dbContainer, initialLogCount, newLogCount)
 
 	// start the SQL Query receiver again
-	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
+	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -276,7 +284,7 @@ func startPostgresDbContainer(t *testing.T, externalPort string) testcontainers.
 	return container
 }
 
-func createTestLogsReceiverForPostgres(t *testing.T, externalPort string) (*logsReceiver, *Config, *consumertest.LogsSink) {
+func createTestLogsReceiverForPostgres(t *testing.T, externalPort string, receiverCreateSettings receiver.Settings) (*logsReceiver, *Config, *consumertest.LogsSink) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
 	config.CollectionInterval = time.Second
@@ -284,7 +292,6 @@ func createTestLogsReceiverForPostgres(t *testing.T, externalPort string) (*logs
 	config.DataSource = fmt.Sprintf("host=localhost port=%s user=otel password=otel sslmode=disable", externalPort)
 
 	consumer := &consumertest.LogsSink{}
-	receiverCreateSettings := receivertest.NewNopCreateSettings()
 	receiverCreateSettings.Logger = zap.NewExample()
 	receiver, err := factory.CreateLogsReceiver(
 		context.Background(),
@@ -314,7 +321,7 @@ func printLogs(allLogs []plog.Logs) {
 
 func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, existingLogID, newLogCount int) {
 	for newLogID := existingLogID + 1; newLogID <= existingLogID+newLogCount; newLogID++ {
-		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body) values (%d, now(), 'another log %d');", newLogID, newLogID)
+		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body, attribute) values (%d, now(), 'another log %d', 'TLSv1.2');", newLogID, newLogID)
 		returnValue, returnMessageReader, err := container.Exec(context.Background(), []string{
 			"psql", "-U", "otel", "-c", query,
 		})
@@ -355,77 +362,77 @@ func TestPostgresqlIntegrationMetrics(t *testing.T) {
 				rCfg.Driver = "postgres"
 				rCfg.DataSource = fmt.Sprintf("host=%s port=%s user=otel password=otel sslmode=disable",
 					ci.Host(t), ci.MappedPort(t, postgresqlPort))
-				rCfg.Queries = []Query{
+				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:       "genre.count",
 								ValueColumn:      "count",
 								AttributeColumns: []string{"genre"},
-								ValueType:        MetricValueTypeInt,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:       "genre.imdb",
 								ValueColumn:      "avg",
 								AttributeColumns: []string{"genre"},
-								ValueType:        MetricValueTypeDouble,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 						},
 					},
 					{
 						SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
 							" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g, null as h",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:  "a",
 								ValueColumn: "a",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "b",
 								ValueColumn: "b",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "c",
 								ValueColumn: "c",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "d",
 								ValueColumn: "d",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "e",
 								ValueColumn: "e",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "f",
 								ValueColumn: "f",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "g",
 								ValueColumn: "g",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "h",
 								ValueColumn: "h",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 						},
 					},
@@ -443,6 +450,7 @@ func TestPostgresqlIntegrationMetrics(t *testing.T) {
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
 // test the receiver itself.
 func TestOracleDBIntegrationMetrics(t *testing.T) {
+	t.Skip("Skipping the test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27577 is fixed")
 	if runtime.GOARCH == "arm64" {
 		t.Skip("Incompatible with arm64")
 	}
@@ -467,23 +475,23 @@ func TestOracleDBIntegrationMetrics(t *testing.T) {
 				rCfg.Driver = "oracle"
 				rCfg.DataSource = fmt.Sprintf("oracle://otel:p@ssw%%25rd@%s:%s/XE",
 					ci.Host(t), ci.MappedPort(t, oraclePort))
-				rCfg.Queries = []Query{
+				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from sys.movie group by genre",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:       "genre.count",
 								ValueColumn:      "COUNT",
 								AttributeColumns: []string{"GENRE"},
-								ValueType:        MetricValueTypeInt,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:       "genre.imdb",
 								ValueColumn:      "AVG",
 								AttributeColumns: []string{"GENRE"},
-								ValueType:        MetricValueTypeDouble,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 						},
 					},
@@ -524,23 +532,23 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 				rCfg.Driver = "mysql"
 				rCfg.DataSource = fmt.Sprintf("otel:otel@tcp(%s:%s)/otel",
 					ci.Host(t), ci.MappedPort(t, mysqlPort))
-				rCfg.Queries = []Query{
+				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:       "genre.count",
 								ValueColumn:      "count(*)",
 								AttributeColumns: []string{"genre"},
-								ValueType:        MetricValueTypeInt,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:       "genre.imdb",
 								ValueColumn:      "avg(imdb_rating)",
 								AttributeColumns: []string{"genre"},
-								ValueType:        MetricValueTypeDouble,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 						},
 					},
@@ -553,42 +561,42 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 							"cast(3.3 as float) as e, " +
 							"cast(3.4 as double) as f, " +
 							"null as g",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:  "a",
 								ValueColumn: "a",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "b",
 								ValueColumn: "b",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "c",
 								ValueColumn: "c",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "d",
 								ValueColumn: "d",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "e",
 								ValueColumn: "e",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "f",
 								ValueColumn: "f",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 						},
 					},
@@ -604,18 +612,28 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 }
 
 func testAllSimpleLogs(t *testing.T, logs []plog.Logs) {
-	assert.Equal(t, 1, len(logs))
+	assert.Len(t, logs, 1)
 	assert.Equal(t, 1, logs[0].ResourceLogs().Len())
 	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
-	expectedEntries := []string{
+	expectedLogBodies := []string{
 		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6197 4 \"-\" \"-\" 445af8e6c428303f -",
 		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6205 5 \"-\" \"-\" 3285f43cd4baa202 -",
 		"- - - [03/Jun/2022:21:59:29 +0000] \"GET /api/health HTTP/1.1\" 200 6233 4 \"-\" \"-\" 579e8362d3185b61 -",
 		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6207 5 \"-\" \"-\" 8c6ac61ae66e509f -",
 		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6200 4 \"-\" \"-\" c163495861e873d8 -",
 	}
-	assert.Equal(t, len(expectedEntries), logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
-	for i := range expectedEntries {
-		assert.Equal(t, expectedEntries[i], logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i).Body().Str())
+	expectedLogAttributes := []string{
+		"TLSv1.2",
+		"TLSv1",
+		"TLSv1.2",
+		"TLSv1",
+		"TLSv1.2",
+	}
+	assert.Equal(t, len(expectedLogBodies), logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+	for i := range expectedLogBodies {
+		logRecord := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i)
+		assert.Equal(t, expectedLogBodies[i], logRecord.Body().Str())
+		logAttribute, _ := logRecord.Attributes().Get("attribute")
+		assert.Equal(t, expectedLogAttributes[i], logAttribute.Str())
 	}
 }

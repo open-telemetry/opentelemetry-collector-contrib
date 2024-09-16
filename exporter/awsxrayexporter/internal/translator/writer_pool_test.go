@@ -59,13 +59,13 @@ func BenchmarkWithPool(b *testing.B) {
 		w := wp.borrow()
 		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false, nil, false)
 		err := w.Encode(*segment)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 		logger.Info(w.String())
 	}
 }
 
 func constructWriterPoolSpan() ptrace.Span {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"

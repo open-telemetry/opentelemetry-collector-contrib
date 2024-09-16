@@ -6,7 +6,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("redaction")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
+)
+
 const (
-	Type            = "redaction"
-	TracesStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
+	TracesStability  = component.StabilityLevelBeta
 )

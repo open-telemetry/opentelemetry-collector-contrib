@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("k8s_cluster")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
+)
+
 const (
-	Type             = "k8s_cluster"
-	MetricsStability = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelBeta
 )

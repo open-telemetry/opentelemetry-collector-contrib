@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
@@ -71,15 +72,59 @@ func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
 	}
 }
 
-func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
+func defaultLogsUnmarshalers(version string, logger *zap.Logger) map[string]LogsUnmarshaler {
+	azureResourceLogs := newAzureResourceLogsUnmarshaler(version, logger)
 	otlpPb := newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding)
 	raw := newRawLogsUnmarshaler()
 	text := newTextLogsUnmarshaler()
 	json := newJSONLogsUnmarshaler()
 	return map[string]LogsUnmarshaler{
-		otlpPb.Encoding(): otlpPb,
-		raw.Encoding():    raw,
-		text.Encoding():   text,
-		json.Encoding():   json,
+		azureResourceLogs.Encoding(): azureResourceLogs,
+		otlpPb.Encoding():            otlpPb,
+		raw.Encoding():               raw,
+		text.Encoding():              text,
+		json.Encoding():              json,
 	}
+}
+
+// tracesEncodingUnmarshaler is a wrapper around ptrace.Unmarshaler that implements TracesUnmarshaler.
+type tracesEncodingUnmarshaler struct {
+	unmarshaler ptrace.Unmarshaler
+	encoding    string
+}
+
+func (t *tracesEncodingUnmarshaler) Unmarshal(data []byte) (ptrace.Traces, error) {
+	return t.unmarshaler.UnmarshalTraces(data)
+}
+
+func (t *tracesEncodingUnmarshaler) Encoding() string {
+	return t.encoding
+}
+
+// metricsEncodingUnmarshaler is a wrapper around pmetric.Unmarshaler that implements MetricsUnmarshaler.
+type metricsEncodingUnmarshaler struct {
+	unmarshaler pmetric.Unmarshaler
+	encoding    string
+}
+
+func (m *metricsEncodingUnmarshaler) Unmarshal(data []byte) (pmetric.Metrics, error) {
+	return m.unmarshaler.UnmarshalMetrics(data)
+}
+
+func (m *metricsEncodingUnmarshaler) Encoding() string {
+	return m.encoding
+}
+
+// logsEncodingUnmarshaler is a wrapper around plog.Unmarshaler that implements LogsUnmarshaler.
+type logsEncodingUnmarshaler struct {
+	unmarshaler plog.Unmarshaler
+	encoding    string
+}
+
+func (l *logsEncodingUnmarshaler) Unmarshal(data []byte) (plog.Logs, error) {
+	return l.unmarshaler.UnmarshalLogs(data)
+}
+
+func (l *logsEncodingUnmarshaler) Encoding() string {
+	return l.encoding
 }

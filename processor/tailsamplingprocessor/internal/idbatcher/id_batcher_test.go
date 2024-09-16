@@ -47,7 +47,7 @@ func TestMinBufferedChannels(t *testing.T) {
 }
 
 func BenchmarkConcurrentEnqueue(b *testing.B) {
-	ids := generateSequentialIds(1)
+	ids := generateSequentialIDs(1)
 	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
 	defer batcher.Stop()
 	if err != nil {
@@ -101,13 +101,19 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 		}
 	}()
 
-	ids := generateSequentialIds(10000)
+	ids := generateSequentialIDs(10000)
 	wg := &sync.WaitGroup{}
+	// Limit the concurrency here to avoid creating too many goroutines and hit
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126
+	concurrencyLimiter := make(chan struct{}, 128)
+	defer close(concurrencyLimiter)
 	for i := 0; i < len(ids); i++ {
 		wg.Add(1)
+		concurrencyLimiter <- struct{}{}
 		go func(id pcommon.TraceID) {
 			batcher.AddToCurrentBatch(id)
 			wg.Done()
+			<-concurrencyLimiter
 		}(ids[i])
 	}
 
@@ -137,9 +143,9 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	}
 }
 
-func generateSequentialIds(numIds uint64) []pcommon.TraceID {
-	ids := make([]pcommon.TraceID, numIds)
-	for i := uint64(0); i < numIds; i++ {
+func generateSequentialIDs(numIDs uint64) []pcommon.TraceID {
+	ids := make([]pcommon.TraceID, numIDs)
+	for i := uint64(0); i < numIDs; i++ {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], 0)
 		binary.BigEndian.PutUint64(traceID[8:], i)

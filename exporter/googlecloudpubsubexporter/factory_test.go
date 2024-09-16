@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -24,18 +23,18 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, component.Type(metadata.Type), factory.Type())
+	assert.Equal(t, metadata.Type, factory.Type())
 }
 
 func TestCreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.endpoint = "http://testing.invalid"
+	eCfg.Endpoint = "http://testing.invalid"
 
 	te, err := factory.CreateTracesExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -46,11 +45,11 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.endpoint = "http://testing.invalid"
+	eCfg.Endpoint = "http://testing.invalid"
 
 	me, err := factory.CreateMetricsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -61,11 +60,11 @@ func TestLogsCreateExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.endpoint = "http://testing.invalid"
+	eCfg.Endpoint = "http://testing.invalid"
 
 	me, err := factory.CreateLogsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -76,9 +75,9 @@ func TestEnsureExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.endpoint = "http://testing.invalid"
+	eCfg.Endpoint = "http://testing.invalid"
 
-	exporter1 := ensureExporter(exportertest.NewNopCreateSettings(), eCfg)
-	exporter2 := ensureExporter(exportertest.NewNopCreateSettings(), eCfg)
+	exporter1 := ensureExporter(exportertest.NewNopSettings(), eCfg)
+	exporter2 := ensureExporter(exportertest.NewNopSettings(), eCfg)
 	assert.Equal(t, exporter1, exporter2)
 }

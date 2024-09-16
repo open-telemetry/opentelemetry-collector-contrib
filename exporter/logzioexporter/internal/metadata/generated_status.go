@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("logzio")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
+)
+
 const (
-	Type            = "logzio"
 	TracesStability = component.StabilityLevelBeta
 	LogsStability   = component.StabilityLevelBeta
 )

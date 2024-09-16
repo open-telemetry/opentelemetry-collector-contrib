@@ -1,0 +1,17 @@
+action: test
+apiVersion: events.k8s.io/v1
+eventTime: "2023-01-01T00:00:00.000000Z"
+kind: Event
+metadata:
+  name: test-k8sobjects-receiver-events-core
+  namespace: default
+note: test event of type warning
+reason: TestEvent
+reportingController: e2etest-events-core
+reportingInstance: k8sobjectsreceiver
+regarding:
+  kind: customresource
+  uid: 035355e1-07a3-4e86-95d0-d7a2bec7d6f0
+  name: test-k8sobjects-receiver-events-core
+  namespace: default
+type: Warning

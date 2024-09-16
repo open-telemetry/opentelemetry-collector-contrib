@@ -2,10 +2,11 @@ name: build-and-test-windows
 on:
   push:
     branches:
-      - 'main'
-      - 'releases/**'
+      - "main"
+      - "releases/**"
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  merge_group:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches:
@@ -24,41 +25,57 @@ concurrency:
 jobs:
   windows-unittest-matrix:
     strategy:
+      fail-fast: false
       matrix:
         group:
           - receiver-0
           - receiver-1
-          - processor
-          - exporter
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
+          - connector
           - internal
           - pkg
-          - cmd
+          - cmd-0
+          - cmd-1
           - other
     runs-on: windows-latest
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    env:
+      # Limit memory usage via GC environment variables to avoid OOM on GH runners, especially for `cmd/otelcontribcol`,
+      # see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28682#issuecomment-1802296776
+      GOGC: 50
+      GOMEMLIMIT: 2GiB
     steps:
       - uses: actions/checkout@v4
-      - if: matrix.group == 'receiver-0'
-        name: install IIS
+      - name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.8
+          go-version: "1.22.7"
           cache: false
       - name: Cache Go
         id: go-mod-cache
-        timeout-minutes: 15
-        uses: actions/cache@v3
+        timeout-minutes: 25
+        uses: actions/cache@v4
         with:
           path: |
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Ensure required ports in the dynamic range are available
+        run: |
+          & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
       - name: Run Unit tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
   windows-unittest:
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: windows-latest
     needs: [windows-unittest-matrix]
     steps:

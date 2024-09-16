@@ -11,13 +11,39 @@ all_set:
       enabled: true
     vcenter.cluster.memory.limit:
       enabled: true
-    vcenter.cluster.memory.used:
-      enabled: true
     vcenter.cluster.vm.count:
+      enabled: true
+    vcenter.cluster.vm_template.count:
+      enabled: true
+    vcenter.cluster.vsan.congestions:
+      enabled: true
+    vcenter.cluster.vsan.latency.avg:
+      enabled: true
+    vcenter.cluster.vsan.operations:
+      enabled: true
+    vcenter.cluster.vsan.throughput:
+      enabled: true
+    vcenter.datacenter.cluster.count:
+      enabled: true
+    vcenter.datacenter.cpu.limit:
+      enabled: true
+    vcenter.datacenter.datastore.count:
+      enabled: true
+    vcenter.datacenter.disk.space:
+      enabled: true
+    vcenter.datacenter.host.count:
+      enabled: true
+    vcenter.datacenter.memory.limit:
+      enabled: true
+    vcenter.datacenter.vm.count:
       enabled: true
     vcenter.datastore.disk.usage:
       enabled: true
     vcenter.datastore.disk.utilization:
+      enabled: true
+    vcenter.host.cpu.capacity:
+      enabled: true
+    vcenter.host.cpu.reserved:
       enabled: true
     vcenter.host.cpu.usage:
       enabled: true
@@ -33,21 +59,41 @@ all_set:
       enabled: true
     vcenter.host.memory.utilization:
       enabled: true
-    vcenter.host.network.packet.count:
+    vcenter.host.network.packet.drop.rate:
       enabled: true
-    vcenter.host.network.packet.errors:
+    vcenter.host.network.packet.error.rate:
+      enabled: true
+    vcenter.host.network.packet.rate:
       enabled: true
     vcenter.host.network.throughput:
       enabled: true
     vcenter.host.network.usage:
       enabled: true
+    vcenter.host.vsan.cache.hit_rate:
+      enabled: true
+    vcenter.host.vsan.congestions:
+      enabled: true
+    vcenter.host.vsan.latency.avg:
+      enabled: true
+    vcenter.host.vsan.operations:
+      enabled: true
+    vcenter.host.vsan.throughput:
+      enabled: true
     vcenter.resource_pool.cpu.shares:
       enabled: true
     vcenter.resource_pool.cpu.usage:
       enabled: true
+    vcenter.resource_pool.memory.ballooned:
+      enabled: true
+    vcenter.resource_pool.memory.granted:
+      enabled: true
     vcenter.resource_pool.memory.shares:
       enabled: true
+    vcenter.resource_pool.memory.swapped:
+      enabled: true
     vcenter.resource_pool.memory.usage:
+      enabled: true
+    vcenter.vm.cpu.readiness:
       enabled: true
     vcenter.vm.cpu.usage:
       enabled: true
@@ -73,14 +119,24 @@ all_set:
       enabled: true
     vcenter.vm.memory.utilization:
       enabled: true
-    vcenter.vm.network.packet.count:
+    vcenter.vm.network.packet.drop.rate:
+      enabled: true
+    vcenter.vm.network.packet.rate:
       enabled: true
     vcenter.vm.network.throughput:
       enabled: true
     vcenter.vm.network.usage:
       enabled: true
+    vcenter.vm.vsan.latency.avg:
+      enabled: true
+    vcenter.vm.vsan.operations:
+      enabled: true
+    vcenter.vm.vsan.throughput:
+      enabled: true
   resource_attributes:
     vcenter.cluster.name:
+      enabled: true
+    vcenter.datacenter.name:
       enabled: true
     vcenter.datastore.name:
       enabled: true
@@ -90,9 +146,17 @@ all_set:
       enabled: true
     vcenter.resource_pool.name:
       enabled: true
+    vcenter.virtual_app.inventory_path:
+      enabled: true
+    vcenter.virtual_app.name:
+      enabled: true
     vcenter.vm.id:
       enabled: true
     vcenter.vm.name:
+      enabled: true
+    vcenter.vm_template.id:
+      enabled: true
+    vcenter.vm_template.name:
       enabled: true
 none_set:
   metrics:
@@ -106,13 +170,39 @@ none_set:
       enabled: false
     vcenter.cluster.memory.limit:
       enabled: false
-    vcenter.cluster.memory.used:
-      enabled: false
     vcenter.cluster.vm.count:
+      enabled: false
+    vcenter.cluster.vm_template.count:
+      enabled: false
+    vcenter.cluster.vsan.congestions:
+      enabled: false
+    vcenter.cluster.vsan.latency.avg:
+      enabled: false
+    vcenter.cluster.vsan.operations:
+      enabled: false
+    vcenter.cluster.vsan.throughput:
+      enabled: false
+    vcenter.datacenter.cluster.count:
+      enabled: false
+    vcenter.datacenter.cpu.limit:
+      enabled: false
+    vcenter.datacenter.datastore.count:
+      enabled: false
+    vcenter.datacenter.disk.space:
+      enabled: false
+    vcenter.datacenter.host.count:
+      enabled: false
+    vcenter.datacenter.memory.limit:
+      enabled: false
+    vcenter.datacenter.vm.count:
       enabled: false
     vcenter.datastore.disk.usage:
       enabled: false
     vcenter.datastore.disk.utilization:
+      enabled: false
+    vcenter.host.cpu.capacity:
+      enabled: false
+    vcenter.host.cpu.reserved:
       enabled: false
     vcenter.host.cpu.usage:
       enabled: false
@@ -128,21 +218,41 @@ none_set:
       enabled: false
     vcenter.host.memory.utilization:
       enabled: false
-    vcenter.host.network.packet.count:
+    vcenter.host.network.packet.drop.rate:
       enabled: false
-    vcenter.host.network.packet.errors:
+    vcenter.host.network.packet.error.rate:
+      enabled: false
+    vcenter.host.network.packet.rate:
       enabled: false
     vcenter.host.network.throughput:
       enabled: false
     vcenter.host.network.usage:
       enabled: false
+    vcenter.host.vsan.cache.hit_rate:
+      enabled: false
+    vcenter.host.vsan.congestions:
+      enabled: false
+    vcenter.host.vsan.latency.avg:
+      enabled: false
+    vcenter.host.vsan.operations:
+      enabled: false
+    vcenter.host.vsan.throughput:
+      enabled: false
     vcenter.resource_pool.cpu.shares:
       enabled: false
     vcenter.resource_pool.cpu.usage:
       enabled: false
+    vcenter.resource_pool.memory.ballooned:
+      enabled: false
+    vcenter.resource_pool.memory.granted:
+      enabled: false
     vcenter.resource_pool.memory.shares:
       enabled: false
+    vcenter.resource_pool.memory.swapped:
+      enabled: false
     vcenter.resource_pool.memory.usage:
+      enabled: false
+    vcenter.vm.cpu.readiness:
       enabled: false
     vcenter.vm.cpu.usage:
       enabled: false
@@ -168,14 +278,24 @@ none_set:
       enabled: false
     vcenter.vm.memory.utilization:
       enabled: false
-    vcenter.vm.network.packet.count:
+    vcenter.vm.network.packet.drop.rate:
+      enabled: false
+    vcenter.vm.network.packet.rate:
       enabled: false
     vcenter.vm.network.throughput:
       enabled: false
     vcenter.vm.network.usage:
       enabled: false
+    vcenter.vm.vsan.latency.avg:
+      enabled: false
+    vcenter.vm.vsan.operations:
+      enabled: false
+    vcenter.vm.vsan.throughput:
+      enabled: false
   resource_attributes:
     vcenter.cluster.name:
+      enabled: false
+    vcenter.datacenter.name:
       enabled: false
     vcenter.datastore.name:
       enabled: false
@@ -185,7 +305,115 @@ none_set:
       enabled: false
     vcenter.resource_pool.name:
       enabled: false
+    vcenter.virtual_app.inventory_path:
+      enabled: false
+    vcenter.virtual_app.name:
+      enabled: false
     vcenter.vm.id:
       enabled: false
     vcenter.vm.name:
       enabled: false
+    vcenter.vm_template.id:
+      enabled: false
+    vcenter.vm_template.name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    vcenter.cluster.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.datacenter.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.datastore.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.host.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.resource_pool.inventory_path:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.resource_pool.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.virtual_app.inventory_path:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.virtual_app.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.vm.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.vm.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.vm_template.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.vm_template.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    vcenter.cluster.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.cluster.name-val"
+    vcenter.datacenter.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.datacenter.name-val"
+    vcenter.datastore.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.datastore.name-val"
+    vcenter.host.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.host.name-val"
+    vcenter.resource_pool.inventory_path:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.resource_pool.inventory_path-val"
+    vcenter.resource_pool.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.resource_pool.name-val"
+    vcenter.virtual_app.inventory_path:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.virtual_app.inventory_path-val"
+    vcenter.virtual_app.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.virtual_app.name-val"
+    vcenter.vm.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.vm.id-val"
+    vcenter.vm.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.vm.name-val"
+    vcenter.vm_template.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.vm_template.id-val"
+    vcenter.vm_template.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.vm_template.name-val"

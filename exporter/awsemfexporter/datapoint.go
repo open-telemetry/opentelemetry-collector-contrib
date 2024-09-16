@@ -27,7 +27,7 @@ type emfCalculators struct {
 	summary aws.MetricCalculator
 }
 
-func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
+func calculateSummaryDelta(prev *aws.MetricValue, val any, _ time.Time) (any, bool) {
 	metricEntry := val.(summaryMetricEntry)
 	summaryDelta := metricEntry.sum
 	countDelta := metricEntry.count
@@ -44,7 +44,7 @@ func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, _ time.Time) 
 // dataPoint represents a processed metric data point
 type dataPoint struct {
 	name        string
-	value       interface{}
+	value       any
 	labels      map[string]string
 	timestampMs int64
 }
@@ -61,6 +61,10 @@ type dataPoints interface {
 	// retained: indicates whether the data point is valid for further process
 	// NOTE: It is an expensive call as it calculates the metric value.
 	CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) (dataPoint []dataPoint, retained bool)
+	// IsStaleNaNInf returns true if metric value has NoRecordedValue flag set or if any metric value contains a NaN or Inf.
+	// When return value is true, IsStaleNaNInf also returns the attributes attached to the metric which can be used for
+	// logging purposes.
+	IsStaleNaNInf(i int) (bool, pcommon.Map)
 }
 
 // deltaMetricMetadata contains the metadata required to perform rate/delta calculation
@@ -122,7 +126,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 	retained := true
 
 	if dps.adjustToDelta {
-		var deltaVal interface{}
+		var deltaVal any
 		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
 		deltaVal, retained = calculators.delta.Calculate(mKey, metricVal, metric.Timestamp().AsTime())
 
@@ -145,6 +149,17 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 	return []dataPoint{{name: dps.metricName, value: metricVal, labels: labels, timestampMs: timestampMs}}, retained
 }
 
+func (dps numberDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
+	metric := dps.NumberDataPointSlice.At(i)
+	if metric.Flags().NoRecordedValue() {
+		return true, metric.Attributes()
+	}
+	if metric.ValueType() == pmetric.NumberDataPointValueTypeDouble {
+		return math.IsNaN(metric.DoubleValue()) || math.IsInf(metric.DoubleValue(), 0), metric.Attributes()
+	}
+	return false, pcommon.Map{}
+}
+
 // CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
 func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
@@ -162,6 +177,19 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 		labels:      labels,
 		timestampMs: timestamp,
 	}}, true
+}
+
+func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
+	metric := dps.HistogramDataPointSlice.At(i)
+	if metric.Flags().NoRecordedValue() {
+		return true, metric.Attributes()
+	}
+	if math.IsNaN(metric.Max()) || math.IsNaN(metric.Sum()) ||
+		math.IsNaN(metric.Min()) || math.IsInf(metric.Max(), 0) ||
+		math.IsInf(metric.Sum(), 0) || math.IsInf(metric.Min(), 0) {
+		return true, metric.Attributes()
+	}
+	return false, pcommon.Map{}
 }
 
 // CalculateDeltaDatapoints retrieves the ExponentialHistogramDataPoint at the given index.
@@ -246,6 +274,23 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 	}}, true
 }
 
+func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
+	metric := dps.ExponentialHistogramDataPointSlice.At(i)
+	if metric.Flags().NoRecordedValue() {
+		return true, metric.Attributes()
+	}
+	if math.IsNaN(metric.Max()) ||
+		math.IsNaN(metric.Min()) ||
+		math.IsNaN(metric.Sum()) ||
+		math.IsInf(metric.Max(), 0) ||
+		math.IsInf(metric.Min(), 0) ||
+		math.IsInf(metric.Sum(), 0) {
+		return true, metric.Attributes()
+	}
+
+	return false, pcommon.Map{}
+}
+
 // CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
 func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.SummaryDataPointSlice.At(i)
@@ -259,7 +304,7 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 	datapoints := []dataPoint{}
 
 	if dps.adjustToDelta {
-		var delta interface{}
+		var delta any
 		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
 		delta, retained = calculators.summary.Calculate(mKey, summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
 
@@ -301,6 +346,27 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 	}
 
 	return datapoints, retained
+}
+
+func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
+	metric := dps.SummaryDataPointSlice.At(i)
+	if metric.Flags().NoRecordedValue() {
+		return true, metric.Attributes()
+	}
+	if math.IsNaN(metric.Sum()) || math.IsInf(metric.Sum(), 0) {
+		return true, metric.Attributes()
+	}
+
+	values := metric.QuantileValues()
+	for i := 0; i < values.Len(); i++ {
+		quantile := values.At(i)
+		if math.IsNaN(quantile.Value()) || math.IsNaN(quantile.Quantile()) ||
+			math.IsInf(quantile.Value(), 0) || math.IsInf(quantile.Quantile(), 0) {
+			return true, metric.Attributes()
+		}
+	}
+
+	return false, metric.Attributes()
 }
 
 // createLabels converts OTel AttributesMap attributes to a map

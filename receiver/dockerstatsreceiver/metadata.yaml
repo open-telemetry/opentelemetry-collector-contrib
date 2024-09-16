@@ -4,9 +4,10 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [rmfitzpatrick, jamesmoessis]
+  unsupported_platforms: [darwin, windows]
 
 sem_conv_version: 1.6.1
 
@@ -132,21 +133,30 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   container.cpu.utilization:
-    enabled: false
+    enabled: true
     description: "Percent of CPU used by the container."
     unit: "1"
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in v0.82.0.
     gauge:
       value_type: double
-  container.cpu.percent:
-    enabled: true
-    description: "Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container."
+  container.cpu.limit:
+    enabled: false
+    description: "CPU limit set for the container."
+    extended_documentation: "This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota."
+    unit: "{cpus}"
+    gauge:
+      value_type: double
+  container.cpu.shares:
+    enabled: false
+    description: "CPU shares set for the container."
     unit: "1"
-    warnings:
-      if_enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.
     gauge:
-      value_type: double
+      value_type: int
+  container.cpu.logical.count:
+    enabled: false
+    description: "Number of cores available to the container."
+    unit: "{cpus}"
+    gauge:
+      value_type: int
 
 
   # Memory
@@ -177,7 +187,7 @@ metrics:
   container.memory.percent:
     enabled: true
     description: "Percentage of memory used."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   container.memory.cache:
@@ -460,6 +470,14 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.fails:
+    enabled: false
+    description: "Number of times the memory limit was hit."
+    unit: "{fails}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
 
 
   # BlockIO (cgroup v1) and IO (cgroup v2) controllers
@@ -681,3 +699,13 @@ metrics:
     unit: s
     gauge:
       value_type: double
+
+  # Container
+  container.restarts:
+    enabled: false
+    description: "Number of restarts for the container."
+    unit: "{restarts}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative

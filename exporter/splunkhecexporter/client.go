@@ -12,16 +12,18 @@ import (
 	"net/url"
 	"sync"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -53,15 +55,10 @@ type client struct {
 	heartbeater       *heartbeater
 	bufferPool        bufferPool
 	exporterName      string
+	meter             metric.Meter
 }
 
-var jsonStreamPool = sync.Pool{
-	New: func() interface{} {
-		return jsoniter.NewStream(jsoniter.ConfigDefault, nil, 512)
-	},
-}
-
-func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) *client {
+func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *client {
 	return &client{
 		config:            cfg,
 		logger:            set.Logger,
@@ -69,18 +66,19 @@ func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) 
 		buildInfo:         set.BuildInfo,
 		bufferPool:        newBufferPool(maxContentLength, !cfg.DisableCompression),
 		exporterName:      set.ID.String(),
+		meter:             metadata.Meter(set.TelemetrySettings),
 	}
 }
 
-func newLogsClient(set exporter.CreateSettings, cfg *Config) *client {
+func newLogsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthLogs)
 }
 
-func newTracesClient(set exporter.CreateSettings, cfg *Config) *client {
+func newTracesClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthTraces)
 }
 
-func newMetricsClient(set exporter.CreateSettings, cfg *Config) *client {
+func newMetricsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
 }
 
@@ -192,8 +190,6 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterState, []error) {
 	var b []byte
 	var permanentErrors []error
-	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
-	defer jsonStreamPool.Put(jsonStream)
 
 	for i := is.resource; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
@@ -209,10 +205,14 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 				} else {
 					// Parsing log record to Splunk event.
 					event := mapLogRecordToSplunkEvent(rl.Resource(), logRecord, c.config)
+					if event == nil {
+						// TODO record this drop as a metric
+						continue
+					}
 
 					// JSON encoding event and writing to buffer.
 					var err error
-					b, err = marshalEvent(event, c.config.MaxEventSize, jsonStream)
+					b, err = marshalEvent(event, c.config.MaxEventSize)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
 							"dropped log event: %v, error: %w", event, err)))
@@ -245,9 +245,8 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 
 func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
-	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
-	defer jsonStreamPool.Put(jsonStream)
 
+	tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
 	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		for j := is.library; j < rm.ScopeMetrics().Len(); j++ {
@@ -259,10 +258,10 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 
 				// Parsing metric record to Splunk event.
 				events := mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)
-				tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
+				tempBuf.Reset()
 				for _, event := range events {
 					// JSON encoding event and writing to buffer.
-					b, err := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+					b, err := marshalEvent(event, c.config.MaxEventSize)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
 						continue
@@ -296,13 +295,11 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 
 func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
-	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
-	defer jsonStreamPool.Put(jsonStream)
 
 	for i := is.record; i < len(events); i++ {
 		event := events[i]
 		// JSON encoding event and writing to buffer.
-		b, jsonErr := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+		b, jsonErr := marshalEvent(event, c.config.MaxEventSize)
 		if jsonErr != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, jsonErr)))
 			continue
@@ -333,8 +330,6 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffe
 
 func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
-	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
-	defer jsonStreamPool.Put(jsonStream)
 
 	for i := is.resource; i < traces.ResourceSpans().Len(); i++ {
 		rs := traces.ResourceSpans().At(i)
@@ -349,7 +344,7 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 				event := mapSpanToSplunkEvent(rs.Resource(), span, c.config)
 
 				// JSON encoding event and writing to buffer.
-				b, err := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+				b, err := marshalEvent(event, c.config.MaxEventSize)
 				if err != nil {
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
 					continue
@@ -617,7 +612,7 @@ func (c *client) stop(context.Context) error {
 
 func (c *client) start(ctx context.Context, host component.Host) (err error) {
 
-	httpClient, err := buildHTTPClient(c.config, host, c.telemetrySettings)
+	httpClient, err := buildHTTPClient(ctx, c.config, host, c.telemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -630,8 +625,8 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 		}
 	}
 	url, _ := c.config.getURL()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
-	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger}
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.meter)
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
 			return fmt.Errorf("%s: heartbeat on startup failed: %w", c.exporterName, err)
@@ -661,20 +656,10 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 	return nil
 }
 
-func buildHTTPClient(config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
+func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
-	config.HTTPClientSettings.Compression = ""
-	if config.MaxConnections != 0 && (config.MaxIdleConns == nil || config.HTTPClientSettings.MaxIdleConnsPerHost == nil) {
-		telemetrySettings.Logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/splunkhecexporter#advanced-configuration")
-		intMaxConns := int(config.MaxConnections)
-		if config.HTTPClientSettings.MaxIdleConns == nil {
-			config.HTTPClientSettings.MaxIdleConns = &intMaxConns
-		}
-		if config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
-			config.HTTPClientSettings.MaxIdleConnsPerHost = &intMaxConns
-		}
-	}
-	return config.ToClient(host, telemetrySettings)
+	config.ClientConfig.Compression = ""
+	return config.ToClient(ctx, host, telemetrySettings)
 }
 
 func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]string {
@@ -692,16 +677,14 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 	}
 }
 
-// marshalEvent marshals an event to JSON using a reusable jsoniter stream.
-func marshalEvent(event *splunk.Event, sizeLimit uint, stream *jsoniter.Stream) ([]byte, error) {
-	stream.Reset(nil)
-	stream.Error = nil
-	stream.WriteVal(event)
-	if stream.Error != nil {
-		return nil, stream.Error
+// marshalEvent marshals an event to JSON
+func marshalEvent(event *splunk.Event, sizeLimit uint) ([]byte, error) {
+	b, err := json.Marshal(event)
+	if err != nil {
+		return nil, err
 	}
-	if uint(stream.Buffered()) > sizeLimit {
-		return nil, fmt.Errorf("event size %d exceeds limit %d", stream.Buffered(), sizeLimit)
+	if uint(len(b)) > sizeLimit {
+		return nil, fmt.Errorf("event size %d exceeds limit %d", len(b), sizeLimit)
 	}
-	return stream.Buffer(), nil
+	return b, nil
 }

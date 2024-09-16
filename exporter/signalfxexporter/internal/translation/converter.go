@@ -6,14 +6,12 @@ package translation // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"fmt"
 	"strings"
-	"time"
 	"unicode"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -38,6 +36,7 @@ type MetricsConverter struct {
 	datapointValidator   *datapointValidator
 	translator           *signalfx.FromTranslator
 	dropHistogramBuckets bool
+	processHistograms    bool
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -49,7 +48,8 @@ func NewMetricsConverter(
 	excludes []dpfilters.MetricFilter,
 	includes []dpfilters.MetricFilter,
 	nonAlphanumericDimChars string,
-	dropHistogramBuckets bool) (*MetricsConverter, error) {
+	dropHistogramBuckets bool,
+	processHistograms bool) (*MetricsConverter, error) {
 	fs, err := dpfilters.NewFilterSet(excludes, includes)
 	if err != nil {
 		return nil, err
@@ -61,11 +61,19 @@ func NewMetricsConverter(
 		datapointValidator:   newDatapointValidator(logger, nonAlphanumericDimChars),
 		translator:           &signalfx.FromTranslator{},
 		dropHistogramBuckets: dropHistogramBuckets,
+		processHistograms:    processHistograms,
 	}, nil
 }
 
-// MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
-// returning those datapoints and the number of time series that had to be
+func (c *MetricsConverter) Start() {
+	if c.metricTranslator != nil {
+		c.metricTranslator.Start()
+	}
+}
+
+// MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints
+// and if processHistograms is set, histogram metrics are not converted to SFx format.
+// It returns those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
 func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
 	var sfxDataPoints []*sfxpb.DataPoint
@@ -79,7 +87,7 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 			var initialDps []*sfxpb.DataPoint
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				currentMetric := ilm.Metrics().At(k)
-				dps := c.translator.FromMetric(currentMetric, extraDimensions, c.dropHistogramBuckets)
+				dps := c.translator.FromMetric(currentMetric, extraDimensions, c.dropHistogramBuckets, c.processHistograms)
 				initialDps = append(initialDps, dps...)
 			}
 
@@ -159,6 +167,12 @@ func (c *MetricsConverter) ConvertDimension(dim string) string {
 	return filterKeyChars(res, c.datapointValidator.nonAlphanumericDimChars)
 }
 
+func (c *MetricsConverter) Shutdown() {
+	if c.metricTranslator != nil {
+		c.metricTranslator.Shutdown()
+	}
+}
+
 // Values obtained from https://dev.splunk.com/observability/docs/datamodel/ingest#Criteria-for-metric-and-dimension-names-and-values
 const (
 	maxMetricNameLength     = 256
@@ -184,7 +198,7 @@ type datapointValidator struct {
 }
 
 func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *datapointValidator {
-	return &datapointValidator{logger: CreateSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
+	return &datapointValidator{logger: logger, nonAlphanumericDimChars: nonAlphanumericDimChars}
 }
 
 // sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
@@ -276,24 +290,4 @@ func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 		return false
 	}
 	return true
-}
-
-// CreateSampledLogger was copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
-func CreateSampledLogger(logger *zap.Logger) *zap.Logger {
-	if logger.Core().Enabled(zapcore.DebugLevel) {
-		// Debugging is enabled. Don't do any sampling.
-		return logger
-	}
-
-	// Create a logger that samples all messages to 1 per 10 seconds initially,
-	// and 1/10000 of messages after that.
-	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return zapcore.NewSamplerWithOptions(
-			core,
-			10*time.Second,
-			1,
-			10000,
-		)
-	})
-	return logger.WithOptions(opts)
 }

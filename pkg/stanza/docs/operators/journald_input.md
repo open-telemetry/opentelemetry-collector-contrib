@@ -21,6 +21,7 @@ The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the j
 | `start_at`        | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`. |
 | `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource. |
+| `all`             | 'false'          | If `true`, very long logs and logs with unprintable characters will also be included. |
 
 ### Example Configurations
 

@@ -25,7 +25,7 @@ func Test_spanID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := spanID[interface{}](tt.bytes)
+			exprFunc, err := spanID[any](tt.bytes)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -50,7 +50,7 @@ func Test_spanID_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := spanID[interface{}](tt.bytes)
+			_, err := spanID[any](tt.bytes)
 			require.Error(t, err)
 			assert.ErrorContains(t, err, "span ids must be 8 bytes")
 		})

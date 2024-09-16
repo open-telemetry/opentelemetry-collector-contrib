@@ -4,6 +4,10 @@ status:
   class: extension
   stability:
     alpha: [extension]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, atoulme]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true

@@ -23,15 +23,15 @@ const (
 )
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultInterval
 
 	return &Config{
-		ScraperControllerSettings: cfg,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
-		Schema:                    defaultSchema,
-		Database:                  defaultDB,
-		Role:                      defaultRole,
+		ControllerConfig:     cfg,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Schema:               defaultSchema,
+		Database:             defaultDB,
+		Role:                 defaultRole,
 	}
 }
 
@@ -44,20 +44,20 @@ func NewFactory() receiver.Factory {
 }
 
 func createMetricsReceiver(_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := baseCfg.(*Config)
 	snowflakeScraper := newSnowflakeMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type, snowflakeScraper.scrape, scraperhelper.WithStart(snowflakeScraper.start), scraperhelper.WithShutdown(snowflakeScraper.shutdown))
+	scraper, err := scraperhelper.NewScraperWithComponentType(metadata.Type, snowflakeScraper.scrape, scraperhelper.WithStart(snowflakeScraper.start), scraperhelper.WithShutdown(snowflakeScraper.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings,
+		&cfg.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

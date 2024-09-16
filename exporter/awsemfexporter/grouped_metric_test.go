@@ -27,7 +27,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 	namespace := "namespace"
 	instrumentationLibName := "cloudwatch-otel"
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	logger := zap.NewNop()
 
 	testCases := []struct {
 		name               string
@@ -99,7 +98,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			emfCalcs := setupEmfCalculators()
 			defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 
-			groupedMetrics := make(map[interface{}]*groupedMetric)
+			groupedMetrics := make(map[any]*groupedMetric)
 			rms := tc.metric.ResourceMetrics()
 			ilms := rms.At(0).ScopeMetrics()
 			metrics := ilms.At(0).Metrics()
@@ -110,18 +109,18 @@ func TestAddToGroupedMetric(t *testing.T) {
 			for i := 0; i < metrics.Len(); i++ {
 				err := addToGroupedMetric(metrics.At(i), groupedMetrics,
 					generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
-					true, zap.NewNop(),
+					true,
 					nil,
 					testCfg,
 					emfCalcs)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 
-			assert.Equal(t, 1, len(groupedMetrics))
+			assert.Len(t, groupedMetrics, 1)
 			for _, v := range groupedMetrics {
 				assert.Equal(t, len(tc.expectedMetricInfo), len(v.metrics))
 				assert.Equal(t, tc.expectedMetricInfo, v.metrics)
-				assert.Equal(t, 2, len(v.labels))
+				assert.Len(t, v.labels, 2)
 				assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, tc.expectedMetricType), v.metadata)
 				assert.Equal(t, tc.expectedLabels, v.labels)
 			}
@@ -132,7 +131,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		generateMetrics := []pmetric.Metrics{
 			generateTestGaugeMetric("int-gauge", intValueType),
 			generateTestGaugeMetric("double-gauge", doubleValueType),
@@ -153,14 +152,85 @@ func TestAddToGroupedMetric(t *testing.T) {
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
 				true,
-				logger,
 				nil,
 				testCfg,
 				emfCalcs)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 
-		assert.Equal(t, 4, len(groupedMetrics))
+		assert.Len(t, groupedMetrics, 4)
+		for _, group := range groupedMetrics {
+			for metricName, metricInfo := range group.metrics {
+				switch metricName {
+				case "int-gauge", "double-gauge":
+					assert.Len(t, group.metrics, 2)
+					assert.Equal(t, "Count", metricInfo.unit)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeGauge), group.metadata)
+				case "int-sum", "double-sum":
+					assert.Len(t, group.metrics, 2)
+					assert.Equal(t, "Count", metricInfo.unit)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSum), group.metadata)
+				case "histogram":
+					assert.Len(t, group.metrics, 1)
+					assert.Equal(t, "Seconds", metricInfo.unit)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeHistogram), group.metadata)
+				case "summary":
+					assert.Len(t, group.metrics, 1)
+					assert.Equal(t, "Seconds", metricInfo.unit)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary), group.metadata)
+				default:
+					assert.Fail(t, fmt.Sprintf("Unhandled metric %s not expected", metricName))
+				}
+				expectedLabels := map[string]string{
+					oTellibDimensionKey: "cloudwatch-otel",
+					"label1":            "value1",
+				}
+				assert.Equal(t, expectedLabels, group.labels)
+			}
+		}
+	})
+
+	t.Run("Add multiple different metrics with NaN and Inf types", func(t *testing.T) {
+		emfCalcs := setupEmfCalculators()
+		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+
+		groupedMetrics := make(map[any]*groupedMetric)
+		generateMetrics := []pmetric.Metrics{
+			generateTestGaugeMetric("int-gauge", intValueType),
+			generateTestGaugeMetric("double-gauge", doubleValueType),
+			generateTestHistogramMetric("histogram"),
+			generateTestSumMetric("int-sum", intValueType),
+			generateTestSumMetric("double-sum", doubleValueType),
+			generateTestSummaryMetric("summary"),
+			// We do not expect these to be added to the grouped metric. Metrics with NaN or Inf values should be dropped.
+			generateTestGaugeMetricNaN("double-gauge-nan"),
+			generateTestExponentialHistogramMetricWithNaNs("expo-with-nan"),
+			generateTestHistogramMetricWithNaNs("histo-with-nan"),
+			generateTestSummaryMetricWithNaN("sum-with-nan"),
+			generateTestGaugeMetricInf("double-gauge-inf"),
+			generateTestExponentialHistogramMetricWithInfs("expo-with-inf"),
+			generateTestHistogramMetricWithInfs("histo-with-inf"),
+			generateTestSummaryMetricWithInf("sum-with-inf"),
+		}
+
+		finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
+		rms := finalOtelMetrics.ResourceMetrics()
+		ilms := rms.At(0).ScopeMetrics()
+		metrics := ilms.At(0).Metrics()
+		// Verify if all metrics are generated, including NaN, Inf values
+		require.Equal(t, 19, metrics.Len(), "mock metric creation failed")
+		for i := 0; i < metrics.Len(); i++ {
+			err := addToGroupedMetric(metrics.At(i),
+				groupedMetrics,
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+				true,
+				nil,
+				testCfg,
+				emfCalcs)
+			assert.NoError(t, err)
+		}
+
+		assert.Len(t, groupedMetrics, 4)
 		for _, group := range groupedMetrics {
 			for metricName, metricInfo := range group.metrics {
 				switch metricName {
@@ -195,7 +265,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	t.Run("Add same metric but different log group", func(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		otelMetrics := generateTestGaugeMetric("int-gauge", "int")
 		ilms := otelMetrics.ResourceMetrics().At(0).ScopeMetrics()
 		metric := ilms.At(0).Metrics().At(0)
@@ -204,11 +274,11 @@ func TestAddToGroupedMetric(t *testing.T) {
 		err := addToGroupedMetric(metric,
 			groupedMetrics,
 			metricMetadata1,
-			true, logger,
+			true,
 			nil,
 			testCfg,
 			emfCalcs)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		metricMetadata2 := generateTestMetricMetadata(namespace,
 			timestamp,
@@ -217,8 +287,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 			instrumentationLibName,
 			metric.Type(),
 		)
-		err = addToGroupedMetric(metric, groupedMetrics, metricMetadata2, true, logger, nil, testCfg, emfCalcs)
-		assert.Nil(t, err)
+		err = addToGroupedMetric(metric, groupedMetrics, metricMetadata2, true, nil, testCfg, emfCalcs)
+		assert.NoError(t, err)
 
 		assert.Len(t, groupedMetrics, 2)
 		seenLogGroup1 := false
@@ -251,7 +321,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	t.Run("Duplicate metric names", func(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		generateMetrics := []pmetric.Metrics{
 			generateTestGaugeMetric("foo", "int"),
 			generateTestGaugeMetric("foo", "double"),
@@ -265,20 +335,20 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 2, metrics.Len())
 
 		obs, logs := observer.New(zap.WarnLevel)
-		obsLogger := zap.New(obs)
+		testCfg.logger = zap.New(obs)
 
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
-				true, obsLogger,
+				true,
 				nil,
 				testCfg,
 				emfCalcs,
 			)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
-		assert.Equal(t, 1, len(groupedMetrics))
+		assert.Len(t, groupedMetrics, 1)
 
 		labels := map[string]string{
 			oTellibDimensionKey: instrumentationLibName,
@@ -301,7 +371,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	t.Run("Unhandled metric type", func(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		md := pmetric.NewMetrics()
 		rms := md.ResourceMetrics()
 		metric := rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -309,18 +379,17 @@ func TestAddToGroupedMetric(t *testing.T) {
 		metric.SetUnit("Count")
 
 		obs, logs := observer.New(zap.WarnLevel)
-		obsLogger := zap.New(obs)
+		testCfg.logger = zap.New(obs)
 		err := addToGroupedMetric(metric,
 			groupedMetrics,
 			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeEmpty),
 			true,
-			obsLogger,
 			nil,
 			testCfg,
 			emfCalcs,
 		)
-		assert.Nil(t, err)
-		assert.Equal(t, 0, len(groupedMetrics))
+		assert.NoError(t, err)
+		assert.Empty(t, groupedMetrics)
 
 		// Test output warning logs
 		expectedLogs := []observer.LoggedEntry{
@@ -347,10 +416,10 @@ func TestAddKubernetesWrapper(t *testing.T) {
 			ContainerID: "Container mccontainter the third",
 		}
 		expectedCreatedObj := struct {
-			ContainerName string      `json:"container_name"`
-			Docker        interface{} `json:"docker"`
-			Host          string      `json:"host"`
-			PodID         string      `json:"pod_id"`
+			ContainerName string `json:"container_name"`
+			Docker        any    `json:"docker"`
+			Host          string `json:"host"`
+			PodID         string `json:"pod_id"`
 		}{
 			ContainerName: "container mccontainer",
 			Docker:        dockerObj,
@@ -387,15 +456,13 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 
-	logger := zap.NewNop()
-
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		for i := 0; i < numMetrics; i++ {
 			metadata := generateTestMetricMetadata("namespace", int64(1596151098037), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
-			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, logger, nil, testCfg, emfCalcs)
-			assert.Nil(b, err)
+			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, nil, testCfg, emfCalcs)
+			assert.NoError(b, err)
 		}
 	}
 }
@@ -428,7 +495,7 @@ func TestTranslateUnit(t *testing.T) {
 		"Bi":    "Bits",
 	}
 	for input, output := range translateUnitCases {
-		t.Run(input, func(tt *testing.T) {
+		t.Run(input, func(_ *testing.T) {
 			metric.SetUnit(input)
 
 			v := translateUnit(metric, translator.metricDescriptor)

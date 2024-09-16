@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
 
@@ -54,13 +54,4 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [state]
-
-# Old version of metric, to be removed when featuregate is stable
-  temp.connections_current:
-    enabled: true # must be enabled by default in order to apply necessary MetricBuilder option
-    description: Temporary placeholder for old version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.
-    unit: connections
-    gauge:
-      value_type: int
     attributes: [state]

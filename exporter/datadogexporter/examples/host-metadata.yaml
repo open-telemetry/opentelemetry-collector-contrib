@@ -1,0 +1,44 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+processors:
+  probabilistic_sampler:
+    sampling_percentage: 20
+  batch:
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
+  transform:
+    metric_statements:
+      - context: resource
+        statements:
+          - set(attributes["datadog.host.use_as_metadata"], true)
+    trace_statements:
+      - context: resource
+        statements:
+          - set(attributes["datadog.host.use_as_metadata"], true)
+connectors:
+    datadog/connector:
+exporters:
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+      site: ${env:DD_SITE}
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, transform]
+      exporters: [datadog/connector]
+    traces/sampling:
+      receivers: [datadog/connector]
+      processors: [batch, probabilistic_sampler]
+      exporters: [datadog]
+    metrics:
+      receivers: [datadog/connector]
+      processors: [batch, transform]
+      exporters: [datadog]

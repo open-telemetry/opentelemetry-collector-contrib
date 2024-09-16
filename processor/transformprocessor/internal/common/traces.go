@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
@@ -20,7 +22,8 @@ import (
 var _ consumer.Traces = &traceStatements{}
 
 type traceStatements struct {
-	ottl.Statements[ottlspan.TransformContext]
+	ottl.StatementSequence[ottlspan.TransformContext]
+	expr.BoolExpr[ottlspan.TransformContext]
 }
 
 func (t traceStatements) Capabilities() consumer.Capabilities {
@@ -36,10 +39,16 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 			sspans := rspans.ScopeSpans().At(j)
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
-				err := t.Execute(ctx, tCtx)
+				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource(), sspans, rspans)
+				condition, err := t.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {
 					return err
+				}
+				if condition {
+					err := t.Execute(ctx, tCtx)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -50,7 +59,8 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 var _ consumer.Traces = &spanEventStatements{}
 
 type spanEventStatements struct {
-	ottl.Statements[ottlspanevent.TransformContext]
+	ottl.StatementSequence[ottlspanevent.TransformContext]
+	expr.BoolExpr[ottlspanevent.TransformContext]
 }
 
 func (s spanEventStatements) Capabilities() consumer.Capabilities {
@@ -69,10 +79,16 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 				span := spans.At(k)
 				spanEvents := span.Events()
 				for n := 0; n < spanEvents.Len(); n++ {
-					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(n), span, sspans.Scope(), rspans.Resource())
-					err := s.Execute(ctx, tCtx)
+					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(n), span, sspans.Scope(), rspans.Resource(), sspans, rspans)
+					condition, err := s.BoolExpr.Eval(ctx, tCtx)
 					if err != nil {
 						return err
+					}
+					if condition {
+						err := s.Execute(ctx, tCtx)
+						if err != nil {
+							return err
+						}
 					}
 				}
 			}
@@ -152,15 +168,23 @@ func (pc TraceParserCollection) ParseContextStatements(contextStatements Context
 		if err != nil {
 			return nil, err
 		}
-		sStatements := ottlspan.NewStatements(parsedStatements, pc.settings, ottlspan.WithErrorMode(pc.errorMode))
-		return traceStatements{sStatements}, nil
+		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForSpan, contextStatements.Conditions, pc.parserCollection, filterottl.StandardSpanFuncs())
+		if errGlobalBoolExpr != nil {
+			return nil, errGlobalBoolExpr
+		}
+		sStatements := ottlspan.NewStatementSequence(parsedStatements, pc.settings, ottlspan.WithStatementSequenceErrorMode(pc.errorMode))
+		return traceStatements{sStatements, globalExpr}, nil
 	case SpanEvent:
 		parsedStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		seStatements := ottlspanevent.NewStatements(parsedStatements, pc.settings, ottlspanevent.WithErrorMode(pc.errorMode))
-		return spanEventStatements{seStatements}, nil
+		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForSpanEvent, contextStatements.Conditions, pc.parserCollection, filterottl.StandardSpanEventFuncs())
+		if errGlobalBoolExpr != nil {
+			return nil, errGlobalBoolExpr
+		}
+		seStatements := ottlspanevent.NewStatementSequence(parsedStatements, pc.settings, ottlspanevent.WithStatementSequenceErrorMode(pc.errorMode))
+		return spanEventStatements{seStatements, globalExpr}, nil
 	default:
 		return pc.parseCommonContextStatements(contextStatements)
 	}

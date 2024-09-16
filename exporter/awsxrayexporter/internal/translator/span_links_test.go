@@ -16,7 +16,7 @@ import (
 func TestSpanLinkSimple(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -30,10 +30,10 @@ func TestSpanLinkSimple(t *testing.T) {
 
 	var convertedTraceID, _ = convertToAmazonTraceID(traceID, false)
 
-	assert.Equal(t, 1, len(segment.Links))
+	assert.Len(t, segment.Links, 1)
 	assert.Equal(t, spanLink.SpanID().String(), *segment.Links[0].SpanID)
 	assert.Equal(t, convertedTraceID, *segment.Links[0].TraceID)
-	assert.Equal(t, 0, len(segment.Links[0].Attributes))
+	assert.Empty(t, segment.Links[0].Attributes)
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
@@ -46,13 +46,13 @@ func TestSpanLinkSimple(t *testing.T) {
 func TestSpanLinkEmpty(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
-	assert.Equal(t, 0, len(segment.Links))
+	assert.Empty(t, segment.Links)
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
@@ -62,7 +62,7 @@ func TestSpanLinkEmpty(t *testing.T) {
 func TestOldSpanLinkError(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -78,17 +78,17 @@ func TestOldSpanLinkError(t *testing.T) {
 
 	_, error1 := MakeSegment(span, resource, nil, false, nil, false)
 
-	assert.NotNil(t, error1)
+	assert.Error(t, error1)
 
 	_, error2 := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
-	assert.NotNil(t, error2)
+	assert.Error(t, error2)
 }
 
 func TestTwoSpanLinks(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -111,16 +111,16 @@ func TestTwoSpanLinks(t *testing.T) {
 	var convertedTraceID1, _ = convertToAmazonTraceID(traceID1, false)
 	var convertedTraceID2, _ = convertToAmazonTraceID(traceID2, false)
 
-	assert.Equal(t, 2, len(segment.Links))
+	assert.Len(t, segment.Links, 2)
 	assert.Equal(t, spanLink1.SpanID().String(), *segment.Links[0].SpanID)
 	assert.Equal(t, convertedTraceID1, *segment.Links[0].TraceID)
 
-	assert.Equal(t, 1, len(segment.Links[0].Attributes))
+	assert.Len(t, segment.Links[0].Attributes, 1)
 	assert.Equal(t, "ABC", segment.Links[0].Attributes["myKey1"])
 
 	assert.Equal(t, spanLink2.SpanID().String(), *segment.Links[1].SpanID)
 	assert.Equal(t, convertedTraceID2, *segment.Links[1].TraceID)
-	assert.Equal(t, 1, len(segment.Links[0].Attributes))
+	assert.Len(t, segment.Links[0].Attributes, 1)
 	assert.Equal(t, int64(1234), segment.Links[1].Attributes["myKey2"])
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
@@ -138,7 +138,7 @@ func TestTwoSpanLinks(t *testing.T) {
 func TestSpanLinkComplexAttributes(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -172,29 +172,29 @@ func TestSpanLinkComplexAttributes(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
-	assert.Equal(t, 1, len(segment.Links))
-	assert.Equal(t, 8, len(segment.Links[0].Attributes))
+	assert.Len(t, segment.Links, 1)
+	assert.Len(t, segment.Links[0].Attributes, 8)
 
 	assert.Equal(t, "myValue", segment.Links[0].Attributes["myKey1"])
 	assert.Equal(t, true, segment.Links[0].Attributes["myKey2"])
 	assert.Equal(t, int64(112233), segment.Links[0].Attributes["myKey3"])
 	assert.Equal(t, 3.1415, segment.Links[0].Attributes["myKey4"])
 
-	assert.Equal(t, "apple", segment.Links[0].Attributes["myKey5"].([]interface{})[0])
-	assert.Equal(t, "pear", segment.Links[0].Attributes["myKey5"].([]interface{})[1])
-	assert.Equal(t, "banana", segment.Links[0].Attributes["myKey5"].([]interface{})[2])
+	assert.Equal(t, "apple", segment.Links[0].Attributes["myKey5"].([]any)[0])
+	assert.Equal(t, "pear", segment.Links[0].Attributes["myKey5"].([]any)[1])
+	assert.Equal(t, "banana", segment.Links[0].Attributes["myKey5"].([]any)[2])
 
-	assert.Equal(t, true, segment.Links[0].Attributes["myKey6"].([]interface{})[0])
-	assert.Equal(t, false, segment.Links[0].Attributes["myKey6"].([]interface{})[1])
-	assert.Equal(t, false, segment.Links[0].Attributes["myKey6"].([]interface{})[2])
-	assert.Equal(t, true, segment.Links[0].Attributes["myKey6"].([]interface{})[0])
+	assert.Equal(t, true, segment.Links[0].Attributes["myKey6"].([]any)[0])
+	assert.Equal(t, false, segment.Links[0].Attributes["myKey6"].([]any)[1])
+	assert.Equal(t, false, segment.Links[0].Attributes["myKey6"].([]any)[2])
+	assert.Equal(t, true, segment.Links[0].Attributes["myKey6"].([]any)[0])
 
-	assert.Equal(t, int64(1234), segment.Links[0].Attributes["myKey7"].([]interface{})[0])
-	assert.Equal(t, int64(5678), segment.Links[0].Attributes["myKey7"].([]interface{})[1])
-	assert.Equal(t, int64(9012), segment.Links[0].Attributes["myKey7"].([]interface{})[2])
+	assert.Equal(t, int64(1234), segment.Links[0].Attributes["myKey7"].([]any)[0])
+	assert.Equal(t, int64(5678), segment.Links[0].Attributes["myKey7"].([]any)[1])
+	assert.Equal(t, int64(9012), segment.Links[0].Attributes["myKey7"].([]any)[2])
 
-	assert.Equal(t, 2.718, segment.Links[0].Attributes["myKey8"].([]interface{})[0])
-	assert.Equal(t, 1.618, segment.Links[0].Attributes["myKey8"].([]interface{})[1])
+	assert.Equal(t, 2.718, segment.Links[0].Attributes["myKey8"].([]any)[0])
+	assert.Equal(t, 1.618, segment.Links[0].Attributes["myKey8"].([]any)[1])
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 

@@ -16,40 +16,30 @@ import (
 
 const defaultZeroThreshold = 1e-128
 
-func addSingleExponentialHistogramDataPoint(
-	metric string,
-	pt pmetric.ExponentialHistogramDataPoint,
-	resource pcommon.Resource,
-	settings Settings,
-	series map[string]*prompb.TimeSeries,
-) error {
-	labels := createAttributes(
-		resource,
-		pt.Attributes(),
-		settings.ExternalLabels,
-		model.MetricNameLabel, metric,
-	)
+func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
+	resource pcommon.Resource, settings Settings, baseName string) error {
+	for x := 0; x < dataPoints.Len(); x++ {
+		pt := dataPoints.At(x)
+		lbls := createAttributes(
+			resource,
+			pt.Attributes(),
+			settings.ExternalLabels,
+			nil,
+			true,
+			model.MetricNameLabel,
+			baseName,
+		)
+		ts, _ := c.getOrCreateTimeSeries(lbls)
 
-	sig := timeSeriesSignature(
-		pmetric.MetricTypeExponentialHistogram.String(),
-		&labels,
-	)
-	ts, ok := series[sig]
-	if !ok {
-		ts = &prompb.TimeSeries{
-			Labels: labels,
+		histogram, err := exponentialToNativeHistogram(pt)
+		if err != nil {
+			return err
 		}
-		series[sig] = ts
-	}
+		ts.Histograms = append(ts.Histograms, histogram)
 
-	histogram, err := exponentialToNativeHistogram(pt)
-	if err != nil {
-		return err
+		exemplars := getPromExemplars[pmetric.ExponentialHistogramDataPoint](pt)
+		ts.Exemplars = append(ts.Exemplars, exemplars...)
 	}
-	ts.Histograms = append(ts.Histograms, histogram)
-
-	exemplars := getPromExemplars[pmetric.ExponentialHistogramDataPoint](pt)
-	ts.Exemplars = append(ts.Exemplars, exemplars...)
 
 	return nil
 }
@@ -74,7 +64,17 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 	nSpans, nDeltas := convertBucketsLayout(p.Negative(), scaleDown)
 
 	h := prompb.Histogram{
-		Schema: scale,
+		// The counter reset detection must be compatible with Prometheus to
+		// safely set ResetHint to NO. This is not ensured currently.
+		// Sending a sample that triggers counter reset but with ResetHint==NO
+		// would lead to Prometheus panic as it does not double check the hint.
+		// Thus we're explicitly saying UNKNOWN here, which is always safe.
+		// TODO: using created time stamp should be accurate, but we
+		// need to know here if it was used for the detection.
+		// Ref: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28663#issuecomment-1810577303
+		// Counter reset detection in Prometheus: https://github.com/prometheus/prometheus/blob/f997c72f294c0f18ca13fa06d51889af04135195/tsdb/chunkenc/histogram.go#L232
+		ResetHint: prompb.Histogram_UNKNOWN,
+		Schema:    scale,
 
 		ZeroCount: &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
 		// TODO use zero_threshold, if set, see

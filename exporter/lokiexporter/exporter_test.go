@@ -27,19 +27,19 @@ import (
 func TestPushLogData(t *testing.T) {
 	testCases := []struct {
 		desc          string
-		hints         map[string]interface{}
-		attrs         map[string]interface{}
-		res           map[string]interface{}
+		hints         map[string]any
+		attrs         map[string]any
+		res           map[string]any
 		expectedLabel string
 		expectedLine  string
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name":   "guarana",
 				"http.status": 200,
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				"loki.attribute.labels": "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
@@ -47,11 +47,11 @@ func TestPushLogData(t *testing.T) {
 		},
 		{
 			desc: "with resource to label and regular resource",
-			res: map[string]interface{}{
+			res: map[string]any{
 				"host.name": "guarana",
 				"region.az": "eu-west-1a",
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				"loki.resource.labels": "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
@@ -63,7 +63,7 @@ func TestPushLogData(t *testing.T) {
 			actualPushRequest := &push.PushRequest{}
 
 			// prepare
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
 				require.NoError(t, err)
 
@@ -76,13 +76,13 @@ func TestPushLogData(t *testing.T) {
 			defer ts.Close()
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: ts.URL,
 				},
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -160,12 +160,12 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 				label string
 			}{
 				"1": {
-					label: `{exporter="OTLP", tenant_id="1"}`,
-					line:  `{"attributes":{"http.status":200}}`,
+					label: `{exporter="OTLP"}`,
+					line:  `{"attributes":{"http.status":200,"tenant.id":"1"}}`,
 				},
 				"2": {
-					label: `{exporter="OTLP", tenant_id="2"}`,
-					line:  `{"attributes":{"http.status":200}}`,
+					label: `{exporter="OTLP"}`,
+					line:  `{"attributes":{"http.status":200,"tenant.id":"2"}}`,
 				},
 			},
 		},
@@ -224,12 +224,12 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 				label string
 			}{
 				"1": {
-					label: `{exporter="OTLP", tenant_id="1"}`,
-					line:  `{"attributes":{"http.status":200}}`,
+					label: `{exporter="OTLP"}`,
+					line:  `{"attributes":{"http.status":200,"tenant.id":"11"},"resources":{"tenant.id":"1"}}`,
 				},
 				"2": {
-					label: `{exporter="OTLP", tenant_id="2"}`,
-					line:  `{"attributes":{"http.status":200}}`,
+					label: `{exporter="OTLP"}`,
+					line:  `{"attributes":{"http.status":200,"tenant.id":"22"},"resources":{"tenant.id":"2"}}`,
 				},
 			},
 		},
@@ -239,7 +239,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			actualPushRequestPerTenant := map[string]*push.PushRequest{}
 
 			// prepare
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
 				require.NoError(t, err)
 
@@ -255,13 +255,13 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			defer ts.Close()
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: ts.URL,
 				},
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -276,7 +276,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			assert.Equal(t, len(actualPushRequestPerTenant), len(tC.expected))
 			for tenant, request := range actualPushRequestPerTenant {
 				pr, ok := tC.expected[tenant]
-				assert.Equal(t, ok, true)
+				assert.True(t, ok)
 
 				expectedLabel := pr.label
 				expectedLine := pr.line

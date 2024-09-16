@@ -6,8 +6,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("loadbalancing")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
+)
+
 const (
-	Type            = "loadbalancing"
-	TracesStability = component.StabilityLevelBeta
-	LogsStability   = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

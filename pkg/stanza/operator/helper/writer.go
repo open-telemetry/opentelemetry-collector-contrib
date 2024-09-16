@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -27,8 +28,8 @@ type WriterConfig struct {
 }
 
 // Build will build a writer operator from the config.
-func (c WriterConfig) Build(logger *zap.SugaredLogger) (WriterOperator, error) {
-	basicOperator, err := c.BasicConfig.Build(logger)
+func (c WriterConfig) Build(set component.TelemetrySettings) (WriterOperator, error) {
+	basicOperator, err := c.BasicConfig.Build(set)
 	if err != nil {
 		return WriterOperator{}, err
 	}
@@ -47,14 +48,17 @@ type WriterOperator struct {
 }
 
 // Write will write an entry to the outputs of the operator.
-func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) {
-	for i, operator := range w.OutputOperators {
+func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
+	for i, op := range w.OutputOperators {
 		if i == len(w.OutputOperators)-1 {
-			_ = operator.Process(ctx, e)
-			return
+			return op.Process(ctx, e)
 		}
-		_ = operator.Process(ctx, e.Copy())
+		err := op.Process(ctx, e.Copy())
+		if err != nil {
+			w.Logger().Error("Failed to process entry", zap.Error(err))
+		}
 	}
+	return nil
 }
 
 // CanOutput always returns true for a writer operator.
@@ -94,8 +98,8 @@ func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 }
 
 // SetOutputIDs will set the outputs of the operator.
-func (w *WriterOperator) SetOutputIDs(opIds []string) {
-	w.OutputIDs = opIds
+func (w *WriterOperator) SetOutputIDs(opIDs []string) {
+	w.OutputIDs = opIDs
 }
 
 // FindOperator will find an operator matching the supplied id.

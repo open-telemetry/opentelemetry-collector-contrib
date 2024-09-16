@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration && !windows
-// +build integration,!windows
 
 package subprocess
 
@@ -15,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -54,7 +53,7 @@ func (suite *SubprocessIntegrationSuite) SetupSuite() {
 }
 
 func (suite *SubprocessIntegrationSuite) TearDownSuite() {
-	require.NoError(suite.T(), os.Remove(suite.scriptPath))
+	suite.Require().NoError(os.Remove(suite.scriptPath))
 }
 
 // prepareSubprocess will create a Subprocess based on a temporary script.
@@ -233,7 +232,7 @@ func (suite *SubprocessIntegrationSuite) TestSendingStdinFails() {
 	subprocess := NewSubprocess(&Config{ExecutablePath: "echo", Args: []string{"finished"}}, logger)
 
 	intentionalError := fmt.Errorf("intentional failure")
-	subprocess.sendToStdIn = func(contents string, writer io.Writer) error {
+	subprocess.sendToStdIn = func(string, io.Writer) error {
 		return intentionalError
 	}
 

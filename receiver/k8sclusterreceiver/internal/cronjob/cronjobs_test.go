@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
@@ -22,7 +22,7 @@ func TestCronJobMetrics(t *testing.T) {
 	cj := testutils.NewCronJob("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	RecordMetrics(mb, cj, ts)
 	m := mb.Emit()
 
@@ -43,7 +43,7 @@ func TestCronJobMetadata(t *testing.T) {
 
 	actualMetadata := GetMetadata(cj)
 
-	require.Equal(t, 1, len(actualMetadata))
+	require.Len(t, actualMetadata, 1)
 
 	// Assert metadata from Pod.
 	require.Equal(t,

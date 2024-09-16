@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("carbon")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+)
+
 const (
-	Type             = "carbon"
 	MetricsStability = component.StabilityLevelBeta
 )

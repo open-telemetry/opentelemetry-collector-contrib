@@ -10,14 +10,15 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Pulsar exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Endpoint of pulsar broker (default "pulsar://localhost:6650")
 	Endpoint string `mapstructure:"endpoint"`
@@ -144,7 +145,7 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 func (cfg *Config) getProducerOptions() pulsar.ProducerOptions {
 	producerOptions := pulsar.ProducerOptions{
 		Topic:                           cfg.Topic,
-		SendTimeout:                     cfg.Timeout,
+		SendTimeout:                     cfg.TimeoutSettings.Timeout,
 		BatcherBuilderType:              cfg.Producer.BatcherBuilderType.ToPulsar(),
 		BatchingMaxMessages:             cfg.Producer.BatchingMaxMessages,
 		BatchingMaxPublishDelay:         cfg.Producer.BatchingMaxPublishDelay,

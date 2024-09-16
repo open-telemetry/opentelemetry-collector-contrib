@@ -128,7 +128,11 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 
 	res, err := dc.ServerPreferredResources()
 	if err != nil {
-		return nil, err
+		// Check if Partial result is returned from discovery client, that means some API servers have issues,
+		// but we can still continue, as we check for the needed groups later in Validate function.
+		if res != nil && !discovery.IsGroupDiscoveryFailedError(err) {
+			return nil, err
+		}
 	}
 
 	validObjects := make(map[string][]*schema.GroupVersionResource)

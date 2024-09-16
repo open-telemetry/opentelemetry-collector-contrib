@@ -30,7 +30,7 @@ type influxHTTPWriter struct {
 	encoderPool sync.Pool
 	httpClient  *http.Client
 
-	httpClientSettings confighttp.HTTPClientSettings
+	httpClientSettings confighttp.ClientConfig
 	telemetrySettings  component.TelemetrySettings
 	writeURL           string
 	payloadMaxLines    int
@@ -47,14 +47,14 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, telemetrySettings
 
 	return &influxHTTPWriter{
 		encoderPool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				e := new(lineprotocol.Encoder)
 				e.SetLax(false)
 				e.SetPrecision(lineprotocol.Nanosecond)
 				return e
 			},
 		},
-		httpClientSettings: config.HTTPClientSettings,
+		httpClientSettings: config.ClientConfig,
 		telemetrySettings:  telemetrySettings,
 		writeURL:           writeURL,
 		payloadMaxLines:    config.PayloadMaxLines,
@@ -64,7 +64,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, telemetrySettings
 }
 
 func composeWriteURL(config *Config) (string, error) {
-	writeURL, err := url.Parse(config.HTTPClientSettings.Endpoint)
+	writeURL, err := url.Parse(config.ClientConfig.Endpoint)
 	if err != nil {
 		return "", err
 	}
@@ -88,16 +88,22 @@ func composeWriteURL(config *Config) (string, error) {
 		queryValues.Set("db", config.V1Compatibility.DB)
 
 		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
-			var basicAuth []byte
-			base64.StdEncoding.Encode(basicAuth, []byte(config.V1Compatibility.Username+":"+string(config.V1Compatibility.Password)))
-			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Basic " + string(basicAuth))
+			basicAuth := base64.StdEncoding.EncodeToString(
+				[]byte(config.V1Compatibility.Username + ":" + string(config.V1Compatibility.Password)))
+			if config.ClientConfig.Headers == nil {
+				config.ClientConfig.Headers = make(map[string]configopaque.String, 1)
+			}
+			config.ClientConfig.Headers["Authorization"] = configopaque.String("Basic " + basicAuth)
 		}
 	} else {
 		queryValues.Set("org", config.Org)
 		queryValues.Set("bucket", config.Bucket)
 
 		if config.Token != "" {
-			config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
+			if config.ClientConfig.Headers == nil {
+				config.ClientConfig.Headers = make(map[string]configopaque.String, 1)
+			}
+			config.ClientConfig.Headers["Authorization"] = "Token " + config.Token
 		}
 	}
 
@@ -107,8 +113,8 @@ func composeWriteURL(config *Config) (string, error) {
 }
 
 // Start implements component.StartFunc
-func (w *influxHTTPWriter) Start(_ context.Context, host component.Host) error {
-	httpClient, err := w.httpClientSettings.ToClient(host, w.telemetrySettings)
+func (w *influxHTTPWriter) Start(ctx context.Context, host component.Host) error {
+	httpClient, err := w.httpClientSettings.ToClient(ctx, host, w.telemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -137,7 +143,7 @@ func newInfluxHTTPWriterBatch(w *influxHTTPWriter) *influxHTTPWriterBatch {
 // EnqueuePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
 // to the internal line protocol buffer.
 // If the buffer is full, it will be flushed by calling WriteBatch.
-func (b *influxHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
+func (b *influxHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]any, ts time.Time, _ common.InfluxMetricValueType) error {
 	if b.encoder == nil {
 		b.encoder = b.encoderPool.Get().(*lineprotocol.Encoder)
 	}
@@ -188,21 +194,24 @@ func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 		return consumererror.NewPermanent(err)
 	}
 
-	if res, err := b.httpClient.Do(req); err != nil {
+	res, err := b.httpClient.Do(req)
+	if err != nil {
 		return err
-	} else if body, err := io.ReadAll(res.Body); err != nil {
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
 		return err
-	} else if err = res.Body.Close(); err != nil {
+	}
+	if err = res.Body.Close(); err != nil {
 		return err
-	} else {
-		switch res.StatusCode / 100 {
-		case 2: // Success
-			break
-		case 5: // Retryable error
-			return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
-		default: // Terminal error
-			return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
-		}
+	}
+	switch res.StatusCode / 100 {
+	case 2: // Success
+		break
+	case 5: // Retryable error
+		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
+	default: // Terminal error
+		return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
 	}
 
 	return nil
@@ -231,7 +240,7 @@ func (b *influxHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
 	return tags
 }
 
-func (b *influxHTTPWriterBatch) convertFields(m map[string]interface{}) (fields map[string]lineprotocol.Value) {
+func (b *influxHTTPWriterBatch) convertFields(m map[string]any) (fields map[string]lineprotocol.Value) {
 	fields = make(map[string]lineprotocol.Value, len(m))
 	for k, v := range m {
 		if k == "" {

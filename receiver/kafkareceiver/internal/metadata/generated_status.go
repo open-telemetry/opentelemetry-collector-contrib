@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("kafka")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
+)
+
 const (
-	Type             = "kafka"
 	MetricsStability = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta
 	TracesStability  = component.StabilityLevelBeta

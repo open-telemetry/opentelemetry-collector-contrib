@@ -37,7 +37,7 @@ import (
 
 // DataCollector emits metrics with CollectMetricData based on the Kubernetes API objects in the metadata store.
 type DataCollector struct {
-	settings                 receiver.CreateSettings
+	settings                 receiver.Settings
 	metadataStore            *metadata.Store
 	nodeConditionsToReport   []string
 	allocatableTypesToReport []string
@@ -45,7 +45,7 @@ type DataCollector struct {
 }
 
 // NewDataCollector returns a DataCollector.
-func NewDataCollector(set receiver.CreateSettings, ms *metadata.Store,
+func NewDataCollector(set receiver.Settings, ms *metadata.Store,
 	metricsBuilderConfig metadata.MetricsBuilderConfig, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
 	return &DataCollector{
 		settings:                 set,
@@ -69,6 +69,7 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 		if crm.ScopeMetrics().Len() > 0 {
 			crm.MoveTo(customRMs.AppendEmpty())
 		}
+		node.RecordMetrics(dc.metricsBuilder, o.(*corev1.Node), ts)
 	})
 	dc.metadataStore.ForEach(gvk.Namespace, func(o any) {
 		namespace.RecordMetrics(dc.metricsBuilder, o.(*corev1.Namespace), ts)

@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
 
@@ -13,8 +13,12 @@ resource_attributes:
     description: The name of the database.
     enabled: true
     type: string
+  postgresql.schema.name:
+    description: The schema name.
+    enabled: true
+    type: string
   postgresql.table.name:
-    description: The schema name followed by the table name.
+    description: The table name.
     enabled: true
     type: string
   postgresql.index.name:
@@ -130,11 +134,11 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
-    unit: 1
+    unit: "1"
   postgresql.blocks_read:
     enabled: true
     description: The number of blocks read.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -143,7 +147,7 @@ metrics:
   postgresql.commits:
     enabled: true
     description: The number of commits.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -174,7 +178,7 @@ metrics:
   postgresql.backends:
     enabled: true
     description: The number of backends.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: false
@@ -188,7 +192,7 @@ metrics:
   postgresql.rows:
     enabled: true
     description: The number of rows in the database.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: false
@@ -211,7 +215,7 @@ metrics:
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -227,7 +231,7 @@ metrics:
   postgresql.rollbacks:
     enabled: true
     description: The number of rollbacks.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -297,3 +301,15 @@ metrics:
       value_type: int
     extended_documentation: |
       This metric requires WAL to be enabled with at least one replica.
+  postgresql.wal.delay:
+    attributes: [wal_operation_lag, replication_client]
+    description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
+    enabled: false
+    unit: s
+    gauge:
+      value_type: double
+    extended_documentation: |
+      This metric requires WAL to be enabled with at least one replica.
+  
+tests:
+  config:

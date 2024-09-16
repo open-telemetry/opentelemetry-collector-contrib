@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("prometheusremotewrite")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
+)
+
 const (
-	Type             = "prometheusremotewrite"
 	MetricsStability = component.StabilityLevelBeta
 )

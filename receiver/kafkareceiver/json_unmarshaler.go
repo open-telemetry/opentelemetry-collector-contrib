@@ -22,7 +22,7 @@ func (r *jsonLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	p := plog.NewLogs()
 
 	// get json logs from the buffer
-	jsonVal := map[string]interface{}{}
+	jsonVal := map[string]any{}
 	if err := jsoniter.Unmarshal(buf, &jsonVal); err != nil {
 		return p, err
 	}

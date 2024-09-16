@@ -80,7 +80,7 @@ func AssertContainsTaggedUint(
 func AssertContainsTaggedField(
 	t *testing.T,
 	cadvisorMetric *CAdvisorMetric,
-	expectedFields map[string]interface{},
+	expectedFields map[string]any,
 	expectedTags map[string]string,
 ) {
 

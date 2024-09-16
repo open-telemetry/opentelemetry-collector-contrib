@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("journald")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
+)
+
 const (
-	Type          = "journald"
 	LogsStability = component.StabilityLevelAlpha
 )

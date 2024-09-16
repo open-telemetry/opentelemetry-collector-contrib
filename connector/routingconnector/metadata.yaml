@@ -7,3 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [jpkrohling, mwear]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

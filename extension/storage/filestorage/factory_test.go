@@ -29,6 +29,7 @@ func TestFactory(t *testing.T) {
 		require.Equal(t, expected, cfg.Directory)
 	}
 	require.Equal(t, time.Second, cfg.Timeout)
+	require.False(t, cfg.FSync)
 
 	tests := []struct {
 		name           string
@@ -51,7 +52,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.CreateExtension(
 				context.Background(),
-				extensiontest.NewNopCreateSettings(),
+				extensiontest.NewNopSettings(),
 				test.config,
 			)
 			if test.wantErr {

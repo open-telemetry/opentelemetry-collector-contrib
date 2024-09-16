@@ -7,11 +7,10 @@ status:
   distributions:
   - core
   - contrib
-  - aws
-  - grafana
-  - observiq
-  - redhat
-  - splunk
-  - sumo
   codeowners:
-    active: [jpkrohling]
+    active: [yurishkuro]
+
+tests:
+  config:
+    protocols:
+      grpc:

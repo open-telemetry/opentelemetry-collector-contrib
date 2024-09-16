@@ -10,7 +10,7 @@ import (
 )
 
 func Test_UUID(t *testing.T) {
-	exprFunc, err := uuid[interface{}]()
+	exprFunc, err := uuid[any]()
 	assert.NoError(t, err)
 
 	value, err := exprFunc(nil, nil)

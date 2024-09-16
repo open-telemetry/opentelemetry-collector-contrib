@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: func() component.Config {
-				cfg := DefaultConfig()
+				cfg := defaultConfig()
 				cfg.ClusterRegion = "us-west-2"
 				cfg.JobLabelName = "my_prometheus_job"
 				return &cfg
@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "3"),
 			expected: func() component.Config {
-				cfg := DefaultConfig()
+				cfg := defaultConfig()
 				cfg.DockerLabels = []DockerLabelConfig{
 					{
 						PortLabel: "IS_NOT_DEFAULT",
@@ -65,7 +65,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr {
 				assert.Error(t, component.ValidateConfig(cfg))
 				return

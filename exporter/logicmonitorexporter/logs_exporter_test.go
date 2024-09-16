@@ -38,7 +38,7 @@ func Test_NewLogsExporter(t *testing.T) {
 				logger *zap.Logger
 			}{
 				config: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: "http://example.logicmonitor.com/rest",
 					},
 					APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
@@ -49,7 +49,7 @@ func Test_NewLogsExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			exp := newLogsExporter(context.Background(), tt.args.config, set)
 			assert.NotNil(t, exp)
 		})
@@ -57,7 +57,7 @@ func Test_NewLogsExporter(t *testing.T) {
 }
 
 func TestPushLogData(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		response := lmsdklogs.LMLogIngestResponse{
 			Success: true,
 			Message: "Accepted",
@@ -68,7 +68,7 @@ func TestPushLogData(t *testing.T) {
 	defer ts.Close()
 
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ts.URL,
 		},
 		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
@@ -106,10 +106,11 @@ func TestPushLogData(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			exp := newLogsExporter(test.args.ctx, test.fields.config, set)
 
 			require.NoError(t, exp.start(test.args.ctx, componenttest.NewNopHost()))
+			defer func() { require.NoError(t, exp.shutdown(test.args.ctx)) }()
 			err := exp.PushLogData(test.args.ctx, test.args.lg)
 			assert.NoError(t, err)
 		})

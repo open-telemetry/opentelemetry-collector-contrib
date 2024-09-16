@@ -4,6 +4,11 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, aws, sumo]
+  distributions: [contrib]
   codeowners:
     active: [Aneurysm9, mxiamxia]
+
+tests:
+  skip_lifecycle: true
+  goleak:
+    skip: true

@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("routing")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
+)
+
 const (
-	Type             = "routing"
 	TracesStability  = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta

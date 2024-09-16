@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("podman_stats")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
+)
+
 const (
-	Type             = "podman_stats"
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

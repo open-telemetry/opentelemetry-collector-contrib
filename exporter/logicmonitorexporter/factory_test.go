@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
@@ -20,8 +21,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -37,7 +38,7 @@ func TestCreateLogsExporter(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.logicmonitor.com/rest",
 				},
 			},
@@ -48,7 +49,7 @@ func TestCreateLogsExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateLogsExporter() error = %v, shouldError %v", err, tt.shouldError)
@@ -77,7 +78,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.logicmonitor.com/rest",
 				},
 			},
@@ -88,7 +89,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			oexp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateTracesExporter() error = %v, shouldError %v", err, tt.shouldError)

@@ -13,14 +13,14 @@ import (
 
 func Test_expandConfigValue(t *testing.T) {
 	type args struct {
-		env         map[string]interface{}
+		env         map[string]any
 		configValue string
 	}
-	localhostEnv := map[string]interface{}{
+	localhostEnv := map[string]any{
 		"endpoint": "localhost",
-		"nested": map[string]interface{}{
-			"outer": map[string]interface{}{
-				"inner": map[string]interface{}{
+		"nested": map[string]any{
+			"outer": map[string]any{
+				"inner": map[string]any{
 					"value": 123,
 				},
 			},
@@ -29,19 +29,19 @@ func Test_expandConfigValue(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    interface{}
+		want    any
 		wantErr bool
 	}{
 		// Non-error cases.
 		{"normal string", args{nil, "str"}, "str", false},
 		{"expanded string", args{localhostEnv, "`endpoint + ':1234'`"}, "localhost:1234", false},
-		{"expanded boolean", args{map[string]interface{}{
+		{"expanded boolean", args{map[string]any{
 			"secure": "true",
 		}, "`secure == 'true'`"}, true, false},
-		{"expanded number", args{map[string]interface{}{
+		{"expanded number", args{map[string]any{
 			"secure": "true",
 		}, "`secure == 'true' ? 443 : 80`"}, 443, false},
-		{"multiple expressions", args{map[string]interface{}{
+		{"multiple expressions", args{map[string]any{
 			"endpoint": "localhost",
 			"port":     1234,
 		}, "`endpoint`:`port`"}, "localhost:1234", false},
@@ -86,11 +86,11 @@ func Test_userConfigMap_resolve(t *testing.T) {
 	}{
 		// Note:
 		{"multi-level maps", userConfigMap{
-			"one": map[string]interface{}{
+			"one": map[string]any{
 				"two": "`endpoint`",
 			},
 		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
-			"one": map[string]interface{}{
+			"one": map[string]any{
 				"two": "localhost",
 			},
 		}, false},
@@ -103,17 +103,17 @@ func Test_userConfigMap_resolve(t *testing.T) {
 		},
 		{
 			"nested slices and maps", userConfigMap{
-				"one": []interface{}{
+				"one": []any{
 					"`one`:6379",
-					map[string]interface{}{
-						"two": []interface{}{
+					map[string]any{
+						"two": []any{
 							"`two`:6379",
 						},
-						"three": []interface{}{
-							map[string]interface{}{
+						"three": []any{
+							map[string]any{
 								"three": "abc`three`xyz",
 							},
-							map[string]interface{}{
+							map[string]any{
 								"four": []string{
 									"`first`",
 									"second",
@@ -130,18 +130,18 @@ func Test_userConfigMap_resolve(t *testing.T) {
 				"first": "first.value",
 				"third": "third.value",
 			}}, userConfigMap{
-				"one": []interface{}{
+				"one": []any{
 					"one.value:6379",
-					map[string]interface{}{
-						"two": []interface{}{
+					map[string]any{
+						"two": []any{
 							"two.value:6379",
 						},
-						"three": []interface{}{
-							map[string]interface{}{
+						"three": []any{
+							map[string]any{
 								"three": "abcthree.valuexyz",
 							},
-							map[string]interface{}{
-								"four": []interface{}{
+							map[string]any{
+								"four": []any{
 									"first.value",
 									"second",
 									"abc third.value xyz",

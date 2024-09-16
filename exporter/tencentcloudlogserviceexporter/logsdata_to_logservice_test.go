@@ -89,7 +89,7 @@ func TestConvertLogs(t *testing.T) {
 	totalLogCount := 10
 	validLogCount := totalLogCount - 1
 	gotLogs := convertLogs(createLogData(10))
-	assert.Equal(t, len(gotLogs), 9)
+	assert.Len(t, gotLogs, 9)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 
@@ -115,7 +115,7 @@ func TestConvertLogs(t *testing.T) {
 	}
 }
 
-func loadFromJSON(file string, obj interface{}) error {
+func loadFromJSON(file string, obj any) error {
 	blob, err := os.ReadFile(file)
 	if err == nil {
 		err = json.Unmarshal(blob, obj)

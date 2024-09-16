@@ -10,12 +10,19 @@ resourceMetrics:
         - key: k8s.kubelet.version
           value:
             stringValue: v1.25.3
-        - key: k8s.kubeproxy.version
+        - key: container.runtime.version
           value:
-            stringValue: v1.25.3
-        - key: opencensus.resourcetype
+            stringValue: "1.6.9"
+        - key: container.runtime
           value:
-            stringValue: k8s
+            stringValue: "containerd"
+        - key: os.description
+          value:
+            stringValue: Ubuntu 22.04.1 LTS
+        - key: os.type
+          value:
+            stringValue: "linux"
+
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -32,5 +39,5 @@ resourceMetrics:
             name: k8s.node.allocatable_memory
             unit: By
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest

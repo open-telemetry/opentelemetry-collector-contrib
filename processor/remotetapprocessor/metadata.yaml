@@ -1,0 +1,13 @@
+type: remotetap
+
+status:
+  class: processor
+  stability:
+    alpha: [logs, metrics, traces]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme, jaronoff97]
+    emeritus: [pmcollins]
+
+tests:
+  config:

@@ -53,7 +53,7 @@ func (f AttributeField) String() string {
 }
 
 // Get will return the attribute value and a boolean indicating if it exists
-func (f AttributeField) Get(entry *Entry) (interface{}, bool) {
+func (f AttributeField) Get(entry *Entry) (any, bool) {
 	if entry.Attributes == nil {
 		return "", false
 	}
@@ -68,7 +68,7 @@ func (f AttributeField) Get(entry *Entry) (interface{}, bool) {
 	}
 
 	for _, key := range f.Keys[1:] {
-		currentMap, ok := currentValue.(map[string]interface{})
+		currentMap, ok := currentValue.(map[string]any)
 		if !ok {
 			return nil, false
 		}
@@ -84,12 +84,12 @@ func (f AttributeField) Get(entry *Entry) (interface{}, bool) {
 
 // Set will set a value on an entry's attributes using the field.
 // If a key already exists, it will be overwritten.
-func (f AttributeField) Set(entry *Entry, value interface{}) error {
+func (f AttributeField) Set(entry *Entry, value any) error {
 	if entry.Attributes == nil {
-		entry.Attributes = map[string]interface{}{}
+		entry.Attributes = map[string]any{}
 	}
 
-	mapValue, isMapValue := value.(map[string]interface{})
+	mapValue, isMapValue := value.(map[string]any)
 	if isMapValue {
 		f.Merge(entry, mapValue)
 		return nil
@@ -112,7 +112,7 @@ func (f AttributeField) Set(entry *Entry, value interface{}) error {
 
 // Merge will attempt to merge the contents of a map into an entry's attributes.
 // It will overwrite any intermediate values as necessary.
-func (f AttributeField) Merge(entry *Entry, mapValues map[string]interface{}) {
+func (f AttributeField) Merge(entry *Entry, mapValues map[string]any) {
 	currentMap := entry.Attributes
 
 	for _, key := range f.Keys {
@@ -126,7 +126,7 @@ func (f AttributeField) Merge(entry *Entry, mapValues map[string]interface{}) {
 
 // Delete removes a value from an entry's attributes using the field.
 // It will return the deleted value and whether the field existed.
-func (f AttributeField) Delete(entry *Entry) (interface{}, bool) {
+func (f AttributeField) Delete(entry *Entry) (any, bool) {
 	if entry.Attributes == nil {
 		return "", false
 	}
@@ -149,7 +149,7 @@ func (f AttributeField) Delete(entry *Entry) (interface{}, bool) {
 			return currentValue, true
 		}
 
-		currentMap, ok = currentValue.(map[string]interface{})
+		currentMap, ok = currentValue.(map[string]any)
 		if !ok {
 			break
 		}
@@ -183,7 +183,7 @@ func (f *AttributeField) UnmarshalJSON(raw []byte) error {
 }
 
 // UnmarshalYAML will attempt to unmarshal a field from YAML.
-func (f *AttributeField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *AttributeField) UnmarshalYAML(unmarshal func(any) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
 		return fmt.Errorf("the field is not a string: %w", err)

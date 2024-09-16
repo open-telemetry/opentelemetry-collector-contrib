@@ -16,7 +16,7 @@ const (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	TopMetricsQueryMaxRows            int       `mapstructure:"top_metrics_query_max_rows"`
 	BackfillEnabled                   bool      `mapstructure:"backfill_enabled"`

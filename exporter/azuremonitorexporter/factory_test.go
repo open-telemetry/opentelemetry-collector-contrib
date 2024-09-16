@@ -19,10 +19,12 @@ func TestCreateTracesExporterUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation
 	f := factory{tChannel: &mockTransportChannel{}}
 	ctx := context.Background()
-	params := exportertest.NewNopCreateSettings()
-	exporter, err := f.createTracesExporter(ctx, params, createDefaultConfig())
+	params := exportertest.NewNopSettings()
+	config := createDefaultConfig().(*Config)
+	config.ConnectionString = "InstrumentationKey=test-key;IngestionEndpoint=https://test-endpoint/"
+	exporter, err := f.createTracesExporter(ctx, params, config)
 	assert.NotNil(t, exporter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
@@ -30,9 +32,11 @@ func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
 	f := factory{}
 	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
-	exporter, err := f.createTracesExporter(ctx, exportertest.NewNopCreateSettings(), createDefaultConfig())
+	config := createDefaultConfig().(*Config)
+	config.ConnectionString = "InstrumentationKey=test-key;IngestionEndpoint=https://test-endpoint/"
+	exporter, err := f.createTracesExporter(ctx, exportertest.NewNopSettings(), config)
 	assert.NotNil(t, exporter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, f.tChannel)
 }
 
@@ -41,11 +45,11 @@ func TestCreateTracesExporterUsingBadConfig(t *testing.T) {
 	f := factory{}
 	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
 	badConfig := &badConfig{}
 
 	exporter, err := f.createTracesExporter(ctx, params, badConfig)
 	assert.Nil(t, exporter)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

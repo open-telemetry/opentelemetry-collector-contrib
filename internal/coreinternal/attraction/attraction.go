@@ -10,16 +10,10 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
-)
 
-var enableSha256Gate = featuregate.GlobalRegistry().MustRegister(
-	"coreinternal.attraction.hash.sha256",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, switches hashing algorithm from SHA-1 to SHA-2 256"),
-	featuregate.WithRegisterToVersion("0.85.0"),
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/clientutil"
 )
 
 // Settings specifies the processor settings.
@@ -38,7 +32,7 @@ type ActionKeyValue struct {
 
 	// Value specifies the value to populate for the key.
 	// The type of the value is inferred from the configuration.
-	Value interface{} `mapstructure:"value"`
+	Value any `mapstructure:"value"`
 
 	// A regex pattern  must be specified for the action EXTRACT.
 	// It uses the attribute specified by `key' to extract values from
@@ -349,14 +343,17 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 
 func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Value, bool) {
 	const (
-		metadataPrefix = "metadata."
-		authPrefix     = "auth."
+		metadataPrefix   = "metadata."
+		authPrefix       = "auth."
+		clientAddressKey = "client.address"
 	)
 
 	ci := client.FromContext(ctx)
 	var vals []string
 
 	switch {
+	case key == clientAddressKey:
+		vals = []string{clientutil.Address(ci)}
 	case strings.HasPrefix(key, metadataPrefix):
 		mdKey := strings.TrimPrefix(key, metadataPrefix)
 		vals = ci.Metadata.Get(mdKey)
@@ -404,11 +401,7 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 
 func hashAttribute(key string, attrs pcommon.Map) {
 	if value, exists := attrs.Get(key); exists {
-		if enableSha256Gate.IsEnabled() {
-			sha2Hasher(value)
-		} else {
-			sha1Hasher(value)
-		}
+		sha2Hasher(value)
 	}
 }
 
@@ -447,7 +440,7 @@ func getMatchingKeys(regexp *regexp.Regexp, attrs pcommon.Map) []string {
 		return keys
 	}
 
-	attrs.Range(func(k string, v pcommon.Value) bool {
+	attrs.Range(func(k string, _ pcommon.Value) bool {
 		if regexp.MatchString(k) {
 			keys = append(keys, k)
 		}

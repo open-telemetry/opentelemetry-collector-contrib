@@ -21,15 +21,15 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateExporter(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, "sapm", string(factory.Type()))
+	assert.Equal(t, "sapm", factory.Type().String())
 
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://local"
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
 	te, err := factory.CreateTracesExporter(context.Background(), params, eCfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
 	me, err := factory.CreateMetricsExporter(context.Background(), params, eCfg)

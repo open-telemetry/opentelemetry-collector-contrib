@@ -38,8 +38,8 @@ type riakCredentials struct {
 	password string
 }
 
-func newClient(cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
-	httpClient, err := cfg.ToClient(host, settings)
+func newClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
+	httpClient, err := cfg.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -66,7 +66,7 @@ func (c *riakClient) GetStats(ctx context.Context) (*model.Stats, error) {
 	return stats, nil
 }
 
-func (c *riakClient) get(ctx context.Context, path string, respObj interface{}) error {
+func (c *riakClient) get(ctx context.Context, path string, respObj any) error {
 	// Construct endpoint and create request
 	url := c.hostEndpoint + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)

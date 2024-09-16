@@ -1,0 +1,100 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.pod.name
+          value:
+            stringValue: kube-scheduler-minikube
+        - key: k8s.pod.uid
+          value:
+            stringValue: 5795d0c442cb997ff93c49feeb9f6386
+    scopeMetrics:
+      - metrics:
+          - description: Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
+            gauge:
+              dataPoints:
+                - asDouble: 0.90502575
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.cpu_limit_utilization
+            unit: "1"
+          - description: Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
+            gauge:
+              dataPoints:
+                - asDouble: 1.8100515
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.cpu_request_utilization
+            unit: "1"
+          - description: Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
+            gauge:
+              dataPoints:
+                - asDouble: 0.14290944
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.memory_limit_utilization
+            unit: "1"
+          - description: Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
+            gauge:
+              dataPoints:
+                - asDouble: 1.4290944
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.memory_request_utilization
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: k8s.container.name
+          value:
+            stringValue: kube-scheduler
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.pod.name
+          value:
+            stringValue: kube-scheduler-minikube
+        - key: k8s.pod.uid
+          value:
+            stringValue: 5795d0c442cb997ff93c49feeb9f6386
+    scopeMetrics:
+      - metrics:
+          - description: Container cpu utilization as a ratio of the container's limits
+            gauge:
+              dataPoints:
+                - asDouble: 0.8596562499999999
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_limit_utilization
+            unit: "1"
+          - description: Container cpu utilization as a ratio of the container's requests
+            gauge:
+              dataPoints:
+                - asDouble: 1.7193124999999998
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_request_utilization
+            unit: "1"
+          - description: Container memory utilization as a ratio of the container's limits
+            gauge:
+              dataPoints:
+                - asDouble: 0.1370112
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_limit_utilization
+            unit: "1"
+          - description: Container memory utilization as a ratio of the container's requests
+            gauge:
+              dataPoints:
+                - asDouble: 1.370112
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_request_utilization
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest

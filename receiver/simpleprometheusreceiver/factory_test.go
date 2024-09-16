@@ -19,7 +19,7 @@ func TestFactory(t *testing.T) {
 
 	r, err := f.CreateMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)

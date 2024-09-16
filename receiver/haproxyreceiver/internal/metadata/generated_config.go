@@ -2,7 +2,10 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -15,7 +18,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -139,19 +142,34 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for haproxy resource attributes.
 type ResourceAttributesConfig struct {
 	HaproxyAddr        ResourceAttributeConfig `mapstructure:"haproxy.addr"`
-	HaproxyAlgo        ResourceAttributeConfig `mapstructure:"haproxy.algo"`
-	HaproxyIid         ResourceAttributeConfig `mapstructure:"haproxy.iid"`
-	HaproxyPid         ResourceAttributeConfig `mapstructure:"haproxy.pid"`
 	HaproxyProxyName   ResourceAttributeConfig `mapstructure:"haproxy.proxy_name"`
 	HaproxyServiceName ResourceAttributeConfig `mapstructure:"haproxy.service_name"`
-	HaproxySid         ResourceAttributeConfig `mapstructure:"haproxy.sid"`
-	HaproxyType        ResourceAttributeConfig `mapstructure:"haproxy.type"`
-	HaproxyURL         ResourceAttributeConfig `mapstructure:"haproxy.url"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -159,28 +177,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		HaproxyAddr: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HaproxyAlgo: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		HaproxyIid: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		HaproxyPid: ResourceAttributeConfig{
-			Enabled: true,
-		},
 		HaproxyProxyName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		HaproxyServiceName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		HaproxySid: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		HaproxyType: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		HaproxyURL: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

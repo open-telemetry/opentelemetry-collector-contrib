@@ -126,7 +126,7 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPII(t *testing.T) {
 
 	metricsDataPoint.HideLockStatsRowrangestartkeyPII()
 
-	assert.Equal(t, len(metricsDataPoint.labelValues), 2)
+	assert.Len(t, metricsDataPoint.labelValues, 2)
 	assert.Equal(t, metricsDataPoint.labelValues[0].Value(), "table1.s("+hashOf23+","+hashOfHello+","+hashOf23+"+)")
 	assert.Equal(t, metricsDataPoint.labelValues[1].Value(), "table2("+hashOf23+","+hashOfHello+")")
 }
@@ -149,7 +149,7 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(
 		metricValue: metricValues[0],
 	}
 	metricsDataPoint.HideLockStatsRowrangestartkeyPII()
-	assert.Equal(t, len(metricsDataPoint.labelValues), 4)
+	assert.Len(t, metricsDataPoint.labelValues, 4)
 }
 
 func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
@@ -168,8 +168,8 @@ func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
 
 	metricsDataPoint.TruncateQueryText(6)
 
-	assert.Equal(t, len(metricsDataPoint.labelValues), 1)
-	assert.Equal(t, metricsDataPoint.labelValues[0].Value(), "SELECT")
+	assert.Len(t, metricsDataPoint.labelValues, 1)
+	assert.Equal(t, "SELECT", metricsDataPoint.labelValues[0].Value())
 }
 
 func allPossibleLabelValues() []LabelValue {
@@ -260,7 +260,7 @@ func assertLabelValue(t *testing.T, attributesMap pcommon.Map, labelValue LabelV
 	}
 }
 
-func assertStringLabelValue(t *testing.T, attributesMap pcommon.Map, labelName string, expectedValue interface{}) {
+func assertStringLabelValue(t *testing.T, attributesMap pcommon.Map, labelName string, expectedValue any) {
 	value, exists := attributesMap.Get(labelName)
 
 	assert.True(t, exists)
@@ -276,7 +276,7 @@ func assertMetricValue(t *testing.T, metricValue MetricValue, dataPoint pmetric.
 	}
 }
 
-func assertLabel(t *testing.T, lbl label, expectedName string, expectedValue interface{}) {
+func assertLabel(t *testing.T, lbl label, expectedName string, expectedValue any) {
 	assert.Equal(t, expectedName, lbl.Name)
 	assert.Equal(t, expectedValue, lbl.Value)
 }

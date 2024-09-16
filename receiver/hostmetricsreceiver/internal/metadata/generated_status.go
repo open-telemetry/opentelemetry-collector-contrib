@@ -6,7 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("hostmetrics")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+)
+
 const (
-	Type             = "hostmetrics"
+	LogsStability    = component.StabilityLevelDevelopment
 	MetricsStability = component.StabilityLevelBeta
 )

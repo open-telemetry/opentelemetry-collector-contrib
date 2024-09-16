@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package perfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 
@@ -11,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/leoluk/perflib_exporter/perflib"
+	"github.com/prometheus-community/windows_exporter/pkg/perflib"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )

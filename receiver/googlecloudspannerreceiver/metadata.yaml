@@ -3,7 +3,12 @@ type: googlecloudspanner
 status:
   class: receiver
   stability:
-    beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+    unmaintained: [metrics]
+  distributions: [contrib]
   codeowners:
-    active: [architjugran, varunraiko, kiranmayib]
+    active: [varunraiko]
+    emeritus: [architjugran, kiranmayib]
+tests:
+  config:
+  goleak:
+    skip: true

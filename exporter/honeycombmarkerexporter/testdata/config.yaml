@@ -1,0 +1,81 @@
+honeycombmarker:
+  api_key: "test-apikey"
+  markers:
+    - type: "fooType"
+      rules:
+        log_conditions:
+          - body == "test"
+honeycombmarker/all_fields:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  sending_queue:
+    enabled: true
+    num_consumers: 10
+    queue_size: 1000
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5000000000
+    randomization_factor: 0.5
+    multiplier: 1.5
+    max_interval: 30000000000
+    max_elapsed_time: 300000000000
+  markers:
+    - type: "fooType"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
+      dataset_slug: "testing"
+      rules:
+        log_conditions:
+          - body == "test"
+
+honeycombmarker/bad_syntax_log:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+    - type: "fooType"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
+      dataset_slug: "__all__"
+      rules:
+        log_conditions:
+          - body == "test"
+          - set(attributes["body"], body)
+
+honeycombmarker/no_conditions:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+    - type: "test-apikey"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
+      dataset_slug: "__all__"
+      rules:
+
+honeycombmarker/no_api_key:
+  api_key: ""
+  api_url: "https://api.testhost.io"
+  markers:
+    - type: "fooType"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
+      dataset_slug: "__all__"
+      rules:
+        log_conditions:
+          - body == "test"
+
+honeycombmarker/no_markers_supplied:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+
+honeycombmarker/no_dataset_slug:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+    - type: "fooType"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
+      rules:
+        log_conditions:
+          - body == "test"
+

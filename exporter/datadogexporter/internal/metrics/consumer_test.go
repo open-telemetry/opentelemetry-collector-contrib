@@ -7,18 +7,17 @@ import (
 	"context"
 	"testing"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 type testProvider string
@@ -28,7 +27,12 @@ func (t testProvider) Source(context.Context) (source.Source, error) {
 }
 
 func newTranslator(t *testing.T, logger *zap.Logger) *metrics.Translator {
-	tr, err := metrics.NewTranslator(logger,
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = logger
+	attributesTranslator, err := attributes.NewTranslator(set)
+	require.NoError(t, err)
+	tr, err := metrics.NewTranslator(set,
+		attributesTranslator,
 		metrics.WithHistogramMode(metrics.HistogramModeDistributions),
 		metrics.WithNumberMode(metrics.NumberModeCumulativeToDelta),
 		metrics.WithFallbackSourceProvider(testProvider("fallbackHostname")),
@@ -120,23 +124,4 @@ func TestTagsMetrics(t *testing.T) {
 	assert.ElementsMatch(t, runningHostnames, []string{"", "", ""})
 	assert.Len(t, runningMetrics, 3)
 	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
-}
-
-func TestConsumeAPMStats(t *testing.T) {
-	var md metrics.Metadata
-	c := NewConsumer()
-	for _, sp := range testutil.StatsPayloads {
-		c.ConsumeAPMStats(sp)
-	}
-	require.Len(t, c.as, len(testutil.StatsPayloads))
-	require.ElementsMatch(t, c.as, testutil.StatsPayloads)
-	_, _, out := c.All(0, component.BuildInfo{}, []string{}, md)
-	require.ElementsMatch(t, out, testutil.StatsPayloads)
-	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"}, md)
-	var copies []*pb.ClientStatsPayload
-	for _, sp := range testutil.StatsPayloads {
-		sp.Tags = append(sp.Tags, "extra:key")
-		copies = append(copies, sp)
-	}
-	require.ElementsMatch(t, out, copies)
 }

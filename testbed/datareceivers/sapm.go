@@ -33,13 +33,13 @@ func NewSapmDataReceiver(port int, compression string) *SapmDataReceiver {
 // Start the receiver.
 func (sr *SapmDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	sapmCfg := sapmreceiver.Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{AccessTokenPassthrough: true},
 	}
 	var err error
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	sr.receiver, err = sapmreceiver.NewFactory().CreateTracesReceiver(context.Background(), params, &sapmCfg, tc)
 	if err != nil {
 		return err

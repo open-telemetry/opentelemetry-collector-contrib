@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("apache")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
+)
+
 const (
-	Type             = "apache"
 	MetricsStability = component.StabilityLevelBeta
 )

@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("zookeeper")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
+)
+
 const (
-	Type             = "zookeeper"
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

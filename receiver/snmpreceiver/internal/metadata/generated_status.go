@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("snmp")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
+)
+
 const (
-	Type             = "snmp"
 	MetricsStability = component.StabilityLevelAlpha
 )

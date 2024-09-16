@@ -11,12 +11,12 @@ data:
         tls:
           insecure: true
     extensions:
-      health_check: {}
+      health_check:
+        endpoint: 0.0.0.0:13133
     processors:
     receivers:
       kubeletstats:
         auth_type: "serviceAccount"
-        insecure_skip_verify: true
         endpoint: "https://${env:K8S_NODE_NAME}:10250"
         metric_groups:
         - node

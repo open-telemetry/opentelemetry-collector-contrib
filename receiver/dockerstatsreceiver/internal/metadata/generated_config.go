@@ -2,7 +2,10 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -15,7 +18,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -33,7 +36,9 @@ type MetricsConfig struct {
 	ContainerBlockioIoTimeRecursive            MetricConfig `mapstructure:"container.blockio.io_time_recursive"`
 	ContainerBlockioIoWaitTimeRecursive        MetricConfig `mapstructure:"container.blockio.io_wait_time_recursive"`
 	ContainerBlockioSectorsRecursive           MetricConfig `mapstructure:"container.blockio.sectors_recursive"`
-	ContainerCPUPercent                        MetricConfig `mapstructure:"container.cpu.percent"`
+	ContainerCPULimit                          MetricConfig `mapstructure:"container.cpu.limit"`
+	ContainerCPULogicalCount                   MetricConfig `mapstructure:"container.cpu.logical.count"`
+	ContainerCPUShares                         MetricConfig `mapstructure:"container.cpu.shares"`
 	ContainerCPUThrottlingDataPeriods          MetricConfig `mapstructure:"container.cpu.throttling_data.periods"`
 	ContainerCPUThrottlingDataThrottledPeriods MetricConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
 	ContainerCPUThrottlingDataThrottledTime    MetricConfig `mapstructure:"container.cpu.throttling_data.throttled_time"`
@@ -48,6 +53,7 @@ type MetricsConfig struct {
 	ContainerMemoryAnon                        MetricConfig `mapstructure:"container.memory.anon"`
 	ContainerMemoryCache                       MetricConfig `mapstructure:"container.memory.cache"`
 	ContainerMemoryDirty                       MetricConfig `mapstructure:"container.memory.dirty"`
+	ContainerMemoryFails                       MetricConfig `mapstructure:"container.memory.fails"`
 	ContainerMemoryFile                        MetricConfig `mapstructure:"container.memory.file"`
 	ContainerMemoryHierarchicalMemoryLimit     MetricConfig `mapstructure:"container.memory.hierarchical_memory_limit"`
 	ContainerMemoryHierarchicalMemswLimit      MetricConfig `mapstructure:"container.memory.hierarchical_memsw_limit"`
@@ -91,6 +97,7 @@ type MetricsConfig struct {
 	ContainerNetworkIoUsageTxPackets           MetricConfig `mapstructure:"container.network.io.usage.tx_packets"`
 	ContainerPidsCount                         MetricConfig `mapstructure:"container.pids.count"`
 	ContainerPidsLimit                         MetricConfig `mapstructure:"container.pids.limit"`
+	ContainerRestarts                          MetricConfig `mapstructure:"container.restarts"`
 	ContainerUptime                            MetricConfig `mapstructure:"container.uptime"`
 }
 
@@ -120,8 +127,14 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerBlockioSectorsRecursive: MetricConfig{
 			Enabled: false,
 		},
-		ContainerCPUPercent: MetricConfig{
-			Enabled: true,
+		ContainerCPULimit: MetricConfig{
+			Enabled: false,
+		},
+		ContainerCPULogicalCount: MetricConfig{
+			Enabled: false,
+		},
+		ContainerCPUShares: MetricConfig{
+			Enabled: false,
 		},
 		ContainerCPUThrottlingDataPeriods: MetricConfig{
 			Enabled: false,
@@ -148,7 +161,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerCPUUtilization: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ContainerMemoryActiveAnon: MetricConfig{
 			Enabled: false,
@@ -163,6 +176,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryDirty: MetricConfig{
+			Enabled: false,
+		},
+		ContainerMemoryFails: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryFile: MetricConfig{
@@ -294,6 +310,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerPidsLimit: MetricConfig{
 			Enabled: false,
 		},
+		ContainerRestarts: MetricConfig{
+			Enabled: false,
+		},
 		ContainerUptime: MetricConfig{
 			Enabled: false,
 		},
@@ -303,6 +322,27 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for docker_stats resource attributes.

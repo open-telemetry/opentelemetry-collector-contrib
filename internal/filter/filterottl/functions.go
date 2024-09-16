@@ -14,21 +14,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func StandardSpanFuncs() map[string]ottl.Factory[ottlspan.TransformContext] {
-	return standardFuncs[ottlspan.TransformContext]()
+	m := ottlfuncs.StandardConverters[ottlspan.TransformContext]()
+	isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
+	m[isRootSpanFactory.Name()] = isRootSpanFactory
+	return m
 }
 
 func StandardSpanEventFuncs() map[string]ottl.Factory[ottlspanevent.TransformContext] {
-	return standardFuncs[ottlspanevent.TransformContext]()
+	return ottlfuncs.StandardConverters[ottlspanevent.TransformContext]()
 }
 
 func StandardMetricFuncs() map[string]ottl.Factory[ottlmetric.TransformContext] {
-	m := standardFuncs[ottlmetric.TransformContext]()
+	m := ottlfuncs.StandardConverters[ottlmetric.TransformContext]()
 	hasAttributeOnDatapointFactory := newHasAttributeOnDatapointFactory()
 	hasAttributeKeyOnDatapointFactory := newHasAttributeKeyOnDatapointFactory()
 	m[hasAttributeOnDatapointFactory.Name()] = hasAttributeOnDatapointFactory
@@ -37,36 +41,19 @@ func StandardMetricFuncs() map[string]ottl.Factory[ottlmetric.TransformContext] 
 }
 
 func StandardDataPointFuncs() map[string]ottl.Factory[ottldatapoint.TransformContext] {
-	return standardFuncs[ottldatapoint.TransformContext]()
+	return ottlfuncs.StandardConverters[ottldatapoint.TransformContext]()
+}
+
+func StandardScopeFuncs() map[string]ottl.Factory[ottlscope.TransformContext] {
+	return ottlfuncs.StandardConverters[ottlscope.TransformContext]()
 }
 
 func StandardLogFuncs() map[string]ottl.Factory[ottllog.TransformContext] {
-	return standardFuncs[ottllog.TransformContext]()
+	return ottlfuncs.StandardConverters[ottllog.TransformContext]()
 }
 
 func StandardResourceFuncs() map[string]ottl.Factory[ottlresource.TransformContext] {
-	return standardFuncs[ottlresource.TransformContext]()
-}
-
-func standardFuncs[K any]() map[string]ottl.Factory[K] {
-	m := ottlfuncs.StandardConverters[K]()
-	f := newDropFactory[K]()
-	m[f.Name()] = f
-	return m
-}
-
-func newDropFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("drop", nil, createDropFunction[K])
-}
-
-func createDropFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return dropFn[K]()
-}
-
-func dropFn[K any]() (ottl.ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
-		return true, nil
-	}, nil
+	return ottlfuncs.StandardConverters[ottlresource.TransformContext]()
 }
 
 type hasAttributeOnDatapointArguments struct {
@@ -89,7 +76,7 @@ func createHasAttributeOnDatapointFunction(_ ottl.FunctionContext, oArgs ottl.Ar
 }
 
 func hasAttributeOnDatapoint(key string, expectedVal string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
+	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		return checkDataPoints(tCtx, key, &expectedVal)
 	}, nil
 }
@@ -113,12 +100,12 @@ func createHasAttributeKeyOnDatapointFunction(_ ottl.FunctionContext, oArgs ottl
 }
 
 func hasAttributeKeyOnDatapoint(key string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
+	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		return checkDataPoints(tCtx, key, nil)
 	}, nil
 }
 
-func checkDataPoints(tCtx ottlmetric.TransformContext, key string, expectedVal *string) (interface{}, error) {
+func checkDataPoints(tCtx ottlmetric.TransformContext, key string, expectedVal *string) (any, error) {
 	metric := tCtx.GetMetric()
 	//exhaustive:enforce
 	switch metric.Type() {

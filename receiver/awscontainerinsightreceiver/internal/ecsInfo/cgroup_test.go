@@ -49,7 +49,7 @@ func TestGetCGroupPathForTask(t *testing.T) {
 			got, err := getCGroupPathForTask(cgroupMount, controller, tt.input, clusterName)
 
 			if tt.err != nil {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantRes, got)
@@ -100,7 +100,7 @@ func TestGetCGroupPathFromARN(t *testing.T) {
 			got, err := getTaskCgroupPathFromARN(tt.input)
 
 			if tt.err != nil {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantRes, got)
@@ -153,7 +153,7 @@ func TestGetCGroupMountPoint(t *testing.T) {
 			got, err := getCGroupMountPoint(tt.input)
 
 			if tt.err != nil {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantRes, got)

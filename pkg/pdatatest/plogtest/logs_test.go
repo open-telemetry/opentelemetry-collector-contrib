@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestCompareLogs(t *testing.T) {
@@ -132,6 +132,14 @@ func TestCompareLogs(t *testing.T) {
 				IgnoreObservedTimestamp(),
 			},
 			withoutOptions: errors.New(`resource "map[]": scope "collector": log record "map[]": observed timestamp doesn't match expected: 11651379494838206465, actual: 11651379494838206464`),
+			withOptions:    nil,
+		},
+		{
+			name: "ignore-timestamp",
+			compareOptions: []CompareLogsOption{
+				IgnoreTimestamp(),
+			},
+			withoutOptions: errors.New(`resource "map[]": scope "collector": log record "map[]": timestamp doesn't match expected: 11651379494838206465, actual: 11651379494838206464`),
 			withOptions:    nil,
 		},
 	}

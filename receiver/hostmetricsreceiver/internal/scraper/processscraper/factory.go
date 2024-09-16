@@ -8,10 +8,12 @@ import (
 	"errors"
 	"runtime"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -20,6 +22,17 @@ import (
 const (
 	// TypeStr the value of "type" key in configuration.
 	TypeStr = "process"
+)
+
+var (
+	bootTimeCacheFeaturegateID = "hostmetrics.process.bootTimeCache"
+	bootTimeCacheFeaturegate   = featuregate.GlobalRegistry().MustRegister(
+		bootTimeCacheFeaturegateID,
+		featuregate.StageBeta,
+		featuregate.WithRegisterDescription("When enabled, all process scrapes will use the boot time value that is cached at the start of the process."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/28849"),
+		featuregate.WithRegisterFromVersion("v0.98.0"),
+	)
 )
 
 // Factory is the Factory for scraper.
@@ -36,7 +49,7 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 // CreateMetricsScraper creates a resource scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg internal.Config,
 ) (scraperhelper.Scraper, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
@@ -48,8 +61,8 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraper(
-		TypeStr,
+	return scraperhelper.NewScraperWithComponentType(
+		hostmeta.Type,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

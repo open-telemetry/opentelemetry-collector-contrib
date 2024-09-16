@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("purefb")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver"
+)
+
 const (
-	Type             = "purefb"
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 		Broker:     []string{defaultHost},
 		MaxUnacked: defaultMaxUnaked,
 		Auth:       Authentication{},
-		TLS: configtls.TLSClientSetting{
+		TLS: configtls.ClientConfig{
 			InsecureSkipVerify: false,
 			Insecure:           false,
 		},
@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 // CreateTracesReceiver creates a trace receiver based on provided config. Component is not shared
 func createTracesReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	receiverConfig component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {

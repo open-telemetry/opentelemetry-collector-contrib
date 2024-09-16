@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 
@@ -21,8 +20,8 @@ import (
 var errConfigNotActiveDirectory = fmt.Errorf("config is not valid for the '%s' receiver", metadata.Type)
 
 func createMetricsReceiver(
-	ctx context.Context,
-	params receiver.CreateSettings,
+	_ context.Context,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -32,7 +31,7 @@ func createMetricsReceiver(
 	}
 
 	adds := newActiveDirectoryDSScraper(c.MetricsBuilderConfig, params)
-	scraper, err := scraperhelper.NewScraper(
+	scraper, err := scraperhelper.NewScraperWithComponentType(
 		metadata.Type,
 		adds.scrape,
 		scraperhelper.WithStart(adds.start),
@@ -44,7 +43,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&c.ScraperControllerSettings,
+		&c.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

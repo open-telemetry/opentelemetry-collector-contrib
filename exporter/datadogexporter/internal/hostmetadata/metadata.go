@@ -1,12 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package metadata is responsible for collecting host metadata from different providers
+// Package hostmetadata is responsible for collecting host metadata from different providers
 // such as EC2, ECS, AWS, etc and pushing it to Datadog.
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -58,7 +59,7 @@ func metadataFromAttributes(attrs pcommon.Map) payload.HostMetadata {
 	return hm
 }
 
-func fillHostMetadata(params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, hm *payload.HostMetadata) {
+func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Provider, hm *payload.HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
 		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
@@ -76,7 +77,7 @@ func fillHostMetadata(params exporter.CreateSettings, pcfg PusherConfig, p sourc
 	hm.Processes = gohai.NewProcessesPayload(hm.Meta.Hostname, params.Logger)
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
-		ec2HostInfo := ec2.GetHostInfo(params.Logger)
+		ec2HostInfo := ec2.GetHostInfo(context.Background(), params.Logger)
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 	}
@@ -91,9 +92,27 @@ func fillHostMetadata(params exporter.CreateSettings, pcfg PusherConfig, p sourc
 
 func (p *pusher) pushMetadata(hm payload.HostMetadata) error {
 	path := p.pcfg.MetricsEndpoint + "/intake"
-	buf, _ := json.Marshal(hm)
-	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
+	marshaled, err := json.Marshal(hm)
+	if err != nil {
+		return fmt.Errorf("error marshaling metadata payload: %w", err)
+	}
+
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(marshaled); err != nil {
+		return fmt.Errorf("error compressing metadata payload: %w", err)
+	}
+	if err = g.Close(); err != nil {
+		return fmt.Errorf("error closing gzip writer: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, path, &buf)
+	if err != nil {
+		return fmt.Errorf("error creating metadata request: %w", err)
+	}
+
 	clientutil.SetDDHeaders(req.Header, p.params.BuildInfo, p.pcfg.APIKey)
+	// Set the content type to JSON and the content encoding to gzip
 	clientutil.SetExtraHeaders(req.Header, clientutil.JSONHeaders)
 
 	resp, err := p.httpClient.Do(req)
@@ -132,25 +151,25 @@ func (p *pusher) Push(_ context.Context, hm payload.HostMetadata) error {
 var _ inframetadata.Pusher = (*pusher)(nil)
 
 type pusher struct {
-	params     exporter.CreateSettings
+	params     exporter.Settings
 	pcfg       PusherConfig
 	retrier    *clientutil.Retrier
 	httpClient *http.Client
 }
 
 // NewPusher creates a new inframetadata.Pusher that pushes metadata payloads
-func NewPusher(params exporter.CreateSettings, pcfg PusherConfig) inframetadata.Pusher {
+func NewPusher(params exporter.Settings, pcfg PusherConfig) inframetadata.Pusher {
 	return &pusher{
 		params:     params,
 		pcfg:       pcfg,
 		retrier:    clientutil.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber()),
-		httpClient: clientutil.NewHTTPClient(pcfg.TimeoutSettings, pcfg.InsecureSkipVerify),
+		httpClient: clientutil.NewHTTPClient(pcfg.ClientConfig),
 	}
 }
 
 // RunPusher to push host metadata payloads from the host where the Collector is running periodically to Datadog intake.
 // This function is blocking and it is meant to be run on a goroutine.
-func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map, reporter *inframetadata.Reporter) {
+func RunPusher(ctx context.Context, params exporter.Settings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map, reporter *inframetadata.Reporter) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
@@ -163,7 +182,7 @@ func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherC
 	// All fields that are being filled in by our exporter
 	// do not change over time. If this ever changes `hostMetadata`
 	// *must* be deep copied before calling `fillHostMetadata`.
-	hostMetadata := payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
+	hostMetadata := payload.NewEmpty()
 	if pcfg.UseResourceMetadata {
 		hostMetadata = metadataFromAttributes(attrs)
 	}

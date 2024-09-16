@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("cumulativetodelta")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
+)
+
 const (
-	Type             = "cumulativetodelta"
 	MetricsStability = component.StabilityLevelBeta
 )

@@ -1,0 +1,530 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: default
+        - key: k8s.pod.name
+          value:
+            stringValue: go-hello-world-5456b4b8cd-99vxc
+        - key: k8s.pod.uid
+          value:
+            stringValue: 42ad382b-ed0b-446d-9aab-3fdce8b4f9e2
+        - key: k8s.volume.name
+          value:
+            stringValue: default-token-wgfsl
+        - key: k8s.volume.type
+          value:
+            stringValue: secret
+    scopeMetrics:
+      - metrics:
+          - description: The number of available bytes in the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015703040"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.available
+            unit: By
+          - description: The total capacity in bytes of the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015715328"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.capacity
+            unit: By
+          - description: The total inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492118"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes
+            unit: "1"
+          - description: The free inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492109"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.free
+            unit: "1"
+          - description: The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.
+            gauge:
+              dataPoints:
+                - asInt: "9"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.used
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.pod.name
+          value:
+            stringValue: coredns-66bff467f8-58qvv
+        - key: k8s.pod.uid
+          value:
+            stringValue: eb632b33-62c6-4a80-9575-a97ab363ad7f
+        - key: k8s.volume.name
+          value:
+            stringValue: config-volume
+        - key: k8s.volume.type
+          value:
+            stringValue: configMap
+    scopeMetrics:
+      - metrics:
+          - description: The number of available bytes in the volume.
+            gauge:
+              dataPoints:
+                - asInt: "14810071040"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.available
+            unit: By
+          - description: The total capacity in bytes of the volume.
+            gauge:
+              dataPoints:
+                - asInt: "17361125376"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.capacity
+            unit: By
+          - description: The total inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "9768928"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes
+            unit: "1"
+          - description: The free inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "9758502"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.free
+            unit: "1"
+          - description: The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.
+            gauge:
+              dataPoints:
+                - asInt: "5"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.used
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.pod.name
+          value:
+            stringValue: coredns-66bff467f8-szddj
+        - key: k8s.pod.uid
+          value:
+            stringValue: 0adffe8e-9849-4e05-b4cd-92d2d1e1f1c3
+        - key: k8s.volume.name
+          value:
+            stringValue: config-volume
+        - key: k8s.volume.type
+          value:
+            stringValue: configMap
+    scopeMetrics:
+      - metrics:
+          - description: The number of available bytes in the volume.
+            gauge:
+              dataPoints:
+                - asInt: "14810071040"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.available
+            unit: By
+          - description: The total capacity in bytes of the volume.
+            gauge:
+              dataPoints:
+                - asInt: "17361125376"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.capacity
+            unit: By
+          - description: The total inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "9768928"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes
+            unit: "1"
+          - description: The free inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "9758502"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.free
+            unit: "1"
+          - description: The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.
+            gauge:
+              dataPoints:
+                - asInt: "5"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.used
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.pod.name
+          value:
+            stringValue: coredns-66bff467f8-szddj
+        - key: k8s.pod.uid
+          value:
+            stringValue: 0adffe8e-9849-4e05-b4cd-92d2d1e1f1c3
+        - key: k8s.volume.name
+          value:
+            stringValue: coredns-token-dzc5t
+        - key: k8s.volume.type
+          value:
+            stringValue: secret
+    scopeMetrics:
+      - metrics:
+          - description: The number of available bytes in the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015703040"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.available
+            unit: By
+          - description: The total capacity in bytes of the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015715328"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.capacity
+            unit: By
+          - description: The total inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492118"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes
+            unit: "1"
+          - description: The free inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492109"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.free
+            unit: "1"
+          - description: The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.
+            gauge:
+              dataPoints:
+                - asInt: "9"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.used
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.pod.name
+          value:
+            stringValue: kube-proxy-v48tf
+        - key: k8s.pod.uid
+          value:
+            stringValue: 0a6d6b05-0e8d-4920-8a38-926a33164d45
+        - key: k8s.volume.name
+          value:
+            stringValue: kube-proxy-token-2z27z
+        - key: k8s.volume.type
+          value:
+            stringValue: secret
+    scopeMetrics:
+      - metrics:
+          - description: The number of available bytes in the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015703040"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.available
+            unit: By
+          - description: The total capacity in bytes of the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015715328"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.capacity
+            unit: By
+          - description: The total inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492118"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes
+            unit: "1"
+          - description: The free inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492109"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.free
+            unit: "1"
+          - description: The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.
+            gauge:
+              dataPoints:
+                - asInt: "9"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.used
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: glusterfs.endpoints.name
+          value:
+            stringValue: endpoints_name
+        - key: glusterfs.path
+          value:
+            stringValue: path
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.persistentvolumeclaim.name
+          value:
+            stringValue: volume_claim_3
+        - key: k8s.pod.name
+          value:
+            stringValue: coredns-66bff467f8-58qvv
+        - key: k8s.pod.uid
+          value:
+            stringValue: eb632b33-62c6-4a80-9575-a97ab363ad7f
+        - key: k8s.volume.name
+          value:
+            stringValue: coredns-token-dzc5t
+        - key: k8s.volume.type
+          value:
+            stringValue: glusterfs
+    scopeMetrics:
+      - metrics:
+          - description: The number of available bytes in the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015703040"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.available
+            unit: By
+          - description: The total capacity in bytes of the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015715328"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.capacity
+            unit: By
+          - description: The total inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492118"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes
+            unit: "1"
+          - description: The free inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492109"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.free
+            unit: "1"
+          - description: The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.
+            gauge:
+              dataPoints:
+                - asInt: "9"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.used
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: aws.volume.id
+          value:
+            stringValue: volume_id
+        - key: fs.type
+          value:
+            stringValue: fs_type
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.persistentvolumeclaim.name
+          value:
+            stringValue: volume_claim_1
+        - key: k8s.pod.name
+          value:
+            stringValue: storage-provisioner
+        - key: k8s.pod.uid
+          value:
+            stringValue: 14bf95e0-9451-4192-b111-807b03163670
+        - key: k8s.volume.name
+          value:
+            stringValue: storage-provisioner-token-qzlx6
+        - key: k8s.volume.type
+          value:
+            stringValue: awsElasticBlockStore
+        - key: partition
+          value:
+            stringValue: "10"
+    scopeMetrics:
+      - metrics:
+          - description: The number of available bytes in the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015703040"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.available
+            unit: By
+          - description: The total capacity in bytes of the volume.
+            gauge:
+              dataPoints:
+                - asInt: "2015715328"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.capacity
+            unit: By
+          - description: The total inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492118"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes
+            unit: "1"
+          - description: The free inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "492109"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.free
+            unit: "1"
+          - description: The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.
+            gauge:
+              dataPoints:
+                - asInt: "9"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.used
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: fs.type
+          value:
+            stringValue: fs_type
+        - key: gce.pd.name
+          value:
+            stringValue: pd_name
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.persistentvolumeclaim.name
+          value:
+            stringValue: volume_claim_2
+        - key: k8s.pod.name
+          value:
+            stringValue: kube-proxy-v48tf
+        - key: k8s.pod.uid
+          value:
+            stringValue: 0a6d6b05-0e8d-4920-8a38-926a33164d45
+        - key: k8s.volume.name
+          value:
+            stringValue: kube-proxy
+        - key: k8s.volume.type
+          value:
+            stringValue: gcePersistentDisk
+        - key: partition
+          value:
+            stringValue: "10"
+    scopeMetrics:
+      - metrics:
+          - description: The number of available bytes in the volume.
+            gauge:
+              dataPoints:
+                - asInt: "14810071040"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.available
+            unit: By
+          - description: The total capacity in bytes of the volume.
+            gauge:
+              dataPoints:
+                - asInt: "17361125376"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.capacity
+            unit: By
+          - description: The total inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "9768928"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes
+            unit: "1"
+          - description: The free inodes in the filesystem.
+            gauge:
+              dataPoints:
+                - asInt: "9758502"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.free
+            unit: "1"
+          - description: The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.
+            gauge:
+              dataPoints:
+                - asInt: "7"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.volume.inodes.used
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest

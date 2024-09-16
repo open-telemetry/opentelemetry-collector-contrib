@@ -18,6 +18,6 @@ func newZapInfluxLogger(logger *zap.Logger) common.Logger {
 	}
 }
 
-func (l zapInfluxLogger) Debug(msg string, kv ...interface{}) {
+func (l zapInfluxLogger) Debug(msg string, kv ...any) {
 	l.SugaredLogger.Debugw(msg, kv...)
 }

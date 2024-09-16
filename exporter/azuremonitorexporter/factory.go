@@ -12,7 +12,9 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
@@ -48,12 +50,13 @@ func createDefaultConfig() component.Config {
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
 		SpanEventsEnabled: false,
+		QueueSettings:     exporterhelper.NewDefaultQueueConfig(),
 	}
 }
 
 func (f *factory) createTracesExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	exporterConfig, ok := cfg.(*Config)
@@ -62,13 +65,17 @@ func (f *factory) createTracesExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 
-	tc := f.getTransportChannel(exporterConfig, set.Logger)
+	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
+	if errInstrumentationKeyOrConnectionString != nil {
+		return nil, errInstrumentationKeyOrConnectionString
+	}
+
 	return newTracesExporter(exporterConfig, tc, set)
 }
 
 func (f *factory) createLogsExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	exporterConfig, ok := cfg.(*Config)
@@ -77,13 +84,17 @@ func (f *factory) createLogsExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 
-	tc := f.getTransportChannel(exporterConfig, set.Logger)
+	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
+	if errInstrumentationKeyOrConnectionString != nil {
+		return nil, errInstrumentationKeyOrConnectionString
+	}
+
 	return newLogsExporter(exporterConfig, tc, set)
 }
 
 func (f *factory) createMetricsExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	exporterConfig, ok := cfg.(*Config)
@@ -92,17 +103,28 @@ func (f *factory) createMetricsExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 
-	tc := f.getTransportChannel(exporterConfig, set.Logger)
+	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
+	if errInstrumentationKeyOrConnectionString != nil {
+		return nil, errInstrumentationKeyOrConnectionString
+	}
+
 	return newMetricsExporter(exporterConfig, tc, set)
 }
 
 // Configures the transport channel.
 // This method is not thread-safe
-func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) transportChannel {
+func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) (transportChannel, error) {
 
 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
 	// This default channel handles batching, appropriate retries, and is backed by memory.
 	if f.tChannel == nil {
+		connectionVars, err := parseConnectionString(exporterConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		exporterConfig.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
+		exporterConfig.Endpoint = connectionVars.IngestionURL
 		telemetryConfiguration := appinsights.NewTelemetryConfiguration(string(exporterConfig.InstrumentationKey))
 		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
 		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
@@ -120,5 +142,5 @@ func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger
 		}
 	}
 
-	return f.tChannel
+	return f.tChannel, nil
 }

@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("asapclient")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
+)
+
 const (
-	Type               = "asapclient"
 	ExtensionStability = component.StabilityLevelBeta
 )

@@ -75,8 +75,8 @@ type bigipCredentials struct {
 var _ client = (*bigipClient)(nil)
 
 // newClient creates an initialized client (but with no token)
-func newClient(cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
-	httpClient, err := cfg.ToClient(host, settings)
+func newClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
+	httpClient, err := cfg.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -188,7 +188,7 @@ func (c *bigipClient) GetNodes(ctx context.Context) (nodes *models.Nodes, err er
 }
 
 // post makes a POST request for the passed in path and stores result in the respObj
-func (c *bigipClient) post(ctx context.Context, path string, respObj interface{}) error {
+func (c *bigipClient) post(ctx context.Context, path string, respObj any) error {
 	// Construct endpoint and create request
 	url := c.hostEndpoint + path
 	postBody, _ := json.Marshal(map[string]string{
@@ -206,7 +206,7 @@ func (c *bigipClient) post(ctx context.Context, path string, respObj interface{}
 }
 
 // get makes a GET request (with token in header) for the passed in path and stores result in the respObj
-func (c *bigipClient) get(ctx context.Context, path string, respObj interface{}) error {
+func (c *bigipClient) get(ctx context.Context, path string, respObj any) error {
 	// Construct endpoint and create request
 	url := c.hostEndpoint + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
@@ -219,7 +219,7 @@ func (c *bigipClient) get(ctx context.Context, path string, respObj interface{})
 }
 
 // makeHTTPRequest makes the request and decodes the body into the respObj on a 200 Status
-func (c *bigipClient) makeHTTPRequest(req *http.Request, respObj interface{}) (err error) {
+func (c *bigipClient) makeHTTPRequest(req *http.Request, respObj any) (err error) {
 	// Make request
 	resp, err := c.client.Do(req)
 	if err != nil {

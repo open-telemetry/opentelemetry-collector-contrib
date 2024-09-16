@@ -16,7 +16,7 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, "docker_stats", string(factory.Type()))
+	assert.Equal(t, "docker_stats", factory.Type().String())
 
 	config := factory.CreateDefaultConfig()
 	assert.NotNil(t, config, "failed to create default config")
@@ -27,7 +27,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	traceReceiver, err := factory.CreateTracesReceiver(context.Background(), params, config, consumertest.NewNop())
 	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, traceReceiver)

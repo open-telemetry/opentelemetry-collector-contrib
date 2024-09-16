@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/common"
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -22,9 +22,9 @@ import (
 
 func TestConsistentRootPaths(t *testing.T) {
 	// use testdata because it's a directory that exists - don't actually use any files in it
-	assert.Nil(t, testValidate("testdata"))
-	assert.Nil(t, testValidate(""))
-	assert.Nil(t, testValidate("/"))
+	assert.NoError(t, testValidate("testdata"))
+	assert.NoError(t, testValidate(""))
+	assert.NoError(t, testValidate("/"))
 }
 
 func TestInconsistentRootPaths(t *testing.T) {
@@ -38,6 +38,8 @@ func TestLoadConfigRootPath(t *testing.T) {
 	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-root-path.yaml"), factories)
 	require.NoError(t, err)
 	globalRootPath = ""
@@ -63,6 +65,8 @@ func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
 	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	_, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-bad-root-path.yaml"), factories)
 	assert.ErrorContains(t, err, "invalid root_path:")
 	globalRootPath = ""

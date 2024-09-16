@@ -3,8 +3,8 @@ type: filestats
 status:
   class: receiver
   stability:
-    alpha: [metrics]
-  distributions: [contrib, sumo]
+    beta: [metrics]
+  distributions: [contrib]
   codeowners:
     active: [atoulme]
 
@@ -57,3 +57,9 @@ metrics:
     gauge:
       value_type: int
     unit: "b"
+  file.count:
+    description: The number of files matched
+    enabled: false
+    gauge:
+      value_type: int
+    unit: "{file}"

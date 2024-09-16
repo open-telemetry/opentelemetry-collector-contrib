@@ -16,7 +16,7 @@ type Provider interface {
 
 type consulMetadataImpl struct {
 	consulClient  *api.Client
-	allowedLabels map[string]interface{}
+	allowedLabels map[string]any
 }
 
 type Metadata struct {
@@ -26,7 +26,7 @@ type Metadata struct {
 	HostMetadata map[string]string
 }
 
-func NewProvider(client *api.Client, allowedLabels map[string]interface{}) Provider {
+func NewProvider(client *api.Client, allowedLabels map[string]any) Provider {
 	return &consulMetadataImpl{consulClient: client, allowedLabels: allowedLabels}
 }
 

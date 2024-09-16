@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("memcached")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
+)
+
 const (
-	Type             = "memcached"
 	MetricsStability = component.StabilityLevelBeta
 )

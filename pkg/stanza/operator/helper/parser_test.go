@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -21,7 +22,8 @@ import (
 
 func TestParserConfigMissingBase(t *testing.T) {
 	config := ParserConfig{}
-	_, err := config.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := config.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -35,7 +37,8 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 		LayoutType: "strptime",
 	}
 
-	_, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required configuration parameter `layout`")
 }
@@ -47,7 +50,8 @@ func TestParserConfigBodyCollision(t *testing.T) {
 	b := entry.NewAttributeField("message")
 	cfg.BodyField = &b
 
-	_, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "`parse_to: body` not allowed when `body` is configured")
 }
@@ -87,7 +91,8 @@ func TestParserConfigBuildValid(t *testing.T) {
 		ParseFrom: scopeNameField,
 	}
 
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	require.NotNil(t, op.TimeParser)
@@ -97,20 +102,22 @@ func TestParserConfigBuildValid(t *testing.T) {
 }
 
 func TestParserMissingField(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: zaptest.NewLogger(t).Sugar(),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 			},
 			OnError: DropOnError,
 		},
 		ParseFrom: entry.NewBodyField("test"),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -129,7 +136,7 @@ func TestParserInvalidParseDrop(t *testing.T) {
 		},
 		ParseFrom: entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, fmt.Errorf("parse failure")
 	}
 	ctx := context.Background()
@@ -149,7 +156,7 @@ func TestParserInvalidParseSend(t *testing.T) {
 		},
 		ParseFrom: entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, fmt.Errorf("parse failure")
 	}
 	ctx := context.Background()
@@ -177,7 +184,7 @@ func TestParserInvalidTimeParseDrop(t *testing.T) {
 			}(),
 		},
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -204,7 +211,7 @@ func TestParserInvalidTimeParseSend(t *testing.T) {
 			}(),
 		},
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -228,7 +235,7 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -240,13 +247,15 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 }
 
 func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: testutil.Logger(t),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 			},
 			OnError: DropOnError,
@@ -266,7 +275,7 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -293,13 +302,16 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 	expected, err := time.ParseInLocation(layout, sample, hst)
 	require.NoError(t, err)
 
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: testutil.Logger(t),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 			},
 			OnError: DropOnError,
@@ -318,7 +330,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -338,14 +350,17 @@ func TestParserOutput(t *testing.T) {
 	output.On("ID").Return("test-output")
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
 
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			OnError: DropOnError,
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: testutil.Logger(t),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 				OutputOperators: []operator.Operator{output},
 			},
@@ -353,7 +368,7 @@ func TestParserOutput(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -386,7 +401,7 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -407,7 +422,7 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -428,7 +443,7 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -448,9 +463,9 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Body = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -473,9 +488,9 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Attributes = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Attributes = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -498,9 +513,9 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -523,7 +538,7 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
 				e.Body = "value"
@@ -538,8 +553,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Body = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -548,12 +563,12 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Body = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -567,8 +582,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Attributes = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -577,9 +592,9 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
-					"one": map[string]interface{}{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -594,8 +609,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -604,11 +619,11 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -617,9 +632,9 @@ func TestParserFields(t *testing.T) {
 		},
 	}
 
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		split := strings.Split(i.(string), ":")
-		return map[string]interface{}{split[0]: split[1]}, nil
+		return map[string]any{split[0]: split[1]}, nil
 	}
 
 	for _, tc := range cases {
@@ -627,7 +642,8 @@ func TestParserFields(t *testing.T) {
 			cfg := NewParserConfig("test-id", "test-type")
 			tc.cfgMod(&cfg)
 
-			parser, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			parser, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			e := tc.input()
@@ -647,7 +663,7 @@ func NewTestParserConfig() ParserConfig {
 	expect.TimeParser = &tp
 
 	sp := NewSeverityConfig()
-	sp.Mapping = map[string]interface{}{
+	sp.Mapping = map[string]any{
 		"info": "3xx",
 		"warn": "4xx",
 	}
@@ -661,11 +677,13 @@ func NewTestParserConfig() ParserConfig {
 
 func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
 	fakeOut := testutil.NewFakeOutput(t)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	writer := &WriterOperator{
 		BasicOperator: BasicOperator{
-			OperatorID:    "test-id",
-			OperatorType:  "test-type",
-			SugaredLogger: testutil.Logger(t),
+			OperatorID:   "test-id",
+			OperatorType: "test-type",
+			set:          set,
 		},
 		OutputIDs: []string{fakeOut.ID()},
 	}

@@ -43,13 +43,13 @@ type ssoSpan struct {
 		SchemaURL              string         `json:"schemaUrl"`
 		Version                string         `json:"version"`
 	} `json:"instrumentationScope,omitempty"`
-	Kind         string         `json:"kind"`
-	Links        []ssoSpanLinks `json:"links,omitempty"`
-	Name         string         `json:"name"`
-	ParentSpanID string         `json:"parentSpanId"`
-	Resource     map[string]any `json:"resource,omitempty"`
-	SpanID       string         `json:"spanId"`
-	StartTime    time.Time      `json:"startTime"`
+	Kind         string            `json:"kind"`
+	Links        []ssoSpanLinks    `json:"links,omitempty"`
+	Name         string            `json:"name"`
+	ParentSpanID string            `json:"parentSpanId"`
+	Resource     map[string]string `json:"resource,omitempty"`
+	SpanID       string            `json:"spanId"`
+	StartTime    time.Time         `json:"startTime"`
 	Status       struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
@@ -57,4 +57,25 @@ type ssoSpan struct {
 	Timestamp  time.Time `json:"@timestamp"`
 	TraceID    string    `json:"traceId"`
 	TraceState string    `json:"traceState"`
+}
+
+type ssoRecord struct {
+	Attributes           map[string]any `json:"attributes,omitempty"`
+	Body                 string         `json:"body"`
+	InstrumentationScope struct {
+		Attributes map[string]any `json:"attributes,omitempty"`
+		Name       string         `json:"name,omitempty"`
+		SchemaURL  string         `json:"schemaUrl,omitempty"`
+		Version    string         `json:"version,omitempty"`
+	} `json:"instrumentationScope,omitempty"`
+	ObservedTimestamp *time.Time        `json:"observedTimestamp,omitempty"`
+	Resource          map[string]string `json:"resource,omitempty"`
+	SchemaURL         string            `json:"schemaUrl,omitempty"`
+	Severity          struct {
+		Text   string `json:"text,omitempty"`
+		Number int64  `json:"number,omitempty"`
+	} `json:"severity"`
+	SpanID    string     `json:"spanId,omitempty"`
+	Timestamp *time.Time `json:"@timestamp"`
+	TraceID   string     `json:"traceId,omitempty"`
 }

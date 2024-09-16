@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("mysql")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+)
+
 const (
-	Type             = "mysql"
 	MetricsStability = component.StabilityLevelBeta
 )

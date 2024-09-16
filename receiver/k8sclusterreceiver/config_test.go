@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -84,7 +84,7 @@ func TestInvalidConfig(t *testing.T) {
 		CollectionInterval: 30 * time.Second,
 	}
 	err := component.ValidateConfig(cfg)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 
 	// Wrong distro
@@ -94,6 +94,6 @@ func TestInvalidConfig(t *testing.T) {
 		CollectionInterval: 30 * time.Second,
 	}
 	err = component.ValidateConfig(cfg)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, "\"wrong\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", err.Error())
 }

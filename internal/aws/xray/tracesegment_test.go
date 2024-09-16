@@ -106,10 +106,10 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 					},
 				},
 			},
-			Annotations: map[string]interface{}{
+			Annotations: map[string]any{
 				"DDB.DescribeExistingTableAndPutToMissingTable.Annotation": "anno",
 			},
-			Metadata: map[string]map[string]interface{}{
+			Metadata: map[string]map[string]any{
 				"default": {
 					"DDB.DescribeExistingTableAndPutToMissingTable.AddMetadata": "meta",
 				},
@@ -152,9 +152,9 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 									Name:      String("connect"),
 									StartTime: aws.Float64(1596566305.5357504),
 									EndTime:   aws.Float64(1596566305.575329),
-									Metadata: map[string]map[string]interface{}{
+									Metadata: map[string]map[string]any{
 										"http": {
-											"connection": map[string]interface{}{
+											"connection": map[string]any{
 												"reused":   false,
 												"was_idle": false,
 											},
@@ -166,11 +166,11 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											Name:      String("dns"),
 											StartTime: aws.Float64(1596566305.5357957),
 											EndTime:   aws.Float64(1596566305.5373216),
-											Metadata: map[string]map[string]interface{}{
+											Metadata: map[string]map[string]any{
 												"http": {
-													"dns": map[string]interface{}{
-														"addresses": []interface{}{
-															map[string]interface{}{
+													"dns": map[string]any{
+														"addresses": []any{
+															map[string]any{
 																"IP":   "52.94.10.94",
 																"Zone": "",
 															},
@@ -185,9 +185,9 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											Name:      String("dial"),
 											StartTime: aws.Float64(1596566305.5373297),
 											EndTime:   aws.Float64(1596566305.537964),
-											Metadata: map[string]map[string]interface{}{
+											Metadata: map[string]map[string]any{
 												"http": {
-													"connect": map[string]interface{}{
+													"connect": map[string]any{
 														"network": "tcp",
 													},
 												},
@@ -198,9 +198,9 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											Name:      String("tls"),
 											StartTime: aws.Float64(1596566305.5380135),
 											EndTime:   aws.Float64(1596566305.5753162),
-											Metadata: map[string]map[string]interface{}{
+											Metadata: map[string]map[string]any{
 												"http": {
-													"tls": map[string]interface{}{
+													"tls": map[string]any{
 														"cipher_suite":                  49199.0,
 														"did_resume":                    false,
 														"negotiated_protocol":           "http/1.1",
@@ -629,7 +629,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		content, err := os.ReadFile(tc.samplePath)
 		assert.NoError(t, err, fmt.Sprintf("[%s] can not read raw segment", tc.testCase))
 
-		assert.True(t, len(content) > 0, fmt.Sprintf("[%s] content length is 0", tc.testCase))
+		assert.NotEmpty(t, content, fmt.Sprintf("[%s] content length is 0", tc.testCase))
 
 		var actualSeg Segment
 		err = json.Unmarshal(content, &actualSeg)

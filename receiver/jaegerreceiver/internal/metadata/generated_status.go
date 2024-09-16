@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("jaeger")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
+)
+
 const (
-	Type            = "jaeger"
 	TracesStability = component.StabilityLevelBeta
 )

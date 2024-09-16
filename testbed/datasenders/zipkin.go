@@ -38,10 +38,10 @@ func (zs *zipkinDataSender) Start() error {
 	cfg := factory.CreateDefaultConfig().(*zipkinexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("http://%s/api/v2/spans", zs.GetEndpoint())
 	// Disable retries, we should push data and if error just log it.
-	cfg.RetrySettings.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueSettings.Enabled = false
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)

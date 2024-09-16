@@ -18,10 +18,10 @@ func TestExprString(t *testing.T) {
 
 	exampleEntry := func() *entry.Entry {
 		e := entry.New()
-		e.Body = map[string]interface{}{
+		e.Body = map[string]any{
 			"test": "value",
 		}
-		e.Resource = map[string]interface{}{
+		e.Resource = map[string]any{
 			"id": "value",
 		}
 		return e

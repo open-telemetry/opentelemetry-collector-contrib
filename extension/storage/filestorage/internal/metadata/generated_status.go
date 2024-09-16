@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("file_storage")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+)
+
 const (
-	Type               = "file_storage"
 	ExtensionStability = component.StabilityLevelBeta
 )

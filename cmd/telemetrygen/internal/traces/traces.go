@@ -6,6 +6,8 @@ package traces
 import (
 	"context"
 	"fmt"
+	"math"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -21,51 +23,43 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
 
-	grpcExpOpt := []otlptracegrpc.Option{
-		otlptracegrpc.WithEndpoint(cfg.Endpoint),
-		otlptracegrpc.WithDialOption(
-			grpc.WithBlock(),
-		),
-	}
-
-	httpExpOpt := []otlptracehttp.Option{
-		otlptracehttp.WithEndpoint(cfg.Endpoint),
-		otlptracehttp.WithURLPath(cfg.HTTPPath),
-	}
-
-	if cfg.Insecure {
-		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithInsecure())
-		httpExpOpt = append(httpExpOpt, otlptracehttp.WithInsecure())
-	}
-
-	if len(cfg.Headers) > 0 {
-		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithHeaders(cfg.Headers))
-		httpExpOpt = append(httpExpOpt, otlptracehttp.WithHeaders(cfg.Headers))
-	}
-
 	var exp *otlptrace.Exporter
 	if cfg.UseHTTP {
+		var exporterOpts []otlptracehttp.Option
+
 		logger.Info("starting HTTP exporter")
-		exp, err = otlptracehttp.New(context.Background(), httpExpOpt...)
+		exporterOpts, err = httpExporterOptions(cfg)
+		if err != nil {
+			return err
+		}
+		exp, err = otlptracehttp.New(context.Background(), exporterOpts...)
+		if err != nil {
+			return fmt.Errorf("failed to obtain OTLP HTTP exporter: %w", err)
+		}
 	} else {
+		var exporterOpts []otlptracegrpc.Option
+
 		logger.Info("starting gRPC exporter")
-		exp, err = otlptracegrpc.New(context.Background(), grpcExpOpt...)
+		exporterOpts, err = grpcExporterOptions(cfg)
+		if err != nil {
+			return err
+		}
+		exp, err = otlptracegrpc.New(context.Background(), exporterOpts...)
+		if err != nil {
+			return fmt.Errorf("failed to obtain OTLP gRPC exporter: %w", err)
+		}
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to obtain OTLP exporter: %w", err)
-	}
 	defer func() {
 		logger.Info("stopping the exporter")
 		if tempError := exp.Shutdown(context.Background()); tempError != nil {
@@ -79,13 +73,13 @@ func Start(cfg *Config) error {
 		defer func() {
 			logger.Info("stop the batch span processor")
 			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
-				logger.Error("failed to stop the batch span processor", zap.Error(err))
+				logger.Error("failed to stop the batch span processor", zap.Error(tempError))
 			}
 		}()
 	}
 
 	var attributes []attribute.KeyValue
-	// may be overridden by `-otlp-attributes service.name="foo"`
+	// may be overridden by `--otlp-attributes service.name="foo"`
 	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
 	attributes = append(attributes, cfg.GetAttributes()...)
 
@@ -123,22 +117,30 @@ func Run(c *Config, logger *zap.Logger) error {
 	}
 
 	var statusCode codes.Code
-	if c.StatusCode == "" {
+
+	switch strings.ToLower(c.StatusCode) {
+	case "0", "unset", "":
 		statusCode = codes.Unset
-	} else {
-		if err := statusCode.UnmarshalJSON([]byte(c.StatusCode)); err != nil {
-			return fmt.Errorf("expected `status-code` to be one of (Unset, Error, Ok) or (0, 1, 2), got %q instead", c.StatusCode)
-		}
+	case "1", "error":
+		statusCode = codes.Error
+	case "2", "ok":
+		statusCode = codes.Ok
+	default:
+		return fmt.Errorf("expected `status-code` to be one of (Unset, Error, Ok) or (0, 1, 2), got %q instead", c.StatusCode)
 	}
+
 	wg := sync.WaitGroup{}
 
 	running := &atomic.Bool{}
 	running.Store(true)
 
+	telemetryAttributes := c.GetTelemetryAttributes()
+
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
 		w := worker{
 			numTraces:        c.NumTraces,
+			numChildSpans:    int(math.Max(1, float64(c.NumChildSpans))),
 			propagateContext: c.PropagateContext,
 			statusCode:       statusCode,
 			limitPerSecond:   limit,
@@ -147,9 +149,10 @@ func Run(c *Config, logger *zap.Logger) error {
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
 			loadSize:         c.LoadSize,
+			spanDuration:     c.SpanDuration,
 		}
 
-		go w.simulateTraces()
+		go w.simulateTraces(telemetryAttributes)
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)

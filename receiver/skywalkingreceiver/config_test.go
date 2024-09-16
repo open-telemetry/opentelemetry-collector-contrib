@@ -29,14 +29,26 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(metadata.Type, ""),
-			expected: createDefaultConfig(),
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Protocols: Protocols{
+					HTTP: &confighttp.ServerConfig{
+						Endpoint: "0.0.0.0:12800",
+					},
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  "0.0.0.0:11800",
+							Transport: confignet.TransportTypeTCP,
+						},
+					},
+				},
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				Protocols: Protocols{
-					HTTP: &confighttp.HTTPServerSettings{
+					HTTP: &confighttp.ServerConfig{
 						Endpoint: "0.0.0.0:12801",
 					},
 				},
@@ -46,10 +58,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expected: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
-							Endpoint:  defaultGRPCBindEndpoint,
-							Transport: "tcp",
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  "localhost:11800",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 				},
@@ -64,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

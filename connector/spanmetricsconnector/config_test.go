@@ -26,10 +26,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultMethod := "GET"
+	defaultMaxPerDatapoint := 5
+	customTimestampCacheSize := 123
 	tests := []struct {
-		id           component.ID
-		expected     component.Config
-		errorMessage string
+		id              component.ID
+		expected        component.Config
+		errorMessage    string
+		extraAssertions func(config *Config)
 	}{
 		{
 			id:       component.NewIDWithName(metadata.Type, "default"),
@@ -47,8 +50,10 @@ func TestLoadConfig(t *testing.T) {
 					{Name: "http.method", Default: &defaultMethod},
 					{Name: "http.status_code", Default: (*string)(nil)},
 				},
-				DimensionsCacheSize:  1500,
-				MetricsFlushInterval: 30 * time.Second,
+				Namespace:                DefaultNamespace,
+				DimensionsCacheSize:      1500,
+				ResourceMetricsCacheSize: 1600,
+				MetricsFlushInterval:     30 * time.Second,
 				Exemplars: ExemplarsConfig{
 					Enabled: true,
 				},
@@ -66,9 +71,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "exponential_histogram"),
 			expected: &Config{
-				AggregationTemporality: cumulative,
-				DimensionsCacheSize:    1000,
-				MetricsFlushInterval:   15 * time.Second,
+				Namespace:                DefaultNamespace,
+				AggregationTemporality:   cumulative,
+				DimensionsCacheSize:      defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
 				Histogram: HistogramConfig{
 					Unit: metrics.Milliseconds,
 					Exponential: &ExponentialHistogramConfig{
@@ -86,14 +93,74 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "unknown Unit \"h\"",
 		},
 		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_metrics_expiration"),
+			errorMessage: "the duration should be positive",
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "exemplars_enabled"),
 			expected: &Config{
-				AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
-				DimensionsCacheSize:    defaultDimensionsCacheSize,
-				MetricsFlushInterval:   15 * time.Second,
-				Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit},
-				Exemplars:              ExemplarsConfig{Enabled: true},
+				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				DimensionsCacheSize:      defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Exemplars:                ExemplarsConfig{Enabled: true},
+				Namespace:                DefaultNamespace,
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "exemplars_enabled_with_max_per_datapoint"),
+			expected: &Config{
+				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				DimensionsCacheSize:      defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Exemplars:                ExemplarsConfig{Enabled: true, MaxPerDataPoint: &defaultMaxPerDatapoint},
+				Namespace:                DefaultNamespace,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resource_metrics_key_attributes"),
+			expected: &Config{
+				AggregationTemporality:       "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				DimensionsCacheSize:          defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize:     defaultResourceMetricsCacheSize,
+				ResourceMetricsKeyAttributes: []string{"service.name", "telemetry.sdk.language", "telemetry.sdk.name"},
+				MetricsFlushInterval:         60 * time.Second,
+				Histogram:                    HistogramConfig{Disable: false, Unit: defaultUnit},
+				Namespace:                    DefaultNamespace,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "custom_delta_timestamp_cache_size"),
+			expected: &Config{
+				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
+				TimestampCacheSize:       &customTimestampCacheSize,
+				DimensionsCacheSize:      defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Namespace:                DefaultNamespace,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "default_delta_timestamp_cache_size"),
+			expected: &Config{
+				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
+				DimensionsCacheSize:      defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Namespace:                DefaultNamespace,
+			},
+			extraAssertions: func(config *Config) {
+				assert.Equal(t, defaultDeltaTimestampCacheSize, config.GetDeltaTimestampCacheSize())
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_delta_timestamp_cache_size"),
+			errorMessage: "invalid delta timestamp cache size: 0, the maximum number of the items in the cache should be positive",
 		},
 	}
 
@@ -104,7 +171,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			err = component.UnmarshalConfig(sub, cfg)
+			err = sub.Unmarshal(cfg)
 
 			if tt.expected == nil {
 				err = errors.Join(err, component.ValidateConfig(cfg))
@@ -113,6 +180,9 @@ func TestLoadConfig(t *testing.T) {
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+			if tt.extraAssertions != nil {
+				tt.extraAssertions(cfg.(*Config))
+			}
 		})
 	}
 }
@@ -163,6 +233,50 @@ func TestValidateDimensions(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateDimensions(tc.dimensions)
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateEventDimensions(t *testing.T) {
+	for _, tc := range []struct {
+		enabled     bool
+		name        string
+		dimensions  []Dimension
+		expectedErr string
+	}{
+		{
+			enabled:    false,
+			name:       "disabled - no additional dimensions",
+			dimensions: []Dimension{},
+		},
+		{
+			enabled:     true,
+			name:        "enabled - no additional dimensions",
+			dimensions:  []Dimension{},
+			expectedErr: "no dimensions configured for events",
+		},
+		{
+			enabled:    true,
+			name:       "enabled - no duplicate dimensions",
+			dimensions: []Dimension{{Name: "exception_type"}},
+		},
+		{
+			enabled: true,
+			name:    "enabled - duplicate dimensions",
+			dimensions: []Dimension{
+				{Name: "exception_type"},
+				{Name: "exception_type"},
+			},
+			expectedErr: "duplicate dimension name exception_type",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateEventDimensions(tc.enabled, tc.dimensions)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
 			} else {

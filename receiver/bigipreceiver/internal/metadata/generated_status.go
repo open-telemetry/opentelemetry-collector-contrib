@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("bigip")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
+)
+
 const (
-	Type             = "bigip"
 	MetricsStability = component.StabilityLevelBeta
 )

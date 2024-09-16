@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -39,7 +39,7 @@ func TestPrometheusExporter(t *testing.T) {
 					"foo0":  "bar0",
 					"code0": "one0",
 				},
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8999",
 				},
 				SendTimestamps:   false,
@@ -48,7 +48,7 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:88999",
 				},
 			},
@@ -61,7 +61,7 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
@@ -96,10 +96,10 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
-			TLSSetting: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: &configtls.ServerConfig{
+				Config: configtls.Config{
 					CertFile: "./testdata/certs/server.crt",
 					KeyFile:  "./testdata/certs/server.key",
 					CAFile:   "./testdata/certs/ca.crt",
@@ -113,19 +113,19 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 	}
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 
-	tlscs := configtls.TLSClientSetting{
-		TLSSetting: configtls.TLSSetting{
+	tlscs := configtls.ClientConfig{
+		Config: configtls.Config{
 			CAFile:   "./testdata/certs/ca.crt",
 			CertFile: "./testdata/certs/client.crt",
 			KeyFile:  "./testdata/certs/client.key",
 		},
 		ServerName: "localhost",
 	}
-	tls, err := tlscs.LoadTLSConfig()
+	tls, err := tlscs.LoadTLSConfig(context.Background())
 	assert.NoError(t, err)
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -136,8 +136,10 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = httpClient.Get("https://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = httpClient.Get("https://localhost:7777/metrics")
 		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -181,22 +183,24 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -263,22 +267,24 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -339,7 +345,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
@@ -347,15 +353,17 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -416,7 +424,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
@@ -427,15 +435,17 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err, "Failed to perform a scrape")
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)

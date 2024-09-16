@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -21,13 +23,24 @@ const (
 )
 
 func createDefaultConfig() component.Config {
-	scfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	// Default HttpClient settings
+	httpCfg := confighttp.NewDefaultClientConfig()
+	httpCfg.Headers = map[string]configopaque.String{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
+	httpCfg.Timeout = defaultMaxSearchWaitTime
+
+	// Default ScraperController settings
+	scfg := scraperhelper.NewDefaultControllerConfig()
 	scfg.CollectionInterval = defaultInterval
+	scfg.Timeout = defaultMaxSearchWaitTime
 
 	return &Config{
-		ScraperControllerSettings: scfg,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
-		MaxSearchWaitTime:         defaultMaxSearchWaitTime,
+		IdxEndpoint:          httpCfg,
+		SHEndpoint:           httpCfg,
+		CMEndpoint:           httpCfg,
+		ControllerConfig:     scfg,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -41,14 +54,14 @@ func NewFactory() receiver.Factory {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := baseCfg.(*Config)
 	splunkScraper := newSplunkMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type,
+	scraper, err := scraperhelper.NewScraperWithComponentType(metadata.Type,
 		splunkScraper.scrape,
 		scraperhelper.WithStart(splunkScraper.start))
 	if err != nil {
@@ -56,7 +69,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings,
+		&cfg.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

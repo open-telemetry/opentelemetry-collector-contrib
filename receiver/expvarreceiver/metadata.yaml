@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [jamesmoessis, MovieStoreGuy]
 
@@ -261,6 +261,6 @@ metrics:
     enabled: true
     description: The fraction of this program's available CPU time used by the GC since the program started.
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double

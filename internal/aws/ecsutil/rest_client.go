@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-func NewRestClient(baseEndpoint url.URL, clientSettings confighttp.HTTPClientSettings, settings component.TelemetrySettings) (RestClient, error) {
+func NewRestClient(baseEndpoint url.URL, clientSettings confighttp.ClientConfig, settings component.TelemetrySettings) (RestClient, error) {
 	clientProvider := NewClientProvider(baseEndpoint, clientSettings, &nopHost{}, settings)
 
 	client, err := clientProvider.BuildClient()

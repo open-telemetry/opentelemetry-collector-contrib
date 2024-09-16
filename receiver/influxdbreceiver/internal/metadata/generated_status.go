@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("influxdb")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
+)
+
 const (
-	Type             = "influxdb"
 	MetricsStability = component.StabilityLevelBeta
 )

@@ -3,7 +3,13 @@ type: azureeventhub
 status:
   class: receiver
   stability:
-    alpha: [metrics, logs]
-  distributions: [contrib, splunk, observiq, sumo]
+    alpha: [metrics, logs, traces]
+  distributions: [contrib]
   codeowners:
-    active: [atoulme, djaglowski]
+    active: [atoulme, cparkins]
+    emeritus: [djaglowski]
+    seeking_new: true
+
+tests:
+  config:
+  skip_lifecycle: true

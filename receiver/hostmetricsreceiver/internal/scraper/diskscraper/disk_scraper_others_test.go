@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package diskscraper
 
@@ -11,7 +10,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,7 +28,7 @@ func TestScrape_Others(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "Error",
-			ioCountersFunc: func(_ context.Context, names ...string) (map[string]disk.IOCountersStat, error) {
+			ioCountersFunc: func(context.Context, ...string) (map[string]disk.IOCountersStat, error) {
 				return nil, errors.New("err1")
 			},
 			expectedErr: "err1",
@@ -38,7 +37,7 @@ func TestScrape_Others(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{})
+			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopSettings(), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
 			if test.ioCountersFunc != nil {

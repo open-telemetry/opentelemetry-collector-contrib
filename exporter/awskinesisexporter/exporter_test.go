@@ -13,13 +13,6 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func MustTestGeneric[T any](t T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
 func applyConfigChanges(fn func(conf *Config)) *Config {
 	conf := createDefaultConfig().(*Config)
 	fn(conf)
@@ -42,7 +35,7 @@ func TestCreatingExporter(t *testing.T) {
 			}),
 			validateNew: func(tb testing.TB) func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
 				return func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
-					assert.Equal(tb, conf.Region, "us-west-2", "Must match the expected region")
+					assert.Equal(tb, "us-west-2", conf.Region, "Must match the expected region")
 					k := kinesis.NewFromConfig(conf, opts...)
 					return k
 				}
@@ -53,10 +46,11 @@ func TestCreatingExporter(t *testing.T) {
 			conf: applyConfigChanges(func(conf *Config) {
 				conf.AWS.StreamName = "example-test"
 				conf.AWS.Region = "us-east-1"
+				conf.AWS.Role = "example-role"
 			}),
 			validateNew: func(tb testing.TB) func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
 				return func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
-					assert.Equal(tb, conf.Region, "us-east-1", "Must match the expected region")
+					assert.Equal(tb, "us-east-1", conf.Region, "Must match the expected region")
 					k := kinesis.NewFromConfig(conf, opts...)
 					return k
 				}

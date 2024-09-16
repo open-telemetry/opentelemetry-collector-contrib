@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -26,17 +26,18 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		Brokers:                   []string{"10.10.10.10:9092"},
-		ProtocolVersion:           "2.0.0",
-		TopicMatch:                "test_\\w+",
-		GroupMatch:                "test_\\w+",
-		Authentication: kafkaexporter.Authentication{
-			TLS: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		ClusterAlias:     "kafka-test",
+		Brokers:          []string{"10.10.10.10:9092"},
+		ProtocolVersion:  "2.0.0",
+		TopicMatch:       "test_\\w+",
+		GroupMatch:       "test_\\w+",
+		Authentication: kafka.Authentication{
+			TLS: &configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile:   "ca.pem",
 					CertFile: "cert.pem",
 					KeyFile:  "key.pem",

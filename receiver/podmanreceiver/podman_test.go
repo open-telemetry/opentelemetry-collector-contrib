@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver
 
@@ -71,13 +70,13 @@ func TestWatchingTimeouts(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},
 	}
 
 	client, err := newLibpodClient(zap.NewNop(), config)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	cli := newContainerScraper(client, zap.NewNop(), config)
 	assert.NotNil(t, cli)
@@ -124,18 +123,20 @@ func TestEventLoopHandlesError(t *testing.T) {
 	observed, logs := observer.New(zapcore.WarnLevel)
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},
 	}
 
 	client, err := newLibpodClient(zap.NewNop(), config)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	cli := newContainerScraper(client, zap.New(observed), config)
 	assert.NotNil(t, cli)
 
-	go cli.containerEventLoop(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	go cli.containerEventLoop(ctx)
+	defer cancel()
 
 	assert.Eventually(t, func() bool {
 		for _, l := range logs.All() {
@@ -175,15 +176,18 @@ func TestEventLoopHandles(t *testing.T) {
 	cli := newContainerScraper(&eventClient, zap.NewNop(), &Config{})
 	assert.NotNil(t, cli)
 
-	assert.Equal(t, 0, len(cli.containers))
+	assert.Empty(t, cli.containers)
 
-	go cli.containerEventLoop(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	go cli.containerEventLoop(ctx)
+	defer cancel()
+
 	eventChan <- event{ID: "c1", Status: "start"}
 
 	assert.Eventually(t, func() bool {
 		cli.containersLock.Lock()
 		defer cli.containersLock.Unlock()
-		return assert.Equal(t, 1, len(cli.containers))
+		return assert.Len(t, cli.containers, 1)
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 
 	eventChan <- event{ID: "c1", Status: "died"}
@@ -191,7 +195,7 @@ func TestEventLoopHandles(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		cli.containersLock.Lock()
 		defer cli.containersLock.Unlock()
-		return assert.Equal(t, 0, len(cli.containers))
+		return assert.Empty(t, cli.containers)
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 }
 
@@ -206,10 +210,10 @@ func TestInspectAndPersistContainer(t *testing.T) {
 	cli := newContainerScraper(&inspectClient, zap.NewNop(), &Config{})
 	assert.NotNil(t, cli)
 
-	assert.Equal(t, 0, len(cli.containers))
+	assert.Empty(t, cli.containers)
 
 	stats, ok := cli.inspectAndPersistContainer(context.Background(), "c1")
 	assert.True(t, ok)
 	assert.NotNil(t, stats)
-	assert.Equal(t, 1, len(cli.containers))
+	assert.Len(t, cli.containers, 1)
 }

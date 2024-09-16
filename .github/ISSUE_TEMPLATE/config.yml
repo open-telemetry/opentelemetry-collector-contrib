@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: OpenTelemetry Collector Slack Channel
-    url: https://cloud-native.slack.com/archives/C01N6P7KR6W
+  - name: Stack Overflow
+    url: https://stackoverflow.com/questions/tagged/open-telemetry-collector
     about: Please ask and answer questions here.

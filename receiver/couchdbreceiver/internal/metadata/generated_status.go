@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("couchdb")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
+)
+
 const (
-	Type             = "couchdb"
 	MetricsStability = component.StabilityLevelBeta
 )

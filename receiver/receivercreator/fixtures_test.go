@@ -26,6 +26,25 @@ var podEndpoint = observer.Endpoint{
 	Details: &pod,
 }
 
+var service = observer.K8sService{
+	UID:       "uid-1",
+	Namespace: "default",
+	Name:      "service-1",
+	Labels: map[string]string{
+		"app":    "redis2",
+		"region": "west-1",
+	},
+	Annotations: map[string]string{
+		"scrape": "true",
+	},
+}
+
+var serviceEndpoint = observer.Endpoint{
+	ID:      "service-1",
+	Target:  "localhost",
+	Details: &service,
+}
+
 var portEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",

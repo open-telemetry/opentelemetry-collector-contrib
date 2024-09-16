@@ -5,7 +5,6 @@ package ecsmock
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -28,10 +27,10 @@ func TestCluster_ListTasksWithContext(t *testing.T) {
 		_, err := c.ListTasksWithContext(ctx, req)
 		require.Error(t, err)
 		var aerr awserr.Error
-		assert.True(t, errors.As(err, &aerr))
+		assert.ErrorAs(t, err, &aerr)
 		assert.Equal(t, ecs.ErrCodeClusterNotFoundException, aerr.Code())
 		assert.Equal(t, "code "+ecs.ErrCodeClusterNotFoundException+" message "+aerr.Message(), aerr.Error())
-		assert.Nil(t, aerr.OrigErr())
+		assert.NoError(t, aerr.OrigErr())
 	})
 
 	t.Run("get all", func(t *testing.T) {
@@ -63,7 +62,7 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 	ctx := context.Background()
 	c := NewClusterWithName("c1")
 	count := 10
-	c.SetTasks(GenTasks("p", count, func(i int, task *ecs.Task) {
+	c.SetTasks(GenTasks("p", count, func(_ int, task *ecs.Task) {
 		task.LastStatus = aws.String("running")
 	}))
 
@@ -78,7 +77,7 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 		res, err := c.DescribeTasksWithContext(ctx, req)
 		require.NoError(t, err)
 		assert.Len(t, res.Tasks, 2)
-		assert.Len(t, res.Failures, 0)
+		assert.Empty(t, res.Failures)
 		assert.Equal(t, "running", aws.StringValue(res.Tasks[0].LastStatus))
 	})
 
@@ -95,7 +94,7 @@ func TestCluster_DescribeTaskDefinitionWithContext(t *testing.T) {
 	ctx := context.Background()
 	c := NewClusterWithName("c1")
 	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, nil)) // accept nil
-	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, func(i int, def *ecs.TaskDefinition) {
+	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, func(_ int, def *ecs.TaskDefinition) {
 		def.NetworkMode = aws.String(ecs.NetworkModeBridge)
 	}))
 
@@ -151,14 +150,14 @@ func TestCluster_DescribeInstancesWithContext(t *testing.T) {
 
 	t.Run("get by id", func(t *testing.T) {
 		var ids []*string
-		nIds := 100
-		for i := 0; i < nIds; i++ {
+		nIDs := 100
+		for i := 0; i < nIDs; i++ {
 			ids = append(ids, aws.String(fmt.Sprintf("i-%d", i*10)))
 		}
 		req := &ec2.DescribeInstancesInput{InstanceIds: ids}
 		res, err := c.DescribeInstancesWithContext(ctx, req)
 		require.NoError(t, err)
-		assert.Equal(t, nIds, len(res.Reservations[0].Instances))
+		assert.Len(t, res.Reservations[0].Instances, nIDs)
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
@@ -191,15 +190,15 @@ func TestCluster_DescribeContainerInstancesWithContext(t *testing.T) {
 
 	t.Run("get by id", func(t *testing.T) {
 		var ids []*string
-		nIds := count
-		for i := 0; i < nIds; i++ {
+		nIDs := count
+		for i := 0; i < nIDs; i++ {
 			ids = append(ids, aws.String(fmt.Sprintf("foo%d", i)))
 		}
 		req := &ecs.DescribeContainerInstancesInput{ContainerInstances: ids}
 		res, err := c.DescribeContainerInstancesWithContext(ctx, req)
 		require.NoError(t, err)
-		assert.Equal(t, nIds, len(res.ContainerInstances))
-		assert.Equal(t, 0, len(res.Failures))
+		assert.Len(t, res.ContainerInstances, nIDs)
+		assert.Empty(t, res.Failures)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -272,7 +271,7 @@ func TestCluster_DescribeServicesWithContext(t *testing.T) {
 		res, err := c.DescribeServicesWithContext(ctx, req)
 		require.NoError(t, err)
 		assert.Len(t, res.Services, 2)
-		assert.Len(t, res.Failures, 0)
+		assert.Empty(t, res.Failures)
 	})
 
 	t.Run("not found", func(t *testing.T) {

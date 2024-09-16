@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetProcessCgroup sets provided value as "process.cgroup" attribute.
+func (rb *ResourceBuilder) SetProcessCgroup(val string) {
+	if rb.config.ProcessCgroup.Enabled {
+		rb.res.Attributes().PutStr("process.cgroup", val)
+	}
+}
+
 // SetProcessCommand sets provided value as "process.command" attribute.
 func (rb *ResourceBuilder) SetProcessCommand(val string) {
 	if rb.config.ProcessCommand.Enabled {

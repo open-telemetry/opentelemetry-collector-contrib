@@ -10,12 +10,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -27,8 +28,8 @@ type testTrace struct {
 	spanName           string
 	libraryName        string
 	libraryVersion     string
-	resourceAttributes map[string]interface{}
-	tags               map[string]interface{}
+	resourceAttributes map[string]any
+	tags               map[string]any
 }
 
 // All the data we need to define a test
@@ -47,10 +48,10 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "test_service",
 			},
-			tags: map[string]interface{}{
+			tags: map[string]any{
 				"db.type": "redis",
 			},
 		},
@@ -61,7 +62,7 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "keep",
 			},
 		},
@@ -69,7 +70,7 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "dont_keep",
 			},
 		},
@@ -77,7 +78,7 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "keep",
 			},
 		},
@@ -131,12 +132,12 @@ func TestFilterTraceProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateTracesProcessor(
 				ctx,
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				cfg,
 				next,
 			)
 			require.NotNil(t, fmp)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			caps := fmp.Capabilities()
 			require.True(t, caps.MutatesData)
@@ -144,12 +145,12 @@ func TestFilterTraceProcessor(t *testing.T) {
 			require.NoError(t, fmp.Start(ctx, nil))
 
 			cErr := fmp.ConsumeTraces(ctx, test.inTraces)
-			require.Nil(t, cErr)
+			require.NoError(t, cErr)
 			got := next.AllTraces()
 
 			// If all traces got filtered you shouldn't even have ResourceSpans
 			if test.allTracesFiltered {
-				require.Equal(t, 0, len(got))
+				require.Empty(t, got)
 			} else {
 				require.Equal(t, test.spanCountExpected, got[0].SpanCount())
 			}
@@ -258,13 +259,13 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 					`Substring("", 0, 100) == "test"`,
 				},
 			},
-			want:      func(td ptrace.Traces) {},
+			want:      func(_ ptrace.Traces) {},
 			errorMode: ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterSpansProcessor(componenttest.NewNopTelemetrySettings(), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
+			processor, err := newFilterSpansProcessor(processortest.NewNopSettings(), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processTraces(context.Background(), constructTraces())
@@ -279,6 +280,41 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFilterTraceProcessorTelemetry(t *testing.T) {
+	tel := setupTestTelemetry()
+	processor, err := newFilterSpansProcessor(tel.NewSettings(), &Config{
+		Traces: TraceFilters{
+			SpanConditions: []string{
+				`name == "operationA"`,
+			},
+		}, ErrorMode: ottl.IgnoreError,
+	})
+	assert.NoError(t, err)
+
+	_, err = processor.processTraces(context.Background(), constructTraces())
+	assert.NoError(t, err)
+
+	want := []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_filter_spans.filtered",
+			Description: "Number of spans dropped by the filter processor",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      2,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
+				},
+			},
+		},
+	}
+
+	tel.assertMetrics(t, want)
 }
 
 func constructTraces() ptrace.Traces {

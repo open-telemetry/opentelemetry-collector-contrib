@@ -6,7 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("skywalking")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
+)
+
 const (
-	Type            = "skywalking"
-	TracesStability = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelBeta
 )

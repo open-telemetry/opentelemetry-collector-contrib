@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -35,8 +35,8 @@ type ParserConfig struct {
 }
 
 // Build will build a parser operator.
-func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(logger)
+func (c ParserConfig) Build(set component.TelemetrySettings) (ParserOperator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(set)
 	if err != nil {
 		return ParserOperator{}, err
 	}
@@ -60,7 +60,7 @@ func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
 	}
 
 	if c.SeverityConfig != nil {
-		severityParser, err := c.SeverityConfig.Build(logger)
+		severityParser, err := c.SeverityConfig.Build(set)
 		if err != nil {
 			return ParserOperator{}, err
 		}
@@ -105,8 +105,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 		return p.HandleEntryError(ctx, entry, err)
 	}
 	if skip {
-		p.Write(ctx, entry)
-		return nil
+		return p.Write(ctx, entry)
 	}
 
 	if err = p.ParseWith(ctx, entry, parse); err != nil {
@@ -119,8 +118,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 		}
 	}
 
-	p.Write(ctx, entry)
-	return nil
+	return p.Write(ctx, entry)
 }
 
 // ParseWith will process an entry's field with a parser function.
@@ -187,4 +185,4 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 }
 
 // ParseFunction is function that parses a raw value.
-type ParseFunction = func(interface{}) (interface{}, error)
+type ParseFunction = func(any) (any, error)

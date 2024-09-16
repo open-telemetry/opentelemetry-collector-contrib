@@ -4,6 +4,13 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
+    development: [logs]
+  distributions: [contrib]
   codeowners:
-    active: [agoallikmaa, pellared, crobert-1]
+    active: [crobert-1]
+    emeritus: [agoallikmaa, pellared]
+    seeking_new: true
+
+tests:
+  config:
+  skip_lifecycle: true

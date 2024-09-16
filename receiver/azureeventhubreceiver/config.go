@@ -25,11 +25,12 @@ var (
 )
 
 type Config struct {
-	Connection string        `mapstructure:"connection"`
-	Partition  string        `mapstructure:"partition"`
-	Offset     string        `mapstructure:"offset"`
-	StorageID  *component.ID `mapstructure:"storage"`
-	Format     string        `mapstructure:"format"`
+	Connection    string        `mapstructure:"connection"`
+	Partition     string        `mapstructure:"partition"`
+	Offset        string        `mapstructure:"offset"`
+	StorageID     *component.ID `mapstructure:"storage"`
+	Format        string        `mapstructure:"format"`
+	ConsumerGroup string        `mapstructure:"group"`
 }
 
 func isValidFormat(format string) bool {

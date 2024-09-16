@@ -34,9 +34,9 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "one"),
 			expected: &Config{
 				RLPGateway: RLPGatewayConfig{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: "https://log-stream.sys.example.internal",
-						TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.ClientConfig{
 							InsecureSkipVerify: true,
 						},
 						Timeout: time.Second * 20,
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 					ShardID: "otel-test",
 				},
 				UAA: UAAConfig{
-					LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+					LimitedClientConfig: LimitedClientConfig{
 						Endpoint: "https://uaa.sys.example.internal",
 						TLSSetting: LimitedTLSClientSetting{
 							InsecureSkipVerify: true,
@@ -63,6 +63,31 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "invalid"),
 			errorMessage: "failed to parse rlp_gateway.endpoint as url: parse \"https://[invalid\": missing ']' in host",
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "shardidnotdefined"),
+			expected: &Config{
+				RLPGateway: RLPGatewayConfig{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: "https://log-stream.sys.example.internal",
+						TLSSetting: configtls.ClientConfig{
+							InsecureSkipVerify: true,
+						},
+						Timeout: time.Second * 20,
+					},
+					ShardID: "opentelemetry",
+				},
+				UAA: UAAConfig{
+					LimitedClientConfig: LimitedClientConfig{
+						Endpoint: "https://uaa.sys.example.internal",
+						TLSSetting: LimitedTLSClientSetting{
+							InsecureSkipVerify: true,
+						},
+					},
+					Username: "admin",
+					Password: "test",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -71,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
@@ -97,32 +122,36 @@ func TestInvalidConfigValidation(t *testing.T) {
 	require.Error(t, configuration.Validate())
 
 	configuration = loadSuccessfulConfig(t)
+	configuration.RLPGateway.ShardID = ""
+	require.Error(t, configuration.Validate())
+
+	configuration = loadSuccessfulConfig(t)
 	configuration.UAA.Endpoint = "https://[invalid"
 	require.Error(t, configuration.Validate())
 }
 
 func TestHTTPConfigurationStructConsistency(t *testing.T) {
-	// LimitedHTTPClientSettings must have the same structure as HTTPClientSettings, but without the fields that the UAA
+	// LimitedClientConfig must have the same structure as ClientConfig, but without the fields that the UAA
 	// library does not support.
-	checkTypeFieldMatch(t, "Endpoint", reflect.TypeOf(LimitedHTTPClientSettings{}), reflect.TypeOf(confighttp.HTTPClientSettings{}))
-	checkTypeFieldMatch(t, "TLSSetting", reflect.TypeOf(LimitedHTTPClientSettings{}), reflect.TypeOf(confighttp.HTTPClientSettings{}))
-	checkTypeFieldMatch(t, "InsecureSkipVerify", reflect.TypeOf(LimitedTLSClientSetting{}), reflect.TypeOf(configtls.TLSClientSetting{}))
+	checkTypeFieldMatch(t, "Endpoint", reflect.TypeOf(LimitedClientConfig{}), reflect.TypeOf(confighttp.ClientConfig{}))
+	checkTypeFieldMatch(t, "TLSSetting", reflect.TypeOf(LimitedClientConfig{}), reflect.TypeOf(confighttp.ClientConfig{}))
+	checkTypeFieldMatch(t, "InsecureSkipVerify", reflect.TypeOf(LimitedTLSClientSetting{}), reflect.TypeOf(configtls.ClientConfig{}))
 }
 
 func loadSuccessfulConfig(t *testing.T) *Config {
 	configuration := &Config{
 		RLPGateway: RLPGatewayConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: "https://log-stream.sys.example.internal",
 				Timeout:  time.Second * 20,
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					InsecureSkipVerify: true,
 				},
 			},
 			ShardID: "otel-test",
 		},
 		UAA: UAAConfig{
-			LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+			LimitedClientConfig: LimitedClientConfig{
 				Endpoint: "https://uaa.sys.example.internal",
 				TLSSetting: LimitedTLSClientSetting{
 					InsecureSkipVerify: true,

@@ -21,13 +21,13 @@ func TestLambda(t *testing.T) {
 	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
 
 	// Call Lambda Resource detector to detect resources
-	lambdaDetector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	lambdaDetector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, map[string]any{
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
 		conventions.AttributeCloudPlatform: conventions.AttributeCloudPlatformAWSLambda,
 		conventions.AttributeFaaSName:      functionName,
@@ -37,7 +37,7 @@ func TestLambda(t *testing.T) {
 // Tests Lambda resource detector not running in Lambda environment
 func TestNotLambda(t *testing.T) {
 	ctx := context.Background()
-	lambdaDetector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	lambdaDetector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)

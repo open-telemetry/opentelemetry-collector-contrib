@@ -7,7 +7,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -24,6 +27,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+)
+
+const (
+	defaultMetadataCollectionInterval = 5 * time.Minute
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -46,7 +53,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 func getScraperFactory(key string) (internal.ScraperFactory, bool) {
@@ -59,13 +67,16 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
-	return &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)}
+	return &Config{
+		ControllerConfig:           scraperhelper.NewDefaultControllerConfig(),
+		MetadataCollectionInterval: defaultMetadataCollectionInterval,
+	}
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	ctx context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -76,17 +87,30 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
+	host.EnableBootTimeCache(true)
+	process.EnableBootTimeCache(true)
+
 	return scraperhelper.NewScraperControllerReceiver(
-		&oCfg.ScraperControllerSettings,
+		&oCfg.ControllerConfig,
 		set,
 		consumer,
 		addScraperOptions...,
 	)
 }
 
+func createLogsReceiver(
+	_ context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Logs,
+) (receiver.Logs, error) {
+	return &hostEntitiesReceiver{
+		cfg:      cfg.(*Config),
+		nextLogs: consumer,
+		settings: &set,
+	}, nil
+}
+
 func createAddScraperOptions(
 	ctx context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config *Config,
 	factories map[string]internal.ScraperFactory,
 ) ([]scraperhelper.ScraperControllerOption, error) {
@@ -109,7 +133,7 @@ func createAddScraperOptions(
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, set receiver.CreateSettings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
@@ -123,16 +147,11 @@ func createHostMetricsScraper(ctx context.Context, set receiver.CreateSettings, 
 
 type environment interface {
 	Lookup(k string) (string, bool)
-	Set(k, v string) error
 }
 
 type osEnv struct{}
 
 var _ environment = (*osEnv)(nil)
-
-func (e *osEnv) Set(k, v string) error {
-	return os.Setenv(k, v)
-}
 
 func (e *osEnv) Lookup(k string) (string, bool) {
 	return os.LookupEnv(k)

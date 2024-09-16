@@ -94,14 +94,15 @@ func TestRemote(t *testing.T) {
 				err = server.Serve(lis)
 				require.NoError(t, err)
 			}()
+			defer func() { server.Stop() }()
 
 			// create the config, pointing to the mock server
 			cfg := testConfig()
-			cfg.GRPCServerSettings.NetAddr.Endpoint = "127.0.0.1:0"
+			cfg.GRPCServerConfig.NetAddr.Endpoint = "127.0.0.1:0"
 			cfg.Source.ReloadInterval = tc.reloadInterval
-			cfg.Source.Remote = &configgrpc.GRPCClientSettings{
+			cfg.Source.Remote = &configgrpc.ClientConfig{
 				Endpoint: fmt.Sprintf("127.0.0.1:%d", lis.Addr().(*net.TCPAddr).Port),
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: true, // test only
 				},
 				WaitForReady: true,
@@ -120,6 +121,7 @@ func TestRemote(t *testing.T) {
 				resp, err := http.Get("http://127.0.0.1:5778/sampling?service=foo")
 				assert.NoError(t, err)
 				assert.Equal(t, 200, resp.StatusCode)
+				assert.NoError(t, resp.Body.Close())
 			}
 
 			// shut down the server
@@ -163,7 +165,7 @@ func (s *samplingServer) GetSamplingStrategy(ctx context.Context, params *api_v2
 
 func testConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPServerSettings.Endpoint = "127.0.0.1:5778"
-	cfg.GRPCServerSettings.NetAddr.Endpoint = "127.0.0.1:14250"
+	cfg.HTTPServerConfig.Endpoint = "127.0.0.1:5778"
+	cfg.GRPCServerConfig.NetAddr.Endpoint = "127.0.0.1:14250"
 	return cfg
 }

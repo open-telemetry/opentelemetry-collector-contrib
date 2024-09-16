@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("vcenter")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
+)
+
 const (
-	Type             = "vcenter"
 	MetricsStability = component.StabilityLevelAlpha
 )

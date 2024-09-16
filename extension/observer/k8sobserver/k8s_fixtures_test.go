@@ -5,6 +5,7 @@ package k8sobserver
 
 import (
 	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -102,6 +103,127 @@ var podWithNamedPorts = func() *v1.Pod {
 
 func pointerBool(val bool) *bool {
 	return &val
+}
+
+// newService is a helper function for creating Services for testing.
+func newService(name string) *v1.Service {
+	service := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      name,
+			UID:       types.UID(name + "-UID"),
+			Labels: map[string]string{
+				"env": "prod",
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Type:      v1.ServiceTypeClusterIP,
+			ClusterIP: "1.2.3.4",
+		},
+	}
+
+	return service
+}
+
+var serviceWithClusterIP = func() *v1.Service {
+	return newService("service-1")
+}()
+
+var serviceWithClusterIPV2 = func() *v1.Service {
+	service := serviceWithClusterIP.DeepCopy()
+	service.Labels["service-version"] = "2"
+	return service
+}()
+
+var ingress = &networkingv1.Ingress{
+	ObjectMeta: metav1.ObjectMeta{
+		Namespace: "default",
+		Name:      "application-ingress",
+		UID:       types.UID("ingress-1-UID"),
+		Labels: map[string]string{
+			"env": "prod",
+		},
+	},
+	Spec: networkingv1.IngressSpec{
+		Rules: []networkingv1.IngressRule{
+			{
+				Host: "host-1",
+				IngressRuleValue: networkingv1.IngressRuleValue{
+					HTTP: &networkingv1.HTTPIngressRuleValue{
+						Paths: []networkingv1.HTTPIngressPath{
+							{
+								Path: "/",
+							},
+						},
+					},
+				},
+			},
+		},
+		TLS: []networkingv1.IngressTLS{
+			{
+				Hosts: []string{"host-1"},
+			},
+		},
+	},
+}
+
+var ingressMultipleHost = &networkingv1.Ingress{
+	ObjectMeta: metav1.ObjectMeta{
+		Namespace: "default",
+		Name:      "application-ingress",
+		UID:       types.UID("ingress-1-UID"),
+		Labels: map[string]string{
+			"env": "prod",
+		},
+	},
+	Spec: networkingv1.IngressSpec{
+		Rules: []networkingv1.IngressRule{
+			{
+				Host: "host-invalid",
+			},
+			{
+				Host: "host-1",
+				IngressRuleValue: networkingv1.IngressRuleValue{
+					HTTP: &networkingv1.HTTPIngressRuleValue{
+						Paths: []networkingv1.HTTPIngressPath{
+							{
+								Path: "/",
+							},
+						},
+					},
+				},
+			},
+			{
+				Host: "host.2.host",
+				IngressRuleValue: networkingv1.IngressRuleValue{
+					HTTP: &networkingv1.HTTPIngressRuleValue{
+						Paths: []networkingv1.HTTPIngressPath{
+							{
+								Path: "/",
+							},
+						},
+					},
+				},
+			},
+			{
+				Host: "host.3.host",
+				IngressRuleValue: networkingv1.IngressRuleValue{
+					HTTP: &networkingv1.HTTPIngressRuleValue{
+						Paths: []networkingv1.HTTPIngressPath{
+							{
+								Path: "/test",
+							},
+						},
+					},
+				},
+			},
+		},
+		TLS: []networkingv1.IngressTLS{
+			{
+				Hosts: []string{"host-1", "*.2.host"},
+			},
+		},
+	},
 }
 
 // newNode is a helper function for creating Nodes for testing.

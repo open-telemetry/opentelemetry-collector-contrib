@@ -19,7 +19,7 @@ import (
 )
 
 // DataSender defines the interface that allows sending data. This is an interface
-// that must be implemented by all protocols that want to be used in LoadGenerator.
+// that must be implemented by all protocols that want to be used in ProviderSender.
 // Note the terminology: DataSender is something that sends data to Collector
 // and the corresponding entity that receives the data in the Collector is a receiver.
 type DataSender interface {
@@ -78,16 +78,16 @@ func (dsb *DataSenderBase) Flush() {
 
 type otlpHTTPDataSender struct {
 	DataSenderBase
-	compression configcompression.CompressionType
+	compression configcompression.Type
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
 	cfg.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
 	// Disable retries, we should push data and if error just log it.
-	cfg.RetrySettings.Enabled = false
+	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
-	cfg.QueueSettings.Enabled = false
-	cfg.TLSSetting = configtls.TLSClientSetting{
+	cfg.QueueConfig.Enabled = false
+	cfg.TLSSetting = configtls.ClientConfig{
 		Insecure: true,
 	}
 	cfg.Compression = ods.compression
@@ -114,7 +114,7 @@ type otlpHTTPTraceDataSender struct {
 }
 
 // NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces exporter.
-func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompression.CompressionType) TraceDataSender {
+func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompression.Type) TraceDataSender {
 	return &otlpHTTPTraceDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
@@ -129,7 +129,7 @@ func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompres
 func (ote *otlpHTTPTraceDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -163,7 +163,7 @@ func NewOTLPHTTPMetricDataSender(host string, port int) MetricDataSender {
 func (ome *otlpHTTPMetricsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
@@ -197,7 +197,7 @@ func NewOTLPHTTPLogsDataSender(host string, port int) LogDataSender {
 func (olds *otlpHTTPLogsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)
@@ -216,10 +216,10 @@ type otlpDataSender struct {
 func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Config {
 	cfg.Endpoint = ods.GetEndpoint().String()
 	// Disable retries, we should push data and if error just log it.
-	cfg.RetrySettings.Enabled = false
+	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
-	cfg.QueueSettings.Enabled = false
-	cfg.TLSSetting = configtls.TLSClientSetting{
+	cfg.QueueConfig.Enabled = false
+	cfg.TLSSetting = configtls.ClientConfig{
 		Insecure: true,
 	}
 	return cfg
@@ -259,7 +259,7 @@ func NewOTLPTraceDataSender(host string, port int) TraceDataSender {
 func (ote *otlpTraceDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -293,7 +293,7 @@ func NewOTLPMetricDataSender(host string, port int) MetricDataSender {
 func (ome *otlpMetricsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
@@ -327,7 +327,7 @@ func NewOTLPLogsDataSender(host string, port int) LogDataSender {
 func (olds *otlpLogsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)

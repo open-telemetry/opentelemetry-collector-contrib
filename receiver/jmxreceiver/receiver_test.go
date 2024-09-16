@@ -18,7 +18,7 @@ import (
 )
 
 func TestReceiver(t *testing.T) {
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	config := &Config{
 		Endpoint: "service:jmx:protocol:sap",
 		OTLPExporterConfig: otlpExporterConfig{
@@ -31,26 +31,26 @@ func TestReceiver(t *testing.T) {
 	require.Same(t, params.Logger, receiver.logger)
 	require.Same(t, config, receiver.config)
 
-	require.Nil(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
-	require.Nil(t, receiver.Shutdown(context.Background()))
+	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, receiver.Shutdown(context.Background()))
 }
 
 func TestBuildJMXMetricGathererConfig(t *testing.T) {
 	tests := []struct {
 		name           string
-		config         Config
+		config         *Config
 		expectedConfig string
 		expectedError  string
 	}{
 		{
 			"handles all relevant input appropriately",
-			Config{
+			&Config{
 				Endpoint:           "myhost:12345",
 				TargetSystem:       "mytargetsystem",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "https://myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 234 * time.Second,
 					},
 					Headers: map[string]string{
@@ -61,9 +61,8 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 				// While these aren't realistic usernames/passwords, we want to test the
 				// multiline handling in place to reduce the attack surface of the
 				// interface to the JMX metrics gatherer
-				Username: "myuser\nname",
-				Password: `mypass 
-word`,
+				Username:           "myuser\nname",
+				Password:           "mypass \nword",
 				Realm:              "myrealm",
 				RemoteProfile:      "myprofile",
 				TruststorePath:     "/1/2/3",
@@ -99,13 +98,13 @@ otel.resource.attributes = abc=123,one=two`,
 		},
 		{
 			"errors on portless endpoint",
-			Config{
+			&Config{
 				Endpoint:           "myhostwithoutport",
 				TargetSystem:       "mytargetsystem",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 234 * time.Second,
 					},
 				},
@@ -114,13 +113,13 @@ otel.resource.attributes = abc=123,one=two`,
 		},
 		{
 			"errors on invalid port in endpoint",
-			Config{
+			&Config{
 				Endpoint:           "myhost:withoutvalidport",
 				TargetSystem:       "mytargetsystem",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 234 * time.Second,
 					},
 				},
@@ -129,13 +128,13 @@ otel.resource.attributes = abc=123,one=two`,
 		},
 		{
 			"errors on invalid endpoint",
-			Config{
+			&Config{
 				Endpoint:           ":::",
 				TargetSystem:       "mytargetsystem",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 234 * time.Second,
 					},
 				},
@@ -145,9 +144,9 @@ otel.resource.attributes = abc=123,one=two`,
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(tt *testing.T) {
-			params := receivertest.NewNopCreateSettings()
-			receiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
+		t.Run(test.name, func(*testing.T) {
+			params := receivertest.NewNopSettings()
+			receiver := newJMXMetricReceiver(params, test.config, consumertest.NewNop())
 			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
 			if test.expectedError == "" {
 				require.NoError(t, err)
@@ -163,24 +162,24 @@ otel.resource.attributes = abc=123,one=two`,
 func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 	tests := []struct {
 		name        string
-		config      Config
+		config      *Config
 		expectedErr string
 	}{
 		{
 			"missing OTLPExporterConfig.Endpoint",
-			Config{},
+			&Config{},
 			"failed to parse OTLPExporterConfig.Endpoint : missing port in address",
 		},
 		{
 			"invalid OTLPExporterConfig.Endpoint host with 0 port",
-			Config{OTLPExporterConfig: otlpExporterConfig{Endpoint: ".:0"}},
+			&Config{OTLPExporterConfig: otlpExporterConfig{Endpoint: ".:0"}},
 			"failed determining desired port from OTLPExporterConfig.Endpoint .:0: listen tcp: lookup .",
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(tt *testing.T) {
-			params := receivertest.NewNopCreateSettings()
-			jmxReceiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
+		t.Run(test.name, func(*testing.T) {
+			params := receivertest.NewNopSettings()
+			jmxReceiver := newJMXMetricReceiver(params, test.config, consumertest.NewNop())
 			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()
 			require.Error(t, err)
 			require.Contains(t, err.Error(), test.expectedErr)

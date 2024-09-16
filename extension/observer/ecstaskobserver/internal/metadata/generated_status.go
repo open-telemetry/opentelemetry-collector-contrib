@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("ecs_task_observer")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
+)
+
 const (
-	Type               = "ecs_task_observer"
 	ExtensionStability = component.StabilityLevelBeta
 )

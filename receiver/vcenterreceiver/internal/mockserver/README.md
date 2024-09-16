@@ -35,7 +35,7 @@ And then running the receiver against the proxy.
 ```yaml
 receivers:
   vcenter:
-    endpoint: https://localhost:56626
+    endpoint: http://localhost:55626
     username: "otelu"
     password: "otelp"
     tls:

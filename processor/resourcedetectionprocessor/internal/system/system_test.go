@@ -6,8 +6,10 @@ package system
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -66,6 +68,29 @@ func (m *mockMetadata) ReverseLookupHost() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *mockMetadata) HostIPs() ([]net.IP, error) {
+	args := m.MethodCalled("HostIPs")
+	return args.Get(0).([]net.IP), args.Error(1)
+}
+
+func (m *mockMetadata) HostMACs() ([]net.HardwareAddr, error) {
+	args := m.MethodCalled("HostMACs")
+	return args.Get(0).([]net.HardwareAddr), args.Error(1)
+}
+
+func (m *mockMetadata) CPUInfo(_ context.Context) ([]cpu.InfoStat, error) {
+	args := m.MethodCalled("CPUInfo")
+	return args.Get(0).([]cpu.InfoStat), args.Error(1)
+}
+
+var (
+	testIPsAttribute = []any{"192.168.1.140", "fe80::abc2:4a28:737a:609e"}
+	testIPsAddresses = []net.IP{net.ParseIP(testIPsAttribute[0].(string)), net.ParseIP(testIPsAttribute[1].(string))}
+
+	testMACsAttribute = []any{"00-00-00-00-00-01", "DE-AD-BE-EF-00-00"}
+	testMACsAddresses = []net.HardwareAddr{{0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00}}
+)
+
 func TestNewDetector(t *testing.T) {
 	tests := []struct {
 		name string
@@ -86,9 +111,31 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(processortest.NewNopCreateSettings(), tt.cfg)
+			detector, err := NewDetector(processortest.NewNopSettings(), tt.cfg)
 			assert.NotNil(t, detector)
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestToIEEERA(t *testing.T) {
+	tests := []struct {
+		addr     net.HardwareAddr
+		expected string
+	}{
+		{
+			addr:     testMACsAddresses[0],
+			expected: testMACsAttribute[0].(string),
+		},
+		{
+			addr:     testMACsAddresses[1],
+			expected: testMACsAttribute[1].(string),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			assert.Equal(t, tt.expected, toIEEERA(tt.addr))
 		})
 	}
 }
@@ -97,6 +144,8 @@ func allEnabledConfig() metadata.ResourceAttributesConfig {
 	cfg := metadata.DefaultResourceAttributesConfig()
 	cfg.HostArch.Enabled = true
 	cfg.HostID.Enabled = true
+	cfg.HostIP.Enabled = true
+	cfg.HostMac.Enabled = true
 	cfg.OsDescription.Enabled = true
 	return cfg
 }
@@ -108,12 +157,15 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("OSType").Return("darwin", nil)
 	md.On("HostID").Return("2", nil)
 	md.On("HostArch").Return("amd64", nil)
+	md.On("HostIPs").Return(testIPsAddresses, nil)
+	md.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector := newTestDetector(md, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
+	md.AssertNotCalled(t, "CPUInfo")
 
 	expected := map[string]any{
 		conventions.AttributeHostName:      "fqdn",
@@ -121,6 +173,8 @@ func TestDetectFQDNAvailable(t *testing.T) {
 		conventions.AttributeOSType:        "darwin",
 		conventions.AttributeHostID:        "2",
 		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
+		"host.mac":                         testMACsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -141,6 +195,7 @@ func TestFallbackHostname(t *testing.T) {
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
 	mdHostname.AssertNotCalled(t, "HostID")
+	mdHostname.AssertNotCalled(t, "HostIPs")
 
 	expected := map[string]any{
 		conventions.AttributeHostName: "hostname",
@@ -158,6 +213,8 @@ func TestEnableHostID(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("3", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
+	mdHostname.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -171,6 +228,8 @@ func TestEnableHostID(t *testing.T) {
 		conventions.AttributeOSType:        "darwin",
 		conventions.AttributeHostID:        "3",
 		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
+		"host.mac":                         testMACsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -183,6 +242,8 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("1", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
+	mdHostname.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector := newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -196,6 +257,8 @@ func TestUseHostname(t *testing.T) {
 		conventions.AttributeOSType:        "darwin",
 		conventions.AttributeHostID:        "1",
 		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
+		"host.mac":                         testMACsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -210,6 +273,8 @@ func TestDetectError(t *testing.T) {
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 	mdFQDN.On("HostID").Return("", errors.New("err"))
 	mdFQDN.On("HostArch").Return("amd64", nil)
+	mdFQDN.On("HostIPs").Return(testIPsAddresses, nil)
+	mdFQDN.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector := newTestDetector(mdFQDN, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -224,6 +289,8 @@ func TestDetectError(t *testing.T) {
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 	mdHostname.On("HostID").Return("", errors.New("err"))
 	mdHostname.On("HostArch").Return("amd64", nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
+	mdHostname.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector = newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -238,6 +305,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("OSType").Return("", errors.New("err"))
 	mdOSType.On("HostID").Return("1", nil)
 	mdOSType.On("HostArch").Return("amd64", nil)
+	mdOSType.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector = newTestDetector(mdOSType, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -252,6 +320,8 @@ func TestDetectError(t *testing.T) {
 	mdHostID.On("OSType").Return("linux", nil)
 	mdHostID.On("HostID").Return("", errors.New("err"))
 	mdHostID.On("HostArch").Return("arm64", nil)
+	mdHostID.On("HostIPs").Return(testIPsAddresses, nil)
+	mdHostID.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector = newTestDetector(mdHostID, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -262,7 +332,43 @@ func TestDetectError(t *testing.T) {
 		conventions.AttributeOSDescription: "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
 		conventions.AttributeOSType:        "linux",
 		conventions.AttributeHostArch:      conventions.AttributeHostArchARM64,
+		"host.ip":                          testIPsAttribute,
+		"host.mac":                         testMACsAttribute,
 	}, res.Attributes().AsRaw())
+}
+
+func TestDetectCPUInfo(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("FQDN").Return("fqdn", nil)
+	md.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
+	md.On("OSType").Return("darwin", nil)
+	md.On("HostID").Return("2", nil)
+	md.On("HostArch").Return("amd64", nil)
+	md.On("HostIPs").Return(testIPsAddresses, nil)
+	md.On("HostMACs").Return(testMACsAddresses, nil)
+	md.On("CPUInfo").Return([]cpu.InfoStat{{Family: "some"}}, nil)
+
+	cfg := allEnabledConfig()
+	cfg.HostCPUFamily.Enabled = true
+	detector := newTestDetector(md, []string{"dns"}, cfg)
+	res, schemaURL, err := detector.Detect(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	md.AssertExpectations(t)
+
+	expected := map[string]any{
+		conventions.AttributeHostName:      "fqdn",
+		conventions.AttributeOSDescription: "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
+		conventions.AttributeOSType:        "darwin",
+		conventions.AttributeHostID:        "2",
+		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
+		"host.mac":                         testMACsAttribute,
+		"host.cpu.family":                  "some",
+	}
+
+	assert.Equal(t, expected, res.Attributes().AsRaw())
+
 }
 
 func newTestDetector(mock *mockMetadata, hostnameSources []string, resCfg metadata.ResourceAttributesConfig) *Detector {

@@ -30,3 +30,13 @@ type Config struct {
 	// Optional.
 	GroupsClaim string `mapstructure:"groups_claim"`
 }
+
+func (c *Config) Validate() error {
+	if c.Audience == "" {
+		return errNoAudienceProvided
+	}
+	if c.IssuerURL == "" {
+		return errNoIssuerURL
+	}
+	return nil
+}

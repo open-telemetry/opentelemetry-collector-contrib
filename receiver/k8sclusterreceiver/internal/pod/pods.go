@@ -41,7 +41,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			NodeName: pod.Spec.NodeName,
 		},
 		Status: corev1.PodStatus{
-			Phase: pod.Status.Phase,
+			Phase:    pod.Status.Phase,
+			QOSClass: pod.Status.QOSClass,
 		},
 	}
 	for _, cs := range pod.Status.ContainerStatuses {
@@ -49,11 +50,13 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			continue
 		}
 		newPod.Status.ContainerStatuses = append(newPod.Status.ContainerStatuses, corev1.ContainerStatus{
-			Name:         cs.Name,
-			Image:        cs.Image,
-			ContainerID:  cs.ContainerID,
-			RestartCount: cs.RestartCount,
-			Ready:        cs.Ready,
+			Name:                 cs.Name,
+			Image:                cs.Image,
+			ContainerID:          cs.ContainerID,
+			RestartCount:         cs.RestartCount,
+			Ready:                cs.Ready,
+			State:                cs.State,
+			LastTerminationState: cs.LastTerminationState,
 		})
 	}
 	for _, c := range pod.Spec.Containers {
@@ -76,7 +79,7 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	rb.SetK8sNodeName(pod.Spec.NodeName)
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sPodUID(string(pod.UID))
-	rb.SetOpencensusResourcetype("k8s")
+	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	for _, c := range pod.Spec.Containers {
@@ -170,7 +173,7 @@ func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.
 			logError(err, jobRef, pod.UID, logger)
 			return nil
 		} else if !exists {
-			logWarning(jobRef, pod.UID, logger)
+			logDebug(jobRef, pod.UID, logger)
 			return nil
 		}
 
@@ -193,7 +196,7 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 			logError(err, rsRef, pod.UID, logger)
 			return nil
 		} else if !exists {
-			logWarning(rsRef, pod.UID, logger)
+			logDebug(rsRef, pod.UID, logger)
 			return nil
 		}
 
@@ -206,8 +209,8 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 	return nil
 }
 
-func logWarning(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
-	logger.Warn(
+func logDebug(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
+	logger.Debug(
 		"Resource does not exist in store, properties from it will not be synced.",
 		zap.String(conventions.AttributeK8SPodUID, string(podUID)),
 		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),

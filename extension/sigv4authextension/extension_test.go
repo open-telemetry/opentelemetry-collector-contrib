@@ -36,7 +36,7 @@ func TestRoundTripper(t *testing.T) {
 	assert.NotNil(t, sa)
 
 	rt, err := sa.RoundTripper(base)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	si := rt.(*signingRoundTripper)
 	assert.Equal(t, base, si.transport)

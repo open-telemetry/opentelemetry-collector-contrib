@@ -89,7 +89,7 @@ func TestRoundTrip(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, res.StatusCode, 200)
+			assert.Equal(t, 200, res.StatusCode)
 		})
 	}
 }
@@ -161,7 +161,7 @@ func TestInferServiceAndRegion(t *testing.T) {
 			assert.NotNil(t, sa)
 
 			rt, err := sa.RoundTripper((http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone()))
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			si := rt.(*signingRoundTripper)
 
 			service, region := si.inferServiceAndRegion(testcase.request)

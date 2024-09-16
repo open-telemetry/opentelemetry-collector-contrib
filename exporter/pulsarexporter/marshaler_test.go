@@ -102,15 +102,15 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 
 	// Since marshaling json is not guaranteed to be in order
 	// within a string, using a map to compare that the expected values are there
-	expectedJSON := map[string]interface{}{
-		"resourceSpans": []interface{}{
-			map[string]interface{}{
-				"resource": map[string]interface{}{},
-				"scopeSpans": []interface{}{
-					map[string]interface{}{
-						"scope": map[string]interface{}{},
-						"spans": []interface{}{
-							map[string]interface{}{
+	expectedJSON := map[string]any{
+		"resourceSpans": []any{
+			map[string]any{
+				"resource": map[string]any{},
+				"scopeSpans": []any{
+					map[string]any{
+						"scope": map[string]any{},
+						"spans": []any{
+							map[string]any{
 								"traceId":           "",
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
@@ -118,7 +118,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 								"kind":              float64(ptrace.SpanKindInternal),
 								"startTimeUnixNano": fmt.Sprint(now.UnixNano()),
 								"endTimeUnixNano":   fmt.Sprint(now.Add(time.Second).UnixNano()),
-								"status":            map[string]interface{}{},
+								"status":            map[string]any{},
 							},
 						},
 						"schemaUrl": conventions.SchemaURL,
@@ -129,7 +129,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		},
 	}
 
-	var final map[string]interface{}
+	var final map[string]any
 	err = json.Unmarshal(payload, &final)
 	require.NoError(t, err, "Must not error marshaling expected data")
 

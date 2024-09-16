@@ -34,11 +34,11 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }
 
@@ -63,7 +63,7 @@ func TestGenerateUrl(t *testing.T) {
 		cfg := &Config{
 			Region: test.region,
 			Token:  "token",
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: test.endpoint,
 			},
 		}
@@ -92,6 +92,6 @@ func TestGetListenerURL(t *testing.T) {
 	}
 	for _, test := range getListenerURLTests {
 		output := getListenerURL(test.arg1)
-		require.Equal(t, output, test.expected)
+		require.Equal(t, test.expected, output)
 	}
 }

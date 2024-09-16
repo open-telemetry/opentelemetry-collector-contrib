@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("mongodb")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
+)
+
 const (
-	Type             = "mongodb"
 	MetricsStability = component.StabilityLevelBeta
 )

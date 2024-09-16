@@ -40,7 +40,7 @@ data:
         include:
           # This will ensure that logs from the following path are collected.
           - /var/log/**/*otel-collector*/*.log
-      # # Comment out this block below to get access to system metrics regarding
+      # # Uncomment this block below to get access to system metrics regarding
       # # the OpenTelemetry Collector and its environment, such as spans or metrics
       # # processed, running and sent, queue sizes, uptime, k8s information
       # # and much more.
@@ -57,6 +57,7 @@ data:
       datadog:
         api:
           key: <YOUR_API_KEY_HERE>
+          site: datadoghq.com # Change this to your site if not using the default
     processors:
       resourcedetection:
         # ensures host.name and other important resource tags
@@ -132,7 +133,7 @@ data:
           encoding: "json"
           initial_fields:
             # Add the service field to every log line. It can be used for filtering in Datadog.
-            - service: "otel-collector"
+            service: "otel-collector"
       pipelines:
         metrics:
           receivers: [hostmetrics, otlp]

@@ -3,7 +3,9 @@ type: deltatorate
 status:
   class: processor
   stability:
-    development: [metrics]
-  distributions: [contrib, observiq, sumo, aws]
+    alpha: [metrics]
+  distributions: [contrib]
   codeowners:
     active: [Aneurysm9]
+tests:
+  config:

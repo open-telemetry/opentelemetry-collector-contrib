@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("filelog")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+)
+
 const (
-	Type          = "filelog"
 	LogsStability = component.StabilityLevelBeta
 )

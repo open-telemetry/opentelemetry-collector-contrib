@@ -16,86 +16,112 @@ import (
 
 func Test_ParseJSON(t *testing.T) {
 	tests := []struct {
-		name   string
-		target ottl.StringGetter[any]
-		want   func(pcommon.Map)
+		name      string
+		target    ottl.StringGetter[any]
+		wantMap   func(pcommon.Map)
+		wantSlice func(pcommon.Slice)
 	}{
 		{
 			name: "handle string",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return `{"test":"string value"}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "string value")
 			},
 		},
 		{
 			name: "handle bool",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return `{"test":true}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutBool("test", true)
 			},
 		},
 		{
 			name: "handle int",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return `{"test":1}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutDouble("test", 1)
 			},
 		},
 		{
 			name: "handle float",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return `{"test":1.1}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutDouble("test", 1.1)
 			},
 		},
 		{
 			name: "handle nil",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return `{"test":null}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutEmpty("test")
 			},
 		},
 		{
 			name: "handle array",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return `{"test":["string","value"]}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				emptySlice := expectedMap.PutEmptySlice("test")
 				emptySlice.AppendEmpty().SetStr("string")
 				emptySlice.AppendEmpty().SetStr("value")
 			},
 		},
 		{
+			name: "handle top level array",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return `["string","value"]`, nil
+				},
+			},
+			wantSlice: func(expectedSlice pcommon.Slice) {
+				expectedSlice.AppendEmpty().SetStr("string")
+				expectedSlice.AppendEmpty().SetStr("value")
+			},
+		},
+		{
+			name: "handle top level array of objects",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return `[{"test":"value"},{"test":"value"}]`, nil
+				},
+			},
+			wantSlice: func(expectedSlice pcommon.Slice) {
+
+				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
+				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
+			},
+		},
+		{
 			name: "handle nested object",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return `{"test":{"nested":"true"}}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				newMap := expectedMap.PutEmptyMap("test")
 				newMap.PutStr("nested", "true")
 			},
@@ -103,22 +129,22 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "updates existing",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return `{"existing":"pass"}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("existing", "pass")
 			},
 		},
 		{
 			name: "complex",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return `{"test1":{"nested":"true"},"test2":"string","test3":1,"test4":1.1,"test5":[[1], [2, 3],[]],"test6":null}`, nil
 				},
 			},
-			want: func(expectedMap pcommon.Map) {
+			wantMap: func(expectedMap pcommon.Map) {
 				newMap := expectedMap.PutEmptyMap("test1")
 				newMap.PutStr("nested", "true")
 				expectedMap.PutStr("test2", "string")
@@ -141,30 +167,37 @@ func Test_ParseJSON(t *testing.T) {
 			result, err := exprFunc(context.Background(), nil)
 			assert.NoError(t, err)
 
-			resultMap, ok := result.(pcommon.Map)
-			require.True(t, ok)
+			if tt.wantMap != nil {
+				resultMap, ok := result.(pcommon.Map)
+				require.True(t, ok)
+				expected := pcommon.NewMap()
+				tt.wantMap(expected)
+				assert.Equal(t, expected.Len(), resultMap.Len())
+				expected.Range(func(k string, _ pcommon.Value) bool {
+					ev, _ := expected.Get(k)
+					av, _ := resultMap.Get(k)
+					assert.Equal(t, ev, av)
+					return true
+				})
+			} else if tt.wantSlice != nil {
+				resultSlice, ok := result.(pcommon.Slice)
+				require.True(t, ok)
+				expected := pcommon.NewSlice()
+				tt.wantSlice(expected)
+				assert.Equal(t, expected, resultSlice)
+			}
 
-			expected := pcommon.NewMap()
-			tt.want(expected)
-
-			assert.Equal(t, expected.Len(), resultMap.Len())
-			expected.Range(func(k string, v pcommon.Value) bool {
-				ev, _ := expected.Get(k)
-				av, _ := resultMap.Get(k)
-				assert.Equal(t, ev, av)
-				return true
-			})
 		})
 	}
 }
 
 func Test_ParseJSON_Error(t *testing.T) {
-	target := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return 1, nil
 		},
 	}
-	exprFunc := parseJSON[interface{}](target)
+	exprFunc := parseJSON[any](target)
 	_, err := exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }

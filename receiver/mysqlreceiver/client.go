@@ -4,6 +4,7 @@
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -18,6 +19,7 @@ type client interface {
 	getVersion() (string, error)
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
+	getTableStats() ([]TableStats, error)
 	getTableIoWaitsStats() ([]TableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]IndexIoWaitsStats, error)
 	getStatementEventsStats() ([]StatementEventStats, error)
@@ -54,6 +56,15 @@ type TableIoWaitsStats struct {
 type IndexIoWaitsStats struct {
 	IoWaitsStats
 	index string
+}
+
+type TableStats struct {
+	schema           string
+	name             string
+	rows             int64
+	averageRowLength int64
+	dataLength       int64
+	indexLength      int64
 }
 
 type StatementEventStats struct {
@@ -137,7 +148,7 @@ type ReplicaStatusStats struct {
 	lastIOError               string
 	lastSQLErrno              int64
 	lastSQLError              string
-	replicateIgnoreServerIds  string
+	replicateIgnoreServerIDs  string
 	sourceServerID            int64
 	sourceUUID                string
 	sourceInfoFile            string
@@ -163,14 +174,29 @@ type ReplicaStatusStats struct {
 
 var _ client = (*mySQLClient)(nil)
 
-func newMySQLClient(conf *Config) client {
+func newMySQLClient(conf *Config) (client, error) {
+	tls, err := conf.TLS.LoadTLSConfig(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	tlsConfig := ""
+	if tls != nil {
+		err := mysql.RegisterTLSConfig("custom", tls)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig = "custom"
+	}
+
 	driverConf := mysql.Config{
 		User:                 conf.Username,
 		Passwd:               string(conf.Password),
-		Net:                  conf.Transport,
+		Net:                  string(conf.Transport),
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
 		AllowNativePasswords: conf.AllowNativePasswords,
+		TLS:                  tls,
+		TLSConfig:            tlsConfig,
 	}
 	connStr := driverConf.FormatDSN()
 
@@ -179,7 +205,7 @@ func newMySQLClient(conf *Config) client {
 		statementEventsDigestTextLimit: conf.StatementEvents.DigestTextLimit,
 		statementEventsLimit:           conf.StatementEvents.Limit,
 		statementEventsTimeLimit:       conf.StatementEvents.TimeLimit,
-	}
+	}, nil
 }
 
 func (c *mySQLClient) Connect() error {
@@ -213,6 +239,35 @@ func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 	q := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
 	return query(*c, q)
+}
+
+// getTableStats queries the db for information_schema table size metrics.
+func (c *mySQLClient) getTableStats() ([]TableStats, error) {
+	query := "SELECT TABLE_SCHEMA, TABLE_NAME, " +
+		"COALESCE(TABLE_ROWS, 0) as TABLE_ROWS, " +
+		"COALESCE(AVG_ROW_LENGTH, 0) as AVG_ROW_LENGTH, " +
+		"COALESCE(DATA_LENGTH, 0) as DATA_LENGTH, " +
+		"COALESCE(INDEX_LENGTH, 0) as  INDEX_LENGTH " +
+		"FROM information_schema.TABLES " +
+		"WHERE TABLE_SCHEMA NOT in ('information_schema', 'sys');"
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var stats []TableStats
+	for rows.Next() {
+		var s TableStats
+		err := rows.Scan(&s.schema, &s.name,
+			&s.rows, &s.averageRowLength,
+			&s.dataLength, &s.indexLength)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	return stats, nil
 }
 
 // getTableIoWaitsStats queries the db for table_io_waits metrics.
@@ -367,7 +422,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	var stats []ReplicaStatusStats
 	for rows.Next() {
 		var s ReplicaStatusStats
-		dest := []interface{}{}
+		dest := []any{}
 		for _, col := range cols {
 			switch strings.ToLower(col) {
 			case "replica_io_state":
@@ -447,7 +502,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "last_sql_error":
 				dest = append(dest, &s.lastSQLError)
 			case "replicate_ignore_server_ids":
-				dest = append(dest, &s.replicateIgnoreServerIds)
+				dest = append(dest, &s.replicateIgnoreServerIDs)
 			case "source_server_id":
 				dest = append(dest, &s.sourceServerID)
 			case "source_uuid":

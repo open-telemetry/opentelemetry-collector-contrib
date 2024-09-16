@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("kafkametrics")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
+)
+
 const (
-	Type             = "kafkametrics"
 	MetricsStability = component.StabilityLevelBeta
 )

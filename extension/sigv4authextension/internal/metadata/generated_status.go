@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("sigv4auth")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
+)
+
 const (
-	Type               = "sigv4auth"
 	ExtensionStability = component.StabilityLevelBeta
 )

@@ -117,3 +117,15 @@ none_set:
   resource_attributes:
     oracledb.instance.name:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    oracledb.instance.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    oracledb.instance.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.instance.name-val"

@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
@@ -57,13 +57,18 @@ func (m mockListenerHandleWrapper) Err() error {
 }
 
 type mockDataConsumer struct {
-	logsUnmarshaler  eventLogsUnmarshaler
-	nextLogsConsumer consumer.Logs
-	obsrecv          *obsreport.Receiver
+	logsUnmarshaler    eventLogsUnmarshaler
+	nextLogsConsumer   consumer.Logs
+	nextTracesConsumer consumer.Traces
+	obsrecv            *receiverhelper.ObsReport
 }
 
 func (m *mockDataConsumer) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
 	m.nextLogsConsumer = nextLogsConsumer
+}
+
+func (m *mockDataConsumer) setNextTracesConsumer(nextTracesConsumer consumer.Traces) {
+	m.nextTracesConsumer = nextTracesConsumer
 }
 
 func (m *mockDataConsumer) setNextMetricsConsumer(_ consumer.Metrics) {}
@@ -78,46 +83,41 @@ func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) e
 	}
 
 	err = m.nextLogsConsumer.ConsumeLogs(logsContext, logs)
-	m.obsrecv.EndLogsOp(logsContext, metadata.Type, 1, err)
+	m.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), 1, err)
 
 	return err
 }
 
 func TestEventhubHandler_Start(t *testing.T) {
-
 	config := createDefaultConfig()
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
 	ehHandler := &eventhubHandler{
-		settings:     receivertest.NewNopCreateSettings(),
+		settings:     receivertest.NewNopSettings(),
 		dataConsumer: &mockDataConsumer{},
 		config:       config.(*Config),
 	}
 	ehHandler.hub = &mockHubWrapper{}
 
-	err := ehHandler.run(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
-
-	err = ehHandler.close(context.Background())
-	assert.NoError(t, err)
+	assert.NoError(t, ehHandler.run(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, ehHandler.close(context.Background()))
 }
 
 func TestEventhubHandler_newMessageHandler(t *testing.T) {
-
 	config := createDefaultConfig()
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
 	sink := new(consumertest.LogsSink)
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              "",
 		LongLivedCtx:           false,
-		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(),
 	})
 	require.NoError(t, err)
 
 	ehHandler := &eventhubHandler{
-		settings: receivertest.NewNopCreateSettings(),
+		settings: receivertest.NewNopSettings(),
 		config:   config.(*Config),
 		dataConsumer: &mockDataConsumer{
 			logsUnmarshaler:  newRawLogsUnmarshaler(zap.NewNop()),
@@ -127,14 +127,13 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	}
 	ehHandler.hub = &mockHubWrapper{}
 
-	err = ehHandler.run(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
+	assert.NoError(t, ehHandler.run(context.Background(), componenttest.NewNopHost()))
 
 	now := time.Now()
 	err = ehHandler.newMessageHandler(context.Background(), &eventhub.Event{
 		Data:         []byte("hello"),
 		PartitionKey: nil,
-		Properties:   map[string]interface{}{"foo": "bar"},
+		Properties:   map[string]any{"foo": "bar"},
 		ID:           "11234",
 		SystemProperties: &eventhub.SystemProperties{
 			SequenceNumber: nil,
@@ -154,4 +153,5 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	read, ok := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("foo")
 	assert.True(t, ok)
 	assert.Equal(t, "bar", read.AsString())
+	assert.NoError(t, ehHandler.close(context.Background()))
 }

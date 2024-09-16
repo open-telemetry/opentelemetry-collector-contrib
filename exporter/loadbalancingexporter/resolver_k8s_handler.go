@@ -7,10 +7,12 @@ import (
 	"context"
 	"sync"
 
-	"go.opencensus.io/stats"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 var _ cache.ResourceEventHandler = (*handler)(nil)
@@ -19,9 +21,10 @@ type handler struct {
 	endpoints *sync.Map
 	callback  func(ctx context.Context) ([]string, error)
 	logger    *zap.Logger
+	telemetry *metadata.TelemetryBuilder
 }
 
-func (h handler) OnAdd(obj interface{}, _ bool) {
+func (h handler) OnAdd(obj any, _ bool) {
 	var endpoints []string
 
 	switch object := obj.(type) {
@@ -29,7 +32,7 @@ func (h handler) OnAdd(obj interface{}, _ bool) {
 		endpoints = convertToEndpoints(object)
 	default: // unsupported
 		h.logger.Warn("Got an unexpected Kubernetes data type during the inclusion of a new pods for the service", zap.Any("obj", obj))
-		_ = stats.RecordWithTags(context.Background(), k8sResolverSuccessFalseMutators, mNumResolutions.M(1))
+		h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
 		return
 	}
 	changed := false
@@ -43,7 +46,7 @@ func (h handler) OnAdd(obj interface{}, _ bool) {
 	}
 }
 
-func (h handler) OnUpdate(oldObj, newObj interface{}) {
+func (h handler) OnUpdate(oldObj, newObj any) {
 	switch oldEps := oldObj.(type) {
 	case *corev1.Endpoints:
 		epRemove := convertToEndpoints(oldEps)
@@ -57,7 +60,7 @@ func (h handler) OnUpdate(oldObj, newObj interface{}) {
 		newEps, ok := newObj.(*corev1.Endpoints)
 		if !ok {
 			h.logger.Warn("Got an unexpected Kubernetes data type during the update of the pods for a service", zap.Any("obj", newObj))
-			_ = stats.RecordWithTags(context.Background(), k8sResolverSuccessFalseMutators, mNumResolutions.M(1))
+			h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
 			return
 		}
 		changed := false
@@ -71,12 +74,12 @@ func (h handler) OnUpdate(oldObj, newObj interface{}) {
 		}
 	default: // unsupported
 		h.logger.Warn("Got an unexpected Kubernetes data type during the update of the pods for a service", zap.Any("obj", oldObj))
-		_ = stats.RecordWithTags(context.Background(), k8sResolverSuccessFalseMutators, mNumResolutions.M(1))
+		h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
 		return
 	}
 }
 
-func (h handler) OnDelete(obj interface{}) {
+func (h handler) OnDelete(obj any) {
 	var endpoints []string
 	switch object := obj.(type) {
 	case *cache.DeletedFinalStateUnknown:
@@ -88,7 +91,7 @@ func (h handler) OnDelete(obj interface{}) {
 		}
 	default: // unsupported
 		h.logger.Warn("Got an unexpected Kubernetes data type during the removal of the pods for a service", zap.Any("obj", obj))
-		_ = stats.RecordWithTags(context.Background(), k8sResolverSuccessFalseMutators, mNumResolutions.M(1))
+		h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
 		return
 	}
 	if len(endpoints) != 0 {

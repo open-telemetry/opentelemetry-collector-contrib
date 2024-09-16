@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("filter")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
+)
+
 const (
-	Type             = "filter"
 	TracesStability  = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelAlpha
 	LogsStability    = component.StabilityLevelAlpha

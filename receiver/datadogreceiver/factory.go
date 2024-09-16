@@ -21,25 +21,47 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8126",
 		},
 		ReadTimeout: 60 * time.Second,
 	}
 }
 
-func createTracesReceiver(_ context.Context, params receiver.CreateSettings, cfg component.Config, consumer consumer.Traces) (r receiver.Traces, err error) {
+func createTracesReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Traces) (receiver.Traces, error) {
+	var err error
 	rcfg := cfg.(*Config)
-	r = receivers.GetOrAdd(cfg, func() component.Component {
-		dd, _ := newDataDogReceiver(rcfg, consumer, params)
+	r := receivers.GetOrAdd(rcfg, func() (dd component.Component) {
+		dd, err = newDataDogReceiver(rcfg, params)
 		return dd
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	r.Unwrap().(*datadogReceiver).nextTracesConsumer = consumer
+	return r, nil
+}
+
+func createMetricsReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+	var err error
+	rcfg := cfg.(*Config)
+	r := receivers.GetOrAdd(cfg, func() (dd component.Component) {
+		dd, err = newDataDogReceiver(rcfg, params)
+		return dd
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	r.Unwrap().(*datadogReceiver).nextMetricsConsumer = consumer
 	return r, nil
 }
 

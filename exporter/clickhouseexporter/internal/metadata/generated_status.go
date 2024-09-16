@@ -6,9 +6,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("clickhouse")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
+)
+
 const (
-	Type             = "clickhouse"
 	TracesStability  = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelAlpha
-	LogsStability    = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelBeta
 )

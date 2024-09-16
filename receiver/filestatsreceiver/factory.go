@@ -24,28 +24,28 @@ func NewFactory() receiver.Factory {
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
 func newReceiver(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	fileStatsConfig := cfg.(*Config)
 
 	mp := newScraper(fileStatsConfig, settings)
-	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape)
+	s, err := scraperhelper.NewScraperWithComponentType(metadata.Type, mp.scrape)
 	if err != nil {
 		return nil, err
 	}
 	opt := scraperhelper.AddScraper(s)
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&fileStatsConfig.ScraperControllerSettings,
+		&fileStatsConfig.ControllerConfig,
 		settings,
 		consumer,
 		opt,

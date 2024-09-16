@@ -30,13 +30,13 @@ func TestAckEncoding(t *testing.T) {
 	}
 
 	err := a.EncodeMsg(msgpWriterWithLimit(t, 1000))
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = a.EncodeMsg(msgpWriterWithLimit(t, 4))
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	err = a.EncodeMsg(msgpWriterWithLimit(t, 7))
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 // LimitedWriter is an io.Writer that will return an EOF error after MaxLen has

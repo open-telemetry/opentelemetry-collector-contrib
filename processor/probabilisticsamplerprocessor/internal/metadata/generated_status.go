@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("probabilistic_sampler")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
+)
+
 const (
-	Type            = "probabilistic_sampler"
 	LogsStability   = component.StabilityLevelAlpha
 	TracesStability = component.StabilityLevelBeta
 )

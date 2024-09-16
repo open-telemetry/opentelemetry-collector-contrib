@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -29,6 +28,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				AwsEcsLaunchtype:      ResourceAttributeConfig{Enabled: true},
 				AwsEcsTaskArn:         ResourceAttributeConfig{Enabled: true},
 				AwsEcsTaskFamily:      ResourceAttributeConfig{Enabled: true},
+				AwsEcsTaskID:          ResourceAttributeConfig{Enabled: true},
 				AwsEcsTaskRevision:    ResourceAttributeConfig{Enabled: true},
 				AwsLogGroupArns:       ResourceAttributeConfig{Enabled: true},
 				AwsLogGroupNames:      ResourceAttributeConfig{Enabled: true},
@@ -48,6 +48,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				AwsEcsLaunchtype:      ResourceAttributeConfig{Enabled: false},
 				AwsEcsTaskArn:         ResourceAttributeConfig{Enabled: false},
 				AwsEcsTaskFamily:      ResourceAttributeConfig{Enabled: false},
+				AwsEcsTaskID:          ResourceAttributeConfig{Enabled: false},
 				AwsEcsTaskRevision:    ResourceAttributeConfig{Enabled: false},
 				AwsLogGroupArns:       ResourceAttributeConfig{Enabled: false},
 				AwsLogGroupNames:      ResourceAttributeConfig{Enabled: false},
@@ -79,6 +80,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

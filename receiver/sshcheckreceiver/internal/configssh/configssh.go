@@ -103,6 +103,7 @@ func (scs *SSHClientSettings) ToClient(_ component.Host, _ component.TelemetrySe
 
 	switch {
 	case scs.IgnoreHostKey:
+		// nolint G106
 		hkc = ssh.InsecureIgnoreHostKey() //#nosec G106
 	case scs.KnownHosts != "":
 		fn, err := knownhosts.New(scs.KnownHosts)

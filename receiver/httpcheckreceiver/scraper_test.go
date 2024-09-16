@@ -17,12 +17,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func newMockServer(t *testing.T, responseCode int) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(responseCode)
 		// This could be expanded if the checks for the server include
 		// parsing the response content
@@ -43,10 +43,10 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					Targets: []*targetConfig{
 						{
-							HTTPClientSettings: confighttp.HTTPClientSettings{
+							ClientConfig: confighttp.ClientConfig{
 								Endpoint: "http://example.com",
-								TLSSetting: configtls.TLSClientSetting{
-									TLSSetting: configtls.TLSSetting{
+								TLSSetting: configtls.ClientConfig{
+									Config: configtls.Config{
 										CAFile: "/non/existent",
 									},
 								},
@@ -64,8 +64,8 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					Targets: []*targetConfig{
 						{
-							HTTPClientSettings: confighttp.HTTPClientSettings{
-								TLSSetting: configtls.TLSClientSetting{},
+							ClientConfig: confighttp.ClientConfig{
+								TLSSetting: configtls.ClientConfig{},
 								Endpoint:   "http://example.com",
 							},
 						},
@@ -159,7 +159,7 @@ func TestScaperScrape(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if len(tc.endpoint) > 0 {
 				cfg.Targets = []*targetConfig{{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: tc.endpoint,
 					}},
 				}
@@ -167,12 +167,12 @@ func TestScaperScrape(t *testing.T) {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
 				cfg.Targets = []*targetConfig{{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: ms.URL,
 					}},
 				}
 			}
-			scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
+			scraper := newScraper(cfg, receivertest.NewNopSettings())
 			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -190,7 +190,7 @@ func TestScaperScrape(t *testing.T) {
 }
 
 func TestNilClient(t *testing.T) {
-	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
+	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings())
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
@@ -205,17 +205,17 @@ func TestScraperMultipleTargets(t *testing.T) {
 	defer ms2.Close()
 
 	cfg.Targets = append(cfg.Targets, &targetConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ms1.URL,
 		},
 	})
 	cfg.Targets = append(cfg.Targets, &targetConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ms2.URL,
 		},
 	})
 
-	scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newScraper(cfg, receivertest.NewNopSettings())
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 
 	actualMetrics, err := scraper.scrape(context.Background())

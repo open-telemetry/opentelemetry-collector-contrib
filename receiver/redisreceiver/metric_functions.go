@@ -11,8 +11,8 @@ import (
 
 // dataPointRecorders is called once at startup. Returns recorders for all metrics (except keyspace)
 // we want to extract from Redis INFO.
-func (rs *redisScraper) dataPointRecorders() map[string]interface{} {
-	return map[string]interface{}{
+func (rs *redisScraper) dataPointRecorders() map[string]any {
+	return map[string]any{
 		"blocked_clients":                 rs.mb.RecordRedisClientsBlockedDataPoint,
 		"client_recent_max_input_buffer":  rs.mb.RecordRedisClientsMaxInputBufferDataPoint,
 		"client_recent_max_output_buffer": rs.mb.RecordRedisClientsMaxOutputBufferDataPoint,
@@ -30,6 +30,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]interface{} {
 		"rdb_changes_since_last_save":     rs.mb.RecordRedisRdbChangesSinceLastSaveDataPoint,
 		"rejected_connections":            rs.mb.RecordRedisConnectionsRejectedDataPoint,
 		"repl_backlog_first_byte_offset":  rs.mb.RecordRedisReplicationBacklogFirstByteOffsetDataPoint,
+		"slave_repl_offset":               rs.mb.RecordRedisReplicationReplicaOffsetDataPoint,
 		"total_commands_processed":        rs.mb.RecordRedisCommandsProcessedDataPoint,
 		"total_connections_received":      rs.mb.RecordRedisConnectionsReceivedDataPoint,
 		"total_net_input_bytes":           rs.mb.RecordRedisNetInputDataPoint,

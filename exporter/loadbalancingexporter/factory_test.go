@@ -14,7 +14,7 @@ import (
 func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := exportertest.NewNopCreateSettings()
+	creationParams := exportertest.NewNopSettings()
 	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
@@ -25,14 +25,14 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 
 	// verify
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
 
 func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := exportertest.NewNopCreateSettings()
+	creationParams := exportertest.NewNopSettings()
 	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
@@ -43,6 +43,18 @@ func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 
 	// verify
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+}
+
+func TestOTLPConfigIsValid(t *testing.T) {
+	// prepare
+	factory := NewFactory()
+	defaultCfg := factory.CreateDefaultConfig().(*Config)
+
+	// test
+	otlpCfg := defaultCfg.Protocol.OTLP
+
+	// verify
+	assert.NoError(t, otlpCfg.Validate())
 }

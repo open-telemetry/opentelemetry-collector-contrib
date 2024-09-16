@@ -1,9 +1,0 @@
-type: datadog
-
-status:
-  class: processor
-  stability:
-    deprecated: [traces]
-  distributions: [contrib]
-  codeowners:
-    active: [mx-psi, gbbr, dineshg13]

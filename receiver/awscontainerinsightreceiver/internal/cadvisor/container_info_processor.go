@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
-// +build linux
 
 package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 
@@ -33,7 +32,7 @@ const (
 type podKey struct {
 	cgroupPath   string
 	podID        string
-	containerIds []string
+	containerIDs []string
 	podName      string
 	namespace    string
 }
@@ -60,7 +59,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 				podKeys[outPodKey.cgroupPath] = *outPodKey
 			} else {
 				// collect the container ids associated with a pod
-				key.containerIds = append(key.containerIds, outPodKey.containerIds...)
+				key.containerIDs = append(key.containerIDs, outPodKey.containerIDs...)
 			}
 		}
 	}
@@ -137,7 +136,7 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 			tags[ci.ContainerNamekey] = containerName
 			containerID := path.Base(info.Name)
 			tags[ci.ContainerIDkey] = containerID
-			pKey.containerIds = []string{containerID}
+			pKey.containerIDs = []string{containerID}
 			containerType = ci.TypeContainer
 			// TODO(pvasir): wait for upstream fix https://github.com/google/cadvisor/issues/2785
 			if !info.Spec.HasFilesystem {

@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
@@ -35,7 +36,7 @@ type Config struct {
 	DetectorConfig DetectorConfig `mapstructure:",squash"`
 	// HTTP client settings for the detector
 	// Timeout default is 5s
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.ClientConfig `mapstructure:",squash"`
 	// Attributes is an allowlist of attributes to add.
 	// If a supplied attribute is not a valid attribute of a supplied detector it will be ignored.
 	// Deprecated: Please use detector's resource_attributes config instead
@@ -82,6 +83,9 @@ type DetectorConfig struct {
 
 	// OpenShift contains user-specified configurations for the Openshift detector
 	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
+
+	// K8SNode contains user-specified configurations for the K8SNode detector
+	K8SNodeConfig k8snode.Config `mapstructure:"k8snode"`
 }
 
 func detectorCreateDefaultConfig() DetectorConfig {
@@ -99,6 +103,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		HerokuConfig:           heroku.CreateDefaultConfig(),
 		SystemConfig:           system.CreateDefaultConfig(),
 		OpenShiftConfig:        openshift.CreateDefaultConfig(),
+		K8SNodeConfig:          k8snode.CreateDefaultConfig(),
 	}
 }
 
@@ -130,6 +135,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.SystemConfig
 	case openshift.TypeStr:
 		return d.OpenShiftConfig
+	case k8snode.TypeStr:
+		return d.K8SNodeConfig
 	default:
 		return nil
 	}

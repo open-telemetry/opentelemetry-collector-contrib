@@ -6,90 +6,16 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
-
-func TestValidateConfig(t *testing.T) {
-	t.Parallel()
-
-	var multipleErrors error
-
-	multipleErrors = multierr.Combine(multipleErrors, errBadOrMissingEndpoint, errMissingUsername, errMissingPassword)
-
-	tests := []struct {
-		desc   string
-		expect error
-		conf   Config
-	}{
-		{
-			desc:   "Missing password",
-			expect: errMissingPassword,
-			conf: Config{
-				Username: "admin",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://localhost:8089",
-				},
-			},
-		},
-		{
-			desc:   "Missing username",
-			expect: errMissingUsername,
-			conf: Config{
-				Password: "securityFirst",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://localhost:8089",
-				},
-			},
-		},
-		{
-			desc:   "Bad scheme (none http/s)",
-			expect: errBadScheme,
-			conf: Config{
-				Password: "securityFirst",
-				Username: "admin",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "localhost:8089",
-				},
-			},
-		},
-		{
-			desc:   "Missing endpoint",
-			expect: errBadOrMissingEndpoint,
-			conf: Config{
-				Username: "admin",
-				Password: "securityFirst",
-			},
-		},
-		{
-			desc:   "Missing multiple",
-			expect: multipleErrors,
-			conf:   Config{},
-		},
-	}
-
-	for i := range tests {
-		test := tests[i]
-
-		t.Run(test.desc, func(t *testing.T) {
-			t.Parallel()
-
-			err := test.conf.Validate()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), test.expect.Error())
-		})
-	}
-}
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -97,35 +23,82 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	id := component.NewID(metadata.Type)
-	cmSub, err := cm.Sub(id.String())
+	_, err = cm.Sub(id.String())
 	require.NoError(t, err)
+}
 
-	testmetrics := metadata.DefaultMetricsBuilderConfig()
-	testmetrics.Metrics.SplunkLicenseIndexUsage.Enabled = true
-	testmetrics.Metrics.SplunkIndexerThroughput.Enabled = false
+var dummyID = component.MustNewID("dummy")
 
-	expected := &Config{
-		Username:          "admin",
-		Password:          "securityFirst",
-		MaxSearchWaitTime: 11 * time.Second,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "https://localhost:8089",
+func TestEndpointCorrectness(t *testing.T) {
+	// Declare errors for tests that should fail
+	var errBad, errScheme error
+	// Error for bad or missing endpoint
+	errBad = multierr.Append(errBad, errBadOrMissingEndpoint)
+	// There is no way with the current SDK design to create a test config that
+	// satisfies the auth extension so we will just expect this error to appear.
+	errBad = multierr.Append(errBad, errMissingAuthExtension)
+
+	// Error related to bad scheme (not http/s)
+	errScheme = multierr.Append(errScheme, errBadScheme)
+	errScheme = multierr.Append(errScheme, errMissingAuthExtension)
+
+	tests := []struct {
+		desc     string
+		expected error
+		config   *Config
+	}{
+		{
+			desc:     "missing any endpoint setting",
+			expected: errBad,
+			config: &Config{
+				IdxEndpoint: confighttp.ClientConfig{
+					Auth: &configauth.Authentication{AuthenticatorID: dummyID},
+				},
+				SHEndpoint: confighttp.ClientConfig{
+					Auth: &configauth.Authentication{AuthenticatorID: dummyID},
+				},
+				CMEndpoint: confighttp.ClientConfig{
+					Auth: &configauth.Authentication{AuthenticatorID: dummyID},
+				},
+			},
 		},
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-			InitialDelay:       1 * time.Second,
+		{
+			desc:     "properly configured invalid endpoint",
+			expected: errBad,
+			config: &Config{
+				IdxEndpoint: confighttp.ClientConfig{
+					Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+					Endpoint: "123.321.12.1:1",
+				},
+			},
 		},
-		MetricsBuilderConfig: testmetrics,
+		{
+			desc:     "properly configured endpoint has bad scheme",
+			expected: errScheme,
+			config: &Config{
+				IdxEndpoint: confighttp.ClientConfig{
+					Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+					Endpoint: "gss://123.124.32.12:90",
+				},
+			},
+		},
+		{
+			desc:     "properly configured endpoint missing auth",
+			expected: errMissingAuthExtension,
+			config: &Config{
+				IdxEndpoint: confighttp.ClientConfig{
+					Endpoint: "https://123.123.32.2:2093",
+				},
+			},
+		},
 	}
 
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	require.NoError(t, component.UnmarshalConfig(cmSub, cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
-
-	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}))
-	if diff != "" {
-		t.Errorf("config mismatch (-expected / +actual)\n%s", diff)
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			err := test.config.Validate()
+			t.Logf("%v\n", err)
+			require.Error(t, err)
+			require.Contains(t, test.expected.Error(), err.Error())
+		})
 	}
 }

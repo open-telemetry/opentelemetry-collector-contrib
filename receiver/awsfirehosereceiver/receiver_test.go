@@ -77,7 +77,7 @@ func TestStart(t *testing.T) {
 		})
 		cfg := &Config{
 			RecordType: defaultRecordType,
-			HTTPServerSettings: confighttp.HTTPServerSettings{
+			ServerConfig: confighttp.ServerConfig{
 				Endpoint: listener.Addr().String(),
 			},
 		}
@@ -102,7 +102,7 @@ func TestFirehoseRequest(t *testing.T) {
 	testCases := map[string]struct {
 		headers          map[string]string
 		commonAttributes map[string]string
-		body             interface{}
+		body             any
 		consumer         firehoseConsumer
 		wantStatusCode   int
 		wantErr          error
@@ -118,6 +118,14 @@ func TestFirehoseRequest(t *testing.T) {
 		"WithDifferentAccessKey": {
 			headers: map[string]string{
 				headerFirehoseAccessKey: "test",
+			},
+			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
+			wantStatusCode: http.StatusUnauthorized,
+			wantErr:        errInvalidAccessKey,
+		},
+		"WithNoAccessKey": {
+			headers: map[string]string{
+				headerFirehoseAccessKey: "",
 			},
 			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
 			wantStatusCode: http.StatusUnauthorized,
@@ -227,7 +235,7 @@ func TestFirehoseRequest(t *testing.T) {
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver
 func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseReceiver {
 	return &firehoseReceiver{
-		settings: receivertest.NewNopCreateSettings(),
+		settings: receivertest.NewNopSettings(),
 		config:   config,
 		consumer: consumer,
 	}

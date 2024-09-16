@@ -10,9 +10,6 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: test-namespace
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -33,5 +30,5 @@ resourceMetrics:
             name: k8s.deployment.desired
             unit: "{pod}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest

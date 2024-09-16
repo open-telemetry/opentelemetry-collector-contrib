@@ -4,6 +4,10 @@ status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, observiq, splunk, sumo, aws]
+  distributions: [core, contrib]
   codeowners:
     active: [pavolloffay, MovieStoreGuy]
+
+tests:
+  config:
+  skip_lifecycle: true

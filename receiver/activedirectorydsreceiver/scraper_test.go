@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package activedirectorydsreceiver
 
@@ -16,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
@@ -35,7 +34,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
 			w:  mockWatchers,
 		}
 
@@ -46,7 +45,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricDataPointsOrder()))
 
 		err = scraper.shutdown(context.Background())
 		require.NoError(t, err)
@@ -67,7 +66,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).scrapeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
 			w:  mockWatchers,
 		}
 
@@ -81,7 +80,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricDataPointsOrder()))
 
 		err = scraper.shutdown(context.Background())
 		require.NoError(t, err)
@@ -102,7 +101,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).closeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
 			w:  mockWatchers,
 		}
 
@@ -121,7 +120,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
 			w:  mockWatchers,
 		}
 
@@ -138,6 +137,11 @@ type mockPerfCounterWatcher struct {
 	scrapeErr error
 	closeErr  error
 	closed    bool
+}
+
+// Reset panics; it should not be called
+func (mockPerfCounterWatcher) Reset() error {
+	panic("mockPerfCounterWatcher::Reset is not implemented")
 }
 
 // Path panics; It should not be called

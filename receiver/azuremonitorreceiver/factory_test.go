@@ -35,15 +35,18 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 
 				var expectedCfg component.Config = &Config{
-					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
-					Services:                      monitorServices,
-					CacheResources:                24 * 60 * 60,
-					CacheResourcesDefinitions:     24 * 60 * 60,
-					MaximumNumberOfMetricsInACall: 20,
+					MetricsBuilderConfig:              metadata.DefaultMetricsBuilderConfig(),
+					Services:                          monitorServices,
+					CacheResources:                    24 * 60 * 60,
+					CacheResourcesDefinitions:         24 * 60 * 60,
+					MaximumNumberOfMetricsInACall:     20,
+					MaximumNumberOfRecordsPerResource: 10,
+					Authentication:                    servicePrincipal,
+					Cloud:                             defaultCloud,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
@@ -56,7 +59,7 @@ func TestNewFactory(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -69,7 +72,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					nil,
 					consumertest.NewNop(),
 				)

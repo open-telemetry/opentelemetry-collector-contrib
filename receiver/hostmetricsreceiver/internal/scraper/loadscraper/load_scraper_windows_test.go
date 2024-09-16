@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package loadscraper
 
@@ -17,6 +16,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 )
+
+func TestStopSamplingWithoutStart(t *testing.T) {
+	// When the collector fails to start it is possible that stopSampling is called
+	// before startSampling. This test ensures that stopSampling does not panic in
+	// this scenario.
+	require.NoError(t, stopSampling(context.Background()))
+}
 
 func TestStartSampling(t *testing.T) {
 	t.Skip(t, "Test is causing race conditions, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10143.")

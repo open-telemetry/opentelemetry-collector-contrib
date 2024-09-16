@@ -83,7 +83,7 @@ func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
 		}
 	}
 
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
@@ -144,7 +144,7 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 		Value: proto.String(lr.SeverityText()),
 	})
 
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		fields[k] = v.AsString()
 		return true

@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var podArray = []interface{}{
+var podArray = []any{
 	&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
@@ -189,5 +189,5 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 func TestTransformFuncPod(t *testing.T) {
 	info, err := transformFuncPod(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

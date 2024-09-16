@@ -11,13 +11,14 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 )
 
 const (
 	// language=ClickHouse SQL
 	createSumTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_sum (
+CREATE TABLE IF NOT EXISTS %s_sum %s (
     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ResourceSchemaUrl String CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS %s_sum (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
+    ServiceName LowCardinality(String) CODEC(ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -40,7 +42,7 @@ CREATE TABLE IF NOT EXISTS %s_sum (
 		SpanId String,
 		TraceId String
     ) CODEC(ZSTD(1)),
-    AggTemp Int32 CODEC(ZSTD(1)),
+    AggregationTemporality Int32 CODEC(ZSTD(1)),
 	IsMonotonic Boolean CODEC(Delta, ZSTD(1)),
 	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
@@ -48,10 +50,10 @@ CREATE TABLE IF NOT EXISTS %s_sum (
 	INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
-) ENGINE MergeTree()
+) ENGINE = %s
 %s
 PARTITION BY toDate(TimeUnix)
-ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -63,6 +65,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     ScopeAttributes,
 	ScopeDroppedAttrCount,
     ScopeSchemaUrl,
+    ServiceName,
     MetricName,
     MetricDescription,
     MetricUnit,
@@ -76,8 +79,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Exemplars.Value,
     Exemplars.SpanId,
     Exemplars.TraceId,
-	AggTemp,
-	IsMonotonic) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	AggregationTemporality,
+	IsMonotonic) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 )
 
 type sumModel struct {
@@ -110,6 +113,11 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 		}()
 
 		for _, model := range s.sumModel {
+			var serviceName string
+			if v, ok := model.metadata.ResAttr[conventions.AttributeServiceName]; ok {
+				serviceName = v
+			}
+
 			for i := 0; i < model.sum.DataPoints().Len(); i++ {
 				dp := model.sum.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
@@ -121,6 +129,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 					attributesToMap(model.metadata.ScopeInstr.Attributes()),
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
+					serviceName,
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,
@@ -132,8 +141,8 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 					attrs,
 					times,
 					values,
-					traceIDs,
 					spanIDs,
+					traceIDs,
 					int32(model.sum.AggregationTemporality()),
 					model.sum.IsMonotonic(),
 				)

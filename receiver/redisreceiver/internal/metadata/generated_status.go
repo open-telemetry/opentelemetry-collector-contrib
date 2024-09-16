@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("redis")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+)
+
 const (
-	Type             = "redis"
 	MetricsStability = component.StabilityLevelBeta
 )

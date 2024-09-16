@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -27,7 +27,7 @@ func TestScraper(t *testing.T) {
 	dbWrapper := &testDBWrapper{}
 	initializeWrapper(t, dbWrapper, allQueryMetrics)
 
-	sc, err := newSapHanaScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(receivertest.NewNopSettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
@@ -94,7 +94,7 @@ func TestDisabledMetrics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.SaphanaVolumeOperationSize.Enabled = false
 	cfg.MetricsBuilderConfig.Metrics.SaphanaVolumeOperationTime.Enabled = false
 
-	sc, err := newSapHanaScraper(receivertest.NewNopCreateSettings(), cfg, &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(receivertest.NewNopSettings(), cfg, &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(partialExpectedMetricsPath)

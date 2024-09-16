@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -18,15 +20,24 @@ import (
 
 func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, "splunkenterprise", factory.Type())
+	require.EqualValues(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
+	cfg := confighttp.NewDefaultClientConfig()
+	cfg.Headers = map[string]configopaque.String{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
+	cfg.Timeout = 60 * time.Second
+
 	expectedConf := &Config{
-		MaxSearchWaitTime: 60 * time.Second,
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		IdxEndpoint: cfg,
+		SHEndpoint:  cfg,
+		CMEndpoint:  cfg,
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Minute,
 			InitialDelay:       1 * time.Second,
+			Timeout:            60 * time.Second,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -47,32 +58,18 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				t.Parallel()
 
 				cfg := createDefaultConfig().(*Config)
+				cfg.CMEndpoint.Endpoint = "https://123.12.12.12:80"
+				cfg.IdxEndpoint.Endpoint = "https://123.12.12.12:80"
+				cfg.SHEndpoint.Endpoint = "https://123.12.12.12:80"
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
 
 				require.NoError(t, err, "failed to create metrics receiver with valid inputs")
-			},
-		},
-		{
-			desc: "Missing consumer",
-			run: func(t *testing.T) {
-				t.Parallel()
-
-				cfg := createDefaultConfig().(*Config)
-
-				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopCreateSettings(),
-					cfg,
-					nil,
-				)
-
-				require.Error(t, err, "created metrics receiver without consumer")
 			},
 		},
 	}

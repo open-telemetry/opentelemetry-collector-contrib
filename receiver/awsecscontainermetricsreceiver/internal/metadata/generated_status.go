@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("awsecscontainermetrics")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
+)
+
 const (
-	Type             = "awsecscontainermetrics"
 	MetricsStability = component.StabilityLevelBeta
 )

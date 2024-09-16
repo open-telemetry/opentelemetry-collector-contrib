@@ -13,12 +13,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
+var scopeLogName = "otlp/" + metadata.Type.String()
+
 const (
 	// might add this later, for now I wish to require a valid
 	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
 	// defaultEndpoint = "localhost:8080"
-	scopeLogName        = "otlp/" + metadata.Type
 	defaultReadTimeout  = "500ms"
 	defaultWriteTimeout = "500ms"
 	defaultPath         = "/events"
@@ -47,7 +48,7 @@ func createDefaultConfig() component.Config {
 // createLogsReceiver creates a logs receiver based on provided config.
 func createLogsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {

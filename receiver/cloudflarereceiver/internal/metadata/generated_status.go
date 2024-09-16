@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("cloudflare")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver"
+)
+
 const (
-	Type          = "cloudflare"
 	LogsStability = component.StabilityLevelAlpha
 )

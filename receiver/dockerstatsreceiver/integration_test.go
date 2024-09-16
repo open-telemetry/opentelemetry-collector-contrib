@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package dockerstatsreceiver
 
@@ -16,6 +15,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	rcvr "go.opentelemetry.io/collector/receiver"
@@ -25,18 +25,6 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-type testHost struct {
-	component.Host
-	t *testing.T
-}
-
-// ReportFatalError causes the test to be run to fail.
-func (h *testHost) ReportFatalError(err error) {
-	h.t.Fatalf("receiver reported a fatal error: %v", err)
-}
-
-var _ component.Host = (*testHost)(nil)
-
 func factory() (rcvr.Factory, *Config) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
@@ -44,10 +32,10 @@ func factory() (rcvr.Factory, *Config) {
 	return f, config
 }
 
-func paramsAndContext(t *testing.T) (rcvr.CreateSettings, context.Context, context.CancelFunc) {
+func paramsAndContext(t *testing.T) (rcvr.Settings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = logger
 	return settings, ctx, cancel
 }
@@ -63,7 +51,7 @@ func createNginxContainer(ctx context.Context, t *testing.T) testcontainers.Cont
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, container)
 
 	return container
@@ -95,8 +83,10 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
 
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, recv.Start(ctx, &testHost{
-		t: t,
+	require.NoError(t, recv.Start(ctx, &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			require.NoError(t, event.Err())
+		},
 	}))
 
 	assert.Eventuallyf(t, func() bool {
@@ -115,8 +105,10 @@ func TestMonitoringAddedAndRemovedContainerIntegration(t *testing.T) {
 
 	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, recv.Start(ctx, &testHost{
-		t: t,
+	require.NoError(t, recv.Start(ctx, &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			require.NoError(t, event.Err())
+		},
 	}))
 
 	container := createNginxContainer(ctx, t)
@@ -150,8 +142,10 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	consumer := new(consumertest.MetricsSink)
 	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, recv.Start(ctx, &testHost{
-		t: t,
+	require.NoError(t, recv.Start(ctx, &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			require.NoError(t, event.Err())
+		},
 	}))
 
 	assert.Never(t, func() bool {
@@ -159,4 +153,26 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	}, 5*time.Second, 1*time.Second, "received undesired metrics")
 
 	assert.NoError(t, recv.Shutdown(ctx))
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return nil
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

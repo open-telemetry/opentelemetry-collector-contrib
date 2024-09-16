@@ -1,0 +1,23 @@
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="VSS" /> 
+    <EventID Qualifiers="0">8194</EventID> 
+    <Version>0</Version> 
+    <Level>2</Level> 
+    <Task>0</Task> 
+    <Opcode>0</Opcode> 
+    <Keywords>0x80000000000000</Keywords> 
+    <TimeCreated SystemTime="2023-10-19T21:57:58.0685414Z" /> 
+    <EventRecordID>383972</EventRecordID> 
+    <Correlation /> 
+    <Execution ProcessID="0" ThreadID="0" /> 
+    <Channel>Application</Channel> 
+    <Computer>computer</Computer> 
+    <Security /> 
+  </System>
+  <EventData>
+    <Data>1st_value</Data> 
+    <Data>2nd_value</Data> 
+    <Binary>2D20</Binary> 
+  </EventData>
+</Event>

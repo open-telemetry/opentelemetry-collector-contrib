@@ -18,26 +18,26 @@ func TestWithDetails(t *testing.T) {
 		err := NewError("Test error", "")
 		err2 := WithDetails(err, "foo", "bar")
 
-		require.Equal(t, err2.Details, ErrorDetails{"foo": "bar"})
+		require.Equal(t, ErrorDetails{"foo": "bar"}, err2.Details)
 	})
 
 	t.Run("AgentErrorWithExistingDetails", func(t *testing.T) {
 		err := NewError("Test error", "", "foo1", "bar1")
 		err2 := WithDetails(err, "foo2", "bar2")
 
-		require.Equal(t, err2.Details, ErrorDetails{"foo1": "bar1", "foo2": "bar2"})
+		require.Equal(t, ErrorDetails{"foo1": "bar1", "foo2": "bar2"}, err2.Details)
 	})
 
 	t.Run("StandardError", func(t *testing.T) {
 		err := fmt.Errorf("Test error")
 		err2 := WithDetails(err, "foo", "bar")
 
-		require.Equal(t, err2.Details, ErrorDetails{"foo": "bar"})
+		require.Equal(t, ErrorDetails{"foo": "bar"}, err2.Details)
 	})
 
 	t.Run("AgentMethod", func(t *testing.T) {
 		err := NewError("Test error", "").WithDetails("foo", "bar")
-		require.Equal(t, err.Details, ErrorDetails{"foo": "bar"})
+		require.Equal(t, ErrorDetails{"foo": "bar"}, err.Details)
 	})
 }
 
@@ -89,7 +89,7 @@ func TestMarshalLogObject(t *testing.T) {
 		out, err := enc.EncodeEntry(entry, fields)
 		require.NoError(t, err)
 
-		expected := `{"level":"debug","ts":-6795364578.8713455,"logger":"testlogger","msg":"Got an error","error":{"description":"Test error"}}` + "\n"
+		expected := `{"level":"debug","logger":"testlogger","msg":"Got an error","error":{"description":"Test error"}}` + "\n"
 		require.Equal(t, expected, out.String())
 	})
 
@@ -98,7 +98,7 @@ func TestMarshalLogObject(t *testing.T) {
 		out, err := enc.EncodeEntry(entry, fields)
 		require.NoError(t, err)
 
-		expected := `{"level":"debug","ts":-6795364578.8713455,"logger":"testlogger","msg":"Got an error","error":{"description":"Test error","suggestion":"Fix it","details":{"foo":"bar"}}}` + "\n"
+		expected := `{"level":"debug","logger":"testlogger","msg":"Got an error","error":{"description":"Test error","suggestion":"Fix it","details":{"foo":"bar"}}}` + "\n"
 		require.Equal(t, expected, out.String())
 	})
 }

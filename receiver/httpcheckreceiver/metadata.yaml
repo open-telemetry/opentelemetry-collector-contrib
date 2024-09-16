@@ -3,8 +3,8 @@ type: httpcheck
 status:
   class: receiver
   stability:
-    development: [metrics]
-  distributions: [contrib, sumo]
+    alpha: [metrics]
+  distributions: [contrib]
   warnings: []
   codeowners:
     active: [codeboten]
@@ -36,7 +36,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-    unit: 1
+    unit: "1"
     attributes: [http.url, http.status_code, http.method, http.status_class]
   httpcheck.duration:
     description: Measures the duration of the HTTP check.

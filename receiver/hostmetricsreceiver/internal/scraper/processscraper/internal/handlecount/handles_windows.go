@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package handlecount // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/handlecount"
 
@@ -53,6 +52,7 @@ func (m *handleCountManager) GetProcessHandleCount(pid int64) (uint32, error) {
 
 type wmiHandleCountQueryer struct{}
 
+//revive:disable-next-line:var-naming
 type Win32_Process struct {
 	ProcessID   int64
 	HandleCount uint32

@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -27,24 +29,25 @@ import (
 )
 
 type logsReceiver struct {
-	logger   *zap.Logger
-	cfg      *LogsConfig
-	server   *http.Server
-	consumer consumer.Logs
-	wg       *sync.WaitGroup
-	id       component.ID // ID of the receiver component
+	logger            *zap.Logger
+	cfg               *LogsConfig
+	server            *http.Server
+	consumer          consumer.Logs
+	wg                *sync.WaitGroup
+	id                component.ID // ID of the receiver component
+	telemetrySettings component.TelemetrySettings
 }
 
 const secretHeaderName = "X-CF-Secret"
-const receiverScopeName = "otelcol/" + metadata.Type
 
-func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
+func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{
-		cfg:      &cfg.Logs,
-		consumer: consumer,
-		logger:   params.Logger,
-		wg:       &sync.WaitGroup{},
-		id:       params.ID,
+		cfg:               &cfg.Logs,
+		consumer:          consumer,
+		logger:            params.Logger,
+		wg:                &sync.WaitGroup{},
+		telemetrySettings: params.TelemetrySettings,
+		id:                params.ID,
 	}
 
 	recv.server = &http.Server{
@@ -53,7 +56,7 @@ func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.
 	}
 
 	if recv.cfg.TLS != nil {
-		tlsConfig, err := recv.cfg.TLS.LoadTLSConfig()
+		tlsConfig, err := recv.cfg.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -105,9 +108,9 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 
 			l.logger.Debug("ServeTLS done")
 
-			if err != http.ErrServerClosed {
+			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("ServeTLS failed", zap.Error(err))
-				host.ReportFatalError(err)
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 
 		} else {
@@ -118,9 +121,9 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 
 			l.logger.Debug("Serve done")
 
-			if err != http.ErrServerClosed {
+			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("Serve failed", zap.Error(err))
-				host.ReportFatalError(err)
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 
 		}
@@ -190,14 +193,14 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 	rw.WriteHeader(http.StatusOK)
 }
 
-func parsePayload(payload []byte) ([]map[string]interface{}, error) {
+func parsePayload(payload []byte) ([]map[string]any, error) {
 	lines := bytes.Split(payload, []byte("\n"))
-	logs := make([]map[string]interface{}, 0, len(lines))
+	logs := make([]map[string]any, 0, len(lines))
 	for _, line := range lines {
 		if len(line) == 0 {
 			continue
 		}
-		var log map[string]interface{}
+		var log map[string]any
 		err := json.Unmarshal(line, &log)
 		if err != nil {
 			return logs, err
@@ -207,11 +210,11 @@ func parsePayload(payload []byte) ([]map[string]interface{}, error) {
 	return logs, nil
 }
 
-func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]interface{}) plog.Logs {
+func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any) plog.Logs {
 	pLogs := plog.NewLogs()
 
 	// Group logs by ZoneName field if it was configured so it can be used as a resource attribute
-	groupedLogs := make(map[string][]map[string]interface{})
+	groupedLogs := make(map[string][]map[string]any)
 	for _, log := range logs {
 		zone := ""
 		if v, ok := log["ZoneName"]; ok {
@@ -229,7 +232,7 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]inte
 			resource.Attributes().PutStr("cloudflare.zone", zone)
 		}
 		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-		scopeLogs.Scope().SetName(receiverScopeName)
+		scopeLogs.Scope().SetName(metadata.ScopeName)
 
 		for _, log := range logGroup {
 			logRecord := scopeLogs.LogRecords().AppendEmpty()

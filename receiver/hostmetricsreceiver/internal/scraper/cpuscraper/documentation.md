@@ -39,6 +39,20 @@ metrics:
     enabled: true
 ```
 
+### system.cpu.frequency
+
+Current frequency of the CPU core in Hz.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| Hz | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cpu | Logical CPU number starting at 0. | Any Str |
+
 ### system.cpu.logical.count
 
 Number of available logical CPUs.

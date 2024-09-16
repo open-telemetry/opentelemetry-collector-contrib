@@ -57,24 +57,24 @@ property_value: '!/property.value/'`,
 		{
 			name:          "invalid regex",
 			yaml:          "dimension_name: '/(?=not.in.re2)/'",
-			expectedError: "1 error(s) decoding:\n\n* error decoding 'dimension_name': error parsing regexp: invalid or unsupported Perl syntax: `(?=`",
+			expectedError: "'dimension_name': error parsing regexp: invalid or unsupported Perl syntax: `(?=`",
 		},
 		{
 			name:          "invalid glob",
 			yaml:          "dimension_value: '*[c-a]'",
-			expectedError: "1 error(s) decoding:\n\n* error decoding 'dimension_value': hi character 'a' should be greater than lo 'c'",
+			expectedError: "'dimension_value': hi character 'a' should be greater than lo 'c'",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			var conf map[string]interface{}
+			var conf map[string]any
 			err := yaml.Unmarshal([]byte(test.yaml), &conf)
 			require.NoError(t, err)
 
 			cm := confmap.NewFromStringMap(conf)
 			pf := &PropertyFilter{}
-			err = cm.Unmarshal(pf, confmap.WithErrorUnused())
+			err = cm.Unmarshal(pf)
 			if test.expectedError != "" {
-				require.EqualError(t, err, test.expectedError)
+				require.ErrorContains(t, err, test.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, test.expectedPropertyFilter, *pf)

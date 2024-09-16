@@ -26,7 +26,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint:        "",
 			Timeout:         30 * time.Second,
 			Headers:         map[string]configopaque.String{},
@@ -47,13 +47,13 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "valid").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 
 		require.NoError(t, err)
 		assert.Equal(t, &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
 				Headers:         map[string]configopaque.String{},
@@ -68,19 +68,19 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "valid_with_ca_file").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 
 		require.NoError(t, err)
 		assert.Equal(t, &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
 				Headers:         map[string]configopaque.String{},
 				WriteBufferSize: 512 * 1024,
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile: "ca.crt",
 					},
 				},
@@ -94,13 +94,13 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "valid_no_ca_file").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 
 		require.NoError(t, err)
 		assert.Equal(t, &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
 				Headers:         map[string]configopaque.String{},
@@ -115,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "bad_endpoint").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)
@@ -126,7 +126,7 @@ func TestLoadConfig(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "non_https_endpoint").String())
 
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)
@@ -136,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "missing_agent_key").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)

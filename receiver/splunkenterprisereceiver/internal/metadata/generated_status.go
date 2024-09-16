@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("splunkenterprise")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
+)
+
 const (
-	Type             = "splunkenterprise"
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

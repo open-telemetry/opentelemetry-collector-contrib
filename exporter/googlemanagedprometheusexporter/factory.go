@@ -34,8 +34,8 @@ func NewFactory() exporter.Factory {
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: defaultTimeout},
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		GMPConfig: GMPConfig{
 			MetricConfig: MetricConfig{
 				Config: googlemanagedprometheus.DefaultConfig(),
@@ -47,10 +47,10 @@ func createDefaultConfig() component.Config {
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg component.Config) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
-	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.GMPConfig.toCollectorConfig(), params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.Timeout)
+	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.GMPConfig.toCollectorConfig(), params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +59,10 @@ func createMetricsExporter(
 		params,
 		cfg,
 		mExp.PushMetrics,
+		exporterhelper.WithStart(mExp.Start),
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithQueue(eCfg.QueueSettings))
 }

@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("opencensus")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
+)
+
 const (
-	Type             = "opencensus"
 	MetricsStability = component.StabilityLevelBeta
 	TracesStability  = component.StabilityLevelBeta
 )

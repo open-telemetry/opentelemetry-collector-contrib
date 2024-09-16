@@ -56,7 +56,8 @@ func TestK8sResolve(t *testing.T) {
 		}
 
 		cl := fake.NewSimpleClientset(endpoint)
-		res, err := newK8sResolver(cl, zap.NewNop(), service, ports)
+		_, tb := getTelemetryAssets(t)
+		res, err := newK8sResolver(cl, zap.NewNop(), service, ports, defaultListWatchTimeout, tb)
 		require.NoError(t, err)
 
 		require.NoError(t, res.start(context.Background()))
@@ -101,7 +102,7 @@ func TestK8sResolve(t *testing.T) {
 				return err
 
 			},
-			verifyFn: func(ctx *suiteContext, args args) error {
+			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
 					return err
 				}
@@ -139,7 +140,7 @@ func TestK8sResolve(t *testing.T) {
 				return err
 
 			},
-			verifyFn: func(ctx *suiteContext, args args) error {
+			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
 					return err
 				}
@@ -163,7 +164,7 @@ func TestK8sResolve(t *testing.T) {
 				return suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
 					Delete(context.TODO(), args.service, metav1.DeleteOptions{})
 			},
-			verifyFn: func(suiteCtx *suiteContext, args args) error {
+			verifyFn: func(suiteCtx *suiteContext, _ args) error {
 				if _, err := suiteCtx.resolver.resolve(context.Background()); err != nil {
 					return err
 				}
@@ -241,9 +242,10 @@ func Test_newK8sResolver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports)
+			_, tb := getTelemetryAssets(t)
+			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout, tb)
 			if tt.wantErr != nil {
-				require.Error(t, err, tt.wantErr)
+				require.ErrorIs(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.wantNil, got == nil)

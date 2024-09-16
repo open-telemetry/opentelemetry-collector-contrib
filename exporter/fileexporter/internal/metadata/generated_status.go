@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("file")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
+)
+
 const (
-	Type             = "file"
 	TracesStability  = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelAlpha
 	LogsStability    = component.StabilityLevelAlpha

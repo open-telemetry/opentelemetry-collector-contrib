@@ -3,7 +3,10 @@ type: exceptions
 status:
   class: connector
   stability:
-    development: [traces_to_metrics, traces_to_logs]
+    alpha: [traces_to_metrics, traces_to_logs]
   distributions: [contrib]
   codeowners:
-    active: [jpkrohling]
+    active: [jpkrohling, marctc]
+
+tests:
+  config:

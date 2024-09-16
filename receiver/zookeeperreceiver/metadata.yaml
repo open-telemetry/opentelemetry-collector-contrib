@@ -3,10 +3,11 @@ type: zookeeper
 status:
   class: receiver
   stability:
-    development: [metrics]
-  distributions: [contrib, observiq, sumo]
+    alpha: [metrics]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
+    seeking_new: true
 
 resource_attributes:
   server.state:
@@ -150,6 +151,9 @@ metrics:
   zookeeper.ruok:
     enabled: true
     description: Response from zookeeper ruok command
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
+
+tests:
+  config:

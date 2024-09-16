@@ -1,0 +1,28 @@
+splunk:
+  hec:
+    enable: True
+    ssl: True
+    port: 8088
+    token: 00000000-0000-0000-0000-000000000000
+  conf:
+    indexes:
+      directory: /opt/splunk/etc/apps/search/local
+      content:
+        sck-otel:
+          coldPath: $SPLUNK_DB/sck-otel/colddb
+          datatype: event
+          homePath: $SPLUNK_DB/sck-otel/db
+          maxTotalDataSizeMB: 512000
+          thawedPath: $SPLUNK_DB/sck-otel/thaweddb
+        sck-metrics:
+          coldPath: $SPLUNK_DB/sck-metrics/colddb
+          datatype: metric
+          homePath: $SPLUNK_DB/sck-metrics/db
+          maxTotalDataSizeMB: 512000
+          thawedPath: $SPLUNK_DB/sck-metrics/thaweddb
+        sck-traces:
+          coldPath: $SPLUNK_DB/sck-traces/colddb
+          datatype: event
+          homePath: $SPLUNK_DB/sck-traces/db
+          maxTotalDataSizeMB: 512000
+          thawedPath: $SPLUNK_DB/sck-traces/thaweddb

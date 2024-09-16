@@ -54,7 +54,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{},
 			args{
 				exporters: map[component.ID]component.Component{
-					component.NewID("nop"): MockExporter{},
+					component.MustNewID("nop"): MockExporter{},
 				},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -66,7 +66,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
 			args{exporters: map[component.ID]component.Component{
-				component.NewID("nop"): mockExporterWithK8sMetadata{},
+				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -78,7 +78,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 				metadataConsumers: []metadataConsumer{},
 			},
 			args{exporters: map[component.ID]component.Component{
-				component.NewID("nop"): mockExporterWithK8sMetadata{},
+				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop/1"},
 			},
@@ -229,7 +229,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	origPod := pods[0]
 	updatedPod := getUpdatedPod(origPod)
 
-	rw := newResourceWatcher(receivertest.NewNopCreateSettings(), &Config{}, metadata.NewStore())
+	rw := newResourceWatcher(receivertest.NewNopSettings(), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
 	rw.entityLogConsumer = logsConsumer
 
 	step1 := time.Now()
@@ -266,6 +266,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected := map[string]any{
 		"otel.entity.event.type": "entity_state",
+		"otel.entity.interval":   int64(7200000), // 2h in milliseconds
 		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z"},
@@ -306,7 +307,7 @@ func TestObjMetadata(t *testing.T) {
 	tests := []struct {
 		name          string
 		metadataStore *metadata.Store
-		resource      interface{}
+		resource      any
 		want          map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata
 	}{
 		{
@@ -363,7 +364,7 @@ func TestObjMetadata(t *testing.T) {
 			metadataStore: func() *metadata.Store {
 				ms := metadata.NewStore()
 				ms.Setup(gvk.Service, &testutils.MockStore{
-					Cache: map[string]interface{}{
+					Cache: map[string]any{
 						"test-namespace/test-service": &corev1.Service{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "test-service",
@@ -531,7 +532,7 @@ func TestObjMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		observedLogger, _ := observer.New(zapcore.WarnLevel)
-		set := receivertest.NewNopCreateSettings()
+		set := receivertest.NewNopSettings()
 		set.TelemetrySettings.Logger = zap.New(observedLogger)
 		t.Run(tt.name, func(t *testing.T) {
 			dc := &resourceWatcher{metadataStore: tt.metadataStore}
@@ -553,7 +554,7 @@ var allPodMetadata = func(metadata map[string]string) map[string]string {
 	return out
 }
 
-func podWithAdditionalLabels(labels map[string]string, pod *corev1.Pod) interface{} {
+func podWithAdditionalLabels(labels map[string]string, pod *corev1.Pod) any {
 	if pod.Labels == nil {
 		pod.Labels = make(map[string]string, len(labels))
 	}

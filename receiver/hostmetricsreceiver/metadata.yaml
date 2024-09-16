@@ -4,6 +4,9 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [core, contrib, observiq, splunk, sumo]
+    development: [logs]
+  distributions: [core, contrib]
   codeowners:
-    active: [dmitryax]
+    active: [dmitryax, braydonk]
+tests:
+  config:

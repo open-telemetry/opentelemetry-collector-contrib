@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"errors"
 	"syscall"
 	"unsafe"
 
@@ -21,10 +21,20 @@ var (
 	renderProc                SyscallProc = api.NewProc("EvtRender")
 	closeProc                 SyscallProc = api.NewProc("EvtClose")
 	createBookmarkProc        SyscallProc = api.NewProc("EvtCreateBookmark")
+	createRenderContextProc   SyscallProc = api.NewProc("EvtCreateRenderContext")
 	updateBookmarkProc        SyscallProc = api.NewProc("EvtUpdateBookmark")
 	openPublisherMetadataProc SyscallProc = api.NewProc("EvtOpenPublisherMetadata")
 	formatMessageProc         SyscallProc = api.NewProc("EvtFormatMessage")
+	openSessionProc           SyscallProc = api.NewProc("EvtOpenSession")
 )
+
+type EvtRPCLogin struct {
+	Server   *uint16
+	User     *uint16
+	Domain   *uint16
+	Password *uint16
+	Flags    uint32
+}
 
 // SyscallProc is a syscall procedure.
 type SyscallProc interface {
@@ -38,6 +48,8 @@ const (
 	EvtSubscribeStartAtOldestRecord uint32 = 2
 	// EvtSubscribeStartAfterBookmark is a flag that will subscribe to all events that begin after a bookmark.
 	EvtSubscribeStartAfterBookmark uint32 = 3
+	// EvtRPCLoginClass is a flag that indicates the login class.
+	EvtRPCLoginClass uint32 = 1
 )
 
 const (
@@ -59,16 +71,27 @@ const (
 )
 
 const (
+	// EvtRenderEventValues is a flag to render the event properties specified in the rendering context
+	EvtRenderEventValues uint32 = 0
 	// EvtRenderEventXML is a flag to render an event as an XML string
 	EvtRenderEventXML uint32 = 1
 	// EvtRenderBookmark is a flag to render a bookmark as an XML string
 	EvtRenderBookmark uint32 = 2
 )
 
+const (
+	// EvtRenderContextValues is a flag to render the system properties under the System element.
+	// The properties are returned in the order defined in the EVT_SYSTEM_PROPERTY_ID enumeration.
+	// https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_render_context_flags
+	EvtRenderContextSystem uint32 = 1
+)
+
+var evtSubscribeFunc = evtSubscribe
+
 // evtSubscribe is the direct syscall implementation of EvtSubscribe (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe)
 func evtSubscribe(session uintptr, signalEvent windows.Handle, channelPath *uint16, query *uint16, bookmark uintptr, context uintptr, callback uintptr, flags uint32) (uintptr, error) {
 	handle, _, err := subscribeProc.Call(session, uintptr(signalEvent), uintptr(unsafe.Pointer(channelPath)), uintptr(unsafe.Pointer(query)), bookmark, context, callback, uintptr(flags))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
 	}
 
@@ -78,7 +101,7 @@ func evtSubscribe(session uintptr, signalEvent windows.Handle, channelPath *uint
 // evtNext is the direct syscall implementation of EvtNext (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtnext)
 func evtNext(resultSet uintptr, eventsSize uint32, events *uintptr, timeout uint32, flags uint32, returned *uint32) error {
 	_, _, err := nextProc.Call(resultSet, uintptr(eventsSize), uintptr(unsafe.Pointer(events)), uintptr(timeout), uintptr(flags), uintptr(unsafe.Pointer(returned)))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return err
 	}
 
@@ -86,21 +109,21 @@ func evtNext(resultSet uintptr, eventsSize uint32, events *uintptr, timeout uint
 }
 
 // evtRender is the direct syscall implementation of EvtRender (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtrender)
-func evtRender(context uintptr, fragment uintptr, flags uint32, bufferSize uint32, buffer *byte) (*uint32, *uint32, error) {
+func evtRender(context uintptr, fragment uintptr, flags uint32, bufferSize uint32, buffer *byte) (*uint32, error) {
 	bufferUsed := new(uint32)
 	propertyCount := new(uint32)
 	_, _, err := renderProc.Call(context, fragment, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)), uintptr(unsafe.Pointer(propertyCount)))
-	if err != ErrorSuccess {
-		return bufferUsed, propertyCount, err
+	if !errors.Is(err, ErrorSuccess) {
+		return bufferUsed, err
 	}
 
-	return bufferUsed, propertyCount, nil
+	return bufferUsed, nil
 }
 
 // evtClose is the direct syscall implementation of EvtClose (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtclose)
 func evtClose(handle uintptr) error {
 	_, _, err := closeProc.Call(handle)
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return err
 	}
 
@@ -110,7 +133,17 @@ func evtClose(handle uintptr) error {
 // evtCreateBookmark is the direct syscall implementation of EvtCreateBookmark (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreatebookmark)
 func evtCreateBookmark(bookmarkXML *uint16) (uintptr, error) {
 	handle, _, err := createBookmarkProc.Call(uintptr(unsafe.Pointer(bookmarkXML)))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
+		return 0, err
+	}
+
+	return handle, nil
+}
+
+// evtCreateRenderContext is the direct syscall implementation of EvtCreateRenderContext (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreaterendercontext)
+func evtCreateRenderContext(valuePathsCount uint32, valuePaths **uint16, flags uint32) (uintptr, error) {
+	handle, _, err := createRenderContextProc.Call(uintptr(valuePathsCount), uintptr(unsafe.Pointer(valuePaths)), uintptr(flags))
+	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
 	}
 
@@ -120,7 +153,7 @@ func evtCreateBookmark(bookmarkXML *uint16) (uintptr, error) {
 // evtUpdateBookmark is the direct syscall implementation of EvtUpdateBookmark (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreatebookmark)
 func evtUpdateBookmark(bookmark uintptr, event uintptr) error {
 	_, _, err := updateBookmarkProc.Call(bookmark, event)
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return err
 	}
 
@@ -130,7 +163,7 @@ func evtUpdateBookmark(bookmark uintptr, event uintptr) error {
 // evtOpenPublisherMetadata is the direct syscall implementation of EvtOpenPublisherMetadata (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtopenpublishermetadata)
 func evtOpenPublisherMetadata(session uintptr, publisherIdentity *uint16, logFilePath *uint16, locale uint32, flags uint32) (uintptr, error) {
 	handle, _, err := openPublisherMetadataProc.Call(session, uintptr(unsafe.Pointer(publisherIdentity)), uintptr(unsafe.Pointer(logFilePath)), uintptr(locale), uintptr(flags))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
 	}
 
@@ -141,9 +174,19 @@ func evtOpenPublisherMetadata(session uintptr, publisherIdentity *uint16, logFil
 func evtFormatMessage(publisherMetadata uintptr, event uintptr, messageID uint32, valueCount uint32, values uintptr, flags uint32, bufferSize uint32, buffer *byte) (*uint32, error) {
 	bufferUsed := new(uint32)
 	_, _, err := formatMessageProc.Call(publisherMetadata, event, uintptr(messageID), uintptr(valueCount), values, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return bufferUsed, err
 	}
 
 	return bufferUsed, nil
+}
+
+// evtOpenSession is the direct syscall implementation of EvtOpenSession (https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtopensession)
+func evtOpenSession(loginClass uint32, login *EvtRPCLogin, timeout uint32, flags uint32) (windows.Handle, error) {
+	r0, _, e1 := openSessionProc.Call(uintptr(loginClass), uintptr(unsafe.Pointer(login)), uintptr(timeout), uintptr(flags))
+	handle := windows.Handle(r0)
+	if handle == 0 {
+		return handle, e1
+	}
+	return handle, nil
 }

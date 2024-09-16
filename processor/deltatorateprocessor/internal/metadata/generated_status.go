@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("deltatorate")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
+)
+
 const (
-	Type             = "deltatorate"
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

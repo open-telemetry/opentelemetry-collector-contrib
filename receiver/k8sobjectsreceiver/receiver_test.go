@@ -22,7 +22,7 @@ func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -38,13 +38,13 @@ func TestPullObject(t *testing.T) {
 
 	mockClient := newMockDynamicClient()
 	mockClient.createPods(
-		generatePod("pod1", "default", map[string]interface{}{
+		generatePod("pod1", "default", map[string]any{
 			"environment": "production",
 		}, "1"),
-		generatePod("pod2", "default", map[string]interface{}{
+		generatePod("pod2", "default", map[string]any{
 			"environment": "test",
 		}, "2"),
-		generatePod("pod3", "default_ignore", map[string]interface{}{
+		generatePod("pod3", "default_ignore", map[string]any{
 			"environment": "production",
 		}, "3"),
 	)
@@ -67,7 +67,7 @@ func TestPullObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumer,
 	)
@@ -86,7 +86,7 @@ func TestWatchObject(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	mockClient.createPods(
-		generatePod("pod1", "default", map[string]interface{}{
+		generatePod("pod1", "default", map[string]any{
 			"environment": "production",
 		}, "1"),
 	)
@@ -108,7 +108,7 @@ func TestWatchObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumer,
 	)
@@ -119,17 +119,17 @@ func TestWatchObject(t *testing.T) {
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs(), 0)
+	assert.Empty(t, consumer.Logs())
 	assert.Equal(t, 0, consumer.Count())
 
 	mockClient.createPods(
-		generatePod("pod2", "default", map[string]interface{}{
+		generatePod("pod2", "default", map[string]any{
 			"environment": "test",
 		}, "2"),
-		generatePod("pod3", "default_ignore", map[string]interface{}{
+		generatePod("pod3", "default_ignore", map[string]any{
 			"environment": "production",
 		}, "3"),
-		generatePod("pod4", "default", map[string]interface{}{
+		generatePod("pod4", "default", map[string]any{
 			"environment": "production",
 		}, "4"),
 	)
@@ -138,7 +138,7 @@ func TestWatchObject(t *testing.T) {
 	assert.Equal(t, 2, consumer.Count())
 
 	mockClient.deletePods(
-		generatePod("pod2", "default", map[string]interface{}{
+		generatePod("pod2", "default", map[string]any{
 			"environment": "test",
 		}, "2"),
 	)
@@ -155,7 +155,7 @@ func TestExludeDeletedTrue(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	mockClient.createPods(
-		generatePod("pod1", "default", map[string]interface{}{
+		generatePod("pod1", "default", map[string]any{
 			"environment": "production",
 		}, "1"),
 	)
@@ -180,7 +180,7 @@ func TestExludeDeletedTrue(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumer,
 	)
@@ -191,16 +191,16 @@ func TestExludeDeletedTrue(t *testing.T) {
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs(), 0)
+	assert.Empty(t, consumer.Logs())
 	assert.Equal(t, 0, consumer.Count())
 
 	mockClient.deletePods(
-		generatePod("pod1", "default", map[string]interface{}{
+		generatePod("pod1", "default", map[string]any{
 			"environment": "test",
 		}, "1"),
 	)
 	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs(), 0)
+	assert.Empty(t, consumer.Logs())
 	assert.Equal(t, 0, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))

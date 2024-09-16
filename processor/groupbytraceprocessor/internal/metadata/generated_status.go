@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("groupbytrace")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
+)
+
 const (
-	Type            = "groupbytrace"
 	TracesStability = component.StabilityLevelBeta
 )

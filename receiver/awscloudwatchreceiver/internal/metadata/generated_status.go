@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("awscloudwatch")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
+)
+
 const (
-	Type          = "awscloudwatch"
 	LogsStability = component.StabilityLevelAlpha
 )

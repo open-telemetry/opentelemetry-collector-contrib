@@ -10,7 +10,7 @@ Date: July 30, 2020
 
 Prometheus can be integrated with remote storage systems that supports its remote write API. Existing remote storage integration support is included in [Cortex](https://cortexmetrics.io/docs/api/), [influxDB](https://docs.influxdata.com/influxdb/v1.8/supported_protocols/prometheus/), and many [others](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage).
 
-The following diagram shows an example of Prometheus remote write API usage, with Cortex,n open source, horizontally scalable, highly available, multi-tenant, long term storage, as a remote storage backend.
+The following diagram shows an example of Prometheus remote write API usage, with Cortex, an open source, horizontally scalable, highly available, multi-tenant, long term storage, as a remote storage backend.
 
 ![Cortex Architecture](img/cortex.png)
 

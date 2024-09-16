@@ -27,13 +27,13 @@ type tracesConnector struct {
 }
 
 func newTracesConnector(
-	set connector.CreateSettings,
+	set connector.Settings,
 	config component.Config,
 	traces consumer.Traces,
 ) (*tracesConnector, error) {
 	cfg := config.(*Config)
 
-	tr, ok := traces.(connector.TracesRouter)
+	tr, ok := traces.(connector.TracesRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer
 	}
@@ -68,10 +68,10 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 	var errs error
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
-		rtx := ottlresource.NewTransformContext(rspans.Resource())
+		rtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
 
 		noRoutesMatch := true
-		for _, route := range c.router.routes {
+		for _, route := range c.router.routeSlice {
 			_, isMatch, err := route.statement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
@@ -83,6 +83,9 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 			if isMatch {
 				noRoutesMatch = false
 				c.group(groups, route.consumer, rspans)
+				if c.config.MatchOnce {
+					break
+				}
 			}
 
 		}

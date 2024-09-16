@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.uber.org/zap"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -23,30 +23,32 @@ func TestCreateTestProcessor(t *testing.T) {
 		GroupByKeys: []string{"foo"},
 	}
 
-	tp, err := createTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
-	assert.Equal(t, true, tp.Capabilities().MutatesData)
+	assert.True(t, tp.Capabilities().MutatesData)
 
-	lp, err := createLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	lp, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
-	assert.Equal(t, true, lp.Capabilities().MutatesData)
+	assert.True(t, lp.Capabilities().MutatesData)
 
-	mp, err := createMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := createMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
-	assert.Equal(t, true, mp.Capabilities().MutatesData)
+	assert.True(t, mp.Capabilities().MutatesData)
 }
 
 func TestNoKeys(t *testing.T) {
 	// This is allowed since can be used for compacting data
-	gap := createGroupByAttrsProcessor(zap.NewNop(), []string{})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
+	require.NoError(t, err)
 	assert.NotNil(t, gap)
 }
 
 func TestDuplicateKeys(t *testing.T) {
-	gbap := createGroupByAttrsProcessor(zap.NewNop(), []string{"foo", "foo", ""})
+	gbap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{"foo", "foo", ""})
+	require.NoError(t, err)
 	assert.NotNil(t, gbap)
 	assert.EqualValues(t, []string{"foo"}, gbap.groupByKeys)
 }

@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("aerospike")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
+)
+
 const (
-	Type             = "aerospike"
 	MetricsStability = component.StabilityLevelAlpha
 )

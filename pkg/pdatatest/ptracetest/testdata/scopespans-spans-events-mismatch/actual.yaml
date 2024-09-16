@@ -13,8 +13,6 @@ resourceSpans:
               - key: key1
                 value:
                   stringValue: value1
-            events:
-              - name: Sub span event
             parentSpanId: ""
             spanId: ""
             status: {}

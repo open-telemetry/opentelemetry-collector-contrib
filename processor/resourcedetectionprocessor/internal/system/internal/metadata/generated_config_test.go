@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,21 +24,37 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				HostArch:      ResourceAttributeConfig{Enabled: true},
-				HostID:        ResourceAttributeConfig{Enabled: true},
-				HostName:      ResourceAttributeConfig{Enabled: true},
-				OsDescription: ResourceAttributeConfig{Enabled: true},
-				OsType:        ResourceAttributeConfig{Enabled: true},
+				HostArch:           ResourceAttributeConfig{Enabled: true},
+				HostCPUCacheL2Size: ResourceAttributeConfig{Enabled: true},
+				HostCPUFamily:      ResourceAttributeConfig{Enabled: true},
+				HostCPUModelID:     ResourceAttributeConfig{Enabled: true},
+				HostCPUModelName:   ResourceAttributeConfig{Enabled: true},
+				HostCPUStepping:    ResourceAttributeConfig{Enabled: true},
+				HostCPUVendorID:    ResourceAttributeConfig{Enabled: true},
+				HostID:             ResourceAttributeConfig{Enabled: true},
+				HostIP:             ResourceAttributeConfig{Enabled: true},
+				HostMac:            ResourceAttributeConfig{Enabled: true},
+				HostName:           ResourceAttributeConfig{Enabled: true},
+				OsDescription:      ResourceAttributeConfig{Enabled: true},
+				OsType:             ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				HostArch:      ResourceAttributeConfig{Enabled: false},
-				HostID:        ResourceAttributeConfig{Enabled: false},
-				HostName:      ResourceAttributeConfig{Enabled: false},
-				OsDescription: ResourceAttributeConfig{Enabled: false},
-				OsType:        ResourceAttributeConfig{Enabled: false},
+				HostArch:           ResourceAttributeConfig{Enabled: false},
+				HostCPUCacheL2Size: ResourceAttributeConfig{Enabled: false},
+				HostCPUFamily:      ResourceAttributeConfig{Enabled: false},
+				HostCPUModelID:     ResourceAttributeConfig{Enabled: false},
+				HostCPUModelName:   ResourceAttributeConfig{Enabled: false},
+				HostCPUStepping:    ResourceAttributeConfig{Enabled: false},
+				HostCPUVendorID:    ResourceAttributeConfig{Enabled: false},
+				HostID:             ResourceAttributeConfig{Enabled: false},
+				HostIP:             ResourceAttributeConfig{Enabled: false},
+				HostMac:            ResourceAttributeConfig{Enabled: false},
+				HostName:           ResourceAttributeConfig{Enabled: false},
+				OsDescription:      ResourceAttributeConfig{Enabled: false},
+				OsType:             ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
@@ -61,6 +76,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

@@ -9,6 +9,7 @@ import (
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -29,7 +30,7 @@ type handler struct {
 
 func (h *handler) ListEndpoints() []observer.Endpoint {
 	var endpoints []observer.Endpoint
-	h.endpoints.Range(func(endpointID, endpoint interface{}) bool {
+	h.endpoints.Range(func(endpointID, endpoint any) bool {
 		if e, ok := endpoint.(observer.Endpoint); ok {
 			endpoints = append(endpoints, e)
 		} else {
@@ -41,12 +42,16 @@ func (h *handler) ListEndpoints() []observer.Endpoint {
 }
 
 // OnAdd is called in response to a new pod or node being detected.
-func (h *handler) OnAdd(objectInterface interface{}, _ bool) {
+func (h *handler) OnAdd(objectInterface any, _ bool) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {
 	case *v1.Pod:
 		endpoints = convertPodToEndpoints(h.idNamespace, object)
+	case *v1.Service:
+		endpoints = convertServiceToEndpoints(h.idNamespace, object)
+	case *networkingv1.Ingress:
+		endpoints = convertIngressToEndpoints(h.idNamespace, object)
 	case *v1.Node:
 		endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
 	default: // unsupported
@@ -59,7 +64,7 @@ func (h *handler) OnAdd(objectInterface interface{}, _ bool) {
 }
 
 // OnUpdate is called in response to an existing pod or node changing.
-func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
+func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	oldEndpoints := map[observer.EndpointID]observer.Endpoint{}
 	newEndpoints := map[observer.EndpointID]observer.Endpoint{}
 
@@ -67,6 +72,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 	case *v1.Pod:
 		newPod, ok := newObjectInterface.(*v1.Pod)
 		if !ok {
+			h.logger.Warn("skip updating endpoint for pod as the update is of different type", zap.Any("oldPod", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		for _, e := range convertPodToEndpoints(h.idNamespace, oldObject) {
@@ -76,9 +82,36 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 			newEndpoints[e.ID] = e
 		}
 
+	case *v1.Service:
+		newService, ok := newObjectInterface.(*v1.Service)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for service as the update is of different type", zap.Any("oldService", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, newService) {
+			newEndpoints[e.ID] = e
+		}
+
+	case *networkingv1.Ingress:
+		newIngress, ok := newObjectInterface.(*networkingv1.Ingress)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for ingress as the update is of different type", zap.Any("oldIngress", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		for _, e := range convertIngressToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertIngressToEndpoints(h.idNamespace, newIngress) {
+			newEndpoints[e.ID] = e
+		}
+
 	case *v1.Node:
 		newNode, ok := newObjectInterface.(*v1.Node)
 		if !ok {
+			h.logger.Warn("skip updating endpoint for node as the update is of different type", zap.Any("oldNode", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		oldEndpoint := convertNodeToEndpoint(h.idNamespace, oldObject)
@@ -131,7 +164,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 }
 
 // OnDelete is called in response to a pod or node being deleted.
-func (h *handler) OnDelete(objectInterface interface{}) {
+func (h *handler) OnDelete(objectInterface any) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {
@@ -143,6 +176,14 @@ func (h *handler) OnDelete(objectInterface interface{}) {
 	case *v1.Pod:
 		if object != nil {
 			endpoints = convertPodToEndpoints(h.idNamespace, object)
+		}
+	case *v1.Service:
+		if object != nil {
+			endpoints = convertServiceToEndpoints(h.idNamespace, object)
+		}
+	case *networkingv1.Ingress:
+		if object != nil {
+			endpoints = convertIngressToEndpoints(h.idNamespace, object)
 		}
 	case *v1.Node:
 		if object != nil {

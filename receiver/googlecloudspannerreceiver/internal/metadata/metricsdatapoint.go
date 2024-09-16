@@ -47,7 +47,7 @@ type dataForHashing struct {
 // Fields must be exported for hashing purposes
 type label struct {
 	Name  string
-	Value interface{}
+	Value any
 }
 
 func (mdp *MetricsDataPoint) CopyTo(dataPoint pmetric.NumberDataPoint) {

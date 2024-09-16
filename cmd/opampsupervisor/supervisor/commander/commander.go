@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -22,23 +22,25 @@ import (
 // for the Agent process to finish.
 type Commander struct {
 	logger  *zap.Logger
-	cfg     *config.Agent
+	cfg     config.Agent
+	logsDir string
 	args    []string
 	cmd     *exec.Cmd
 	doneCh  chan struct{}
+	exitCh  chan struct{}
 	running *atomic.Int64
 }
 
-func NewCommander(logger *zap.Logger, cfg *config.Agent, args ...string) (*Commander, error) {
-	if cfg.Executable == "" {
-		return nil, errors.New("agent.executable config option must be specified")
-	}
-
+func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
 		logger:  logger,
+		logsDir: logsDir,
 		cfg:     cfg,
 		args:    args,
 		running: &atomic.Int64{},
+		// Buffer channels so we can send messages without blocking on listeners.
+		doneCh: make(chan struct{}, 1),
+		exitCh: make(chan struct{}, 1),
 	}, nil
 }
 
@@ -52,36 +54,52 @@ func (c *Commander) Start(ctx context.Context) error {
 		return nil
 	}
 
+	// Drain channels in case there are no listeners that
+	// drained messages from previous runs.
+	if len(c.doneCh) > 0 {
+		select {
+		case <-c.doneCh:
+		default:
+		}
+	}
+	if len(c.exitCh) > 0 {
+		select {
+		case <-c.exitCh:
+		default:
+		}
+	}
+
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
-	logFilePath := "agent.log"
-	logFile, err := os.Create(logFilePath)
+	logFilePath := filepath.Join(c.logsDir, "agent.log")
+	stdoutFile, err := os.Create(logFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
 	}
 
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
+	c.cmd.SysProcAttr = sysProcAttrs()
 
 	// Capture standard output and standard error.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
-	c.cmd.Stdout = logFile
-	c.cmd.Stderr = logFile
-
-	c.doneCh = make(chan struct{})
+	c.cmd.Stdout = stdoutFile
+	c.cmd.Stderr = stdoutFile
 
 	if err := c.cmd.Start(); err != nil {
+		stdoutFile.Close()
 		return err
 	}
 
 	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 	c.running.Store(1)
 
-	go c.watch()
+	go c.watch(stdoutFile)
 
 	return nil
 }
 
 func (c *Commander) Restart(ctx context.Context) error {
+	c.logger.Debug("Restarting agent", zap.String("agent", c.cfg.Executable))
 	if err := c.Stop(ctx); err != nil {
 		return err
 	}
@@ -89,7 +107,9 @@ func (c *Commander) Restart(ctx context.Context) error {
 	return c.Start(ctx)
 }
 
-func (c *Commander) watch() {
+func (c *Commander) watch(stdoutFile *os.File) {
+	defer stdoutFile.Close()
+
 	err := c.cmd.Wait()
 
 	// cmd.Wait returns an exec.ExitError when the Collector exits unsuccessfully or stops
@@ -101,12 +121,13 @@ func (c *Commander) watch() {
 	}
 
 	c.running.Store(0)
-	close(c.doneCh)
+	c.doneCh <- struct{}{}
+	c.exitCh <- struct{}{}
 }
 
-// Done returns a channel that will send a signal when the Agent process is finished.
-func (c *Commander) Done() <-chan struct{} {
-	return c.doneCh
+// Exited returns a channel that will send a signal when the Agent process exits.
+func (c *Commander) Exited() <-chan struct{} {
+	return c.exitCh
 }
 
 // Pid returns Agent process PID if it is started or 0 if it is not.
@@ -138,10 +159,11 @@ func (c *Commander) Stop(ctx context.Context) error {
 		return nil
 	}
 
-	c.logger.Debug("Stopping agent process", zap.Int("pid", c.cmd.Process.Pid))
+	pid := c.cmd.Process.Pid
+	c.logger.Debug("Stopping agent process", zap.Int("pid", pid))
 
 	// Gracefully signal process to stop.
-	if err := c.cmd.Process.Signal(syscall.SIGTERM); err != nil {
+	if err := sendShutdownSignal(c.cmd.Process); err != nil {
 		return err
 	}
 
@@ -154,15 +176,15 @@ func (c *Commander) Stop(ctx context.Context) error {
 		<-waitCtx.Done()
 
 		if !errors.Is(waitCtx.Err(), context.DeadlineExceeded) {
-			c.logger.Debug("Agent process successfully stopped.", zap.Int("pid", c.cmd.Process.Pid))
+			c.logger.Debug("Agent process successfully stopped.", zap.Int("pid", pid))
 			return
 		}
 
 		// Time is out. Kill the process.
 		c.logger.Debug(
-			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcedly.",
-			zap.Int("pid", c.cmd.Process.Pid))
-		if innerErr = c.cmd.Process.Signal(syscall.SIGKILL); innerErr != nil {
+			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
+			zap.Int("pid", pid))
+		if innerErr = c.cmd.Process.Signal(os.Kill); innerErr != nil {
 			return
 		}
 	}()

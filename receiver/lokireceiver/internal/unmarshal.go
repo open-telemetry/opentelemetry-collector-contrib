@@ -16,53 +16,121 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
-// PushRequest models a log stream push
+// PushRequest models a log stream push but is unmarshalled to proto push format.
 type PushRequest struct {
-	Streams []*Stream `json:"streams"`
+	Streams []Stream `json:"streams"`
 }
 
-// Stream represents a log stream.  It includes a set of log entries and their labels.
-type Stream struct {
-	Labels  LabelSet `json:"stream"`
-	Entries []Entry  `json:"values"`
-}
+// Stream helps with unmarshalling of each log stream for push request.
+type Stream push.Stream
 
 func (s *Stream) UnmarshalJSON(data []byte) error {
-	if s.Labels == nil {
-		s.Labels = LabelSet{}
-	}
-	if len(s.Entries) > 0 {
-		s.Entries = s.Entries[:0]
-	}
-	return jsonparser.ObjectEach(data, func(key, value []byte, ty jsonparser.ValueType, _ int) error {
+	err := jsonparser.ObjectEach(data, func(key, val []byte, ty jsonparser.ValueType, _ int) error {
 		switch string(key) {
 		case "stream":
-			if err := s.Labels.UnmarshalJSON(value); err != nil {
+			var labels LabelSet
+			if err := labels.UnmarshalJSON(val); err != nil {
 				return err
 			}
+			s.Labels = labels.String()
 		case "values":
 			if ty == jsonparser.Null {
 				return nil
 			}
-			var parseError error
-			_, err := jsonparser.ArrayEach(value, func(value []byte, ty jsonparser.ValueType, _ int, _ error) {
-				if ty == jsonparser.Null {
-					return
-				}
-				var entry Entry
-				if err := entry.UnmarshalJSON(value); err != nil {
-					parseError = err
-					return
-				}
-				s.Entries = append(s.Entries, entry)
-			})
-			if parseError != nil {
-				return parseError
+			entries, err := unmarshalHTTPToLogProtoEntries(val)
+			if err != nil {
+				return err
 			}
-			return err
+			s.Entries = entries
 		}
 		return nil
 	})
+	return err
+}
+
+func unmarshalHTTPToLogProtoEntries(data []byte) ([]push.Entry, error) {
+	var (
+		entries    []push.Entry
+		parseError error
+	)
+	if _, err := jsonparser.ArrayEach(data, func(value []byte, ty jsonparser.ValueType, _ int, err error) {
+		if err != nil || parseError != nil {
+			return
+		}
+		if ty == jsonparser.Null {
+			return
+		}
+		e, err := unmarshalHTTPToLogProtoEntry(value)
+		if err != nil {
+			parseError = err
+			return
+		}
+		entries = append(entries, e)
+	}); err != nil {
+		parseError = err
+	}
+
+	if parseError != nil {
+		return nil, parseError
+	}
+
+	return entries, nil
+}
+
+func unmarshalHTTPToLogProtoEntry(data []byte) (push.Entry, error) {
+	var (
+		i          int
+		parseError error
+		e          push.Entry
+	)
+	_, err := jsonparser.ArrayEach(data, func(value []byte, t jsonparser.ValueType, _ int, _ error) {
+		// assert that both items in array are of type string
+		if (i == 0 || i == 1) && t != jsonparser.String {
+			parseError = jsonparser.MalformedStringError
+			return
+		} else if i == 2 && t != jsonparser.Object {
+			parseError = jsonparser.MalformedObjectError
+			return
+		}
+		switch i {
+		case 0: // timestamp
+			ts, err := jsonparser.ParseInt(value)
+			if err != nil {
+				parseError = err
+				return
+			}
+			e.Timestamp = time.Unix(0, ts)
+		case 1: // value
+			v, err := jsonparser.ParseString(value)
+			if err != nil {
+				parseError = err
+				return
+			}
+			e.Line = v
+		case 2: // structuredMetadata
+			var structuredMetadata []push.LabelAdapter
+			err := jsonparser.ObjectEach(value, func(key, val []byte, dataType jsonparser.ValueType, _ int) error {
+				if dataType != jsonparser.String {
+					return jsonparser.MalformedStringError
+				}
+				structuredMetadata = append(structuredMetadata, push.LabelAdapter{
+					Name:  string(key),
+					Value: string(val),
+				})
+				return nil
+			})
+			if err != nil {
+				parseError = err
+				return
+			}
+			e.StructuredMetadata = structuredMetadata
+		}
+		i++
+	})
+	if parseError != nil {
+		return e, parseError
+	}
+	return e, err
 }
 
 // LabelSet is a key/value pair mapping of labels
@@ -110,47 +178,6 @@ func (l LabelSet) String() string {
 	return b.String()
 }
 
-// Entry represents a log entry. It includes a log message and the time it occurred at.
-type Entry struct {
-	Timestamp time.Time
-	Line      string
-}
-
-func (e *Entry) UnmarshalJSON(data []byte) error {
-	var (
-		i          int
-		parseError error
-	)
-	_, err := jsonparser.ArrayEach(data, func(value []byte, t jsonparser.ValueType, _ int, _ error) {
-		// assert that both items in array are of type string
-		if t != jsonparser.String {
-			parseError = jsonparser.MalformedStringError
-			return
-		}
-		switch i {
-		case 0: // timestamp
-			ts, err := jsonparser.ParseInt(value)
-			if err != nil {
-				parseError = err
-				return
-			}
-			e.Timestamp = time.Unix(0, ts)
-		case 1: // value
-			v, err := jsonparser.ParseString(value)
-			if err != nil {
-				parseError = err
-				return
-			}
-			e.Line = v
-		}
-		i++
-	})
-	if parseError != nil {
-		return parseError
-	}
-	return err
-}
-
 // decodePushRequest directly decodes json to a push.PushRequest
 func decodePushRequest(b io.Reader, r *push.PushRequest) error {
 	var request PushRequest
@@ -158,28 +185,9 @@ func decodePushRequest(b io.Reader, r *push.PushRequest) error {
 	if err := jsoniter.NewDecoder(b).Decode(&request); err != nil {
 		return err
 	}
-	*r = newPushRequest(request)
+	*r = push.PushRequest{
+		Streams: *(*[]push.Stream)(unsafe.Pointer(&request.Streams)),
+	}
 
 	return nil
-}
-
-// newPushRequest constructs a push.PushRequest from a PushRequest
-func newPushRequest(r PushRequest) push.PushRequest {
-	ret := push.PushRequest{
-		Streams: make([]push.Stream, len(r.Streams)),
-	}
-
-	for i, s := range r.Streams {
-		ret.Streams[i] = newStream(s)
-	}
-
-	return ret
-}
-
-// newStream constructs a push.Stream from a Stream
-func newStream(s *Stream) push.Stream {
-	return push.Stream{
-		Entries: *(*[]push.Entry)(unsafe.Pointer(&s.Entries)),
-		Labels:  s.Labels.String(),
-	}
 }

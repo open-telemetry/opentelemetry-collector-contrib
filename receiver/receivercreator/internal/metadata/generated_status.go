@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("receiver_creator")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
+)
+
 const (
-	Type             = "receiver_creator"
 	LogsStability    = component.StabilityLevelAlpha
 	TracesStability  = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelBeta

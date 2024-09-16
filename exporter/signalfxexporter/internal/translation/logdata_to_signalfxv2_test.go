@@ -32,7 +32,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			Timestamp:  msec,
 			Category:   &userDefinedCat,
 			Dimensions: buildNDimensions(4),
-			Properties: mapToEventProps(map[string]interface{}{
+			Properties: mapToEventProps(map[string]any{
 				"env":      "prod",
 				"isActive": true,
 				"rack":     5,
@@ -48,6 +48,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		resourceLog.Resource().Attributes().PutStr("k0", "should use ILL attr value instead")
 		resourceLog.Resource().Attributes().PutStr("k3", "v3")
 		resourceLog.Resource().Attributes().PutInt("k4", 123)
+		resourceLog.Resource().Attributes().PutStr("com.splunk.signalfx.access_token", "hunter2")
 
 		ilLogs := resourceLog.ScopeLogs()
 		logSlice := ilLogs.AppendEmpty().LogRecords()
@@ -132,7 +133,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 	}
 }
 
-func mapToEventProps(m map[string]interface{}) []*sfxpb.Property {
+func mapToEventProps(m map[string]any) []*sfxpb.Property {
 	out := make([]*sfxpb.Property, 0, len(m))
 	for k, v := range m {
 		var pval sfxpb.PropertyValue

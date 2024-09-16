@@ -3,7 +3,12 @@ type: datadog
 status:
   class: connector
   stability:
-    alpha: [traces_to_metrics]
-  distributions: []
+    beta: [traces_to_metrics, traces_to_traces]
+  distributions: [contrib]
   codeowners:
-    active: [mx-psi, gbbr, dineshg13]
+    active: [mx-psi, dineshg13, ankitpatel96]
+    emeritus: [gbbr]
+
+tests:
+  goleak:
+    skip: true

@@ -33,18 +33,14 @@ type basicAuth struct {
 	matchFunc  func(username, password string) bool
 }
 
-func newClientAuthExtension(cfg *Config) (auth.Client, error) {
-	if cfg.ClientAuth == nil || cfg.ClientAuth.Username == "" {
-		return nil, errNoCredentialSource
-	}
-
+func newClientAuthExtension(cfg *Config) auth.Client {
 	ba := basicAuth{
 		clientAuth: cfg.ClientAuth,
 	}
 	return auth.NewClient(
 		auth.WithClientRoundTripper(ba.roundTripper),
 		auth.WithClientPerRPCCredentials(ba.perRPCCredentials),
-	), nil
+	)
 }
 
 func newServerAuthExtension(cfg *Config) (auth.Server, error) {
@@ -173,7 +169,7 @@ type authData struct {
 	raw      string
 }
 
-func (a *authData) GetAttribute(name string) interface{} {
+func (a *authData) GetAttribute(name string) any {
 	switch name {
 	case "username":
 		return a.username

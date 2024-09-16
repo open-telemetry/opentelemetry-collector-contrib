@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -26,6 +25,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					SystemCPUFrequency:     MetricConfig{Enabled: true},
 					SystemCPULogicalCount:  MetricConfig{Enabled: true},
 					SystemCPUPhysicalCount: MetricConfig{Enabled: true},
 					SystemCPUTime:          MetricConfig{Enabled: true},
@@ -37,6 +37,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					SystemCPUFrequency:     MetricConfig{Enabled: false},
 					SystemCPULogicalCount:  MetricConfig{Enabled: false},
 					SystemCPUPhysicalCount: MetricConfig{Enabled: false},
 					SystemCPUTime:          MetricConfig{Enabled: false},
@@ -61,6 +62,6 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

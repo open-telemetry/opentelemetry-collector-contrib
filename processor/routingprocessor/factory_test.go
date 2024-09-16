@@ -20,21 +20,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/otel/metric/noop"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
-var noopTelemetrySettings = component.TelemetrySettings{
-	TracerProvider: trace.NewNoopTracerProvider(),
-	MeterProvider:  noop.NewMeterProvider(),
-	Logger:         zap.NewNop(),
-}
+var noopTelemetrySettings = componenttest.NewNopTelemetrySettings()
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := processortest.NewNopCreateSettings()
+	creationParams := processortest.NewNopSettings()
 	cfg := &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
@@ -112,7 +105,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := processortest.NewNopCreateSettings()
+	creationParams := processortest.NewNopSettings()
 	cfg := &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
@@ -125,7 +118,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
@@ -139,23 +132,23 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
 	otlpExporterFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "example.com:1234",
 		},
 	}
 
-	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), otlpConfig)
+	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), otlpConfig)
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp/traces"): otlpTracesExporter,
+			component.MustNewIDWithName("otlp", "traces"): otlpTracesExporter,
 		},
 		component.DataTypeMetrics: {
-			component.NewID("otlp/metrics"): otlpMetricsExporter,
+			component.MustNewIDWithName("otlp", "metrics"): otlpMetricsExporter,
 		},
 	})
 
@@ -169,7 +162,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 
 			sub, err := cm.Sub(k)
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			exp, err := newMetricProcessor(noopTelemetrySettings, cfg)
 			require.NoError(t, err)
@@ -185,7 +178,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 func TestShutdown(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := processortest.NewNopCreateSettings()
+	creationParams := processortest.NewNopSettings()
 	cfg := &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
@@ -198,7 +191,7 @@ func TestShutdown(t *testing.T) {
 	}
 
 	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	// test

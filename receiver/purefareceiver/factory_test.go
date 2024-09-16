@@ -11,12 +11,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/metadata"
 )
 
 func TestTypeStr(t *testing.T) {
 	factory := NewFactory()
-
-	assert.Equal(t, "purefa", string(factory.Type()))
+	assert.Equal(t, metadata.Type, factory.Type())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -29,7 +30,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")

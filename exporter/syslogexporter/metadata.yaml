@@ -3,6 +3,11 @@ type: syslog
 status:
   class: exporter
   stability: 
-    development: [logs]
+    alpha: [logs]
+  distributions: [contrib]
   codeowners:
-    active: [kkujawa-sumo, rnishtala-sumo, astencel-sumo]
+    active: [kasia-kujawa, rnishtala-sumo, andrzej-stencel]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

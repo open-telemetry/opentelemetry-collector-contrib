@@ -1,6 +1,0 @@
-type: configschema
-
-status:
-  class: cmd
-  codeowners:
-    active: [mx-psi, dmitryax, pmcollins]

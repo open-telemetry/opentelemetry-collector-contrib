@@ -37,7 +37,7 @@ func createASAPClientAuthenticator(cfg *Config) (auth.Client, error) {
 // perRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
 type perRPCAuth struct {
 	provisioner asap.Provisioner
-	privateKey  interface{}
+	privateKey  any
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.

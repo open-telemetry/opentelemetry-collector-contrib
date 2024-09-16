@@ -35,12 +35,15 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		Exclude:   defaultExcludes,
+		Extract: ExtractConfig{
+			Metadata: enabledAttributes(),
+		},
 	}
 }
 
 func createTracesProcessor(
 	ctx context.Context,
-	params processor.CreateSettings,
+	params processor.Settings,
 	cfg component.Config,
 	next consumer.Traces,
 ) (processor.Traces, error) {
@@ -49,7 +52,7 @@ func createTracesProcessor(
 
 func createLogsProcessor(
 	ctx context.Context,
-	params processor.CreateSettings,
+	params processor.Settings,
 	cfg component.Config,
 	nextLogsConsumer consumer.Logs,
 ) (processor.Logs, error) {
@@ -58,7 +61,7 @@ func createLogsProcessor(
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params processor.CreateSettings,
+	params processor.Settings,
 	cfg component.Config,
 	nextMetricsConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
@@ -67,15 +70,12 @@ func createMetricsProcessor(
 
 func createTracesProcessorWithOptions(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	next consumer.Traces,
 	options ...option,
 ) (processor.Traces, error) {
-	kp, err := createKubernetesProcessor(set, cfg, options...)
-	if err != nil {
-		return nil, err
-	}
+	kp := createKubernetesProcessor(set, cfg, options...)
 
 	return processorhelper.NewTracesProcessor(
 		ctx,
@@ -90,15 +90,12 @@ func createTracesProcessorWithOptions(
 
 func createMetricsProcessorWithOptions(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextMetricsConsumer consumer.Metrics,
 	options ...option,
 ) (processor.Metrics, error) {
-	kp, err := createKubernetesProcessor(set, cfg, options...)
-	if err != nil {
-		return nil, err
-	}
+	kp := createKubernetesProcessor(set, cfg, options...)
 
 	return processorhelper.NewMetricsProcessor(
 		ctx,
@@ -113,15 +110,12 @@ func createMetricsProcessorWithOptions(
 
 func createLogsProcessorWithOptions(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextLogsConsumer consumer.Logs,
 	options ...option,
 ) (processor.Logs, error) {
-	kp, err := createKubernetesProcessor(set, cfg, options...)
-	if err != nil {
-		return nil, err
-	}
+	kp := createKubernetesProcessor(set, cfg, options...)
 
 	return processorhelper.NewLogsProcessor(
 		ctx,
@@ -135,29 +129,17 @@ func createLogsProcessorWithOptions(
 }
 
 func createKubernetesProcessor(
-	params processor.CreateSettings,
+	params processor.Settings,
 	cfg component.Config,
 	options ...option,
-) (*kubernetesprocessor, error) {
-	kp := &kubernetesprocessor{logger: params.Logger}
-
-	allOptions := append(createProcessorOpts(cfg), options...)
-
-	for _, opt := range allOptions {
-		if err := opt(kp); err != nil {
-			return nil, err
-		}
+) *kubernetesprocessor {
+	kp := &kubernetesprocessor{logger: params.Logger,
+		cfg:               cfg,
+		options:           options,
+		telemetrySettings: params.TelemetrySettings,
 	}
 
-	// This might have been set by an option already
-	if kp.kc == nil {
-		err := kp.initKubeClient(kp.logger, kubeClientProvider)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return kp, nil
+	return kp
 }
 
 func createProcessorOpts(cfg component.Config) []option {

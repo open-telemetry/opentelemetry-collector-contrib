@@ -30,17 +30,17 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: defaultEndpoint,
 		},
 	}
 }
 
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 	if config.TCPAddr.Endpoint == "" {
 		return nil, errors.New("\"endpoint\" is required when using the \"pprof\" extension")
 	}
 
-	return newServer(*config, set.Logger), nil
+	return newServer(*config, set.TelemetrySettings), nil
 }

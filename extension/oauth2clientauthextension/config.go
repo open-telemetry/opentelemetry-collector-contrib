@@ -49,7 +49,7 @@ type Config struct {
 	Scopes []string `mapstructure:"scopes,omitempty"`
 
 	// TLSSetting struct exposes TLS client configuration for the underneath client to authorization server.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// Timeout parameter configures `http.Client.Timeout` for the underneath client to authorization
 	// server while fetching and refreshing tokens.

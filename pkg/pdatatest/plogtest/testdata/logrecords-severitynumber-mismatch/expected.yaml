@@ -17,7 +17,7 @@ resourceLogs:
               stringValue: testscopevalue1
             flags: 1
             observedTimeUnixNano: "11651379494838206464"
-            severityNumber: 1
+            severityNumber: 9
             severityText: TEST
             spanId: ""
             timeUnixNano: "11651379494838206464"

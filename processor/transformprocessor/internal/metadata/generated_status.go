@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("transform")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+)
+
 const (
-	Type             = "transform"
 	TracesStability  = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelAlpha
 	LogsStability    = component.StabilityLevelAlpha

@@ -72,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: createDefaultConfig(),
 		},
 		{
-			id:       component.NewIDWithName("receiver_creator", ""),
+			id:       component.MustNewIDWithName("receiver_creator", ""),
 			expected: createDefaultConfig(),
 		},
 		{
@@ -81,39 +81,41 @@ func TestLoadConfig(t *testing.T) {
 				receiverTemplates: map[string]receiverTemplate{
 					"examplereceiver/1": {
 						receiverConfig: receiverConfig{
-							id: component.NewIDWithName("examplereceiver", "1"),
+							id: component.MustNewIDWithName("examplereceiver", "1"),
 							config: userConfigMap{
 								"key": "value",
 							},
 							endpointID: "endpoint.id",
 						},
 						Rule:               `type == "port"`,
-						ResourceAttributes: map[string]interface{}{"one": "two"},
+						ResourceAttributes: map[string]any{"one": "two"},
 						rule:               portRule,
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
-							id: component.NewIDWithName("nop", "1"),
+							id: component.MustNewIDWithName("nop", "1"),
 							config: userConfigMap{
 								endpointConfigKey: "localhost:12345",
 							},
 							endpointID: "endpoint.id",
 						},
 						Rule:               `type == "port"`,
-						ResourceAttributes: map[string]interface{}{"two": "three"},
+						ResourceAttributes: map[string]any{"two": "three"},
 						rule:               portRule,
 					},
 				},
 				WatchObservers: []component.ID{
-					component.NewID("mock_observer"),
-					component.NewIDWithName("mock_observer", "with_name"),
+					component.MustNewID("mock_observer"),
+					component.MustNewIDWithName("mock_observer", "with_name"),
 				},
 				ResourceAttributes: map[observer.EndpointType]map[string]string{
-					observer.ContainerType: {"container.key": "container.value"},
-					observer.PodType:       {"pod.key": "pod.value"},
-					observer.PortType:      {"port.key": "port.value"},
-					observer.HostPortType:  {"hostport.key": "hostport.value"},
-					observer.K8sNodeType:   {"k8s.node.key": "k8s.node.value"},
+					observer.ContainerType:  {"container.key": "container.value"},
+					observer.PodType:        {"pod.key": "pod.value"},
+					observer.PortType:       {"port.key": "port.value"},
+					observer.HostPortType:   {"hostport.key": "hostport.value"},
+					observer.K8sServiceType: {"k8s.service.key": "k8s.service.value"},
+					observer.K8sIngressType: {"k8s.ingress.key": "k8s.ingress.value"},
+					observer.K8sNodeType:    {"k8s.node.key": "k8s.node.value"},
 				},
 			},
 		},
@@ -126,7 +128,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -136,12 +138,14 @@ func TestLoadConfig(t *testing.T) {
 
 func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-resource-attributes.yaml"), factories)
 	require.Contains(t, err.Error(), "error reading configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
 	require.Nil(t, cfg)
@@ -149,12 +153,14 @@ func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 
 func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-receiver-resource-attributes.yaml"), factories)
 	require.Contains(t, err.Error(), "error reading configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
 	require.Nil(t, cfg)
@@ -174,7 +180,7 @@ type nopWithEndpointReceiver struct {
 	consumer.Logs
 	consumer.Metrics
 	consumer.Traces
-	rcvr.CreateSettings
+	rcvr.Settings
 	cfg component.Config
 }
 
@@ -191,37 +197,37 @@ type mockComponent struct {
 
 func (*nopWithEndpointFactory) CreateLogsReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs) (rcvr.Logs, error) {
 	return &nopWithEndpointReceiver{
-		Logs:           nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Logs:     nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithEndpointReceiver{
-		Metrics:        nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Metrics:  nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
 func (*nopWithEndpointFactory) CreateTracesReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces) (rcvr.Traces, error) {
 	return &nopWithEndpointReceiver{
-		Traces:         nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Traces:   nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
@@ -239,7 +245,7 @@ type nopWithoutEndpointReceiver struct {
 	consumer.Logs
 	consumer.Metrics
 	consumer.Traces
-	rcvr.CreateSettings
+	rcvr.Settings
 	cfg component.Config
 }
 
@@ -251,36 +257,36 @@ func (*nopWithoutEndpointFactory) CreateDefaultConfig() component.Config {
 
 func (*nopWithoutEndpointFactory) CreateLogsReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs) (rcvr.Logs, error) {
 	return &nopWithoutEndpointReceiver{
-		Logs:           nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Logs:     nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
 func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithoutEndpointReceiver{
-		Metrics:        nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Metrics:  nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
 func (*nopWithoutEndpointFactory) CreateTracesReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces) (rcvr.Traces, error) {
 	return &nopWithoutEndpointReceiver{
-		Traces:         nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Traces:   nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }

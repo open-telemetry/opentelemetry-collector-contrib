@@ -23,14 +23,14 @@ var (
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Targets                                 []*targetConfig `mapstructure:"targets"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Targets                        []*targetConfig `mapstructure:"targets"`
 }
 
 type targetConfig struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	Method                        string `mapstructure:"method"`
+	confighttp.ClientConfig `mapstructure:",squash"`
+	Method                  string `mapstructure:"method"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields

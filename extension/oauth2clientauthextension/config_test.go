@@ -45,8 +45,8 @@ func TestLoadConfig(t *testing.T) {
 				Scopes:       []string{"api.metrics"},
 				TokenURL:     "https://example2.com/oauth2/default/v1/token",
 				Timeout:      time.Second,
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile:   "cafile",
 						CertFile: "certfile",
 						KeyFile:  "keyfile",
@@ -78,7 +78,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)
 				return

@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("docker_stats")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
+)
+
 const (
-	Type             = "docker_stats"
 	MetricsStability = component.StabilityLevelAlpha
 )

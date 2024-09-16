@@ -45,7 +45,7 @@ const (
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.HeadersConfig == nil || len(cfg.HeadersConfig) == 0 {
+	if len(cfg.HeadersConfig) == 0 {
 		return errMissingHeadersConfig
 	}
 	for _, header := range cfg.HeadersConfig {

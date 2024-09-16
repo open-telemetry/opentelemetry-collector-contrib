@@ -19,32 +19,48 @@ type MetricsBuilders struct {
 }
 
 type CPUMetrics struct {
-	Time        RecordDoubleDataPointFunc
-	Utilization RecordDoubleDataPointFunc
+	Time               RecordDoubleDataPointFunc
+	Usage              RecordDoubleDataPointFunc
+	Utilization        RecordDoubleDataPointFunc
+	NodeUtilization    RecordDoubleDataPointFunc
+	LimitUtilization   RecordDoubleDataPointFunc
+	RequestUtilization RecordDoubleDataPointFunc
 }
 
 var NodeCPUMetrics = CPUMetrics{
 	Time:        (*MetricsBuilder).RecordK8sNodeCPUTimeDataPoint,
+	Usage:       (*MetricsBuilder).RecordK8sNodeCPUUsageDataPoint,
 	Utilization: (*MetricsBuilder).RecordK8sNodeCPUUtilizationDataPoint,
 }
 
 var PodCPUMetrics = CPUMetrics{
-	Time:        (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
-	Utilization: (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
+	Time:               (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
+	Usage:              (*MetricsBuilder).RecordK8sPodCPUUsageDataPoint,
+	Utilization:        (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
+	NodeUtilization:    (*MetricsBuilder).RecordK8sPodCPUNodeUtilizationDataPoint,
+	LimitUtilization:   (*MetricsBuilder).RecordK8sPodCPULimitUtilizationDataPoint,
+	RequestUtilization: (*MetricsBuilder).RecordK8sPodCPURequestUtilizationDataPoint,
 }
 
 var ContainerCPUMetrics = CPUMetrics{
-	Time:        (*MetricsBuilder).RecordContainerCPUTimeDataPoint,
-	Utilization: (*MetricsBuilder).RecordContainerCPUUtilizationDataPoint,
+	Time:               (*MetricsBuilder).RecordContainerCPUTimeDataPoint,
+	Usage:              (*MetricsBuilder).RecordContainerCPUUsageDataPoint,
+	Utilization:        (*MetricsBuilder).RecordContainerCPUUtilizationDataPoint,
+	NodeUtilization:    (*MetricsBuilder).RecordK8sContainerCPUNodeUtilizationDataPoint,
+	LimitUtilization:   (*MetricsBuilder).RecordK8sContainerCPULimitUtilizationDataPoint,
+	RequestUtilization: (*MetricsBuilder).RecordK8sContainerCPURequestUtilizationDataPoint,
 }
 
 type MemoryMetrics struct {
-	Available       RecordIntDataPointFunc
-	Usage           RecordIntDataPointFunc
-	Rss             RecordIntDataPointFunc
-	WorkingSet      RecordIntDataPointFunc
-	PageFaults      RecordIntDataPointFunc
-	MajorPageFaults RecordIntDataPointFunc
+	Available          RecordIntDataPointFunc
+	Usage              RecordIntDataPointFunc
+	NodeUtilization    RecordDoubleDataPointFunc
+	LimitUtilization   RecordDoubleDataPointFunc
+	RequestUtilization RecordDoubleDataPointFunc
+	Rss                RecordIntDataPointFunc
+	WorkingSet         RecordIntDataPointFunc
+	PageFaults         RecordIntDataPointFunc
+	MajorPageFaults    RecordIntDataPointFunc
 }
 
 var NodeMemoryMetrics = MemoryMetrics{
@@ -57,21 +73,27 @@ var NodeMemoryMetrics = MemoryMetrics{
 }
 
 var PodMemoryMetrics = MemoryMetrics{
-	Available:       (*MetricsBuilder).RecordK8sPodMemoryAvailableDataPoint,
-	Usage:           (*MetricsBuilder).RecordK8sPodMemoryUsageDataPoint,
-	Rss:             (*MetricsBuilder).RecordK8sPodMemoryRssDataPoint,
-	WorkingSet:      (*MetricsBuilder).RecordK8sPodMemoryWorkingSetDataPoint,
-	PageFaults:      (*MetricsBuilder).RecordK8sPodMemoryPageFaultsDataPoint,
-	MajorPageFaults: (*MetricsBuilder).RecordK8sPodMemoryMajorPageFaultsDataPoint,
+	Available:          (*MetricsBuilder).RecordK8sPodMemoryAvailableDataPoint,
+	Usage:              (*MetricsBuilder).RecordK8sPodMemoryUsageDataPoint,
+	NodeUtilization:    (*MetricsBuilder).RecordK8sPodMemoryNodeUtilizationDataPoint,
+	LimitUtilization:   (*MetricsBuilder).RecordK8sPodMemoryLimitUtilizationDataPoint,
+	RequestUtilization: (*MetricsBuilder).RecordK8sPodMemoryRequestUtilizationDataPoint,
+	Rss:                (*MetricsBuilder).RecordK8sPodMemoryRssDataPoint,
+	WorkingSet:         (*MetricsBuilder).RecordK8sPodMemoryWorkingSetDataPoint,
+	PageFaults:         (*MetricsBuilder).RecordK8sPodMemoryPageFaultsDataPoint,
+	MajorPageFaults:    (*MetricsBuilder).RecordK8sPodMemoryMajorPageFaultsDataPoint,
 }
 
 var ContainerMemoryMetrics = MemoryMetrics{
-	Available:       (*MetricsBuilder).RecordContainerMemoryAvailableDataPoint,
-	Usage:           (*MetricsBuilder).RecordContainerMemoryUsageDataPoint,
-	Rss:             (*MetricsBuilder).RecordContainerMemoryRssDataPoint,
-	WorkingSet:      (*MetricsBuilder).RecordContainerMemoryWorkingSetDataPoint,
-	PageFaults:      (*MetricsBuilder).RecordContainerMemoryPageFaultsDataPoint,
-	MajorPageFaults: (*MetricsBuilder).RecordContainerMemoryMajorPageFaultsDataPoint,
+	Available:          (*MetricsBuilder).RecordContainerMemoryAvailableDataPoint,
+	Usage:              (*MetricsBuilder).RecordContainerMemoryUsageDataPoint,
+	NodeUtilization:    (*MetricsBuilder).RecordK8sContainerMemoryNodeUtilizationDataPoint,
+	LimitUtilization:   (*MetricsBuilder).RecordK8sContainerMemoryLimitUtilizationDataPoint,
+	RequestUtilization: (*MetricsBuilder).RecordK8sContainerMemoryRequestUtilizationDataPoint,
+	Rss:                (*MetricsBuilder).RecordContainerMemoryRssDataPoint,
+	WorkingSet:         (*MetricsBuilder).RecordContainerMemoryWorkingSetDataPoint,
+	PageFaults:         (*MetricsBuilder).RecordContainerMemoryPageFaultsDataPoint,
+	MajorPageFaults:    (*MetricsBuilder).RecordContainerMemoryMajorPageFaultsDataPoint,
 }
 
 type FilesystemMetrics struct {

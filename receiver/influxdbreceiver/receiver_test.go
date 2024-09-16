@@ -24,13 +24,13 @@ import (
 func TestWriteLineProtocol_v2API(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	config := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: addr,
 		},
 	}
 	nextConsumer := new(mockConsumer)
 
-	receiver, outerErr := NewFactory().CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, nextConsumer)
+	receiver, outerErr := NewFactory().CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), config, nextConsumer)
 	require.NoError(t, outerErr)
 	require.NotNil(t, receiver)
 
@@ -48,14 +48,14 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 
 		batchPoints, err := influxdb1.NewBatchPoints(influxdb1.BatchPointsConfig{Precision: "µs"})
 		require.NoError(t, err)
-		point, err := influxdb1.NewPoint("cpu_temp", map[string]string{"foo": "bar"}, map[string]interface{}{"gauge": 87.332})
+		point, err := influxdb1.NewPoint("cpu_temp", map[string]string{"foo": "bar"}, map[string]any{"gauge": 87.332})
 		require.NoError(t, err)
 		batchPoints.AddPoint(point)
 		err = client.Write(batchPoints)
 		require.NoError(t, err)
 
 		metrics := nextConsumer.lastMetricsConsumed
-		if assert.NotNil(t, metrics) && assert.Less(t, 0, metrics.DataPointCount()) {
+		if assert.NotNil(t, metrics) && assert.Positive(t, metrics.DataPointCount()) {
 			assert.Equal(t, 1, metrics.MetricCount())
 			metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 			assert.Equal(t, "cpu_temp", metric.Name())
@@ -77,7 +77,7 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 		require.NoError(t, err)
 
 		metrics := nextConsumer.lastMetricsConsumed
-		if assert.NotNil(t, metrics) && assert.Less(t, 0, metrics.DataPointCount()) {
+		if assert.NotNil(t, metrics) && assert.Positive(t, metrics.DataPointCount()) {
 			assert.Equal(t, 1, metrics.MetricCount())
 			metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 			assert.Equal(t, "cpu_temp", metric.Name())

@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("azuremonitor")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
+)
+
 const (
-	Type             = "azuremonitor"
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("googlecloudpubsub")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
+)
+
 const (
-	Type             = "googlecloudpubsub"
 	TracesStability  = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta

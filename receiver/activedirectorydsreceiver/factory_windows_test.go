@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package activedirectorydsreceiver
 
@@ -19,7 +18,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	t.Run("Nil config gives error", func(t *testing.T) {
 		recv, err := createMetricsReceiver(
 			context.Background(),
-			receivertest.NewNopCreateSettings(),
+			receivertest.NewNopSettings(),
 			nil,
 			&consumertest.MetricsSink{},
 		)
@@ -32,12 +31,16 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	t.Run("Metrics receiver is created with default config", func(t *testing.T) {
 		recv, err := createMetricsReceiver(
 			context.Background(),
-			receivertest.NewNopCreateSettings(),
+			receivertest.NewNopSettings(),
 			createDefaultConfig(),
 			&consumertest.MetricsSink{},
 		)
 
 		require.NoError(t, err)
 		require.NotNil(t, recv)
+
+		// The receiver must be able to shutdown cleanly without a Start call.
+		err = recv.Shutdown(context.Background())
+		require.NoError(t, err)
 	})
 }

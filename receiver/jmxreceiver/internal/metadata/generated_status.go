@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("jmx")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
+)
+
 const (
-	Type             = "jmx"
 	MetricsStability = component.StabilityLevelAlpha
 )

@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("pprof")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+)
+
 const (
-	Type               = "pprof"
 	ExtensionStability = component.StabilityLevelBeta
 )

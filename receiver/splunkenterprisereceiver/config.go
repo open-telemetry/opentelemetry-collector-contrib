@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net/url"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -17,49 +16,61 @@ import (
 )
 
 var (
-	errBadOrMissingEndpoint = errors.New("Missing a valid endpoint")
-	errMissingUsername      = errors.New("Missing valid username")
-	errMissingPassword      = errors.New("Missing valid password")
-	errBadScheme            = errors.New("Endpoint scheme must be either http or https")
+	errBadOrMissingEndpoint = errors.New("missing a valid endpoint")
+	errBadScheme            = errors.New("endpoint scheme must be either http or https")
+	errMissingAuthExtension = errors.New("auth extension missing from config")
 )
 
 type Config struct {
-	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	// Username and password with associated with an account with
-	// permission to access the Splunk deployments REST api
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	// default is 60s
-	MaxSearchWaitTime time.Duration `mapstructure:"max_search_wait_time"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	IdxEndpoint                    confighttp.ClientConfig `mapstructure:"indexer"`
+	SHEndpoint                     confighttp.ClientConfig `mapstructure:"search_head"`
+	CMEndpoint                     confighttp.ClientConfig `mapstructure:"cluster_master"`
 }
 
 func (cfg *Config) Validate() (errors error) {
 	var targetURL *url.URL
+	var err error
+	endpoints := []string{}
 
-	if cfg.Endpoint == "" {
+	// if no endpoint is set we do not start the receiver. For each set endpoint we go through and Validate
+	// that it contains an auth setting and a valid endpoint, if its missing either of these the receiver will
+	// fail to start.
+	if cfg.IdxEndpoint.Endpoint == "" && cfg.SHEndpoint.Endpoint == "" && cfg.CMEndpoint.Endpoint == "" {
 		errors = multierr.Append(errors, errBadOrMissingEndpoint)
 	} else {
-		// we want to validate that the endpoint url supplied by user is at least
-		// a little bit valid
-		var err error
-		targetURL, err = url.Parse(cfg.Endpoint)
-		if err != nil {
-			errors = multierr.Append(errors, errBadOrMissingEndpoint)
+		if cfg.IdxEndpoint.Endpoint != "" {
+			if cfg.IdxEndpoint.Auth == nil {
+				errors = multierr.Append(errors, errMissingAuthExtension)
+			}
+			endpoints = append(endpoints, cfg.IdxEndpoint.Endpoint)
+		}
+		if cfg.SHEndpoint.Endpoint != "" {
+			if cfg.SHEndpoint.Auth == nil {
+				errors = multierr.Append(errors, errMissingAuthExtension)
+			}
+			endpoints = append(endpoints, cfg.SHEndpoint.Endpoint)
+		}
+		if cfg.CMEndpoint.Endpoint != "" {
+			if cfg.CMEndpoint.Auth == nil {
+				errors = multierr.Append(errors, errMissingAuthExtension)
+			}
+			endpoints = append(endpoints, cfg.CMEndpoint.Endpoint)
 		}
 
-		if !strings.HasPrefix(targetURL.Scheme, "http") {
-			errors = multierr.Append(errors, errBadScheme)
+		for _, e := range endpoints {
+			targetURL, err = url.Parse(e)
+			if err != nil {
+				errors = multierr.Append(errors, errBadOrMissingEndpoint)
+				continue
+			}
+
+			// note passes for both http and https
+			if !strings.HasPrefix(targetURL.Scheme, "http") {
+				errors = multierr.Append(errors, errBadScheme)
+			}
 		}
-	}
-
-	if cfg.Username == "" {
-		errors = multierr.Append(errors, errMissingUsername)
-	}
-
-	if cfg.Password == "" {
-		errors = multierr.Append(errors, errMissingPassword)
 	}
 
 	return errors

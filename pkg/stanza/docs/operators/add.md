@@ -22,7 +22,7 @@ Add a string to the body
 ```yaml
 - type: add
   field: body.key2
-  value: body.val2
+  value: val2
 ```
 
 <table>
@@ -91,7 +91,7 @@ Add a value to the body using an expression
   "attributes": { },
   "body": {
     "key1": "val1",
-    "key2": "val_suffix"
+    "key2": "val1_suffix"
   }
 }
 ```
@@ -135,7 +135,7 @@ Add an object to the body
   "body": {
     "key1": "val1",
     "key2": {
-      "nestedkey":"nested value"
+      "nestedkey":"nestedvalue"
     }
   }
 }

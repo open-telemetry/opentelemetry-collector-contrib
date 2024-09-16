@@ -65,7 +65,7 @@ func TestConfig(t *testing.T) {
 					parseField := entry.NewBodyField("severity_field")
 					severityParser := helper.NewSeverityConfig()
 					severityParser.ParseFrom = &parseField
-					mapping := map[string]interface{}{
+					mapping := map[string]any{
 						"critical": "5xx",
 						"error":    "4xx",
 						"info":     "3xx",
@@ -107,6 +107,14 @@ func TestConfig(t *testing.T) {
 				Expect: func() *Config {
 					p := NewConfig()
 					p.ParseTo = entry.RootableField{Field: entry.NewResourceField()}
+					return p
+				}(),
+			},
+			{
+				Name: "parse_ints",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.ParseInts = true
 					return p
 				}(),
 			},

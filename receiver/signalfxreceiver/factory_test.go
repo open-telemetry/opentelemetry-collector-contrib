@@ -26,16 +26,16 @@ func TestCreateReceiverMetricsFirst(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
-	assert.Nil(t, err, "receiver creation failed")
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
-	_, err = factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+	_, err = factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 
-	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	assert.Nil(t, err, "receiver creation failed")
+	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
 	assert.Same(t, mReceiver, lReceiver)
@@ -46,13 +46,13 @@ func TestCreateReceiverLogsFirst(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
-	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	assert.Nil(t, err, "receiver creation failed")
+	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
-	assert.Nil(t, err, "receiver creation failed")
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
 	assert.Same(t, mReceiver, lReceiver)

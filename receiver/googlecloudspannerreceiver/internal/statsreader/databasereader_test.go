@@ -44,13 +44,13 @@ func TestNewDatabaseReader(t *testing.T) {
 
 	reader, err := NewDatabaseReader(ctx, parsedMetadata, databaseID, serviceAccountPath, readerConfig, logger)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	defer executeShutdown(reader)
 
 	assert.Equal(t, databaseID, reader.database.DatabaseID())
 	assert.Equal(t, logger, reader.logger)
-	assert.Equal(t, 0, len(reader.readers))
+	assert.Empty(t, reader.readers)
 }
 
 func TestNewDatabaseReaderWithError(t *testing.T) {
@@ -66,7 +66,7 @@ func TestNewDatabaseReaderWithError(t *testing.T) {
 
 	reader, err := NewDatabaseReader(ctx, parsedMetadata, databaseID, serviceAccountPath, readerConfig, logger)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	// Do not call executeShutdown() here because reader hasn't been created
 	assert.Nil(t, reader)
 }
@@ -94,7 +94,7 @@ func TestInitializeReaders(t *testing.T) {
 
 	readers := initializeReaders(logger, parsedMetadata, database, readerConfig)
 
-	assert.Equal(t, 2, len(readers))
+	assert.Len(t, readers, 2)
 	assert.IsType(t, &currentStatsReader{}, readers[0])
 	assert.IsType(t, &intervalStatsReader{}, readers[1])
 }

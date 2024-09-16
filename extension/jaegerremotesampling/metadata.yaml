@@ -6,8 +6,9 @@ status:
     alpha: [extension]
   distributions:
   - contrib
-  - grafana
-  - redhat
-  - sumo
   codeowners:
-    active: [jpkrohling, frzifus]
+    active: [yurishkuro, frzifus]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true

@@ -7,6 +7,7 @@ import (
 	"net"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -109,14 +110,14 @@ func createExclusionsList(t testing.TB, exclusionsText string) []portpair {
 	var exclusions []portpair
 
 	parts := strings.Split(exclusionsText, "--------")
-	require.Equal(t, len(parts), 3)
+	require.Len(t, parts, 3)
 	portsText := strings.Split(parts[2], "*")
 	require.Greater(t, len(portsText), 1) // original text may have a suffix like " - Administered port exclusions."
 	lines := strings.Split(portsText[0], "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) != "" {
 			entries := strings.Fields(strings.TrimSpace(line))
-			require.Equal(t, len(entries), 2)
+			require.Len(t, entries, 2)
 			pair := portpair{entries[0], entries[1]}
 			exclusions = append(exclusions, pair)
 		}
@@ -132,4 +133,15 @@ func SetFeatureGateForTest(t testing.TB, gate *featuregate.Gate, enabled bool) f
 	return func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
 	}
+}
+
+func GetAvailablePort(t testing.TB) int {
+	endpoint := GetAvailableLocalAddress(t)
+	_, port, err := net.SplitHostPort(endpoint)
+	require.NoError(t, err)
+
+	portInt, err := strconv.Atoi(port)
+	require.NoError(t, err)
+
+	return portInt
 }

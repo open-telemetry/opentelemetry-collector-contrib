@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("schema")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor"
+)
+
 const (
-	Type             = "schema"
 	TracesStability  = component.StabilityLevelDevelopment
 	MetricsStability = component.StabilityLevelDevelopment
 	LogsStability    = component.StabilityLevelDevelopment

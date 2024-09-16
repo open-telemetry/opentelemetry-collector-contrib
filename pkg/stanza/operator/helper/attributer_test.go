@@ -32,7 +32,7 @@ func TestAttributer(t *testing.T) {
 			entry.New(),
 			func() *entry.Entry {
 				e := entry.New()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"label1": "value1",
 				}
 				return e
@@ -50,7 +50,7 @@ func TestAttributer(t *testing.T) {
 			entry.New(),
 			func() *entry.Entry {
 				e := entry.New()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"label1": "startend",
 				}
 				return e
@@ -68,7 +68,7 @@ func TestAttributer(t *testing.T) {
 			entry.New(),
 			func() *entry.Entry {
 				e := entry.New()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"label1": "foo",
 				}
 				return e

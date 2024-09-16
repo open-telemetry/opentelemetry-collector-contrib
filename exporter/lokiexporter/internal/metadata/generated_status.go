@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("loki")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
+)
+
 const (
-	Type          = "loki"
-	LogsStability = component.StabilityLevelBeta
+	LogsStability = component.StabilityLevelDeprecated
 )

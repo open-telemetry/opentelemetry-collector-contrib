@@ -298,7 +298,7 @@ func Test_metricTracker_removeStale(t *testing.T) {
 			tr.removeStale(currentTime)
 
 			gotOut := make(map[string]*State)
-			tr.states.Range(func(key, value interface{}) bool {
+			tr.states.Range(func(key, value any) bool {
 				gotOut[key.(string)] = value.(*State)
 				return true
 			})

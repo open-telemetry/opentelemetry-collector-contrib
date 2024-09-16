@@ -11,13 +11,10 @@ import (
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 )
 
-const (
-	// Use 0.0.0.0 to make the health check endpoint accessible
-	// in container orchestration environments like Kubernetes.
-	defaultEndpoint = "0.0.0.0:13133"
-)
+const defaultPort = 13133
 
 // NewFactory creates a factory for HealthCheck extension.
 func NewFactory() extension.Factory {
@@ -31,15 +28,15 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 		Path:                   "/",
 	}
 }
 
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 
 	return newServer(*config, set.TelemetrySettings), nil

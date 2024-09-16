@@ -26,8 +26,8 @@ const (
 // FactoryOption applies changes to PulsarExporterFactory.
 type FactoryOption func(factory *pulsarReceiverFactory)
 
-// WithTracesUnmarshalers adds Unmarshalers.
-func WithTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
+// withTracesUnmarshalers adds Unmarshalers.
+func withTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
 	return func(factory *pulsarReceiverFactory) {
 		for _, unmarshaler := range tracesUnmarshalers {
 			factory.tracesUnmarshalers[unmarshaler.Encoding()] = unmarshaler
@@ -35,8 +35,8 @@ func WithTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOpti
 	}
 }
 
-// WithMetricsUnmarshalers adds MetricsUnmarshalers.
-func WithMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryOption {
+// withMetricsUnmarshalers adds MetricsUnmarshalers.
+func withMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryOption {
 	return func(factory *pulsarReceiverFactory) {
 		for _, unmarshaler := range metricsUnmarshalers {
 			factory.metricsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
@@ -44,8 +44,8 @@ func WithMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryO
 	}
 }
 
-// WithLogsUnmarshalers adds LogsUnmarshalers.
-func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
+// withLogsUnmarshalers adds LogsUnmarshalers.
+func withLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 	return func(factory *pulsarReceiverFactory) {
 		for _, unmarshaler := range logsUnmarshalers {
 			factory.logsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
@@ -81,7 +81,7 @@ type pulsarReceiverFactory struct {
 
 func (f *pulsarReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
@@ -98,7 +98,7 @@ func (f *pulsarReceiverFactory) createTracesReceiver(
 
 func (f *pulsarReceiverFactory) createMetricsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -115,7 +115,7 @@ func (f *pulsarReceiverFactory) createMetricsReceiver(
 
 func (f *pulsarReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {

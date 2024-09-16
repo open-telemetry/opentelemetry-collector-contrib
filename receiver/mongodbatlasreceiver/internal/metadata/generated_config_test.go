@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -100,6 +99,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbAtlasProcessTypeName: ResourceAttributeConfig{Enabled: true},
 					MongodbAtlasProjectID:       ResourceAttributeConfig{Enabled: true},
 					MongodbAtlasProjectName:     ResourceAttributeConfig{Enabled: true},
+					MongodbAtlasProviderName:    ResourceAttributeConfig{Enabled: true},
+					MongodbAtlasRegionName:      ResourceAttributeConfig{Enabled: true},
 					MongodbAtlasUserAlias:       ResourceAttributeConfig{Enabled: true},
 				},
 			},
@@ -182,6 +183,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbAtlasProcessTypeName: ResourceAttributeConfig{Enabled: false},
 					MongodbAtlasProjectID:       ResourceAttributeConfig{Enabled: false},
 					MongodbAtlasProjectName:     ResourceAttributeConfig{Enabled: false},
+					MongodbAtlasProviderName:    ResourceAttributeConfig{Enabled: false},
+					MongodbAtlasRegionName:      ResourceAttributeConfig{Enabled: false},
 					MongodbAtlasUserAlias:       ResourceAttributeConfig{Enabled: false},
 				},
 			},
@@ -203,7 +206,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 
@@ -229,6 +232,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 				MongodbAtlasProcessTypeName: ResourceAttributeConfig{Enabled: true},
 				MongodbAtlasProjectID:       ResourceAttributeConfig{Enabled: true},
 				MongodbAtlasProjectName:     ResourceAttributeConfig{Enabled: true},
+				MongodbAtlasProviderName:    ResourceAttributeConfig{Enabled: true},
+				MongodbAtlasRegionName:      ResourceAttributeConfig{Enabled: true},
 				MongodbAtlasUserAlias:       ResourceAttributeConfig{Enabled: true},
 			},
 		},
@@ -245,6 +250,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 				MongodbAtlasProcessTypeName: ResourceAttributeConfig{Enabled: false},
 				MongodbAtlasProjectID:       ResourceAttributeConfig{Enabled: false},
 				MongodbAtlasProjectName:     ResourceAttributeConfig{Enabled: false},
+				MongodbAtlasProviderName:    ResourceAttributeConfig{Enabled: false},
+				MongodbAtlasRegionName:      ResourceAttributeConfig{Enabled: false},
 				MongodbAtlasUserAlias:       ResourceAttributeConfig{Enabled: false},
 			},
 		},
@@ -267,6 +274,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

@@ -9,9 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
 )
 
 func TestWithValidConfig(t *testing.T) {
@@ -19,14 +20,14 @@ func TestWithValidConfig(t *testing.T) {
 	defer unmockJarVersions()
 
 	f := NewFactory()
-	assert.Equal(t, component.Type("jmx"), f.Type())
+	assert.Equal(t, metadata.Type, f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "myendpoint:12345"
 	cfg.(*Config).JARPath = "testdata/fake_jmx.jar"
 	cfg.(*Config).TargetSystem = "jvm"
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)

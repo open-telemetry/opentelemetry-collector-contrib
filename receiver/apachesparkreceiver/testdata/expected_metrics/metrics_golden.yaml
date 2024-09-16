@@ -405,7 +405,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{ event }'
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest
   - resource:
       attributes:
@@ -575,7 +575,7 @@ resourceMetrics:
               isMonotonic: true
             unit: ms
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest
   - resource:
       attributes:
@@ -598,7 +598,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{ task }'
+            unit: '{ stage }'
           - description: Number of stages with a specific result in this job.
             name: spark.job.stage.result
             sum:
@@ -626,7 +626,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{ task }'
+            unit: '{ stage }'
           - description: Number of active tasks in this job.
             name: spark.job.task.active
             sum:
@@ -665,7 +665,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{ task }'
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest
   - resource:
       attributes:
@@ -955,7 +955,7 @@ resourceMetrics:
               isMonotonic: true
             unit: bytes
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest
   - resource:
       attributes:
@@ -1245,5 +1245,5 @@ resourceMetrics:
               isMonotonic: true
             unit: bytes
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest

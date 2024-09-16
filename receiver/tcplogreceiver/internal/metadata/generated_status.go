@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("tcplog")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
+)
+
 const (
-	Type          = "tcplog"
 	LogsStability = component.StabilityLevelAlpha
 )

@@ -10,12 +10,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -31,8 +32,8 @@ type logNameTest struct {
 
 type logWithResource struct {
 	logNames           []string
-	resourceAttributes map[string]interface{}
-	recordAttributes   map[string]interface{}
+	resourceAttributes map[string]any
+	recordAttributes   map[string]any
 	severityText       string
 	body               string
 	severityNumber     plog.SeverityNumber
@@ -47,7 +48,7 @@ var (
 	inLogForResourceTest = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 				"attr2": "attr2/val2",
 				"attr3": "attr3/val3",
@@ -58,13 +59,13 @@ var (
 	inLogForTwoResource = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val2",
 			},
 		},
@@ -73,19 +74,19 @@ var (
 	inLogForTwoResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val2",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val2",
 			},
 		},
@@ -93,28 +94,28 @@ var (
 	inLogForThreeResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val2",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val2",
 			},
 		},
 		{
 			logNames: []string{"log5"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val5",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val5",
 			},
 		},
@@ -123,25 +124,25 @@ var (
 	inLogForFourResource = []logWithResource{
 		{
 			logNames: []string{"log1"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr": "attr/val1",
 			},
 		},
 		{
 			logNames: []string{"log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr": "attr/val2",
 			},
 		},
 		{
 			logNames: []string{"log3"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr": "attr/val3",
 			},
 		},
 		{
 			logNames: []string{"log4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr": "attr/val4",
 			},
 		},
@@ -581,12 +582,12 @@ func TestFilterLogProcessor(t *testing.T) {
 			factory := NewFactory()
 			flp, err := factory.CreateLogsProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				cfg,
 				next,
 			)
 			assert.NotNil(t, flp)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			caps := flp.Capabilities()
 			assert.True(t, caps.MutatesData)
@@ -594,7 +595,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			assert.NoError(t, flp.Start(ctx, nil))
 
 			cErr := flp.ConsumeLogs(context.Background(), test.inLogs)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllLogs()
 
 			require.Len(t, got, 1)
@@ -677,7 +678,7 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	ctx := context.Background()
 	proc, _ := factory.CreateLogsProcessor(
 		ctx,
-		processortest.NewNopCreateSettings(),
+		processortest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -742,13 +743,13 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			conditions: []string{
 				`Substring("", 0, 100) == "test"`,
 			},
-			want:      func(ld plog.Logs) {},
+			want:      func(_ plog.Logs) {},
 			errorMode: ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterLogsProcessor(componenttest.NewNopTelemetrySettings(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
+			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
 			assert.NoError(t, err)
 
 			got, err := processor.processLogs(context.Background(), constructLogs())
@@ -762,6 +763,38 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFilterLogProcessorTelemetry(t *testing.T) {
+	tel := setupTestTelemetry()
+	processor, err := newFilterLogsProcessor(tel.NewSettings(), &Config{
+		Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
+	})
+	assert.NoError(t, err)
+
+	_, err = processor.processLogs(context.Background(), constructLogs())
+	assert.NoError(t, err)
+
+	want := []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_filter_logs.filtered",
+			Description: "Number of logs dropped by the filter processor",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      2,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
+				},
+			},
+		},
+	}
+
+	tel.assertMetrics(t, want)
+
 }
 
 func constructLogs() plog.Logs {

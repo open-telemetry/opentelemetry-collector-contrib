@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -31,6 +30,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				CloudProvider:           ResourceAttributeConfig{Enabled: true},
 				CloudRegion:             ResourceAttributeConfig{Enabled: true},
 				FaasID:                  ResourceAttributeConfig{Enabled: true},
+				FaasInstance:            ResourceAttributeConfig{Enabled: true},
 				FaasName:                ResourceAttributeConfig{Enabled: true},
 				FaasVersion:             ResourceAttributeConfig{Enabled: true},
 				GcpCloudRunJobExecution: ResourceAttributeConfig{Enabled: true},
@@ -52,6 +52,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				CloudProvider:           ResourceAttributeConfig{Enabled: false},
 				CloudRegion:             ResourceAttributeConfig{Enabled: false},
 				FaasID:                  ResourceAttributeConfig{Enabled: false},
+				FaasInstance:            ResourceAttributeConfig{Enabled: false},
 				FaasName:                ResourceAttributeConfig{Enabled: false},
 				FaasVersion:             ResourceAttributeConfig{Enabled: false},
 				GcpCloudRunJobExecution: ResourceAttributeConfig{Enabled: false},
@@ -83,6 +84,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

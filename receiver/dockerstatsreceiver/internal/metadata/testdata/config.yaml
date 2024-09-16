@@ -17,7 +17,11 @@ all_set:
       enabled: true
     container.blockio.sectors_recursive:
       enabled: true
-    container.cpu.percent:
+    container.cpu.limit:
+      enabled: true
+    container.cpu.logical.count:
+      enabled: true
+    container.cpu.shares:
       enabled: true
     container.cpu.throttling_data.periods:
       enabled: true
@@ -46,6 +50,8 @@ all_set:
     container.memory.cache:
       enabled: true
     container.memory.dirty:
+      enabled: true
+    container.memory.fails:
       enabled: true
     container.memory.file:
       enabled: true
@@ -132,6 +138,8 @@ all_set:
     container.pids.count:
       enabled: true
     container.pids.limit:
+      enabled: true
+    container.restarts:
       enabled: true
     container.uptime:
       enabled: true
@@ -168,7 +176,11 @@ none_set:
       enabled: false
     container.blockio.sectors_recursive:
       enabled: false
-    container.cpu.percent:
+    container.cpu.limit:
+      enabled: false
+    container.cpu.logical.count:
+      enabled: false
+    container.cpu.shares:
       enabled: false
     container.cpu.throttling_data.periods:
       enabled: false
@@ -197,6 +209,8 @@ none_set:
     container.memory.cache:
       enabled: false
     container.memory.dirty:
+      enabled: false
+    container.memory.fails:
       enabled: false
     container.memory.file:
       enabled: false
@@ -284,6 +298,8 @@ none_set:
       enabled: false
     container.pids.limit:
       enabled: false
+    container.restarts:
+      enabled: false
     container.uptime:
       enabled: false
   resource_attributes:
@@ -301,3 +317,63 @@ none_set:
       enabled: false
     container.runtime:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    container.command_line:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.hostname:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.image.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.image.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.runtime:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    container.command_line:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.command_line-val"
+    container.hostname:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.hostname-val"
+    container.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.id-val"
+    container.image.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.image.id-val"
+    container.image.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.image.name-val"
+    container.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.name-val"
+    container.runtime:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.runtime-val"

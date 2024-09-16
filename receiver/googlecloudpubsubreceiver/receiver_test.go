@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -38,7 +38,7 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 			Endpoint:  srv.Addr,
 			Insecure:  true,
 			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 12 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",
@@ -72,12 +72,12 @@ func TestReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	core, _ := observer.New(zap.WarnLevel)
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              reportTransport,
 		LongLivedCtx:           false,
@@ -94,7 +94,7 @@ func TestReceiver(t *testing.T) {
 			Endpoint:  srv.Addr,
 			Insecure:  true,
 			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 1 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",
@@ -153,6 +153,6 @@ func TestReceiver(t *testing.T) {
 		return len(logSink.AllLogs()) == 1
 	}, time.Second, 10*time.Millisecond)
 
-	assert.Nil(t, receiver.Shutdown(ctx))
-	assert.Nil(t, receiver.Shutdown(ctx))
+	assert.NoError(t, receiver.Shutdown(ctx))
+	assert.NoError(t, receiver.Shutdown(ctx))
 }

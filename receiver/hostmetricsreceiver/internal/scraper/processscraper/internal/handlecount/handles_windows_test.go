@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package handlecount
 
@@ -26,11 +25,11 @@ func TestHandleCountManager(t *testing.T) {
 
 	count, err := m.GetProcessHandleCount(1)
 	assert.NoError(t, err)
-	assert.Equal(t, count, uint32(3))
+	assert.Equal(t, uint32(3), count)
 
 	count, err = m.GetProcessHandleCount(2)
 	assert.NoError(t, err)
-	assert.Equal(t, count, uint32(5))
+	assert.Equal(t, uint32(5), count)
 
 	_, err = m.GetProcessHandleCount(3)
 	assert.ErrorIs(t, errors.Unwrap(err), ErrNoHandleCountForProcess)

@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("headers_setter")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
+)
+
 const (
-	Type               = "headers_setter"
 	ExtensionStability = component.StabilityLevelAlpha
 )

@@ -27,12 +27,12 @@ func TestToPrometheusConfig(t *testing.T) {
 	baCfg := baFactory.CreateDefaultConfig().(*bearertokenauthextension.Config)
 	baCfg.BearerToken = "the-token"
 
-	baExt, err := baFactory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), baCfg)
+	baExt, err := baFactory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), baCfg)
 	require.NoError(t, err)
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewIDWithName("bearertokenauth", "array01"): baExt,
+			component.MustNewIDWithName("bearertokenauth", "array01"): baExt,
 		},
 	}
 
@@ -42,7 +42,7 @@ func TestToPrometheusConfig(t *testing.T) {
 		{
 			Address: "array01",
 			Auth: configauth.Authentication{
-				AuthenticatorID: component.NewIDWithName("bearertokenauth", "array01"),
+				AuthenticatorID: component.MustNewIDWithName("bearertokenauth", "array01"),
 			},
 		},
 	}

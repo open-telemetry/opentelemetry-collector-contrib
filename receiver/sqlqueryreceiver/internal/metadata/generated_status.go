@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("sqlquery")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
+)
+
 const (
-	Type             = "sqlquery"
-	MetricsStability = component.StabilityLevelAlpha
 	LogsStability    = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

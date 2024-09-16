@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("k8s_observer")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
+)
+
 const (
-	Type               = "k8s_observer"
 	ExtensionStability = component.StabilityLevelAlpha
 )

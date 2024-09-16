@@ -2,7 +2,9 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -15,7 +17,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -29,7 +31,6 @@ type MetricsConfig struct {
 	NginxConnectionsCurrent  MetricConfig `mapstructure:"nginx.connections_current"`
 	NginxConnectionsHandled  MetricConfig `mapstructure:"nginx.connections_handled"`
 	NginxRequests            MetricConfig `mapstructure:"nginx.requests"`
-	TempConnectionsCurrent   MetricConfig `mapstructure:"temp.connections_current"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -44,9 +45,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NginxRequests: MetricConfig{
-			Enabled: true,
-		},
-		TempConnectionsCurrent: MetricConfig{
 			Enabled: true,
 		},
 	}

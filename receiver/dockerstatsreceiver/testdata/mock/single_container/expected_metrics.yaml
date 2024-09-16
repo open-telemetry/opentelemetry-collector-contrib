@@ -201,13 +201,20 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
-          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
+          - description: 'Number of cores available to the container.'
             gauge:
               dataPoints:
-                - asDouble: 0.0002888012543185477
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: container.cpu.percent
+                - asInt: 8
+                  startTimeUnixNano: "1687762436124732000"
+                  timeUnixNano: "1687762436137493000"
+            name: container.cpu.logical.count
+            unit: "{cpus}"
+          - description: CPU shares set for the container.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1657771705535206000"
+            name: container.cpu.shares
             unit: "1"
           - description: Number of periods with throttling active.
             name: container.cpu.throttling_data.periods
@@ -342,6 +349,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
+          - description: 'Percent of CPU used by the container.'
+            gauge:
+              dataPoints:
+                - asDouble: 0.0002888012543185477
+                  startTimeUnixNano: "1687762436059456000"
+                  timeUnixNano: "1687762436071484000"
+            name: container.cpu.utilization
+            unit: "1"
           - description: The amount of anonymous memory that has been identified as active by the kernel.
             name: container.memory.active_anon
             sum:
@@ -378,6 +393,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
+          - description: 'Number of times the memory limit was hit.'
+            name: container.memory.fails
+            sum:
+              isMonotonic: true
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "{fails}"
           - description: The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).
             name: container.memory.hierarchical_memory_limit
             sum:
@@ -794,6 +819,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{pids}'
+          - description: Number of restarts for the container.
+            name: container.restarts
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1657771705535206000"
+              isMonotonic: true
+            unit: "{restarts}"
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
@@ -803,5 +837,5 @@ resourceMetrics:
             name: container.uptime
             unit: s
         scope:
-          name: otelcol/dockerstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
           version: latest

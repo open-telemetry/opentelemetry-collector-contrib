@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var nodeArray = []interface{}{
+var nodeArray = []any{
 	&v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "ip-192-168-200-63.eu-west-1.compute.internal",
@@ -302,8 +302,8 @@ func TestNodeClient(t *testing.T) {
 	clusterFailedNodeCount := client.ClusterFailedNodeCount()
 	log.Printf("clusterNodeCount: %v, clusterFailedNodeCount: %v", clusterNodeCount, clusterFailedNodeCount)
 
-	assert.Equal(t, clusterNodeCount, expectedClusterNodeCount)
-	assert.Equal(t, clusterFailedNodeCount, expectedClusterFailedNodeCount)
+	assert.Equal(t, expectedClusterNodeCount, clusterNodeCount)
+	assert.Equal(t, expectedClusterFailedNodeCount, clusterFailedNodeCount)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }
@@ -311,5 +311,5 @@ func TestNodeClient(t *testing.T) {
 func TestTransformFuncNode(t *testing.T) {
 	info, err := transformFuncNode(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

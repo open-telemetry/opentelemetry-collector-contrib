@@ -1,6 +1,0 @@
-type: mdatagen
-
-status:
-  class: cmd
-  codeowners:
-    active: [dmitryax]

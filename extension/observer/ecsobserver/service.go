@@ -96,7 +96,7 @@ func (s *serviceMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefiniti
 func serviceConfigsToFilter(cfgs []ServiceConfig) (serviceNameFilter, error) {
 	// If no service config, don't describe any services
 	if len(cfgs) == 0 {
-		return func(name string) bool {
+		return func(_ string) bool {
 			return false
 		}, nil
 	}

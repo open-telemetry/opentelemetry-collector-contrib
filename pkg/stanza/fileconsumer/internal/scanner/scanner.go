@@ -25,14 +25,6 @@ func New(r io.Reader, maxLogSize int, bufferSize int, startOffset int64, splitFu
 	s.Buffer(make([]byte, 0, bufferSize), maxLogSize)
 	scanFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
-		if (advance == 0 && token == nil && err == nil) && len(data) >= maxLogSize {
-			// reference: https://pkg.go.dev/bufio#SplitFunc
-			// splitFunc returns (0, nil, nil) to signal the Scanner to read more data but the buffer is full.
-			// Truncate the log entry.
-			advance, token, err = maxLogSize, data[:maxLogSize], nil
-		} else if len(token) > maxLogSize {
-			advance, token = maxLogSize, token[:maxLogSize]
-		}
 		s.pos += int64(advance)
 		return
 	}

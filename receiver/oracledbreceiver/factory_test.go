@@ -11,21 +11,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/otel/metric/noop"
-	"go.opentelemetry.io/otel/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		receiver.CreateSettings{
-			TelemetrySettings: component.TelemetrySettings{
-				TracerProvider: trace.NewNoopTracerProvider(),
-				MeterProvider:  noop.NewMeterProvider(),
-			},
+		receiver.Settings{
+			ID:                component.NewID(metadata.Type),
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		},
 		factory.CreateDefaultConfig(),
 		consumertest.NewNop(),
@@ -94,7 +93,7 @@ func TestGetDataSource(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			dataSource := getDataSource(*tc.config)
-			require.Equal(t, dataSource, tc.expected)
+			require.Equal(t, tc.expected, dataSource)
 			_, err := url.PathUnescape(dataSource)
 			require.NoError(t, err)
 		})

@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
@@ -27,12 +26,9 @@ func TestNewTracesProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"foo"}
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
-	require.Error(t, component.ErrNilNextConsumer, err)
-	require.Nil(t, tp)
 
-	tp, err = factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 }
 
@@ -40,9 +36,9 @@ func TestNewTracesProcessor(t *testing.T) {
 type testCase struct {
 	serviceName      string
 	inputName        string
-	inputAttributes  map[string]interface{}
+	inputAttributes  map[string]any
 	outputName       string
-	outputAttributes map[string]interface{}
+	outputAttributes map[string]any
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -55,7 +51,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp processor.Traces) {
 	})
 }
 
-func generateTraceData(serviceName, inputName string, attrs map[string]interface{}) ptrace.Traces {
+func generateTraceData(serviceName, inputName string, attrs map[string]any) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
@@ -107,8 +103,8 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	}
 	oCfg.Rename.FromAttributes = []string{"key"}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
 		tt := testCases[i]
@@ -137,47 +133,47 @@ func TestSpanProcessor_Values(t *testing.T) {
 		},
 		{
 			inputName:        "empty-attributes",
-			inputAttributes:  map[string]interface{}{},
+			inputAttributes:  map[string]any{},
 			outputName:       "empty-attributes",
-			outputAttributes: map[string]interface{}{},
+			outputAttributes: map[string]any{},
 		},
 		{
 			inputName: "string-type",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": "bob",
 			},
 			outputName: "bob",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": "bob",
 			},
 		},
 		{
 			inputName: "int-type",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": 123,
 			},
 			outputName: "123",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": 123,
 			},
 		},
 		{
 			inputName: "double-type",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": 234.129312,
 			},
 			outputName: "234.129312",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": 234.129312,
 			},
 		},
 		{
 			inputName: "bool-type",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": true,
 			},
 			outputName: "true",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": true,
 			},
 		},
@@ -211,8 +207,8 @@ func TestSpanProcessor_Values(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"key1"}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
 		runIndividualTestCase(t, tc, tp)
@@ -224,13 +220,13 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	testCases := []testCase{
 		{
 			inputName: "first-keys-missing",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key2": 123,
 				"key3": 234.129312,
 				"key4": true,
 			},
 			outputName: "first-keys-missing",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key2": 123,
 				"key3": 234.129312,
 				"key4": true,
@@ -238,13 +234,13 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 		},
 		{
 			inputName: "middle-key-missing",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key4": true,
 			},
 			outputName: "middle-key-missing",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key4": true,
@@ -252,13 +248,13 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 		},
 		{
 			inputName: "last-key-missing",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key3": 234.129312,
 			},
 			outputName: "last-key-missing",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key3": 234.129312,
@@ -266,14 +262,14 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 		},
 		{
 			inputName: "all-keys-exists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key3": 234.129312,
 				"key4": true,
 			},
 			outputName: "bob::123::234.129312::true",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key3": 234.129312,
@@ -287,8 +283,8 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2", "key3", "key4"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
 		runIndividualTestCase(t, tc, tp)
@@ -305,14 +301,14 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	traceData := generateTraceData(
 		"",
 		"ensure no separator in the rename with one key",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
@@ -320,7 +316,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 		}), traceData))
 }
@@ -334,13 +330,13 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2"}
 	oCfg.Rename.Separator = ""
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	traceData := generateTraceData(
 		"",
-		"ensure no separator in the rename with two keys", map[string]interface{}{
+		"ensure no separator in the rename with two keys", map[string]any{
 			"key1": "bob",
 			"key2": 123,
 		})
@@ -349,7 +345,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob123",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 			"key2": 123,
 		}), traceData))
@@ -364,14 +360,14 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2", "key3", "key4"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	traceData := generateTraceData(
 		"",
 		"rename with separators and multiple keys",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 			"key2": 123,
 			"key3": 234.129312,
@@ -382,7 +378,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob::123::234.129312::true",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 			"key2": 123,
 			"key3": 234.129312,
@@ -399,14 +395,14 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	traceData := generateTraceData(
 		"",
 		"",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
@@ -414,7 +410,7 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 		}), traceData))
 }
@@ -431,9 +427,9 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update\/1$`},
 			testCase: testCase{
 				inputName:       "/api/v1/document/321083210/update/1",
-				inputAttributes: map[string]interface{}{},
+				inputAttributes: map[string]any{},
 				outputName:      "/api/v1/document/{documentId}/update/1",
-				outputAttributes: map[string]interface{}{
+				outputAttributes: map[string]any{
 					"documentId": "321083210",
 				},
 			},
@@ -444,7 +440,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/2",
 				outputName: "/api/{version}/document/{documentId}/update/2",
-				outputAttributes: map[string]interface{}{
+				outputAttributes: map[string]any{
 					"documentId": "321083210",
 					"version":    "v1",
 				},
@@ -457,7 +453,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/3",
 				outputName: "/api/{version}/document/{documentId}/update/3",
-				outputAttributes: map[string]interface{}{
+				outputAttributes: map[string]any{
 					"documentId": "321083210",
 					"version":    "v1",
 				},
@@ -471,7 +467,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/4",
 				outputName: "/api/v1/document/{documentId}/update/4",
-				outputAttributes: map[string]interface{}{
+				outputAttributes: map[string]any{
 					"documentId": "321083210",
 				},
 			},
@@ -496,8 +492,8 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 	for _, tc := range testCases {
 		oCfg.Rename.ToAttributes.Rules = tc.rules
 		oCfg.Rename.ToAttributes.BreakAfterMatch = tc.breakAfterMatch
-		tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-		require.Nil(t, err)
+		tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+		require.NoError(t, err)
 		require.NotNil(t, tp)
 
 		runIndividualTestCase(t, tc.testCase, tp)
@@ -520,29 +516,29 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 			serviceName: "banks",
 			inputName:   "www.test.com/code",
 			outputName:  "{operation_website}",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"operation_website": "www.test.com/code",
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"operation_website": "www.test.com/code",
 			},
 			outputName: "{operation_website}",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"operation_website": "donot/",
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/change",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"operation_website": "www.test.com/code",
 			},
 			outputName: "donot/change",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"operation_website": "www.test.com/code",
 			},
 		},
@@ -563,8 +559,8 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	oCfg.Rename.ToAttributes = &ToAttributes{
 		Rules: []string{`(?P<operation_website>.*?)$`},
 	}
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tc := range testCases {
@@ -572,7 +568,7 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	}
 }
 
-func generateTraceDataSetStatus(code ptrace.StatusCode, description string, attrs map[string]interface{}) ptrace.Traces {
+func generateTraceDataSetStatus(code ptrace.StatusCode, description string, attrs map[string]any) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -591,8 +587,8 @@ func TestSpanProcessor_setStatusCode(t *testing.T) {
 		Code:        "Error",
 		Description: "Set custom error message",
 	}
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	td := generateTraceDataSetStatus(ptrace.StatusCodeUnset, "foobar", nil)
@@ -610,7 +606,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 		Code:        "Error",
 		Description: "custom error message",
 	}
-	// This test numer two include rule for applying rule only for status code 400
+	// This test number two include rule for applying rule only for status code 400
 	oCfg.Include = &filterconfig.MatchProperties{
 		Config: filterset.Config{
 			MatchType: filterset.Strict,
@@ -619,23 +615,23 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 			{Key: "http.status_code", Value: 400},
 		},
 	}
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	testCases := []struct {
-		inputAttributes         map[string]interface{}
+		inputAttributes         map[string]any
 		inputStatusCode         ptrace.StatusCode
 		outputStatusCode        ptrace.StatusCode
 		outputStatusDescription string
 	}{
 		{
-			// without attribiutes - should not apply rule and leave status code as it is
+			// without attributes - should not apply rule and leave status code as it is
 			inputStatusCode:  ptrace.StatusCodeOk,
 			outputStatusCode: ptrace.StatusCodeOk,
 		},
 		{
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"http.status_code": 400,
 			},
 			inputStatusCode:         ptrace.StatusCodeOk,

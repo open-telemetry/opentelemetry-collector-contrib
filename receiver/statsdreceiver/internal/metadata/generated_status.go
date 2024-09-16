@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("statsd")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
+)
+
 const (
-	Type             = "statsd"
 	MetricsStability = component.StabilityLevelBeta
 )

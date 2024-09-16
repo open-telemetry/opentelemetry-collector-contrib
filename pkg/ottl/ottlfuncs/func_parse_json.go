@@ -31,7 +31,7 @@ func createParseJSONFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	return parseJSON(args.Target), nil
 }
 
-// parseJSON returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+// parseJSON returns a `pcommon.Map` or `pcommon.Slice` struct that is a result of parsing the target string as JSON
 // Each JSON type is converted into a `pdata.Value` using the following map:
 //
 //	JSON boolean -> bool
@@ -41,18 +41,27 @@ func createParseJSONFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 //	JSON arrays  -> pdata.SliceValue
 //	JSON objects -> map[string]any
 func parseJSON[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		var parsedValue map[string]interface{}
+		var parsedValue any
 		err = jsoniter.UnmarshalFromString(targetVal, &parsedValue)
 		if err != nil {
 			return nil, err
 		}
-		result := pcommon.NewMap()
-		err = result.FromRaw(parsedValue)
-		return result, err
+		switch v := parsedValue.(type) {
+		case []any:
+			result := pcommon.NewSlice()
+			err = result.FromRaw(v)
+			return result, err
+		case map[string]any:
+			result := pcommon.NewMap()
+			err = result.FromRaw(v)
+			return result, err
+		default:
+			return nil, fmt.Errorf("could not convert parsed value of type %T to JSON object", v)
+		}
 	}
 }

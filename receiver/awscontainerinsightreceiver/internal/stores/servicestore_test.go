@@ -41,7 +41,7 @@ func TestServiceStore(t *testing.T) {
 			ci.K8sNamespace:  "default",
 		},
 	}
-	kubernetesBlob := map[string]interface{}{}
+	kubernetesBlob := map[string]any{}
 	ok := s.Decorate(ctx, metric, kubernetesBlob)
 	assert.True(t, ok)
 	assert.Equal(t, "test-service", metric.GetTag(ci.TypeService))
@@ -52,7 +52,7 @@ func TestServiceStore(t *testing.T) {
 			ci.K8sPodNameKey: "test-pod",
 		},
 	}
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	ok = s.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
 	assert.Equal(t, "", metric.GetTag(ci.TypeService))

@@ -14,10 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,14 +35,14 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
-			option: func(conf *Config) {
+			option: func(_ *Config) {
 				// intentionally left blank so we use default config
 			},
 			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -48,16 +50,20 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				Topic:    "spans",
-				Encoding: "otlp_proto",
-				Brokers:  []string{"foo:123", "bar:456"},
-				Authentication: Authentication{
-					PlainText: &PlainTextConfig{
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				PartitionTracesByID:                  true,
+				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ClientID:                             "test_client_id",
+				Authentication: kafka.Authentication{
+					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
 						Password: "pass",
 					},
@@ -79,8 +85,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			option: func(conf *Config) {
-				conf.Authentication = Authentication{
-					SASL: &SASLConfig{
+				conf.Authentication = kafka.Authentication{
+					SASL: &kafka.SASLConfig{
 						Username:  "jdoe",
 						Password:  "pass",
 						Mechanism: "PLAIN",
@@ -89,10 +95,10 @@ func TestLoadConfig(t *testing.T) {
 				}
 			},
 			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -100,24 +106,78 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				Topic:    "spans",
-				Encoding: "otlp_proto",
-				Brokers:  []string{"foo:123", "bar:456"},
-				Authentication: Authentication{
-					PlainText: &PlainTextConfig{
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				PartitionTracesByID:                  true,
+				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ClientID:                             "test_client_id",
+				Authentication: kafka.Authentication{
+					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
 						Password: "pass",
 					},
-					SASL: &SASLConfig{
+					SASL: &kafka.SASLConfig{
 						Username:  "jdoe",
 						Password:  "pass",
 						Mechanism: "PLAIN",
 						Version:   0,
+					},
+				},
+				Metadata: Metadata{
+					Full: false,
+					Retry: MetadataRetry{
+						Max:     15,
+						Backoff: defaultMetadataRetryBackoff,
+					},
+				},
+				Producer: Producer{
+					MaxMessageBytes: 10000000,
+					RequiredAcks:    sarama.WaitForAll,
+					Compression:     "none",
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, ""),
+			option: func(conf *Config) {
+				conf.ResolveCanonicalBootstrapServersOnly = true
+			},
+			expected: &Config{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
+					Timeout: 10 * time.Second,
+				},
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.QueueConfig{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				PartitionTracesByID:                  true,
+				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ClientID:                             "test_client_id",
+				ResolveCanonicalBootstrapServersOnly: true,
+				Authentication: kafka.Authentication{
+					PlainText: &kafka.PlainTextConfig{
+						Username: "jdoe",
+						Password: "pass",
 					},
 				},
 				Metadata: Metadata{
@@ -142,7 +202,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -166,8 +226,8 @@ func TestValidate_sasl_username(t *testing.T) {
 		Producer: Producer{
 			Compression: "none",
 		},
-		Authentication: Authentication{
-			SASL: &SASLConfig{
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
 				Username:  "",
 				Password:  "pass",
 				Mechanism: "PLAIN",
@@ -184,8 +244,8 @@ func TestValidate_sasl_password(t *testing.T) {
 		Producer: Producer{
 			Compression: "none",
 		},
-		Authentication: Authentication{
-			SASL: &SASLConfig{
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
 				Username:  "jdoe",
 				Password:  "",
 				Mechanism: "PLAIN",
@@ -202,8 +262,8 @@ func TestValidate_sasl_mechanism(t *testing.T) {
 		Producer: Producer{
 			Compression: "none",
 		},
-		Authentication: Authentication{
-			SASL: &SASLConfig{
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
 				Username:  "jdoe",
 				Password:  "pass",
 				Mechanism: "FAKE",
@@ -220,8 +280,8 @@ func TestValidate_sasl_version(t *testing.T) {
 		Producer: Producer{
 			Compression: "none",
 		},
-		Authentication: Authentication{
-			SASL: &SASLConfig{
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
 				Username:  "jdoe",
 				Password:  "pass",
 				Mechanism: "PLAIN",
@@ -275,8 +335,8 @@ func Test_saramaProducerCompressionCodec(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			c, err := saramaProducerCompressionCodec(test.compression)
-			assert.Equal(t, c, test.expectedCompression)
-			assert.Equal(t, err, test.expectedError)
+			assert.Equal(t, test.expectedCompression, c)
+			assert.Equal(t, test.expectedError, err)
 		})
 	}
 }

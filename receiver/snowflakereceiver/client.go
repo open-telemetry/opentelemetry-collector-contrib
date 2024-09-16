@@ -398,15 +398,15 @@ func (c snowflakeClient) FetchStorageMetrics(ctx context.Context) (*[]storageMet
 	var res []storageMetric
 
 	for rows.Next() {
-		var storageBytes, stageBytes, failsafeBytes int64
+		var storageBytes, stageBytes, failsafeBytes float64
 		err := rows.Scan(&storageBytes, &stageBytes, &failsafeBytes)
 		if err != nil {
 			return nil, err
 		}
 		res = append(res, storageMetric{
-			storageBytes:  storageBytes,
-			stageBytes:    stageBytes,
-			failsafeBytes: failsafeBytes,
+			storageBytes:  int64(storageBytes),
+			stageBytes:    int64(stageBytes),
+			failsafeBytes: int64(failsafeBytes),
 		})
 	}
 	return &res, nil

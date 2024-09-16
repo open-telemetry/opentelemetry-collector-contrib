@@ -6,11 +6,14 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter/internal/metadata"
 )
@@ -80,6 +83,34 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "7"),
 			errorMessage: `clusterURI config is mandatory`,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "8"),
+			expected: &Config{
+				ClusterURI:     "https://CLUSTER.kusto.windows.net",
+				ApplicationID:  "f80da32c-108c-415c-a19e-643f461a677a",
+				ApplicationKey: "xx-xx-xx-xx",
+				TenantID:       "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
+				Database:       "oteldb",
+				MetricTable:    "OTELMetrics",
+				LogTable:       "OTELLogs",
+				TraceTable:     "OTELTraces",
+				IngestionType:  managedIngestType,
+				TimeoutSettings: exporterhelper.TimeoutConfig{
+					Timeout: 10 * time.Second,
+				},
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:         true,
+					InitialInterval: 10 * time.Second,
+					MaxInterval:     60 * time.Second,
+					MaxElapsedTime:  10 * time.Minute,
+				},
+				QueueSettings: exporterhelper.QueueConfig{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -89,7 +120,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)

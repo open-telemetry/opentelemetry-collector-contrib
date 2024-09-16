@@ -140,12 +140,12 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 	require.NoError(t, err)
 
 	// Cache timeout hasn't been reached, so filtered out all items
-	assert.Equal(t, 0, len(filteredItems))
+	assert.Empty(t, filteredItems)
 
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
 	syncChannel := make(chan bool)
 
-	filterCasted.cache.SetExpirationCallback(func(key string, value interface{}) {
+	filterCasted.cache.SetExpirationCallback(func(string, any) {
 		if filterCasted.cache.Count() > 0 {
 			// Waiting until cache is really empty - all items are expired
 			return
@@ -192,18 +192,18 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 	filteredItems, err = filterCasted.filterItems(items)
 	require.NoError(t, err)
 
-	assert.Equal(t, totalLimit, len(filteredItems))
+	assert.Len(t, filteredItems, totalLimit)
 
 	filteredItems, err = filter.Filter(items)
 	require.NoError(t, err)
 
 	// Cache timeout hasn't been reached, so no more new items expected
-	assert.Equal(t, totalLimit, len(filteredItems))
+	assert.Len(t, filteredItems, totalLimit)
 
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
 	syncChannel := make(chan bool)
 
-	filterCasted.cache.SetExpirationCallback(func(key string, value interface{}) {
+	filterCasted.cache.SetExpirationCallback(func(string, any) {
 		if filterCasted.cache.Count() > 0 {
 			// Waiting until cache is really empty - all items are expired
 			return
@@ -280,7 +280,7 @@ func TestGroupByTimestamp(t *testing.T) {
 	items := initialItems(t)
 	groupedItems := groupByTimestamp(items)
 
-	assert.Equal(t, 3, len(groupedItems))
+	assert.Len(t, groupedItems, 3)
 	assertGroupedByKey(t, items, groupedItems, timestamp1, 0)
 	assertGroupedByKey(t, items, groupedItems, timestamp2, 3)
 	assertGroupedByKey(t, items, groupedItems, timestamp3, 6)

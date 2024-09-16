@@ -180,3 +180,7 @@ header_config:
     pattern: "^#"
     metadata_operators:
       - type: "regex_parser"
+ordering_criteria_top_n:
+  type: mock
+  ordering_criteria:
+    top_n: 10

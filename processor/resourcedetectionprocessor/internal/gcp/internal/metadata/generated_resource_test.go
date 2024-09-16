@@ -19,6 +19,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
 			rb.SetFaasID("faas.id-val")
+			rb.SetFaasInstance("faas.instance-val")
 			rb.SetFaasName("faas.name-val")
 			rb.SetFaasVersion("faas.version-val")
 			rb.SetGcpCloudRunJobExecution("gcp.cloud_run.job.execution-val")
@@ -35,9 +36,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 14, res.Attributes().Len())
+				assert.Equal(t, 15, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 16, res.Attributes().Len())
+				assert.Equal(t, 17, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -74,6 +75,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "faas.id-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("faas.instance")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "faas.instance-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("faas.name")
 			assert.True(t, ok)

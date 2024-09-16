@@ -30,7 +30,7 @@ func TestAndHelper(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := sampling.NewAnd(zap.NewNop(), []sampling.PolicyEvaluator{
-			sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100),
+			sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100, 0),
 		})
 		assert.Equal(t, expected, actual)
 	})

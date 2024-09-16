@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -2343,7 +2344,7 @@ type metricSparkJobStageActive struct {
 func (m *metricSparkJobStageActive) init() {
 	m.data.SetName("spark.job.stage.active")
 	m.data.SetDescription("Number of active stages in this job.")
-	m.data.SetUnit("{ task }")
+	m.data.SetUnit("{ stage }")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2394,7 +2395,7 @@ type metricSparkJobStageResult struct {
 func (m *metricSparkJobStageResult) init() {
 	m.data.SetName("spark.job.stage.result")
 	m.data.SetDescription("Number of stages with a specific result in this job.")
-	m.data.SetUnit("{ task }")
+	m.data.SetUnit("{ stage }")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3535,6 +3536,8 @@ type MetricsBuilder struct {
 	metricsCapacity                                          int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                            pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                                component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                           map[string]filter.Filter
+	resourceAttributeExcludeFilter                           map[string]filter.Filter
 	metricSparkDriverBlockManagerDiskUsage                   metricSparkDriverBlockManagerDiskUsage
 	metricSparkDriverBlockManagerMemoryUsage                 metricSparkDriverBlockManagerMemoryUsage
 	metricSparkDriverCodeGeneratorCompilationAverageTime     metricSparkDriverCodeGeneratorCompilationAverageTime
@@ -3610,7 +3613,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                   mbc,
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
@@ -3679,7 +3682,46 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSparkStageTaskActive:                               newMetricSparkStageTaskActive(mbc.Metrics.SparkStageTaskActive),
 		metricSparkStageTaskResult:                               newMetricSparkStageTaskResult(mbc.Metrics.SparkStageTaskResult),
 		metricSparkStageTaskResultSize:                           newMetricSparkStageTaskResultSize(mbc.Metrics.SparkStageTaskResultSize),
+		resourceAttributeIncludeFilter:                           make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                           make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.SparkApplicationID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.application.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SparkApplicationID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.application.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SparkApplicationName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.application.name"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SparkApplicationName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.application.name"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SparkExecutorID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.executor.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkExecutorID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SparkExecutorID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.executor.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkExecutorID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SparkJobID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkJobID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SparkJobID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkJobID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SparkStageAttemptID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.stage.attempt.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageAttemptID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SparkStageAttemptID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.stage.attempt.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageAttemptID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SparkStageID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.stage.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SparkStageID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.stage.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageID.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -3737,7 +3779,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/apachesparkreceiver")
+	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSparkDriverBlockManagerDiskUsage.emit(ils.Metrics())
@@ -3807,6 +3849,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

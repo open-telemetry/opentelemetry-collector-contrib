@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("windowseventlog")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
+)
+
 const (
-	Type          = "windowseventlog"
 	LogsStability = component.StabilityLevelAlpha
 )

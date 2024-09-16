@@ -8,10 +8,14 @@ import (
 
 	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 	egress_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/egress/v1"
 )
 
@@ -21,7 +25,7 @@ import (
 var msgWithAdditionalSpan = []byte{10, 48, 10, 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2, 18, 8, 1, 2, 3, 4, 5, 6, 7, 8, 26, 8, 1, 2, 3, 4, 5, 6, 7, 8, 74, 8, 32, 3, 10, 4, 116, 101, 115, 116, 18, 10, 118, 109, 114, 45, 49, 51, 51, 45, 53, 51, 26, 7, 100, 101, 102, 97, 117, 108, 116}
 
 func TestMsgWithUnknownOneof(t *testing.T) {
-	unmarshallerV1 := newTestEgressV1Unmarshaller(t)
+	unmarshallerV1, _ := newTestEgressV1Unmarshaller(t)
 	spanData, err := unmarshallerV1.unmarshalToSpanData(amqp.NewMessage(msgWithAdditionalSpan))
 	assert.NoError(t, err)
 	// expect one egress span
@@ -36,10 +40,9 @@ func TestEgressUnmarshallerMapResourceSpan(t *testing.T) {
 		version    = "10.0.0"
 	)
 	tests := []struct {
-		name                        string
-		spanData                    *egress_v1.SpanData
-		want                        map[string]interface{}
-		expectedUnmarshallingErrors interface{}
+		name     string
+		spanData *egress_v1.SpanData
+		want     map[string]any
 	}{
 		{
 			name: "Maps All Fields When Present",
@@ -48,7 +51,7 @@ func TestEgressUnmarshallerMapResourceSpan(t *testing.T) {
 				MessageVpnName: &vpnName,
 				SolosVersion:   version,
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"service.name":        routerName,
 				"service.instance.id": vpnName,
 				"service.version":     version,
@@ -57,7 +60,7 @@ func TestEgressUnmarshallerMapResourceSpan(t *testing.T) {
 		{
 			name:     "Does Not Map Fields When Not Present",
 			spanData: &egress_v1.SpanData{},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"service.version": "",
 				"service.name":    "",
 			},
@@ -65,11 +68,10 @@ func TestEgressUnmarshallerMapResourceSpan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTestEgressV1Unmarshaller(t)
+			u, _ := newTestEgressV1Unmarshaller(t)
 			actual := pcommon.NewMap()
 			u.mapResourceSpanAttributes(tt.spanData, actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
-			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
 	}
 }
@@ -117,9 +119,10 @@ var validEgressSpans = []struct {
 			span.SetKind(4)
 			spanAttrs := span.Attributes()
 			spanAttrs.PutStr("messaging.system", "SolacePubSub+")
-			spanAttrs.PutStr("messaging.operation", "send")
-			spanAttrs.PutStr("messaging.protocol", "SMF")
-			spanAttrs.PutStr("messaging.protocol_version", "3.0")
+			spanAttrs.PutStr("messaging.operation.name", "send")    // Operation name
+			spanAttrs.PutStr("messaging.operation.type", "publish") // Operation type
+			spanAttrs.PutStr("network.protocol.name", "SMF")
+			spanAttrs.PutStr("network.protocol.version", "3.0")
 			spanAttrs.PutStr("messaging.source.name", "someQueue")
 			spanAttrs.PutStr("messaging.source.kind", "queue")
 			spanAttrs.PutStr("messaging.solace.client_username", "clientUsername")
@@ -174,9 +177,10 @@ var validEgressSpans = []struct {
 			span.Status().SetMessage("someErrorOccurred")
 			spanAttrs := span.Attributes()
 			spanAttrs.PutStr("messaging.system", "SolacePubSub+")
-			spanAttrs.PutStr("messaging.operation", "send")
-			spanAttrs.PutStr("messaging.protocol", "MQTT")
-			spanAttrs.PutStr("messaging.protocol_version", "5.0")
+			spanAttrs.PutStr("messaging.operation.name", "send")
+			spanAttrs.PutStr("messaging.operation.type", "publish")
+			spanAttrs.PutStr("network.protocol.name", "MQTT")
+			spanAttrs.PutStr("network.protocol.version", "5.0")
 			spanAttrs.PutStr("messaging.source.name", "queueName")
 			spanAttrs.PutStr("messaging.source.kind", "queue")
 			spanAttrs.PutStr("messaging.solace.client_username", "someClientUsername")
@@ -239,9 +243,10 @@ var validEgressSpans = []struct {
 			span.SetKind(4)
 			spanAttrs := span.Attributes()
 			spanAttrs.PutStr("messaging.system", "SolacePubSub+")
-			spanAttrs.PutStr("messaging.operation", "send")
-			spanAttrs.PutStr("messaging.protocol", "AMQP")
-			spanAttrs.PutStr("messaging.protocol_version", "1.0")
+			spanAttrs.PutStr("messaging.operation.name", "send")
+			spanAttrs.PutStr("messaging.operation.type", "publish")
+			spanAttrs.PutStr("network.protocol.name", "AMQP")
+			spanAttrs.PutStr("network.protocol.version", "1.0")
 			spanAttrs.PutStr("messaging.source.name", "topicEndpointName")
 			spanAttrs.PutStr("messaging.source.kind", "topic-endpoint")
 			spanAttrs.PutStr("messaging.solace.client_username", "someOtherClientUsername")
@@ -261,10 +266,9 @@ var validEgressSpans = []struct {
 
 func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 	type testCase struct {
-		name                        string
-		spanData                    *egress_v1.SpanData_EgressSpan
-		want                        *ptrace.Span
-		expectedUnmarshallingErrors interface{}
+		name     string
+		spanData *egress_v1.SpanData_EgressSpan
+		want     *ptrace.Span
 	}
 	tests := []testCase{
 		{
@@ -293,17 +297,33 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTestEgressV1Unmarshaller(t)
+			u, tel := newTestEgressV1Unmarshaller(t)
 			actual := ptrace.NewSpanSlice()
 			u.mapEgressSpan(tt.spanData, actual)
 			if tt.want != nil {
 				assert.Equal(t, 1, actual.Len())
 				compareSpans(t, *tt.want, actual.At(0))
+				tel.assertMetrics(t, []metricdata.Metrics{})
 			} else {
 				assert.Equal(t, 0, actual.Len())
-				validateMetric(t, u.metrics.views.droppedEgressSpans, 1)
+				tel.assertMetrics(t, []metricdata.Metrics{
+					{
+						Name:        "otelcol_solacereceiver_dropped_egress_spans",
+						Description: "Number of dropped egress spans",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value:      1,
+									Attributes: u.metricAttrs,
+								},
+							},
+						},
+					},
+				})
 			}
-			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
 	}
 }
@@ -311,12 +331,13 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	// creates a base attribute map that additional data can be added to
 	// does not include outcome or source. Attributes will override all fields in base
-	getSpan := func(attributes map[string]interface{}, name string) ptrace.Span {
-		base := map[string]interface{}{
+	getSpan := func(attributes map[string]any, name string) ptrace.Span {
+		base := map[string]any{
 			"messaging.system":                  "SolacePubSub+",
-			"messaging.operation":               "send",
-			"messaging.protocol":                "MQTT",
-			"messaging.protocol_version":        "5.0",
+			"messaging.operation.name":          "send",
+			"messaging.operation.type":          "publish",
+			"network.protocol.name":             "MQTT",
+			"network.protocol.version":          "5.0",
 			"messaging.solace.client_username":  "someUser",
 			"messaging.solace.client_name":      "someName",
 			"messaging.solace.message_replayed": false,
@@ -345,7 +366,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 		name                        string
 		spanData                    *egress_v1.SpanData_SendSpan
 		want                        ptrace.Span
-		expectedUnmarshallingErrors interface{}
+		expectedUnmarshallingErrors int64
 	}{
 		{
 			name: "With Queue source",
@@ -354,7 +375,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					QueueName: "someQueue",
 				},
 			}),
-			want: getSpan(map[string]interface{}{
+			want: getSpan(map[string]any{
 				"messaging.source.name": "someQueue",
 				"messaging.source.kind": "queue",
 			}, "someQueue send"),
@@ -366,7 +387,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					TopicEndpointName: "0123456789abcdef0123456789abcdeg",
 				},
 			}),
-			want: getSpan(map[string]interface{}{
+			want: getSpan(map[string]any{
 				"messaging.source.name": "0123456789abcdef0123456789abcdeg",
 				"messaging.source.kind": "topic-endpoint",
 			}, "0123456789abcdef0123456789abcdeg send"),
@@ -378,7 +399,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					QueueName: "#P2P/QTMP/myQueue",
 				},
 			}),
-			want: getSpan(map[string]interface{}{
+			want: getSpan(map[string]any{
 				"messaging.source.name": "#P2P/QTMP/myQueue",
 				"messaging.source.kind": "queue",
 			}, "(anonymous) send"),
@@ -390,7 +411,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					TopicEndpointName: "0123456789abcdef0123456789abcdef",
 				},
 			}),
-			want: getSpan(map[string]interface{}{
+			want: getSpan(map[string]any{
 				"messaging.source.name": "0123456789abcdef0123456789abcdef",
 				"messaging.source.kind": "topic-endpoint",
 			}, "(anonymous) send"),
@@ -398,17 +419,35 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 		{
 			name:                        "With Unknown Endpoint source",
 			spanData:                    getSendSpan(&egress_v1.SpanData_SendSpan{}),
-			want:                        getSpan(map[string]interface{}{}, "(unknown) send"),
+			want:                        getSpan(map[string]any{}, "(unknown) send"),
 			expectedUnmarshallingErrors: 1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTestEgressV1Unmarshaller(t)
+			u, tel := newTestEgressV1Unmarshaller(t)
 			actual := ptrace.NewSpan()
 			u.mapSendSpan(tt.spanData, actual)
 			compareSpans(t, tt.want, actual)
-			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
+			var expectedMetrics []metricdata.Metrics
+			if tt.expectedUnmarshallingErrors > 0 {
+				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
+					Description: "Number of recoverable message unmarshalling errors",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
+							},
+						},
+					},
+				})
+			}
+			tel.assertMetrics(t, expectedMetrics)
 		})
 	}
 	// test the various outcomes
@@ -424,8 +463,8 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	}
 	for outcomeKey, outcomeName := range outcomes {
 		t.Run("With outcome "+outcomeName, func(t *testing.T) {
-			u := newTestEgressV1Unmarshaller(t)
-			expected := getSpan(map[string]interface{}{
+			u, _ := newTestEgressV1Unmarshaller(t)
+			expected := getSpan(map[string]any{
 				"messaging.source.name":         "someQueue",
 				"messaging.source.kind":         "queue",
 				"messaging.solace.send.outcome": outcomeName,
@@ -446,10 +485,10 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 	someErrorString := "some error"
 	tests := []struct {
-		name                 string
-		spanData             *egress_v1.SpanData_TransactionEvent
-		populateExpectedSpan func(span ptrace.Span)
-		unmarshallingErrors  interface{}
+		name                        string
+		spanData                    *egress_v1.SpanData_TransactionEvent
+		populateExpectedSpan        func(span ptrace.Span)
+		expectedUnmarshallingErrors int64
 	}{
 		{ // Local Transaction
 			name: "Local Transaction Event",
@@ -466,7 +505,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "commit", 123456789, map[string]interface{}{
+				populateEvent(t, span, "commit", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -489,7 +528,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "session_timeout", 123456789, map[string]interface{}{
+				populateEvent(t, span, "session_timeout", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -512,7 +551,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "rollback_only", 123456789, map[string]interface{}{
+				populateEvent(t, span, "rollback_only", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -535,7 +574,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "end", 123456789, map[string]interface{}{
+				populateEvent(t, span, "end", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator": "administrator",
 					"messaging.solace.transaction_xid":       "0000007b-000814fe-804020100804020100",
 				})
@@ -557,7 +596,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				ErrorDescription: &someErrorString,
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "prepare", 123456789, map[string]interface{}{
+				populateEvent(t, span, "prepare", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":     "broker",
 					"messaging.solace.transaction_xid":           "0000007b--",
 					"messaging.solace.transaction_error_message": someErrorString,
@@ -571,11 +610,11 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				Type:         egress_v1.SpanData_TransactionEvent_Type(12345),
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "Unknown Transaction Event (12345)", 123456789, map[string]interface{}{
+				populateEvent(t, span, "Unknown Transaction Event (12345)", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator": "client",
 				})
 			},
-			unmarshallingErrors: 2,
+			expectedUnmarshallingErrors: 2,
 		},
 		{ // Type of ID not handled, type of initiator not handled
 			name: "Unknown Transaction Initiator and no ID",
@@ -586,28 +625,49 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				TransactionId: nil,
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "rollback", 123456789, map[string]interface{}{
+				populateEvent(t, span, "rollback", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator": "Unknown Transaction Initiator (12345)",
 				})
 			},
-			unmarshallingErrors: 2,
+			expectedUnmarshallingErrors: 2,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTestEgressV1Unmarshaller(t)
+			u, tel := newTestEgressV1Unmarshaller(t)
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.populateExpectedSpan(expected)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			u.mapTransactionEvent(tt.spanData, actual.Events().AppendEmpty())
 			// order is nondeterministic for attributes, so we must sort to get a valid comparison
 			compareSpans(t, expected, actual)
-			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.unmarshallingErrors)
+			var expectedMetrics []metricdata.Metrics
+			if tt.expectedUnmarshallingErrors > 0 {
+				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
+					Description: "Number of recoverable message unmarshalling errors",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
+							},
+						},
+					},
+				})
+			}
+			tel.assertMetrics(t, expectedMetrics)
 		})
 	}
 }
 
-func newTestEgressV1Unmarshaller(t *testing.T) *brokerTraceEgressUnmarshallerV1 {
-	m := newTestMetrics(t)
-	return &brokerTraceEgressUnmarshallerV1{zap.NewNop(), m}
+func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1, componentTestTelemetry) {
+	tt := setupTestTelemetry()
+	builder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
+	require.NoError(t, err)
+	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
+	return &brokerTraceEgressUnmarshallerV1{zap.NewNop(), builder, metricAttr}, tt
 }

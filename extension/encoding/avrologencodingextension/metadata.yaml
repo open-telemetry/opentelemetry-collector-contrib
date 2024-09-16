@@ -1,0 +1,21 @@
+type: avro_log_encoding
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [thmshmm]
+
+tests:
+  config:
+    schema: |
+      {
+         "type" : "record",
+         "namespace" : "com.example",
+         "name" : "LogMsg",
+         "fields" : [
+            { "name" : "message" , "type" : "string" }
+         ]
+      }

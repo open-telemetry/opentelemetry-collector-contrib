@@ -4,9 +4,12 @@
 package finder // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
 
 import (
+	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"golang.org/x/exp/maps"
 )
 
 func Validate(globs []string) error {
@@ -20,10 +23,18 @@ func Validate(globs []string) error {
 }
 
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude
-func FindFiles(includes []string, excludes []string) []string {
-	all := make([]string, 0, len(includes))
+func FindFiles(includes []string, excludes []string) ([]string, error) {
+	var errs error
+
+	allSet := make(map[string]struct{}, len(includes))
 	for _, include := range includes {
-		matches, _ := doublestar.FilepathGlob(include, doublestar.WithFilesOnly()) // compile error checked in build
+		matches, err := doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())
+		if err != nil {
+			errs = errors.Join(errs, fmt.Errorf("find files with '%s' pattern: %w", include, err))
+			// the same pattern could cause an IO error due to one file or directory,
+			// but also could still find files without `doublestar.WithFailOnIOErrors()`.
+			matches, _ = doublestar.FilepathGlob(include, doublestar.WithFilesOnly())
+		}
 	INCLUDE:
 		for _, match := range matches {
 			for _, exclude := range excludes {
@@ -32,15 +43,11 @@ func FindFiles(includes []string, excludes []string) []string {
 				}
 			}
 
-			for _, existing := range all {
-				if existing == match {
-					continue INCLUDE
-				}
-			}
-
-			all = append(all, match)
+			allSet[match] = struct{}{}
 		}
 	}
 
-	return all
+	keys := maps.Keys(allSet)
+	slices.Sort(keys)
+	return keys, errs
 }

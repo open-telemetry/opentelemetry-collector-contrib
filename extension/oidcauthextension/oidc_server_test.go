@@ -31,14 +31,14 @@ type oidcServer struct {
 }
 
 func newOIDCServer() (*oidcServer, error) {
-	jwks := map[string]interface{}{}
+	jwks := map[string]any{}
 
 	mux := http.NewServeMux()
 	server := httptest.NewUnstartedServer(mux)
 
-	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		err := json.NewEncoder(w).Encode(map[string]interface{}{
+		err := json.NewEncoder(w).Encode(map[string]any{
 			"issuer":   server.URL,
 			"jwks_uri": fmt.Sprintf("%s/.well-known/jwks.json", server.URL),
 		})
@@ -47,7 +47,7 @@ func newOIDCServer() (*oidcServer, error) {
 			return
 		}
 	})
-	mux.HandleFunc("/.well-known/jwks.json", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/.well-known/jwks.json", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		if err := json.NewEncoder(w).Encode(jwks); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -71,7 +71,7 @@ func newOIDCServer() (*oidcServer, error) {
 
 	// #nosec
 	sum := sha1.Sum(x509Cert)
-	jwks["keys"] = []map[string]interface{}{{
+	jwks["keys"] = []map[string]any{{
 		"alg": "RS256",
 		"kty": "RSA",
 		"use": "sig",
@@ -86,7 +86,7 @@ func newOIDCServer() (*oidcServer, error) {
 }
 
 func (s *oidcServer) token(jsonPayload []byte) (string, error) {
-	jsonHeader, err := json.Marshal(map[string]interface{}{
+	jsonHeader, err := json.Marshal(map[string]any{
 		"alg": "RS256",
 		"typ": "JWT",
 	})

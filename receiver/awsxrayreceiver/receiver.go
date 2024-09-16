@@ -10,8 +10,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
@@ -32,24 +32,20 @@ const (
 type xrayReceiver struct {
 	poller   udppoller.Poller
 	server   proxy.Server
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	consumer consumer.Traces
-	obsrecv  *obsreport.Receiver
+	obsrecv  *receiverhelper.ObsReport
 	registry telemetry.Registry
 }
 
 func newReceiver(config *Config,
 	consumer consumer.Traces,
-	set receiver.CreateSettings) (receiver.Traces, error) {
-
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
+	set receiver.Settings) (receiver.Traces, error) {
 
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{
-		Transport:          config.Transport,
+		Transport:          string(config.Transport),
 		Endpoint:           config.Endpoint,
 		NumOfPollerToStart: maxPollerCount,
 	}, set)
@@ -65,7 +61,7 @@ func newReceiver(config *Config,
 		return nil, err
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              udppoller.Transport,
 		ReceiverCreateSettings: set,
@@ -114,16 +110,16 @@ func (x *xrayReceiver) start() {
 		traces, totalSpanCount, err := translator.ToTraces(seg.Payload, x.registry.LoadOrNop(x.settings.ID))
 		if err != nil {
 			x.settings.Logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
-			x.obsrecv.EndTracesOp(ctx, metadata.Type, totalSpanCount, err)
+			x.obsrecv.EndTracesOp(ctx, metadata.Type.String(), totalSpanCount, err)
 			continue
 		}
 
 		err = x.consumer.ConsumeTraces(ctx, traces)
 		if err != nil {
 			x.settings.Logger.Warn("Trace consumer errored out", zap.Error(err))
-			x.obsrecv.EndTracesOp(ctx, metadata.Type, totalSpanCount, err)
+			x.obsrecv.EndTracesOp(ctx, metadata.Type.String(), totalSpanCount, err)
 			continue
 		}
-		x.obsrecv.EndTracesOp(ctx, metadata.Type, totalSpanCount, nil)
+		x.obsrecv.EndTracesOp(ctx, metadata.Type.String(), totalSpanCount, nil)
 	}
 }

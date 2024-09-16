@@ -30,7 +30,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	rCfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	rcvr, err := createMetricsReceiver(context.Background(), params, rCfg, sink)
 	require.NoError(t, err)
 
@@ -123,7 +123,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 			numMetrics = 1
 		}
 		n, err := fmt.Fprint(conn, tt.msg)
-		assert.Equal(t, len(tt.msg), n)
+		assert.Len(t, tt.msg, n)
 		assert.NoError(t, err)
 
 		require.NoError(t, conn.Close())

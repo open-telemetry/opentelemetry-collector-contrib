@@ -72,7 +72,7 @@ func TestAttributesMapToOC(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]any{
 		"abc":       "def",
 		"intval":    345,
 		"boolval":   true,
@@ -345,7 +345,7 @@ func TestInternalTracesToOCTracesAndBack(t *testing.T) {
 	assert.NoError(t, err)
 	for _, td := range tds {
 		ocNode, ocResource, ocSpans := ResourceSpansToOC(td.ResourceSpans().At(0))
-		assert.Equal(t, td.SpanCount(), len(ocSpans))
+		assert.Len(t, ocSpans, td.SpanCount())
 		tdFromOC := OCToTraces(ocNode, ocResource, ocSpans)
 		assert.NotNil(t, tdFromOC)
 		assert.Equal(t, td.SpanCount(), tdFromOC.SpanCount())

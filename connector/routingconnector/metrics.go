@@ -27,13 +27,13 @@ type metricsConnector struct {
 }
 
 func newMetricsConnector(
-	set connector.CreateSettings,
+	set connector.Settings,
 	config component.Config,
 	metrics consumer.Metrics,
 ) (*metricsConnector, error) {
 	cfg := config.(*Config)
 
-	mr, ok := metrics.(connector.MetricsRouter)
+	mr, ok := metrics.(connector.MetricsRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer
 	}
@@ -69,10 +69,10 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
-		rtx := ottlresource.NewTransformContext(rmetrics.Resource())
+		rtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
 
 		noRoutesMatch := true
-		for _, route := range c.router.routes {
+		for _, route := range c.router.routeSlice {
 			_, isMatch, err := route.statement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
@@ -84,6 +84,9 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 			if isMatch {
 				noRoutesMatch = false
 				c.group(groups, route.consumer, rmetrics)
+				if c.config.MatchOnce {
+					break
+				}
 			}
 
 		}

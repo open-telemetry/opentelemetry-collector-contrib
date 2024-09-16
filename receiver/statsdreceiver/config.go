@@ -16,9 +16,10 @@ import (
 
 // Config defines configuration for StatsD receiver.
 type Config struct {
-	NetAddr               confignet.NetAddr                `mapstructure:",squash"`
+	NetAddr               confignet.AddrConfig             `mapstructure:",squash"`
 	AggregationInterval   time.Duration                    `mapstructure:"aggregation_interval"`
 	EnableMetricType      bool                             `mapstructure:"enable_metric_type"`
+	EnableSimpleTags      bool                             `mapstructure:"enable_simple_tags"`
 	IsMonotonicCounter    bool                             `mapstructure:"is_monotonic_counter"`
 	TimerHistogramMapping []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 }
@@ -70,6 +71,16 @@ func (c *Config) Validate() error {
 			var empty protocol.HistogramConfig
 			if eachMap.Histogram != empty {
 				errs = multierr.Append(errs, fmt.Errorf("histogram configuration requires observer_type: histogram"))
+			}
+		}
+		if len(eachMap.Summary.Percentiles) != 0 {
+			for _, percentile := range eachMap.Summary.Percentiles {
+				if percentile > 100 || percentile < 0 {
+					errs = multierr.Append(errs, fmt.Errorf("summary percentiles out of [0, 100] range: %v", percentile))
+				}
+			}
+			if eachMap.ObserverType != protocol.SummaryObserver {
+				errs = multierr.Append(errs, fmt.Errorf("summary configuration requires observer_type: summary"))
 			}
 		}
 	}

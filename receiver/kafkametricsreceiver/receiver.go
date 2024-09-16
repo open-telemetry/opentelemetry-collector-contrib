@@ -8,37 +8,38 @@ import (
 	"fmt"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
-const (
-	brokersScraperName   = "brokers"
-	topicsScraperName    = "topics"
-	consumersScraperName = "consumers"
-)
-
-type createKafkaScraper func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error)
+type createKafkaScraper func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error)
 
 var (
-	allScrapers = map[string]createKafkaScraper{
-		brokersScraperName:   createBrokerScraper,
-		topicsScraperName:    createTopicsScraper,
-		consumersScraperName: createConsumerScraper,
+	brokersScraperType   = component.MustNewType("brokers")
+	topicsScraperType    = component.MustNewType("topics")
+	consumersScraperType = component.MustNewType("consumers")
+	allScrapers          = map[string]createKafkaScraper{
+		brokersScraperType.String():   createBrokerScraper,
+		topicsScraperType.String():    createTopicsScraper,
+		consumersScraperType.String(): createConsumerScraper,
 	}
 )
 
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	sc := sarama.NewConfig()
 	sc.ClientID = config.ClientID
+	if config.ResolveCanonicalBootstrapServersOnly {
+		sc.Net.ResolveCanonicalBootstrapServers = true
+	}
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -46,7 +47,7 @@ var newMetricsReceiver = func(
 		}
 		sc.Version = version
 	}
-	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, sc); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, sc); err != nil {
 		return nil, err
 	}
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
@@ -63,7 +64,7 @@ var newMetricsReceiver = func(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&config.ScraperControllerSettings,
+		&config.ControllerConfig,
 		params,
 		consumer,
 		scraperControllerOptions...,

@@ -4,7 +4,7 @@
 package k8sattributesprocessor
 
 import (
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
@@ -23,7 +23,9 @@ type fakeClient struct {
 	Informer           cache.SharedInformer
 	NamespaceInformer  cache.SharedInformer
 	ReplicaSetInformer cache.SharedInformer
+	NodeInformer       cache.SharedInformer
 	Namespaces         map[string]*kube.Namespace
+	Nodes              map[string]*kube.Node
 	StopCh             chan struct{}
 }
 
@@ -33,7 +35,7 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ *zap.Logger, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
+func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()
@@ -44,6 +46,7 @@ func newFakeClient(_ *zap.Logger, _ k8sconfig.APIConfig, rules kube.ExtractionRu
 		Associations:       associations,
 		Informer:           kube.NewFakeInformer(cs, "", ls, fs),
 		NamespaceInformer:  kube.NewFakeInformer(cs, "", ls, fs),
+		NodeInformer:       kube.NewFakeInformer(cs, "", ls, fs),
 		ReplicaSetInformer: kube.NewFakeInformer(cs, "", ls, fs),
 		StopCh:             make(chan struct{}),
 	}, nil
@@ -59,6 +62,11 @@ func (f *fakeClient) GetPod(identifier kube.PodIdentifier) (*kube.Pod, bool) {
 func (f *fakeClient) GetNamespace(namespace string) (*kube.Namespace, bool) {
 	ns, ok := f.Namespaces[namespace]
 	return ns, ok
+}
+
+func (f *fakeClient) GetNode(nodeName string) (*kube.Node, bool) {
+	node, ok := f.Nodes[nodeName]
+	return node, ok
 }
 
 // Start is a noop for FakeClient.

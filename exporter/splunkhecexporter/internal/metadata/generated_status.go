@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("splunk_hec")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+)
+
 const (
-	Type             = "splunk_hec"
 	TracesStability  = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta

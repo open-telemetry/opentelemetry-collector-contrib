@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
 func TestCreateLogsReceiver(t *testing.T) {
@@ -22,25 +24,28 @@ func TestCreateLogsReceiver(t *testing.T) {
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		&Config{
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				CollectionInterval: 10 * time.Second,
-			},
-			Driver:     "mydriver",
-			DataSource: "my-datasource",
-			Queries: []Query{{
-				SQL: "select * from foo",
-				Logs: []LogsCfg{
-					{},
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Second,
 				},
-			}},
+				Driver:     "mydriver",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Logs: []sqlquery.LogsCfg{
+						{},
+					},
+				}},
+			},
 		},
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
+	require.NoError(t, receiver.Shutdown(ctx))
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
@@ -48,33 +53,36 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		&Config{
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				CollectionInterval: 10 * time.Second,
-				InitialDelay:       time.Second,
-			},
-			Driver:     "mydriver",
-			DataSource: "my-datasource",
-			Queries: []Query{{
-				SQL: "select * from foo",
-				Metrics: []MetricCfg{{
-					MetricName:  "my-metric",
-					ValueColumn: "my-column",
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
+				},
+				Driver:     "mydriver",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Metrics: []sqlquery.MetricCfg{{
+						MetricName:  "my-metric",
+						ValueColumn: "my-column",
+					}},
 				}},
-			}},
+			},
 		},
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
+	require.NoError(t, receiver.Shutdown(ctx))
 }
 
 func fakeDBConnect(string, string) (*sql.DB, error) {
 	return nil, nil
 }
 
-func mkFakeClient(db, string, *zap.Logger) dbClient {
-	return &fakeDBClient{stringMaps: [][]stringMap{{{"foo": "111"}}}}
+func mkFakeClient(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+	return &sqlquery.FakeDBClient{StringMaps: [][]sqlquery.StringMap{{{"foo": "111"}}}}
 }

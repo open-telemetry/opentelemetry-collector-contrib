@@ -4,36 +4,44 @@
 package fileconsumer
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestNewConfig(t *testing.T) {
 	cfg := NewConfig()
+	assert.Equal(t, 200*time.Millisecond, cfg.PollInterval)
+	assert.Equal(t, defaultMaxConcurrentFiles, cfg.MaxConcurrentFiles)
+	assert.Equal(t, "end", cfg.StartAt)
+	assert.Equal(t, fingerprint.DefaultSize, int(cfg.FingerprintSize))
+	assert.Equal(t, defaultEncoding, cfg.Encoding)
+	assert.Equal(t, reader.DefaultMaxLogSize, int(cfg.MaxLogSize))
+	assert.Equal(t, reader.DefaultFlushPeriod, cfg.FlushPeriod)
 	assert.True(t, cfg.IncludeFileName)
 	assert.False(t, cfg.IncludeFilePath)
 	assert.False(t, cfg.IncludeFileNameResolved)
 	assert.False(t, cfg.IncludeFilePathResolved)
-	assert.Equal(t, "end", cfg.StartAt)
-	assert.Equal(t, 200*time.Millisecond, cfg.PollInterval)
-	assert.Equal(t, fingerprint.DefaultSize, int(cfg.FingerprintSize))
-	assert.Equal(t, defaultEncoding, cfg.Encoding)
-	assert.Equal(t, defaultMaxLogSize, int(cfg.MaxLogSize))
-	assert.Equal(t, defaultMaxConcurrentFiles, cfg.MaxConcurrentFiles)
-	assert.Equal(t, defaultFlushPeriod, cfg.FlushPeriod)
+	assert.False(t, cfg.IncludeFileOwnerName)
+	assert.False(t, cfg.IncludeFileOwnerGroupName)
+	assert.False(t, cfg.IncludeFileRecordNumber)
+	assert.False(t, cfg.AcquireFSLock)
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -412,6 +420,16 @@ func TestUnmarshal(t *testing.T) {
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
+			{
+				Name: "ordering_criteria_top_n",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria = matcher.OrderingCriteria{
+						TopN: 10,
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
 		},
 	}.Run(t)
 }
@@ -435,10 +453,10 @@ func TestBuild(t *testing.T) {
 	}{
 		{
 			"Basic",
-			func(cfg *Config) {},
+			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{
@@ -472,7 +490,7 @@ func TestBuild(t *testing.T) {
 				cfg.SplitConfig.LineStartPattern = "START.*"
 			},
 			require.NoError,
-			func(t *testing.T, f *Manager) {},
+			func(_ *testing.T, _ *Manager) {},
 		},
 		{
 			"MultilineConfiguredEndPattern",
@@ -480,7 +498,7 @@ func TestBuild(t *testing.T) {
 				cfg.SplitConfig.LineEndPattern = "END.*"
 			},
 			require.NoError,
-			func(t *testing.T, f *Manager) {},
+			func(_ *testing.T, _ *Manager) {},
 		},
 		{
 			"InvalidEncoding",
@@ -501,9 +519,9 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"NoLineStartOrEnd",
-			func(cfg *Config) {},
+			func(_ *Config) {},
 			require.NoError,
-			func(t *testing.T, f *Manager) {},
+			func(_ *testing.T, _ *Manager) {},
 		},
 		{
 			"InvalidLineStartRegex",
@@ -602,7 +620,7 @@ func TestBuild(t *testing.T) {
 				}
 			},
 			require.NoError,
-			func(t *testing.T, f *Manager) {},
+			func(_ *testing.T, _ *Manager) {},
 		},
 	}
 
@@ -613,7 +631,8 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
+			set := componenttest.NewNopTelemetrySettings()
+			input, err := cfg.Build(set, emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -643,10 +662,10 @@ func TestBuildWithSplitFunc(t *testing.T) {
 	}{
 		{
 			"Basic",
-			func(cfg *Config) {},
+			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{
@@ -692,7 +711,8 @@ func TestBuildWithSplitFunc(t *testing.T) {
 				return len(data), data, nil
 			}
 
-			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmitFunc, splitNone)
+			set := componenttest.NewNopTelemetrySettings()
+			input, err := cfg.BuildWithSplitFunc(set, emittest.Nop, splitNone)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -767,7 +787,7 @@ func TestBuildWithHeader(t *testing.T) {
 			},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.NotNil(t, m.readerFactory.headerConfig.SplitFunc)
+				require.NotNil(t, m.readerFactory.HeaderConfig.SplitFunc)
 			},
 		},
 	}
@@ -779,7 +799,8 @@ func TestBuildWithHeader(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
+			set := componenttest.NewNopTelemetrySettings()
+			input, err := cfg.Build(set, emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -787,4 +808,57 @@ func TestBuildWithHeader(t *testing.T) {
 			tc.validate(t, input)
 		})
 	}
+}
+
+// includeDir is a builder-like helper for quickly setting up a test config
+func (c *Config) includeDir(dir string) *Config {
+	c.Include = append(c.Include, fmt.Sprintf("%s/*", dir))
+	return c
+}
+
+// withHeader is a builder-like helper for quickly setting up a test config header
+func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
+	regexOpConfig := regex.NewConfig()
+	regexOpConfig.Regex = extractRegex
+
+	c.Header = &HeaderConfig{
+		Pattern: headerMatchPattern,
+		MetadataOperators: []operator.Config{
+			{
+				Builder: regexOpConfig,
+			},
+		},
+	}
+
+	return c
+}
+
+// withGzipFileSuffix is a builder-like helper for quickly setting up support for gzip compressed log files
+func (c *Config) withGzip() *Config {
+	c.Compression = "gzip"
+	return c
+}
+
+const mockOperatorType = "mock"
+
+func init() {
+	operator.Register(mockOperatorType, func() operator.Builder { return newMockOperatorConfig(NewConfig()) })
+}
+
+type mockOperatorConfig struct {
+	helper.BasicConfig `mapstructure:",squash"`
+	*Config            `mapstructure:",squash"`
+}
+
+func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
+	return &mockOperatorConfig{
+		BasicConfig: helper.NewBasicConfig(mockOperatorType, mockOperatorType),
+		Config:      cfg,
+	}
+}
+
+// This function is impelmented for compatibility with operatortest
+// but is not meant to be used directly
+func (h *mockOperatorConfig) Build(_ component.TelemetrySettings) (operator.Operator, error) {
+	panic("not impelemented")
 }

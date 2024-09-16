@@ -6,9 +6,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("count")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
+)
+
 const (
-	Type                      = "count"
-	TracesToMetricsStability  = component.StabilityLevelDevelopment
-	MetricsToMetricsStability = component.StabilityLevelDevelopment
-	LogsToMetricsStability    = component.StabilityLevelDevelopment
+	TracesToMetricsStability  = component.StabilityLevelAlpha
+	MetricsToMetricsStability = component.StabilityLevelAlpha
+	LogsToMetricsStability    = component.StabilityLevelAlpha
 )

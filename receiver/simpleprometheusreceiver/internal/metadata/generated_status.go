@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("prometheus_simple")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
+)
+
 const (
-	Type             = "prometheus_simple"
 	MetricsStability = component.StabilityLevelBeta
 )

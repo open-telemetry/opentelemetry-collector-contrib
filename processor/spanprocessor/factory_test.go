@@ -20,7 +20,7 @@ import (
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, factory.Type(), component.Type(metadata.Type))
+	assert.Equal(t, factory.Type(), metadata.Type)
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
@@ -39,9 +39,9 @@ func TestFactory_CreateTracesProcessor(t *testing.T) {
 
 	// Name.FromAttributes field needs to be set for the configuration to be valid.
 	oCfg.Rename.FromAttributes = []string{"test-key"}
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tp)
 }
 
@@ -76,7 +76,7 @@ func TestFactory_CreateTracesProcessor_InvalidConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Rename = test.cfg
 
-			tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+			tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 			require.Nil(t, tp)
 			assert.EqualValues(t, err, test.err)
 		})
@@ -87,7 +87,7 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, nil)
 	require.Nil(t, mp)
 	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
 }

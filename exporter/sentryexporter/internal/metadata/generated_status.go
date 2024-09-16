@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("sentry")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
+)
+
 const (
-	Type            = "sentry"
 	TracesStability = component.StabilityLevelBeta
 )

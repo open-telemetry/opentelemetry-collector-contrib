@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("zipkin")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
+)
+
 const (
-	Type            = "zipkin"
 	TracesStability = component.StabilityLevelBeta
 )

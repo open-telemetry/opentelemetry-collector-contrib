@@ -85,7 +85,7 @@ func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		return errors.New("")
 	}
-	err := componentParser.Unmarshal(c, confmap.WithErrorUnused())
+	err := componentParser.Unmarshal(c)
 	if err != nil {
 		return err
 	}

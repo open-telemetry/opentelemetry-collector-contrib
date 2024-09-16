@@ -52,7 +52,7 @@ func newMetricsBuilder(throwErrorOnShutdown bool) metadata.MetricsBuilder {
 }
 
 func (b *metricsBuilder) Build([]*metadata.MetricsDataPoint) (pmetric.Metrics, error) {
-	return pmetric.Metrics{}, nil
+	return pmetric.NewMetrics(), nil
 }
 
 func (b *metricsBuilder) Shutdown() error {
@@ -116,10 +116,10 @@ func TestStart(t *testing.T) {
 
 			if testCase.expectError {
 				require.Error(t, err)
-				assert.Equal(t, 0, len(receiver.projectReaders))
+				assert.Empty(t, receiver.projectReaders)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 1, len(receiver.projectReaders))
+				assert.Len(t, receiver.projectReaders, 1)
 			}
 		})
 	}
@@ -189,10 +189,10 @@ func TestInitializeProjectReaders(t *testing.T) {
 
 			if testCase.expectError {
 				require.Error(t, err)
-				assert.Equal(t, 0, len(receiver.projectReaders))
+				assert.Empty(t, receiver.projectReaders)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 1, len(receiver.projectReaders))
+				assert.Len(t, receiver.projectReaders, 1)
 			}
 		})
 	}
@@ -313,9 +313,9 @@ func TestGoogleCloudSpannerReceiver_Shutdown(t *testing.T) {
 			err := receiver.Shutdown(ctx)
 
 			if testCase.expectError {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

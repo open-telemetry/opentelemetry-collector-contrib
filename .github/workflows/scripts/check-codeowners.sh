@@ -63,7 +63,7 @@ check_component_existence() {
   do
     if [[ $line =~ ^[^#\*] ]]; then
       COMPONENT_PATH=$(echo "$line" | cut -d" " -f1)
-      if [ ! -d "$COMPONENT_PATH" ]; then
+      if [ ! -e "$COMPONENT_PATH" ]; then
         echo "\"$COMPONENT_PATH\" does not exist as specified in CODEOWNERS"
         ((NOT_EXIST_COMPONENTS=NOT_EXIST_COMPONENTS+1))
       fi

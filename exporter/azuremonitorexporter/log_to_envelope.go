@@ -45,6 +45,7 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 	applyResourcesToDataProperties(messageData.Properties, resourceAttributes)
 	applyInstrumentationScopeValueToDataProperties(messageData.Properties, instrumentationScope)
 	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+	applyInternalSdkVersionTagToEnvelope(envelope)
 
 	setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
 

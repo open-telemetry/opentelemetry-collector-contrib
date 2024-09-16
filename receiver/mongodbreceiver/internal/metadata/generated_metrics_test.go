@@ -13,30 +13,43 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testConfigCollection int
+type testDataSet int
 
 const (
-	testSetDefault testConfigCollection = iota
-	testSetAll
-	testSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name      string
-		configSet testConfigCollection
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:      "default",
-			configSet: testSetDefault,
+			name: "default",
 		},
 		{
-			name:      "all_set",
-			configSet: testSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:      "none_set",
-			configSet: testSetNone,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
 		},
 	}
 	for _, test := range tests {
@@ -44,11 +57,12 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -60,11 +74,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbCollectionCountDataPoint(ts, 1, "database-val")
+			mb.RecordMongodbCollectionCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbConnectionCountDataPoint(ts, 1, "database-val", AttributeConnectionTypeActive)
+			mb.RecordMongodbConnectionCountDataPoint(ts, 1, AttributeConnectionTypeActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -76,7 +90,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbDataSizeDataPoint(ts, 1, "database-val")
+			mb.RecordMongodbDataSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -84,11 +98,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, "database-val", AttributeOperationInsert)
+			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, AttributeOperationInsert)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbExtentCountDataPoint(ts, 1, "database-val")
+			mb.RecordMongodbExtentCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -99,31 +113,31 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "database-val", "collection-val")
+			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "collection-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbIndexCountDataPoint(ts, 1, "database-val")
+			mb.RecordMongodbIndexCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbIndexSizeDataPoint(ts, 1, "database-val")
+			mb.RecordMongodbIndexSizeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMongodbLockAcquireCountDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
+			mb.RecordMongodbLockAcquireCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
 
 			allMetricsCount++
-			mb.RecordMongodbLockAcquireTimeDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
+			mb.RecordMongodbLockAcquireTimeDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
 
 			allMetricsCount++
-			mb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
+			mb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
 
 			allMetricsCount++
-			mb.RecordMongodbLockDeadlockCountDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
+			mb.RecordMongodbLockDeadlockCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbMemoryUsageDataPoint(ts, 1, "database-val", AttributeMemoryTypeResident)
+			mb.RecordMongodbMemoryUsageDataPoint(ts, 1, AttributeMemoryTypeResident)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -139,7 +153,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbObjectCountDataPoint(ts, 1, "database-val")
+			mb.RecordMongodbObjectCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -161,17 +175,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbStorageSizeDataPoint(ts, 1, "database-val")
+			mb.RecordMongodbStorageSizeDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMongodbUptimeDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
 			rb.SetDatabase("database-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -181,10 +197,10 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.configSet == testSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -221,9 +237,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "mongodb.connection.count":
 					assert.False(t, validatedMetrics["mongodb.connection.count"], "Found a duplicate in the metrics slice: mongodb.connection.count")
 					validatedMetrics["mongodb.connection.count"] = true
@@ -238,10 +251,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
+					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "active", attrVal.Str())
 				case "mongodb.cursor.count":
@@ -286,9 +296,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "mongodb.database.count":
 					assert.False(t, validatedMetrics["mongodb.database.count"], "Found a duplicate in the metrics slice: mongodb.database.count")
 					validatedMetrics["mongodb.database.count"] = true
@@ -317,10 +324,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("operation")
+					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
 					assert.EqualValues(t, "insert", attrVal.Str())
 				case "mongodb.extent.count":
@@ -337,9 +341,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "mongodb.global_lock.time":
 					assert.False(t, validatedMetrics["mongodb.global_lock.time"], "Found a duplicate in the metrics slice: mongodb.global_lock.time")
 					validatedMetrics["mongodb.global_lock.time"] = true
@@ -380,10 +381,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("collection")
+					attrVal, ok := dp.Attributes().Get("collection")
 					assert.True(t, ok)
 					assert.EqualValues(t, "collection-val", attrVal.Str())
 				case "mongodb.index.count":
@@ -400,9 +398,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "mongodb.index.size":
 					assert.False(t, validatedMetrics["mongodb.index.size"], "Found a duplicate in the metrics slice: mongodb.index.size")
 					validatedMetrics["mongodb.index.size"] = true
@@ -417,9 +412,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "mongodb.lock.acquire.count":
 					assert.False(t, validatedMetrics["mongodb.lock.acquire.count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.count")
 					validatedMetrics["mongodb.lock.acquire.count"] = true
@@ -434,10 +426,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_type")
+					attrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "parallel_batch_write_mode", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("lock_mode")
@@ -457,10 +446,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_type")
+					attrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "parallel_batch_write_mode", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("lock_mode")
@@ -480,10 +466,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_type")
+					attrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "parallel_batch_write_mode", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("lock_mode")
@@ -503,10 +486,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_type")
+					attrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "parallel_batch_write_mode", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("lock_mode")
@@ -526,10 +506,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
+					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "resident", attrVal.Str())
 				case "mongodb.network.io.receive":
@@ -588,9 +565,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "mongodb.operation.count":
 					assert.False(t, validatedMetrics["mongodb.operation.count"], "Found a duplicate in the metrics slice: mongodb.operation.count")
 					validatedMetrics["mongodb.operation.count"] = true
@@ -685,9 +659,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "mongodb.uptime":
 					assert.False(t, validatedMetrics["mongodb.uptime"], "Found a duplicate in the metrics slice: mongodb.uptime")
 					validatedMetrics["mongodb.uptime"] = true

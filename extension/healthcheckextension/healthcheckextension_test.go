@@ -12,10 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 
@@ -49,7 +46,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -76,7 +73,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCustomizedPathWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -99,7 +96,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithBothCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -126,7 +123,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithHealthyCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -153,7 +150,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithUnhealthyCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -173,122 +170,6 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 				{
 					step:               func(hcExt *healthCheckExtension) error { return hcExt.NotReady() },
 					expectedStatusCode: http.StatusServiceUnavailable,
-					expectedBody:       "NOT OK",
-				},
-			},
-		},
-		{
-			name: "WithCheckCollectorPipeline",
-			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
-				},
-				CheckCollectorPipeline: checkCollectorPipelineSettings{
-					Enabled:                  true,
-					Interval:                 "5m",
-					ExporterFailureThreshold: 1,
-				},
-				Path: "/",
-			},
-			teststeps: []teststep{
-				{
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusOK,
-				},
-				{
-					step:               func(hcExt *healthCheckExtension) error { return hcExt.NotReady() },
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-			},
-		},
-		{
-			name: "WithCustomPathWithCheckCollectorPipeline",
-			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
-				},
-				CheckCollectorPipeline: checkCollectorPipelineSettings{
-					Enabled:                  true,
-					Interval:                 "5m",
-					ExporterFailureThreshold: 1,
-				},
-				Path: "/health",
-			},
-			teststeps: []teststep{
-				{
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusOK,
-				},
-				{
-					step:               func(hcExt *healthCheckExtension) error { return hcExt.NotReady() },
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-			},
-		},
-		{
-			name: "WithCustomStaticResponseBodyWithCheckCollectorPipeline",
-			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
-				},
-				CheckCollectorPipeline: checkCollectorPipelineSettings{
-					Enabled:                  true,
-					Interval:                 "5m",
-					ExporterFailureThreshold: 1,
-				},
-				Path:         "/",
-				ResponseBody: &ResponseBodySettings{Healthy: "ALL OK", Unhealthy: "NOT OK"},
-			},
-			teststeps: []teststep{
-				{
-					expectedStatusCode: http.StatusInternalServerError,
-					expectedBody:       "NOT OK",
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusOK,
-					expectedBody:       "ALL OK",
-				},
-				{
-					step:               func(hcExt *healthCheckExtension) error { return hcExt.NotReady() },
-					expectedStatusCode: http.StatusInternalServerError,
-					expectedBody:       "NOT OK",
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusInternalServerError,
 					expectedBody:       "NOT OK",
 				},
 			},
@@ -343,7 +224,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: endpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -351,13 +232,12 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	mh := newAssertNoErrorHost(t)
-	require.Error(t, hcExt.Start(context.Background(), mh))
+	require.Error(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
 	config := Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -367,16 +247,15 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	mh := newAssertNoErrorHost(t)
-	require.NoError(t, hcExt.Start(context.Background(), mh))
+	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
 
-	require.Error(t, hcExt.Start(context.Background(), mh))
+	require.Error(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	config := Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -393,7 +272,7 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -403,33 +282,4 @@ func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Shutdown(context.Background()))
-}
-
-func viewData() *view.Data {
-	currentTime := time.Now()
-	vd := &view.Data{
-		View:  &view.View{Name: exporterFailureView},
-		Start: currentTime.Add(-1 * time.Minute),
-		End:   currentTime,
-		Rows:  nil,
-	}
-	return vd
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		Host: componenttest.NewNopHost(),
-		T:    t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }

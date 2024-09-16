@@ -38,7 +38,7 @@ type baseExtension struct {
 
 func createExtension(
 	_ context.Context,
-	params extension.CreateSettings,
+	params extension.Settings,
 	cfg component.Config,
 ) (extension.Extension, error) {
 	obsCfg := cfg.(*Config)
@@ -74,7 +74,7 @@ func metadataProviderFromEndpoint(config *Config, settings component.TelemetrySe
 		return nil, fmt.Errorf("failed to parse task metadata endpoint: %w", err)
 	}
 
-	restClient, err := ecsutil.NewRestClient(*parsed, config.HTTPClientSettings, settings)
+	restClient, err := ecsutil.NewRestClient(*parsed, config.ClientConfig, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ECS Task Observer rest client: %w", err)
 	}

@@ -21,16 +21,14 @@ func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
 
 func TestWALCreation_nilConfig(t *testing.T) {
 	config := (*WALConfig)(nil)
-	pwal, err := newWAL(config, doNothingExportSink)
-	require.Equal(t, err, errNilConfig)
+	pwal := newWAL(config, doNothingExportSink)
 	require.Nil(t, pwal)
 }
 
 func TestWALCreation_nonNilConfig(t *testing.T) {
 	config := &WALConfig{Directory: t.TempDir()}
-	pwal, err := newWAL(config, doNothingExportSink)
+	pwal := newWAL(config, doNothingExportSink)
 	require.NotNil(t, pwal)
-	assert.Nil(t, err)
 	assert.NoError(t, pwal.stop())
 }
 
@@ -80,18 +78,15 @@ func TestWALStopManyTimes(t *testing.T) {
 		TruncateFrequency: 60 * time.Microsecond,
 		BufferSize:        1,
 	}
-	pwal, err := newWAL(config, doNothingExportSink)
-	require.Nil(t, err)
+	pwal := newWAL(config, doNothingExportSink)
 	require.NotNil(t, pwal)
 
 	// Ensure that invoking .stop() multiple times doesn't cause a panic, but actually
 	// First close should NOT return an error.
-	err = pwal.stop()
-	require.Nil(t, err)
+	require.NoError(t, pwal.stop())
 	for i := 0; i < 4; i++ {
 		// Every invocation to .stop() should return an errAlreadyClosed.
-		err = pwal.stop()
-		require.Equal(t, err, errAlreadyClosed)
+		require.ErrorIs(t, pwal.stop(), errAlreadyClosed)
 	}
 }
 
@@ -99,8 +94,8 @@ func TestWAL_persist(t *testing.T) {
 	// Unit tests that requests written to the WAL persist.
 	config := &WALConfig{Directory: t.TempDir()}
 
-	pwal, err := newWAL(config, doNothingExportSink)
-	require.Nil(t, err)
+	pwal := newWAL(config, doNothingExportSink)
+	require.NotNil(t, pwal)
 
 	// 1. Write out all the entries.
 	reqL := []*prompb.WriteRequest{
@@ -127,27 +122,25 @@ func TestWAL_persist(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	err = pwal.retrieveWALIndices()
-	require.Nil(t, err)
+	require.NoError(t, pwal.retrieveWALIndices())
 	t.Cleanup(func() {
 		assert.NoError(t, pwal.stop())
 	})
 
-	err = pwal.persistToWAL(reqL)
-	require.Nil(t, err)
+	require.NoError(t, pwal.persistToWAL(reqL))
 
 	// 2. Read all the entries from the WAL itself, guided by the indices available,
 	// and ensure that they are exactly in order as we'd expect them.
 	wal := pwal.wal
 	start, err := wal.FirstIndex()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	end, err := wal.LastIndex()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	var reqLFromWAL []*prompb.WriteRequest
 	for i := start; i <= end; i++ {
 		req, err := pwal.readPrompbFromWAL(ctx, i)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		reqLFromWAL = append(reqLFromWAL, req)
 	}
 

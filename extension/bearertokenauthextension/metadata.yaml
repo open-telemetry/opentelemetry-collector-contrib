@@ -6,9 +6,9 @@ status:
     beta: [extension]
   distributions:
   - contrib
-  - grafana
-  - observiq
-  - redhat
-  - sumo
   codeowners:
-    active: [jpkrohling, pavankrish123, frzifus]
+    active: [jpkrohling, frzifus]
+    emeritus: [pavankrish123]
+
+tests:
+  config:

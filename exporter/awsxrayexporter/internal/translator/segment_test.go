@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -37,7 +38,7 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	user := "testingT"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
@@ -59,7 +60,7 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
 	assert.True(t, strings.Contains(jsonStr, "GetItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -70,7 +71,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	user := "testingT"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
@@ -92,7 +93,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
 	assert.True(t, strings.Contains(jsonStr, "GetItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -102,7 +103,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 func TestClientSpanWithPeerService(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
@@ -125,7 +126,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	errorMessage := "java.lang.NullPointerException"
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
@@ -152,7 +153,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	errorMessage := "java.lang.NullPointerException"
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
@@ -220,12 +221,12 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	spanName := "call update_user_preference( ?, ?, ? )"
 	parentSpanID := newSegmentID()
 	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeDBSystem] = "mysql"
 	attributes[conventions.AttributeDBName] = "customers"
 	attributes[conventions.AttributeDBStatement] = spanName
 	attributes[conventions.AttributeDBUser] = "userprefsvc"
-	attributes[conventions.AttributeDBConnectionString] = "mysql://db.dev.example.com:3306"
+	attributes[conventions.AttributeDBConnectionString] = "jdbc:mysql://db.dev.example.com:3306"
 	attributes[conventions.AttributeNetPeerName] = "db.dev.example.com"
 	attributes[conventions.AttributeNetPeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
@@ -239,7 +240,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.NotNil(t, segment.Service)
 	assert.NotNil(t, segment.AWS)
 	assert.NotNil(t, segment.Metadata)
-	assert.Equal(t, 0, len(segment.Annotations))
+	assert.Empty(t, segment.Annotations)
 	assert.Equal(t, enterpriseAppID, segment.Metadata["default"]["enterprise.app.id"])
 	assert.Nil(t, segment.Cause)
 	assert.Nil(t, segment.HTTP)
@@ -259,7 +260,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 func TestClientSpanWithHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
@@ -279,7 +280,7 @@ func TestClientSpanWithHttpHost(t *testing.T) {
 func TestClientSpanWithoutHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
@@ -298,7 +299,7 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 func TestClientSpanWithRpcHost(t *testing.T) {
 	spanName := "GET /com.foo.AnimalService/GetCats"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
@@ -317,7 +318,7 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 
 func TestSpanWithInvalidTraceId(t *testing.T) {
 	spanName := "platformapi.widgets.searchWidgets"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "ipv6"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
@@ -333,7 +334,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 
 	_, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestSpanWithExpiredTraceId(t *testing.T) {
@@ -345,14 +346,14 @@ func TestSpanWithExpiredTraceId(t *testing.T) {
 	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
 
 	_, err := convertToAmazonTraceID(tempTraceID, false)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
 	spanName := "ABC.payment"
 	parentSpanID := newSegmentID()
 	user := "testingT"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
@@ -367,13 +368,13 @@ func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
 	span.SetTraceID(traceID)
 
 	segment, err := MakeSegment(span, resource, nil, false, nil, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "ProducerService", *segment.Name)
 	assert.Equal(t, "subsegment", *segment.Type)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, true)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, jsonStr)
 	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -389,7 +390,7 @@ func TestSpanWithExpiredTraceIdWithoutTimestampValidation(t *testing.T) {
 	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
 
 	amazonTraceID, err := convertToAmazonTraceID(tempTraceID, true)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
 	assert.Equal(t, expectedTraceID, amazonTraceID)
 }
@@ -398,18 +399,39 @@ func TestFixSegmentName(t *testing.T) {
 	validName := "EP @ test_15.testing-d\u00F6main.org#GO"
 	fixedName := fixSegmentName(validName)
 	assert.Equal(t, validName, fixedName)
-	invalidName := "<subDomain>.example.com"
+	invalidName := "<subDomain>.example.com,1413"
 	fixedName = fixSegmentName(invalidName)
-	assert.Equal(t, "subDomain.example.com", fixedName)
+	assert.Equal(t, "subDomain.example.com1413", fixedName)
 	fullyInvalidName := "<>"
 	fixedName = fixSegmentName(fullyInvalidName)
 	assert.Equal(t, defaultSegmentName, fixedName)
 }
 
 func TestFixAnnotationKey(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
 	assert.Equal(t, validKey, fixedKey)
+	validDotKey := "Key.1"
+	fixedDotKey := fixAnnotationKey(validDotKey)
+	assert.Equal(t, "Key_1", fixedDotKey)
+	invalidKey := "Key@1"
+	fixedKey = fixAnnotationKey(invalidKey)
+	assert.Equal(t, "Key_1", fixedKey)
+}
+
+func TestFixAnnotationKeyWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.NoError(t, err)
+
+	validKey := "Key_1"
+	fixedKey := fixAnnotationKey(validKey)
+	assert.Equal(t, validKey, fixedKey)
+	validDotKey := "Key.1"
+	fixedDotKey := fixAnnotationKey(validDotKey)
+	assert.Equal(t, validDotKey, fixedDotKey)
 	invalidKey := "Key@1"
 	fixedKey = fixAnnotationKey(invalidKey)
 	assert.Equal(t, "Key_1", fixedKey)
@@ -418,7 +440,7 @@ func TestFixAnnotationKey(t *testing.T) {
 func TestServerSpanWithNilAttributes(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -436,7 +458,7 @@ func TestServerSpanWithNilAttributes(t *testing.T) {
 func TestSpanWithAttributesDefaultNotIndexed(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
@@ -445,25 +467,25 @@ func TestSpanWithAttributesDefaultNotIndexed(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, 0, len(segment.Annotations))
+	assert.Empty(t, segment.Annotations)
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
 	assert.Equal(t, "string", segment.Metadata["default"]["otel.resource.string.key"])
 	assert.Equal(t, int64(10), segment.Metadata["default"]["otel.resource.int.key"])
 	assert.Equal(t, 5.0, segment.Metadata["default"]["otel.resource.double.key"])
 	assert.Equal(t, true, segment.Metadata["default"]["otel.resource.bool.key"])
-	expectedMap := make(map[string]interface{})
+	expectedMap := make(map[string]any)
 	expectedMap["key1"] = int64(1)
 	expectedMap["key2"] = "value"
 	assert.Equal(t, expectedMap, segment.Metadata["default"]["otel.resource.map.key"])
-	expectedArr := []interface{}{"foo", "bar"}
+	expectedArr := []any{"foo", "bar"}
 	assert.Equal(t, expectedArr, segment.Metadata["default"]["otel.resource.array.key"])
 }
 
 func TestSpanWithResourceNotStoredIfSubsegment(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
@@ -472,7 +494,7 @@ func TestSpanWithResourceNotStoredIfSubsegment(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, 0, len(segment.Annotations))
+	assert.Empty(t, segment.Annotations)
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
 	assert.Nil(t, segment.Metadata["default"]["otel.resource.string.key"])
@@ -486,7 +508,7 @@ func TestSpanWithResourceNotStoredIfSubsegment(t *testing.T) {
 func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
@@ -495,7 +517,7 @@ func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, []string{"attr1@1", "not_exist"}, false, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, 1, len(segment.Annotations))
+	assert.Len(t, segment.Annotations, 1)
 	assert.Equal(t, "val1", segment.Annotations["attr1_1"])
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
 }
@@ -503,7 +525,7 @@ func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 func TestSpanWithAnnotationsAttribute(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	attributes[awsxray.AWSXraySegmentAnnotationsAttribute] = []string{"attr2@2", "not_exist"}
@@ -513,7 +535,7 @@ func TestSpanWithAnnotationsAttribute(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, 1, len(segment.Annotations))
+	assert.Len(t, segment.Annotations, 1)
 	assert.Equal(t, "val2", segment.Annotations["attr2_2"])
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 }
@@ -521,7 +543,7 @@ func TestSpanWithAnnotationsAttribute(t *testing.T) {
 func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
@@ -534,13 +556,42 @@ func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	assert.Equal(t, "val2", segment.Annotations["attr2_2"])
 }
 
-func TestResourceAttributesCanBeIndexed(t *testing.T) {
+func TestSpanWithAttributesSegmentMetadata(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
+	attributes["attr1@1"] = "val1"
+	attributes[awsxray.AWSXraySegmentMetadataAttributePrefix+"default"] = "{\"custom_key\": \"custom_value\"}"
+	attributes[awsxray.AWSXraySegmentMetadataAttributePrefix+"http"] = "{\"connection\":{\"reused\":false,\"was_idle\":false}}"
+	attributes[awsxray.AWSXraySegmentMetadataAttributePrefix+"non-xray-sdk"] = "retain-value"
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Empty(t, segment.Annotations)
+	assert.Len(t, segment.Metadata, 2)
+	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
+	assert.Equal(t, "custom_value", segment.Metadata["default"]["custom_key"])
+	assert.Equal(t, "retain-value", segment.Metadata["default"][awsxray.AWSXraySegmentMetadataAttributePrefix+"non-xray-sdk"])
+	assert.Nil(t, segment.Metadata["default"][awsxray.AWSXraySegmentMetadataAttributePrefix+"default"])
+	assert.Nil(t, segment.Metadata["default"][awsxray.AWSXraySegmentMetadataAttributePrefix+"http"])
+	assert.Equal(t, map[string]any{
+		"reused":   false,
+		"was_idle": false,
+	}, segment.Metadata["http"]["connection"])
+}
+
+func TestResourceAttributesCanBeIndexed(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 	segment, _ := MakeSegment(span, resource, []string{
 		"otel.resource.string.key",
 		"otel.resource.int.key",
@@ -551,25 +602,57 @@ func TestResourceAttributesCanBeIndexed(t *testing.T) {
 	}, false, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, 4, len(segment.Annotations))
+	assert.Len(t, segment.Annotations, 4)
 	assert.Equal(t, "string", segment.Annotations["otel_resource_string_key"])
 	assert.Equal(t, int64(10), segment.Annotations["otel_resource_int_key"])
 	assert.Equal(t, 5.0, segment.Annotations["otel_resource_double_key"])
 	assert.Equal(t, true, segment.Annotations["otel_resource_bool_key"])
-
-	expectedMap := make(map[string]interface{})
+	expectedMap := make(map[string]any)
 	expectedMap["key1"] = int64(1)
 	expectedMap["key2"] = "value"
 	// Maps and arrays are not supported for annotations so still in metadata.
 	assert.Equal(t, expectedMap, segment.Metadata["default"]["otel.resource.map.key"])
-	expectedArr := []interface{}{"foo", "bar"}
+	expectedArr := []any{"foo", "bar"}
+	assert.Equal(t, expectedArr, segment.Metadata["default"]["otel.resource.array.key"])
+}
+
+func TestResourceAttributesCanBeIndexedWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.NoError(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	segment, _ := MakeSegment(span, resource, []string{
+		"otel.resource.string.key",
+		"otel.resource.int.key",
+		"otel.resource.double.key",
+		"otel.resource.bool.key",
+		"otel.resource.map.key",
+		"otel.resource.array.key",
+	}, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Len(t, segment.Annotations, 4)
+	assert.Equal(t, "string", segment.Annotations["otel.resource.string.key"])
+	assert.Equal(t, int64(10), segment.Annotations["otel.resource.int.key"])
+	assert.Equal(t, 5.0, segment.Annotations["otel.resource.double.key"])
+	assert.Equal(t, true, segment.Annotations["otel.resource.bool.key"])
+	expectedMap := make(map[string]any)
+	expectedMap["key1"] = int64(1)
+	expectedMap["key2"] = "value"
+	// Maps and arrays are not supported for annotations so still in metadata.
+	assert.Equal(t, expectedMap, segment.Metadata["default"]["otel.resource.map.key"])
+	expectedArr := []any{"foo", "bar"}
 	assert.Equal(t, expectedArr, segment.Metadata["default"]["otel.resource.array.key"])
 }
 
 func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
@@ -588,9 +671,12 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
 	attributes[conventions.AttributeRPCMethod] = "rpc_method_val"
 	resource := constructDefaultResource()
@@ -599,15 +685,38 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, false, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, 2, len(segment.Annotations))
+	assert.Len(t, segment.Annotations, 2)
 	assert.Equal(t, "aws_operation_val", segment.Annotations["aws_operation"])
 	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
 }
 
-func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
+func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.NoError(t, err)
+
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
+	attributes[conventions.AttributeRPCMethod] = "rpc_method_val"
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Len(t, segment.Annotations, 2)
+	assert.Equal(t, "aws_operation_val", segment.Annotations[awsxray.AWSOperationAttribute])
+	assert.Equal(t, "rpc_method_val", segment.Annotations[conventions.AttributeRPCMethod])
+}
+
+func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
 	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
 	attributes[conventions.AttributeRPCMethod] = "rpc_method_val"
 	resource := constructDefaultResource()
@@ -620,10 +729,29 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
 }
 
+func TestSpanWithSpecialAttributesAsListedAndIndexAllWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.NoError(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
+	attributes[conventions.AttributeRPCMethod] = "rpc_method_val"
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, true, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "aws_operation_val", segment.Annotations[awsxray.AWSOperationAttribute])
+	assert.Equal(t, "rpc_method_val", segment.Annotations[conventions.AttributeRPCMethod])
+}
+
 func TestSpanWithSpecialAttributesNotListedAndIndexAll(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[awsxray.AWSOperationAttribute] = "val1"
 	attributes[conventions.AttributeRPCMethod] = "val2"
 	resource := constructDefaultResource()
@@ -639,7 +767,7 @@ func TestSpanWithSpecialAttributesNotListedAndIndexAll(t *testing.T) {
 func TestOriginNotAws(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
@@ -655,7 +783,7 @@ func TestOriginNotAws(t *testing.T) {
 func TestOriginEc2(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
@@ -672,7 +800,7 @@ func TestOriginEc2(t *testing.T) {
 func TestOriginEcs(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
@@ -690,7 +818,7 @@ func TestOriginEcs(t *testing.T) {
 func TestOriginEcsEc2(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
@@ -709,7 +837,7 @@ func TestOriginEcsEc2(t *testing.T) {
 func TestOriginEcsFargate(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
@@ -728,7 +856,7 @@ func TestOriginEcsFargate(t *testing.T) {
 func TestOriginEb(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
@@ -750,7 +878,7 @@ func TestOriginEks(t *testing.T) {
 	containerID := "0123456789A"
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
@@ -778,7 +906,7 @@ func TestOriginEks(t *testing.T) {
 func TestOriginAppRunner(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
@@ -794,7 +922,7 @@ func TestOriginAppRunner(t *testing.T) {
 func TestOriginBlank(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
@@ -809,7 +937,7 @@ func TestOriginBlank(t *testing.T) {
 func TestOriginPrefersInfraService(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
@@ -829,7 +957,7 @@ func TestOriginPrefersInfraService(t *testing.T) {
 func TestFilteredAttributesMetadata(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
@@ -858,8 +986,8 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	assert.Equal(t, int64(123), segment.Metadata["default"]["int_value"])
 	assert.Equal(t, 456.78, segment.Metadata["default"]["float_value"])
 	assert.Equal(t, false, segment.Metadata["default"]["bool_value"])
-	assert.Equal(t, []interface{}{int64(12), int64(34), int64(56)}, segment.Metadata["default"]["array_value"])
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, []any{int64(12), int64(34), int64(56)}, segment.Metadata["default"]["array_value"])
+	assert.Equal(t, map[string]any{
 		"value1": -987.65,
 		"value2": true,
 	}, segment.Metadata["default"]["map_value"])
@@ -868,7 +996,7 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 func TestSpanWithSingleDynamoDBTableHasTableName(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeAWSDynamoDBTableNames] = []string{"table1"}
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
@@ -878,13 +1006,13 @@ func TestSpanWithSingleDynamoDBTableHasTableName(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Equal(t, "table1", *segment.AWS.TableName)
 	assert.Nil(t, segment.AWS.TableNames)
-	assert.Equal(t, []interface{}{"table1"}, segment.Metadata["default"][conventions.AttributeAWSDynamoDBTableNames])
+	assert.Equal(t, []any{"table1"}, segment.Metadata["default"][conventions.AttributeAWSDynamoDBTableNames])
 }
 
 func TestSpanWithMultipleDynamoDBTablesHasTableNames(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeAWSDynamoDBTableNames] = []string{"table1", "table2"}
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
@@ -894,13 +1022,13 @@ func TestSpanWithMultipleDynamoDBTablesHasTableNames(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Nil(t, segment.AWS.TableName)
 	assert.Equal(t, []string{"table1", "table2"}, segment.AWS.TableNames)
-	assert.Equal(t, []interface{}{"table1", "table2"}, segment.Metadata["default"][conventions.AttributeAWSDynamoDBTableNames])
+	assert.Equal(t, []any{"table1", "table2"}, segment.Metadata["default"][conventions.AttributeAWSDynamoDBTableNames])
 }
 
 func TestSegmentWithLogGroupsFromConfig(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -919,7 +1047,7 @@ func TestSegmentWithLogGroupsFromConfig(t *testing.T) {
 func TestSegmentWith2LogGroupsFromConfig(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -941,7 +1069,7 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	spanName := "ABC.payment"
 	parentSpanID := newSegmentID()
 	user := "testingT"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
@@ -959,8 +1087,64 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "PaymentService"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
+func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
+	spanName := "DynamoDB.PutItem"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeRPCSystem] = "aws-api"
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeRPCService] = "DynamoDb"
+	attributes[awsRemoteService] = "AWS.SDK.DynamoDb"
+
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+	assert.Equal(t, "DynamoDb", *segment.Name)
+	assert.Equal(t, "subsegment", *segment.Type)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, jsonStr)
+	assert.NoError(t, err)
+	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
+	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
+func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
+	spanName := "DynamoDB.PutItem"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeRPCSystem] = "aws-api"
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeRPCService] = "DynamoDb"
+	attributes[awsRemoteService] = "AWS::DynamoDB"
+
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+	assert.Equal(t, "DynamoDB", *segment.Name)
+	assert.Equal(t, "subsegment", *segment.Type)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, jsonStr)
+	assert.NoError(t, err)
+	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
+	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
@@ -969,7 +1153,7 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	spanName := "ABC.payment"
 	parentSpanID := newSegmentID()
 	user := "testingT"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
@@ -987,7 +1171,7 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
@@ -997,24 +1181,16 @@ func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
 	spanName := "ABC.payment"
 	parentSpanID := newSegmentID()
 	user := "testingT"
-	attributes := make(map[string]interface{})
-	attributes[conventions.AttributeHTTPMethod] = "POST"
-	attributes[conventions.AttributeHTTPScheme] = "https"
-	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
-	attributes[conventions.AttributeHTTPTarget] = "/"
-	attributes[conventions.AttributeRPCService] = "ABC"
-	attributes[awsLocalService] = "ConsumerService"
+	attributes := getBasicAttributes()
+	attributes[awsRemoteService] = "ConsumerService"
 
 	resource := constructDefaultResource()
-	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
-
-	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
-	assert.Equal(t, "ConsumerService", *segment.Name)
+	span := constructConsumerSpan(parentSpanID, spanName, 0, "Ok", attributes)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "ConsumerService"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
@@ -1024,7 +1200,7 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 	spanName := "ABC.payment"
 	parentSpanID := newSegmentID()
 	user := "testingT"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
@@ -1042,13 +1218,532 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "PaymentLocalService"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
-func constructClientSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
+func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segment, span ptrace.Span, parentID string) {
+	tempTraceID := span.TraceID()
+	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
+
+	assert.Equal(t, "subsegment", *segment.Type)
+	assert.Equal(t, "myRemoteService", *segment.Name)
+	assert.Equal(t, span.SpanID().String(), *segment.ID)
+	assert.Equal(t, parentID, *segment.ParentID)
+	assert.Equal(t, expectedTraceID, *segment.TraceID)
+	assert.NotNil(t, segment.HTTP)
+	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
+	assert.Len(t, segment.Annotations, 2)
+	assert.Nil(t, segment.Annotations[awsRemoteService])
+	assert.Nil(t, segment.Annotations[remoteTarget])
+	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
+
+	assert.Len(t, segment.Metadata["default"], 8)
+	assert.Equal(t, "receive", segment.Metadata["default"][conventions.AttributeMessagingOperation])
+	assert.Equal(t, "LOCAL_ROOT", segment.Metadata["default"][awsSpanKind])
+	assert.Equal(t, "myRemoteOperation", segment.Metadata["default"][awsRemoteOperation])
+	assert.Equal(t, "myTarget", segment.Metadata["default"][remoteTarget])
+	assert.Equal(t, "k8sRemoteNamespace", segment.Metadata["default"][k8sRemoteNamespace])
+	assert.Equal(t, "myLocalService", segment.Metadata["default"][awsLocalService])
+	assert.Equal(t, "awsLocalOperation", segment.Metadata["default"][awsLocalOperation])
+	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
+
+	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
+	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
+
+	assert.Equal(t, "UpdateItem", *segment.AWS.Operation)
+	assert.Equal(t, "AWSAccountAttribute", *segment.AWS.AccountID)
+	assert.Equal(t, "AWSRegionAttribute", *segment.AWS.RemoteRegion)
+	assert.Equal(t, "AWSRequestIDAttribute", *segment.AWS.RequestID)
+	assert.Equal(t, "AWSQueueURLAttribute", *segment.AWS.QueueURL)
+	assert.Equal(t, "TableName", *segment.AWS.TableName)
+
+	assert.Equal(t, "remote", *segment.Namespace)
+}
+
+func validateLocalRootServiceSegment(t *testing.T, segment *awsxray.Segment, span ptrace.Span) {
+	tempTraceID := span.TraceID()
+	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
+
+	assert.Nil(t, segment.Type)
+	assert.Equal(t, "myLocalService", *segment.Name)
+	assert.Equal(t, expectedTraceID, *segment.TraceID)
+	assert.Nil(t, segment.HTTP)
+	assert.Len(t, segment.Annotations, 1)
+	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
+	assert.Len(t, segment.Metadata["default"], 1)
+	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
+	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
+	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
+	assert.Nil(t, segment.AWS.Operation)
+	assert.Nil(t, segment.AWS.AccountID)
+	assert.Nil(t, segment.AWS.RemoteRegion)
+	assert.Nil(t, segment.AWS.RequestID)
+	assert.Nil(t, segment.AWS.QueueURL)
+	assert.Nil(t, segment.AWS.TableName)
+	assert.Nil(t, segment.Namespace)
+
+	assert.Nil(t, segment.Namespace)
+}
+
+func getBasicAttributes() map[string]any {
+	attributes := make(map[string]any)
+
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeMessagingOperation] = "receive"
+
+	attributes["otel.resource.attributes"] = "service.name=myTest"
+
+	attributes[awsSpanKind] = "LOCAL_ROOT"
+	attributes[awsRemoteService] = "myRemoteService"
+	attributes[awsRemoteOperation] = "myRemoteOperation"
+	attributes[remoteTarget] = "myTarget"
+	attributes[k8sRemoteNamespace] = "k8sRemoteNamespace"
+	attributes[awsLocalService] = "myLocalService"
+	attributes[awsLocalOperation] = "awsLocalOperation"
+
+	attributes["myAnnotationKey"] = "myAnnotationValue"
+
+	attributes[awsxray.AWSOperationAttribute] = "UpdateItem"
+	attributes[awsxray.AWSAccountAttribute] = "AWSAccountAttribute"
+	attributes[awsxray.AWSRegionAttribute] = "AWSRegionAttribute"
+	attributes[awsxray.AWSRequestIDAttribute] = "AWSRequestIDAttribute"
+	attributes[awsxray.AWSQueueURLAttribute] = "AWSQueueURLAttribute"
+	attributes[awsxray.AWSTableNameAttribute] = "TableName"
+
+	return attributes
+}
+
+func getBasicResource() pcommon.Resource {
+	resource := constructDefaultResource()
+
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "MySDK")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.20.0")
+	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "1.2.3")
+
+	return resource
+}
+
+func addSpanLink(span ptrace.Span) {
+	spanLink := span.Links().AppendEmpty()
+	spanLink.SetTraceID(newTraceID())
+	spanLink.SetSpanID(newSegmentID())
+}
+
+func TestLocalRootConsumer(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
+	spanName := "destination operation"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+
+	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 2)
+	assert.NoError(t, err)
+
+	validateLocalRootDependencySubsegment(t, segments[0], span, *segments[1].ID)
+	assert.Nil(t, segments[0].Links)
+
+	validateLocalRootServiceSegment(t, segments[1], span)
+	assert.Len(t, segments[1].Links, 1)
+
+	// Checks these values are the same for both
+	assert.Equal(t, segments[0].StartTime, segments[1].StartTime)
+	assert.Equal(t, segments[0].EndTime, segments[1].EndTime)
+}
+
+func TestNonLocalRootConsumerProcess(t *testing.T) {
+	spanName := "destination operation"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	delete(attributes, awsRemoteService)
+	delete(attributes, awsRemoteOperation)
+	attributes[awsSpanKind] = "Consumer"
+
+	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 1)
+	assert.NoError(t, err)
+
+	tempTraceID := span.TraceID()
+	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
+
+	// Validate segment 1 (dependency subsegment)
+	assert.Equal(t, "subsegment", *segments[0].Type)
+	assert.Equal(t, "destination operation", *segments[0].Name)
+	assert.NotEqual(t, parentSpanID.String(), *segments[0].ID)
+	assert.Equal(t, span.SpanID().String(), *segments[0].ID)
+	assert.Len(t, segments[0].Links, 1)
+	assert.Equal(t, expectedTraceID, *segments[0].TraceID)
+	assert.NotNil(t, segments[0].HTTP)
+	assert.Equal(t, "POST", *segments[0].HTTP.Request.Method)
+	assert.Len(t, segments[0].Annotations, 1)
+	assert.Equal(t, "myAnnotationValue", segments[0].Annotations["myAnnotationKey"])
+	assert.Len(t, segments[0].Metadata["default"], 7)
+	assert.Equal(t, "Consumer", segments[0].Metadata["default"][awsSpanKind])
+	assert.Equal(t, "myLocalService", segments[0].Metadata["default"][awsLocalService])
+	assert.Equal(t, "receive", segments[0].Metadata["default"][conventions.AttributeMessagingOperation])
+	assert.Equal(t, "service.name=myTest", segments[0].Metadata["default"]["otel.resource.attributes"])
+	assert.Equal(t, "MySDK", *segments[0].AWS.XRay.SDK)
+	assert.Equal(t, "1.20.0", *segments[0].AWS.XRay.SDKVersion)
+	assert.True(t, *segments[0].AWS.XRay.AutoInstrumentation)
+	assert.Equal(t, "UpdateItem", *segments[0].AWS.Operation)
+	assert.Nil(t, segments[0].Namespace)
+}
+
+func TestLocalRootConsumerAWSNamespace(t *testing.T) {
+	spanName := "destination receive"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	attributes[conventions.AttributeRPCSystem] = "aws-api"
+
+	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	spanLink := span.Links().AppendEmpty()
+	spanLink.SetTraceID(newTraceID())
+	spanLink.SetSpanID(newSegmentID())
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 2)
+	assert.NoError(t, err)
+
+	// Ensure that AWS namespace is not overwritten to remote
+	assert.Equal(t, "aws", *segments[0].Namespace)
+}
+
+func TestLocalRootClient(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
+	spanName := "SQS Get"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+
+	span := constructClientSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	spanLink := span.Links().AppendEmpty()
+	spanLink.SetTraceID(newTraceID())
+	spanLink.SetSpanID(newSegmentID())
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 2)
+	assert.NoError(t, err)
+
+	validateLocalRootDependencySubsegment(t, segments[0], span, *segments[1].ID)
+	assert.Len(t, segments[0].Links, 1)
+
+	validateLocalRootServiceSegment(t, segments[1], span)
+	assert.Nil(t, segments[1].Links)
+
+	// Checks these values are the same for both
+	assert.Equal(t, segments[0].StartTime, segments[1].StartTime)
+	assert.Equal(t, segments[0].EndTime, segments[1].EndTime)
+}
+
+func TestLocalRootClientAwsServiceMetrics(t *testing.T) {
+	spanName := "SQS ReceiveMessage"
+	resource := getBasicResource()
+
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	attributes[awsSpanKind] = "LOCAL_ROOT"
+	attributes[conventions.AttributeRPCSystem] = "aws-api"
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeRPCService] = "SQS"
+	attributes[awsRemoteService] = "AWS.SDK.SQS"
+
+	span := constructClientSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	spanLink := span.Links().AppendEmpty()
+	spanLink.SetTraceID(newTraceID())
+	spanLink.SetSpanID(newSegmentID())
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 2)
+	assert.NoError(t, err)
+
+	subsegment := segments[0]
+
+	assert.Equal(t, "subsegment", *subsegment.Type)
+	assert.Equal(t, "SQS", *subsegment.Name)
+	assert.Equal(t, "aws", *subsegment.Namespace)
+}
+
+func TestLocalRootProducer(t *testing.T) {
+	spanName := "destination operation"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+
+	span := constructProducerSpan(parentSpanID, spanName, 200, "Ok", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 2)
+	assert.NoError(t, err)
+
+	validateLocalRootDependencySubsegment(t, segments[0], span, *segments[1].ID)
+	assert.Len(t, segments[0].Links, 1)
+
+	validateLocalRootServiceSegment(t, segments[1], span)
+	assert.Nil(t, segments[1].Links)
+
+	// Checks these values are the same for both
+	assert.Equal(t, segments[0].StartTime, segments[1].StartTime)
+	assert.Equal(t, segments[0].EndTime, segments[1].EndTime)
+}
+
+func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, span ptrace.Span) {
+	tempTraceID := span.TraceID()
+	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
+
+	// Validate segment
+	assert.Nil(t, segment.Type)
+	assert.Equal(t, "myLocalService", *segment.Name)
+	assert.Equal(t, span.ParentSpanID().String(), *segment.ParentID)
+	assert.Len(t, segment.Links, 1)
+	assert.Equal(t, expectedTraceID, *segment.TraceID)
+	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
+	assert.Len(t, segment.Annotations, 2)
+	assert.Equal(t, "myRemoteService", segment.Annotations["aws_remote_service"])
+	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
+
+	var numberOfMetadataKeys = 8
+
+	if span.Kind() == ptrace.SpanKindServer {
+		numberOfMetadataKeys = 30
+	}
+
+	assert.Len(t, segment.Metadata["default"], numberOfMetadataKeys)
+	assert.Equal(t, "receive", segment.Metadata["default"][conventions.AttributeMessagingOperation])
+	assert.Equal(t, "LOCAL_ROOT", segment.Metadata["default"][awsSpanKind])
+	assert.Equal(t, "myRemoteOperation", segment.Metadata["default"][awsRemoteOperation])
+	assert.Equal(t, "myTarget", segment.Metadata["default"][remoteTarget])
+	assert.Equal(t, "k8sRemoteNamespace", segment.Metadata["default"][k8sRemoteNamespace])
+	assert.Equal(t, "myLocalService", segment.Metadata["default"][awsLocalService])
+	assert.Equal(t, "awsLocalOperation", segment.Metadata["default"][awsLocalOperation])
+	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
+
+	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
+	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
+	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
+
+	assert.Equal(t, "UpdateItem", *segment.AWS.Operation)
+	assert.Equal(t, "AWSAccountAttribute", *segment.AWS.AccountID)
+	assert.Equal(t, "AWSRegionAttribute", *segment.AWS.RemoteRegion)
+	assert.Equal(t, "AWSRequestIDAttribute", *segment.AWS.RequestID)
+	assert.Equal(t, "AWSQueueURLAttribute", *segment.AWS.QueueURL)
+	assert.Equal(t, "TableName", *segment.AWS.TableName)
+
+	assert.Nil(t, segment.Namespace)
+}
+
+func TestLocalRootServer(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
+	spanName := "MyService"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+
+	span := constructServerSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 1)
+	assert.NoError(t, err)
+
+	validateLocalRootWithoutDependency(t, segments[0], span)
+}
+
+func TestLocalRootInternal(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
+	spanName := "MyInternalService"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+
+	span := constructInternalSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 1)
+	assert.NoError(t, err)
+
+	validateLocalRootWithoutDependency(t, segments[0], span)
+}
+
+func TestNotLocalRootInternal(t *testing.T) {
+	spanName := "MyService"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	attributes[awsSpanKind] = "Internal"
+
+	span := constructInternalSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 1)
+	assert.NoError(t, err)
+
+	// Validate segment
+	assert.Equal(t, "subsegment", *segments[0].Type)
+	assert.Nil(t, segments[0].Namespace)
+	assert.Equal(t, "MyService", *segments[0].Name)
+}
+
+func TestNotLocalRootConsumer(t *testing.T) {
+	spanName := "MyService"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	attributes[awsSpanKind] = "Consumer"
+
+	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 1)
+	assert.NoError(t, err)
+
+	// Validate segment
+	assert.Equal(t, "subsegment", *segments[0].Type)
+	assert.Equal(t, "remote", *segments[0].Namespace)
+	assert.Equal(t, "myRemoteService", *segments[0].Name)
+}
+
+func TestNotLocalRootClient(t *testing.T) {
+	spanName := "MyService"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	attributes[awsSpanKind] = "Client"
+
+	span := constructClientSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 1)
+	assert.NoError(t, err)
+
+	// Validate segment
+	assert.Equal(t, "subsegment", *segments[0].Type)
+	assert.Equal(t, "remote", *segments[0].Namespace)
+	assert.Equal(t, "myRemoteService", *segments[0].Name)
+}
+
+func TestNotLocalRootProducer(t *testing.T) {
+	spanName := "MyService"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	attributes[awsSpanKind] = "Producer"
+
+	span := constructProducerSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 1)
+	assert.NoError(t, err)
+
+	// Validate segment
+	assert.Equal(t, "subsegment", *segments[0].Type)
+	assert.Equal(t, "remote", *segments[0].Namespace)
+	assert.Equal(t, "myRemoteService", *segments[0].Name)
+}
+
+func TestNotLocalRootServer(t *testing.T) {
+	spanName := "MyInternalService"
+	resource := getBasicResource()
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	attributes[awsSpanKind] = "Server"
+	delete(attributes, awsRemoteService)
+	delete(attributes, awsRemoteOperation)
+
+	span := constructServerSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	addSpanLink(span)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 1)
+	assert.NoError(t, err)
+
+	// Validate segment
+	assert.Nil(t, segments[0].Type)
+	assert.Nil(t, segments[0].Namespace)
+	assert.Equal(t, "myLocalService", *segments[0].Name)
+}
+
+func constructClientSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]any) ptrace.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()
@@ -1075,7 +1770,7 @@ func constructClientSpan(parentSpanID pcommon.SpanID, name string, code ptrace.S
 	return span
 }
 
-func constructServerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
+func constructServerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]any) ptrace.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()
@@ -1102,7 +1797,34 @@ func constructServerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.S
 	return span
 }
 
-func constructConsumerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
+func constructInternalSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]any) ptrace.Span {
+	var (
+		traceID        = newTraceID()
+		spanID         = newSegmentID()
+		endTime        = time.Now()
+		startTime      = endTime.Add(-215 * time.Millisecond)
+		spanAttributes = constructSpanAttributes(attributes)
+	)
+
+	span := ptrace.NewSpan()
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(parentSpanID)
+	span.SetName(name)
+	span.SetKind(ptrace.SpanKindInternal)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+
+	status := ptrace.NewStatus()
+	status.SetCode(code)
+	status.SetMessage(message)
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
+}
+
+func constructConsumerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]any) ptrace.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()
@@ -1129,7 +1851,7 @@ func constructConsumerSpan(parentSpanID pcommon.SpanID, name string, code ptrace
 	return span
 }
 
-func constructProducerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
+func constructProducerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]any) ptrace.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()
@@ -1156,7 +1878,7 @@ func constructProducerSpan(parentSpanID pcommon.SpanID, name string, code ptrace
 	return span
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
+func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {

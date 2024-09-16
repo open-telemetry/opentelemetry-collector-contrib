@@ -32,31 +32,31 @@ func createConfig(matchType filterset.MatchType) *filterset.Config {
 func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	testcases := []struct {
 		name        string
-		property    filterconfig.MatchProperties
+		property    *filterconfig.MatchProperties
 		errorString string
 	}{
 		{
 			name:        "empty_property",
-			property:    filterconfig.MatchProperties{},
+			property:    &filterconfig.MatchProperties{},
 			errorString: filterconfig.ErrMissingRequiredField.Error(),
 		},
 		{
 			name: "empty_service_span_names_and_attributes",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Services: []string{},
 			},
 			errorString: filterconfig.ErrMissingRequiredField.Error(),
 		},
 		{
 			name: "log_properties",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				LogBodies: []string{"log"},
 			},
 			errorString: "log_bodies should not be specified for trace spans",
 		},
 		{
 			name: "invalid_match_type",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:   *createConfig("wrong_match_type"),
 				Services: []string{"abc"},
 			},
@@ -64,14 +64,14 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "missing_match_type",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Services: []string{"abc"},
 			},
 			errorString: "error creating service name filters: unrecognized match_type: '', valid types are: [regexp strict]",
 		},
 		{
 			name: "invalid_regexp_pattern_service",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Regexp),
 				Services: []string{"["},
 			},
@@ -79,7 +79,7 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_span",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				SpanNames: []string{"["},
 			},
@@ -87,7 +87,7 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_strict_span_kind_match",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Strict),
 				SpanKinds: []string{
 					"test_invalid_span_kind",
@@ -99,7 +99,7 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := newExpr(&tc.property)
+			output, err := newExpr(tc.property)
 			assert.Nil(t, output)
 			assert.EqualError(t, err, tc.errorString)
 		})
@@ -179,7 +179,7 @@ func TestSpan_Matching_False(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, expr)
 
-			val, err := expr.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource))
+			val, err := expr.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
 			require.NoError(t, err)
 			assert.False(t, val)
 		})
@@ -193,11 +193,11 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	}
 
 	mp, err := newExpr(cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 
 	emptySpan := ptrace.NewSpan()
-	val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+	val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
 	require.NoError(t, err)
 	assert.False(t, val)
 }
@@ -288,7 +288,7 @@ func TestSpan_Matching_True(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource))
+			val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
 			require.NoError(t, err)
 			assert.True(t, val)
 		})
@@ -298,12 +298,12 @@ func TestSpan_Matching_True(t *testing.T) {
 func TestServiceNameForResource(t *testing.T) {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	name := serviceNameForResource(td.ResourceSpans().At(0).Resource())
-	require.Equal(t, name, "<nil-service-name>")
+	require.Equal(t, "<nil-service-name>", name)
 
 	td = testdata.GenerateTracesOneSpan()
 	resource := td.ResourceSpans().At(0).Resource()
 	name = serviceNameForResource(resource)
-	require.Equal(t, name, "<nil-service-name>")
+	require.Equal(t, "<nil-service-name>", name)
 
 }
 
@@ -1211,7 +1211,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			scope.SetName("scope")
 			scope.SetVersion("0.1.0")
 
-			tCtx := ottlspan.NewTransformContext(span, scope, resource)
+			tCtx := ottlspan.NewTransformContext(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 
 			boolExpr, err := NewSkipExpr(tt.condition)
 			require.NoError(t, err)
@@ -1279,7 +1279,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 
 		scope := pcommon.NewInstrumentationScope()
 
-		tCtx := ottlspan.NewTransformContext(span, scope, resource)
+		tCtx := ottlspan.NewTransformContext(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 
 		b.Run(tt.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {

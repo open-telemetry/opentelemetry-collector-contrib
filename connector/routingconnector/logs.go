@@ -27,13 +27,13 @@ type logsConnector struct {
 }
 
 func newLogsConnector(
-	set connector.CreateSettings,
+	set connector.Settings,
 	config component.Config,
 	logs consumer.Logs,
 ) (*logsConnector, error) {
 	cfg := config.(*Config)
 
-	lr, ok := logs.(connector.LogsRouter)
+	lr, ok := logs.(connector.LogsRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer
 	}
@@ -69,10 +69,10 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
-		rtx := ottlresource.NewTransformContext(rlogs.Resource())
+		rtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
 
 		noRoutesMatch := true
-		for _, route := range c.router.routes {
+		for _, route := range c.router.routeSlice {
 			_, isMatch, err := route.statement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
@@ -84,6 +84,9 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			if isMatch {
 				noRoutesMatch = false
 				c.group(groups, route.consumer, rlogs)
+				if c.config.MatchOnce {
+					break
+				}
 			}
 
 		}

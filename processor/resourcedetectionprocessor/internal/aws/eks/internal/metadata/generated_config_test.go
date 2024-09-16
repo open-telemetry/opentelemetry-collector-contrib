@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,15 +24,17 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				CloudPlatform: ResourceAttributeConfig{Enabled: true},
-				CloudProvider: ResourceAttributeConfig{Enabled: true},
+				CloudPlatform:  ResourceAttributeConfig{Enabled: true},
+				CloudProvider:  ResourceAttributeConfig{Enabled: true},
+				K8sClusterName: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				CloudPlatform: ResourceAttributeConfig{Enabled: false},
-				CloudProvider: ResourceAttributeConfig{Enabled: false},
+				CloudPlatform:  ResourceAttributeConfig{Enabled: false},
+				CloudProvider:  ResourceAttributeConfig{Enabled: false},
+				K8sClusterName: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
@@ -55,6 +56,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

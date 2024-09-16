@@ -11,11 +11,11 @@ import (
 
 func TestParseLatencyStats(t *testing.T) {
 	ls, err := parseLatencyStats("p50=181.247,p55=182.271,p99=309.247,p99.9=1023.999")
-	require.Nil(t, err)
-	require.Equal(t, ls["p50"], 181.247)
-	require.Equal(t, ls["p55"], 182.271)
-	require.Equal(t, ls["p99"], 309.247)
-	require.Equal(t, ls["p99.9"], 1023.999)
+	require.NoError(t, err)
+	require.Equal(t, 181.247, ls["p50"])
+	require.Equal(t, 182.271, ls["p55"])
+	require.Equal(t, 309.247, ls["p99"])
+	require.Equal(t, 1023.999, ls["p99.9"])
 }
 
 func TestParseMalformedLatencyStats(t *testing.T) {
@@ -28,7 +28,7 @@ func TestParseMalformedLatencyStats(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := parseLatencyStats(test.stats)
-			require.NotNil(t, err)
+			require.Error(t, err)
 		})
 	}
 }

@@ -1,0 +1,12 @@
+type: otlp_encoding
+
+status:
+  class: extension
+  stability:
+    alpha: [ extension ]
+  distributions: [ ]
+  codeowners:
+    active: [ dao-jun, VihasMakwana ]
+
+tests:
+  config:

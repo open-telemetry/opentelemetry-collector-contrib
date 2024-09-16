@@ -15,7 +15,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mongodb-forks/digest"
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
@@ -24,7 +24,7 @@ import (
 type clientRoundTripper struct {
 	originalTransport http.RoundTripper
 	log               *zap.Logger
-	retrySettings     exporterhelper.RetrySettings
+	backoffConfig     configretry.BackOffConfig
 	stopped           bool
 	mutex             sync.Mutex
 	shutdownChan      chan struct{}
@@ -33,12 +33,12 @@ type clientRoundTripper struct {
 func newClientRoundTripper(
 	originalTransport http.RoundTripper,
 	log *zap.Logger,
-	retrySettings exporterhelper.RetrySettings,
+	backoffConfig configretry.BackOffConfig,
 ) *clientRoundTripper {
 	return &clientRoundTripper{
 		originalTransport: originalTransport,
 		log:               log,
-		retrySettings:     retrySettings,
+		backoffConfig:     backoffConfig,
 		shutdownChan:      make(chan struct{}, 1),
 	}
 }
@@ -79,11 +79,11 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 	}
 	if resp.StatusCode == 429 {
 		expBackoff := &backoff.ExponentialBackOff{
-			InitialInterval:     rt.retrySettings.InitialInterval,
+			InitialInterval:     rt.backoffConfig.InitialInterval,
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
 			Multiplier:          backoff.DefaultMultiplier,
-			MaxInterval:         rt.retrySettings.MaxInterval,
-			MaxElapsedTime:      rt.retrySettings.MaxElapsedTime,
+			MaxInterval:         rt.backoffConfig.MaxInterval,
+			MaxElapsedTime:      rt.backoffConfig.MaxElapsedTime,
 			Stop:                backoff.Stop,
 			Clock:               backoff.SystemClock,
 		}
@@ -123,6 +123,7 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 type MongoDBAtlasClient struct {
 	log          *zap.Logger
 	client       *mongodbatlas.Client
+	transport    *http.Transport
 	roundTripper *clientRoundTripper
 }
 
@@ -130,21 +131,24 @@ type MongoDBAtlasClient struct {
 func NewMongoDBAtlasClient(
 	publicKey string,
 	privateKey string,
-	retrySettings exporterhelper.RetrySettings,
+	backoffConfig configretry.BackOffConfig,
 	log *zap.Logger,
 ) *MongoDBAtlasClient {
-	t := digest.NewTransport(publicKey, privateKey)
-	roundTripper := newClientRoundTripper(t, log, retrySettings)
+	defaultTransporter := &http.Transport{}
+	t := digest.NewTransportWithHTTPTransport(publicKey, privateKey, defaultTransporter)
+	roundTripper := newClientRoundTripper(t, log, backoffConfig)
 	tc := &http.Client{Transport: roundTripper}
 	client := mongodbatlas.NewClient(tc)
 	return &MongoDBAtlasClient{
 		log,
 		client,
+		defaultTransporter,
 		roundTripper,
 	}
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {
+	s.transport.CloseIdleConnections()
 	return s.roundTripper.Shutdown()
 }
 

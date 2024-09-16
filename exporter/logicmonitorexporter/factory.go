@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -28,12 +29,12 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 	}
 }
 
-func createLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	lmLogExp := newLogsExporter(ctx, cfg, set)
 	c := cfg.(*Config)
 
@@ -44,11 +45,12 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg co
 		lmLogExp.PushLogData,
 		exporterhelper.WithStart(lmLogExp.start),
 		exporterhelper.WithQueue(c.QueueSettings),
-		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
+		exporterhelper.WithShutdown(lmLogExp.shutdown),
 	)
 }
 
-func createTracesExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
+func createTracesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	lmTraceExp := newTracesExporter(ctx, cfg, set)
 	c := cfg.(*Config)
 
@@ -59,6 +61,8 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, cfg 
 		lmTraceExp.PushTraceData,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(lmTraceExp.start),
-		exporterhelper.WithRetry(c.RetrySettings),
-		exporterhelper.WithQueue(c.QueueSettings))
+		exporterhelper.WithRetry(c.BackOffConfig),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithShutdown(lmTraceExp.shutdown),
+	)
 }

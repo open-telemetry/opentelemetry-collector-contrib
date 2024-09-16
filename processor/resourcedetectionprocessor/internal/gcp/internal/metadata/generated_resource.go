@@ -63,6 +63,13 @@ func (rb *ResourceBuilder) SetFaasID(val string) {
 	}
 }
 
+// SetFaasInstance sets provided value as "faas.instance" attribute.
+func (rb *ResourceBuilder) SetFaasInstance(val string) {
+	if rb.config.FaasInstance.Enabled {
+		rb.res.Attributes().PutStr("faas.instance", val)
+	}
+}
+
 // SetFaasName sets provided value as "faas.name" attribute.
 func (rb *ResourceBuilder) SetFaasName(val string) {
 	if rb.config.FaasName.Enabled {

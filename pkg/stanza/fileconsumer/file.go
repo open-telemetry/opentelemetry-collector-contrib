@@ -4,61 +4,60 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-const (
-	logFileName         = "log.file.name"
-	logFilePath         = "log.file.path"
-	logFileNameResolved = "log.file.name_resolved"
-	logFilePathResolved = "log.file.path_resolved"
-)
-
 type Manager struct {
-	*zap.SugaredLogger
+	set    component.TelemetrySettings
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
-	readerFactory readerFactory
+	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
-	roller        roller
+	tracker       tracker.Tracker
+
+	pollInterval  time.Duration
 	persister     operator.Persister
+	maxBatches    int
+	maxBatchFiles int
 
-	pollInterval    time.Duration
-	maxBatches      int
-	maxBatchFiles   int
-	deleteAfterRead bool
-
-	knownFiles []*reader
-	seenPaths  map[string]struct{}
-
-	currentFps []*fingerprint.Fingerprint
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
-	m.persister = persister
-
-	// Load offsets from disk
-	if err := m.loadLastPollFiles(ctx); err != nil {
-		return fmt.Errorf("read known files from database: %w", err)
-	}
 
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.Warnf("finding files: %v", err)
+		m.set.Logger.Warn("finding files", zap.Error(err))
+	}
+
+	if persister != nil {
+		m.persister = persister
+		offsets, err := checkpoint.Load(ctx, m.persister)
+		if err != nil {
+			return fmt.Errorf("read known files from database: %w", err)
+		}
+		if len(offsets) > 0 {
+			m.set.Logger.Info("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
+			m.readerFactory.FromBeginning = true
+			m.tracker.LoadMetadata(offsets)
+		}
 	}
 
 	// Start polling goroutine
@@ -69,14 +68,17 @@ func (m *Manager) Start(persister operator.Persister) error {
 
 // Stop will stop the file monitoring process
 func (m *Manager) Stop() error {
-	m.cancel()
-	m.wg.Wait()
-	m.roller.cleanup()
-	for _, reader := range m.knownFiles {
-		reader.Close()
+	if m.cancel != nil {
+		m.cancel()
+		m.cancel = nil
 	}
-	m.knownFiles = nil
-	m.cancel = nil
+	m.wg.Wait()
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	if m.persister != nil {
+		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
+			m.set.Logger.Error("save offsets", zap.Error(err))
+		}
+	}
 	return nil
 }
 
@@ -103,20 +105,15 @@ func (m *Manager) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
-	// Increment the generation on all known readers
-	// This is done here because the next generation is about to start
-	for i := 0; i < len(m.knownFiles); i++ {
-		m.knownFiles[i].generation++
-	}
-
 	// Used to keep track of the number of batches processed in this poll cycle
 	batchesProcessed := 0
 
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
-		m.Infof("finding files: %v", err)
+		m.set.Logger.Debug("finding files", zap.Error(err))
 	}
+	m.set.Logger.Debug("matched files", zap.Strings("paths", matches))
 
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
@@ -132,254 +129,135 @@ func (m *Manager) poll(ctx context.Context) {
 		matches = matches[m.maxBatchFiles:]
 	}
 	m.consume(ctx, matches)
+
+	// Any new files that appear should be consumed entirely
+	m.readerFactory.FromBeginning = true
+	if m.persister != nil {
+		metadata := m.tracker.GetMetadata()
+		if metadata != nil {
+			if err := checkpoint.Save(context.Background(), m.persister, metadata); err != nil {
+				m.set.Logger.Error("save offsets", zap.Error(err))
+			}
+		}
+	}
+	// rotate at end of every poll()
+	m.tracker.EndPoll()
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
-	m.Debug("Consuming files")
-	readers := make([]*reader, 0, len(paths))
-	for _, path := range paths {
-		r := m.makeReader(path)
-		if r != nil {
-			readers = append(readers, r)
-		}
-	}
+	m.set.Logger.Debug("Consuming files", zap.Strings("paths", paths))
+	m.makeReaders(ctx, paths)
 
-	// take care of files which disappeared from the pattern since the last poll cycle
-	// this can mean either files which were removed, or rotated into a name not matching the pattern
-	// we do this before reading existing files to ensure we emit older log lines before newer ones
-	m.roller.readLostFiles(ctx, readers)
+	m.readLostFiles(ctx)
 
+	// read new readers to end
 	var wg sync.WaitGroup
-	for _, r := range readers {
+	for _, r := range m.tracker.CurrentPollFiles() {
 		wg.Add(1)
-		go func(r *reader) {
+		go func(r *reader.Reader) {
 			defer wg.Done()
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
-			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
-			if m.deleteAfterRead && r.eof {
-				r.Delete()
-			}
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, -1)
 		}(r)
 	}
 	wg.Wait()
 
-	// Save off any files that were not fully read
-	if m.deleteAfterRead {
-		unfinished := make([]*reader, 0, len(readers))
-		for _, r := range readers {
-			if !r.eof {
-				unfinished = append(unfinished, r)
-			}
-		}
-		readers = unfinished
-
-		// If all files were read and deleted then no need to do bookkeeping on readers
-		if len(readers) == 0 {
-			return
-		}
-	}
-
-	// Any new files that appear should be consumed entirely
-	m.readerFactory.fromBeginning = true
-
-	m.roller.roll(ctx, readers)
-	m.saveCurrent(readers)
-	m.syncLastPollFiles(ctx)
-	m.clearCurrentFingerprints()
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, int64(0-m.tracker.EndConsume()))
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
-	if _, ok := m.seenPaths[path]; !ok {
-		if m.readerFactory.fromBeginning {
-			m.Infow("Started watching file", "path", path)
-		} else {
-			m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
-		}
-		m.seenPaths[path] = struct{}{}
-	}
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
-		m.Debugf("Failed to open file", zap.Error(err))
+		m.set.Logger.Error("Failed to open file", zap.Error(err))
 		return nil, nil
 	}
 
-	fp, err := m.readerFactory.newFingerprint(file)
+	fp, err := m.readerFactory.NewFingerprint(file)
 	if err != nil {
 		if err = file.Close(); err != nil {
-			m.Errorf("problem closing file %s", file.Name())
+			m.set.Logger.Debug("problem closing file", zap.Error(err))
 		}
 		return nil, nil
 	}
 
-	if len(fp.FirstBytes) == 0 {
+	if fp.Len() == 0 {
 		// Empty file, don't read it until we can compare its fingerprint
 		if err = file.Close(); err != nil {
-			m.Errorf("problem closing file %s", file.Name())
+			m.set.Logger.Debug("problem closing file", zap.Error(err))
 		}
 		return nil, nil
 	}
 	return fp, file
 }
 
-func (m *Manager) checkDuplicates(fp *fingerprint.Fingerprint) bool {
-	for i := 0; i < len(m.currentFps); i++ {
-		if fp.Equal(m.currentFps[i]) {
-			return true
-		}
-	}
-	return false
-}
-
 // makeReader take a file path, then creates reader,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
-func (m *Manager) makeReader(path string) *reader {
-	// Open the files first to minimize the time between listing and opening
-	fp, file := m.makeFingerprint(path)
-	if fp == nil {
-		return nil
-	}
-
-	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
-	if m.checkDuplicates(fp) {
-		if err := file.Close(); err != nil {
-			m.Errorf("problem closing file", "file", file.Name())
+func (m *Manager) makeReaders(ctx context.Context, paths []string) {
+	for _, path := range paths {
+		fp, file := m.makeFingerprint(path)
+		if fp == nil {
+			continue
 		}
-		return nil
-	}
 
-	m.currentFps = append(m.currentFps, fp)
-	reader, err := m.newReader(file, fp)
-	if err != nil {
-		m.Errorw("Failed to create reader", zap.Error(err))
-		return nil
-	}
-
-	return reader
-}
-
-func (m *Manager) clearCurrentFingerprints() {
-	m.currentFps = make([]*fingerprint.Fingerprint, 0)
-}
-
-// saveCurrent adds the readers from this polling interval to this list of
-// known files, then increments the generation of all tracked old readers
-// before clearing out readers that have existed for 3 generations.
-func (m *Manager) saveCurrent(readers []*reader) {
-	// Add readers from the current, completed poll interval to the list of known files
-	m.knownFiles = append(m.knownFiles, readers...)
-
-	// Clear out old readers. They are sorted such that they are oldest first,
-	// so we can just find the first reader whose generation is less than our
-	// max, and keep every reader after that
-	for i := 0; i < len(m.knownFiles); i++ {
-		reader := m.knownFiles[i]
-		if reader.generation <= 3 {
-			m.knownFiles = m.knownFiles[i:]
-			break
+		// Exclude duplicate paths with the same content. This can happen when files are
+		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
+		if r := m.tracker.GetCurrentFile(fp); r != nil {
+			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
+			// re-add the reader as Match() removes duplicates
+			m.tracker.Add(r)
+			if err := file.Close(); err != nil {
+				m.set.Logger.Debug("problem closing file", zap.Error(err))
+			}
+			continue
 		}
+
+		r, err := m.newReader(ctx, file, fp)
+		if err != nil {
+			m.set.Logger.Error("Failed to create reader", zap.Error(err))
+			continue
+		}
+
+		m.tracker.Add(r)
 	}
 }
 
-func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
-	// Check if the new path has the same fingerprint as an old path
-	if oldReader, ok := m.findFingerprintMatch(fp); ok {
-		return m.readerFactory.copy(oldReader, file)
+func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
+	// Check previous poll cycle for match
+	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
+		if oldReader.GetFileName() != file.Name() {
+			if !oldReader.Validate() {
+				m.set.Logger.Debug(
+					"File has been rotated(truncated)",
+					zap.String("original_path", oldReader.GetFileName()),
+					zap.String("rotated_path", file.Name()))
+			} else {
+				m.set.Logger.Debug(
+					"File has been rotated(moved)",
+					zap.String("original_path", oldReader.GetFileName()),
+					zap.String("rotated_path", file.Name()))
+			}
+		}
+		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
+	}
+
+	// Check for closed files for match
+	if oldMetadata := m.tracker.GetClosedFile(fp); oldMetadata != nil {
+		r, err := m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
+		if err != nil {
+			return nil, err
+		}
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
+		return r, nil
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
-	return m.readerFactory.newReader(file, fp)
-}
-
-func (m *Manager) findFingerprintMatch(fp *fingerprint.Fingerprint) (*reader, bool) {
-	// Iterate backwards to match newest first
-	for i := len(m.knownFiles) - 1; i >= 0; i-- {
-		oldReader := m.knownFiles[i]
-		if fp.StartsWith(oldReader.Fingerprint) {
-			// Remove the old reader from the list of known files. We will
-			// add it back in saveCurrent if it is still alive.
-			m.knownFiles = append(m.knownFiles[:i], m.knownFiles[i+1:]...)
-			return oldReader, true
-		}
-	}
-	return nil, false
-}
-
-const knownFilesKey = "knownFiles"
-
-// syncLastPollFiles syncs the most recent set of files to the database
-func (m *Manager) syncLastPollFiles(ctx context.Context) {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-
-	// Encode the number of known files
-	if err := enc.Encode(len(m.knownFiles)); err != nil {
-		m.Errorw("Failed to encode known files", zap.Error(err))
-		return
-	}
-
-	// Encode each known file
-	for _, fileReader := range m.knownFiles {
-		if err := enc.Encode(fileReader.readerMetadata); err != nil {
-			m.Errorw("Failed to encode known files", zap.Error(err))
-		}
-	}
-
-	if err := m.persister.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
-		m.Errorw("Failed to sync to database", zap.Error(err))
-	}
-}
-
-// syncLastPollFiles loads the most recent set of files to the database
-func (m *Manager) loadLastPollFiles(ctx context.Context) error {
-	encoded, err := m.persister.Get(ctx, knownFilesKey)
+	m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+	r, err := m.readerFactory.NewReader(file, fp)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	if encoded == nil {
-		m.knownFiles = make([]*reader, 0, 10)
-		return nil
-	}
-
-	dec := json.NewDecoder(bytes.NewReader(encoded))
-
-	// Decode the number of entries
-	var knownFileCount int
-	if err = dec.Decode(&knownFileCount); err != nil {
-		return fmt.Errorf("decoding file count: %w", err)
-	}
-
-	if knownFileCount > 0 {
-		m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
-		m.readerFactory.fromBeginning = true
-	}
-
-	// Decode each of the known files
-	m.knownFiles = make([]*reader, 0, knownFileCount)
-	for i := 0; i < knownFileCount; i++ {
-		rmd := &readerMetadata{}
-		if err = dec.Decode(rmd); err != nil {
-			return err
-		}
-
-		// Migrate readers that used FileAttributes.HeaderAttributes
-		// This block can be removed in a future release, tentatively v0.90.0
-		if ha, ok := rmd.FileAttributes["HeaderAttributes"]; ok {
-			switch hat := ha.(type) {
-			case map[string]any:
-				for k, v := range hat {
-					rmd.FileAttributes[k] = v
-				}
-				delete(rmd.FileAttributes, "HeaderAttributes")
-			default:
-				m.Errorw("migrate header attributes: unexpected format")
-			}
-		}
-
-		// This reader won't be used for anything other than metadata reference, so just wrap the metadata
-		m.knownFiles = append(m.knownFiles, &reader{readerMetadata: rmd})
-	}
-
-	return nil
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
+	return r, nil
 }

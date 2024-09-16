@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
@@ -95,7 +95,41 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 
 	groupRequests := alertRcvr.groupRequests
 	require.Len(t, groupRequests, 1)
-	require.Equal(t, groupRequests[0].groupName(), "test-log-group-name")
+	require.Equal(t, "test-log-group-name", groupRequests[0].groupName())
+
+	err = alertRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	logs := sink.AllLogs()[0]
+	expected, err := golden.ReadLogs(filepath.Join("testdata", "processed", "prefixed.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
+}
+
+func TestNamedConfigNoStreamFilter(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.PollInterval = 1 * time.Second
+	cfg.Logs.Groups = GroupConfig{
+		NamedConfigs: map[string]StreamConfig{
+			testLogGroupName: {},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr.client = defaultMockClient()
+
+	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	groupRequests := alertRcvr.groupRequests
+	require.Len(t, groupRequests, 1)
+	require.Equal(t, "test-log-group-name", groupRequests[0].groupName())
 
 	err = alertRcvr.Shutdown(context.Background())
 	require.NoError(t, err)
@@ -128,7 +162,7 @@ func TestDiscovery(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
-	require.Equal(t, len(logsRcvr.groupRequests), 2)
+	require.Len(t, logsRcvr.groupRequests, 2)
 	require.NoError(t, logsRcvr.Shutdown(context.Background()))
 }
 

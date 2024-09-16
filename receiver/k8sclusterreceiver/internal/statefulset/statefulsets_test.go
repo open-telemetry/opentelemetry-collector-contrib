@@ -23,7 +23,7 @@ func TestStatefulsetMetrics(t *testing.T) {
 	ss := testutils.NewStatefulset("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	RecordMetrics(mb, ss, ts)
 	m := mb.Emit()
 
@@ -32,11 +32,10 @@ func TestStatefulsetMetrics(t *testing.T) {
 
 	rm := m.ResourceMetrics().At(0)
 	assert.Equal(t,
-		map[string]interface{}{
-			"k8s.statefulset.uid":     "test-statefulset-1-uid",
-			"k8s.statefulset.name":    "test-statefulset-1",
-			"k8s.namespace.name":      "test-namespace",
-			"opencensus.resourcetype": "k8s",
+		map[string]any{
+			"k8s.statefulset.uid":  "test-statefulset-1-uid",
+			"k8s.statefulset.name": "test-statefulset-1",
+			"k8s.namespace.name":   "test-namespace",
 		}, rm.Resource().Attributes().AsRaw(),
 	)
 
@@ -57,7 +56,7 @@ func TestStatefulsetMetadata(t *testing.T) {
 
 	actualMetadata := GetMetadata(ss)
 
-	require.Equal(t, 1, len(actualMetadata))
+	require.Len(t, actualMetadata, 1)
 
 	require.Equal(t,
 		metadata.KubernetesMetadata{

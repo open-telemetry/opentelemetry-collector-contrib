@@ -1,0 +1,13 @@
+type: failover
+
+status:
+  class: connector
+  stability:
+    alpha: [traces_to_traces, metrics_to_metrics, logs_to_logs]
+  distributions: [contrib]
+  codeowners:
+    active: [akats7, djaglowski, fatsheep9146]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

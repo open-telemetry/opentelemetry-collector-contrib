@@ -22,7 +22,6 @@ func RecordMetrics(mb *metadata.MetricsBuilder, rc *corev1.ReplicationController
 	rb.SetK8sNamespaceName(rc.Namespace)
 	rb.SetK8sReplicationcontrollerName(rc.Name)
 	rb.SetK8sReplicationcontrollerUID(string(rc.UID))
-	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

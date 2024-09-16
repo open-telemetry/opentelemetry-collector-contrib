@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 
@@ -21,7 +20,7 @@ var errReceiverNotSupported = fmt.Errorf("The '%s' receiver is only supported on
 
 func createMetricsReceiver(
 	_ context.Context,
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	_ component.Config,
 	_ consumer.Metrics,
 ) (receiver.Metrics, error) {

@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("googlemanagedprometheus")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
+)
+
 const (
-	Type             = "googlemanagedprometheus"
 	MetricsStability = component.StabilityLevelBeta
 )

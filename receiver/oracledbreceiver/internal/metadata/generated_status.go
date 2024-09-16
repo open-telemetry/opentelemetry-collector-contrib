@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("oracledb")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
+)
+
 const (
-	Type             = "oracledb"
 	MetricsStability = component.StabilityLevelAlpha
 )

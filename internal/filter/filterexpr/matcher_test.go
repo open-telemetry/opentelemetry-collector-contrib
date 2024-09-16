@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr/vm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -148,20 +148,20 @@ func TestNonMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 
 func TestMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 	expression := `MetricName == 'my.metric' && HasLabel("foo")`
-	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
+	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]any{"foo": ""}))
 }
 
 func TestMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]any{"foo": ""}))
 }
 
 func TestNonMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]any{"foo": ""}))
 }
 
-func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]interface{}) bool {
+func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]any) bool {
 	matcher, err := NewMatcher(expression)
 	require.NoError(t, err)
 	m := pmetric.NewMetric()

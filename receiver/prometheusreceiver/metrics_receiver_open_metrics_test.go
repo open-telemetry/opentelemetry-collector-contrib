@@ -46,7 +46,7 @@ var skippedTests = map[string]struct{}{
 }
 
 func verifyPositiveTarget(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
-	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, mds, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
 	// if we only have one ResourceMetrics, then we should have a non-default metric in there
@@ -74,7 +74,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 func verifyFailTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
@@ -85,7 +85,7 @@ func verifyFailTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics)
 		t.Skip("skipping failing negative OpenMetrics parser tests")
 	}
 
-	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, mds, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 0, metrics)
 }
@@ -107,7 +107,7 @@ func TestOpenMetricsFail(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
@@ -118,7 +118,7 @@ func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetri
 		t.Skip("skipping failing negative OpenMetrics parser tests")
 	}
 
-	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, mds, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 
 	// The Prometheus scrape parser accepted the sample, but the receiver dropped it due to incompatibility with the Otel schema.
@@ -142,14 +142,14 @@ func TestOpenMetricsInvalid(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 // reads test data from testdata/openmetrics directory
 func getOpenMetricsTestData(testNameFilterFunc func(testName string) bool) map[string]string {
 	testDir, err := os.Open(testDir)
 	if err != nil {
-		log.Fatalf("failed opening openmetrics test directory")
+		log.Fatal("failed opening openmetrics test directory")
 	}
 	defer testDir.Close()
 
@@ -228,7 +228,7 @@ func TestInfoStatesetMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 
 }
 

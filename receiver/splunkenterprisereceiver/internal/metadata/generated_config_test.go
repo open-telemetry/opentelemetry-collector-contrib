@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -26,8 +25,35 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SplunkIndexerThroughput: MetricConfig{Enabled: true},
-					SplunkLicenseIndexUsage: MetricConfig{Enabled: true},
+					SplunkAggregationQueueRatio:                 MetricConfig{Enabled: true},
+					SplunkBucketsSearchableStatus:               MetricConfig{Enabled: true},
+					SplunkDataIndexesExtendedBucketCount:        MetricConfig{Enabled: true},
+					SplunkDataIndexesExtendedBucketEventCount:   MetricConfig{Enabled: true},
+					SplunkDataIndexesExtendedBucketHotCount:     MetricConfig{Enabled: true},
+					SplunkDataIndexesExtendedBucketWarmCount:    MetricConfig{Enabled: true},
+					SplunkDataIndexesExtendedEventCount:         MetricConfig{Enabled: true},
+					SplunkDataIndexesExtendedRawSize:            MetricConfig{Enabled: true},
+					SplunkDataIndexesExtendedTotalSize:          MetricConfig{Enabled: true},
+					SplunkIndexerAvgRate:                        MetricConfig{Enabled: true},
+					SplunkIndexerCPUTime:                        MetricConfig{Enabled: true},
+					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: true},
+					SplunkIndexerRawWriteTime:                   MetricConfig{Enabled: true},
+					SplunkIndexerThroughput:                     MetricConfig{Enabled: true},
+					SplunkIndexesAvgSize:                        MetricConfig{Enabled: true},
+					SplunkIndexesAvgUsage:                       MetricConfig{Enabled: true},
+					SplunkIndexesBucketCount:                    MetricConfig{Enabled: true},
+					SplunkIndexesMedianDataAge:                  MetricConfig{Enabled: true},
+					SplunkIndexesSize:                           MetricConfig{Enabled: true},
+					SplunkIoAvgIops:                             MetricConfig{Enabled: true},
+					SplunkLicenseIndexUsage:                     MetricConfig{Enabled: true},
+					SplunkParseQueueRatio:                       MetricConfig{Enabled: true},
+					SplunkPipelineSetCount:                      MetricConfig{Enabled: true},
+					SplunkSchedulerAvgExecutionLatency:          MetricConfig{Enabled: true},
+					SplunkSchedulerAvgRunTime:                   MetricConfig{Enabled: true},
+					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: true},
+					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: true},
+					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: true},
+					SplunkTypingQueueRatio:                      MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -35,8 +61,35 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SplunkIndexerThroughput: MetricConfig{Enabled: false},
-					SplunkLicenseIndexUsage: MetricConfig{Enabled: false},
+					SplunkAggregationQueueRatio:                 MetricConfig{Enabled: false},
+					SplunkBucketsSearchableStatus:               MetricConfig{Enabled: false},
+					SplunkDataIndexesExtendedBucketCount:        MetricConfig{Enabled: false},
+					SplunkDataIndexesExtendedBucketEventCount:   MetricConfig{Enabled: false},
+					SplunkDataIndexesExtendedBucketHotCount:     MetricConfig{Enabled: false},
+					SplunkDataIndexesExtendedBucketWarmCount:    MetricConfig{Enabled: false},
+					SplunkDataIndexesExtendedEventCount:         MetricConfig{Enabled: false},
+					SplunkDataIndexesExtendedRawSize:            MetricConfig{Enabled: false},
+					SplunkDataIndexesExtendedTotalSize:          MetricConfig{Enabled: false},
+					SplunkIndexerAvgRate:                        MetricConfig{Enabled: false},
+					SplunkIndexerCPUTime:                        MetricConfig{Enabled: false},
+					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: false},
+					SplunkIndexerRawWriteTime:                   MetricConfig{Enabled: false},
+					SplunkIndexerThroughput:                     MetricConfig{Enabled: false},
+					SplunkIndexesAvgSize:                        MetricConfig{Enabled: false},
+					SplunkIndexesAvgUsage:                       MetricConfig{Enabled: false},
+					SplunkIndexesBucketCount:                    MetricConfig{Enabled: false},
+					SplunkIndexesMedianDataAge:                  MetricConfig{Enabled: false},
+					SplunkIndexesSize:                           MetricConfig{Enabled: false},
+					SplunkIoAvgIops:                             MetricConfig{Enabled: false},
+					SplunkLicenseIndexUsage:                     MetricConfig{Enabled: false},
+					SplunkParseQueueRatio:                       MetricConfig{Enabled: false},
+					SplunkPipelineSetCount:                      MetricConfig{Enabled: false},
+					SplunkSchedulerAvgExecutionLatency:          MetricConfig{Enabled: false},
+					SplunkSchedulerAvgRunTime:                   MetricConfig{Enabled: false},
+					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: false},
+					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: false},
+					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: false},
+					SplunkTypingQueueRatio:                      MetricConfig{Enabled: false},
 				},
 			},
 		},
@@ -57,6 +110,6 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

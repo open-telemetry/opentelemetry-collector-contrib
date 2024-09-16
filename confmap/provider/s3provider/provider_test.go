@@ -41,7 +41,8 @@ func (client *testClient) GetObject(_ context.Context, request *s3.GetObjectInpu
 		return &s3.GetObjectOutput{}, err
 	}
 
-	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
+	bodyLen := (int64)(len(f))
+	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: &bodyLen}, nil
 }
 
 // Create a provider mocking the s3 provider
@@ -123,4 +124,10 @@ func TestScheme(t *testing.T) {
 	fp := NewTestProvider("./testdata/otel-config.yaml")
 	assert.Equal(t, "s3", fp.Scheme())
 	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestFactory(t *testing.T) {
+	p := NewFactory().Create(confmap.ProviderSettings{})
+	_, ok := p.(*provider)
+	require.True(t, ok)
 }

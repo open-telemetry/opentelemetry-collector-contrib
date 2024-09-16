@@ -52,7 +52,7 @@ func (s *ServiceStore) RefreshTick(ctx context.Context) {
 
 // Decorate decorates metrics and update kubernetesBlob
 // service info is not mandatory
-func (s *ServiceStore) Decorate(_ context.Context, metric CIMetric, _ map[string]interface{}) bool {
+func (s *ServiceStore) Decorate(_ context.Context, metric CIMetric, _ map[string]any) bool {
 	if metric.HasTag(ci.K8sPodNameKey) {
 		podKey := createPodKeyFromMetric(metric)
 		if podKey == "" {

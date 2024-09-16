@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("fluentforward")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
+)
+
 const (
-	Type          = "fluentforward"
 	LogsStability = component.StabilityLevelBeta
 )

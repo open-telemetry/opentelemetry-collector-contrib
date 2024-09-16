@@ -33,7 +33,7 @@ func TestMetricProcessorCapabilities(t *testing.T) {
 	require.NotNil(t, p)
 
 	// verify
-	assert.Equal(t, false, p.Capabilities().MutatesData)
+	assert.False(t, p.Capabilities().MutatesData)
 }
 
 func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
@@ -42,8 +42,8 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): mExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
 	})
 
@@ -101,8 +101,8 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): mExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
 	})
 
@@ -132,7 +132,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 			})),
 			m,
 		))
-		assert.Len(t, defaultExp.AllMetrics(), 0,
+		assert.Empty(t, defaultExp.AllMetrics(),
 			"metric should not be routed to default exporter",
 		)
 		assert.Len(t, mExp.AllMetrics(), 1,
@@ -195,8 +195,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): mExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
 	})
 
@@ -221,7 +221,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 		rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
-		assert.Len(t, defaultExp.AllMetrics(), 0,
+		assert.Empty(t, defaultExp.AllMetrics(),
 			"metric should not be routed to default exporter",
 		)
 		assert.Len(t, mExp.AllMetrics(), 1,
@@ -250,8 +250,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): mExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
 	})
 
@@ -312,8 +312,8 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 
 		host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 			component.DataTypeMetrics: {
-				component.NewID("otlp"):              defaultExp,
-				component.NewIDWithName("otlp", "2"): mExp,
+				component.MustNewID("otlp"):              defaultExp,
+				component.MustNewIDWithName("otlp", "2"): mExp,
 			},
 		})
 
@@ -345,9 +345,9 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "1"): firstExp,
-			component.NewIDWithName("otlp", "2"): secondExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
+			component.MustNewIDWithName("otlp", "2"): secondExp,
 		},
 	})
 
@@ -384,8 +384,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
 
 		assert.Len(t, defaultExp.AllMetrics(), 1)
-		assert.Len(t, firstExp.AllMetrics(), 0)
-		assert.Len(t, secondExp.AllMetrics(), 0)
+		assert.Empty(t, firstExp.AllMetrics())
+		assert.Empty(t, secondExp.AllMetrics())
 	})
 
 	t.Run("metric matched by one of two expressions", func(t *testing.T) {
@@ -403,9 +403,9 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 
 		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
 
-		assert.Len(t, defaultExp.AllMetrics(), 0)
+		assert.Empty(t, defaultExp.AllMetrics())
 		assert.Len(t, firstExp.AllMetrics(), 1)
-		assert.Len(t, secondExp.AllMetrics(), 0)
+		assert.Empty(t, secondExp.AllMetrics())
 	})
 
 	t.Run("metric matched by all expressions", func(t *testing.T) {
@@ -429,12 +429,12 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 
 		require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
 
-		assert.Len(t, defaultExp.AllMetrics(), 0)
+		assert.Empty(t, defaultExp.AllMetrics())
 		assert.Len(t, firstExp.AllMetrics(), 1)
 		assert.Len(t, secondExp.AllMetrics(), 1)
 
-		assert.Equal(t, firstExp.AllMetrics()[0].MetricCount(), 2)
-		assert.Equal(t, secondExp.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, 2, firstExp.AllMetrics()[0].MetricCount())
+		assert.Equal(t, 2, secondExp.AllMetrics()[0].MetricCount())
 		assert.Equal(t, firstExp.AllMetrics(), secondExp.AllMetrics())
 	})
 
@@ -480,8 +480,8 @@ func TestMetricsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "1"): firstExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
 		},
 	})
 
@@ -512,5 +512,5 @@ func TestMetricsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 
 	// verify
 	assert.Len(t, defaultExp.AllMetrics(), 1)
-	assert.Len(t, firstExp.AllMetrics(), 0)
+	assert.Empty(t, firstExp.AllMetrics())
 }

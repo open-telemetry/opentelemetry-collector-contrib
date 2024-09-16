@@ -4,7 +4,21 @@ carbon/allsettings:
   # use endpoint to specify alternative destinations for the exporter,
   # the default is localhost:2003
   endpoint: localhost:8080
+  max_idle_conns: 15
   # timeout is the maximum duration allowed to connecting and sending the
   # data to the Carbon/Graphite backend.
   # The default is 5 seconds.
   timeout: 10s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    randomization_factor: 0.7
+    multiplier: 3.14
+    max_interval: 60s
+    max_elapsed_time: 10m
+  resource_to_telemetry_conversion:
+    enabled: true

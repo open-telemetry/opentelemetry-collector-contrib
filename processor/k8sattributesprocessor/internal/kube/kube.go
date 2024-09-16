@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
@@ -26,7 +26,9 @@ const (
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
-	MetadataFromNamespace  = "namespace"
+	MetadataFromNamespace = "namespace"
+	// MetadataFromNode is used to specify to extract metadata/labels/annotations from node
+	MetadataFromNode       = "node"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -88,12 +90,13 @@ var (
 type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
 	GetNamespace(string) (*Namespace, bool)
+	GetNode(string) (*Node, bool)
 	Start()
 	Stop()
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet) (Client, error)
+type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -108,6 +111,7 @@ type Pod struct {
 	StartTime   *metav1.Time
 	Ignore      bool
 	Namespace   string
+	NodeName    string
 	HostNetwork bool
 
 	// Containers specifies all containers in this pod.
@@ -136,7 +140,8 @@ type Container struct {
 
 // ContainerStatus stores resource attributes for a particular container run defined by k8s pod status.
 type ContainerStatus struct {
-	ContainerID string
+	ContainerID     string
+	ImageRepoDigest string
 }
 
 // Namespace represents a kubernetes namespace.
@@ -146,6 +151,13 @@ type Namespace struct {
 	Attributes   map[string]string
 	StartTime    metav1.Time
 	DeletedAt    time.Time
+}
+
+// Node represents a kubernetes node.
+type Node struct {
+	Name       string
+	NodeUID    string
+	Attributes map[string]string
 }
 
 type deleteRequest struct {
@@ -183,28 +195,31 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
-	CronJobName        bool
-	DeploymentName     bool
-	DeploymentUID      bool
-	DaemonSetUID       bool
-	DaemonSetName      bool
-	JobUID             bool
-	JobName            bool
-	Namespace          bool
-	PodName            bool
-	PodUID             bool
-	PodHostName        bool
-	ReplicaSetID       bool
-	ReplicaSetName     bool
-	StatefulSetUID     bool
-	StatefulSetName    bool
-	Node               bool
-	StartTime          bool
-	ContainerName      bool
-	ContainerID        bool
-	ContainerImageName bool
-	ContainerImageTag  bool
-	ClusterUID         bool
+	CronJobName               bool
+	DeploymentName            bool
+	DeploymentUID             bool
+	DaemonSetUID              bool
+	DaemonSetName             bool
+	JobUID                    bool
+	JobName                   bool
+	Namespace                 bool
+	PodName                   bool
+	PodUID                    bool
+	PodHostName               bool
+	PodIP                     bool
+	ReplicaSetID              bool
+	ReplicaSetName            bool
+	StatefulSetUID            bool
+	StatefulSetName           bool
+	Node                      bool
+	NodeUID                   bool
+	StartTime                 bool
+	ContainerName             bool
+	ContainerID               bool
+	ContainerImageName        bool
+	ContainerImageRepoDigests bool
+	ContainerImageTag         bool
+	ClusterUID                bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
@@ -247,9 +262,10 @@ type FieldExtractionRule struct {
 	// Full value is extracted when no regexp is provided.
 	Regex *regexp.Regexp
 	// From determines the kubernetes object the field should be retrieved from.
-	// Currently only two values are supported,
+	// Currently only three values are supported,
 	//  - pod
 	//  - namespace
+	//  - node
 	From string
 }
 
@@ -262,6 +278,12 @@ func (r *FieldExtractionRule) extractFromPodMetadata(metadata map[string]string,
 
 func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata map[string]string, tags map[string]string, formatter string) {
 	if r.From == MetadataFromNamespace {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromNodeMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+	if r.From == MetadataFromNode {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }

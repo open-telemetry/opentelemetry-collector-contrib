@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
@@ -39,7 +39,7 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape from couchdb version 2.31", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
-		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
 		scraper.client = mockClient
 
 		actualMetrics, err := scraper.scrape(context.Background())
@@ -56,7 +56,7 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_3.12.json"))
-		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
 		scraper.client = mockClient
 
 		actualMetrics, err := scraper.scrape(context.Background())
@@ -72,8 +72,8 @@ func TestScrape(t *testing.T) {
 
 	t.Run("scrape returns nothing", func(t *testing.T) {
 		mockClient := new(mockClient)
-		mockClient.On("GetStats", "_local").Return(map[string]interface{}{}, nil)
-		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
+		mockClient.On("GetStats", "_local").Return(map[string]any{}, nil)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
 		scraper.client = mockClient
 
 		metrics, err := scraper.scrape(context.Background())
@@ -81,21 +81,21 @@ func TestScrape(t *testing.T) {
 		assert.Equal(t, 0, metrics.DataPointCount(), "Expected 0 datapoints to be collected")
 
 		var partialScrapeErr scrapererror.PartialScrapeError
-		require.True(t, errors.As(err, &partialScrapeErr), "returned error was not PartialScrapeError")
-		require.True(t, partialScrapeErr.Failed > 0, "Expected scrape failures, but none were recorded!")
+		require.ErrorAs(t, err, &partialScrapeErr, "returned error was not PartialScrapeError")
+		require.Positive(t, partialScrapeErr.Failed, "Expected scrape failures, but none were recorded!")
 	})
 
 	t.Run("scrape error: failed to connect to client", func(t *testing.T) {
-		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
 
 		_, err := scraper.scrape(context.Background())
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Equal(t, err, errors.New("no client available"))
 	})
 
 	t.Run("scrape error: get stats endpoint error", func(t *testing.T) {
 		obs, logs := observer.New(zap.ErrorLevel)
-		settings := receivertest.NewNopCreateSettings()
+		settings := receivertest.NewNopSettings()
 		settings.Logger = zap.New(obs)
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats(""))
@@ -103,7 +103,7 @@ func TestScrape(t *testing.T) {
 		scraper.client = mockClient
 
 		_, err := scraper.scrape(context.Background())
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Equal(t, 1, logs.Len())
 		require.Equal(t, []observer.LoggedEntry{
 			{
@@ -125,21 +125,21 @@ func TestStart(t *testing.T) {
 		cfg.Password = "otelp"
 		require.NoError(t, component.ValidateConfig(cfg))
 
-		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
 		require.NoError(t, err)
 	})
 	t.Run("start fail", func(t *testing.T) {
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.HTTPClientSettings.TLSSetting.CAFile = "/non/existent"
+		cfg.ClientConfig.TLSSetting.CAFile = "/non/existent"
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
 		require.NoError(t, component.ValidateConfig(cfg))
 
-		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
-		require.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -158,10 +158,10 @@ func TestMetricSettings(t *testing.T) {
 		CouchdbHttpdViews:         metadata.MetricConfig{Enabled: false},
 	}
 	cfg := &Config{
-		HTTPClientSettings:   confighttp.HTTPClientSettings{},
+		ClientConfig:         confighttp.ClientConfig{},
 		MetricsBuilderConfig: mbc,
 	}
-	scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
 	scraper.client = mockClient
 
 	metrics, err := scraper.scrape(context.Background())
@@ -172,11 +172,11 @@ func TestMetricSettings(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metrics, pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
-	require.Equal(t, metrics.MetricCount(), 1)
+	require.Equal(t, 1, metrics.MetricCount())
 }
 
-func getStats(filename string) (map[string]interface{}, error) {
-	var stats map[string]interface{}
+func getStats(filename string) (map[string]any, error) {
+	var stats map[string]any
 
 	if filename == "" {
 		return nil, errors.New("bad response")
@@ -226,14 +226,14 @@ func (_m *mockClient) Get(path string) ([]byte, error) {
 }
 
 // GetStats provides a mock function with given fields: nodeName
-func (_m *mockClient) GetStats(nodeName string) (map[string]interface{}, error) {
+func (_m *mockClient) GetStats(nodeName string) (map[string]any, error) {
 	ret := _m.Called(nodeName)
 
-	var r0 map[string]interface{}
-	if rf, ok := ret.Get(0).(func(string) map[string]interface{}); ok {
+	var r0 map[string]any
+	if rf, ok := ret.Get(0).(func(string) map[string]any); ok {
 		r0 = rf(nodeName)
 	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(map[string]interface{})
+		r0 = ret.Get(0).(map[string]any)
 	}
 
 	var r1 error

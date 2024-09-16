@@ -34,6 +34,12 @@ type InformerProviderNamespace func(
 	client kubernetes.Interface,
 ) cache.SharedInformer
 
+// InformerProviderNode defines a function type that returns a new SharedInformer. It is used to
+// allow passing custom shared informers to the watch client for fetching node objects.
+type InformerProviderNode func(
+	client kubernetes.Interface,
+) cache.SharedInformer
+
 // InformerProviderReplicaSet defines a function type that returns a new SharedInformer. It is used to
 // allow passing custom shared informers to the watch client.
 type InformerProviderReplicaSet func(

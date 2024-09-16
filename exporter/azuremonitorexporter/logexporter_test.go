@@ -94,6 +94,7 @@ func TestLogRecordToEnvelope(t *testing.T) {
 			assert.Equal(t, contracts.Information, messageData.SeverityLevel)
 			assert.Equal(t, defaultTraceIDAsHex, envelope.Tags[contracts.OperationId])
 			assert.Equal(t, defaultSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
+			assert.Contains(t, envelope.Tags[contracts.InternalSdkVersion], "otelc-")
 		})
 	}
 }

@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("webhookevent")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
+)
+
 const (
-	Type          = "webhookevent"
 	LogsStability = component.StabilityLevelAlpha
 )

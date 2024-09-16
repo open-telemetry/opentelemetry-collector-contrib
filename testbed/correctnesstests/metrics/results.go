@@ -25,11 +25,11 @@ type result struct {
 func (r *results) Init(resultsDir string) {
 	err := os.MkdirAll(resultsDir, os.FileMode(0755))
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 	r.resultsFile, err = os.Create(path.Join(resultsDir, "TESTRESULTS.md"))
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 	r.writeString(
 		"# Test Results\n" +
@@ -39,7 +39,7 @@ func (r *results) Init(resultsDir string) {
 	)
 }
 
-func (r *results) Add(_ string, rslt interface{}) {
+func (r *results) Add(_ string, rslt any) {
 	tr := rslt.(result)
 	line := fmt.Sprintf(
 		"%-40s|%-6s|%9d|\n",

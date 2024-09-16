@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
@@ -18,20 +19,20 @@ import (
 var ErrEndOfHeader = errors.New("end of header")
 
 type Reader struct {
-	logger   *zap.SugaredLogger
+	set      component.TelemetrySettings
 	cfg      Config
 	pipeline pipeline.Pipeline
 	output   *pipelineOutput
 }
 
-func NewReader(logger *zap.SugaredLogger, cfg Config) (*Reader, error) {
-	r := &Reader{logger: logger, cfg: cfg}
+func NewReader(set component.TelemetrySettings, cfg Config) (*Reader, error) {
+	r := &Reader{set: set, cfg: cfg}
 	var err error
-	r.output = newPipelineOutput(logger)
+	r.output = newPipelineOutput(set)
 	r.pipeline, err = pipeline.Config{
 		Operators:     cfg.metadataOperators,
 		DefaultOutput: r.output,
-	}.Build(logger)
+	}.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipeline: %w", err)
 	}
@@ -54,7 +55,8 @@ func (r *Reader) Process(ctx context.Context, token []byte, fileAttributes map[s
 	newEntry.Body = string(token)
 
 	if err := firstOperator.Process(ctx, newEntry); err != nil {
-		return fmt.Errorf("process header entry: %w", err)
+		r.set.Logger.Error("process header entry", zap.Error(err))
+		// Do not return yet. An entry was added to the logsChan which must be consumed generically.
 	}
 
 	ent, err := r.output.WaitForEntry(ctx)

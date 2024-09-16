@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -41,6 +40,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessThreads:             MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					ProcessCgroup:         ResourceAttributeConfig{Enabled: true},
 					ProcessCommand:        ResourceAttributeConfig{Enabled: true},
 					ProcessCommandLine:    ResourceAttributeConfig{Enabled: true},
 					ProcessExecutableName: ResourceAttributeConfig{Enabled: true},
@@ -70,6 +70,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessThreads:             MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					ProcessCgroup:         ResourceAttributeConfig{Enabled: false},
 					ProcessCommand:        ResourceAttributeConfig{Enabled: false},
 					ProcessCommandLine:    ResourceAttributeConfig{Enabled: false},
 					ProcessExecutableName: ResourceAttributeConfig{Enabled: false},
@@ -97,7 +98,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 
@@ -113,6 +114,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				ProcessCgroup:         ResourceAttributeConfig{Enabled: true},
 				ProcessCommand:        ResourceAttributeConfig{Enabled: true},
 				ProcessCommandLine:    ResourceAttributeConfig{Enabled: true},
 				ProcessExecutableName: ResourceAttributeConfig{Enabled: true},
@@ -125,6 +127,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				ProcessCgroup:         ResourceAttributeConfig{Enabled: false},
 				ProcessCommand:        ResourceAttributeConfig{Enabled: false},
 				ProcessCommandLine:    ResourceAttributeConfig{Enabled: false},
 				ProcessExecutableName: ResourceAttributeConfig{Enabled: false},
@@ -153,6 +156,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

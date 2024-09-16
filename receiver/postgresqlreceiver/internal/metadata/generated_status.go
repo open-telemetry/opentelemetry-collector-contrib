@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("postgresql")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
+)
+
 const (
-	Type             = "postgresql"
 	MetricsStability = component.StabilityLevelBeta
 )

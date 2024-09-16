@@ -118,10 +118,10 @@ func TestTask_MappedPort(t *testing.T) {
 			EC2:        &ec2.Instance{PrivateIpAddress: aws.String("172.168.1.1")},
 		}
 		ip, err := task.PrivateIP()
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "172.168.1.1", ip)
 		p, err := task.MappedPort(&ecs.ContainerDefinition{Name: aws.String("c1")}, 2112)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(2345), p)
 	})
 
@@ -132,7 +132,7 @@ func TestTask_MappedPort(t *testing.T) {
 			EC2:        &ec2.Instance{PrivateIpAddress: aws.String("172.168.1.1")},
 		}
 		p, err := task.MappedPort(&ecs.ContainerDefinition{Name: aws.String("c1")}, 2112)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(2345), p)
 	})
 
@@ -156,7 +156,7 @@ func TestTask_MappedPort(t *testing.T) {
 			Definition: vpcTaskDef,
 		}
 		p, err := task.MappedPort(vpcTaskDef.ContainerDefinitions[0], 2112)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(2345), p)
 	})
 
@@ -168,7 +168,7 @@ func TestTask_MappedPort(t *testing.T) {
 			Definition: def,
 		}
 		p, err := task.MappedPort(def.ContainerDefinitions[0], 2112)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(2345), p)
 	})
 

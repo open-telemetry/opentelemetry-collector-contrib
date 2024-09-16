@@ -4,59 +4,57 @@
 package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 
 import (
-	"bytes"
 	"errors"
-	"io"
+	"fmt"
 	"net"
-	"strings"
 
 	"go.opentelemetry.io/collector/consumer"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 type udpServer struct {
 	packetConn net.PacketConn
-	reporter   Reporter
+	transport  Transport
 }
 
+// Ensure that Server is implemented on UDP Server.
 var _ (Server) = (*udpServer)(nil)
 
 // NewUDPServer creates a transport.Server using UDP as its transport.
-func NewUDPServer(addr string) (Server, error) {
-	packetConn, err := net.ListenPacket("udp", addr)
-	if err != nil {
-		return nil, err
+func NewUDPServer(transport Transport, address string) (Server, error) {
+	if !transport.IsPacketTransport() {
+		return nil, fmt.Errorf("NewUDPServer with %s: %w", transport.String(), ErrUnsupportedPacketTransport)
 	}
 
-	u := udpServer{
-		packetConn: packetConn,
+	conn, err := net.ListenPacket(transport.String(), address)
+	if err != nil {
+		return nil, fmt.Errorf("starting to listen %s socket: %w", transport.String(), err)
 	}
-	return &u, nil
+
+	return &udpServer{
+		packetConn: conn,
+		transport:  transport,
+	}, nil
 }
 
+// ListenAndServe starts the server ready to receive metrics.
 func (u *udpServer) ListenAndServe(
-	parser protocol.Parser,
 	nextConsumer consumer.Metrics,
 	reporter Reporter,
 	transferChan chan<- Metric,
 ) error {
-	if parser == nil || nextConsumer == nil || reporter == nil {
+	if nextConsumer == nil || reporter == nil {
 		return errNilListenAndServeParameters
 	}
-
-	u.reporter = reporter
 
 	buf := make([]byte, 65527) // max size for udp packet body (assuming ipv6)
 	for {
 		n, addr, err := u.packetConn.ReadFrom(buf)
 		if n > 0 {
-			bufCopy := make([]byte, n)
-			copy(bufCopy, buf)
-			u.handlePacket(bufCopy, addr, transferChan)
+			u.handlePacket(n, buf, addr, transferChan)
 		}
 		if err != nil {
-			u.reporter.OnDebugf("UDP Transport (%s) - ReadFrom error: %v",
+			reporter.OnDebugf("%s Transport (%s) - ReadFrom error: %v",
+				u.transport,
 				u.packetConn.LocalAddr(),
 				err)
 			var netErr net.Error
@@ -70,27 +68,23 @@ func (u *udpServer) ListenAndServe(
 	}
 }
 
+// Close closes the server.
 func (u *udpServer) Close() error {
 	return u.packetConn.Close()
 }
 
+// handlePacket is helper that parses the buffer and split it line by line to be parsed upstream.
 func (u *udpServer) handlePacket(
+	numBytes int,
 	data []byte,
 	addr net.Addr,
 	transferChan chan<- Metric,
 ) {
-	buf := bytes.NewBuffer(data)
-	for {
-		bytes, err := buf.ReadBytes((byte)('\n'))
-		if errors.Is(err, io.EOF) {
-			if len(bytes) == 0 {
-				// Completed without errors.
-				break
-			}
-		}
-		line := strings.TrimSpace(string(bytes))
-		if line != "" {
-			transferChan <- Metric{line, addr}
+	splitPacket := NewSplitBytes(data[:numBytes], '\n')
+	for splitPacket.Next() {
+		chunk := splitPacket.Chunk()
+		if len(chunk) > 0 {
+			transferChan <- Metric{string(chunk), addr}
 		}
 	}
 }

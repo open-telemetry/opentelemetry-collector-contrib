@@ -4,13 +4,14 @@
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
 	"net/url"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -23,10 +24,15 @@ type defaultHecWorker struct {
 	url     *url.URL
 	client  *http.Client
 	headers map[string]string
+	logger  *zap.Logger
 }
 
 func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
-	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), buf)
+	// We copy the bytes to a new buffer to avoid corruption. This is a workaround to avoid hitting https://github.com/golang/go/issues/51907.
+	nb := make([]byte, buf.Len())
+	copy(nb, buf.Bytes())
+	bodyBuf := bytes.NewReader(nb)
+	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), bodyBuf)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -52,6 +58,10 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable {
+		hec.logger.Error("Splunk is unable to receive data. Please investigate the health of the cluster", zap.Int("status", resp.StatusCode), zap.String("host", hec.url.String()))
+	}
+
 	err = splunk.HandleHTTPCode(resp)
 	if err != nil {
 		return err
@@ -61,10 +71,11 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 	// HTTP client will not reuse the same connection unless it is drained.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18281 for more details.
 	if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode != http.StatusBadGateway {
-		_, errCopy := io.Copy(io.Discard, resp.Body)
-		err = multierr.Combine(err, errCopy)
+		if _, errCopy := io.Copy(io.Discard, resp.Body); errCopy != nil {
+			return errCopy
+		}
 	}
-	return err
+	return nil
 }
 
 var _ hecWorker = &defaultHecWorker{}

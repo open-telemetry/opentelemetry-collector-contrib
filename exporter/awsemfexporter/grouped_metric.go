@@ -22,19 +22,36 @@ type groupedMetric struct {
 
 // metricInfo defines value and unit for OT Metrics
 type metricInfo struct {
-	value interface{}
+	value any
 	unit  string
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config, calculators *emfCalculators) error {
+func addToGroupedMetric(
+	pmd pmetric.Metric,
+	groupedMetrics map[any]*groupedMetric,
+	metadata cWMetricMetadata,
+	patternReplaceSucceeded bool,
+	descriptor map[string]MetricDescriptor,
+	config *Config,
+	calculators *emfCalculators,
+) error {
 
-	dps := getDataPoints(pmd, metadata, logger)
+	dps := getDataPoints(pmd, metadata, config.logger)
 	if dps == nil || dps.Len() == 0 {
 		return nil
 	}
 
 	for i := 0; i < dps.Len(); i++ {
+		// Drop stale or NaN metric values
+		if isStaleNanInf, attrs := dps.IsStaleNaNInf(i); isStaleNanInf {
+			if config != nil && config.logger != nil {
+				config.logger.Debug("dropped metric with nan value",
+					zap.String("metric.name", pmd.Name()),
+					zap.Any("metric.attributes", attrs))
+			}
+			continue
+		}
 		dps, retained := dps.CalculateDeltaDatapoints(i, metadata.instrumentationScopeName, config.DetailedMetrics, calculators)
 		if !retained {
 			continue
@@ -74,7 +91,7 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 			if _, ok := groupedMetrics[groupKey]; ok {
 				// if MetricName already exists in metrics map, print warning log
 				if _, ok := groupedMetrics[groupKey].metrics[dp.name]; ok {
-					logger.Warn(
+					config.logger.Warn(
 						"Duplicate metric found",
 						zap.String("Name", dp.name),
 						zap.Any("Labels", labels),

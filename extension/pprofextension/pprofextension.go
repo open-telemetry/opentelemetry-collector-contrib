@@ -15,17 +15,18 @@ import (
 	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.uber.org/zap"
 )
 
 var running = &atomic.Bool{}
 
 type pprofExtension struct {
-	config Config
-	logger *zap.Logger
-	file   *os.File
-	server http.Server
-	stopCh chan struct{}
+	config            Config
+	file              *os.File
+	server            http.Server
+	stopCh            chan struct{}
+	telemetrySettings component.TelemetrySettings
 }
 
 func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
@@ -49,7 +50,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
 	var ln net.Listener
-	ln, startErr = p.config.TCPAddr.Listen()
+	ln, startErr = p.config.TCPAddr.Listen(context.Background())
 	if startErr != nil {
 		return startErr
 	}
@@ -57,7 +58,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	runtime.SetBlockProfileRate(p.config.BlockProfileFraction)
 	runtime.SetMutexProfileFraction(p.config.MutexProfileFraction)
 
-	p.logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
+	p.telemetrySettings.Logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
 	p.stopCh = make(chan struct{})
 	go func() {
 		defer func() {
@@ -67,7 +68,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 
 		// The listener ownership goes to the server.
 		if errHTTP := p.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -97,9 +98,9 @@ func (p *pprofExtension) Shutdown(context.Context) error {
 	return err
 }
 
-func newServer(config Config, logger *zap.Logger) *pprofExtension {
+func newServer(config Config, params component.TelemetrySettings) *pprofExtension {
 	return &pprofExtension{
-		config: config,
-		logger: logger,
+		config:            config,
+		telemetrySettings: params,
 	}
 }

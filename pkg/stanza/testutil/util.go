@@ -7,34 +7,31 @@ import (
 	"context"
 	"strings"
 	"sync"
-	"testing"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-// Logger will return a new tesst logger
-func Logger(t testing.TB) *zap.SugaredLogger {
-	return zaptest.NewLogger(t, zaptest.Level(zapcore.ErrorLevel)).Sugar()
-}
-
 type mockPersister struct {
 	data    map[string][]byte
 	dataMux sync.Mutex
+	errKeys map[string]error
 }
 
 func (p *mockPersister) Get(_ context.Context, k string) ([]byte, error) {
 	p.dataMux.Lock()
 	defer p.dataMux.Unlock()
+	if _, ok := p.errKeys[k]; ok {
+		return nil, p.errKeys[k]
+	}
 	return p.data[k], nil
 }
 
 func (p *mockPersister) Set(_ context.Context, k string, v []byte) error {
 	p.dataMux.Lock()
 	defer p.dataMux.Unlock()
+	if _, ok := p.errKeys[k]; ok {
+		return p.errKeys[k]
+	}
 	p.data[k] = v
 	return nil
 }
@@ -42,6 +39,9 @@ func (p *mockPersister) Set(_ context.Context, k string, v []byte) error {
 func (p *mockPersister) Delete(_ context.Context, k string) error {
 	p.dataMux.Lock()
 	defer p.dataMux.Unlock()
+	if _, ok := p.errKeys[k]; ok {
+		return p.errKeys[k]
+	}
 	delete(p.data, k)
 	return nil
 }
@@ -52,9 +52,15 @@ func NewUnscopedMockPersister() operator.Persister {
 	return &mockPersister{data: data}
 }
 
-// NewMockPersister will return a new persister for testing
 func NewMockPersister(scope string) operator.Persister {
 	return operator.NewScopedPersister(scope, NewUnscopedMockPersister())
+}
+
+// NewErrPersister will return a new persister for testing
+// which will return an error if any of the specified keys are used
+func NewErrPersister(errKeys map[string]error) operator.Persister {
+	data := make(map[string][]byte)
+	return &mockPersister{data: data, errKeys: errKeys}
 }
 
 // Trim removes white space from the lines of a string

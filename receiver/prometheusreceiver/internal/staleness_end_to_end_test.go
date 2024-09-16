@@ -50,7 +50,7 @@ func TestStalenessMarkersEndToEnd(t *testing.T) {
 
 	// 1. Setup the server that sends series that intermittently appear and disappear.
 	n := &atomic.Uint64{}
-	scrapeServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	scrapeServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// Increment the scrape count atomically per scrape.
 		i := n.Add(1)
 
@@ -81,7 +81,7 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 
 	// 2. Set up the Prometheus RemoteWrite endpoint.
 	prweUploads := make(chan *prompb.WriteRequest)
-	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	prweServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 		// Snappy decode the uploads.
 		payload, rerr := io.ReadAll(req.Body)
 		require.NoError(t, rerr)
@@ -128,17 +128,17 @@ service:
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.Remove(confFile.Name())
 	_, err = confFile.Write([]byte(cfg))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// 4. Run the OpenTelemetry Collector.
 	receivers, err := receiver.MakeFactoryMap(prometheusreceiver.NewFactory())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	exporters, err := exporter.MakeFactoryMap(prometheusremotewriteexporter.NewFactory())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	processors, err := processor.MakeFactoryMap(batchprocessor.NewFactory())
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	factories := otelcol.Factories{
 		Receivers:  receivers,
@@ -146,19 +146,14 @@ service:
 		Processors: processors,
 	}
 
-	fmp := fileprovider.New()
-	configProvider, err := otelcol.NewConfigProvider(
-		otelcol.ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{confFile.Name()},
-				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
-			},
-		})
-	require.NoError(t, err)
-
 	appSettings := otelcol.CollectorSettings{
-		Factories:      factories,
-		ConfigProvider: configProvider,
+		Factories: func() (otelcol.Factories, error) { return factories, nil },
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{confFile.Name()},
+				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
+			},
+		},
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
@@ -173,7 +168,7 @@ service:
 	}
 
 	app, err := otelcol.NewCollector(appSettings)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	go func() {
 		assert.NoError(t, app.Run(context.Background()))
@@ -201,13 +196,13 @@ service:
 	// 6. Assert that we encounter the stale markers aka special NaNs for the various time series.
 	staleMarkerCount := 0
 	totalSamples := 0
-	require.True(t, len(wReqL) > 0, "Expecting at least one WriteRequest")
+	require.NotEmpty(t, wReqL, "Expecting at least one WriteRequest")
 	for i, wReq := range wReqL {
 		name := fmt.Sprintf("WriteRequest#%d", i)
-		require.True(t, len(wReq.Timeseries) > 0, "Expecting at least 1 timeSeries for:: "+name)
+		require.NotEmpty(t, wReq.Timeseries, "Expecting at least 1 timeSeries for:: "+name)
 		for j, ts := range wReq.Timeseries {
 			fullName := fmt.Sprintf("%s/TimeSeries#%d", name, j)
-			assert.True(t, len(ts.Samples) > 0, "Expected at least 1 Sample in:: "+fullName)
+			assert.NotEmpty(t, ts.Samples, "Expected at least 1 Sample in:: "+fullName)
 
 			// We are strictly counting series directly included in the scrapes, and no
 			// internal timeseries like "up" nor "scrape_seconds" etc.
@@ -230,11 +225,11 @@ service:
 		}
 	}
 
-	require.True(t, totalSamples > 0, "Expected at least 1 sample")
+	require.Positive(t, totalSamples, "Expected at least 1 sample")
 	// On every alternative scrape the prior scrape will be reported as sale.
 	// Expect at least:
 	//    * The first scrape will NOT return stale markers
 	//    * (N-1 / alternatives) = ((10-1) / 2) = ~40% chance of stale markers being emitted.
 	chance := float64(staleMarkerCount) / float64(totalSamples)
-	require.True(t, chance >= 0.4, fmt.Sprintf("Expected at least one stale marker: %.3f", chance))
+	require.GreaterOrEqual(t, chance, 0.4, fmt.Sprintf("Expected at least one stale marker: %.3f", chance))
 }

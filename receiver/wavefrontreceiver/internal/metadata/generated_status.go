@@ -6,7 +6,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("wavefront")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
+)
+
 const (
-	Type             = "wavefront"
 	MetricsStability = component.StabilityLevelBeta
 )

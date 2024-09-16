@@ -55,7 +55,7 @@ func TestParseSecurity(t *testing.T) {
 			require.NoError(t, err, "problem reading expected details")
 
 			// This is a little silly, but if we rely on unmarshaling
-			// then []string gets converted to []interface{} and the comparison fails
+			// then []string gets converted to []any and the comparison fails
 			detailBytes, err := json.Marshal(details)
 			require.NoError(t, err, "problem processing details result")
 

@@ -6,8 +6,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type      = component.MustNewType("pulsar")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
+)
+
 const (
-	Type             = "pulsar"
 	MetricsStability = component.StabilityLevelAlpha
 	TracesStability  = component.StabilityLevelAlpha
 	LogsStability    = component.StabilityLevelAlpha

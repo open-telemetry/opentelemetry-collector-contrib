@@ -6,7 +6,6 @@ package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -42,20 +41,18 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, err)
 			continue
 		}
-		path, err := filepath.Abs(fileinfo.Name())
-		if err != nil {
-			scrapeErrors = append(scrapeErrors, err)
-			continue
-		}
 		s.mb.RecordFileSizeDataPoint(now, fileinfo.Size())
 		s.mb.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
 		collectStats(now, fileinfo, s.mb, s.logger)
 
 		rb := s.mb.NewResourceBuilder()
 		rb.SetFileName(fileinfo.Name())
-		rb.SetFilePath(path)
+		rb.SetFilePath(match)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
+
+	s.mb.RecordFileCountDataPoint(now, int64(len(matches)))
+	s.mb.EmitForResource()
 
 	if len(scrapeErrors) > 0 {
 		return s.mb.Emit(), scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
@@ -63,7 +60,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
+func newScraper(cfg *Config, settings receiver.Settings) *scraper {
 	return &scraper{
 		include: cfg.Include,
 		logger:  settings.TelemetrySettings.Logger,

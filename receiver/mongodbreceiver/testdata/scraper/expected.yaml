@@ -1,5 +1,9 @@
 resourceMetrics:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: ecb6adf34046
     scopeMetrics:
       - metrics:
           - description: The number of cache operations of the instance.
@@ -219,31 +223,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
-          - description: The total number of active sessions.
-            name: mongodb.session.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "19"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: '{sessions}'
-          - description: The amount of time that the server has been running.
-            name: mongodb.uptime
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "58965"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: ms
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
           - description: The total time spent performing operations.
             name: mongodb.operation.time
             sum:
@@ -293,55 +272,33 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ms
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
+          - description: The total number of active sessions.
+            name: mongodb.session.count
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: collection
-                      value:
-                        stringValue: products
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
+                - asInt: "19"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{accesses}'
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
+            unit: '{sessions}'
+          - description: The amount of time that the server has been running.
+            name: mongodb.uptime
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2"
-                  attributes:
-                    - key: collection
-                      value:
-                        stringValue: orders
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
+                - asInt: "58965"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{accesses}'
+              isMonotonic: true
+            unit: ms
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest
   - resource:
       attributes:
+        - key: server.address
+          value:
+            stringValue: ecb6adf34046
         - key: database
           value:
             stringValue: fakedatabase
@@ -353,10 +310,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{collections}'
@@ -367,9 +320,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: type
                       value:
                         stringValue: active
@@ -377,9 +327,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "838857"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: type
                       value:
                         stringValue: available
@@ -387,9 +334,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: type
                       value:
                         stringValue: current
@@ -402,10 +346,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3141"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -416,9 +356,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: operation
                       value:
                         stringValue: delete
@@ -426,9 +363,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: operation
                       value:
                         stringValue: insert
@@ -436,9 +370,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: operation
                       value:
                         stringValue: update
@@ -451,23 +382,35 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{extents}'
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: products
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{accesses}'
           - description: The number of indexes.
             name: mongodb.index.count
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{indexes}'
@@ -477,10 +420,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "16384"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -491,9 +430,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "82837504"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: type
                       value:
                         stringValue: resident
@@ -501,9 +437,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: type
                       value:
                         stringValue: virtual
@@ -516,10 +449,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{objects}'
@@ -529,14 +458,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "16384"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest

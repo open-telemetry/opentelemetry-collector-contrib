@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "with-endpoint"),
 			expected: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://a.valid.url:1234/path",
 				},
 				PortLabels:      []string{"ECS_TASK_OBSERVER_PORT"},
@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != "" {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.expectedErr)
 				return

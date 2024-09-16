@@ -23,7 +23,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetricsReceiver(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -36,7 +36,7 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -49,7 +49,7 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -60,7 +60,7 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		createDefaultConfig(),
 		nil,
 	)

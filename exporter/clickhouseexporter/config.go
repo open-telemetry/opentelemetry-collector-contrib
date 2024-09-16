@@ -8,25 +8,25 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-	// QueueSettings is a subset of exporterhelper.QueueSettings,
-	// because only QueueSize is user-settable.
-	QueueSettings QueueSettings `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
-	// Username is the authentication password.
+	// Password is the authentication password.
 	Password configopaque.String `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
@@ -34,33 +34,46 @@ type Config struct {
 	ConnectionParams map[string]string `mapstructure:"connection_params"`
 	// LogsTableName is the table name for logs. default is `otel_logs`.
 	LogsTableName string `mapstructure:"logs_table_name"`
-	// TracesTableName is the table name for logs. default is `otel_traces`.
+	// TracesTableName is the table name for traces. default is `otel_traces`.
 	TracesTableName string `mapstructure:"traces_table_name"`
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
 	MetricsTableName string `mapstructure:"metrics_table_name"`
-	// TTLDays is The data time-to-live in days, 0 means no ttl.
-	TTLDays uint `mapstructure:"ttl_days"`
+	// TTL is The data time-to-live example 30m, 48h. 0 means no ttl.
+	TTL time.Duration `mapstructure:"ttl"`
+	// TableEngine is the table engine to use. default is `MergeTree()`.
+	TableEngine TableEngine `mapstructure:"table_engine"`
+	// ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
+	ClusterName string `mapstructure:"cluster_name"`
+	// CreateSchema if set to true will run the DDL for creating the database and tables. default is true.
+	CreateSchema bool `mapstructure:"create_schema"`
+	// Compress controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4).
+	Compress string `mapstructure:"compress"`
+	// AsyncInsert if true will enable async inserts. Default is `true`.
+	// Ignored if async inserts are configured in the `endpoint` or `connection_params`.
+	// Async inserts may still be overridden server-side.
+	AsyncInsert bool `mapstructure:"async_insert"`
 }
 
-// QueueSettings is a subset of exporterhelper.QueueSettings.
-type QueueSettings struct {
-	// QueueSize set the length of the sending queue
-	QueueSize int `mapstructure:"queue_size"`
+// TableEngine defines the ENGINE string value when creating the table.
+type TableEngine struct {
+	Name   string `mapstructure:"name"`
+	Params string `mapstructure:"params"`
 }
 
 const defaultDatabase = "default"
+const defaultTableEngineName = "MergeTree"
 
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 )
 
-// Validate the clickhouse server configuration.
+// Validate the ClickHouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = errors.Join(err, errConfigNoEndpoint)
 	}
-	dsn, e := cfg.buildDSN(cfg.Database)
+	dsn, e := cfg.buildDSN()
 	if e != nil {
 		err = errors.Join(err, e)
 	}
@@ -74,15 +87,7 @@ func (cfg *Config) Validate() (err error) {
 	return err
 }
 
-func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
-	return exporterhelper.QueueSettings{
-		Enabled:      true,
-		NumConsumers: 1,
-		QueueSize:    cfg.QueueSettings.QueueSize,
-	}
-}
-
-func (cfg *Config) buildDSN(database string) (string, error) {
+func (cfg *Config) buildDSN() (string, error) {
 	dsnURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err.Error())
@@ -100,19 +105,20 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 		queryParams.Set("secure", "true")
 	}
 
-	// Override database if specified in config.
-	if cfg.Database != "" {
+	// Use async_insert from config if not specified in DSN.
+	if !queryParams.Has("async_insert") {
+		queryParams.Set("async_insert", fmt.Sprintf("%t", cfg.AsyncInsert))
+	}
+
+	if !queryParams.Has("compress") && (cfg.Compress == "" || cfg.Compress == "true") {
+		queryParams.Set("compress", "lz4")
+	} else if !queryParams.Has("compress") {
+		queryParams.Set("compress", cfg.Compress)
+	}
+
+	// Use database from config if not specified in path, or if config is not default.
+	if dsnURL.Path == "" || cfg.Database != defaultDatabase {
 		dsnURL.Path = cfg.Database
-	}
-
-	// Override database if specified in database param.
-	if database != "" {
-		dsnURL.Path = database
-	}
-
-	// Use default database if not specified in any other place.
-	if database == "" && cfg.Database == "" && dsnURL.Path == "" {
-		dsnURL.Path = defaultDatabase
 	}
 
 	// Override username and password if specified in config.
@@ -125,8 +131,8 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 	return dsnURL.String(), nil
 }
 
-func (cfg *Config) buildDB(database string) (*sql.DB, error) {
-	dsn, err := cfg.buildDSN(database)
+func (cfg *Config) buildDB() (*sql.DB, error) {
+	dsn, err := cfg.buildDSN()
 	if err != nil {
 		return nil, err
 	}
@@ -140,5 +146,31 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 	}
 
 	return conn, nil
+}
 
+// shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
+func (cfg *Config) shouldCreateSchema() bool {
+	return cfg.CreateSchema
+}
+
+// tableEngineString generates the ENGINE string.
+func (cfg *Config) tableEngineString() string {
+	engine := cfg.TableEngine.Name
+	params := cfg.TableEngine.Params
+
+	if cfg.TableEngine.Name == "" {
+		engine = defaultTableEngineName
+		params = ""
+	}
+
+	return fmt.Sprintf("%s(%s)", engine, params)
+}
+
+// clusterString generates the ON CLUSTER string. Returns empty string if not set.
+func (cfg *Config) clusterString() string {
+	if cfg.ClusterName == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("ON CLUSTER %s", cfg.ClusterName)
 }

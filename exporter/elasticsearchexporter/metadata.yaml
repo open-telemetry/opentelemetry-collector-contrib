@@ -4,6 +4,11 @@ status:
   class: exporter
   stability:
     beta: [traces, logs]
-  distributions: [contrib, observiq]
+    development: [metrics]
+  distributions: [contrib]
   codeowners:
-    active: [JaredTan95]
+    active: [JaredTan95, ycombinator, carsonip]
+
+tests:
+  config:
+    endpoints: [http://localhost:9200]

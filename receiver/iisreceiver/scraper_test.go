@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -22,7 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
@@ -33,11 +32,11 @@ func TestScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	scraper := newIisReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
-	scraper.newWatcher = newMockWatcherFactory(nil, 1)
+	scraper.newWatcher = newMockWatcherFactory(nil)
 	scraper.newWatcherFromPath = newMockWatcherFactorFromPath(nil, 1)
 	scraper.expandWildcardPath = func(s string) ([]string, error) {
 		return []string{strings.Replace(s, "*", "Instance", 1)}, nil
@@ -62,7 +61,7 @@ func TestScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings := receivertest.NewNopSettings()
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -72,7 +71,7 @@ func TestScrapeFailure(t *testing.T) {
 	)
 
 	expectedError := "failure to collect metric"
-	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError), 1)("", "", "")
+	mockWatcher, err := newMockWatcherFactory(errors.New(expectedError))("", "", "")
 	require.NoError(t, err)
 	scraper.totalWatcherRecorders = []watcherRecorder{
 		{
@@ -83,11 +82,12 @@ func TestScrapeFailure(t *testing.T) {
 		},
 	}
 
-	scraper.scrape(context.Background())
+	_, err = scraper.scrape(context.Background())
+	require.NoError(t, err)
 
 	require.Equal(t, 1, obs.Len())
 	log := obs.All()[0]
-	require.Equal(t, log.Level, zapcore.WarnLevel)
+	require.Equal(t, zapcore.WarnLevel, log.Level)
 	require.Equal(t, "error", log.Context[0].Key)
 	require.EqualError(t, log.Context[0].Interface.(error), expectedError)
 }
@@ -97,7 +97,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings := receivertest.NewNopSettings()
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -107,7 +107,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 	)
 
 	expectedError := "failure to collect metric"
-	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError), 1)("", "", "")
+	mockWatcher, err := newMockWatcherFactory(errors.New(expectedError))("", "", "")
 	require.NoError(t, err)
 	scraper.queueMaxAgeWatchers = []instanceWatcher{
 		{
@@ -116,18 +116,19 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 		},
 	}
 
-	scraper.scrape(context.Background())
+	_, err = scraper.scrape(context.Background())
+	require.NoError(t, err)
 
 	require.Equal(t, 1, obs.Len())
 	log := obs.All()[0]
-	require.Equal(t, log.Level, zapcore.WarnLevel)
+	require.Equal(t, zapcore.WarnLevel, log.Level)
 	require.Equal(t, "error", log.Context[0].Key)
 	require.EqualError(t, log.Context[0].Interface.(error), expectedError)
 }
 
 func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings := receivertest.NewNopSettings()
 
 	scraper := newIisReceiver(
 		rcvrSettings,
@@ -136,7 +137,7 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 	)
 
 	expectedError := "Failed to scrape counter \"counter\": A counter with a negative denominator value was detected.\r\n"
-	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError), 1)("", "", "")
+	mockWatcher, err := newMockWatcherFactory(errors.New(expectedError))("", "", "")
 	require.NoError(t, err)
 	scraper.queueMaxAgeWatchers = []instanceWatcher{
 		{
@@ -162,15 +163,15 @@ type mockPerfCounter struct {
 	value    float64
 }
 
-func newMockWatcherFactory(watchErr error, value float64) func(string, string,
+func newMockWatcherFactory(watchErr error) func(string, string,
 	string) (winperfcounters.PerfCounterWatcher, error) {
 	return func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
-		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
+		return &mockPerfCounter{watchErr: watchErr, value: 1}, nil
 	}
 }
 
 func newMockWatcherFactorFromPath(watchErr error, value float64) func(string) (winperfcounters.PerfCounterWatcher, error) {
-	return func(s string) (winperfcounters.PerfCounterWatcher, error) {
+	return func(_ string) (winperfcounters.PerfCounterWatcher, error) {
 		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
 	}
 }
@@ -187,5 +188,9 @@ func (mpc *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error)
 
 // Close
 func (mpc *mockPerfCounter) Close() error {
+	return nil
+}
+
+func (mpc *mockPerfCounter) Reset() error {
 	return nil
 }
