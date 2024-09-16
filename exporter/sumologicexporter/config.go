@@ -21,9 +21,9 @@ import (
 
 // Config defines configuration for Sumo Logic exporter.
 type Config struct {
-	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig   `mapstructure:",squash"`   // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
