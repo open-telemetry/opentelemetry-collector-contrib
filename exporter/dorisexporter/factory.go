@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ClientConfig:  httpClientConfig,
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		Table: Table{
 			Logs:    "otel_logs",
@@ -72,7 +72,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, cfg compon
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		// we config the timeout option in http client, so we don't need to set timeout here
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.BackOffConfig),
 	)
