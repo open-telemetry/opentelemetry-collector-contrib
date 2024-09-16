@@ -14,6 +14,7 @@ import (
 func TestDefaultTracesUnMarshaler(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
+		"otlp_json",
 		"jaeger_proto",
 		"jaeger_json",
 		"zipkin_proto",
@@ -34,6 +35,7 @@ func TestDefaultTracesUnMarshaler(t *testing.T) {
 func TestDefaultMetricsUnMarshaler(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
+		"otlp_json",
 	}
 	marshalers := defaultMetricsUnmarshalers()
 	assert.Equal(t, len(expectedEncodings), len(marshalers))
@@ -49,6 +51,7 @@ func TestDefaultMetricsUnMarshaler(t *testing.T) {
 func TestDefaultLogsUnMarshaler(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
+		"otlp_json",
 		"raw",
 		"text",
 		"json",
