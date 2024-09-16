@@ -356,18 +356,23 @@ func TestMemoryLimiterHit(t *testing.T) {
 	otlpreceiver.WithRetry(`
     retry_on_failure:
       enabled: true
+      max_interval: 5s
 `)
 	otlpreceiver.WithQueue(`
     sending_queue:
       enabled: true
-      queue_size: 10000
+      queue_size: 100000
+      num_consumers: 20
+`)
+	otlpreceiver.WithTimeout(`
+    timeout: 0s
 `)
 	processors := map[string]string{
 		"memory_limiter": `
   memory_limiter:
     check_interval: 1s
-    limit_mib: 500
-    spike_limit_mib: 100
+    limit_mib: 300
+    spike_limit_mib: 150
 `,
 	}
 	ScenarioMemoryLimiterHit(

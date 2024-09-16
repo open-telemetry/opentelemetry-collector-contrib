@@ -579,6 +579,7 @@ func ScenarioMemoryLimiterHit(
 		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
 	)
 	t.Cleanup(tc.Stop)
+	tc.MockBackend.EnableRecording()
 
 	tc.StartBackend()
 	tc.StartAgent()
@@ -586,15 +587,26 @@ func ScenarioMemoryLimiterHit(
 	tc.StartLoad(loadOptions)
 
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
-	// searchFunc checks for "sending queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
-	// to generate only successes from that time on
+
+	var timer *time.Timer
+
+	// check for "Memory usage is above hard limit"
 	tc.WaitForN(func() bool {
-		logFound := tc.AgentLogsContains("Memory usage is above hard limit. Forcing a GC.")
+		logFound := tc.AgentLogsContains("Memory usage is above soft limit. Refusing data.")
 		if !logFound {
 			dataChannel <- true
 			return false
+		} else {
+			// Log found. But keep the collector under stress for 10 more seconds so it starts refusing data
+			if timer == nil {
+				timer = time.NewTimer(10 * time.Second)
+			}
+			select {
+			case <-timer.C:
+			default:
+				return false
+			}
 		}
-		tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == 0 }, "no data successfully received before an error")
 		close(dataChannel)
 		return logFound
 	}, time.Second*time.Duration(sleepTime), "memory limit not hit")
@@ -604,7 +616,10 @@ func ScenarioMemoryLimiterHit(
 		return tc.MockBackend.DataItemsReceived() > 0
 	}, time.Second*time.Duration(sleepTime), "data started to be successfully received")
 
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, "all logs received")
+	// stop sending any more data
+	tc.StopLoad()
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, time.Second*time.Duration(sleepTime), "all logs received")
 
 	tc.WaitForN(func() bool {
 		// get IDs from logs to retry
@@ -618,9 +633,7 @@ func ScenarioMemoryLimiterHit(
 		return logsWereRetried
 	}, time.Second*time.Duration(sleepTime), "all logs were retried successfully")
 
-	tc.StopLoad()
 	tc.StopAgent()
-
 	tc.ValidateData()
 }
 
