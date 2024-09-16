@@ -258,12 +258,6 @@ func (ps *ProviderSender) generateTrace() error {
 			return fmt.Errorf("cannot send traces: %w", err)
 		}
 		ps.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
-
-		select {
-		case <-ps.stopSignal:
-			return nil
-		default:
-		}
 	}
 }
 
@@ -289,12 +283,6 @@ func (ps *ProviderSender) generateMetrics() error {
 			return fmt.Errorf("cannot send metrics: %w", err)
 		}
 		ps.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
-
-		select {
-		case <-ps.stopSignal:
-			return nil
-		default:
-		}
 	}
 }
 
@@ -320,11 +308,5 @@ func (ps *ProviderSender) generateLog() error {
 			return fmt.Errorf("cannot send logs: %w", err)
 		}
 		ps.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
-
-		select {
-		case <-ps.stopSignal:
-			return nil
-		default:
-		}
 	}
 }
