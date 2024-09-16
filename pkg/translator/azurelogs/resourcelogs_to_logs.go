@@ -243,7 +243,6 @@ func copyPropertiesAndApplySemanticConventions(category string, properties *any,
 		if len(attrsProps) > 0 {
 			attrs[azureProperties] = attrsProps
 		}
-		break
 	default:
 		// otherwise, just add the properties as-is
 		attrs[azureProperties] = *properties
