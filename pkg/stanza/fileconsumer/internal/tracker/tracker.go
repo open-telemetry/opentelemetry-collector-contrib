@@ -4,9 +4,13 @@
 package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
+	"context"
+	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
@@ -43,9 +47,35 @@ type fileTracker struct {
 	// persister is to be used to store offsets older than 3 poll cycles.
 	// These offsets will be stored on disk
 	persister operator.Persister
+
+	pollsToArchive int
+	archiveIndex   int
 }
 
-func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
+type option struct {
+	maxBatchFiles  int
+	pollsToArchive int
+}
+
+type optionFunc func(*option)
+
+func WithMaxBatchFiles(maxBatchFiles int) optionFunc {
+	return func(fto *option) {
+		fto.maxBatchFiles = maxBatchFiles
+	}
+}
+
+func WithPollsToArchive(pollsToArchive int) optionFunc {
+	return func(fto *option) {
+		fto.pollsToArchive = pollsToArchive
+	}
+}
+
+func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, opts ...optionFunc) Tracker {
+	option := &option{}
+	for _, opt := range opts {
+		opt(option)
+	}
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
@@ -57,6 +87,8 @@ func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker 
 		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
 		previousPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 		knownFiles:        knownFiles,
+		pollsToArchive:    option.pollsToArchive,
+		archiveIndex:      0,
 	}
 }
 
@@ -138,11 +170,33 @@ func (t *fileTracker) TotalReaders() int {
 	return total
 }
 
-func (t *fileTracker) archive(*fileset.Fileset[*reader.Metadata]) {
-	// TODO; core logic to be implemented in followup PR
+func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	// We make use of a ring buffer, where each set of files is stored under a specific index.
 	// Instead of discarding knownFiles[2], write it to the next index and eventually roll over.
 	// Separate storage keys knownFilesArchive0, knownFilesArchive1, ..., knownFilesArchiveN, roll over back to knownFilesArchive0
+
+	// Archiving:  ┌─────────────────────on-disk archive─────────────────────────┐
+	//			   |	┌───┐	  ┌───┐						┌──────────────────┐ |
+	// index	   | ▶  │ 0 │  ▶  │ 1 │  ▶ 		...		  ▶ │ polls_to_archive │ |
+	//			   | ▲	└───┘	  └───┘						└──────────────────┘ |
+	//			   | ▲	  ▲													▼	 |
+	//			   | ▲	  │ Roll over overriting older offsets, if any     ◀	 |
+	//			   └──────│──────────────────────────────────────────────────────┘
+	//					  │
+	// 					  │
+	// 				  	  │
+	// 					start
+	//			    	index
+
+	if t.pollsToArchive == 0 {
+		return
+	}
+	key := fmt.Sprintf("knownFiles%d", t.archiveIndex)
+	if err := checkpoint.SaveKey(context.Background(), t.persister, metadata.Get(), key); err != nil {
+		t.set.Logger.Error("error faced while saving to the archive", zap.Error(err))
+	}
+	t.archiveIndex += 1                // increment the index
+	t.archiveIndex %= t.pollsToArchive // ring buffer
 }
 
 // noStateTracker only tracks the current polled files. Once the poll is
