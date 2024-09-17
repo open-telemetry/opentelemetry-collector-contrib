@@ -42,11 +42,7 @@ func newExporter(
 	set exporter.Settings,
 	index string,
 	dynamicIndex bool,
-) (*elasticsearchExporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
+) *elasticsearchExporter {
 	model := &encodeModel{
 		dedot: cfg.Mapping.Dedot,
 		mode:  cfg.MappingMode(),
@@ -72,7 +68,7 @@ func newExporter(
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
 		otel:           otel,
-	}, nil
+	}
 }
 
 func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) error {
