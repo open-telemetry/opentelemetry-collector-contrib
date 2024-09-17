@@ -36,7 +36,7 @@ func (c *publisherCache) get(provider string) (Publisher, error) {
 	// Always store the publisher even if there was an error opening it.
 	c.cache[provider] = publisher
 
-	return publisher, publisherOpenErr
+	return publisher, err
 }
 
 func (c *publisherCache) evictAll() error {
