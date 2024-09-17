@@ -317,10 +317,9 @@ func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, 
 
 func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.LogRecord) error {
 	var errs []error
-	var bodyColumnName = config.BodyColumn
-	value, found := row[bodyColumnName]
+	value, found := row[config.BodyColumn]
 	if !found {
-		errs = append(errs, fmt.Errorf("rowToLog: body_column '%s' not found in result set", bodyColumnName))
+		errs = append(errs, fmt.Errorf("rowToLog: body_column '%s' not found in result set", config.BodyColumn))
 	} else {
 		logRecord.Body().SetStr(value)
 	}
