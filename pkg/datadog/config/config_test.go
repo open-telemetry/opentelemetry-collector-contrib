@@ -382,7 +382,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -450,7 +450,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					Site:             "datadoghq.com",
@@ -503,7 +503,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -563,7 +563,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig:  defaultClientConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},

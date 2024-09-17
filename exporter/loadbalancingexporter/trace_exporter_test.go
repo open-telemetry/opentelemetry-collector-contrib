@@ -373,7 +373,7 @@ func TestBuildExporterConfig(t *testing.T) {
 	grpcSettings.Endpoint = "the-endpoint"
 	assert.Equal(t, grpcSettings, exporterCfg.ClientConfig)
 
-	assert.Equal(t, defaultCfg.TimeoutSettings, exporterCfg.TimeoutSettings)
+	assert.Equal(t, defaultCfg.TimeoutConfig, exporterCfg.TimeoutConfig)
 	assert.Equal(t, defaultCfg.QueueConfig, exporterCfg.QueueConfig)
 	assert.Equal(t, defaultCfg.RetryConfig, exporterCfg.RetryConfig)
 }
@@ -569,7 +569,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 				return
 			case <-ticker.C:
 				go func() {
-					require.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
+					assert.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
 				}()
 			}
 		}
