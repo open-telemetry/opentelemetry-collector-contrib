@@ -24,10 +24,10 @@ require (
 	go.opentelemetry.io/collector/semconv v0.109.1-0.20240916171416-d3a171889c53
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	k8s.io/api v0.31.0
-	k8s.io/apimachinery v0.31.0
-	k8s.io/client-go v0.31.0
-	k8s.io/kubelet v0.31.0
+	k8s.io/api v0.31.1
+	k8s.io/apimachinery v0.31.1
+	k8s.io/client-go v0.31.1
+	k8s.io/kubelet v0.31.1
 )
 
 require (
