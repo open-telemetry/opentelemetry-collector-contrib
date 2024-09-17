@@ -8,10 +8,10 @@ component: otelarrowreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: |
-Add admission control in the otelarrow receiver's standard otlp data path.
-Also moves admission control config options to a separate block.
-arrow.admission_limit_mib -> admission.request_limit_mib
-arrow.waiter_limit -> admission.waiter_limit
+  Add admission control in the otelarrow receiver's standard otlp data path.
+  Also moves admission control config options to a separate block.
+  arrow.admission_limit_mib -> admission.request_limit_mib
+  arrow.waiter_limit -> admission.waiter_limit
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [35021]
