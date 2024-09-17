@@ -10,7 +10,7 @@ resourceMetrics:
         - key: k8s.job.uid
           value:
             stringValue: test-job-1-uid
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    schemaUrl: https://opentelemetry.io/schemas/1.27.0
     scopeMetrics:
       - metrics:
           - description: The number of actively running pods for a job
