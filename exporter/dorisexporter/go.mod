@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorise
 
 go 1.22.0
 
-toolchain go1.22.7
+toolchain go1.23.1
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
