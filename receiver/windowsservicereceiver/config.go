@@ -7,9 +7,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-// Config defines configuration for HostMetrics receiver.
+// Config defines configuration for windowsservice receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Services                       []string `mapstructure:"services"`    // user provided list of services to monitor with receiver
+	MonitorAll                     bool     `mapstructure:"monitor_all"` // monitor all services on host machine. supercedes services
 }
 
 // Validate checks the receiver configuration is valid
