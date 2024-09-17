@@ -1,5 +1,3 @@
-github.com/SAP/go-hdb v1.12.1 h1:+SOCT23AsMIZz+G8M79/N4AS8Hkq0cPvQztF/BSKeqM=
-github.com/SAP/go-hdb v1.12.1/go.mod h1:rnW0pSZJPPFbyDQ4NPJaNBNk84KcWaTYkcpNUJGGNFk=
 github.com/SAP/go-hdb v1.12.2 h1:pWf+rL7c5t8HDN9M6ETkBaVQAGVwH8+REdbZiZh0KAc=
 github.com/SAP/go-hdb v1.12.2/go.mod h1:rnW0pSZJPPFbyDQ4NPJaNBNk84KcWaTYkcpNUJGGNFk=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
