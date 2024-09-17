@@ -712,7 +712,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 	now = func() time.Time { return time.Unix(123456789, 0) }
 	currentTime := now()
 	assert.Equal(t, currentTime, time.Unix(123456789, 0))
-	assert.Equal(t, strconv.FormatInt(currentTime.UnixNano(), 10), "123456789000000000")
+	assert.Equal(t, "123456789000000000", strconv.FormatInt(currentTime.UnixNano(), 10))
 
 	lr := testdata.GenerateLogsOneLogRecord()
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
@@ -817,8 +817,8 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			ServerHost: testServerHost,
 		},
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 	}
 
 	lr1 := testdata.GenerateLogsOneLogRecord()

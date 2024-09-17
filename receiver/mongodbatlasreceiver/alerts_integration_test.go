@@ -93,7 +93,7 @@ func TestAlertsReceiver(t *testing.T) {
 
 			defer resp.Body.Close()
 
-			require.Equal(t, resp.StatusCode, http.StatusOK)
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
 			require.Eventually(t, func() bool {
 				return sink.LogRecordCount() > 0
@@ -167,7 +167,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			defer resp.Body.Close()
 
-			require.Equal(t, resp.StatusCode, http.StatusOK)
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
 			require.Eventually(t, func() bool {
 				return sink.LogRecordCount() > 0

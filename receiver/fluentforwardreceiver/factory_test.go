@@ -31,6 +31,6 @@ func TestCreateReceiver(t *testing.T) {
 	require.Equal(t, metadata.Type, factory.Type())
 
 	tReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.Nil(t, err, "receiver creation failed")
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }

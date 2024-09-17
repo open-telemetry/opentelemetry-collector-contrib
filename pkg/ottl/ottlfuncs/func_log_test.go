@@ -102,7 +102,7 @@ func Test_Log(t *testing.T) {
 			})
 			result, err := exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.errorStr)
-			assert.Equal(t, nil, result)
+			assert.Nil(t, result)
 		})
 	}
 }

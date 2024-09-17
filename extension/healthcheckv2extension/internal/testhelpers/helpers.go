@@ -29,28 +29,10 @@ func (p *PipelineMetadata) InstanceIDs() []*componentstatus.InstanceID {
 func NewPipelineMetadata(typestr string) *PipelineMetadata {
 	pipelineID := component.MustNewID(typestr)
 	return &PipelineMetadata{
-		PipelineID: pipelineID,
-		ReceiverID: &componentstatus.InstanceID{
-			ID:   component.NewIDWithName(component.MustNewType(typestr), "in"),
-			Kind: component.KindReceiver,
-			PipelineIDs: map[component.ID]struct{}{
-				pipelineID: {},
-			},
-		},
-		ProcessorID: &componentstatus.InstanceID{
-			ID:   component.MustNewID("batch"),
-			Kind: component.KindProcessor,
-			PipelineIDs: map[component.ID]struct{}{
-				pipelineID: {},
-			},
-		},
-		ExporterID: &componentstatus.InstanceID{
-			ID:   component.NewIDWithName(component.MustNewType(typestr), "out"),
-			Kind: component.KindExporter,
-			PipelineIDs: map[component.ID]struct{}{
-				pipelineID: {},
-			},
-		},
+		PipelineID:  pipelineID,
+		ReceiverID:  componentstatus.NewInstanceID(component.NewIDWithName(component.MustNewType(typestr), "in"), component.KindReceiver).WithPipelines(pipelineID),
+		ProcessorID: componentstatus.NewInstanceID(component.MustNewID("batch"), component.KindProcessor).WithPipelines(pipelineID),
+		ExporterID:  componentstatus.NewInstanceID(component.NewIDWithName(component.MustNewType(typestr), "out"), component.KindExporter).WithPipelines(pipelineID),
 	}
 }
 

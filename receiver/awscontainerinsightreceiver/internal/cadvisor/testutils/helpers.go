@@ -15,11 +15,11 @@ import (
 
 func LoadContainerInfo(t *testing.T, file string) []*cinfo.ContainerInfo {
 	info, err := os.ReadFile(file)
-	assert.Nil(t, err, "Fail to read file content")
+	assert.NoError(t, err, "Fail to read file content")
 
 	containers := map[string]*cinfo.ContainerInfo{}
 	err = json.Unmarshal(info, &containers)
-	assert.Nil(t, err, "Fail to parse json string")
+	assert.NoError(t, err, "Fail to parse json string")
 
 	result := make([]*cinfo.ContainerInfo, len(containers))
 	i := 0

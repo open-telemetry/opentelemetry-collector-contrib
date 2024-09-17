@@ -12,6 +12,7 @@ import (
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -26,61 +27,86 @@ import (
 
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	texp, err := newTracesExporter(c, exportertest.NewNopSettings())
-	require.NoError(t, err)
-	err = texp.start(context.Background(), componenttest.NewNopHost())
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "foo"}
-	texp, err := newTracesExporter(c, exportertest.NewNopSettings())
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, texp)
+	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, texp)
 }
 
 func TestNewMetricsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings())
-	require.NoError(t, err)
-	err = mexp.start(context.Background(), componenttest.NewNopHost())
+	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
+	err := mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings())
+	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, mexp)
+	err := mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings())
+	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, mexp)
+	err := mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, mexp)
+}
+
+func TestMetricsExporter_encoding_extension(t *testing.T) {
+	c := Config{
+		Encoding: "metrics_encoding",
+	}
+	texp := newMetricsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), &testComponentHost{})
+	assert.Error(t, err)
+	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
 }
 
 func TestNewLogsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	lexp, err := newLogsExporter(c, exportertest.NewNopSettings())
-	require.NoError(t, err)
-	err = lexp.start(context.Background(), componenttest.NewNopHost())
+	lexp := newLogsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, lexp)
+	err := lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopSettings())
+	lexp := newLogsExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, lexp)
+	err := lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopSettings())
+	lexp := newLogsExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, lexp)
+	err := lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, mexp)
+}
+
+func TestLogsExporter_encoding_extension(t *testing.T) {
+	c := Config{
+		Encoding: "logs_encoding",
+	}
+	texp := newLogsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), &testComponentHost{})
+	assert.Error(t, err)
+	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
 }
 
 func TestNewExporter_err_auth_type(t *testing.T) {
@@ -101,18 +127,18 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 			Compression: "none",
 		},
 	}
-	texp, err := newTracesExporter(c, exportertest.NewNopSettings())
-	require.NoError(t, err)
-	err = texp.start(context.Background(), componenttest.NewNopHost())
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings())
-	require.NoError(t, err)
+	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, mexp)
 	err = mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	lexp, err := newLogsExporter(c, exportertest.NewNopSettings())
-	require.NoError(t, err)
+	lexp := newLogsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, lexp)
 	err = lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
@@ -126,11 +152,22 @@ func TestNewExporter_err_compression(t *testing.T) {
 			Compression: "idk",
 		},
 	}
-	texp, err := newTracesExporter(c, exportertest.NewNopSettings())
-	require.NoError(t, err)
-	err = texp.start(context.Background(), componenttest.NewNopHost())
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+}
+
+func TestTracesExporter_encoding_extension(t *testing.T) {
+	c := Config{
+		Encoding: "traces_encoding",
+	}
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), &testComponentHost{})
+	assert.Error(t, err)
+	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
 }
 
 func TestTracesPusher(t *testing.T) {
@@ -436,4 +473,65 @@ func Test_GetTopic(t *testing.T) {
 			assert.Equal(t, tests[i].wantTopic, topic)
 		})
 	}
+}
+
+func TestLoadEncodingExtension_logs(t *testing.T) {
+	extension, err := loadEncodingExtension[plog.Marshaler](&testComponentHost{}, "logs_encoding")
+	require.NoError(t, err)
+	require.NotNil(t, extension)
+}
+
+func TestLoadEncodingExtension_notfound_error(t *testing.T) {
+	extension, err := loadEncodingExtension[plog.Marshaler](&testComponentHost{}, "logs_notfound")
+	require.Error(t, err)
+	require.Nil(t, extension)
+}
+
+func TestLoadEncodingExtension_nomarshaler_error(t *testing.T) {
+	extension, err := loadEncodingExtension[plog.Marshaler](&testComponentHost{}, "logs_nomarshaler")
+	require.Error(t, err)
+	require.Nil(t, extension)
+}
+
+type testComponentHost struct{}
+
+func (h *testComponentHost) GetExtensions() map[component.ID]component.Component {
+	return map[component.ID]component.Component{
+		component.MustNewID("logs_encoding"):    &nopComponent{},
+		component.MustNewID("logs_nomarshaler"): &nopNoMarshalerComponent{},
+		component.MustNewID("metrics_encoding"): &nopComponent{},
+		component.MustNewID("traces_encoding"):  &nopComponent{},
+	}
+}
+
+type nopComponent struct{}
+
+func (c *nopComponent) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (c *nopComponent) Shutdown(_ context.Context) error {
+	return nil
+}
+
+func (c *nopComponent) MarshalLogs(_ plog.Logs) ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (c *nopComponent) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (c *nopComponent) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
+	return []byte{}, nil
+}
+
+type nopNoMarshalerComponent struct{}
+
+func (c *nopNoMarshalerComponent) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (c *nopNoMarshalerComponent) Shutdown(_ context.Context) error {
+	return nil
 }

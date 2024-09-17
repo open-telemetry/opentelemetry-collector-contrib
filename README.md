@@ -77,7 +77,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 Emeritus Triagers:
 
-- [Alolita Sharma](https://github.com/alolita), AWS
+- [Alolita Sharma](https://github.com/alolita), Apple
 - [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Punya Biswal](https://github.com/punya), Google
@@ -109,7 +109,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
-- [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
+- [Sean Marciniak](https://github.com/MovieStoreGuy), Splunk
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Maintainers

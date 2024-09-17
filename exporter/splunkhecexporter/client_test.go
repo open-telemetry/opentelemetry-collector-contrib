@@ -229,7 +229,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -282,7 +282,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -342,7 +342,7 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -508,7 +508,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 			for i, batch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthTraces != 0 {
-					require.True(t, int(test.conf.MaxContentLengthTraces) > len(got[i].body))
+					require.Greater(t, int(test.conf.MaxContentLengthTraces), len(got[i].body))
 				}
 				if test.conf.DisableCompression {
 					for _, expected := range batch {
@@ -786,12 +786,12 @@ func TestReceiveLogs(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, test.want.numBatches, len(got))
+			require.Len(t, got, test.want.numBatches)
 
 			for i, wantBatch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthLogs != 0 {
-					require.True(t, int(test.conf.MaxContentLengthLogs) > len(got[i].body))
+					require.Greater(t, int(test.conf.MaxContentLengthLogs), len(got[i].body))
 				}
 				if test.conf.DisableCompression {
 					for _, expected := range wantBatch {
@@ -1163,7 +1163,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				for i, batch := range test.want.batches {
 					require.NotZero(t, got[i])
 					if test.conf.MaxContentLengthMetrics != 0 {
-						require.True(t, int(test.conf.MaxContentLengthMetrics) > len(got[i].body))
+						require.Greater(t, int(test.conf.MaxContentLengthMetrics), len(got[i].body))
 					}
 					if test.want.compressed {
 						validateCompressedContains(t, batch, got[i].body)
@@ -1181,7 +1181,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				}
 
 				if test.want.numBatches == 0 {
-					assert.Equal(t, 0, len(got))
+					assert.Empty(t, got)
 					return
 				}
 
@@ -1287,7 +1287,7 @@ func TestErrorReceived(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -1376,7 +1376,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1415,7 +1415,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1450,7 +1450,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1509,7 +1509,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().Len())
 			},
 		},
@@ -1523,8 +1523,8 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
-				require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
+				require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 			},
 		},
@@ -1670,7 +1670,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	require.NoError(t, err)
 	err = c.pushLogData(context.Background(), profilingData)
 	require.NoError(t, err)
-	assert.Equal(t, 30, len(*headers))
+	assert.Len(t, *headers, 30)
 
 	profilingCount, nonProfilingCount := 0, 0
 	for i := range *headers {

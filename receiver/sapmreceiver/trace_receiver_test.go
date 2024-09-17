@@ -350,7 +350,7 @@ func TestReception(t *testing.T) {
 
 			// retrieve received traces
 			got := sink.AllTraces()
-			assert.Equal(t, 1, len(got))
+			assert.Len(t, got, 1)
 
 			// compare what we got to what we wanted
 			t.Log("Comparing expected data to trace data")
@@ -414,7 +414,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			assert.NoError(t, resp.Body.Close())
 
 			got := sink.AllTraces()
-			assert.Equal(t, 1, len(got))
+			assert.Len(t, got, 1)
 
 			received := got[0].ResourceSpans()
 			for i := 0; i < received.Len(); i++ {

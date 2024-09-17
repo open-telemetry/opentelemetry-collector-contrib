@@ -33,8 +33,10 @@ LABELS=$(echo "${COMMENT}" | sed -E 's%^/label%%')
 
 for LABEL_REQ in ${LABELS}; do
     LABEL=$(echo "${LABEL_REQ}" | sed -E s/^[+-]?//)
-    SHOULD_ADD=true
+    # Trim newlines from label that would cause matching to fail
+    LABEL=$(echo "${LABEL}" | tr -d '\n')
 
+    SHOULD_ADD=true
     if [[ "${LABEL_REQ:0:1}" = "-" ]]; then
         SHOULD_ADD=false
     fi

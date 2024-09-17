@@ -183,7 +183,7 @@ func verifyExporterTrace(t *testing.T, traceExporter *tracesExporter) {
 		ParentSpanID: "0102040000000000",
 		TraceState:   "trace state",
 		SpanName:     "call db",
-		SpanKind:     "SPAN_KIND_INTERNAL",
+		SpanKind:     "Internal",
 		ServiceName:  "test-service",
 		ResourceAttributes: map[string]string{
 			"service.name": "test-service",
@@ -194,7 +194,7 @@ func verifyExporterTrace(t *testing.T, traceExporter *tracesExporter) {
 			"service.name": "v",
 		},
 		Duration:      60000000000,
-		StatusCode:    "STATUS_CODE_ERROR",
+		StatusCode:    "Error",
 		StatusMessage: "error",
 		EventsTimestamp: []time.Time{
 			time.Unix(1703498029, 0).UTC(),

@@ -10,6 +10,7 @@ status:
 
 tests:
   config:
+  host: "&mockHost{}"
 
 telemetry:
   metrics:

@@ -69,7 +69,7 @@ func TestGetStats(t *testing.T) {
 			stats, metadata, err := provider.GetStats()
 			if tt.wantError == "" {
 				require.NoError(t, err)
-				require.Less(t, 0, len(stats))
+				require.NotEmpty(t, stats)
 				require.Equal(t, "test200", metadata.Cluster)
 			} else {
 				assert.Equal(t, tt.wantError, err.Error())

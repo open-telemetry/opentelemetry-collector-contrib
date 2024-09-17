@@ -10,5 +10,3 @@ status:
     emeritus:
 
 tests:
-  goleak:
-    skip: true  

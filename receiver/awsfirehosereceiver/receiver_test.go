@@ -123,6 +123,14 @@ func TestFirehoseRequest(t *testing.T) {
 			wantStatusCode: http.StatusUnauthorized,
 			wantErr:        errInvalidAccessKey,
 		},
+		"WithNoAccessKey": {
+			headers: map[string]string{
+				headerFirehoseAccessKey: "",
+			},
+			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
+			wantStatusCode: http.StatusUnauthorized,
+			wantErr:        errInvalidAccessKey,
+		},
 		"WithoutRequestId/Body": {
 			headers: map[string]string{
 				headerFirehoseRequestID: testFirehoseRequestID,

@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -65,7 +66,8 @@ var resourceAttrsToPreserve = map[string]bool{
 
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
-	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
+	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
+	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document
 	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint, pcommon.Value) error
 	encodeDocument(objmodel.Document) ([]byte, error)
 }
@@ -131,8 +133,6 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	return document
 }
 
-var datastreamKeys = []string{dataStreamType, dataStreamDataset, dataStreamNamespace}
-
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
 	var document objmodel.Document
 
@@ -146,76 +146,13 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 
 	document.AddTraceID("trace_id", record.TraceID())
 	document.AddSpanID("span_id", record.SpanID())
-	document.AddInt("trace_flags", int64(record.Flags()))
 	document.AddString("severity_text", record.SeverityText())
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
-	// At this point the data_stream attributes are expected to be in the record attributes,
-	// updated by the router.
-	// Move them to the top of the document and remove them from the record
-	attributeMap := record.Attributes()
-
-	forEachDataStreamKey := func(fn func(key string)) {
-		for _, key := range datastreamKeys {
-			fn(key)
-		}
-	}
-
-	forEachDataStreamKey(func(key string) {
-		if value, exists := attributeMap.Get(key); exists {
-			document.AddAttribute(key, value)
-			attributeMap.Remove(key)
-		}
-	})
-
-	document.AddAttributes("attributes", attributeMap)
-
-	// Resource
-	resourceMapVal := pcommon.NewValueMap()
-	resourceMap := resourceMapVal.Map()
-	resourceMap.PutStr("schema_url", resourceSchemaURL)
-	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
-	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
-
-	resource.Attributes().CopyTo(resourceAttrMap)
-
-	// Remove data_stream attributes from the resources attributes if present
-	forEachDataStreamKey(func(key string) {
-		resourceAttrMap.Remove(key)
-	})
-
-	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
-
-	// Scope
-	scopeMapVal := pcommon.NewValueMap()
-	scopeMap := scopeMapVal.Map()
-	if scope.Name() != "" {
-		scopeMap.PutStr("name", scope.Name())
-	}
-	if scope.Version() != "" {
-		scopeMap.PutStr("version", scope.Version())
-	}
-	if scopeSchemaURL != "" {
-		scopeMap.PutStr("schema_url", scopeSchemaURL)
-	}
-	if scope.DroppedAttributesCount() > 0 {
-		scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
-	}
-	scopeAttributes := scope.Attributes()
-	if scopeAttributes.Len() > 0 {
-		scopeAttrMap := scopeMap.PutEmptyMap("attributes")
-		scopeAttributes.CopyTo(scopeAttrMap)
-
-		// Remove data_stream attributes from the scope attributes if present
-		forEachDataStreamKey(func(key string) {
-			scopeAttrMap.Remove(key)
-		})
-	}
-
-	if scopeMap.Len() > 0 {
-		document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
-	}
+	m.encodeAttributesOTelMode(&document, record.Attributes(), false)
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, false)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, false)
 
 	// Body
 	setOTelLogBody(&document, record.Body())
@@ -349,71 +286,9 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		}
 		document.AddString("unit", metric.Unit())
 
-		// At this point the data_stream attributes are expected to be in the record attributes,
-		// updated by the router.
-		// Move them to the top of the document and remove them from the record
-		attributeMap := dp.Attributes()
-
-		forEachDataStreamKey := func(fn func(key string)) {
-			for _, key := range datastreamKeys {
-				fn(key)
-			}
-		}
-
-		forEachDataStreamKey(func(key string) {
-			if val, exists := attributeMap.Get(key); exists {
-				document.AddAttribute(key, val)
-				attributeMap.Remove(key)
-			}
-		})
-
-		document.AddAttributes("attributes", attributeMap)
-
-		// Resource
-		resourceMapVal := pcommon.NewValueMap()
-		resourceMap := resourceMapVal.Map()
-		resourceMap.PutStr("schema_url", resourceSchemaURL)
-		resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
-		resourceAttrMap := resourceMap.PutEmptyMap("attributes")
-
-		resource.Attributes().CopyTo(resourceAttrMap)
-
-		// Remove data_stream attributes from the resources attributes if present
-		forEachDataStreamKey(func(key string) {
-			resourceAttrMap.Remove(key)
-		})
-
-		document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
-
-		// Scope
-		scopeMapVal := pcommon.NewValueMap()
-		scopeMap := scopeMapVal.Map()
-		if scope.Name() != "" {
-			scopeMap.PutStr("name", scope.Name())
-		}
-		if scope.Version() != "" {
-			scopeMap.PutStr("version", scope.Version())
-		}
-		if scopeSchemaURL != "" {
-			scopeMap.PutStr("schema_url", scopeSchemaURL)
-		}
-		if scope.DroppedAttributesCount() > 0 {
-			scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
-		}
-		scopeAttributes := scope.Attributes()
-		if scopeAttributes.Len() > 0 {
-			scopeAttrMap := scopeMap.PutEmptyMap("attributes")
-			scopeAttributes.CopyTo(scopeAttrMap)
-
-			// Remove data_stream attributes from the scope attributes if present
-			forEachDataStreamKey(func(key string) {
-				scopeAttrMap.Remove(key)
-			})
-		}
-
-		if scopeMap.Len() > 0 {
-			document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
-		}
+		m.encodeAttributesOTelMode(&document, dp.Attributes(), true)
+		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, true)
+		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, true)
 	}
 
 	switch value.Type() {
@@ -477,6 +352,25 @@ func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
 	m := vm.Map()
 	m.PutDouble("sum", dp.Sum())
 	m.PutInt("value_count", int64(dp.Count()))
+	return vm
+}
+
+func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) pcommon.Value {
+	counts, values := exphistogram.ToTDigest(dp)
+
+	vm := pcommon.NewValueMap()
+	m := vm.Map()
+	vmCounts := m.PutEmptySlice("counts")
+	vmCounts.EnsureCapacity(len(counts))
+	for _, c := range counts {
+		vmCounts.AppendEmpty().SetInt(c)
+	}
+	vmValues := m.PutEmptySlice("values")
+	vmValues.EnsureCapacity(len(values))
+	for _, v := range values {
+		vmValues.AppendEmpty().SetDouble(v)
+	}
+
 	return vm
 }
 
@@ -544,7 +438,144 @@ func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
 	return pcommon.Value{}, errInvalidNumberDataPoint
 }
 
-func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
+func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, stringifyArrayValues bool) {
+	resourceMapVal := pcommon.NewValueMap()
+	resourceMap := resourceMapVal.Map()
+	if resourceSchemaURL != "" {
+		resourceMap.PutStr("schema_url", resourceSchemaURL)
+	}
+	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
+	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
+	resource.Attributes().CopyTo(resourceAttrMap)
+	resourceAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
+		switch key {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		return false
+	})
+	if stringifyArrayValues {
+		mapStringifyArrayValues(resourceAttrMap)
+	}
+	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
+}
+
+func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pcommon.InstrumentationScope, scopeSchemaURL string, stringifyArrayValues bool) {
+	scopeMapVal := pcommon.NewValueMap()
+	scopeMap := scopeMapVal.Map()
+	if scope.Name() != "" {
+		scopeMap.PutStr("name", scope.Name())
+	}
+	if scope.Version() != "" {
+		scopeMap.PutStr("version", scope.Version())
+	}
+	if scopeSchemaURL != "" {
+		scopeMap.PutStr("schema_url", scopeSchemaURL)
+	}
+	scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
+	scopeAttrMap := scopeMap.PutEmptyMap("attributes")
+	scope.Attributes().CopyTo(scopeAttrMap)
+	scopeAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
+		switch key {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		return false
+	})
+	if stringifyArrayValues {
+		mapStringifyArrayValues(scopeAttrMap)
+	}
+	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
+}
+
+func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map, stringifyArrayValues bool) {
+	attrsCopy := pcommon.NewMap() // Copy to avoid mutating original map
+	attributeMap.CopyTo(attrsCopy)
+	attrsCopy.RemoveIf(func(key string, val pcommon.Value) bool {
+		switch key {
+		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			// At this point the data_stream attributes are expected to be in the record attributes,
+			// updated by the router.
+			// Move them to the top of the document and remove them from the record
+			document.AddAttribute(key, val)
+			return true
+		}
+		return false
+	})
+	if stringifyArrayValues {
+		mapStringifyArrayValues(attrsCopy)
+	}
+	document.AddAttributes("attributes", attrsCopy)
+}
+
+// mapStringifyArrayValues replaces all slice values within an attribute map to their string representation.
+// It is useful to workaround Elasticsearch TSDB not supporting arrays as dimensions.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35004
+func mapStringifyArrayValues(m pcommon.Map) {
+	m.Range(func(_ string, v pcommon.Value) bool {
+		if v.Type() == pcommon.ValueTypeSlice {
+			v.SetStr(v.AsString())
+		}
+		return true
+	})
+}
+
+func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
+	var document objmodel.Document
+	switch m.mode {
+	case MappingOTel:
+		document = m.encodeSpanOTelMode(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
+	default:
+		document = m.encodeSpanDefaultMode(resource, span, scope)
+	}
+	document.Dedup()
+	var buf bytes.Buffer
+	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
+	return buf.Bytes(), err
+}
+
+func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
+	var document objmodel.Document
+	document.AddTimestamp("@timestamp", span.StartTimestamp())
+	document.AddTraceID("trace_id", span.TraceID())
+	document.AddSpanID("span_id", span.SpanID())
+	document.AddString("trace_state", span.TraceState().AsRaw())
+	document.AddSpanID("parent_span_id", span.ParentSpanID())
+	document.AddString("name", span.Name())
+	document.AddString("kind", span.Kind().String())
+	document.AddInt("duration", int64(span.EndTimestamp()-span.StartTimestamp()))
+
+	m.encodeAttributesOTelMode(&document, span.Attributes(), false)
+
+	document.AddInt("dropped_attributes_count", int64(span.DroppedAttributesCount()))
+	document.AddInt("dropped_events_count", int64(span.DroppedEventsCount()))
+
+	links := pcommon.NewValueSlice()
+	linkSlice := links.SetEmptySlice()
+	spanLinks := span.Links()
+	for i := 0; i < spanLinks.Len(); i++ {
+		linkMap := linkSlice.AppendEmpty().SetEmptyMap()
+		spanLink := spanLinks.At(i)
+		linkMap.PutStr("trace_id", spanLink.TraceID().String())
+		linkMap.PutStr("span_id", spanLink.SpanID().String())
+		linkMap.PutStr("trace_state", spanLink.TraceState().AsRaw())
+		mAttr := linkMap.PutEmptyMap("attributes")
+		spanLink.Attributes().CopyTo(mAttr)
+		linkMap.PutInt("dropped_attributes_count", int64(spanLink.DroppedAttributesCount()))
+	}
+	document.AddAttribute("links", links)
+
+	document.AddInt("dropped_links_count", int64(span.DroppedLinksCount()))
+	document.AddString("status.message", span.Status().Message())
+	document.AddString("status.code", span.Status().Code().String())
+
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, false)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, false)
+
+	return document
+}
+
+func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) objmodel.Document {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
@@ -561,12 +592,27 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	m.encodeEvents(&document, span.Events())
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 	document.AddAttributes("Scope", scopeToAttributes(scope))
-	document.Dedup()
+	return document
+}
 
-	var buf bytes.Buffer
-	// OTel serialization is not supported for traces yet
-	err := document.Serialize(&buf, m.dedot, false)
-	return buf.Bytes(), err
+func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document {
+	if m.mode != MappingOTel {
+		// Currently span events are stored separately only in OTel mapping mode.
+		// In other modes, they are stored within the span document.
+		return nil
+	}
+	var document objmodel.Document
+	document.AddTimestamp("@timestamp", spanEvent.Timestamp())
+	document.AddString("attributes.event.name", spanEvent.Name())
+	document.AddSpanID("span_id", span.SpanID())
+	document.AddTraceID("trace_id", span.TraceID())
+	document.AddInt("dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
+
+	m.encodeAttributesOTelMode(&document, spanEvent.Attributes(), false)
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, false)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, false)
+
+	return &document
 }
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {

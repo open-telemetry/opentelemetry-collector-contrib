@@ -51,3 +51,24 @@ func TestLogsQueryReceiver_Collect(t *testing.T) {
 		"Observed timestamps of all log records collected in a single scrape should be equal",
 	)
 }
+
+func TestLogsQueryReceiver_MissingColumnInResultSetForAttributeColumn(t *testing.T) {
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{"col1": "42"}},
+		},
+	}
+	queryReceiver := logsQueryReceiver{
+		client: fakeClient,
+		query: sqlquery.Query{
+			Logs: []sqlquery.LogsCfg{
+				{
+					BodyColumn:       "col1",
+					AttributeColumns: []string{"expected_column"},
+				},
+			},
+		},
+	}
+	_, err := queryReceiver.collect(context.Background())
+	assert.ErrorContains(t, err, "rowToLog: attribute_column not found: 'expected_column'")
+}

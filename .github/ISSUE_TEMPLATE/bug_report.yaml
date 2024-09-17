@@ -52,6 +52,7 @@ body:
       - exporter/coralogix
       - exporter/datadog
       - exporter/dataset
+      - exporter/doris
       - exporter/elasticsearch
       - exporter/file
       - exporter/googlecloud
@@ -141,6 +142,7 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
       - pkg/ottl
@@ -229,7 +231,7 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
-      - receiver/gitprovider
+      - receiver/github
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner

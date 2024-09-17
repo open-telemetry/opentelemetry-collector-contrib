@@ -458,6 +458,7 @@ exporters:
       ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
       ## See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16380
       ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is enabled (now enabled by default).
+      ## Deprecated since v0.107.0: This config option is not supported in the Datadog Agent logs pipeline.
       #
       # dump_payloads: false
 

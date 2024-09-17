@@ -208,7 +208,7 @@ func Test_substring_error(t *testing.T) {
 			exprFunc := substring(tt.target, tt.start, tt.length)
 			result, err := exprFunc(nil, nil)
 			assert.Error(t, err)
-			assert.Equal(t, nil, result)
+			assert.Nil(t, result)
 		})
 	}
 }

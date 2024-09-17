@@ -106,7 +106,7 @@ func Test_logAggregatorReset(t *testing.T) {
 
 	aggregator.Reset()
 
-	require.Len(t, aggregator.resources, 0)
+	require.Empty(t, aggregator.resources)
 }
 
 func Test_logAggregatorExport(t *testing.T) {

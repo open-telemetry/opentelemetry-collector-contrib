@@ -25,6 +25,8 @@ SRC_PARENT_DIR :=  $(shell dirname $(SRC_ROOT))
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
+# These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
+GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
@@ -72,8 +74,10 @@ BUILDER             := $(TOOLS_BIN_DIR)/builder
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
+TESTIFYLINT         := $(TOOLS_BIN_DIR)/testifylint
 
 GOTESTSUM_OPT?= --rerun-fails=1
+TESTIFYLINT_OPT?= --enable-all --disable=float-compare,formatter,require-error,suite-subtest-run,useless-assert
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -219,6 +223,15 @@ misspell-correction: $(TOOLS_BIN_DIR)/misspell
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
+
+.PHONY: testifylint
+testifylint: $(TESTIFYLINT)
+	@echo "running $(TESTIFYLINT)"
+	$(TESTIFYLINT) $(TESTIFYLINT_OPT) ./...
+
+.PHONY: testifylint-fix
+testifylint-fix:
+	@$(MAKE) testifylint TESTIFYLINT_OPT="${TESTIFYLINT_OPT} --fix"
 
 .PHONY: gci
 gci: $(TOOLS_BIN_DIR)/gci

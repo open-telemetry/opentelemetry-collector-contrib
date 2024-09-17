@@ -93,9 +93,9 @@ func TestRateOfMetrics(t *testing.T) {
 
 	// assert
 	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(m.rms) >= 6, "there should have been more than 6 metrics, had %d", len(m.rms))
+	assert.GreaterOrEqual(t, len(m.rms), 6, "there should have been more than 6 metrics, had %d", len(m.rms))
 	// the maximum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(m.rms) <= 20, "there should have been less than 20 metrics, had %d", len(m.rms))
+	assert.LessOrEqual(t, len(m.rms), 20, "there should have been less than 20 metrics, had %d", len(m.rms))
 }
 
 func TestUnthrottled(t *testing.T) {
@@ -117,7 +117,7 @@ func TestUnthrottled(t *testing.T) {
 	require.NoError(t, Run(cfg, expFunc, logger))
 
 	// assert
-	assert.True(t, len(m.rms) > 100, "there should have been more than 100 metrics, had %d", len(m.rms))
+	assert.Greater(t, len(m.rms), 100, "there should have been more than 100 metrics, had %d", len(m.rms))
 }
 
 func TestSumNoTelemetryAttrs(t *testing.T) {
@@ -202,7 +202,7 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
 		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
 		actualValue, _ := attr.Value(telemetryAttrKeyOne)
-		assert.Equal(t, actualValue.AsString(), telemetryAttrValueOne, "it should be "+telemetryAttrValueOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
 	}
 }
 
@@ -232,7 +232,7 @@ func TestGaugeSingleTelemetryAttr(t *testing.T) {
 		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes
 		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
 		actualValue, _ := attr.Value(telemetryAttrKeyOne)
-		assert.Equal(t, actualValue.AsString(), telemetryAttrValueOne, "it should be "+telemetryAttrValueOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
 	}
 }
 

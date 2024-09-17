@@ -50,7 +50,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	dp.SetDoubleValue(42.42)
 	err = exporter.ConsumeMetrics(context.Background(), testMetrics)
 	assert.Error(t, err)
-	assert.Nil(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 // Given a new factory and no-op exporter , the NewMetric exporter should work.
@@ -105,7 +105,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	// This will fail with auth failure
 	err = exporter.ConsumeLogs(context.Background(), testLogs)
 	assert.Error(t, err)
-	assert.Nil(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 // Given a new factory and no-op exporter , the NewLogs exporter should work.
@@ -150,7 +150,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	ss.Spans().AppendEmpty()
 	err = exporter.ConsumeTraces(context.Background(), testTraces)
 	assert.Error(t, err)
-	assert.Nil(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 // Given a new factory and no-op exporter , the NewLogs exporter should work.

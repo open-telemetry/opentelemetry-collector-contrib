@@ -124,7 +124,7 @@ func TestExportMarkers(t *testing.T) {
 				decodedBody := map[string]any{}
 				err := json.NewDecoder(req.Body).Decode(&decodedBody)
 
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				assert.Equal(t, len(tt.attributeMap), len(decodedBody))
 
@@ -138,7 +138,7 @@ func TestExportMarkers(t *testing.T) {
 
 				userAgent := req.Header.Get(userAgentHeaderKey)
 				assert.NotEmpty(t, userAgent)
-				assert.Equal(t, strings.Contains(userAgent, "OpenTelemetry Collector"), true)
+				assert.True(t, strings.Contains(userAgent, "OpenTelemetry Collector"))
 
 				rw.WriteHeader(http.StatusAccepted)
 			}))

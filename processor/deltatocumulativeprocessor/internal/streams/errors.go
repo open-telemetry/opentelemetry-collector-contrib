@@ -19,3 +19,7 @@ type StreamErr struct {
 func (e StreamErr) Error() string {
 	return fmt.Sprintf("%s: %s", e.Ident, e.Err)
 }
+
+func (e StreamErr) Unwrap() error {
+	return e.Err
+}

@@ -88,7 +88,7 @@ are then also available for the use within association rules. Available attribut
   - k8s.job.name
   - k8s.node.name
   - k8s.cluster.uid
-  - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from metadata](#extracting-attributes-from-metadata)
+  - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from pod labels and annotations](#extracting-attributes-from-pod-labels-and-annotations)
 
 
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
