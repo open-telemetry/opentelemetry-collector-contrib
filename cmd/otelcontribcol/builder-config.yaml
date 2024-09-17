@@ -398,6 +398,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter => ../../exporter/fileexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic  => ../../pkg/kafka/topic
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../../exporter/opencensusexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter => ../../exporter/opensearchexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../../internal/metadataproviders
