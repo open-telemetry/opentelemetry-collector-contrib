@@ -3,16 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/window
 go 1.23.1
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.109.0
-	github.com/shirou/gopsutil/v4 v4.24.8
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.0
 	go.opentelemetry.io/collector/confmap v1.15.0
-	go.opentelemetry.io/collector/consumer v0.109.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.0
-	go.opentelemetry.io/collector/pdata v1.15.0
 	go.opentelemetry.io/collector/receiver v0.109.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/goleak v1.3.0
 )
 
 require (
@@ -41,7 +37,9 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	go.opentelemetry.io/collector v0.109.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.109.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.15.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.109.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
@@ -51,6 +49,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.29.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
