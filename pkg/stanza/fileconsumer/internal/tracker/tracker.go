@@ -176,17 +176,17 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	// Separate storage keys knownFilesArchive0, knownFilesArchive1, ..., knownFilesArchiveN, roll over back to knownFilesArchive0
 
 	// Archiving:  ┌─────────────────────on-disk archive─────────────────────────┐
-	//			   |	┌───┐	  ┌───┐						┌──────────────────┐ |
-	// index	   | ▶  │ 0 │  ▶  │ 1 │  ▶ 		...		  ▶ │ polls_to_archive │ |
-	//			   | ▲	└───┘	  └───┘						└──────────────────┘ |
-	//			   | ▲	  ▲													▼	 |
-	//			   | ▲	  │ Roll over overriting older offsets, if any     ◀	 |
-	//			   └──────│──────────────────────────────────────────────────────┘
-	//					  │
-	// 					  │
-	// 				  	  │
-	// 					start
-	//			    	index
+	//             |    ┌───┐     ┌───┐                     ┌──────────────────┐ |
+	// index       | ▶  │ 0 │  ▶  │ 1 │  ▶      ...       ▶ │ polls_to_archive │ |
+	//             | ▲  └───┘     └───┘                     └──────────────────┘ |
+	//             | ▲    ▲                                                ▼     |
+	//             | ▲    │ Roll over overriting older offsets, if any     ◀     |
+	//             └──────│──────────────────────────────────────────────────────┘
+	//                    │
+	//                    │
+	//                    │
+	//                   start
+	//                   index
 
 	if t.pollsToArchive == 0 {
 		return
