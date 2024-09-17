@@ -395,8 +395,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := tt.config.Validate()
-			assert.EqualError(t, err, tt.err)
+			assert.EqualError(t, component.ValidateConfig(tt.config), tt.err)
 		})
 	}
 }
@@ -405,13 +404,13 @@ func TestConfig_Validate_Environment(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://test:9200")
 		config := withDefaultConfig()
-		err := config.Validate()
+		err := component.ValidateConfig(config)
 		require.NoError(t, err)
 	})
 	t.Run("invalid", func(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://valid:9200, *:!")
 		config := withDefaultConfig()
-		err := config.Validate()
+		err := component.ValidateConfig(config)
 		assert.EqualError(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
 	})
 }
