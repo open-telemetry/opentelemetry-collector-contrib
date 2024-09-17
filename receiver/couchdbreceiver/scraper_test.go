@@ -82,7 +82,7 @@ func TestScrape(t *testing.T) {
 
 		var partialScrapeErr scrapererror.PartialScrapeError
 		require.ErrorAs(t, err, &partialScrapeErr, "returned error was not PartialScrapeError")
-		require.Greater(t, partialScrapeErr.Failed, 0, "Expected scrape failures, but none were recorded!")
+		require.Positive(t, partialScrapeErr.Failed, "Expected scrape failures, but none were recorded!")
 	})
 
 	t.Run("scrape error: failed to connect to client", func(t *testing.T) {

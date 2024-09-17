@@ -216,7 +216,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Producer.Return.Errors = true
 	c.Producer.RequiredAcks = config.Producer.RequiredAcks
 	// Because sarama does not accept a Context for every message, set the Timeout here.
-	c.Producer.Timeout = config.Timeout
+	c.Producer.Timeout = config.TimeoutSettings.Timeout
 	c.Metadata.Full = config.Metadata.Full
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
