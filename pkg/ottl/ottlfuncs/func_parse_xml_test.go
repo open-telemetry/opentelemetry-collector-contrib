@@ -6,8 +6,6 @@ package ottlfuncs
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -306,9 +304,6 @@ func Test_ParseXML(t *testing.T) {
 			require.True(t, ok)
 
 			require.Equal(t, tt.want, resultMap.AsRaw())
-			// json, err := jsoniter.MarshalIndent(resultMap.AsRaw(), "", "  ")
-			// require.NoError(t, err)
-			// t.Logf(string(json))
 		})
 	}
 }
@@ -695,24 +690,6 @@ func Test_ParseXML_v2(t *testing.T) {
 			},
 		},
 		{
-			xml: `<Log>This record has a collision<User id="0001"/><User id="0002"/></Log>`,
-			want: map[string]any{
-				"Log": map[string]any{
-					"xml_value": "This record has a collision",
-					"User": []any{map[string]any{
-						"xml_attributes": map[string]any{
-							"id": "0001",
-						},
-					}, map[string]any{
-						"xml_attributes": map[string]any{
-							"id": "0002",
-						},
-					}},
-					"xml_ordering": "User.0,User.1",
-				},
-			},
-		},
-		{
 			name: "Multiple tags with the same name",
 			xml:  `<Log>This record has a collision<User id="0001"/><User id="0002"/></Log>`,
 			want: map[string]any{
@@ -923,81 +900,7 @@ func Test_ParseXML_v2(t *testing.T) {
 
 			rawMap := resultMap.AsRaw()
 			require.NotNil(t, rawMap)
-			// require.Equal(t, tt.want, rawMap)
-			t.Logf("Result: %s", formatMap(rawMap))
-
-			// re-marshal the result to compare the output
-
-			// marshalArgs := &MarshalXMLArguments[any]{
-			// 	Target: ottl.StandardPMapGetter[any]{
-			// 		Getter: func(_ context.Context, _ any) (any, error) {
-			// 			return resultMap, nil
-			// 		},
-			// 	},
-			// }
-			// exprFunc, err = createMarshalXMLFunction[any](ottl.FunctionContext{}, marshalArgs)
-			// require.NoError(t, err)
-
-			// result, err = exprFunc(context.Background(), nil)
-			// require.NoError(t, err)
-
-			// resultXML, ok := result.(string)
-			// require.True(t, ok)
-
-			// // We'd like to compare the XML output, but variations in whitespace, quoting, and most
-			// // importantly, the use of closing tags vs. self-closing tags, make this difficult.
-			// // Instead, we'll parse the marshaled XML and compare the resulting map.
-
-			// oArgs.Target = ottl.StandardStringGetter[any]{
-			// 	Getter: func(_ context.Context, _ any) (any, error) {
-			// 		return resultXML, nil
-			// 	},
-			// }
-			// exprFunc, err = createParseXMLFunction[any](ottl.FunctionContext{}, oArgs)
-			// require.NoError(t, err)
-			// result, err = exprFunc(context.Background(), nil)
-			// require.NoError(t, err)
-			// resultMap, ok = result.(pcommon.Map)
-			// require.True(t, ok)
-
-			// rawMap = resultMap.AsRaw()
-			// require.NotNil(t, rawMap)
-			// require.Equal(t, tt.want, rawMap)
-
+			require.Equal(t, tt.want, rawMap)
 		})
 	}
-}
-
-func formatMap(m map[string]any) string {
-	var b strings.Builder
-	b.WriteString("map[string]any{\n")
-	for key, value := range m {
-		fmt.Fprintf(&b, "\t%q: %s,\n", key, formatValue(value))
-	}
-	b.WriteString("}")
-	return b.String()
-}
-
-func formatValue(value any) string {
-	v := reflect.ValueOf(value)
-	switch v.Kind() {
-	case reflect.String:
-		return fmt.Sprintf("%q", value)
-	case reflect.Map:
-		if mapValue, ok := value.(map[string]any); ok {
-			return formatMap(mapValue)
-		}
-	case reflect.Slice:
-		b := strings.Builder{}
-		b.WriteString("[]any{")
-		for i := 0; i < v.Len(); i++ {
-			if i > 0 {
-				b.WriteString(", ")
-			}
-			b.WriteString(formatValue(v.Index(i).Interface()))
-		}
-		b.WriteString("}")
-		return b.String()
-	}
-	return fmt.Sprintf("%v", value)
 }
