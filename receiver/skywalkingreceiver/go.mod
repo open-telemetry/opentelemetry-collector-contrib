@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.109.1-0.20240911162712-6c2697c4453c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.66.0
+	google.golang.org/grpc v1.66.2
 	google.golang.org/protobuf v1.34.2
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
