@@ -30,7 +30,7 @@ func (c *publisherCache) get(provider string) (Publisher, error) {
 	if provider != "" {
 		// If the provider is empty, there is nothing to be formatted on the event
 		// keep the invalid publisher in the cache. See issue #35135
-		publisherOpenErr = publisher.Open(provider)
+		err = publisher.Open(provider)
 	}
 
 	// Always store the publisher even if there was an error opening it.
