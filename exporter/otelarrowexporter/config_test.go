@@ -46,7 +46,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 10 * time.Second,
 			},
 			RetryConfig: configretry.BackOffConfig{
@@ -57,7 +57,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueSettings: exporterhelper.QueueSettings{
+			QueueSettings: exporterhelper.QueueConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,

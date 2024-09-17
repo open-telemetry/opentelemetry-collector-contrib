@@ -55,7 +55,12 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
-		otlpmetrics.WithRemapping(),
+	}
+
+	if isMetricRemappingDisabled() {
+		set.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
+	} else {
+		options = append(options, otlpmetrics.WithRemapping())
 	}
 
 	if cfg.Metrics.HistConfig.SendAggregations {

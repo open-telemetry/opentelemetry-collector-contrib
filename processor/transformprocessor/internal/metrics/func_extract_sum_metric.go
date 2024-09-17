@@ -32,7 +32,7 @@ func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 	return extractSumMetric(args.Monotonic)
 }
 
-// this interface helps unify the logic for extracting data from different histogram types
+// SumCountDataPoint interface helps unify the logic for extracting data from different histogram types
 // all supported metric types' datapoints implement it
 type SumCountDataPoint interface {
 	Attributes() pcommon.Map
