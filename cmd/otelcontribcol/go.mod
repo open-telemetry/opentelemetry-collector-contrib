@@ -381,7 +381,7 @@ require (
 	github.com/SAP/go-hdb v1.12.2 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/aerospike/aerospike-client-go/v7 v7.6.1 // indirect
+	github.com/aerospike/aerospike-client-go/v7 v7.7.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20240626203959-61d1e3462e30 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.83 // indirect
@@ -767,7 +767,7 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
+	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
@@ -776,7 +776,7 @@ require (
 	go.elastic.co/fastjson v1.3.0 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
 	go.mongodb.org/atlas v0.37.0 // indirect
-	go.mongodb.org/mongo-driver v1.16.1 // indirect
+	go.mongodb.org/mongo-driver v1.17.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.109.1-0.20240916171416-d3a171889c53 // indirect
 	go.opentelemetry.io/collector/client v1.15.1-0.20240916171416-d3a171889c53 // indirect
