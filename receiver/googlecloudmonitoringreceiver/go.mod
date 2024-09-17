@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.109.1-0.20240916171416-d3a171889c53
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.23.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20240827150818-7e3bb234dfed
+	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1
 )
 
 require (
@@ -33,7 +33,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/monitoring v1.21.0
+	cloud.google.com/go/monitoring v1.21.1
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
