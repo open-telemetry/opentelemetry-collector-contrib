@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
 var (
@@ -40,6 +41,7 @@ type metadataExporter struct {
 
 	metadataKeys []string
 	exporters    sync.Map
+	netReporter    *netstats.NetworkReporter
 	
 	userAgent string
 
@@ -53,6 +55,10 @@ var _ exp = (*metadataExporter)(nil)
 
 func newMetadataExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory) (exp, error) {
 	oCfg := cfg.(*Config)
+	netReporter, err := netstats.NewExporterNetworkReporter(set)
+	if err != nil {
+		return nil, err
+	}
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
@@ -69,13 +75,15 @@ func newMetadataExporter(cfg component.Config, set exporter.Settings, streamClie
 	}
 	sort.Strings(mks)
 	if len(mks) == 0 {
-		return newExporter(cfg, set, streamClientFactory, userAgent)
+		return newExporter(cfg, set, streamClientFactory, userAgent, netReporter)
 	}
 	return &metadataExporter{
 		config:       oCfg,
 		settings:     set,
 		scf:          streamClientFactory,
 		metadataKeys: mks,
+		userAgent: userAgent,
+		netReporter: netReporter,
 	}, nil
 }
 
@@ -135,11 +143,6 @@ func (e *metadataExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.Set, md metadata.MD) (exp, error) {
-	v, ok := e.exporters.Load(s)
-	if ok {
-		return v.(exp), nil
-	}
-
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -147,7 +150,12 @@ func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.
 		return nil, errTooManyExporters
 	}
 
-	newExp, err := newExporter(e.config, e.settings, e.scf, e.userAgent)
+	v, ok := e.exporters.Load(s)
+	if ok {
+		return v.(exp), nil
+	}
+
+	newExp, err := newExporter(e.config, e.settings, e.scf, e.userAgent, e.netReporter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create exporter: %w", err)
 	}
@@ -164,6 +172,7 @@ func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.
 			e.exporters.Delete(s)
 			return nil, fmt.Errorf("failed to start exporter: %w", err)
 		}
+
 		e.size++
 	}
 

@@ -48,6 +48,8 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	cfg.MetadataCardinalityLimit = 10
 	cfg.MetadataKeys = []string{"key1", "key2"}
 	set := exportertest.NewNopSettings()
+	set.BuildInfo.Description = "Collector"
+	set.BuildInfo.Version = "1.2.3test"
 	bg := context.Background()
 	exp, err := factory.CreateTracesExporter(bg, set, cfg)
 	require.NoError(t, err)
@@ -57,8 +59,8 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	}()
 
 	host := componenttest.NewNopHost()
+
 	assert.NoError(t, exp.Start(context.Background(), host))
-	time.Sleep(1 * time.Second)
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
@@ -164,8 +166,8 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	}()
 
 	host := componenttest.NewNopHost()
+
 	assert.NoError(t, exp.Start(context.Background(), host))
-	time.Sleep(1 * time.Second)
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
