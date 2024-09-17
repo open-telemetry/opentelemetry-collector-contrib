@@ -184,7 +184,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 			wg.Done()
 		}
 		_, err := w.Write([]byte{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer srv.Close()
 

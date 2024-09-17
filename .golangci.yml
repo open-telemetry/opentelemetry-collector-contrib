@@ -136,7 +136,6 @@ linters-settings:
     disable:
       - float-compare
       - formatter
-      - go-require
       - require-error
       - suite-subtest-run
       - useless-assert

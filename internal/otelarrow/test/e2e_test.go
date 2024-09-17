@@ -16,7 +16,8 @@ import (
 	"time"
 
 	"github.com/open-telemetry/otel-arrow/pkg/datagen"
-	"github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	otel_assert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -175,18 +176,18 @@ func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfg
 	// Run the receiver, shutdown after exporter does.
 	go func() {
 		defer receiverShutdownWG.Done()
-		require.NoError(t, receiver.Start(ctx, host))
+		assert.NoError(t, receiver.Start(ctx, host))
 		exporterShutdownWG.Wait()
-		require.NoError(t, receiver.Shutdown(ctx))
+		assert.NoError(t, receiver.Shutdown(ctx))
 	}()
 
 	// Run the exporter and wait for clients to finish
 	go func() {
 		defer exporterShutdownWG.Done()
-		require.NoError(t, exporter.Start(ctx, host))
+		assert.NoError(t, exporter.Start(ctx, host))
 		startWG.Done()
 		startExporterShutdownWG.Wait()
-		require.NoError(t, exporter.Shutdown(ctx))
+		assert.NoError(t, exporter.Shutdown(ctx))
 	}()
 
 	// wait for the exporter to start
@@ -287,8 +288,8 @@ func standardEnding(t *testing.T, _ testParams, testCon *testConsumer, expect []
 	for _, td := range testCon.sink.AllTraces() {
 		receivedJSON = append(receivedJSON, ptraceotlp.NewExportRequestFromTraces(td))
 	}
-	asserter := assert.NewStdUnitTest(t)
-	assert.Equiv(asserter, expectJSON, receivedJSON)
+	asserter := otel_assert.NewStdUnitTest(t)
+	otel_assert.Equiv(asserter, expectJSON, receivedJSON)
 
 	rops = map[string]int{}
 	eops = map[string]int{}
