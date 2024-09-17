@@ -16,9 +16,26 @@ The Windows Service Receiver is a receiver for scraping information about servic
 
 ## Getting Started
 
+By default the Windows Service Receiver will attempt to identify and monitor the status of all specified services on the host machine.
+ This behavior can be changed by a user setting the `monitor_all` field to true which will tell the receiver to attempt to build a list
+ and monitor the status of all services present on the host machine. The collection interval for the receiver may also be modified by 
+ specifying a value. Default collection interval is every one minute.
+
+An example of monitoring three services on a host:
 ```yaml
 windowsservice:
   collection_interval: <duration> # default = 1m
+  services:
+    - service1
+    - service2
+    - service3
+    ...
+```
+The case where you wish to monitor all services present on a host machine:
+```yaml
+windowsservice:
+  collection_interval: <duration> # default = 1m
+  monitor_all: true
     ...
 ```
 
