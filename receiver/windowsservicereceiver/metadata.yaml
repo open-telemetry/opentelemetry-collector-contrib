@@ -7,3 +7,32 @@ status:
   distributions: [contrib]
   codeowners:
     active: [shalper2]
+
+attributes:
+  windows.service.name:
+    description: The name of the windows Service being reported.
+    type: string
+  windows.service.startup_mode:
+    description: Startup mode of Windows Service ()
+    enum: [boot_start, system_start, auto_start, demand_start, disabled]
+    type: string
+  
+metrics:
+  windows.service:
+    enabled: true
+    description: Gauge value containing service status as an integer value.
+    extended_documentation: >
+      Gauge values map to service status as follows:
+      1 - Stopped,
+      2 - Start Pending,
+      3 - Stop Pending,
+      4 - Service Running,
+      5 - Continue Pending,
+      6 - Pause Pending,
+      7 - Service Paused
+    unit: '{status}'
+    gauge:
+      value_type: int
+    attributes: [windows.service.name, windows.service.startup_mode]
+
+
