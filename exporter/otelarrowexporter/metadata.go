@@ -41,8 +41,8 @@ type metadataExporter struct {
 
 	metadataKeys []string
 	exporters    sync.Map
-	netReporter    *netstats.NetworkReporter
-	
+	netReporter  *netstats.NetworkReporter
+
 	userAgent string
 
 	// Guards the size and the storing logic to ensure no more than limit items are stored.
@@ -82,8 +82,8 @@ func newMetadataExporter(cfg component.Config, set exporter.Settings, streamClie
 		settings:     set,
 		scf:          streamClientFactory,
 		metadataKeys: mks,
-		userAgent: userAgent,
-		netReporter: netReporter,
+		userAgent:    userAgent,
+		netReporter:  netReporter,
 	}, nil
 }
 
