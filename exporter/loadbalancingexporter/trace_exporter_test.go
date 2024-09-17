@@ -569,7 +569,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 				return
 			case <-ticker.C:
 				go func() {
-					require.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
+					assert.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
 				}()
 			}
 		}
