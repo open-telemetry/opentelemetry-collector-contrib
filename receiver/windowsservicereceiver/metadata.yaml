@@ -1,0 +1,9 @@
+type: windowsservice
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [shalper2]
