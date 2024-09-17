@@ -381,7 +381,7 @@ require (
 	github.com/SAP/go-hdb v1.12.2 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/aerospike/aerospike-client-go/v7 v7.6.1 // indirect
+	github.com/aerospike/aerospike-client-go/v7 v7.7.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20240626203959-61d1e3462e30 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.83 // indirect
