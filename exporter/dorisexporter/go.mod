@@ -7,7 +7,7 @@ toolchain go1.22.7
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	// cannot use higher version: https://github.com/go-sql-driver/mysql/issues/1602
-	github.com/go-sql-driver/mysql v1.7.1
+	github.com/go-sql-driver/mysql v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.108.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240916171416-d3a171889c53
@@ -28,6 +28,7 @@ require (
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
