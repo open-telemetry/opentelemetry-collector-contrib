@@ -67,7 +67,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ProcessorGroupbytraceIncompleteReleases, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_groupbytrace_incomplete_releases",
 		metric.WithDescription("Releases that are suspected to have been incomplete"),
-		metric.WithUnit("<nil>"),
+		metric.WithUnit("{releases}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbytraceNumEventsInQueue, err = builder.meters[configtelemetry.LevelBasic].Int64Gauge(
