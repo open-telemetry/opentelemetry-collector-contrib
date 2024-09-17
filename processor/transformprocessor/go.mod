@@ -25,8 +25,10 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
-require go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240916171416-d3a171889c53
-
+require (
+	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240916171416-d3a171889c53
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
+)
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
