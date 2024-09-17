@@ -82,7 +82,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.109.1-0.20240916093651-6029f3176705 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.109.1-0.20240916093651-6029f3176705 // indirect
 	go.opentelemetry.io/collector/featuregate v1.15.1-0.20240916093651-6029f3176705 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.109.0 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.109.1-0.20240916093651-6029f3176705 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.109.1-0.20240916093651-6029f3176705 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.52.0 // indirect
