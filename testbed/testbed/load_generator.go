@@ -46,6 +46,9 @@ type LoadOptions struct {
 
 	// Parallel specifies how many goroutines to send from.
 	Parallel int
+
+	// MaxDelay defines the longest amount of time we can continue retrying for non-permanent errors.
+	MaxDelay time.Duration
 }
 
 var _ LoadGenerator = (*ProviderSender)(nil)
@@ -110,6 +113,11 @@ func (ps *ProviderSender) Start(options LoadOptions) {
 	if ps.options.ItemsPerBatch == 0 {
 		// 10 items per batch by default.
 		ps.options.ItemsPerBatch = 10
+	}
+
+	if ps.options.MaxDelay == 0 {
+		// retry for an additional 10 seconds by default
+		ps.options.MaxDelay = time.Second * 10
 	}
 
 	log.Printf("Starting load generator at %d items/sec.", ps.options.DataItemsPerSecond)
@@ -240,6 +248,7 @@ func (ps *ProviderSender) generateTrace() error {
 	traceSender := ps.Sender.(TraceDataSender)
 
 	traceData, done := ps.Provider.GenerateTraces()
+	timer := time.NewTimer(ps.options.MaxDelay)
 	if done {
 		return nil
 	}
@@ -258,6 +267,11 @@ func (ps *ProviderSender) generateTrace() error {
 			return fmt.Errorf("cannot send traces: %w", err)
 		}
 		ps.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
+		select {
+		case <-timer.C:
+			return nil
+		default:
+		}
 	}
 }
 
@@ -265,6 +279,7 @@ func (ps *ProviderSender) generateMetrics() error {
 	metricSender := ps.Sender.(MetricDataSender)
 
 	metricData, done := ps.Provider.GenerateMetrics()
+	timer := time.NewTimer(ps.options.MaxDelay)
 	if done {
 		return nil
 	}
@@ -283,6 +298,12 @@ func (ps *ProviderSender) generateMetrics() error {
 			return fmt.Errorf("cannot send metrics: %w", err)
 		}
 		ps.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
+
+		select {
+		case <-timer.C:
+			return nil
+		default:
+		}
 	}
 }
 
@@ -290,6 +311,7 @@ func (ps *ProviderSender) generateLog() error {
 	logSender := ps.Sender.(LogDataSender)
 
 	logData, done := ps.Provider.GenerateLogs()
+	timer := time.NewTimer(ps.options.MaxDelay)
 	if done {
 		return nil
 	}
@@ -308,5 +330,11 @@ func (ps *ProviderSender) generateLog() error {
 			return fmt.Errorf("cannot send logs: %w", err)
 		}
 		ps.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
+
+		select {
+		case <-timer.C:
+			return nil
+		default:
+		}
 	}
 }
