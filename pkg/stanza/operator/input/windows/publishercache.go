@@ -25,7 +25,7 @@ func (c *publisherCache) get(provider string) (Publisher, error) {
 		return publisher, nil
 	}
 
-	var publisherOpenErr error
+	var err error
 	publisher = NewPublisher()
 	if provider != "" {
 		// If the provider is empty, there is nothing to be formatted on the event
