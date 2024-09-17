@@ -10,6 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.109.0
@@ -105,6 +106,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../internal/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../../pkg/batchpersignal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic => ../../pkg/kafka/topic
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 
