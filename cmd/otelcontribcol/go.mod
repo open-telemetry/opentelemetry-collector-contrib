@@ -726,7 +726,7 @@ require (
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/sapm-proto v0.14.0 // indirect
-	github.com/sijms/go-ora/v2 v2.8.19 // indirect
+	github.com/sijms/go-ora/v2 v2.8.21 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snowflakedb/gosnowflake v1.11.1 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
