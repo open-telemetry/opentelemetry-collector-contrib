@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/aws/aws-sdk-go v1.55.5
-	github.com/google/cadvisor v0.49.1-0.20240628164550-89f779d86055
+	github.com/google/cadvisor v0.50.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.109.0
@@ -38,7 +38,10 @@ require (
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cilium/ebpf v0.7.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
-	github.com/containerd/ttrpc v1.2.4 // indirect
+	github.com/containerd/containerd/api v1.7.19 // indirect
+	github.com/containerd/errdefs v0.1.0 // indirect
+	github.com/containerd/log v0.1.0 // indirect
+	github.com/containerd/ttrpc v1.2.5 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -91,7 +94,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.109.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.2 // indirect
+	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runc v1.1.14 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/opencontainers/selinux v1.10.0 // indirect

@@ -13,10 +13,9 @@ import (
 	httpprovider "go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	httpsprovider "go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	yamlprovider "go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/otelcol"
-
 	s3provider "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider"
 	secretsmanagerprovider "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider"
+	"go.opentelemetry.io/collector/otelcol"
 )
 
 func main() {
