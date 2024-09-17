@@ -177,9 +177,9 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 
 	var t tracker.Tracker
 	if o.noTracking {
-		t = tracker.NewNoStateTracker(set, c.MaxConcurrentFiles/2)
+		t = tracker.NewNoStateTracker(set, tracker.WithMaxBatchFiles(c.MaxConcurrentFiles/2))
 	} else {
-		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
+		t = tracker.NewFileTracker(set, tracker.WithMaxBatchFiles(c.MaxConcurrentFiles/2))
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
