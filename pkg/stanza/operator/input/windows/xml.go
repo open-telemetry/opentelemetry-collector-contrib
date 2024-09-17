@@ -266,5 +266,6 @@ func unmarshalEventXML(bytes []byte) (EventXML, error) {
 	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
 		return EventXML{}, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
 	}
+	eventXML.Original = string(bytes)
 	return eventXML, nil
 }
