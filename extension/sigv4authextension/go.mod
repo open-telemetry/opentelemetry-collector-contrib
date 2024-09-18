@@ -8,10 +8,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.32
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.7
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.109.1-0.20240916171416-d3a171889c53
+	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918135221-59c083f830f3
-	go.opentelemetry.io/collector/extension v0.109.1-0.20240916171416-d3a171889c53
-	go.opentelemetry.io/collector/extension/auth v0.109.1-0.20240916171416-d3a171889c53
+	go.opentelemetry.io/collector/extension v0.109.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/extension/auth v0.109.1-0.20240918193345-a3c0565031b0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.66.2
@@ -47,7 +47,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.59.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240916171416-d3a171889c53 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240918193345-a3c0565031b0 // indirect
 	go.opentelemetry.io/collector/pdata v1.15.1-0.20240918193345-a3c0565031b0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.52.0 // indirect
