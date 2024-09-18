@@ -6,8 +6,8 @@ extensions:
         endpoint: "ws://127.0.0.1:{{.SupervisorPort}}/v1/opamp"
         tls:
           insecure: true
-    ppid: { { .PID } }
-    ppid_poll_interval: { { .PPIDPollInterval } }
+    ppid: {{.PID}}
+    ppid_poll_interval: {{.PPIDPollInterval}}
 
 service:
   extensions: [opamp]
