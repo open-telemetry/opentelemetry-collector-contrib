@@ -6,11 +6,13 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	_ "embed"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -392,9 +394,17 @@ func (s *Supervisor) startOpAMP() error {
 func (s *Supervisor) startOpAMPClient() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
-	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
+	// determine if we need to load a TLS config or not
+	var tlsConfig *tls.Config
+	url, err := url.Parse(s.config.Server.Endpoint)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse server endpoint: %w", err)
+	}
+	if url.Scheme == "wss" || url.Scheme == "https" {
+		tlsConfig, err = s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
+		if err != nil {
+			return err
+		}
 	}
 
 	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
