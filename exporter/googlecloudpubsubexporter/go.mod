@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.15.1-0.20240916171416-d3a171889c53
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.197.0
-	google.golang.org/grpc v1.66.1
+	google.golang.org/grpc v1.66.2
 )
 
 require (
