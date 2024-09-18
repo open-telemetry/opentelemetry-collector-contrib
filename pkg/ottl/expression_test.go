@@ -414,6 +414,116 @@ func Test_newGetter(t *testing.T) {
 			},
 			want: []any{"test0", int64(1)},
 		},
+		{
+			name: "map",
+			val: value{
+				Map: &mapValue{
+					Values: []mapItem{
+						{
+							Key:   ottltest.Strp("stringAttr"),
+							Value: &value{String: ottltest.Strp("value")},
+						},
+						{
+							Key: ottltest.Strp("intAttr"),
+							Value: &value{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(3),
+								},
+							},
+						},
+						{
+							Key: ottltest.Strp("floatAttr"),
+							Value: &value{
+								Literal: &mathExprLiteral{
+									Float: ottltest.Floatp(2.5),
+								},
+							},
+						},
+						{
+							Key:   ottltest.Strp("boolAttr"),
+							Value: &value{Bool: (*boolean)(ottltest.Boolp(true))},
+						},
+						{
+							Key:   ottltest.Strp("byteAttr"),
+							Value: &value{Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8})},
+						},
+						{
+							Key:   ottltest.Strp("enumAttr"),
+							Value: &value{Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM_ONE"))},
+						},
+						{
+							Key: ottltest.Strp("pathAttr"),
+							Value: &value{
+								Literal: &mathExprLiteral{
+									Path: &path{
+										Fields: []field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Key: ottltest.Strp("mapAttr"),
+							Value: &value{
+								Map: &mapValue{
+									Values: []mapItem{
+										{
+											Key: ottltest.Strp("foo"),
+											Value: &value{
+												Map: &mapValue{
+													Values: []mapItem{
+														{
+															Key:   ottltest.Strp("test"),
+															Value: &value{String: ottltest.Strp("value")},
+														},
+													},
+												},
+											},
+										},
+										{
+											Key: ottltest.Strp("listAttr"),
+											Value: &value{
+												List: &list{
+													Values: []value{
+														{
+															String: ottltest.Strp("test0"),
+														},
+														{
+															Literal: &mathExprLiteral{
+																Int: ottltest.Intp(1),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ctx: "bear",
+			want: map[string]any{
+				"enumAttr": int64(1),
+				"pathAttr": "bear",
+				"mapAttr": map[string]any{
+					"foo": map[string]any{
+						"test": "value",
+					},
+					"listAttr": []any{"test0", int64(1)},
+				},
+				"stringAttr": "value",
+				"intAttr":    int64(3),
+				"floatAttr":  2.5,
+				"boolAttr":   true,
+				"byteAttr":   []byte{1, 2, 3, 4, 5, 6, 7, 8},
+			},
+		},
 	}
 
 	functions := CreateFactoryMap(
@@ -444,7 +554,15 @@ func Test_newGetter(t *testing.T) {
 
 			val, err := reader.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want, val)
+
+			switch v := val.(type) {
+			case pcommon.Map:
+				// need to compare the raw map here as require.EqualValues can not seem to handle
+				// the comparison of pcommon.Map
+				assert.EqualValues(t, tt.want, v.AsRaw())
+			default:
+				assert.EqualValues(t, tt.want, v)
+			}
 		})
 	}
 

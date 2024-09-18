@@ -165,7 +165,7 @@ func TestLoadConfig(t *testing.T) {
 				assert.Error(t, err)
 
 				if tt.errorLen > 0 {
-					assert.Equal(t, tt.errorLen, len(multierr.Errors(err)))
+					assert.Len(t, multierr.Errors(err), tt.errorLen)
 				}
 
 				return

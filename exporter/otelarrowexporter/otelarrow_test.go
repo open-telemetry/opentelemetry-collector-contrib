@@ -394,7 +394,7 @@ func TestSendTraces(t *testing.T) {
 	// Test the static metadata
 	md = rcv.getMetadata()
 	require.EqualValues(t, expectedHeader, md.Get("header"))
-	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	// Test the caller's dynamic metadata
@@ -566,8 +566,8 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, md, rcv.getLastRequest())
 
 	mdata := rcv.getMetadata()
-	require.EqualValues(t, mdata.Get("header"), expectedHeader)
-	require.Equal(t, len(mdata.Get("User-Agent")), 1)
+	require.EqualValues(t, expectedHeader, mdata.Get("header"))
+	require.Len(t, mdata.Get("User-Agent"), 1)
 	require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	st := status.New(codes.InvalidArgument, "Invalid argument")
@@ -858,7 +858,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, ld, rcv.getLastRequest())
 
 	md := rcv.getMetadata()
-	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	st := status.New(codes.InvalidArgument, "Invalid argument")
@@ -1186,6 +1186,6 @@ func TestUserDialOptions(t *testing.T) {
 	err = exp.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
 
-	require.Equal(t, len(rcv.getMetadata().Get("User-Agent")), 1)
+	require.Len(t, rcv.getMetadata().Get("User-Agent"), 1)
 	require.Contains(t, rcv.getMetadata().Get("User-Agent")[0], testAgent)
 }

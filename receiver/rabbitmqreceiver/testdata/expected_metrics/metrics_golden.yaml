@@ -42,7 +42,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{messages}'
         scope:
-          name: otelcol/rabbitmqreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
           version: latest
   - resource:
       attributes:
@@ -127,5 +127,5 @@ resourceMetrics:
               isMonotonic: true
             unit: '{messages}'
         scope:
-          name: otelcol/rabbitmqreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
           version: latest

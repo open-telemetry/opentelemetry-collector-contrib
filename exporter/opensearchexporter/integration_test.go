@@ -12,6 +12,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -112,13 +113,13 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var err error
 			docs := getReceivedDocuments(r.Body)
-			require.LessOrEqualf(t, requestCount, len(tc.RequestHandlers), "Test case generated more requests than it has response for.")
+			assert.LessOrEqualf(t, requestCount, len(tc.RequestHandlers), "Test case generated more requests than it has response for.")
 			tc.RequestHandlers[requestCount].ValidateReceivedDocuments(t, requestCount, docs)
 
 			w.WriteHeader(200)
 			response, _ := os.ReadFile(tc.RequestHandlers[requestCount].ResponseJSONPath)
 			_, err = w.Write(response)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			requestCount++
 		}))
@@ -242,13 +243,13 @@ func TestOpenSearchLogExporter(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var err error
 			docs := getReceivedDocuments(r.Body)
-			require.LessOrEqualf(t, requestCount, len(tc.RequestHandlers), "Test case generated more requests than it has response for.")
+			assert.LessOrEqualf(t, requestCount, len(tc.RequestHandlers), "Test case generated more requests than it has response for.")
 			tc.RequestHandlers[requestCount].ValidateReceivedDocuments(t, requestCount, docs)
 
 			w.WriteHeader(200)
 			response, _ := os.ReadFile(tc.RequestHandlers[requestCount].ResponseJSONPath)
 			_, err = w.Write(response)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			requestCount++
 		}))

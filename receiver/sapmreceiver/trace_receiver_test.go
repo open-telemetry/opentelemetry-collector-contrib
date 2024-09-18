@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -244,15 +244,20 @@ func compressZstd(reqBytes []byte) ([]byte, error) {
 
 func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) receiver.Traces {
 	params := receivertest.NewNopSettings()
-	params.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
-		require.NoError(t, event.Err())
-	}
 	sr, err := newReceiver(params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
 
-	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start trace reception")
-	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not fail to start log on second Start call")
+	require.NoError(t, sr.Start(context.Background(), &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			require.NoError(t, event.Err())
+		},
+	}), "should not have failed to start trace reception")
+	require.NoError(t, sr.Start(context.Background(), &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			require.NoError(t, event.Err())
+		},
+	}), "should not fail to start log on second Start call")
 
 	t.Log("Trace Reception Started")
 	return sr
@@ -345,7 +350,7 @@ func TestReception(t *testing.T) {
 
 			// retrieve received traces
 			got := sink.AllTraces()
-			assert.Equal(t, 1, len(got))
+			assert.Len(t, got, 1)
 
 			// compare what we got to what we wanted
 			t.Log("Comparing expected data to trace data")
@@ -409,7 +414,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			assert.NoError(t, resp.Body.Close())
 
 			got := sink.AllTraces()
-			assert.Equal(t, 1, len(got))
+			assert.Len(t, got, 1)
 
 			received := got[0].ResourceSpans()
 			for i := 0; i < received.Len(); i++ {
@@ -424,4 +429,26 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			}
 		})
 	}
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return nil
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

@@ -135,7 +135,7 @@ This can be customised through the following settings:
 
 - `traces_dynamic_index` (optional): uses resource, scope, or span attributes to dynamically construct index name.
   - `enabled`(default=false): Enable/Disable dynamic index for trace spans. If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: span attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `traces-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if
-    `elasticsearch.index.prefix` or `elasticsearch.index.suffix` exist in attributes (precedence: resource attribute > scope attribute > span attribute), they will be used to dynamically construct index name in the form `${elasticsearch.index.prefix}${traces_index}${elasticsearch.index.suffix}`. Otherwise, the index name falls back to `traces-generic-default`, and `traces_index` config will be ignored. Except for prefix/suffix attribute presence, the resulting docs will contain the corresponding `data_stream.*` fields.
+    `elasticsearch.index.prefix` or `elasticsearch.index.suffix` exist in attributes (precedence: resource attribute > scope attribute > span attribute), they will be used to dynamically construct index name in the form `${elasticsearch.index.prefix}${traces_index}${elasticsearch.index.suffix}`. Otherwise, the index name falls back to `traces-generic-default`, and `traces_index` config will be ignored. Except for prefix/suffix attribute presence, the resulting docs will contain the corresponding `data_stream.*` fields. There is an exception for span events under OTel mapping mode (`mapping::mode: otel`), where span event attributes instead of span attributes are considered, and `data_stream.type` is always `logs` instead of `traces` such that documents are routed to `logs-${data_stream.dataset}-${data_stream.namespace}`.
 
 - `logstash_format` (optional): Logstash format compatibility. Logs, metrics and traces can be written into an index in Logstash format.
   - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format.enabled` is `true`, the index name is composed using `(logs|metrics|traces)_index` or `(logs|metrics|traces)_dynamic_index` as prefix and the date as suffix,
@@ -155,8 +155,10 @@ behaviours, which may be configured through the following settings:
     - `none`: Use original fields and event structure from the OTLP event.
     - `ecs`: Try to map fields to [Elastic Common Schema (ECS)][ECS]
     - `otel`: Elastic's preferred "OTel-native" mapping mode. Uses original fields and event structure from the OTLP event.
-          :warning: This mode's behavior is unstable, it is currently is experimental and undergoing changes.
-          There's a special treatment for the following attributes: `data_stream.type`, `data_stream.dataset`, `data_stream.namespace`. Instead of serializing these values under the `*attributes.*` namespace, they're put at the root of the document, to conform with the conventions of the data stream naming scheme that maps these as `constant_keyword` fields.
+      - :warning: This mode's behavior is unstable, it is currently is experimental and undergoing changes. 
+      - There's a special treatment for the following attributes: `data_stream.type`, `data_stream.dataset`, `data_stream.namespace`. Instead of serializing these values under the `*attributes.*` namespace, they're put at the root of the document, to conform with the conventions of the data stream naming scheme that maps these as `constant_keyword` fields.
+      - `data_stream.dataset` will always be appended with `.otel`. It is recommended to use with `*_dynamic_index.enabled: true` to route documents to data stream `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
+      - Span events are stored in separate documents. They will be routed with `data_stream.type` set to `logs` if `traces_dynamic_index::enabled` is `true`.
 
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
@@ -173,7 +175,7 @@ behaviours, which may be configured through the following settings:
 > [!WARNING]
 > The ECS mode mapping mode is currently undergoing changes, and its behaviour is unstable.
 
-In ECS mapping mode, the Elastisearch Exporter attempts to map fields from
+In ECS mapping mode, the Elasticsearch Exporter attempts to map fields from
 [OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS].
 This mode may be used for compatibility with existing dashboards that work with ECS.
 
@@ -198,7 +200,7 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `max_requests` (default=3): Number of HTTP request retries.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429, 500, 502, 503, 504]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it is recommended to set it to `[429]`. WARNING: The default will be changed to `[429]` in the future.
+  - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
 
 > [!NOTE]
 > The `flush` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
@@ -229,12 +231,13 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
 ## Exporting metrics
 
 Metrics support is currently in development.
-The only metric types supported are:
+The metric types supported are:
 
 - Gauge
 - Sum
-
-Other metric types (Histogram, Exponential Histogram, Summary) are ignored.
+- Histogram
+- Exponential histogram
+- Summary
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings
@@ -247,3 +250,91 @@ Other metric types (Histogram, Exponential Histogram, Summary) are ignored.
 [data stream]: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html
 [ecs]: https://www.elastic.co/guide/en/ecs/current/index.html
 [SemConv]: https://github.com/open-telemetry/semantic-conventions
+
+
+## ECS Mapping
+
+`elasticsearchexporter` follows ECS mapping defined here: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#elastic-common-schema
+
+When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
+
+If the target ECS field name is specified as an empty string (""), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
+
+When "Preserved" is true, the attribute will be preserved in the payload and duplicated as mapped to its ECS equivalent.
+
+| Semantic Convention Name | ECS Name | Preserve |
+|--------------------------|----------|----------|
+| cloud.platform           | cloud.service.name | false |
+| container.image.tags     | container.image.tag | false |
+| deployment.environment   | service.environment | false |
+| host.arch                | host.architecture | false |
+| host.name                | host.hostname | true |
+| k8s.deployment.name      | kubernetes.deployment.name | false |
+| k8s.namespace.name       | kubernetes.namespace | false |
+| k8s.node.name            | kubernetes.node.name | false |
+| k8s.pod.name             | kubernetes.pod.name | false |
+| k8s.pod.uid              | kubernetes.pod.uid | false |
+| os.description           | host.os.full | false |
+| os.name                  | host.os.name | false |
+| os.type                  | host.os.platform | false |
+| os.version               | host.os.version | false |
+| process.executable.path  | process.executable | false |
+| process.runtime.name     | service.runtime.name | false |
+| process.runtime.version  | service.runtime.version | false |
+| service.instance.id      | service.node.name | false |
+| telemetry.distro.name    | "" | false |
+| telemetry.distro.version | "" | false |
+| telemetry.sdk.language   | "" | false |
+| telemetry.sdk.name       | "" | false |
+| telemetry.sdk.version    | "" | false |
+
+### Compound Mapping
+
+There are ECS fields that are not mapped easily 1 to 1 but require more advanced logic.
+
+#### `agent.name`
+
+The agent name takes the form of a compound name consisting of 3 components:
+- `telemetry.sdk.name` or, if not present, defaults to `otlp`,
+- `telemetry.sdk.language`, defaulting to `unknown` in case it is missing,
+- `telemetry.distro.name`, which is allowed to be empty.
+
+These values are all valid:
+
+| `telemetry.sdk.name` | `telemetry.sdk.language` | `telemetry.distro.name` | `agent.name`           |
+|----------------------|--------------------------|-------------------------|------------------------|
+| ""                   | ""                       | ""                      | `otlp/unknown`                 |
+| ""                   | dotnet                   | ""                      | `otlp/dotnet`          |
+| opentelemetry        | dotnet                   | ""                      | `opentelemetry/dotnet` |
+| ""                   | java                     | parts-unlimited-java    | `otlp/java/parts-unlimited-java` |
+| ""                   | ""                       | parts-unlimited-java    | `otlp/unknown/parts-unlimited-java` |
+
+#### `agent.version`
+
+Takes the value of `telemetry.distro.version` or `telemetry.sdk.version`. If both telemetry.distro.version and telemetry.sdk.version are present, telemetry.distro.version takes precedence.
+
+#### `host.os.type`
+
+Maps values of `os.type` in the following manner:
+
+| SemConv Value | ECS Value |
+|---------------|-----------|
+| windows       | windows   |
+| linux         | linux     |
+| darwin        | macos     |
+| aix           | unix      |
+| hpux          | unix      |
+| solaris       | unix      |
+
+In case `os.name` is present and falls within the specified range of values:
+
+| SemConv Value | ECS Value |
+|---------------|-----------|
+| Android       | android   |
+| iOS           | ios       |
+
+Otherwise, it is mapped to an empty string ("").
+
+#### `@timestamp`
+
+In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.

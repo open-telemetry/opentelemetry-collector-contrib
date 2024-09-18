@@ -1,5 +1,4 @@
 type: grafanacloud
-scope_name: otelcol/grafanacloud
 
 status:
   class: connector
@@ -9,7 +8,7 @@ status:
   codeowners:
     active: [jpkrohling, rlankfo, jcreixell]
     emeritus: []
-    seeking_new: true
+    seeking_new: false
 
 tests:
   config:

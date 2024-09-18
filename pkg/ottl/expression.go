@@ -143,6 +143,32 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	return evaluated, nil
 }
 
+type mapGetter[K any] struct {
+	mapValues map[string]Getter[K]
+}
+
+func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
+	evaluated := map[string]any{}
+	for k, v := range m.mapValues {
+		val, err := v.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		switch t := val.(type) {
+		case pcommon.Map:
+			evaluated[k] = t.AsRaw()
+		default:
+			evaluated[k] = t
+		}
+
+	}
+	result := pcommon.NewMap()
+	if err := result.FromRaw(evaluated); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 // TypeError represents that a value was not an expected type.
 type TypeError string
 
@@ -715,7 +741,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			return &literal[K]{value: *i}, nil
 		}
 		if eL.Path != nil {
-			np, err := newPath[K](eL.Path.Fields)
+			np, err := p.newPath(eL.Path)
 			if err != nil {
 				return nil, err
 			}
@@ -736,6 +762,18 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			lg.slice[i] = getter
 		}
 		return &lg, nil
+	}
+
+	if val.Map != nil {
+		mg := mapGetter[K]{mapValues: map[string]Getter[K]{}}
+		for _, kvp := range val.Map.Values {
+			getter, err := p.newGetter(*kvp.Value)
+			if err != nil {
+				return nil, err
+			}
+			mg.mapValues[*kvp.Key] = getter
+		}
+		return &mg, nil
 	}
 
 	if val.MathExpression == nil {

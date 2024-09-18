@@ -1,5 +1,4 @@
 type: solace
-scope_name: otelcol/solacereceiver
 
 status:
   class: receiver

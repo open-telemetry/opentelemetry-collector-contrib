@@ -268,7 +268,6 @@ The following GitHub users are the currently available sponsors, either by being
 * [@fatsheep9146](https://github.com/fatsheep9146)
 * [@andrzej-stencel](https://github.com/andrzej-stencel)
 * [@songy23](https://github.com/songy23)
-* [@Bryan Aguilar](https://github.com/bryan-aguilar)
 * [@atoulme](https://github.com/atoulme)
 * [@crobert-1](https://github.com/crobert-1)
 
@@ -396,7 +395,13 @@ Example label comment:
 /label receiver/prometheus help-wanted -exporter/prometheus
 ```
 
-## Becoming a Code Owner
+## Membership, Roles, and Responsibilities
+
+### Membership levels
+
+See the [OpenTelemetry membership guide](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md) for information on how to become a member of the OpenTelemetry organization and the different roles available. In addition to the roles listed there we also have a Collector-specific role: code owners.
+
+### Becoming a Code Owner
 
 A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
 
@@ -409,7 +414,7 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 
 Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
-### Requirements
+#### Requirements
 
 If you would like to help and become a Code Owner you must meet the following requirements:
 
@@ -418,7 +423,7 @@ If you would like to help and become a Code Owner you must meet the following re
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
-### How to become a Code Owner
+#### How to become a Code Owner
 
 To become a Code Owner, open a PR with the following changes:
 
@@ -428,6 +433,14 @@ To become a Code Owner, open a PR with the following changes:
       * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make generate` to regenerate the component's README header.
 
 Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+
+### Emeritus roles
+
+Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github.
+
+In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via both Github and the CNCF Slack to confirm their status. After two weeks, if the contributor is an approver or maintainer, they may be removed from the Github review auto-assignment.
+
+If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
 
 ## Makefile Guidelines
 

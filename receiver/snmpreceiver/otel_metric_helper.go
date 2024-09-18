@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
 // generalResourceKey is the resource key for the no general "no attribute" resource
@@ -111,7 +113,7 @@ func (h *otelMetricHelper) createResource(resourceKey string, resourceAttributes
 		resourceMetrics.Resource().Attributes().PutStr(key, value)
 	}
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
-	scopeMetrics.Scope().SetName("otelcol/snmpreceiver")
+	scopeMetrics.Scope().SetName(metadata.ScopeName)
 	scopeMetrics.Scope().SetVersion(h.settings.BuildInfo.Version)
 	h.resourcesByKey[resourceKey] = &resourceMetrics
 	h.metricsByResource[resourceKey] = map[string]*pmetric.Metric{}

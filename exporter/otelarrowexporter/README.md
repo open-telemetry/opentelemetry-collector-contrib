@@ -241,3 +241,47 @@ exporters:
       zstd:
         level: 1       # 1 is the "fastest" compression level
 ```
+
+### Batching Configuration
+
+This exporter includes a new, experimental `batcher` configuration for
+batching in the `exporterhelper` module, but this mode is disabled by
+default.  This batching support works when combined with
+`queue_sender` functionality.
+
+```
+exporters:
+  otelarrow:
+    batcher:
+	  enabled: true
+    sending_queue:
+      enabled: true
+      storage: file_storage/otc
+extensions:
+  file_storage/otc:
+    directory: /var/lib/storage/otc
+```
+
+The built-in batcher is only recommended with a persistent queue,
+otherwise it cannot provide back-pressure to the caller.  If building
+a custom build of the OpenTelemetry Collector, we recommend using the
+[Concurrent Batch
+Processor](https://github.com/open-telemetry/otel-arrow/blob/main/collector/processor/concurrentbatchprocessor/README.md)
+to provide simultaneous back-pressure, concurrency, and batching
+functionality.  See [more discussion on this
+issue](https://github.com/open-telemetry/opentelemetry-collector/issues/10368).
+
+```
+exporters:
+  otelarrow:
+    batcher:
+	  enabled: false
+    sending_queue:
+      enabled: false
+processors:
+  concurrentbatch:
+    send_batch_max_size: 1500
+    send_batch_size: 1000
+    timeout: 1s
+    max_in_flight_size_mib: 128
+```

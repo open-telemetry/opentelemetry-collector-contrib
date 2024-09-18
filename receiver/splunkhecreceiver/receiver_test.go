@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -293,10 +294,10 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				assertHecSuccessResponse(t, resp, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Equal(t, 1, len(sink.AllLogs()))
+				assert.Len(t, sink.AllLogs(), 1)
 			},
 			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
-				assert.Equal(t, 0, len(sink.AllMetrics()))
+				assert.Empty(t, sink.AllMetrics())
 			},
 		},
 		{
@@ -311,10 +312,10 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				assertHecSuccessResponse(t, resp, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Equal(t, 0, len(sink.AllLogs()))
+				assert.Empty(t, sink.AllLogs())
 			},
 			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
-				assert.Equal(t, 1, len(sink.AllMetrics()))
+				assert.Len(t, sink.AllMetrics(), 1)
 			},
 		},
 		{
@@ -457,17 +458,22 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	}
 	sink := new(consumertest.LogsSink)
 	set := receivertest.NewNopSettings()
-	set.ReportStatus = func(event *component.StatusEvent) {
-		assert.NoError(t, event.Err())
-	}
 	r, err := newLogsReceiver(set, *cfg, sink)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
 
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start log reception")
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "should not fail to start log on second Start call")
+	require.NoError(t, r.Start(context.Background(), &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			assert.NoError(t, event.Err())
+		},
+	}), "should not have failed to start log reception")
+	require.NoError(t, r.Start(context.Background(), &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			assert.NoError(t, event.Err())
+		},
+	}), "should not fail to start log on second Start call")
 	defer func() {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
@@ -524,7 +530,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	t.Log("Splunk HEC Request Received")
 
 	got := sink.AllLogs()
-	require.Equal(t, 1, len(got))
+	require.Len(t, got, 1)
 	assert.Equal(t, want, got[0])
 }
 
@@ -1587,7 +1593,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assertHecSuccessResponse(t, resp, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Equal(t, 1, len(sink.AllLogs()))
+				assert.Len(t, sink.AllLogs(), 1)
 			},
 		},
 		{
@@ -1608,7 +1614,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assert.Equal(t, map[string]any{"code": float64(10), "text": "Data channel is missing"}, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Equal(t, 0, len(sink.AllLogs()))
+				assert.Empty(t, sink.AllLogs())
 			},
 		},
 		{
@@ -1629,7 +1635,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assert.Equal(t, map[string]any{"text": "Invalid data channel", "code": float64(11)}, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Equal(t, 0, len(sink.AllLogs()))
+				assert.Empty(t, sink.AllLogs())
 			},
 		},
 		{
@@ -1654,7 +1660,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assertHecSuccessResponseWithAckID(t, resp, body, 1)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Equal(t, 1, len(sink.AllLogs()))
+				assert.Len(t, sink.AllLogs(), 1)
 			},
 		},
 		{
@@ -1679,7 +1685,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assertHecSuccessResponseWithAckID(t, resp, body, 1)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Equal(t, 1, len(sink.AllLogs()))
+				assert.Len(t, sink.AllLogs(), 1)
 			},
 		},
 		{
@@ -1703,7 +1709,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assertHecSuccessResponseWithAckID(t, resp, body, 1)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Equal(t, 1, len(sink.AllLogs()))
+				assert.Len(t, sink.AllLogs(), 1)
 			},
 		},
 	}
@@ -1762,7 +1768,7 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-	assert.Equal(t, string(respBytes), responseHecHealthy)
+	assert.Equal(t, responseHecHealthy, string(respBytes))
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
@@ -1874,7 +1880,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				return req
 			}(),
 			assertResource: func(t *testing.T, got []plog.Logs) {
-				require.Equal(t, 1, len(got))
+				require.Len(t, got, 1)
 				resources := got[0].ResourceLogs()
 				assert.Equal(t, 1, resources.Len())
 				resource := resources.At(0).Resource().Attributes()
@@ -1899,7 +1905,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				return req
 			}(),
 			assertResource: func(t *testing.T, got []plog.Logs) {
-				require.Equal(t, 1, len(got))
+				require.Len(t, got, 1)
 				resources := got[0].ResourceLogs()
 				assert.Equal(t, 1, resources.Len())
 				resource := resources.At(0).Resource().Attributes()
@@ -1924,7 +1930,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				return req
 			}(),
 			assertResource: func(t *testing.T, got []plog.Logs) {
-				require.Equal(t, 1, len(got))
+				require.Len(t, got, 1)
 				resources := got[0].ResourceLogs()
 				assert.Equal(t, 1, resources.Len())
 				resource := resources.At(0).Resource().Attributes()
@@ -2094,4 +2100,26 @@ func (ae *mockAckExtension) Ack(partitionID string, ackID uint64) {
 
 func (ae *mockAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
 	return ae.processEvent(partitionID)
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return nil
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

@@ -34,17 +34,17 @@ func TestCreateDefaultConfig(t *testing.T) {
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
 	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
-	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueSettings())
-	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
-	assert.Equal(t, ocfg.Compression, configcompression.TypeZstd)
-	assert.Equal(t, ocfg.Arrow, ArrowConfig{
+	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
+	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutConfig())
+	assert.Equal(t, configcompression.TypeZstd, ocfg.Compression)
+	assert.Equal(t, ArrowConfig{
 		Disabled:           false,
 		NumStreams:         runtime.NumCPU(),
 		MaxStreamLifetime:  time.Hour,
 		PayloadCompression: "",
 		Zstd:               zstd.DefaultEncoderConfig(),
 		Prioritizer:        arrow.DefaultPrioritizer,
-	})
+	}, ocfg.Arrow)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -54,7 +54,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	set := exportertest.NewNopSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
@@ -191,7 +191,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			cfg := tt.config
 			consumer, err := factory.CreateTracesExporter(context.Background(), set, &cfg)
 			if tt.mustFailOnCreate {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
@@ -207,7 +207,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			if err != nil {
 				// Since the endpoint of OTLP exporter doesn't actually exist,
 				// exporter may already stop because it cannot connect.
-				assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+				assert.Equal(t, "rpc error: code = Canceled desc = grpc: the client connection is closing", err.Error())
 			}
 		})
 	}
@@ -220,7 +220,7 @@ func TestCreateLogsExporter(t *testing.T) {
 
 	set := exportertest.NewNopSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
@@ -233,6 +233,6 @@ func TestCreateArrowTracesExporter(t *testing.T) {
 	}
 	set := exportertest.NewNopSettings()
 	oexp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }

@@ -37,6 +37,7 @@ service:
   telemetry:
     metrics:
       level: basic
+      address: "localhost:8888"
   pipelines:
     logs:
       receivers: [otlp]

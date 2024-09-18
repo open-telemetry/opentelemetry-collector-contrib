@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
@@ -113,13 +112,6 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
 				cfg.BearerToken = "sometoken"
-				return cfg
-			},
-		},
-		{
-			extension: "memory_ballast",
-			getConfigFn: func() component.Config {
-				cfg := extFactories["memory_ballast"].CreateDefaultConfig().(*ballastextension.Config)
 				return cfg
 			},
 		},

@@ -36,7 +36,7 @@ func getProcessName(_ context.Context, _ processHandle, exePath string) (string,
 	return filepath.Base(exePath), nil
 }
 
-func getProcessCgroup(ctx context.Context, proc processHandle) (string, error) {
+func getProcessCgroup(_ context.Context, _ processHandle) (string, error) {
 	return "", nil
 }
 

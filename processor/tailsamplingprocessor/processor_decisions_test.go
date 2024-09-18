@@ -26,7 +26,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -71,7 +71,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -116,7 +116,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -167,7 +167,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -213,7 +213,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -264,7 +264,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -334,7 +334,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe := &mockPolicyEvaluator{}

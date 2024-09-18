@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("oidc")
+	Type      = component.MustNewType("oidc")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 )
 
 const (

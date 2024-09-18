@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
@@ -46,7 +47,7 @@ type opampAgent struct {
 	lifetimeCtx       context.Context
 	lifetimeCtxCancel context.CancelFunc
 
-	reportFunc func(*component.StatusEvent)
+	reportFunc func(*componentstatus.Event)
 
 	capabilities Capabilities
 
@@ -59,7 +60,11 @@ type opampAgent struct {
 
 var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
 
-func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
+func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
+	o.reportFunc = func(event *componentstatus.Event) {
+		componentstatus.ReportStatus(host, event)
+	}
+
 	header := http.Header{}
 	for k, v := range o.cfg.Server.GetHeaders() {
 		header.Set(k, string(v))
@@ -201,7 +206,6 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
-		reportFunc:               set.ReportStatus,
 	}
 
 	return agent, nil

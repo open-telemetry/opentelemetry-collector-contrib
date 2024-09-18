@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
@@ -64,7 +65,7 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 		defer close(s.doneCh)
 
 		if err = s.grpcServer.Serve(ln); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
-			s.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
 		}
 	}()
 

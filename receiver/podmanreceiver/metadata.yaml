@@ -1,5 +1,4 @@
 type: podman_stats
-scope_name: otelcol/podmanreceiver
 
 status:
   class: receiver

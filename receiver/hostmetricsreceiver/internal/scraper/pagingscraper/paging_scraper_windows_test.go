@@ -99,7 +99,7 @@ func TestScrape_Errors(t *testing.T) {
 				pageSize = test.pageSize
 			} else {
 				pageSize = getPageSize()
-				assert.Greater(t, pageSize, uint64(0))
+				assert.Positive(t, pageSize)
 				assert.Zero(t, pageSize%4096) // page size on Windows should always be a multiple of 4KB
 			}
 

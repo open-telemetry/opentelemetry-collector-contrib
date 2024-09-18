@@ -118,7 +118,6 @@ datasources:
 
 The following settings are required:
 
-- `metrics_exporter`: the name of the exporter that this connector will write metrics to. This exporter **must** be present in a pipeline.
 - `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
     - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.

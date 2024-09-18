@@ -28,7 +28,7 @@ resourceMetrics:
             name: system.cpu.load_average.5m
             unit: "1"
         scope:
-          name: otelcol/hostmetricsreceiver/load
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper
           version: v0.55.0-341-gf787ff695
   - resource: {}
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
@@ -62,7 +62,7 @@ resourceMetrics:
                   timeUnixNano: "1660943983792184000"
             unit: By
         scope:
-          name: otelcol/hostmetricsreceiver/memory
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper
           version: v0.55.0-341-gf787ff695
   - resource: {}
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
@@ -1583,7 +1583,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{packets}'
         scope:
-          name: otelcol/hostmetricsreceiver/network
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper
           version: v0.55.0-341-gf787ff695
   - resource: {}
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
@@ -1694,7 +1694,7 @@ resourceMetrics:
                   timeUnixNano: "1660943984119168000"
             unit: By
         scope:
-          name: otelcol/hostmetricsreceiver/paging
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper
           version: v0.55.0-341-gf787ff695
   - resource: {}
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
@@ -2378,5 +2378,5 @@ resourceMetrics:
                   timeUnixNano: "1660943984125836000"
             unit: By
         scope:
-          name: otelcol/hostmetricsreceiver/filesystem
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper
           version: v0.55.0-341-gf787ff695

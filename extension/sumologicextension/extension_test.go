@@ -100,7 +100,7 @@ func TestBasicStart(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerURL, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 				_, err := w.Write([]byte(`{
 					"collectorCredentialID": "collectorId",
 					"collectorCredentialKey": "collectorKey",
@@ -162,7 +162,7 @@ func TestStoreCredentials(t *testing.T) {
 
 				// register
 				case 1:
-					require.Equal(t, registerURL, req.URL.Path)
+					assert.Equal(t, registerURL, req.URL.Path)
 					_, err := w.Write([]byte(`{
 						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
@@ -317,12 +317,12 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 				switch reqNum {
 				// heartbeat
 				case 1:
-					require.Equal(t, heartbeatURL, req.URL.Path)
+					assert.Equal(t, heartbeatURL, req.URL.Path)
 					w.WriteHeader(204)
 
 				// metadata
 				case 2:
-					require.Equal(t, metadataURL, req.URL.Path)
+					assert.Equal(t, metadataURL, req.URL.Path)
 					w.WriteHeader(200)
 
 				// should not produce any more requests
@@ -387,7 +387,7 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	require.NoError(t, se.Shutdown(context.Background()))
 	require.FileExists(t, credsPath)
 
-	require.EqualValues(t, atomic.LoadInt32(&reqCount), 2)
+	require.EqualValues(t, 2, atomic.LoadInt32(&reqCount))
 }
 
 func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T) {
@@ -405,7 +405,7 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 
 				// register
 				case 1:
-					require.Equal(t, registerURL, req.URL.Path)
+					assert.Equal(t, registerURL, req.URL.Path)
 					_, err := w.Write([]byte(`{
 						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
@@ -509,7 +509,7 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerURL, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -578,7 +578,7 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerURL, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -601,7 +601,7 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 
 			// register again because force registration was set
 			case 3:
-				require.Equal(t, registerURL, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -672,7 +672,7 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerURL, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -776,7 +776,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// heatbeat
 						case 1:
-							require.NotEqual(t, registerURL, req.URL.Path,
+							assert.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
 
 							assert.Equal(t, heartbeatURL, req.URL.Path)
@@ -824,7 +824,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// failing heatbeat
 						case 1:
-							require.NotEqual(t, registerURL, req.URL.Path,
+							assert.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
 
 							assert.Equal(t, heartbeatURL, req.URL.Path)
@@ -840,7 +840,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// successful heatbeat
 						case 2:
-							require.NotEqual(t, registerURL, req.URL.Path,
+							assert.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
 
 							assert.Equal(t, heartbeatURL, req.URL.Path)
@@ -888,7 +888,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// failing heatbeat
 						case 1:
-							require.NotEqual(t, registerURL, req.URL.Path,
+							assert.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
 
 							assert.Equal(t, heartbeatURL, req.URL.Path)
@@ -904,7 +904,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// register
 						case 2:
-							require.Equal(t, registerURL, req.URL.Path)
+							assert.Equal(t, registerURL, req.URL.Path)
 
 							authHeader := req.Header.Get("Authorization")
 							assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -956,7 +956,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// register
 						case 1:
-							require.Equal(t, registerURL, req.URL.Path)
+							assert.Equal(t, registerURL, req.URL.Path)
 
 							authHeader := req.Header.Get("Authorization")
 							assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1047,7 +1047,7 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 
 			// register
 			case reqNum <= retriesLimit:
-				require.Equal(t, registerURL, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1113,7 +1113,7 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			// TODO Add payload verification - verify if collectorName is set properly
-			require.Equal(t, registerURL, req.URL.Path)
+			assert.Equal(t, registerURL, req.URL.Path)
 
 			authHeader := req.Header.Get("Authorization")
 			assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1129,7 +1129,7 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 					}
 				]
 			}`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		})
 	}())
 
@@ -1166,7 +1166,7 @@ func TestRegistrationRedirect(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerURL, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 
@@ -1209,7 +1209,7 @@ func TestRegistrationRedirect(t *testing.T) {
 
 			// should not produce any more requests
 			default:
-				require.Fail(t,
+				assert.Fail(t,
 					"extension should not make more than 5 requests to the destination server",
 				)
 			}
@@ -1224,12 +1224,12 @@ func TestRegistrationRedirect(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerURL, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 				http.Redirect(w, req, destSrv.URL, http.StatusMovedPermanently)
 
 			// should not produce any more requests
 			default:
-				require.Fail(t,
+				assert.Fail(t,
 					"extension should not make more than 1 request to the original server",
 				)
 			}
@@ -1398,22 +1398,22 @@ func TestRegistrationRequestPayload(t *testing.T) {
 			switch reqNum {
 			// register
 			case 1:
-				require.Equal(t, registerURL, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 
 				var reqPayload api.OpenRegisterRequestPayload
-				require.NoError(t, json.NewDecoder(req.Body).Decode(&reqPayload))
-				require.True(t, reqPayload.Clobber)
-				require.Equal(t, hostname, reqPayload.Hostname)
-				require.Equal(t, "my description", reqPayload.Description)
-				require.Equal(t, "my category/", reqPayload.Category)
-				require.EqualValues(t,
+				assert.NoError(t, json.NewDecoder(req.Body).Decode(&reqPayload))
+				assert.True(t, reqPayload.Clobber)
+				assert.Equal(t, hostname, reqPayload.Hostname)
+				assert.Equal(t, "my description", reqPayload.Description)
+				assert.Equal(t, "my category/", reqPayload.Category)
+				assert.EqualValues(t,
 					map[string]any{
 						"field1": "value1",
 						"field2": "value2",
 					},
 					reqPayload.Fields,
 				)
-				require.Equal(t, "PST", reqPayload.TimeZone)
+				assert.Equal(t, "PST", reqPayload.TimeZone)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1425,7 +1425,7 @@ func TestRegistrationRequestPayload(t *testing.T) {
 					"collectorId": "0000000001231231",
 					"collectorName": "otc-test-123456123123"
 					}`))
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			// metadata
 			case 2:
 				assert.Equal(t, metadataURL, req.URL.Path)
@@ -1476,10 +1476,10 @@ func TestWatchCredentialKey(t *testing.T) {
 	ctxc, cancel := context.WithCancel(ctx)
 	cancel()
 	v := se.WatchCredentialKey(ctxc, "")
-	require.Equal(t, v, "")
+	require.Equal(t, "", v)
 
 	v = se.WatchCredentialKey(context.Background(), "foobar")
-	require.Equal(t, v, "")
+	require.Equal(t, "", v)
 
 	go func() {
 		time.Sleep(time.Millisecond * 100)
@@ -1490,7 +1490,7 @@ func TestWatchCredentialKey(t *testing.T) {
 	}()
 
 	v = se.WatchCredentialKey(context.Background(), "")
-	require.Equal(t, v, "test-credential-key")
+	require.Equal(t, "test-credential-key", v)
 }
 
 func TestCreateCredentialsHeader(t *testing.T) {
@@ -1526,24 +1526,24 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			require.Equal(t, metadataURL, req.URL.Path)
+			assert.Equal(t, metadataURL, req.URL.Path)
 
 			var reqPayload api.OpenMetadataRequestPayload
-			require.NoError(t, json.NewDecoder(req.Body).Decode(&reqPayload))
-			require.NotEmpty(t, reqPayload.HostDetails.Name)
-			require.NotEmpty(t, reqPayload.HostDetails.OsName)
+			assert.NoError(t, json.NewDecoder(req.Body).Decode(&reqPayload))
+			assert.NotEmpty(t, reqPayload.HostDetails.Name)
+			assert.NotEmpty(t, reqPayload.HostDetails.OsName)
 			// @sumo-drosiek: It happened to be empty OsVersion on my machine
 			// require.NotEmpty(t, reqPayload.HostDetails.OsVersion)
-			require.NotEmpty(t, reqPayload.NetworkDetails.HostIPAddress)
-			require.EqualValues(t, reqPayload.HostDetails.Environment, "EKS-1.20.2")
-			require.EqualValues(t, reqPayload.CollectorDetails.RunningVersion, "1.0.0")
-			require.EqualValues(t, reqPayload.TagDetails["team"], "A")
-			require.EqualValues(t, reqPayload.TagDetails["app"], "linux")
-			require.EqualValues(t, reqPayload.TagDetails["sumo.disco.enabled"], "true")
+			assert.NotEmpty(t, reqPayload.NetworkDetails.HostIPAddress)
+			assert.EqualValues(t, "EKS-1.20.2", reqPayload.HostDetails.Environment)
+			assert.EqualValues(t, "1.0.0", reqPayload.CollectorDetails.RunningVersion)
+			assert.EqualValues(t, "A", reqPayload.TagDetails["team"])
+			assert.EqualValues(t, "linux", reqPayload.TagDetails["app"])
+			assert.EqualValues(t, "true", reqPayload.TagDetails["sumo.disco.enabled"])
 
 			_, err := w.Write([]byte(``))
 
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		})
 	}())
 

@@ -284,4 +284,4 @@ resourceLogs:
             timeUnixNano: "1677821346000000000"
             traceId: ""
         scope:
-          name: otelcol/cloudflare
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver

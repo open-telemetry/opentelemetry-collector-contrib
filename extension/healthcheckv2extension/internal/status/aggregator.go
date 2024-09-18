@@ -11,19 +11,23 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 )
 
 // Extensions are treated as a pseudo pipeline and extsID is used as a map key
-var (
-	extsID    = component.MustNewID("extensions")
-	extsIDMap = map[component.ID]struct{}{extsID: {}}
-)
+var extsID = component.MustNewID("extensions")
+
+// extensionIDIter is an iterator that is substituted for AllPipelineIDs for
+// the extensions pseudo pipeline.
+func extensionIDIter(f func(component.ID) bool) {
+	_ = f(extsID)
+}
 
 // Note: this interface had to be introduced because we need to be able to rewrite the
 // timestamps of some events during aggregation. The implementation in core doesn't currently
 // allow this, but this interface provides a workaround.
 type Event interface {
-	Status() component.Status
+	Status() componentstatus.Status
 	Err() error
 	Timestamp() time.Time
 }
@@ -99,7 +103,7 @@ type Aggregator struct {
 func NewAggregator(errPriority ErrorPriority) *Aggregator {
 	return &Aggregator{
 		aggregateStatus: &AggregateStatus{
-			Event:              &component.StatusEvent{},
+			Event:              &componentstatus.Event{},
 			ComponentStatusMap: make(map[string]*AggregateStatus),
 		},
 		subscriptions:   make(map[string]*list.List),
@@ -128,17 +132,17 @@ func (a *Aggregator) AggregateStatus(scope Scope, verbosity Verbosity) (*Aggrega
 }
 
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
-func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component.StatusEvent) {
-	compIDs := source.PipelineIDs
+func (a *Aggregator) RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event) {
+	allPipelineIDs := source.AllPipelineIDs
 	// extensions are treated as a pseudo-pipeline
-	if source.Kind == component.KindExtension {
-		compIDs = extsIDMap
+	if source.Kind() == component.KindExtension {
+		allPipelineIDs = extensionIDIter
 	}
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	for compID := range compIDs {
+	allPipelineIDs(func(compID component.ID) bool {
 		var pipelineStatus *AggregateStatus
 		pipelineScope := Scope(compID.String())
 		pipelineKey := pipelineScope.toKey()
@@ -150,14 +154,15 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 			}
 		}
 
-		componentKey := fmt.Sprintf("%s:%s", strings.ToLower(source.Kind.String()), source.ID)
+		componentKey := fmt.Sprintf("%s:%s", strings.ToLower(source.Kind().String()), source.ComponentID())
 		pipelineStatus.ComponentStatusMap[componentKey] = &AggregateStatus{
 			Event: event,
 		}
 		a.aggregateStatus.ComponentStatusMap[pipelineKey] = pipelineStatus
 		pipelineStatus.Event = a.aggregationFunc(pipelineStatus)
 		a.notifySubscribers(pipelineScope, pipelineStatus)
-	}
+		return true
+	})
 
 	a.aggregateStatus.Event = a.aggregationFunc(a.aggregateStatus)
 	a.notifySubscribers(ScopeAll, a.aggregateStatus)

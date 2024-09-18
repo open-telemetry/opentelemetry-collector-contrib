@@ -30,5 +30,5 @@ resourceMetrics:
             name: k8s.deployment.desired
             unit: "{pod}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest

@@ -114,7 +114,7 @@ processors:
          {
             name: test-policy-9,
             type: string_attribute,
-            string_attribute: {key: http.url, values: [\/health, \/metrics], enabled_regex_matching: true, invert_match: true}
+            string_attribute: {key: url.path, values: [\/health, \/metrics], enabled_regex_matching: true, invert_match: true}
          },
          {
             name: test-policy-10,

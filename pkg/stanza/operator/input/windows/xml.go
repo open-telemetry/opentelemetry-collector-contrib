@@ -31,6 +31,7 @@ type EventXML struct {
 	Security         *Security   `xml:"System>Security"`
 	Execution        *Execution  `xml:"System>Execution"`
 	EventData        EventData   `xml:"EventData"`
+	RemoteServer     string      `xml:"RemoteServer,omitempty"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
@@ -119,6 +120,10 @@ func (e *EventXML) parseBody() map[string]any {
 		"opcode":      opcode,
 		"keywords":    keywords,
 		"event_data":  parseEventData(e.EventData),
+	}
+
+	if e.RemoteServer != "" {
+		body["remote_server"] = e.RemoteServer
 	}
 
 	if len(details) > 0 {

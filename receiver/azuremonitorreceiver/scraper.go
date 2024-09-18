@@ -126,6 +126,8 @@ func (s *azureScraper) getArmClientOptions() *arm.ClientOptions {
 	switch s.cfg.Cloud {
 	case azureGovernmentCloud:
 		cloudToUse = cloud.AzureGovernment
+	case azureChinaCloud:
+		cloudToUse = cloud.AzureChina
 	default:
 		cloudToUse = cloud.AzurePublic
 	}

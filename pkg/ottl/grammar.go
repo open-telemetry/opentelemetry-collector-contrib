@@ -237,6 +237,7 @@ type value struct {
 	String         *string          `parser:"| @String"`
 	Bool           *boolean         `parser:"| @Boolean"`
 	Enum           *enumSymbol      `parser:"| @Uppercase (?! Lowercase)"`
+	Map            *mapValue        `parser:"| @@"`
 	List           *list            `parser:"| @@)"`
 }
 
@@ -252,7 +253,8 @@ func (v *value) checkForCustomError() error {
 
 // path represents a telemetry path mathExpression.
 type path struct {
-	Fields []field `parser:"@@ ( '.' @@ )*"`
+	Context string  `parser:"(@Lowercase '.')?"`
+	Fields  []field `parser:"@@ ( '.' @@ )*"`
 }
 
 // field is an item within a path.
@@ -268,6 +270,15 @@ type key struct {
 
 type list struct {
 	Values []value `parser:"'[' (@@)* (',' @@)* ']'"`
+}
+
+type mapValue struct {
+	Values []mapItem `parser:"'{' (@@ ','?)* '}'"`
+}
+
+type mapItem struct {
+	Key   *string `parser:"@String ':'"`
+	Value *value  `parser:"@@"`
 }
 
 // byteSlice type for capturing byte slices
@@ -444,6 +455,9 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Equal`, Pattern: `=`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
+		{Name: `LBrace`, Pattern: `\{`},
+		{Name: `RBrace`, Pattern: `\}`},
+		{Name: `Colon`, Pattern: `\:`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
 		{Name: `Uppercase`, Pattern: `[A-Z][A-Z0-9_]*`},
 		{Name: `Lowercase`, Pattern: `[a-z][a-z0-9_]*`},

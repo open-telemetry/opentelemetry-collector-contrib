@@ -5,11 +5,16 @@ package timeutils // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
+	"github.com/elastic/lunes"
+
 	strptime "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt"
 )
+
+var invalidFractionalSecondsGoTime = regexp.MustCompile(`[^.,9]9+`)
 
 func StrptimeToGotime(layout string) (string, error) {
 	return strptime.ToNative(layout)
@@ -21,6 +26,29 @@ func ParseStrptime(layout string, value any, location *time.Location) (time.Time
 		return time.Time{}, err
 	}
 	return ParseGotime(goLayout, value, location)
+}
+
+// ParseLocalizedStrptime is like ParseStrptime, but instead of parsing a formatted time in
+// English, it parses a value in foreign language, and returns the [time.Time] it represents.
+// The language argument must be a well-formed BCP 47 language tag (e.g.: "en", "en-US"), and
+// a known CLDR locale.
+func ParseLocalizedStrptime(layout string, value any, location *time.Location, language string) (time.Time, error) {
+	goLayout, err := strptime.ToNative(layout)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	stringValue, err := convertParsingValue(value)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	translatedVal, err := lunes.Translate(goLayout, stringValue, language)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return ParseGotime(goLayout, translatedVal, location)
 }
 
 func GetLocation(location *string, layout *string) (*time.Location, error) {
@@ -50,14 +78,9 @@ func ParseGotime(layout string, value any, location *time.Location) (time.Time, 
 }
 
 func parseGotime(layout string, value any, location *time.Location) (time.Time, error) {
-	var str string
-	switch v := value.(type) {
-	case string:
-		str = v
-	case []byte:
-		str = string(v)
-	default:
-		return time.Time{}, fmt.Errorf("type %T cannot be parsed as a time", value)
+	str, err := convertParsingValue(value)
+	if err != nil {
+		return time.Time{}, err
 	}
 
 	result, err := time.ParseInLocation(layout, str, location)
@@ -86,6 +109,20 @@ func parseGotime(layout string, value any, location *time.Location) (time.Time, 
 	return resultLoc, locErr
 }
 
+func convertParsingValue(value any) (string, error) {
+	var str string
+	switch v := value.(type) {
+	case string:
+		str = v
+	case []byte:
+		str = string(v)
+	default:
+		return "", fmt.Errorf("type %T cannot be parsed as a time", value)
+	}
+
+	return str, nil
+}
+
 // SetTimestampYear sets the year of a timestamp to the current year.
 // This is needed because year is missing from some time formats, such as rfc3164.
 func SetTimestampYear(t time.Time) time.Time {
@@ -102,6 +139,20 @@ func SetTimestampYear(t time.Time) time.Time {
 		d = d.AddDate(-1, 0, 0)
 	}
 	return d
+}
+
+// ValidateStrptime checks the given strptime layout and returns an error if it detects any known issues
+// that prevent it from being parsed.
+func ValidateStrptime(layout string) error {
+	return strptime.Validate(layout)
+}
+
+func ValidateGotime(layout string) error {
+	if match := invalidFractionalSecondsGoTime.FindString(layout); match != "" {
+		return fmt.Errorf("invalid fractional seconds directive: '%s'. must be preceded with '.' or ','", match)
+	}
+
+	return nil
 }
 
 // Allows tests to override with deterministic value
