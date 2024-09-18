@@ -466,7 +466,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 				return
 			case <-ticker.C:
 				go func() {
-					require.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
+					assert.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
 				}()
 			}
 		}
@@ -488,8 +488,8 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	mu.Lock()
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	mu.Unlock()
-	require.Greater(t, counter1.Load(), int64(0))
-	require.Greater(t, counter2.Load(), int64(0))
+	require.Positive(t, counter1.Load())
+	require.Positive(t, counter2.Load())
 }
 
 func randomLogs() plog.Logs {

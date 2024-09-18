@@ -84,14 +84,14 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 	prweServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 		// Snappy decode the uploads.
 		payload, rerr := io.ReadAll(req.Body)
-		require.NoError(t, rerr)
+		assert.NoError(t, rerr)
 
 		recv := make([]byte, len(payload))
 		decoded, derr := snappy.Decode(recv, payload)
-		require.NoError(t, derr)
+		assert.NoError(t, derr)
 
 		writeReq := new(prompb.WriteRequest)
-		require.NoError(t, proto.Unmarshal(decoded, writeReq))
+		assert.NoError(t, proto.Unmarshal(decoded, writeReq))
 
 		select {
 		case <-ctx.Done():
@@ -225,7 +225,7 @@ service:
 		}
 	}
 
-	require.Greater(t, totalSamples, 0, "Expected at least 1 sample")
+	require.Positive(t, totalSamples, "Expected at least 1 sample")
 	// On every alternative scrape the prior scrape will be reported as sale.
 	// Expect at least:
 	//    * The first scrape will NOT return stale markers
