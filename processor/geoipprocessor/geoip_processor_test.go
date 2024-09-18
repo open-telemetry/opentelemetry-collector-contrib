@@ -219,7 +219,7 @@ func TestProcessor(t *testing.T) {
 				attribute.Float64(conventions.AttributeGeoLocationLon, 5678),
 			}...), nil
 		}
-		return attribute.Set{}, nil
+		return attribute.Set{}, provider.ErrNoMetadataFound
 	}
 	const providerKey string = "mock"
 	providerFactories[providerKey] = &baseMockFactory
