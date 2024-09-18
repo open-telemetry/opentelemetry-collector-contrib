@@ -59,6 +59,7 @@ func TestFactory(t *testing.T) {
 	rCfg.MetadataExporters = []string{"nop/withoutmetadata"}
 	r = newTestReceiver(t, rCfg)
 	require.Error(t, r.Start(context.Background(), newNopHostWithExporters()))
+	require.NoError(t, r.Shutdown(context.Background()))
 }
 
 func TestFactoryDistributions(t *testing.T) {
@@ -74,6 +75,7 @@ func TestFactoryDistributions(t *testing.T) {
 	err := r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.Nil(t, r.resourceWatcher.osQuotaClient)
+	require.NoError(t, r.Shutdown(context.Background()))
 
 	// openshift
 	rCfg.Distribution = "openshift"
@@ -81,6 +83,7 @@ func TestFactoryDistributions(t *testing.T) {
 	err = r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.NotNil(t, r.resourceWatcher.osQuotaClient)
+	require.NoError(t, r.Shutdown(context.Background()))
 }
 
 func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {

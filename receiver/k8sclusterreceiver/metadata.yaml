@@ -520,4 +520,4 @@ tests:
   config:
   skip_lifecycle: true
   goleak:
-    skip: true
+    skip: false
