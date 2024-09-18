@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.109.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918135221-59c083f830f3
+	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/consumer v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/filter v0.109.1-0.20240918193345-a3c0565031b0

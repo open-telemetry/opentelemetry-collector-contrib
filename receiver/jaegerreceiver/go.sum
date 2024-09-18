@@ -84,12 +84,12 @@ github.com/pelletier/go-toml/v2 v2.2.2/go.mod h1:1t835xjRzz80PqgE6HHgN2JOsmgYu/h
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/prometheus/client_golang v1.20.3 h1:oPksm4K8B+Vt35tUhw6GbSNSgVlVSBH0qELP/7u83l4=
-github.com/prometheus/client_golang v1.20.3/go.mod h1:PIEt8X02hGcP8JWbeHyeZ53Y/jReSnHgO035n//V5WE=
+github.com/prometheus/client_golang v1.19.1 h1:wZWJDwK+NameRJuPGDhlnFgx8e8HN3XHQeLaYJFJBOE=
+github.com/prometheus/client_golang v1.19.1/go.mod h1:mP78NwGzrVks5S2H6ab8+ZZGJLZUq1hoULYBAYBw1Ho=
 github.com/prometheus/client_model v0.6.1 h1:ZKSh/rekM+n3CeS952MLRAdFwIKqeY8b62p8ais2e9E=
 github.com/prometheus/client_model v0.6.1/go.mod h1:OrxVMOVHjw3lKMa8+x6HeMGkHMQyHDk9E3jmP2AmGiY=
-github.com/prometheus/common v0.59.1 h1:LXb1quJHWm1P6wq/U824uxYi4Sg0oGvNeUm1z5dJoX0=
-github.com/prometheus/common v0.59.1/go.mod h1:GpWM7dewqmVYcd7SmRaiWVe9SSqjf0UrwnYnpEZNuT0=
+github.com/prometheus/common v0.55.0 h1:KEi6DK7lXW/m7Ig5i47x0vRzuBsHuvJdi5ee6Y3G1dc=
+github.com/prometheus/common v0.55.0/go.mod h1:2SECS4xJG1kd8XF9IcM1gMX6510RAEL65zxzNImwdc8=
 github.com/prometheus/procfs v0.15.1 h1:YagwOFzUgYfKKHX6Dr+sHT7km/hxC76UB0learggepc=
 github.com/prometheus/procfs v0.15.1/go.mod h1:fB45yRUv8NstnjriLhBQLuOUt+WW4BsoGhij/e3PBqk=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
@@ -145,8 +145,8 @@ go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240918193345-a3c05650
 go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240918193345-a3c0565031b0/go.mod h1:T3pOF5UemLzmYgY7QpiZuDRrihJ8lyXB0cDe6j1F1Ek=
 go.opentelemetry.io/collector/config/internal v0.109.1-0.20240918193345-a3c0565031b0 h1:hJpL/3p9b/j9d7ihc8XmekL88QPCCwx+B0BQVQ681cg=
 go.opentelemetry.io/collector/config/internal v0.109.1-0.20240918193345-a3c0565031b0/go.mod h1:WEF0at+6htVlRdJR1iNAZ3h6EdLCK2kWb8pVhXENo+8=
-go.opentelemetry.io/collector/confmap v1.15.1-0.20240918135221-59c083f830f3 h1:AvPbWflHyrHvnpR0cLhh0HrlAei7ReZfal/Hfyxn8ZQ=
-go.opentelemetry.io/collector/confmap v1.15.1-0.20240918135221-59c083f830f3/go.mod h1:GrIZ12P/9DPOuTpe2PIS51a0P/ZM6iKtByVee1Uf3+k=
+go.opentelemetry.io/collector/confmap v1.15.1-0.20240918193345-a3c0565031b0 h1:4yH2rB065AWf9b+QVCCexXc+3DUxy/5hsyyVH/aRS3M=
+go.opentelemetry.io/collector/confmap v1.15.1-0.20240918193345-a3c0565031b0/go.mod h1:GrIZ12P/9DPOuTpe2PIS51a0P/ZM6iKtByVee1Uf3+k=
 go.opentelemetry.io/collector/consumer v0.109.1-0.20240918193345-a3c0565031b0 h1:RgcYold0ls7VSsuFHARW+ZvketIvIGiTABXlPG/1xZw=
 go.opentelemetry.io/collector/consumer v0.109.1-0.20240918193345-a3c0565031b0/go.mod h1:UNssxLa1bhPZ0MwBvb4NsU3wqwxkO+FK73DgNDPj20c=
 go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.1-0.20240918193345-a3c0565031b0 h1:Ts0Hj6UZSxbAxOUM/zpGSLTtL/u0CiKqHacngCAMQqo=

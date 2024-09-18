@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/tinylib/msgp v1.2.1
 	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918135221-59c083f830f3
+	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/connector v0.109.1-0.20240918193345-a3c0565031b0
