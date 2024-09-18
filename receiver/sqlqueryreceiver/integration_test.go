@@ -161,7 +161,7 @@ func TestPostgresIntegrationLogsTrackingByTimestampColumnWithoutStorage(t *testi
 			return consumer.LogRecordCount() > 0
 		},
 		1*time.Minute,
-		5*time.Second,
+		500*time.Millisecond,
 		"failed to receive more than 0 logs",
 	)
 	require.Equal(t, 5, consumer.LogRecordCount())
