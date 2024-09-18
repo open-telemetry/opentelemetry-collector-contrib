@@ -134,7 +134,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("class")
 					assert.True(t, ok)
 					assert.EqualValues(t, "datapath", attrVal.Str())
@@ -166,7 +166,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "nsxt.node.memory.cache.usage":
 					assert.False(t, validatedMetrics["nsxt.node.memory.cache.usage"], "Found a duplicate in the metrics slice: nsxt.node.memory.cache.usage")
 					validatedMetrics["nsxt.node.memory.cache.usage"] = true
