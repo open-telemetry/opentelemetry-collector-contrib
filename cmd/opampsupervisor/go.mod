@@ -12,12 +12,12 @@ require (
 	github.com/knadh/koanf/v2 v2.1.1
 	github.com/open-telemetry/opamp-go v0.15.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/config/configopaque v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/config/configtls v1.13.1-0.20240827012220-5963d446ca4a
-	go.opentelemetry.io/collector/semconv v0.107.1-0.20240827012220-5963d446ca4a
+	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240916171416-d3a171889c53
+	go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240916171416-d3a171889c53
+	go.opentelemetry.io/collector/semconv v0.109.1-0.20240916171416-d3a171889c53
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.24.0
+	golang.org/x/sys v0.25.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
 )

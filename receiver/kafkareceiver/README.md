@@ -29,8 +29,9 @@ The following settings can be optionally configured:
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the kafka topic to read from.
   Only one telemetry type may be used for a given topic.
-- `encoding` (default = otlp_proto): The encoding of the payload received from kafka. Available encodings:
+- `encoding` (default = otlp_proto): The encoding of the payload received from kafka. Supports encoding extensions. Tries to load an encoding extension and falls back to internal encodings if no extension was loaded. Available internal encodings:
   - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`, `ExportLogsServiceRequest` or `ExportMetricsServiceRequest` respectively.
+  - `otlp_json`: the payload is deserialized to `ExportTraceServiceRequest` `ExportLogsServiceRequest` or `ExportMetricsServiceRequest` respectively using JSON encoding.
   - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
   - `jaeger_json`: the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
   - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
@@ -45,6 +46,9 @@ The following settings can be optionally configured:
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
 - `session_timeout` (default = `10s`): The request timeout for detecting client failures when using Kafka’s group management facilities.
 - `heartbeat_interval` (default = `3s`): The expected time between heartbeats to the consumer coordinator when using Kafka’s group management facilities.
+- `min_fetch_size` (default = `1`): The minimum number of message bytes to fetch in a request, defaults to 1 byte.
+- `default_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request, defaults to 1MB.
+- `max_fetch_size` (default = `0`): The maximum number of message bytes to fetch in a request, defaults to unlimited.
 - `auth`
   - `plain_text`
     - `username`: The username to use.

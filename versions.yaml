@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.107.0
+    version: v0.109.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
@@ -40,6 +40,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
@@ -141,12 +142,14 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
@@ -212,7 +215,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver

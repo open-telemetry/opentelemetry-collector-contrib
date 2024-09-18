@@ -762,7 +762,7 @@ func TestReceiveUnmarshallerInsertUserProperty(t *testing.T) {
 			&receive_v1.SpanData_UserPropertyValue_BoolValue{BoolValue: true},
 			pcommon.ValueTypeBool,
 			func(val pcommon.Value) {
-				assert.Equal(t, true, val.Bool())
+				assert.True(t, val.Bool())
 			},
 		},
 		{

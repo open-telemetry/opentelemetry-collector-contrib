@@ -140,7 +140,7 @@ func TestConfigValidate(t *testing.T) {
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
 
-	assert.Equal(t, 2, len(cfg.MetricDescriptors))
+	assert.Len(t, cfg.MetricDescriptors, 2)
 	assert.Equal(t, []MetricDescriptor{
 		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
 		{Unit: "Megabytes", MetricName: "memory_usage"},
@@ -267,7 +267,7 @@ func TestNoDimensionRollupFeatureGate(t *testing.T) {
 	require.NoError(t, err)
 	cfg := createDefaultConfig()
 
-	assert.Equal(t, cfg.(*Config).DimensionRollupOption, "NoDimensionRollup")
+	assert.Equal(t, "NoDimensionRollup", cfg.(*Config).DimensionRollupOption)
 	_ = featuregate.GlobalRegistry().Set("awsemf.nodimrollupdefault", false)
 }
 
@@ -320,7 +320,7 @@ func TestIsApplicationSignalsEnabled(t *testing.T) {
 				cfg.LogGroupName = tc.logGroupName
 			}
 
-			assert.Equal(t, cfg.isAppSignalsEnabled(), tc.expectedResult)
+			assert.Equal(t, tc.expectedResult, cfg.isAppSignalsEnabled())
 		})
 	}
 }

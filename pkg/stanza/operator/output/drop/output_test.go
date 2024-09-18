@@ -38,5 +38,5 @@ func TestProcess(t *testing.T) {
 
 	entry := entry.New()
 	result := op.Process(context.Background(), entry)
-	require.Nil(t, result)
+	require.NoError(t, result)
 }

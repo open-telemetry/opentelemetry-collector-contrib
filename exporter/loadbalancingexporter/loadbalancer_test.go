@@ -102,7 +102,7 @@ func TestLoadBalancerStart(t *testing.T) {
 		require.NoError(t, p.Shutdown(context.Background()))
 	}()
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestWithDNSResolver(t *testing.T) {
@@ -208,7 +208,7 @@ func TestLoadBalancerShutdown(t *testing.T) {
 	res := p.Shutdown(context.Background())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestOnBackendChanges(t *testing.T) {

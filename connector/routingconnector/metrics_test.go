@@ -141,8 +141,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
 
 		assert.Len(t, defaultSink.AllMetrics(), 1)
-		assert.Len(t, sink0.AllMetrics(), 0)
-		assert.Len(t, sink1.AllMetrics(), 0)
+		assert.Empty(t, sink0.AllMetrics())
+		assert.Empty(t, sink1.AllMetrics())
 	})
 
 	t.Run("metric matched by one of two expressions", func(t *testing.T) {
@@ -158,9 +158,9 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
 
-		assert.Len(t, defaultSink.AllMetrics(), 0)
+		assert.Empty(t, defaultSink.AllMetrics())
 		assert.Len(t, sink0.AllMetrics(), 1)
-		assert.Len(t, sink1.AllMetrics(), 0)
+		assert.Empty(t, sink1.AllMetrics())
 	})
 
 	t.Run("metric matched by two expressions", func(t *testing.T) {
@@ -182,12 +182,12 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
 
-		assert.Len(t, defaultSink.AllMetrics(), 0)
+		assert.Empty(t, defaultSink.AllMetrics())
 		assert.Len(t, sink0.AllMetrics(), 1)
 		assert.Len(t, sink1.AllMetrics(), 1)
 
-		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 2)
-		assert.Equal(t, sink1.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, 2, sink0.AllMetrics()[0].MetricCount())
+		assert.Equal(t, 2, sink1.AllMetrics()[0].MetricCount())
 		assert.Equal(t, sink0.AllMetrics(), sink1.AllMetrics())
 	})
 
@@ -237,10 +237,10 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		assert.Len(t, defaultSink.AllMetrics(), 1)
 		assert.Len(t, sink0.AllMetrics(), 1)
-		assert.Len(t, sink1.AllMetrics(), 0)
+		assert.Empty(t, sink1.AllMetrics())
 
-		assert.Equal(t, defaultSink.AllMetrics()[0].MetricCount(), 1)
-		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 1)
+		assert.Equal(t, 1, defaultSink.AllMetrics()[0].MetricCount())
+		assert.Equal(t, 1, sink0.AllMetrics()[0].MetricCount())
 		assert.Equal(t, defaultSink.AllMetrics(), sink0.AllMetrics())
 	})
 }
@@ -312,8 +312,8 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
 
 		assert.Len(t, defaultSink.AllMetrics(), 1)
-		assert.Len(t, sink0.AllMetrics(), 0)
-		assert.Len(t, sink1.AllMetrics(), 0)
+		assert.Empty(t, sink0.AllMetrics())
+		assert.Empty(t, sink1.AllMetrics())
 	})
 
 	t.Run("metric matched by one of two expressions", func(t *testing.T) {
@@ -329,9 +329,9 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
 
-		assert.Len(t, defaultSink.AllMetrics(), 0)
+		assert.Empty(t, defaultSink.AllMetrics())
 		assert.Len(t, sink0.AllMetrics(), 1)
-		assert.Len(t, sink1.AllMetrics(), 0)
+		assert.Empty(t, sink1.AllMetrics())
 	})
 
 	t.Run("metric matched by two expressions, but sinks to one", func(t *testing.T) {
@@ -353,11 +353,11 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
 
-		assert.Len(t, defaultSink.AllMetrics(), 0)
+		assert.Empty(t, defaultSink.AllMetrics())
 		assert.Len(t, sink0.AllMetrics(), 1)
-		assert.Len(t, sink1.AllMetrics(), 0)
+		assert.Empty(t, sink1.AllMetrics())
 
-		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, 2, sink0.AllMetrics()[0].MetricCount())
 	})
 
 	t.Run("one metric matched by 2 expressions, others matched by none", func(t *testing.T) {
@@ -381,7 +381,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		assert.Len(t, defaultSink.AllMetrics(), 1)
 		assert.Len(t, sink0.AllMetrics(), 1)
-		assert.Len(t, sink1.AllMetrics(), 0)
+		assert.Empty(t, sink1.AllMetrics())
 
 		rmetric := defaultSink.AllMetrics()[0].ResourceMetrics().At(0)
 		attr, ok := rmetric.Resource().Attributes().Get("value")
@@ -404,10 +404,10 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 		assert.Len(t, defaultSink.AllMetrics(), 1)
 		assert.Len(t, sink0.AllMetrics(), 1)
-		assert.Len(t, sink1.AllMetrics(), 0)
+		assert.Empty(t, sink1.AllMetrics())
 
-		assert.Equal(t, defaultSink.AllMetrics()[0].MetricCount(), 1)
-		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 1)
+		assert.Equal(t, 1, defaultSink.AllMetrics()[0].MetricCount())
+		assert.Equal(t, 1, sink0.AllMetrics()[0].MetricCount())
 		assert.Equal(t, defaultSink.AllMetrics(), sink0.AllMetrics())
 	})
 }
@@ -463,7 +463,7 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
 	assert.Equal(t, "acme", v.Str())
-	require.Len(t, sink0.AllMetrics(), 0,
+	require.Empty(t, sink0.AllMetrics(),
 		"metrics should not be routed to default pipeline",
 	)
 }
@@ -493,5 +493,5 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.Equal(t, false, conn.Capabilities().MutatesData)
+	assert.False(t, conn.Capabilities().MutatesData)
 }

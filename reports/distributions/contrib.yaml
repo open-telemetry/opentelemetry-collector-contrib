@@ -127,6 +127,7 @@ components:
         - filestats
         - flinkmetrics
         - fluentforward
+        - github
         - googlecloudmonitoring
         - googlecloudspanner
         - haproxy

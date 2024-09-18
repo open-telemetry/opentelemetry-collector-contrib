@@ -210,7 +210,7 @@ func TestMetadataErrorCases(t *testing.T) {
 
 			tt.testScenario(acc)
 
-			assert.Equal(t, tt.numMDs, len(acc.m))
+			assert.Len(t, acc.m, tt.numMDs)
 			require.Equal(t, tt.numLogs, logs.Len())
 			for i := 0; i < tt.numLogs; i++ {
 				assert.Equal(t, tt.logMessages[i], logs.All()[i].Message)

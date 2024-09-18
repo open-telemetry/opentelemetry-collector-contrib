@@ -303,7 +303,7 @@ func TestShutdownClearsCallbacks(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, res.onChangeCallbacks, 0)
+	assert.Empty(t, res.onChangeCallbacks)
 
 	// check that we can add a new onChange before a new start
 	res.onChange(func(_ []string) {})

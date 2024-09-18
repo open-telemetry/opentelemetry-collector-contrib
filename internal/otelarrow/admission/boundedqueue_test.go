@@ -11,6 +11,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 )
 
@@ -34,13 +38,16 @@ func abs(x int64) int64 {
 	}
 	return x
 }
+
+var noopTraces = noop.NewTracerProvider()
+
 func TestAcquireSimpleNoWaiters(t *testing.T) {
 	maxLimitBytes := 1000
 	maxLimitWaiters := 10
 	numRequests := 40
 	requestSize := 21
 
-	bq := NewBoundedQueue(int64(maxLimitBytes), int64(maxLimitWaiters))
+	bq := NewBoundedQueue(noopTraces, int64(maxLimitBytes), int64(maxLimitWaiters))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -92,7 +99,7 @@ func TestAcquireBoundedWithWaiters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bq := NewBoundedQueue(tt.maxLimitBytes, tt.maxLimitWaiters)
+			bq := NewBoundedQueue(noopTraces, tt.maxLimitBytes, tt.maxLimitWaiters)
 			var blockedRequests int64
 			numReqsUntilBlocked := tt.maxLimitBytes / tt.requestSize
 			requestsAboveLimit := abs(tt.numRequests - numReqsUntilBlocked)
@@ -151,7 +158,10 @@ func TestAcquireContextCanceled(t *testing.T) {
 
 	blockedRequests := min(int64(maxLimitWaiters), requestsAboveLimit)
 
-	bq := NewBoundedQueue(int64(maxLimitBytes), int64(maxLimitWaiters))
+	exp := tracetest.NewInMemoryExporter()
+	tp := trace.NewTracerProvider(trace.WithSyncer(exp))
+
+	bq := NewBoundedQueue(tp, int64(maxLimitBytes), int64(maxLimitWaiters))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	var errs error
@@ -178,6 +188,16 @@ func TestAcquireContextCanceled(t *testing.T) {
 	wg.Wait()
 	assert.ErrorContains(t, errs, "context canceled")
 
+	// Expect spans named admission_blocked w/ context canceled.
+	spans := exp.GetSpans()
+	exp.Reset()
+	assert.NotEmpty(t, spans)
+	for _, span := range spans {
+		assert.Equal(t, "admission_blocked", span.Name)
+		assert.Equal(t, codes.Error, span.Status.Code)
+		assert.Equal(t, "context canceled", span.Status.Description)
+	}
+
 	// Now all waiters should have returned and been removed.
 	assert.Equal(t, 0, bq.waiters.Len())
 
@@ -186,4 +206,8 @@ func TestAcquireContextCanceled(t *testing.T) {
 		assert.Equal(t, int64(0), bq.currentWaiters)
 	}
 	assert.True(t, bq.TryAcquire(int64(maxLimitBytes)))
+
+	// Expect no more spans, because admission was not blocked.
+	spans = exp.GetSpans()
+	require.Empty(t, spans)
 }

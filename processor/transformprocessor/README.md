@@ -130,12 +130,12 @@ transform:
     - context: metric
       statements:
         - set(description, "Sum") where type == "Sum"
+        - convert_sum_to_gauge() where name == "system.processes.count"
+        - convert_gauge_to_sum("cumulative", false) where name == "prometheus_metric"
     - context: datapoint
       statements:
         - limit(attributes, 100, ["host.name"])
         - truncate_all(attributes, 4096)
-        - convert_sum_to_gauge() where metric.name == "system.processes.count"
-        - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
         
   log_statements:
     - context: resource
@@ -220,6 +220,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
+- [aggregate_on_attribute_value](#aggregate_on_attribute_value)
 
 ### convert_sum_to_gauge
 
@@ -374,9 +375,11 @@ Examples:
 
 `aggregate_on_attributes(function, Optional[attributes])`
 
-The `aggregate_on_attributes` function aggregates all datapoints in the metric based on the supplied attributes. `function` is a case-sensitive string that represents the aggregation function and `attributes` is an optional list of attribute keys to aggregate upon.
+The `aggregate_on_attributes` function aggregates all datapoints in the metric based on the supplied attributes. `function` is a case-sensitive string that represents the aggregation function and `attributes` is an optional list of attribute keys of type string to aggregate upon.
 
 `aggregate_on_attributes` function removes all attributes that are present in datapoints except the ones that are specified in the `attributes` parameter. If `attributes` parameter is not set, all attributes are removed from datapoints. Afterwards all datapoints are aggregated depending on the attributes left (none or the ones present in the list).
+
+**NOTE:** This function is supported only in `metric` context.
 
 The following metric types can be aggregated:
 
@@ -411,6 +414,50 @@ For example, to remove attribute keys matching a regex and aggregate the metrics
 statements:
    - delete_matching_keys(attributes, "(?i).*myRegex.*") where name == "system.memory.usage"
    - aggregate_on_attributes("sum") where name == "system.memory.usage"
+```
+
+To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
+
+### aggregate_on_attribute_value
+
+`aggregate_on_attribute_value(function, attribute, values, newValue)`
+
+The `aggregate_on_attribute_value` function aggregates all datapoints in the metric containing the attribute `attribute` (type string) with one of the values present in the `values` parameter (list of strings) into a single datapoint where the attribute has the value `newValue` (type string). `function` is a case-sensitive string that represents the aggregation function.
+
+**NOTE:** This function is supported only in `metric` context.
+
+The following metric types can be aggregated:
+
+- sum
+- gauge
+- histogram
+- exponential histogram
+
+Supported aggregation functions are:
+
+- sum
+- max
+- min
+- mean
+- median
+- count
+
+**NOTE:** Only the `sum` agregation function is supported for histogram and exponential histogram datatypes.
+
+Examples:
+
+- `aggregate_on_attribute_value("sum", "attr1", ["val1", "val2"], "new_val") where name == "system.memory.usage"`
+
+The `aggregate_on_attribute_value` function can also be used in conjunction with 
+[keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
+[delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
+
+For example, to remove attribute keys matching a regex and aggregate the metrics on the remaining attributes, you can perform the following statement sequence:
+
+```yaml
+statements:
+   - delete_matching_keys(attributes, "(?i).*myRegex.*") where name == "system.memory.usage"
+   - aggregate_on_attribute_value("sum", "attr1", ["val1", "val2"], "new_val") where name == "system.memory.usage"
 ```
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
