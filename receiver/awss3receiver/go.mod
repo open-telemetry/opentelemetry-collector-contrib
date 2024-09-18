@@ -9,10 +9,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.61.2
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240916171416-d3a171889c53
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240916171416-d3a171889c53
+	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918135221-59c083f830f3
 	go.opentelemetry.io/collector/consumer v0.109.1-0.20240916171416-d3a171889c53
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240916171416-d3a171889c53
-	go.opentelemetry.io/collector/pdata v1.15.1-0.20240916171416-d3a171889c53
+	go.opentelemetry.io/collector/pdata v1.15.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/receiver v0.109.1-0.20240916171416-d3a171889c53
 	go.opentelemetry.io/collector/semconv v0.109.1-0.20240916171416-d3a171889c53
 	go.uber.org/goleak v1.3.0
