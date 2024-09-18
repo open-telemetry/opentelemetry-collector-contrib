@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter/internal/metadata"
@@ -34,7 +33,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ClientConfig:  httpClientConfig,
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		Table: Table{
 			Logs:    "otel_logs",
@@ -51,13 +50,19 @@ func createDefaultConfig() component.Config {
 }
 
 func createLogsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
+	c := cfg.(*Config)
+	exporter := newLogsExporter(set.Logger, c, set.TelemetrySettings)
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
-		func(_ context.Context, _ plog.Logs) error {
-			return nil
-		},
+		exporter.pushLogData,
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
+		// we config the timeout option in http client, so we don't need to set timeout here
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
 
@@ -72,7 +77,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, cfg compon
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		// we config the timeout option in http client, so we don't need to set timeout here
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.BackOffConfig),
 	)

@@ -35,9 +35,9 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		Encoding: Encoding{
 			Name:        defaultEncoding,
 			Compression: defaultCompression,

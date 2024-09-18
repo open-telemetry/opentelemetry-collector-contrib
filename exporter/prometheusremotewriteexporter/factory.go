@@ -64,7 +64,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{
+		exporterhelper.WithQueue(exporterhelper.QueueConfig{
 			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
@@ -86,7 +86,7 @@ func createDefaultConfig() component.Config {
 		Namespace:         "",
 		ExternalLabels:    map[string]string{},
 		MaxBatchSizeBytes: 3000000,
-		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:     retrySettings,
 		AddMetricSuffixes: true,
 		SendMetadata:      false,
@@ -95,7 +95,7 @@ func createDefaultConfig() component.Config {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
+			Timeout:         exporterhelper.NewDefaultTimeoutConfig().Timeout,
 			Headers:         map[string]configopaque.String{},
 		},
 		// TODO(jbd): Adjust the default queue size.

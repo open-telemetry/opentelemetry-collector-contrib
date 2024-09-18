@@ -235,13 +235,13 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		wg.Add(2)
 		concurrencyLimiter <- struct{}{}
 		go func(td ptrace.Traces) {
-			require.NoError(t, sp.ConsumeTraces(context.Background(), td))
+			assert.NoError(t, sp.ConsumeTraces(context.Background(), td))
 			wg.Done()
 			<-concurrencyLimiter
 		}(batch)
 		concurrencyLimiter <- struct{}{}
 		go func(td ptrace.Traces) {
-			require.NoError(t, sp.ConsumeTraces(context.Background(), td))
+			assert.NoError(t, sp.ConsumeTraces(context.Background(), td))
 			wg.Done()
 			<-concurrencyLimiter
 		}(batch)
@@ -292,12 +292,12 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
 			for i := 0; i < 10; i++ {
-				require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
+				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			}
 			<-evalStarted
 			close(continueEvaluation)
 			for i := 0; i < 10; i++ {
-				require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
+				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			}
 			wg.Done()
 		}(batch)
@@ -357,7 +357,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
-			require.NoError(t, sp.ConsumeTraces(context.Background(), td))
+			assert.NoError(t, sp.ConsumeTraces(context.Background(), td))
 			wg.Done()
 		}(batch)
 	}
