@@ -158,6 +158,7 @@ pkg/sampling/                                                       @open-teleme
 pkg/stanza/                                                         @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/stanza/fileconsumer/                                            @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/translator/azure/                                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
+pkg/translator/azurelogs/                                           @open-telemetry/collector-contrib-approvers @atoulme @cparkins @MikeGoldsmith
 pkg/translator/jaeger/                                              @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
 pkg/translator/loki/                                                @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @mar4uk
 pkg/translator/opencensus/                                          @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
