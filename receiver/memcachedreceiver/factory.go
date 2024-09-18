@@ -54,7 +54,7 @@ func createMetricsReceiver(
 
 	ms := newMemcachedScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraperWithComponentType(metadata.Type, ms.scrape)
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape)
 	if err != nil {
 		return nil, err
 	}
