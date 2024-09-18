@@ -534,4 +534,4 @@ tests:
     key_file: "testdata/testkey.key"
     cert_file: "testdata/testcert.crt"
   goleak:
-    skip: true
+    skip: false
