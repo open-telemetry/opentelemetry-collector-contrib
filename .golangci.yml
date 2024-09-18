@@ -137,7 +137,6 @@ linters-settings:
       - float-compare
       - require-error
       - suite-subtest-run
-      - useless-assert
     enable-all: true
 
 linters:
