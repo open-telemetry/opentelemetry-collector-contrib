@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-// ErrNoMetadataFound error should be returned when a provider could not find the correponding IP metadata
+// ErrNoMetadataFound error should be returned when a provider could not find the corresponding IP metadata
 var ErrNoMetadataFound = errors.New("no geo IP metadata found")
 
 // Config is the configuration of a GeoIPProvider.
