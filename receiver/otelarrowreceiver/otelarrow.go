@@ -54,6 +54,14 @@ type otelArrowReceiver struct {
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceiver, error) {
+	if cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
+		set.Logger.Warn("arrow.admission_limit_mib is deprecated, using admission.request_limit_mib instead.")
+	}
+
+	if cfg.Arrow.DeprecatedWaiterLimit != 0 {
+		set.Logger.Warn("arrow.waiter_limit is deprecated, using admission.waiter_limit instead.")
+	}
+
 	netReporter, err := netstats.NewReceiverNetworkReporter(set)
 	if err != nil {
 		return nil, err

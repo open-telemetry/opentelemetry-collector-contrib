@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
@@ -67,7 +66,6 @@ func (cfg *ArrowConfig) Validate() error {
 }
 
 func (cfg *Config) Validate() error {
-	logger := zap.Must(zap.NewDevelopment())
 	if err := cfg.GRPC.Validate(); err != nil {
 		return err
 	}
@@ -75,11 +73,9 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 	if cfg.Admission.RequestLimitMiB == 0 && cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
-		logger.Warn("arrow.admission_limit_mib is deprecated, using admission.request_limit_mib instead.")
 		cfg.Admission.RequestLimitMiB = cfg.Arrow.DeprecatedAdmissionLimitMiB
 	}
 	if cfg.Admission.WaiterLimit == 0 && cfg.Arrow.DeprecatedWaiterLimit != 0 {
-		logger.Warn("arrow.waiter_limit is deprecated, using admission.waiter_limit instead.")
 		cfg.Admission.WaiterLimit = cfg.Arrow.DeprecatedWaiterLimit
 	}
 	return nil
