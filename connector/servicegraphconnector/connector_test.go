@@ -500,6 +500,30 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
+func TestDimensionsKeyMetric(t *testing.T) {
+	// Prepare
+	cfg := &Config{
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
+		Store: StoreConfig{
+			MaxItems: 10,
+			TTL:      time.Second,
+		},
+	}
+	mockMetricsExporter := newMockMetricsExporter()
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
+	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	first := buildSampleTrace(t, "first")
+	second := buildSampleTrace(t, "second")
+	assert.NoError(t, p.ConsumeTraces(context.Background(), first))
+	assert.NoError(t, p.ConsumeTraces(context.Background(), second))
+	// 2 keyToMetric due to different dimensions.
+	assert.Equal(t, 2, len(p.keyToMetric))
+	assert.NoError(t, p.Shutdown(context.Background()))
+}
+
 func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	// Prepare
 	cfg := &Config{
