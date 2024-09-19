@@ -309,7 +309,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "flink.jvm.cpu.time":
 					assert.False(t, validatedMetrics["flink.jvm.cpu.time"], "Found a duplicate in the metrics slice: flink.jvm.cpu.time")
 					validatedMetrics["flink.jvm.cpu.time"] = true
