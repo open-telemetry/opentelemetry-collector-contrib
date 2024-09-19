@@ -596,7 +596,7 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["fail"], ParseBytes("9223372037GB"))`,
-			want: func(tCtx ottllog.TransformContext) {
+			want: func(_ ottllog.TransformContext) {
 				// no-op
 			},
 		},

@@ -9,6 +9,7 @@ import (
 	"math"
 
 	"github.com/dustin/go-humanize"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
