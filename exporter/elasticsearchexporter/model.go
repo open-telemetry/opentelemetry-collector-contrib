@@ -68,7 +68,7 @@ type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document
-	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint, pcommon.Value) error
+	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint) error
 	encodeDocument(objmodel.Document) ([]byte, error)
 }
 
@@ -87,6 +87,8 @@ type dataPoint interface {
 	Timestamp() pcommon.Timestamp
 	StartTimestamp() pcommon.Timestamp
 	Attributes() pcommon.Map
+	Value() (pcommon.Value, error)
+	DynamicTemplate(pmetric.Metric) string
 }
 
 const (
@@ -242,19 +244,24 @@ func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error)
 }
 
 // upsertMetricDataPointValue upserts a datapoint value to documents which is already hashed by resource and index
-func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint) error {
 	switch m.mode {
 	case MappingOTel:
-		return m.upsertMetricDataPointValueOTelMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
+		return m.upsertMetricDataPointValueOTelMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp)
 	case MappingECS:
-		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp)
 	default:
 		// Defaults to ECS for backward compatibility
-		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp)
 	}
 }
 
-func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, metric pmetric.Metric, dp dataPoint) error {
+	value, err := dp.Value()
+	if err != nil {
+		return err
+	}
+
 	hash := metricECSHash(dp.Timestamp(), dp.Attributes())
 	var (
 		document objmodel.Document
@@ -272,7 +279,11 @@ func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]obj
 	return nil
 }
 
-func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint) error {
+	value, err := dp.Value()
+	if err != nil {
+		return err
+	}
 	// documents is per-resource. Therefore, there is no need to hash resource attributes
 	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit())
 	var (
@@ -312,37 +323,19 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 // dynamic template that is defined in ES mapping, e.g.
 // https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
 func metricDpToDynamicTemplate(metric pmetric.Metric, dp dataPoint) string {
-	switch metric.Type() {
-	case pmetric.MetricTypeSum:
-		switch dp.(pmetric.NumberDataPoint).ValueType() {
-		case pmetric.NumberDataPointValueTypeDouble:
-			if metric.Sum().IsMonotonic() {
-				return "counter_double"
-			}
-			return "gauge_double"
-		case pmetric.NumberDataPointValueTypeInt:
-			if metric.Sum().IsMonotonic() {
-				return "counter_long"
-			}
-			return "gauge_long"
-		default:
-			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
-		}
-	case pmetric.MetricTypeGauge:
-		switch dp.(pmetric.NumberDataPoint).ValueType() {
-		case pmetric.NumberDataPointValueTypeDouble:
-			return "gauge_double"
-		case pmetric.NumberDataPointValueTypeInt:
-			return "gauge_long"
-		default:
-			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
-		}
-	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram:
-		return "histogram"
-	case pmetric.MetricTypeSummary:
-		return "summary_metrics"
-	}
-	return ""
+	return dp.DynamicTemplate(metric)
+}
+
+type summaryDataPoint struct {
+	pmetric.SummaryDataPoint
+}
+
+func (dp summaryDataPoint) Value() (pcommon.Value, error) {
+	return summaryToValue(dp.SummaryDataPoint), nil
+}
+
+func (dp summaryDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	return "summary_metrics"
 }
 
 func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
@@ -353,6 +346,18 @@ func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
 	m.PutDouble("sum", dp.Sum())
 	m.PutInt("value_count", int64(dp.Count()))
 	return vm
+}
+
+type exponentialHistogramDataPoint struct {
+	pmetric.ExponentialHistogramDataPoint
+}
+
+func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
+	return exponentialHistogramToValue(dp.ExponentialHistogramDataPoint), nil
+}
+
+func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	return "histogram"
 }
 
 func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) pcommon.Value {
@@ -372,6 +377,18 @@ func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) pcomm
 	}
 
 	return vm
+}
+
+type histogramDataPoint struct {
+	pmetric.HistogramDataPoint
+}
+
+func (dp histogramDataPoint) Value() (pcommon.Value, error) {
+	return histogramToValue(dp.HistogramDataPoint)
+}
+
+func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	return "histogram"
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
@@ -420,6 +437,44 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 	}
 
 	return vm, nil
+}
+
+type numberDataPoint struct {
+	pmetric.NumberDataPoint
+}
+
+func (dp numberDataPoint) Value() (pcommon.Value, error) {
+	return numberToValue(dp.NumberDataPoint)
+}
+
+func (dp numberDataPoint) DynamicTemplate(metric pmetric.Metric) string {
+	switch metric.Type() {
+	case pmetric.MetricTypeSum:
+		switch dp.NumberDataPoint.ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			if metric.Sum().IsMonotonic() {
+				return "counter_double"
+			}
+			return "gauge_double"
+		case pmetric.NumberDataPointValueTypeInt:
+			if metric.Sum().IsMonotonic() {
+				return "counter_long"
+			}
+			return "gauge_long"
+		default:
+			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
+		}
+	case pmetric.MetricTypeGauge:
+		switch dp.NumberDataPoint.ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			return "gauge_double"
+		case pmetric.NumberDataPointValueTypeInt:
+			return "gauge_long"
+		default:
+			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
+		}
+	}
+	return ""
 }
 
 var errInvalidNumberDataPoint = errors.New("invalid number data point")
