@@ -39,6 +39,10 @@ type Config struct {
 	// TracesTableName is the table name for traces. default is `otel_traces`.
 	TracesTableName string `mapstructure:"traces_table_name"`
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
+	//
+	// Deprecated: MetricsTableName exists for historical compatibility
+	// and should not be used. To set the metrics tables name,
+	// use the MetricsTables parameter instead.
 	MetricsTableName string `mapstructure:"metrics_table_name"`
 	// TTL is The data time-to-live example 30m, 48h. 0 means no ttl.
 	TTL time.Duration `mapstructure:"ttl"`
