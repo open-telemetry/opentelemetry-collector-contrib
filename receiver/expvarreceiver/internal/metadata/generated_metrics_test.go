@@ -222,7 +222,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "process.runtime.memstats.gc_sys":
 					assert.False(t, validatedMetrics["process.runtime.memstats.gc_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.gc_sys")
 					validatedMetrics["process.runtime.memstats.gc_sys"] = true

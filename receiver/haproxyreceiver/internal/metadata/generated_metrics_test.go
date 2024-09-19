@@ -422,7 +422,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "haproxy.requests.redispatched":
 					assert.False(t, validatedMetrics["haproxy.requests.redispatched"], "Found a duplicate in the metrics slice: haproxy.requests.redispatched")
 					validatedMetrics["haproxy.requests.redispatched"] = true
@@ -507,7 +507,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "haproxy.sessions.count":
 					assert.False(t, validatedMetrics["haproxy.sessions.count"], "Found a duplicate in the metrics slice: haproxy.sessions.count")
 					validatedMetrics["haproxy.sessions.count"] = true
@@ -531,7 +531,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "haproxy.sessions.total":
 					assert.False(t, validatedMetrics["haproxy.sessions.total"], "Found a duplicate in the metrics slice: haproxy.sessions.total")
 					validatedMetrics["haproxy.sessions.total"] = true

@@ -1611,7 +1611,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "elasticsearch.os.cpu.load_avg.1m":
 					assert.False(t, validatedMetrics["elasticsearch.os.cpu.load_avg.1m"], "Found a duplicate in the metrics slice: elasticsearch.os.cpu.load_avg.1m")
 					validatedMetrics["elasticsearch.os.cpu.load_avg.1m"] = true
@@ -1623,7 +1623,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "elasticsearch.os.cpu.load_avg.5m":
 					assert.False(t, validatedMetrics["elasticsearch.os.cpu.load_avg.5m"], "Found a duplicate in the metrics slice: elasticsearch.os.cpu.load_avg.5m")
 					validatedMetrics["elasticsearch.os.cpu.load_avg.5m"] = true
@@ -1635,7 +1635,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "elasticsearch.os.cpu.usage":
 					assert.False(t, validatedMetrics["elasticsearch.os.cpu.usage"], "Found a duplicate in the metrics slice: elasticsearch.os.cpu.usage")
 					validatedMetrics["elasticsearch.os.cpu.usage"] = true
@@ -1688,7 +1688,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "elasticsearch.process.memory.virtual":
 					assert.False(t, validatedMetrics["elasticsearch.process.memory.virtual"], "Found a duplicate in the metrics slice: elasticsearch.process.memory.virtual")
 					validatedMetrics["elasticsearch.process.memory.virtual"] = true
@@ -1796,7 +1796,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "jvm.memory.nonheap.committed":
 					assert.False(t, validatedMetrics["jvm.memory.nonheap.committed"], "Found a duplicate in the metrics slice: jvm.memory.nonheap.committed")
 					validatedMetrics["jvm.memory.nonheap.committed"] = true

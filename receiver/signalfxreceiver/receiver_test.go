@@ -663,7 +663,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	sfxMsg := buildSFxDatapointMsg(msec, 13, 3)
 	body, err := sfxMsg.Marshal()
-	require.NoError(t, err, fmt.Sprintf("failed to marshal SFx message: %v", err))
+	require.NoErrorf(t, err, "failed to marshal SFx message: %v", err)
 
 	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
 

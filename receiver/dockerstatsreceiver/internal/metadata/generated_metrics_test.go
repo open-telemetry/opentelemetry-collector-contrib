@@ -520,7 +520,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "container.cpu.logical.count":
 					assert.False(t, validatedMetrics["container.cpu.logical.count"], "Found a duplicate in the metrics slice: container.cpu.logical.count")
 					validatedMetrics["container.cpu.logical.count"] = true
@@ -671,7 +671,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "container.memory.active_anon":
 					assert.False(t, validatedMetrics["container.memory.active_anon"], "Found a duplicate in the metrics slice: container.memory.active_anon")
 					validatedMetrics["container.memory.active_anon"] = true
@@ -851,7 +851,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "container.memory.pgfault":
 					assert.False(t, validatedMetrics["container.memory.pgfault"], "Found a duplicate in the metrics slice: container.memory.pgfault")
 					validatedMetrics["container.memory.pgfault"] = true
@@ -1405,7 +1405,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				}
 			}
 		})
