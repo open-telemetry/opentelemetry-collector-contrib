@@ -500,7 +500,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	t.Log("Sending Splunk HEC data Request")
 
 	body, err := json.Marshal(buildSplunkHecMsg(sec, 0))
-	require.NoError(t, err, fmt.Sprintf("failed to marshal Splunk message: %v", err))
+	require.NoErrorf(t, err, "failed to marshal Splunk message: %v", err)
 
 	url := fmt.Sprintf("https://%s", addr)
 
