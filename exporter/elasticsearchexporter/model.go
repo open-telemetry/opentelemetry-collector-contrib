@@ -313,17 +313,13 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	// TODO: support quantiles
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
 
-	document.AddDynamicTemplate("metrics."+metric.Name(), metricDpToDynamicTemplate(metric, dp))
+	// DynamicTemplate returns the name of dynamic template that applies to the metric and data point,
+	// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
+	// dynamic template that is defined in ES mapping, e.g.
+	// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
+	document.AddDynamicTemplate("metrics."+metric.Name(), dp.DynamicTemplate(metric))
 	documents[hash] = document
 	return nil
-}
-
-// metricDpToDynamicTemplate returns the name of dynamic template that applies to the metric and data point,
-// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
-// dynamic template that is defined in ES mapping, e.g.
-// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
-func metricDpToDynamicTemplate(metric pmetric.Metric, dp dataPoint) string {
-	return dp.DynamicTemplate(metric)
 }
 
 type summaryDataPoint struct {
@@ -331,21 +327,17 @@ type summaryDataPoint struct {
 }
 
 func (dp summaryDataPoint) Value() (pcommon.Value, error) {
-	return summaryToValue(dp.SummaryDataPoint), nil
-}
-
-func (dp summaryDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	return "summary_metrics"
-}
-
-func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
 	// TODO: Add support for quantiles
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
 	m.PutDouble("sum", dp.Sum())
 	m.PutInt("value_count", int64(dp.Count()))
-	return vm
+	return vm, nil
+}
+
+func (dp summaryDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	return "summary_metrics"
 }
 
 type exponentialHistogramDataPoint struct {
@@ -353,15 +345,7 @@ type exponentialHistogramDataPoint struct {
 }
 
 func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
-	return exponentialHistogramToValue(dp.ExponentialHistogramDataPoint), nil
-}
-
-func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	return "histogram"
-}
-
-func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) pcommon.Value {
-	counts, values := exphistogram.ToTDigest(dp)
+	counts, values := exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
 
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
@@ -376,7 +360,11 @@ func exponentialHistogramToValue(dp pmetric.ExponentialHistogramDataPoint) pcomm
 		vmValues.AppendEmpty().SetDouble(v)
 	}
 
-	return vm
+	return vm, nil
+}
+
+func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	return "histogram"
 }
 
 type histogramDataPoint struct {
@@ -444,7 +432,17 @@ type numberDataPoint struct {
 }
 
 func (dp numberDataPoint) Value() (pcommon.Value, error) {
-	return numberToValue(dp.NumberDataPoint)
+	switch dp.ValueType() {
+	case pmetric.NumberDataPointValueTypeDouble:
+		value := dp.DoubleValue()
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return pcommon.Value{}, errInvalidNumberDataPoint
+		}
+		return pcommon.NewValueDouble(value), nil
+	case pmetric.NumberDataPointValueTypeInt:
+		return pcommon.NewValueInt(dp.IntValue()), nil
+	}
+	return pcommon.Value{}, errInvalidNumberDataPoint
 }
 
 func (dp numberDataPoint) DynamicTemplate(metric pmetric.Metric) string {
@@ -478,20 +476,6 @@ func (dp numberDataPoint) DynamicTemplate(metric pmetric.Metric) string {
 }
 
 var errInvalidNumberDataPoint = errors.New("invalid number data point")
-
-func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
-	switch dp.ValueType() {
-	case pmetric.NumberDataPointValueTypeDouble:
-		value := dp.DoubleValue()
-		if math.IsNaN(value) || math.IsInf(value, 0) {
-			return pcommon.Value{}, errInvalidNumberDataPoint
-		}
-		return pcommon.NewValueDouble(value), nil
-	case pmetric.NumberDataPointValueTypeInt:
-		return pcommon.NewValueInt(dp.IntValue()), nil
-	}
-	return pcommon.Value{}, errInvalidNumberDataPoint
-}
 
 func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, stringifyArrayValues bool) {
 	resourceMapVal := pcommon.NewValueMap()
