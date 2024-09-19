@@ -15,7 +15,7 @@ issues: [34225]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: `metrics_table_name` of the clickhouseexported config is therefore deprecated and newly introduced parameter `metrics_tables` should be used instead.
+subtext: `metrics_table_name` of the clickhouse exporter config is deprecated and newly introduced parameter `metrics_tables` should be used instead.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
