@@ -519,5 +519,3 @@ metrics:
 tests:
   config:
   skip_lifecycle: true
-  goleak:
-    skip: false
