@@ -231,5 +231,5 @@ service:
 	//    * The first scrape will NOT return stale markers
 	//    * (N-1 / alternatives) = ((10-1) / 2) = ~40% chance of stale markers being emitted.
 	chance := float64(staleMarkerCount) / float64(totalSamples)
-	require.GreaterOrEqual(t, chance, 0.4, fmt.Sprintf("Expected at least one stale marker: %.3f", chance))
+	require.GreaterOrEqualf(t, chance, 0.4, "Expected at least one stale marker: %.3f", chance)
 }
