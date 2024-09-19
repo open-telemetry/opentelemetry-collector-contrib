@@ -179,6 +179,9 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 }
 
 func TestItemCardinalityFilter_FilterItems(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32397")
+	}
 	items := initialItemsWithSameTimestamp(t)
 	logger := zaptest.NewLogger(t)
 	filter, err := NewItemCardinalityFilter(metricName, totalLimit, limitByTimestamp, itemActivityPeriod, logger)
