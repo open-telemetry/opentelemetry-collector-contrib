@@ -411,7 +411,7 @@ func TestLogsSamplingState(t *testing.T) {
 			require.NoError(t, err)
 
 			if len(tt.log) == 0 {
-				require.Len(t, observed.All(), 0, "should not have logs: %v", observed.All())
+				require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				require.Equal(t, "", tt.log)
 			} else {
 				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
@@ -507,7 +507,7 @@ func TestLogsMissingRandomness(t *testing.T) {
 					require.Len(t, sampledData, 1)
 					assert.Equal(t, 1, sink.LogRecordCount())
 				} else {
-					require.Len(t, sampledData, 0)
+					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.LogRecordCount())
 				}
 
@@ -517,7 +517,7 @@ func TestLogsMissingRandomness(t *testing.T) {
 					require.Contains(t, observed.All()[0].Message, "logs sampler")
 					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
 				} else {
-					require.Len(t, observed.All(), 0, "should have no logs: %v", observed.All())
+					require.Empty(t, observed.All(), "should have no logs: %v", observed.All())
 				}
 			})
 		}

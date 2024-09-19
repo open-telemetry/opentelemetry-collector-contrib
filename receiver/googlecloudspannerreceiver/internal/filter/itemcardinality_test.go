@@ -140,7 +140,7 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 	require.NoError(t, err)
 
 	// Cache timeout hasn't been reached, so filtered out all items
-	assert.Len(t, filteredItems, 0)
+	assert.Empty(t, filteredItems)
 
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
 	syncChannel := make(chan bool)

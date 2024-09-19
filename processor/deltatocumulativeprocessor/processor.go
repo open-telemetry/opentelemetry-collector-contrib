@@ -136,7 +136,8 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 	defer p.mtx.Unlock()
 
 	var errs error
-	metrics.Each(md, func(m metrics.Metric) {
+	metrics.Filter(md, func(m metrics.Metric) bool {
+		var n int
 		switch m.Type() {
 		case pmetric.MetricTypeSum:
 			sum := m.Sum()
@@ -145,6 +146,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 				errs = errors.Join(errs, err)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
+			n = sum.DataPoints().Len()
 		case pmetric.MetricTypeHistogram:
 			hist := m.Histogram()
 			if hist.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
@@ -152,6 +154,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 				errs = errors.Join(errs, err)
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
+			n = hist.DataPoints().Len()
 		case pmetric.MetricTypeExponentialHistogram:
 			expo := m.ExponentialHistogram()
 			if expo.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
@@ -159,11 +162,16 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 				errs = errors.Join(errs, err)
 				expo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
+			n = expo.DataPoints().Len()
 		}
+		return n > 0
 	})
 	if errs != nil {
 		return errs
 	}
 
+	if md.MetricCount() == 0 {
+		return nil
+	}
 	return p.next.ConsumeMetrics(ctx, md)
 }

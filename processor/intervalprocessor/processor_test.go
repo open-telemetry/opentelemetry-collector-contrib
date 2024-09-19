@@ -41,7 +41,7 @@ func TestAggregation(t *testing.T) {
 
 	var config *Config
 	for _, tc := range testCases {
-		config = &Config{Interval: time.Second, GaugePassThrough: tc.passThrough, SummaryPassThrough: tc.passThrough}
+		config = &Config{Interval: time.Second, PassThrough: PassThrough{Gauge: tc.passThrough, Summary: tc.passThrough}}
 
 		t.Run(tc.name, func(t *testing.T) {
 			// next stores the results of the filter metric processor

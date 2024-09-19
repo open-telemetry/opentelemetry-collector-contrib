@@ -146,8 +146,10 @@ internal/tools/                                                     @open-teleme
 
 pkg/batchperresourceattr/                                           @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                                                 @open-telemetry/collector-contrib-approvers @jpkrohling
+pkg/datadog/                                                        @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96
 pkg/experimentalmetricmetadata/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 pkg/golden/                                                         @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
+pkg/kafka/topic/                                                    @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 pkg/ottl/                                                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/pdatatest/                                                      @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                                      @open-telemetry/collector-contrib-approvers @dmitryax
@@ -156,6 +158,7 @@ pkg/sampling/                                                       @open-teleme
 pkg/stanza/                                                         @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/stanza/fileconsumer/                                            @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/translator/azure/                                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
+pkg/translator/azurelogs/                                           @open-telemetry/collector-contrib-approvers @atoulme @cparkins @MikeGoldsmith
 pkg/translator/jaeger/                                              @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
 pkg/translator/loki/                                                @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @mar4uk
 pkg/translator/opencensus/                                          @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
@@ -236,7 +239,7 @@ receiver/filelogreceiver/                                           @open-teleme
 receiver/filestatsreceiver/                                         @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                                      @open-telemetry/collector-contrib-approvers @JonathanWamsley @djaglowski
 receiver/fluentforwardreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/githubreceiver/                                            @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel @crobert-1
+receiver/githubreceiver/                                            @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel @crobert-1 @TylerHelmuth
 receiver/googlecloudmonitoringreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth @abhishek-at-cloudwerx
 receiver/googlecloudpubsubreceiver/                                 @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/haproxyreceiver/                                           @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy

@@ -337,8 +337,9 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 
 	// The supervisor is started without a running OpAMP server.
 	// The supervisor should start successfully, even if the OpAMP server is stopped.
-	s := newSupervisor(t, "basic", map[string]string{
-		"url": server.addr,
+	s := newSupervisor(t, "healthcheck_port", map[string]string{
+		"url":              server.addr,
+		"healthcheck_port": "12345",
 	})
 
 	require.Nil(t, s.Start())
@@ -346,9 +347,9 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 
 	// Verify the collector is running by checking the metrics endpoint
 	require.Eventually(t, func() bool {
-		resp, err := http.DefaultClient.Get("http://localhost:8888/metrics")
+		resp, err := http.DefaultClient.Get("http://localhost:12345")
 		if err != nil {
-			t.Logf("Failed check for prometheus metrics: %s", err)
+			t.Logf("Failed agent healthcheck request: %s", err)
 			return false
 		}
 		require.NoError(t, resp.Body.Close())

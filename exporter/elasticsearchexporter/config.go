@@ -21,7 +21,7 @@ import (
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the

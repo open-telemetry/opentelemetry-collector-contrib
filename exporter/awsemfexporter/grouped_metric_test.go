@@ -389,7 +389,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			emfCalcs,
 		)
 		assert.NoError(t, err)
-		assert.Len(t, groupedMetrics, 0)
+		assert.Empty(t, groupedMetrics)
 
 		// Test output warning logs
 		expectedLogs := []observer.LoggedEntry{

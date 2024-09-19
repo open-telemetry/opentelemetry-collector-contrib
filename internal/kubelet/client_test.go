@@ -105,9 +105,9 @@ func TestDefaultTLSClient(t *testing.T) {
 func TestSvcAcctClient(t *testing.T) {
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Check if call is authenticated using token from test file
-		require.Equal(t, req.Header.Get("Authorization"), "Bearer s3cr3t")
+		assert.Equal(t, "Bearer s3cr3t", req.Header.Get("Authorization"))
 		_, err := rw.Write([]byte(`OK`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	cert, err := tls.LoadX509KeyPair(certPath, keyFile)
 	require.NoError(t, err)
@@ -174,11 +174,11 @@ func TestNewKubeConfigClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				// Check if call is authenticated using provided kubeconfig
-				require.Equal(t, req.Header.Get("Authorization"), "Bearer my-token")
-				require.Equal(t, "/api/v1/nodes/nodename/proxy/", req.URL.EscapedPath())
+				assert.Equal(t, "Bearer my-token", req.Header.Get("Authorization"))
+				assert.Equal(t, "/api/v1/nodes/nodename/proxy/", req.URL.EscapedPath())
 				// Send response to be tested
 				_, err := rw.Write([]byte(`OK`))
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			server.StartTLS()
 			defer server.Close()

@@ -5,7 +5,6 @@ package sumologicexporter
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -192,7 +191,7 @@ func TestAllFailed(t *testing.T) {
 	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
-	require.True(t, errors.As(err, &partial))
+	require.ErrorAs(t, err, &partial)
 	assert.Equal(t, logsExpected, partial.Data())
 }
 
@@ -231,7 +230,7 @@ func TestPartiallyFailed(t *testing.T) {
 	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
-	require.True(t, errors.As(err, &partial))
+	require.ErrorAs(t, err, &partial)
 	assert.Equal(t, logsExpected, partial.Data())
 }
 
@@ -462,7 +461,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 			assert.EqualError(t, err, tc.expectedError)
 
 			var partial consumererror.Metrics
-			require.True(t, errors.As(err, &partial))
+			require.ErrorAs(t, err, &partial)
 			// TODO fix
 			// assert.Equal(t, metrics, partial.GetMetrics())
 		})

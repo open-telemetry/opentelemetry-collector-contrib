@@ -353,7 +353,7 @@ func TestEC2Tags(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, output, tt.expectedOutput)
+			assert.Equal(t, tt.expectedOutput, output)
 		})
 	}
 }

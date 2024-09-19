@@ -58,7 +58,7 @@ func TestFailoverRecovery(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
 		idx := failoverConnector.failover.pS.TestStableIndex()
-		require.Equal(t, idx, 1)
+		require.Equal(t, 1, idx)
 
 		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
 
@@ -75,7 +75,7 @@ func TestFailoverRecovery(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
 		idx := failoverConnector.failover.pS.TestStableIndex()
-		require.Equal(t, idx, 1)
+		require.Equal(t, 1, idx)
 
 		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
 
@@ -97,7 +97,7 @@ func TestFailoverRecovery(t *testing.T) {
 
 		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
 		idx := failoverConnector.failover.pS.TestStableIndex()
-		require.Equal(t, idx, 2)
+		require.Equal(t, 2, idx)
 
 		// Simulate recovery of exporter
 		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)

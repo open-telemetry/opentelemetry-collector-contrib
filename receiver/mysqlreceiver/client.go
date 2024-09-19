@@ -243,8 +243,11 @@ func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 
 // getTableStats queries the db for information_schema table size metrics.
 func (c *mySQLClient) getTableStats() ([]TableStats, error) {
-	query := "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_ROWS, " +
-		"AVG_ROW_LENGTH, DATA_LENGTH, INDEX_LENGTH " +
+	query := "SELECT TABLE_SCHEMA, TABLE_NAME, " +
+		"COALESCE(TABLE_ROWS, 0) as TABLE_ROWS, " +
+		"COALESCE(AVG_ROW_LENGTH, 0) as AVG_ROW_LENGTH, " +
+		"COALESCE(DATA_LENGTH, 0) as DATA_LENGTH, " +
+		"COALESCE(INDEX_LENGTH, 0) as  INDEX_LENGTH " +
 		"FROM information_schema.TABLES " +
 		"WHERE TABLE_SCHEMA NOT in ('information_schema', 'sys');"
 	rows, err := c.client.Query(query)

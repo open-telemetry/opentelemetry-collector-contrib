@@ -18,6 +18,10 @@ Receives trace data and metric data in [Skywalking](https://skywalking.apache.or
 
 Note: The current metrics receiver only supports receiving JVM data.
 
+## Prerequisites
+
+This receiver supports [Apache Skywalking-Java Agent](https://github.com/apache/skywalking-java) version 8.9.0+
+
 ## Getting Started
 
 By default, the Skywalking receiver will not serve any protocol. A protocol must be

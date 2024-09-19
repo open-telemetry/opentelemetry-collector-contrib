@@ -30,7 +30,7 @@ func TestConvertStackFramesToStackTraceStr(t *testing.T) {
 		},
 	}
 	actual := convertStackFramesToStackTraceStr(excp)
-	assert.Equal(t, actual, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat label1(path1: 11)\n")
+	assert.Equal(t, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat label1(path1: 11)\n", actual)
 }
 
 func TestConvertStackFramesToStackTraceStrNoPath(t *testing.T) {
@@ -50,7 +50,7 @@ func TestConvertStackFramesToStackTraceStrNoPath(t *testing.T) {
 		},
 	}
 	actual := convertStackFramesToStackTraceStr(excp)
-	assert.Equal(t, actual, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat label1(: 11)\n")
+	assert.Equal(t, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat label1(: 11)\n", actual)
 }
 
 func TestConvertStackFramesToStackTraceStrNoLine(t *testing.T) {
@@ -70,7 +70,7 @@ func TestConvertStackFramesToStackTraceStrNoLine(t *testing.T) {
 		},
 	}
 	actual := convertStackFramesToStackTraceStr(excp)
-	assert.Equal(t, actual, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat label1(path1: <unknown>)\n")
+	assert.Equal(t, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat label1(path1: <unknown>)\n", actual)
 }
 
 func TestConvertStackFramesToStackTraceStrNoLabel(t *testing.T) {
@@ -90,7 +90,7 @@ func TestConvertStackFramesToStackTraceStrNoLabel(t *testing.T) {
 		},
 	}
 	actual := convertStackFramesToStackTraceStr(excp)
-	assert.Equal(t, actual, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat (path1: 11)\n")
+	assert.Equal(t, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat (path1: 11)\n", actual)
 }
 
 func TestConvertStackFramesToStackTraceStrNoErrorMessage(t *testing.T) {
@@ -108,5 +108,5 @@ func TestConvertStackFramesToStackTraceStrNoErrorMessage(t *testing.T) {
 		},
 	}
 	actual := convertStackFramesToStackTraceStr(excp)
-	assert.Equal(t, actual, ": \n\tat label0(path0: 10)\n\tat (path1: 11)\n")
+	assert.Equal(t, ": \n\tat label0(path0: 10)\n\tat (path1: 11)\n", actual)
 }

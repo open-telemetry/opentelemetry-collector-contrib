@@ -39,7 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func Test_signalfxeceiver_New(t *testing.T) {
+func Test_signalfxreceiver_New(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
@@ -78,11 +78,14 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			}
 			err = got.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantStartErr, err)
+			if err == nil {
+				assert.NoError(t, got.Shutdown(context.Background()))
+			}
 		})
 	}
 }
 
-func Test_signalfxeceiver_EndToEnd(t *testing.T) {
+func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
@@ -660,7 +663,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	sfxMsg := buildSFxDatapointMsg(msec, 13, 3)
 	body, err := sfxMsg.Marshal()
-	require.NoError(t, err, fmt.Sprintf("failed to marshal SFx message: %v", err))
+	require.NoErrorf(t, err, "failed to marshal SFx message: %v", err)
 
 	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
 

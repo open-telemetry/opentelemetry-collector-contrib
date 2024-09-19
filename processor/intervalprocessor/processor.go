@@ -38,9 +38,7 @@ type Processor struct {
 	expHistogramLookup map[identity.Stream]pmetric.ExponentialHistogramDataPoint
 	summaryLookup      map[identity.Stream]pmetric.SummaryDataPoint
 
-	exportInterval     time.Duration
-	gaugePassThrough   bool
-	summaryPassThrough bool
+	config *Config
 
 	nextConsumer consumer.Metrics
 }
@@ -64,16 +62,14 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 		expHistogramLookup: map[identity.Stream]pmetric.ExponentialHistogramDataPoint{},
 		summaryLookup:      map[identity.Stream]pmetric.SummaryDataPoint{},
 
-		exportInterval:     config.Interval,
-		gaugePassThrough:   config.GaugePassThrough,
-		summaryPassThrough: config.SummaryPassThrough,
+		config: config,
 
 		nextConsumer: nextConsumer,
 	}
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	exportTicker := time.NewTicker(p.exportInterval)
+	exportTicker := time.NewTicker(p.config.Interval)
 	go func() {
 		for {
 			select {
@@ -109,7 +105,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
 				switch m.Type() {
 				case pmetric.MetricTypeSummary:
-					if p.summaryPassThrough {
+					if p.config.PassThrough.Summary {
 						return false
 					}
 
@@ -117,7 +113,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 					aggregateDataPoints(m.Summary().DataPoints(), mClone.Summary().DataPoints(), metricID, p.summaryLookup)
 					return true
 				case pmetric.MetricTypeGauge:
-					if p.gaugePassThrough {
+					if p.config.PassThrough.Gauge {
 						return false
 					}
 
