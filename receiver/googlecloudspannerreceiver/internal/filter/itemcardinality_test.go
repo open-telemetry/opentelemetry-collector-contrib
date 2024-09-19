@@ -6,6 +6,7 @@ package filter
 import (
 	"testing"
 	"time"
+	"runtime"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -122,6 +123,9 @@ func TestItemCardinalityFilter_Shutdown(t *testing.T) {
 }
 
 func TestItemCardinalityFilter_Filter(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32397")
+	}
 	items := initialItems(t)
 	logger := zaptest.NewLogger(t)
 	filter, err := NewItemCardinalityFilter(metricName, totalLimit, limitByTimestamp, itemActivityPeriod, logger)
