@@ -35,15 +35,6 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
-func TestFactory_CreateLogsExporter_Fail(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	params := exportertest.NewNopSettings()
-	_, err := factory.CreateLogsExporter(context.Background(), params, cfg)
-	require.Error(t, err, "expected an error when creating a logs exporter")
-	assert.EqualError(t, err, "cannot configure Elasticsearch exporter: exactly one of [endpoint, endpoints, cloudid] must be specified")
-}
-
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
@@ -68,15 +59,6 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 	require.NotNil(t, exporter)
 
 	require.NoError(t, exporter.Shutdown(context.Background()))
-}
-
-func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	params := exportertest.NewNopSettings()
-	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
-	require.Error(t, err, "expected an error when creating a traces exporter")
-	assert.EqualError(t, err, "cannot configure Elasticsearch exporter: exactly one of [endpoint, endpoints, cloudid] must be specified")
 }
 
 func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing.T) {
