@@ -417,6 +417,7 @@ Available Converters:
 - [Day](#day)
 - [Double](#double)
 - [Duration](#duration)
+- [ElementizeValues](#elementizevalues)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
@@ -625,6 +626,39 @@ Examples:
 - `Duration("3s")`
 - `Duration("333ms")`
 - `Duration("1000000h")`
+
+
+### ElementizeValuesXML
+
+`ElementizeValuesXML(target, Optional[xpath])`
+
+The `ElementizeValuesXML` Converter returns an edited version of an XML string where all content belongs to a dedicated element.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ElementizeValuesXML` will return an error.
+
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Content will only be converted within the result(s) of the xpath. The default is `/`.
+
+`elementName` (optional) is a string that is used for any element tags that are created to wrap content. 
+The default is `"value"`.
+
+For example, `<a><b>foo</b>bar</a>` will be converted to `<a><b>foo</b><value>bar</value></a>`.
+
+Examples:
+
+Ensure all content in a document is wrapped in a dedicated element
+
+- `ElementizeValuesXML(body)`
+
+Use a custom naem for any new elements
+
+- `ElementizeValuesXML(body, "custom")`
+
+Convert only part of the document
+
+- `ElementizeValuesXML(body, "value", "/some/part/)`
 
 ### ExtractPatterns
 

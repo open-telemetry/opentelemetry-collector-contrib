@@ -384,6 +384,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(body, ElementizeValuesXML("<a><b/>foo</a>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("<a><b></b><value>foo</value></a>")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ExtractPatterns("aa123bb", "(?P<numbers>\\d+)"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
