@@ -89,6 +89,7 @@ type dataPoint interface {
 	Attributes() pcommon.Map
 	Value() (pcommon.Value, error)
 	DynamicTemplate(pmetric.Metric) string
+	DocCount() uint64
 }
 
 const (
@@ -284,8 +285,11 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	if err != nil {
 		return err
 	}
+
+	docCount := dp.DocCount()
+
 	// documents is per-resource. Therefore, there is no need to hash resource attributes
-	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit())
+	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit(), docCount)
 	var (
 		document objmodel.Document
 		ok       bool
@@ -296,6 +300,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 			document.AddTimestamp("start_timestamp", dp.StartTimestamp())
 		}
 		document.AddString("unit", metric.Unit())
+		document.AddInt("_doc_count", int64(docCount))
 
 		m.encodeAttributesOTelMode(&document, dp.Attributes(), true)
 		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, true)
@@ -340,6 +345,10 @@ func (dp summaryDataPoint) DynamicTemplate(_ pmetric.Metric) string {
 	return "summary_metrics"
 }
 
+func (dp summaryDataPoint) DocCount() uint64 {
+	return dp.Count()
+}
+
 type exponentialHistogramDataPoint struct {
 	pmetric.ExponentialHistogramDataPoint
 }
@@ -367,6 +376,10 @@ func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string
 	return "histogram"
 }
 
+func (dp exponentialHistogramDataPoint) DocCount() uint64 {
+	return dp.Count()
+}
+
 type histogramDataPoint struct {
 	pmetric.HistogramDataPoint
 }
@@ -377,6 +390,10 @@ func (dp histogramDataPoint) Value() (pcommon.Value, error) {
 
 func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
 	return "histogram"
+}
+
+func (dp histogramDataPoint) DocCount() uint64 {
+	return dp.HistogramDataPoint.Count()
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
@@ -473,6 +490,10 @@ func (dp numberDataPoint) DynamicTemplate(metric pmetric.Metric) string {
 		}
 	}
 	return ""
+}
+
+func (dp numberDataPoint) DocCount() uint64 {
+	return 1
 }
 
 var errInvalidNumberDataPoint = errors.New("invalid number data point")
@@ -830,7 +851,7 @@ func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	return hasher.Sum32()
 }
 
-func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
+func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string, docCount uint64) uint32 {
 	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
@@ -841,6 +862,10 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 	hasher.Write(timestampBuf)
 
 	hasher.Write([]byte(unit))
+
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, docCount)
+	hasher.Write(buf)
 
 	mapHashExcludeDataStreamAttr(hasher, scopeAttrs)
 	mapHashExcludeDataStreamAttr(hasher, dp.Attributes())
