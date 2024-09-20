@@ -109,6 +109,9 @@ type Supervisor struct {
 	// Supervisor's persistent state
 	persistentState *persistentState
 
+	// Supervisor's package manager
+	packageManager *packageManager
+
 	noopPipelineTemplate   *template.Template
 	opampextensionTemplate *template.Template
 	extraConfigTemplate    *template.Template
@@ -193,6 +196,13 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 	}
 
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
+
+	packageManager, err := newPackageManager(s.config.Agent.Executable, s.config.Storage.Directory)
+	if err != nil {
+		return nil, fmt.Errorf("error creating package state manager: %w", err)
+	}
+
+	s.packageManager = packageManager
 
 	return s, nil
 }
@@ -313,9 +323,8 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 				identAttr := message.AgentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
-					if attr.Key == semconv.AttributeServiceInstanceID {
-						// TODO: Consider whether to attempt restarting the Collector.
-						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
+					switch attr.Key {
+					case semconv.AttributeServiceInstanceID:
 						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
 								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
@@ -324,6 +333,8 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 							return
 						}
 						instanceIDSeen = true
+					case semconv.AttributeServiceVersion:
+						s.packageManager.setAgentVersion(attr.Value.GetStringValue())
 					}
 				}
 
@@ -579,6 +590,12 @@ func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
 	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
 	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
 	s.agentDescription.Store(ad)
+
+	for _, attr := range ad.IdentifyingAttributes {
+		if attr.Key == semconv.AttributeServiceVersion {
+			s.packageManager.setAgentVersion(attr.Value.GetStringValue())
+		}
+	}
 }
 
 // applyKeyValueOverrides merges the overrides map into the array of key value pairs.
@@ -1313,7 +1330,10 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.PackagesAvailable != nil {
-		s.processPackagesAvailableMessage(ctx, msg.PackagesAvailable)
+		err := s.processPackagesAvailableMessage(ctx, msg.PackagesAvailable)
+		if err != nil {
+			s.logger.Error("Failed to process PackagesAvailable message", zap.Error(err))
+		}
 	}
 
 	// Update the agent config if any messages have touched the config
@@ -1422,21 +1442,25 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 
 func (s *Supervisor) processPackagesAvailableMessage(ctx context.Context, msg *protobufs.PackagesAvailable) error {
 	var topLevelPkg *protobufs.PackageAvailable
-	// TODO: Revisit and figure out the most sensible way to choose a package
-	// We might want a defined name for the package(s) we care about (e.g. otel_contrib_col and otel_col)
-	for _, v := range msg.GetPackages() {
-		if v.Type == protobufs.PackageType_PackageType_TopLevel {
+
+	for k, v := range msg.GetPackages() {
+		if k == agentPackageKey && v.Type == protobufs.PackageType_PackageType_TopLevel {
 			topLevelPkg = v
 			break
 		}
 	}
 
 	if topLevelPkg == nil {
-		s.logger.Debug("No top-level package in PackagesAvailable message, ignoring...")
+		return errors.New("No top-level package in PackagesAvailable message, ignoring...")
+	}
+
+	if bytes.Equal(topLevelPkg.Hash, s.packageManager.agentHash) {
+		// We already have this package, nothing to do
+		// TODO: Debug log
 		return nil
 	}
 
-	// TODO: Check the hash of what we have vs the hash of the package
+	// TODO: Async download, send "installing" status
 
 	b, err := downloadPackageContent(ctx, topLevelPkg.File.DownloadUrl)
 	if err != nil {
@@ -1470,8 +1494,6 @@ func (s *Supervisor) processPackagesAvailableMessage(ctx context.Context, msg *p
 		return fmt.Errorf("create agent backup: %w", err)
 	}
 
-	// TODO: Should we remove the backup file when returning from this function?
-
 	f, err := os.OpenFile(s.config.Agent.Executable, os.O_WRONLY|os.O_TRUNC, 0700)
 	if err != nil {
 		return fmt.Errorf("open file: %w", err)
@@ -1482,6 +1504,9 @@ func (s *Supervisor) processPackagesAvailableMessage(ctx context.Context, msg *p
 		restoreErr := restoreBackup(agentBackupPath, s.config.Agent.Executable)
 		return errors.Join(fmt.Errorf("write package to file: %w", err), restoreErr)
 	}
+
+	// TODO: Send installed status
+	// TODO: Update agent hash
 
 	return nil
 }
