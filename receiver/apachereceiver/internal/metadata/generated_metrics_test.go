@@ -152,7 +152,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "apache.cpu.time":
 					assert.False(t, validatedMetrics["apache.cpu.time"], "Found a duplicate in the metrics slice: apache.cpu.time")
 					validatedMetrics["apache.cpu.time"] = true
@@ -166,7 +166,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("level")
 					assert.True(t, ok)
 					assert.EqualValues(t, "self", attrVal.Str())
@@ -198,7 +198,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "apache.load.15":
 					assert.False(t, validatedMetrics["apache.load.15"], "Found a duplicate in the metrics slice: apache.load.15")
 					validatedMetrics["apache.load.15"] = true
@@ -210,7 +210,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "apache.load.5":
 					assert.False(t, validatedMetrics["apache.load.5"], "Found a duplicate in the metrics slice: apache.load.5")
 					validatedMetrics["apache.load.5"] = true
@@ -222,7 +222,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "apache.request.time":
 					assert.False(t, validatedMetrics["apache.request.time"], "Found a duplicate in the metrics slice: apache.request.time")
 					validatedMetrics["apache.request.time"] = true
