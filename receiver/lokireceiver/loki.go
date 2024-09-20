@@ -20,7 +20,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver/internal"
 )
@@ -157,12 +160,15 @@ func (r *lokiReceiver) Push(ctx context.Context, pushRequest *push.PushRequest) 
 	logs, err := loki.PushRequestToLogs(pushRequest, r.conf.KeepTimestamp)
 	if err != nil {
 		r.settings.Logger.Warn(ErrAtLeastOneEntryFailedToProcess, zap.Error(err))
-		return &push.PushResponse{}, err
+		return &push.PushResponse{}, status.New(codes.InvalidArgument, err.Error()).Err()
 	}
 	ctx = r.obsrepGRPC.StartLogsOp(ctx)
 	logRecordCount := logs.LogRecordCount()
 	err = r.nextConsumer.ConsumeLogs(ctx, logs)
 	r.obsrepGRPC.EndLogsOp(ctx, "protobuf", logRecordCount, err)
+	if err != nil {
+		return &push.PushResponse{}, errorutil.GrpcError(err)
+	}
 	return &push.PushResponse{}, nil
 }
 
@@ -219,6 +225,10 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, r *lokiReceiver) {
 	logRecordCount := logs.LogRecordCount()
 	err = r.nextConsumer.ConsumeLogs(ctx, logs)
 	r.obsrepHTTP.EndLogsOp(ctx, "json", logRecordCount, err)
+	if err != nil {
+		errorutil.HttpError(resp, err)
+		return
+	}
 
 	resp.WriteHeader(http.StatusNoContent)
 }
