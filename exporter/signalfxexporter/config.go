@@ -23,6 +23,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+type TranslationRulesConfig struct {
+	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
+}
+
+var defaultTranslationRules = func() []translation.Rule {
+	var data map[string]any
+	var defaultRules TranslationRulesConfig
+
+	// It is safe to panic since this is deterministic, and will not fail anywhere else if it doesn't fail all the time.
+	if err := yaml.Unmarshal([]byte(translation.DefaultTranslationRulesYaml), &data); err != nil {
+		panic(err)
+	}
+
+	if err := confmap.NewFromStringMap(data).Unmarshal(&defaultRules); err != nil {
+		panic(fmt.Errorf("failed to load default translation rules: %w", err))
+	}
+
+	return defaultRules.TranslationRules
+}()
+
 var defaultExcludeMetrics = func() []dpfilters.MetricFilter {
 	cfg, err := loadConfig([]byte(translation.DefaultExcludeMetricsYaml))
 	// It is safe to panic since this is deterministic, and will not fail anywhere else if it doesn't fail all the time.
@@ -137,7 +157,7 @@ func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricT
 	if cfg.DisableDefaultTranslationRules {
 		rules = []translation.Rule{}
 	} else {
-		rules = translation.DefaultTranslationRules
+		rules = defaultTranslationRules
 	}
 	metricTranslator, err := translation.NewMetricTranslator(rules, cfg.DeltaTranslationTTL, done)
 	if err != nil {
