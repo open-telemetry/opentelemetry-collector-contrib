@@ -23,13 +23,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-type TranslationRulesConfig struct {
+type translationRulesConfig struct {
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
 }
 
 var defaultTranslationRules = func() []translation.Rule {
 	var data map[string]any
-	var defaultRules TranslationRulesConfig
+	var defaultRules translationRulesConfig
 
 	// It is safe to panic since this is deterministic, and will not fail anywhere else if it doesn't fail all the time.
 	if err := yaml.Unmarshal([]byte(translation.DefaultTranslationRulesYaml), &data); err != nil {
