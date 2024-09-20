@@ -42,9 +42,9 @@ func createDefaultConfig() component.Config {
 	batcherCfg.Enabled = false
 
 	return &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		BatcherConfig:   batcherCfg,
 		ClientConfig: configgrpc.ClientConfig{
 			Headers: map[string]configopaque.String{},
@@ -72,15 +72,16 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func (exp *baseExporter) helperOptions() []exporterhelper.Option {
+func helperOptions(e exp) []exporterhelper.Option {
+	cfg := e.getConfig().(*Config)
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(exp.config.TimeoutSettings),
-		exporterhelper.WithRetry(exp.config.RetryConfig),
-		exporterhelper.WithQueue(exp.config.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithBatcher(exp.config.BatcherConfig),
-		exporterhelper.WithShutdown(exp.shutdown),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetryConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(e.start),
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
+		exporterhelper.WithShutdown(e.shutdown),
 	}
 }
 
@@ -103,13 +104,13 @@ func createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	exp, err := newExporter(cfg, set, createArrowTracesStream)
+	e, err := newMetadataExporter(cfg, set, createArrowTracesStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(ctx, exp.settings, exp.config,
-		exp.pushTraces,
-		exp.helperOptions()...,
+	return exporterhelper.NewTracesExporter(ctx, e.getSettings(), e.getConfig(),
+		e.pushTraces,
+		helperOptions(e)...,
 	)
 }
 
@@ -122,13 +123,13 @@ func createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	exp, err := newExporter(cfg, set, createArrowMetricsStream)
+	e, err := newMetadataExporter(cfg, set, createArrowMetricsStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporter(ctx, exp.settings, exp.config,
-		exp.pushMetrics,
-		exp.helperOptions()...,
+	return exporterhelper.NewMetricsExporter(ctx, e.getSettings(), e.getConfig(),
+		e.pushMetrics,
+		helperOptions(e)...,
 	)
 }
 
@@ -141,12 +142,12 @@ func createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	exp, err := newExporter(cfg, set, createArrowLogsStream)
+	e, err := newMetadataExporter(cfg, set, createArrowLogsStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(ctx, exp.settings, exp.config,
-		exp.pushLogs,
-		exp.helperOptions()...,
+	return exporterhelper.NewLogsExporter(ctx, e.getSettings(), e.getConfig(),
+		e.pushLogs,
+		helperOptions(e)...,
 	)
 }
