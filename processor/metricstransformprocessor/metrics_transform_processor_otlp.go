@@ -6,6 +6,7 @@ package metricstransformprocessor // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -554,10 +555,15 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)
 		case aggregateLabels:
 			if canChangeMetric {
-				attrs := []string{}
-				for k, v := range op.labelSetMap {
-					if v {
-						attrs = append(attrs, k)
+				var attrs []string
+				fmt.Fprintf(os.Stdout, "is the label set not nil? %v\n", op.labelSetMap != nil)
+				if op.labelSetMap != nil {
+					fmt.Fprintf(os.Stdout, "in the if statement\n")
+					attrs = []string{}
+					for k, v := range op.labelSetMap {
+						if v {
+							attrs = append(attrs, k)
+						}
 					}
 				}
 				aggregateLabelsOp(metric, attrs, op.configOperation.AggregationType)
