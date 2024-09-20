@@ -149,7 +149,7 @@ Similar to the per-endpoint type `resource_attributes` described above but for i
 
 ## Rule Expressions
 
-Each rule must start with `type == ("pod"|"port"|"hostport"|"container"|"k8s.service"|"k8s.node") &&` such that the rule matches
+Each rule must start with `type == ("pod"|"port"|"hostport"|"container"|"k8s.service"|"k8s.node"|"k8s.ingress") &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 
