@@ -394,7 +394,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "spark.driver.code_generator.compilation.count":
 					assert.False(t, validatedMetrics["spark.driver.code_generator.compilation.count"], "Found a duplicate in the metrics slice: spark.driver.code_generator.compilation.count")
 					validatedMetrics["spark.driver.code_generator.compilation.count"] = true
@@ -420,7 +420,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "spark.driver.code_generator.generated_class.count":
 					assert.False(t, validatedMetrics["spark.driver.code_generator.generated_class.count"], "Found a duplicate in the metrics slice: spark.driver.code_generator.generated_class.count")
 					validatedMetrics["spark.driver.code_generator.generated_class.count"] = true
@@ -446,7 +446,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "spark.driver.code_generator.generated_method.count":
 					assert.False(t, validatedMetrics["spark.driver.code_generator.generated_method.count"], "Found a duplicate in the metrics slice: spark.driver.code_generator.generated_method.count")
 					validatedMetrics["spark.driver.code_generator.generated_method.count"] = true
@@ -472,7 +472,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "spark.driver.code_generator.source_code.operations":
 					assert.False(t, validatedMetrics["spark.driver.code_generator.source_code.operations"], "Found a duplicate in the metrics slice: spark.driver.code_generator.source_code.operations")
 					validatedMetrics["spark.driver.code_generator.source_code.operations"] = true
@@ -771,7 +771,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "spark.driver.live_listener_bus.queue_size":
 					assert.False(t, validatedMetrics["spark.driver.live_listener_bus.queue_size"], "Found a duplicate in the metrics slice: spark.driver.live_listener_bus.queue_size")
 					validatedMetrics["spark.driver.live_listener_bus.queue_size"] = true
