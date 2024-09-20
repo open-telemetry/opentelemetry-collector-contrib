@@ -1,0 +1,34 @@
+{
+    "records": [
+        {
+            "time": "2024-04-24T11:59:40.9893370Z",
+            "EventTime": "2024-04-24T11:59:40.9893370Z",
+            "resourceId": "/SUBSCRIPTIONS/DA2DD5CC-E7BC-4DB6-94D9-0AFB3BD30577/RESOURCEGROUPS/FRETBADGER/PROVIDERS/MICROSOFT.WEB/SITES/FBEHTESTAPP",
+            "properties": {
+                "CsHost": "test.com",
+                "CIp": "42.42.42.42",
+                "SPort": "80",
+                "CsUriStem": "/api/test/",
+                "CsUriQuery": "foo=42",
+                "CsMethod": "GET",
+                "TimeTaken": 420,
+                "ScStatus": "200",
+                "Result": "Success",
+                "CsBytes": "4242",
+                "ScBytes": "42",
+                "UserAgent": "Mozilla/5.0",
+                "Cookie": "",
+                "CsUsername": "user@test.com",
+                "Referer": "REFERER",
+                "ComputerName": "COMPUTER_NAME",
+                "Protocol": "HTTP/1.1"
+            },
+            "category": "AppServiceHTTPLogs",
+            "EventStampType": "Stamp",
+            "EventPrimaryStampName": "waws-prod-blu-479",
+            "EventStampName": "waws-prod-blu-479",
+            "Host": "lw0sdlwk0005XR",
+            "EventIpAddress": "10.50.0.34"
+        }
+    ]
+}

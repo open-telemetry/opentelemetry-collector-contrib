@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
@@ -27,7 +28,7 @@ func TestLogEmitter(t *testing.T) {
 	in := entry.New()
 
 	go func() {
-		require.NoError(t, emitter.Process(context.Background(), in))
+		assert.NoError(t, emitter.Process(context.Background(), in))
 	}()
 
 	select {
@@ -55,7 +56,7 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 	go func() {
 		ctx := context.Background()
 		for _, e := range entries {
-			require.NoError(t, emitter.Process(ctx, e))
+			assert.NoError(t, emitter.Process(ctx, e))
 		}
 	}()
 
@@ -85,7 +86,7 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 
 	go func() {
 		ctx := context.Background()
-		require.NoError(t, emitter.Process(ctx, entry))
+		assert.NoError(t, emitter.Process(ctx, entry))
 	}()
 
 	timeoutChan := time.After(timeout)

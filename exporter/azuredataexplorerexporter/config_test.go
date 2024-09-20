@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 				LogTable:       "OTELLogs",
 				TraceTable:     "OTELTraces",
 				IngestionType:  managedIngestType,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     60 * time.Second,
 					MaxElapsedTime:  10 * time.Minute,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
