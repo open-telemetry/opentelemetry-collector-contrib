@@ -64,10 +64,12 @@ func (s *Subscription) Close() error {
 	return nil
 }
 
+var ErrHandleNotOpen = fmt.Errorf("subscription handle is not open")
+
 // Read will read events from the subscription.
 func (s *Subscription) Read(maxReads int) ([]Event, error) {
 	if s.handle == 0 {
-		return nil, fmt.Errorf("subscription handle is not open")
+		return nil, ErrHandleNotOpen
 	}
 
 	if maxReads < 1 {
