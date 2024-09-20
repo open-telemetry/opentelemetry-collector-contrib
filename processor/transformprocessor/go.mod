@@ -25,7 +25,6 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
-
 require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240918193345-a3c0565031b0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
