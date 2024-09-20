@@ -288,22 +288,17 @@ rules:
 
 ### Warning about metrics' deprecation
 
-The following metrics will be removed in a future version:
-- `k8s.node.cpu.utilization` (replaced by `k8s.node.cpu.usage`)
-- `k8s.pod.cpu.utilization` (replaced by `k8s.pod.cpu.usage`)
-- `container.cpu.utilization` (replaced by `container.cpu.usage`)
-
-Users can use the following metrics instead:
-- `k8s.node.cpu.usage`
-- `k8s.pod.cpu.usage`
-- `container.cpu.usage`
+The following metrics will be renamed in a future version:
+- `k8s.node.cpu.utilization` (renamed to `k8s.node.cpu.usage`)
+- `k8s.pod.cpu.utilization` (renamed to `k8s.pod.cpu.usage`)
+- `container.cpu.utilization` (renamed to `container.cpu.usage`)
 
 The above metrics show usage counted in CPUs and it's not a percentage of used resources.
 These metrics were previously incorrectly named using the utilization term.
 
 #### `receiver.kubeletstats.enableCPUUsageMetrics` feature gate
 
-- alpha: when enabled it makes the `.cpu.usage` metrics enabled by default
+- alpha: when enabled it makes the `.cpu.usage` metrics enabled by default, disabling the `.cpu.utilization` metrics
 - beta: `.cpu.usage` metrics are enabled by default and any configuration enabling the deprecated `.cpu.utilization` metrics will be failing. Explicitly disabling the feature gate provides the old (deprecated) behavior.
 - stable: `.cpu.usage` metrics are enabled by default and the deprecated metrics are completely removed.
 - removed three releases after stable.
