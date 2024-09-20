@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
+	"strings"
 )
 
 // Added function to check if value is an accepted number of log retention days
@@ -67,4 +69,21 @@ func ValidateTagsInput(input map[string]*string) error {
 	}
 
 	return nil
+}
+
+// Helper function to convert a map to a consistent string representation
+func mapToString(m map[string]*string) string {
+	if m == nil {
+		return ""
+	}
+	pairs := make([]string, 0, len(m))
+	for k, v := range m {
+		if v == nil {
+			pairs = append(pairs, k+":")
+		} else {
+			pairs = append(pairs, k+":"+*v)
+		}
+	}
+	sort.Strings(pairs) // Ensure a consistent order
+	return strings.Join(pairs, ";")
 }

@@ -11,12 +11,14 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
-	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/sdk/service/cloudwatchlogs"
+	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 const (
@@ -32,7 +34,45 @@ const (
 	containerInsightsReceiver = "awscontainerinsight"
 	attributeReceiver         = "receiver"
 	fieldPrometheusMetricType = "prom_metric_type"
+
+	// Entity fields
+	keyAttributeEntityServiceName           = "aws.entity.service.name"
+	serviceName                             = "Name"
+	keyAttributeEntityDeploymentEnvironment = "aws.entity.deployment.environment"
+	deploymentEnvironment                   = "Environment"
+	keyAttributeEntityType                  = "aws.entity.type"
+	entityType                              = "Type"
+	service                                 = "Service"
+	resource                                = "Resource"
+	keyAttributeEntityResourceType          = "aws.entity.resource.type"
+	resourceType                            = "ResourceType"
+	keyAttributeEntityIdentifier            = "aws.entity.resource.identifier"
+	identifier                              = "Identifier"
+	attributeEntityCluster                  = "aws.entity.k8s.cluster.name"
+	cluster                                 = "Cluster"
+	attributeEntityNamespace                = "aws.entity.k8s.namespace.name"
+	namespace                               = "Namespace"
+	attributeEntityWorkload                 = "aws.entity.k8s.workload.name"
+	workload                                = "Workload"
+	attributeEntityNode                     = "aws.entity.k8s.node.name"
+	node                                    = "Node"
 )
+
+var keyAttributeEntityToShortNameMap = map[string]string{
+	keyAttributeEntityType:                  entityType,
+	keyAttributeEntityResourceType:          resourceType,
+	keyAttributeEntityIdentifier:            identifier,
+	keyAttributeEntityServiceName:           serviceName,
+	keyAttributeEntityDeploymentEnvironment: deploymentEnvironment,
+}
+
+var attributeEntityToShortNameMap = map[string]string{
+	attributeEntityCluster:   cluster,
+	attributeEntityNamespace: namespace,
+	attributeEntityWorkload:  workload,
+	attributeEntityNode:      node,
+	// TODO: add attributes for EC2
+}
 
 var errMissingMetricsForEnhancedContainerInsights = errors.New("nil event detected with EnhancedContainerInsights enabled")
 
@@ -79,6 +119,7 @@ type groupedMetricMetadata struct {
 	timestampMs                int64
 	logGroup                   string
 	logStream                  string
+	entity                     *cloudwatchlogs.Entity
 	metricDataType             pmetric.MetricType
 	retainInitialValueForDelta bool
 }
@@ -103,8 +144,8 @@ func newMetricTranslator(config Config) metricTranslator {
 	return metricTranslator{
 		metricDescriptor: mt,
 		calculators: &emfCalculators{
-			delta:   aws.NewFloat64DeltaCalculator(),
-			summary: aws.NewMetricCalculator(calculateSummaryDelta),
+			delta:   awsmetrics.NewFloat64DeltaCalculator(),
+			summary: awsmetrics.NewMetricCalculator(calculateSummaryDelta),
 		},
 	}
 }
@@ -124,7 +165,6 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
 	deltaInitialValue := config.RetainInitialValueOfDeltaMetric
 
-	ilms := rm.ScopeMetrics()
 	var metricReceiver string
 	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
 		metricReceiver = receiver.Str()
@@ -138,6 +178,13 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 			metricReceiver = containerInsightsReceiver
 		}
 	}
+	// the original resourceAttributes map is immutable, so we need to create a mutable copy of the resource metrics
+	// to remove the entity fields from the attributes
+	mutableMetrics := pmetric.NewResourceMetrics()
+	rm.CopyTo(mutableMetrics)
+	entity := fetchEntityFields(mutableMetrics.Resource().Attributes())
+
+	ilms := mutableMetrics.ScopeMetrics()
 
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
@@ -154,6 +201,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 					timestampMs:                timestamp,
 					logGroup:                   logGroup,
 					logStream:                  logStream,
+					entity:                     &entity,
 					metricDataType:             metric.Type(),
 					retainInitialValueForDelta: deltaInitialValue,
 				},
@@ -167,6 +215,19 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 		}
 	}
 	return nil
+}
+
+func fetchEntityFields(resourceAttributes pcommon.Map) cloudwatchlogs.Entity {
+	keyAttributesMap := map[string]*string{}
+	attributeMap := map[string]*string{}
+
+	processAttributes(keyAttributeEntityToShortNameMap, keyAttributesMap, resourceAttributes)
+	processAttributes(attributeEntityToShortNameMap, attributeMap, resourceAttributes)
+
+	return cloudwatchlogs.Entity{
+		KeyAttributes: keyAttributesMap,
+		Attributes:    attributeMap,
+	}
 }
 
 // translateGroupedMetricToCWMetric converts Grouped Metric format to CloudWatch Metric format.
@@ -505,6 +566,7 @@ func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, d
 
 	logGroup := groupedMetric.metadata.logGroup
 	logStream := groupedMetric.metadata.logStream
+	entity := groupedMetric.metadata.entity
 
 	if logStream == "" {
 		logStream = defaultLogStream
@@ -512,6 +574,7 @@ func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, d
 
 	event.LogGroupName = logGroup
 	event.LogStreamName = logStream
+	event.Entity = entity
 
 	return event, nil
 }

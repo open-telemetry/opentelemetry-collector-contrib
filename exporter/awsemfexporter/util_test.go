@@ -6,6 +6,7 @@ package awsemfexporter
 import (
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -365,4 +366,104 @@ func TestGetLogInfo(t *testing.T) {
 		}
 	}
 
+}
+
+func TestProcessAttributes(t *testing.T) {
+	testCases := []struct {
+		name               string
+		entityMap          []map[string]string
+		resourceAttributes map[string]any
+		wantedAttributes   map[string]*string
+		leftoverAttributes map[string]any
+	}{
+		{
+			name:      "key_attributes",
+			entityMap: []map[string]string{keyAttributeEntityToShortNameMap},
+			resourceAttributes: map[string]any{
+				keyAttributeEntityServiceName:           "my-service",
+				keyAttributeEntityDeploymentEnvironment: "my-environment",
+			},
+			wantedAttributes: map[string]*string{
+				serviceName:           aws.String("my-service"),
+				deploymentEnvironment: aws.String("my-environment"),
+			},
+			leftoverAttributes: make(map[string]any),
+		},
+		{
+			name:      "non-key_attributes",
+			entityMap: []map[string]string{attributeEntityToShortNameMap},
+			resourceAttributes: map[string]any{
+				attributeEntityCluster:   "my-cluster",
+				attributeEntityNamespace: "my-namespace",
+				attributeEntityNode:      "my-node",
+				attributeEntityWorkload:  "my-workload",
+			},
+			wantedAttributes: map[string]*string{
+				cluster:   aws.String("my-cluster"),
+				namespace: aws.String("my-namespace"),
+				node:      aws.String("my-node"),
+				workload:  aws.String("my-workload"),
+			},
+			leftoverAttributes: make(map[string]any),
+		},
+		{
+			name:      "key_and_non_key_attributes",
+			entityMap: []map[string]string{keyAttributeEntityToShortNameMap, attributeEntityToShortNameMap},
+			resourceAttributes: map[string]any{
+				keyAttributeEntityServiceName:           "my-service",
+				keyAttributeEntityDeploymentEnvironment: "my-environment",
+				attributeEntityCluster:                  "my-cluster",
+				attributeEntityNamespace:                "my-namespace",
+				attributeEntityNode:                     "my-node",
+				attributeEntityWorkload:                 "my-workload",
+			},
+			wantedAttributes: map[string]*string{
+				serviceName:           aws.String("my-service"),
+				deploymentEnvironment: aws.String("my-environment"),
+				cluster:               aws.String("my-cluster"),
+				namespace:             aws.String("my-namespace"),
+				node:                  aws.String("my-node"),
+				workload:              aws.String("my-workload"),
+			},
+			leftoverAttributes: make(map[string]any),
+		},
+		{
+			name:      "key_and_non_key_attributes_plus_extras",
+			entityMap: []map[string]string{keyAttributeEntityToShortNameMap, attributeEntityToShortNameMap},
+			resourceAttributes: map[string]any{
+				"extra_attribute":                       "extra_value",
+				keyAttributeEntityServiceName:           "my-service",
+				keyAttributeEntityDeploymentEnvironment: "my-environment",
+				attributeEntityCluster:                  "my-cluster",
+				attributeEntityNamespace:                "my-namespace",
+				attributeEntityNode:                     "my-node",
+				attributeEntityWorkload:                 "my-workload",
+			},
+			wantedAttributes: map[string]*string{
+				serviceName:           aws.String("my-service"),
+				deploymentEnvironment: aws.String("my-environment"),
+				cluster:               aws.String("my-cluster"),
+				namespace:             aws.String("my-namespace"),
+				node:                  aws.String("my-node"),
+				workload:              aws.String("my-workload"),
+			},
+			leftoverAttributes: map[string]any{
+				"extra_attribute": "extra_value",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			attrs := pcommon.NewMap()
+			err := attrs.FromRaw(tc.resourceAttributes)
+			assert.Nil(t, err)
+			targetMap := make(map[string]*string)
+			for _, entityMap := range tc.entityMap {
+				processAttributes(entityMap, targetMap, attrs)
+			}
+			assert.Equal(t, tc.leftoverAttributes, attrs.AsRaw())
+			assert.Equal(t, tc.wantedAttributes, targetMap)
+		})
+	}
 }

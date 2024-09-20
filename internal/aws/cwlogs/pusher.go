@@ -5,6 +5,7 @@ package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -54,10 +55,33 @@ func NewEvent(timestampMs int64, message string) *Event {
 	return event
 }
 
-// Uniquely identify a cloudwatch logs stream
+// Uniquely identify a cloudwatch logs stream. Any changes to this struct will require updates to Hash
 type StreamKey struct {
 	LogGroupName  string
 	LogStreamName string
+	Entity        *cloudwatchlogs.Entity
+}
+
+// Custom hash function for StreamKey. Necessary to uniquely identify with Entity.
+func (sk *StreamKey) Hash() string {
+	var attributes, keyAttributes string
+	if sk.Entity != nil {
+		if sk.Entity.Attributes != nil {
+			attributes = mapToString(sk.Entity.Attributes)
+		}
+		if sk.Entity.KeyAttributes != nil {
+			keyAttributes = mapToString(sk.Entity.KeyAttributes)
+		}
+	}
+
+	data := fmt.Sprintf(
+		"%s|%s|%s|%s",
+		sk.LogGroupName,
+		sk.LogStreamName,
+		attributes,
+		keyAttributes,
+	)
+	return data
 }
 
 func (logEvent *Event) Validate(logger *zap.Logger) error {
@@ -112,11 +136,14 @@ type eventBatch struct {
 
 // Create a new log event batch if needed.
 func newEventBatch(key StreamKey) *eventBatch {
+
 	return &eventBatch{
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
 			LogGroupName:  aws.String(key.LogGroupName),
 			LogStreamName: aws.String(key.LogStreamName),
-			LogEvents:     make([]*cloudwatchlogs.InputLogEvent, 0, maxRequestEventCount)},
+			LogEvents:     make([]*cloudwatchlogs.InputLogEvent, 0, maxRequestEventCount),
+			Entity:        key.Entity,
+		},
 	}
 }
 
@@ -186,6 +213,8 @@ type logPusher struct {
 	logGroupName *string
 	// log stream name of the current logPusher
 	logStreamName *string
+	// entity name of the current logPusher
+	entity *cloudwatchlogs.Entity
 
 	logEventBatch *eventBatch
 
@@ -213,6 +242,7 @@ func newLogPusher(streamKey StreamKey,
 	pusher := &logPusher{
 		logGroupName:     aws.String(streamKey.LogGroupName),
 		logStreamName:    aws.String(streamKey.LogStreamName),
+		entity:           streamKey.Entity,
 		svcStructuredLog: svcStructuredLog,
 		logger:           logger,
 	}
@@ -271,7 +301,8 @@ func (p *logPusher) pushEventBatch(req any) error {
 	p.logger.Debug("logpusher: publish log events successfully.",
 		zap.Int("NumOfLogEvents", len(putLogEventsInput.LogEvents)),
 		zap.Float64("LogEventsSize", float64(logEventBatch.byteTotal)/float64(1024)),
-		zap.Int64("Time", time.Since(startTime).Nanoseconds()/int64(time.Millisecond)))
+		zap.Int64("Time", time.Since(startTime).Nanoseconds()/int64(time.Millisecond)),
+	)
 
 	return nil
 }
@@ -288,6 +319,7 @@ func (p *logPusher) addLogEvent(logEvent *Event) *eventBatch {
 		currentBatch = newEventBatch(StreamKey{
 			LogGroupName:  *p.logGroupName,
 			LogStreamName: *p.logStreamName,
+			Entity:        p.entity,
 		})
 	}
 	currentBatch.append(logEvent)
@@ -304,6 +336,7 @@ func (p *logPusher) renewEventBatch() *eventBatch {
 		p.logEventBatch = newEventBatch(StreamKey{
 			LogGroupName:  *p.logGroupName,
 			LogStreamName: *p.logStreamName,
+			Entity:        p.entity,
 		})
 	}
 
@@ -314,7 +347,7 @@ func (p *logPusher) renewEventBatch() *eventBatch {
 type multiStreamPusher struct {
 	logStreamManager LogStreamManager
 	client           Client
-	pusherMap        map[StreamKey]Pusher
+	pusherMap        map[string]Pusher
 	logger           *zap.Logger
 }
 
@@ -323,7 +356,7 @@ func newMultiStreamPusher(logStreamManager LogStreamManager, client Client, logg
 		logStreamManager: logStreamManager,
 		client:           client,
 		logger:           logger,
-		pusherMap:        make(map[StreamKey]Pusher),
+		pusherMap:        make(map[string]Pusher),
 	}
 }
 
@@ -335,9 +368,9 @@ func (m *multiStreamPusher) AddLogEntry(event *Event) error {
 	var pusher Pusher
 	var ok bool
 
-	if pusher, ok = m.pusherMap[event.StreamKey]; !ok {
+	if pusher, ok = m.pusherMap[event.StreamKey.Hash()]; !ok {
 		pusher = NewPusher(event.StreamKey, 1, m.client, m.logger)
-		m.pusherMap[event.StreamKey] = pusher
+		m.pusherMap[event.StreamKey.Hash()] = pusher
 	}
 
 	return pusher.AddLogEntry(event)
@@ -395,25 +428,26 @@ type LogStreamManager interface {
 
 type logStreamManager struct {
 	logStreamMutex sync.Mutex
-	streams        map[StreamKey]bool
+	streams        map[string]bool
 	client         Client
 }
 
 func NewLogStreamManager(svcStructuredLog Client) LogStreamManager {
 	return &logStreamManager{
 		client:  svcStructuredLog,
-		streams: make(map[StreamKey]bool),
+		streams: make(map[string]bool),
 	}
 }
 
 func (lsm *logStreamManager) InitStream(streamKey StreamKey) error {
-	if _, ok := lsm.streams[streamKey]; !ok {
+	hash := streamKey.Hash()
+	if _, ok := lsm.streams[hash]; !ok {
 		lsm.logStreamMutex.Lock()
 		defer lsm.logStreamMutex.Unlock()
 
-		if _, ok := lsm.streams[streamKey]; !ok {
+		if _, ok := lsm.streams[hash]; !ok {
 			err := lsm.client.CreateStream(&streamKey.LogGroupName, &streamKey.LogStreamName)
-			lsm.streams[streamKey] = true
+			lsm.streams[hash] = true
 			return err
 		}
 	}

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -22,6 +23,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/sdk/service/cloudwatchlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
@@ -39,6 +41,7 @@ func createTestResourceMetricsHelper(numMetrics int) pmetric.ResourceMetrics {
 	rm.Resource().Attributes().PutStr("ClusterName", "myCluster")
 	rm.Resource().Attributes().PutStr("PodName", "myPod")
 	rm.Resource().Attributes().PutStr(attributeReceiver, prometheusReceiver)
+	rm.Resource().Attributes().PutStr(keyAttributeEntityServiceName, "myServiceName")
 	sm := rm.ScopeMetrics().AppendEmpty()
 
 	m := sm.Metrics().AppendEmpty()
@@ -2572,6 +2575,33 @@ func TestTranslateOtToGroupedMetricForInitialDeltaValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFetchEntityFields(t *testing.T) {
+	resourceMetrics := pmetric.NewResourceMetrics()
+	resourceMetrics.Resource().Attributes().PutStr(keyAttributeEntityType, "Service")
+	resourceMetrics.Resource().Attributes().PutStr(keyAttributeEntityDeploymentEnvironment, "my-environment")
+	resourceMetrics.Resource().Attributes().PutStr(keyAttributeEntityServiceName, "my-service")
+	resourceMetrics.Resource().Attributes().PutStr(attributeEntityNode, "my-node")
+	resourceMetrics.Resource().Attributes().PutStr(attributeEntityCluster, "my-cluster")
+	resourceMetrics.Resource().Attributes().PutStr(attributeEntityNamespace, "my-namespace")
+	resourceMetrics.Resource().Attributes().PutStr(attributeEntityWorkload, "my-workload")
+
+	expectedEntity := cloudwatchlogs.Entity{KeyAttributes: map[string]*string{
+		entityType:            aws.String(service),
+		serviceName:           aws.String("my-service"),
+		deploymentEnvironment: aws.String("my-environment"),
+	},
+		Attributes: map[string]*string{
+			node:      aws.String("my-node"),
+			cluster:   aws.String("my-cluster"),
+			namespace: aws.String("my-namespace"),
+			workload:  aws.String("my-workload"),
+		},
+	}
+	entity := fetchEntityFields(resourceMetrics.Resource().Attributes())
+	assert.Equal(t, expectedEntity, entity)
+
 }
 
 func generateTestMetrics(tm testMetric) pmetric.Metrics {
