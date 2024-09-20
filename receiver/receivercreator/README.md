@@ -133,6 +133,12 @@ None
 | k8s.node.name      | \`name\`          |
 | k8s.node.uid       | \`uid\`           |
 
+`type == "k8s.ingress"`
+
+| Resource Attribute | Default           |
+|--------------------|-------------------|
+| k8s.namespace.name | \`namespace\`     |
+
 See `redis/2` in [examples](#examples).
 
 
