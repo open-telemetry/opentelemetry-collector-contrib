@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
@@ -70,6 +71,14 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 	if err := cfg.Arrow.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Unmarshal will apply deprecated field values to assist the user with migration.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
 		return err
 	}
 	if cfg.Admission.RequestLimitMiB == 0 && cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
