@@ -116,7 +116,7 @@ func TestCreateMetrics_CustomConfig(t *testing.T) {
 }
 
 func TestDefaultTranslationRules(t *testing.T) {
-	rules := translation.DefaultTranslationRules
+	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 1, make(chan struct{}))
 	require.NoError(t, err)
@@ -472,7 +472,7 @@ func TestDefaultDiskTranslations(t *testing.T) {
 }
 
 func testGetTranslator(t *testing.T) *translation.MetricTranslator {
-	rules := translation.DefaultTranslationRules
+	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 3600, make(chan struct{}))
 	require.NoError(t, err)
@@ -606,7 +606,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 
 // Benchmark test for default translation rules on an example hostmetrics dataset.
 func BenchmarkMetricConversion(b *testing.B) {
-	rules := translation.DefaultTranslationRules
+	rules := defaultTranslationRules
 	require.NotNil(b, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 1, make(chan struct{}))
 	require.NoError(b, err)
