@@ -1502,14 +1502,14 @@ func TestStartStop(t *testing.T) {
 
 func assertResourceHasStringAttribute(t *testing.T, r pcommon.Resource, k, v string) {
 	got, ok := r.Attributes().Get(k)
-	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
+	require.Truef(t, ok, "resource does not contain attribute %s", k)
 	assert.EqualValues(t, pcommon.ValueTypeStr, got.Type(), "attribute %s is not of type string", k)
 	assert.EqualValues(t, v, got.Str(), "attribute %s is not equal to %s", k, v)
 }
 
 func assertResourceHasStringSlice(t *testing.T, r pcommon.Resource, k string, v []string) {
 	got, ok := r.Attributes().Get(k)
-	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
+	require.Truef(t, ok, "resource does not contain attribute %s", k)
 	assert.EqualValues(t, pcommon.ValueTypeSlice, got.Type(), "attribute %s is not of type slice", k)
 	slice := got.Slice()
 	for i := 0; i < slice.Len(); i++ {
