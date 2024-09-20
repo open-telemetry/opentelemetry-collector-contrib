@@ -36,6 +36,11 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location ottl.Op
 	if format == "" {
 		return nil, fmt.Errorf("format cannot be nil")
 	}
+	gotimeFormat, err := timeutils.StrptimeToGotime(format)
+	if err != nil {
+		return nil, err
+	}
+
 	var defaultLocation *string
 	if !location.IsEmpty() {
 		l := location.Get()
@@ -66,9 +71,9 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location ottl.Op
 		}
 		var timestamp time.Time
 		if inputTimeLocale != nil {
-			timestamp, err = timeutils.ParseLocalizedStrptime(format, t, loc, *inputTimeLocale)
+			timestamp, err = timeutils.ParseLocalizedGotime(gotimeFormat, t, loc, *inputTimeLocale)
 		} else {
-			timestamp, err = timeutils.ParseStrptime(format, t, loc)
+			timestamp, err = timeutils.ParseGotime(gotimeFormat, t, loc)
 		}
 		if err != nil {
 			return nil, err

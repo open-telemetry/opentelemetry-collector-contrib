@@ -784,7 +784,7 @@ func TestReceiverEOF(t *testing.T) {
 			expectData = append(expectData, td)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -797,7 +797,7 @@ func TestReceiverEOF(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		require.NoError(t, ctc.wait())
+		assert.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -851,7 +851,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 			td := testdata.GenerateTraces(2)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -863,7 +863,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 							Name:  key,
 							Value: val,
 						})
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}
 
@@ -879,7 +879,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Add(1)
 
 	go func() {
-		require.NoError(t, ctc.wait())
+		assert.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -1243,7 +1243,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			td := testdata.GenerateTraces(2)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -1256,7 +1256,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 							Name:  strings.ToLower(key),
 							Value: val,
 						})
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}
 

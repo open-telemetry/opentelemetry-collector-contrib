@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -229,9 +230,9 @@ func BenchmarkUDPInput(b *testing.B) {
 	done := make(chan struct{})
 	go func() {
 		conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
-		require.NoError(b, err)
+		assert.NoError(b, err)
 		defer func() {
-			require.NoError(b, udpInput.Stop())
+			assert.NoError(b, udpInput.Stop())
 		}()
 		defer conn.Close()
 		message := []byte("message\n")
@@ -241,7 +242,7 @@ func BenchmarkUDPInput(b *testing.B) {
 				return
 			default:
 				_, err := conn.Write(message)
-				require.NoError(b, err)
+				assert.NoError(b, err)
 			}
 		}
 	}()
