@@ -29,7 +29,7 @@ func TestHandleCountManager(t *testing.T) {
 
 	ppid, err := m.GetProcessPpid(1)
 	assert.NoError(t, err)
-	assert.Equal(t, ppid, int64(10))
+	assert.Equal(t, int64(10), ppid)
 
 	count, err = m.GetProcessHandleCount(2)
 	assert.NoError(t, err)
@@ -37,7 +37,7 @@ func TestHandleCountManager(t *testing.T) {
 
 	ppid, err = m.GetProcessPpid(2)
 	assert.NoError(t, err)
-	assert.Equal(t, ppid, int64(20))
+	assert.Equal(t, int64(20), ppid)
 
 	_, err = m.GetProcessHandleCount(3)
 	assert.ErrorIs(t, errors.Unwrap(err), ErrProcessNotFound)
