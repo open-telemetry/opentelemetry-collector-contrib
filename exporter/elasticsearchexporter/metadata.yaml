@@ -7,7 +7,7 @@ status:
     development: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [JaredTan95, ycombinator, carsonip]
+    active: [JaredTan95, carsonip, lahsivjar]
 
 tests:
   config:
