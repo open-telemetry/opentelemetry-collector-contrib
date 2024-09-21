@@ -116,7 +116,7 @@ Number of disk operations performed by the process.
 
 Number of handles held by the process.
 
-This metric is only available on Windows.
+This metric is only available on Windows. It requires Windows Management Interface to be enabled.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
