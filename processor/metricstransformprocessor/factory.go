@@ -155,7 +155,7 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 			if len(op.ValueActions) > 0 {
 				mtpOp.valueActionsMapping = createLabelValueMapping(op.ValueActions, version)
 			}
-			if op.Action == aggregateLabels && op.LabelSet != nil {
+			if op.Action == aggregateLabels {
 				mtpOp.labelSetMap = sliceToSet(op.LabelSet)
 			} else if op.Action == aggregateLabelValues {
 				mtpOp.aggregatedValuesSet = sliceToSet(op.AggregatedValues)
