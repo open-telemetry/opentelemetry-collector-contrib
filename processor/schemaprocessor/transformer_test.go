@@ -19,7 +19,7 @@ import (
 )
 
 func newTestTransformer(t *testing.T) *transformer {
-	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), processor.CreateSettings{
+	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), processor.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
 		},

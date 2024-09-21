@@ -105,8 +105,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 		return p.HandleEntryError(ctx, entry, err)
 	}
 	if skip {
-		p.Write(ctx, entry)
-		return nil
+		return p.Write(ctx, entry)
 	}
 
 	if err = p.ParseWith(ctx, entry, parse); err != nil {
@@ -119,8 +118,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 		}
 	}
 
-	p.Write(ctx, entry)
-	return nil
+	return p.Write(ctx, entry)
 }
 
 // ParseWith will process an entry's field with a parser function.

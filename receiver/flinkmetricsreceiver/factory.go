@@ -44,7 +44,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -53,7 +53,7 @@ func createMetricsReceiver(
 		return nil, errConfigNotflinkmetrics
 	}
 	ns := newflinkScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

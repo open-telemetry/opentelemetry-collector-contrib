@@ -15,6 +15,12 @@
 Kafka metrics receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from kafka server,
 converting into otlp.
 
+## Prerequisites
+
+This receiver supports Kafka versions:
+  -  2.X
+  -  3.X
+
 ## Getting Started
 
 Required settings (no defaults):
@@ -29,6 +35,7 @@ Metrics collected by the associated scraper are listed [here](metadata.yaml)
 
 Optional Settings (with defaults):
 
+- `cluster_alias`: Alias name of the cluster. Adds `kafka.cluster.alias` resource attribute.
 - `brokers` (default = localhost:9092): the list of brokers to read from.
 - `resolve_canonical_bootstrap_servers_only` (default = false): whether to resolve then reverse-lookup broker IPs during startup.
 - `topic_match` (default = ^[^_].*$): regex pattern of topics to filter on metrics collection. The default filter excludes internal topics (starting with `_`).
@@ -60,6 +67,7 @@ Optional Settings (with defaults):
         - `password`: The Kerberos password used for authenticate with KDC
         - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
         - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
+        - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 
 ## Examples:
 
@@ -83,6 +91,7 @@ For this example:
 ```yaml
 receivers:
   kafkametrics:
+    cluster_alias: kafka-prod
     brokers: 10.10.10.10:9092
     protocol_version: 2.0.0
     scrapers:

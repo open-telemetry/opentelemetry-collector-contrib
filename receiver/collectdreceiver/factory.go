@@ -41,7 +41,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	cs receiver.CreateSettings,
+	cs receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {

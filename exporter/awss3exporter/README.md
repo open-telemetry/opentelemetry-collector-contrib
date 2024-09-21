@@ -30,7 +30,7 @@ The following exporter configuration parameters are supported.
 | `marshaler`           | marshaler used to produce output data                                                                                                      | `otlp_json` |
 | `encoding`            | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                          |             |
 | `encoding_file_extension` | file format extension suffix when using the `encoding` configuration option. May be left empty for no suffix to be appended.               |             |
-| `endpoint`            | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             |
+| `endpoint`            | (REST API endpoint) overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             |
 | `s3_force_path_style` | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       |
 | `disable_ssl`         | set this to `true` to disable SSL when sending requests                                                                                    | false       |
 | `compression`         | should the file be compressed                                                                                                              | none        |

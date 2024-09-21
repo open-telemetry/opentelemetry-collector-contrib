@@ -61,7 +61,7 @@ func TestCreateTracesExporterE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
+	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestCreateLogsExporterE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
+	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -185,7 +185,7 @@ func TestCreateMetricsExporterE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
+	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

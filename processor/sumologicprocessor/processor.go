@@ -29,7 +29,7 @@ type sumologicProcessor struct {
 	subprocessors []sumologicSubprocessor
 }
 
-func newsumologicProcessor(set processor.CreateSettings, config *Config) *sumologicProcessor {
+func newsumologicProcessor(set processor.Settings, config *Config) *sumologicProcessor {
 	cloudNamespaceProcessor := newCloudNamespaceProcessor(config.AddCloudNamespace)
 
 	translateAttributesProcessor := newTranslateAttributesProcessor(config.TranslateAttributes)

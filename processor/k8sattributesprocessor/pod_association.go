@@ -6,12 +6,12 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"net"
-	"strings"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
@@ -22,7 +22,7 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 		return extractPodIDNoAssociations(ctx, attrs)
 	}
 
-	connectionIP := connectionIP(ctx)
+	connectionIP := clientutil.Address(client.FromContext(ctx))
 	for _, asso := range associations {
 		skip := false
 
@@ -81,7 +81,7 @@ func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.Pod
 		}
 	}
 
-	connectionIP := connectionIP(ctx)
+	connectionIP := clientutil.Address(client.FromContext(ctx))
 	if connectionIP != "" {
 		return kube.PodIdentifier{
 			kube.PodIdentifierAttributeFromConnection(connectionIP),
@@ -96,36 +96,6 @@ func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.Pod
 	}
 
 	return kube.PodIdentifier{}
-}
-
-func connectionIP(ctx context.Context) string {
-	c := client.FromContext(ctx)
-	if c.Addr == nil {
-		return ""
-	}
-	switch addr := c.Addr.(type) {
-	case *net.UDPAddr:
-		return addr.IP.String()
-	case *net.TCPAddr:
-		return addr.IP.String()
-	case *net.IPAddr:
-		return addr.IP.String()
-	}
-
-	// If this is not a known address type, check for known "untyped" formats.
-	// 1.1.1.1:<port>
-
-	lastColonIndex := strings.LastIndex(c.Addr.String(), ":")
-	if lastColonIndex != -1 {
-		ipString := c.Addr.String()[:lastColonIndex]
-		ip := net.ParseIP(ipString)
-		if ip != nil {
-			return ip.String()
-		}
-	}
-
-	return c.Addr.String()
-
 }
 
 func stringAttributeFromMap(attrs pcommon.Map, key string) string {

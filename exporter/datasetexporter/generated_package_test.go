@@ -3,9 +3,11 @@
 package datasetexporter
 
 import (
+	"os"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
 	// skipping goleak test as per metadata.yml configuration
+	os.Exit(m.Run())
 }

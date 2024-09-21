@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.uber.org/zap"
@@ -19,6 +20,7 @@ type chainProvider struct {
 	logger       *zap.Logger
 	providers    map[string]source.Provider
 	priorityList []string
+	timeout      time.Duration
 }
 
 func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
@@ -32,6 +34,16 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// Make a different context for our provider calls, to differentiate between a provider timing out and the entire
+	// context being cancelled
+	var childCtx context.Context
+	if p.timeout != 0 {
+		childCtx, cancel = context.WithTimeout(ctx, p.timeout)
+	} else {
+		childCtx, cancel = context.WithCancel(ctx)
+	}
+	defer cancel()
+
 	// Run all providers in parallel
 	replies := make([]chan reply, len(p.priorityList))
 	for i, source := range p.priorityList {
@@ -39,7 +51,7 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 		replies[i] = make(chan reply)
 		p.logger.Debug("Trying out source provider", zap.String("provider", source))
 		go func(i int) {
-			src, err := provider.Source(ctx)
+			src, err := provider.Source(childCtx)
 			replies[i] <- reply{src: src, err: err}
 		}(i)
 	}
@@ -65,14 +77,14 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 }
 
 // Chain providers into a single provider that returns the first available hostname.
-func Chain(logger *zap.Logger, providers map[string]source.Provider, priorityList []string) (source.Provider, error) {
+func Chain(logger *zap.Logger, providers map[string]source.Provider, priorityList []string, timeout time.Duration) (source.Provider, error) {
 	for _, source := range priorityList {
 		if _, ok := providers[source]; !ok {
 			return nil, fmt.Errorf("%q source is not available in providers", source)
 		}
 	}
 
-	return &chainProvider{logger: logger, providers: providers, priorityList: priorityList}, nil
+	return &chainProvider{logger: logger, providers: providers, priorityList: priorityList, timeout: timeout}, nil
 }
 
 var _ source.Provider = (*configProvider)(nil)

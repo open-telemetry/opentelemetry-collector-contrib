@@ -364,6 +364,23 @@ func TestDetect(t *testing.T) {
 			addFaasID: true,
 		},
 		{
+			desc: "Bare Metal Solution",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:                       "my-project",
+				cloudPlatform:                   gcp.BareMetalSolution,
+				gcpBareMetalSolutionCloudRegion: "us-central1",
+				gcpBareMetalSolutionInstanceID:  "1472385723456792345",
+				gcpBareMetalSolutionProjectID:   "my-project",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "my-project",
+				conventions.AttributeCloudPlatform:  "gcp_bare_metal_solution",
+				conventions.AttributeCloudRegion:    "us-central1",
+				conventions.AttributeHostName:       "1472385723456792345",
+			},
+		},
+		{
 			desc: "Unknown Platform",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:     "my-project",
@@ -413,32 +430,35 @@ func newTestDetector(gcpDetector *fakeGCPDetector, opts ...func(*localMetadata.R
 
 // fakeGCPDetector implements gcpDetector and uses fake values.
 type fakeGCPDetector struct {
-	err                       error
-	projectID                 string
-	cloudPlatform             gcp.Platform
-	gkeAvailabilityZone       string
-	gkeRegion                 string
-	gkeClusterName            string
-	gkeHostID                 string
-	faaSName                  string
-	faaSVersion               string
-	faaSID                    string
-	faaSCloudRegion           string
-	appEngineAvailabilityZone string
-	appEngineRegion           string
-	appEngineServiceName      string
-	appEngineServiceVersion   string
-	appEngineServiceInstance  string
-	gceAvailabilityZone       string
-	gceRegion                 string
-	gceHostType               string
-	gceHostID                 string
-	gceHostName               string
-	gceHostNameErr            error
-	gcpCloudRunJobExecution   string
-	gcpCloudRunJobTaskIndex   string
-	gcpGceInstanceName        string
-	gcpGceInstanceHostname    string
+	err                             error
+	projectID                       string
+	cloudPlatform                   gcp.Platform
+	gkeAvailabilityZone             string
+	gkeRegion                       string
+	gkeClusterName                  string
+	gkeHostID                       string
+	faaSName                        string
+	faaSVersion                     string
+	faaSID                          string
+	faaSCloudRegion                 string
+	appEngineAvailabilityZone       string
+	appEngineRegion                 string
+	appEngineServiceName            string
+	appEngineServiceVersion         string
+	appEngineServiceInstance        string
+	gceAvailabilityZone             string
+	gceRegion                       string
+	gceHostType                     string
+	gceHostID                       string
+	gceHostName                     string
+	gceHostNameErr                  error
+	gcpCloudRunJobExecution         string
+	gcpCloudRunJobTaskIndex         string
+	gcpGceInstanceName              string
+	gcpGceInstanceHostname          string
+	gcpBareMetalSolutionInstanceID  string
+	gcpBareMetalSolutionCloudRegion string
+	gcpBareMetalSolutionProjectID   string
 }
 
 func (f *fakeGCPDetector) ProjectID() (string, error) {
@@ -600,4 +620,25 @@ func (f *fakeGCPDetector) GCEInstanceHostname() (string, error) {
 		return "", f.err
 	}
 	return f.gcpGceInstanceHostname, nil
+}
+
+func (f *fakeGCPDetector) BareMetalSolutionInstanceID() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpBareMetalSolutionInstanceID, nil
+}
+
+func (f *fakeGCPDetector) BareMetalSolutionCloudRegion() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpBareMetalSolutionCloudRegion, nil
+}
+
+func (f *fakeGCPDetector) BareMetalSolutionProjectID() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpBareMetalSolutionProjectID, nil
 }

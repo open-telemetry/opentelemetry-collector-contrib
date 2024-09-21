@@ -63,7 +63,7 @@ func (exporter *traceExporter) onTraceData(_ context.Context, traceData ptrace.T
 }
 
 // Returns a new instance of the trace exporter
-func newTracesExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Traces, error) {
+func newTracesExporter(config *Config, transportChannel transportChannel, set exporter.Settings) (exporter.Traces, error) {
 	exporter := &traceExporter{
 		config:           config,
 		transportChannel: transportChannel,

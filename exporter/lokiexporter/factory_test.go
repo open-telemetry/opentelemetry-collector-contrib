@@ -5,13 +5,12 @@ package lokiexporter
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 const (
@@ -47,8 +46,10 @@ func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 	config := &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
-			CustomRoundTripper: func(_ http.RoundTripper) (http.RoundTripper, error) {
-				return nil, fmt.Errorf("this causes ClientConfig.ToClient() to error")
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
+					MinVersion: "invalid",
+				},
 			},
 		},
 	}

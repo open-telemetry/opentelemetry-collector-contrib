@@ -137,8 +137,8 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 					return nil
 				}
 			}
-			if m.Status == nil || m.Status.Codeowners == nil {
-				return fmt.Errorf("component %q has no status or codeowners section", key)
+			if m.Status.Codeowners == nil {
+				return fmt.Errorf("component %q has no codeowners section", key)
 			}
 			for _, id := range m.Status.Codeowners.Active {
 				allCodeowners[id] = struct{}{}

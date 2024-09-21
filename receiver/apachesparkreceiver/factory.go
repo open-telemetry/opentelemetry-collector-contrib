@@ -43,7 +43,7 @@ func createDefaultConfig() component.Config {
 // createMetricsReceiver creates the metric receiver for Spark
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -53,7 +53,7 @@ func createMetricsReceiver(
 	}
 
 	sparkScraper := newSparkScraper(params.Logger, sparkConfig, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sparkScraper.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type, sparkScraper.scrape,
 		scraperhelper.WithStart(sparkScraper.start))
 	if err != nil {
 		return nil, err

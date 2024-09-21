@@ -99,7 +99,7 @@ func generateLogsOneEmptyTimestamp() plog.Logs {
 
 func testLogsExporter(ld plog.Logs, t *testing.T, cfg *Config) error {
 	var err error
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func newTestTraces() ptrace.Traces {
 }
 
 func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) error {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
@@ -207,13 +207,13 @@ func TestExportErrors(tester *testing.T) {
 }
 
 func TestNullTracesExporterConfig(tester *testing.T) {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := newLogzioTracesExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
 func TestNullExporterConfig(tester *testing.T) {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := newLogzioExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
@@ -282,7 +282,7 @@ func TestPushLogsData(tester *testing.T) {
 		},
 	}
 	defer server.Close()
-	ld := testdata.GenerateLogs(2)
+	ld := generateLogsOneEmptyTimestamp()
 	res := ld.ResourceLogs().At(0).Resource()
 	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
 	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
@@ -294,6 +294,12 @@ func TestPushLogsData(tester *testing.T) {
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &jsonLog))
 	assert.Equal(tester, testHost, jsonLog["host.name"])
 	assert.Equal(tester, testService, jsonLog["service.name"])
+	assert.Equal(tester, "server", jsonLog["app"])
+	assert.Equal(tester, 1.0, jsonLog["instance_num"])
+	assert.Equal(tester, "logScopeName", jsonLog["scopeName"])
+	assert.Equal(tester, "hello there", jsonLog["message"])
+	assert.Equal(tester, "bar", jsonLog["foo"])
+	assert.Equal(tester, 45.0, jsonLog["23"])
 }
 
 func TestMergeMapEntries(tester *testing.T) {

@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/open-telemetry/otel-arrow/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,7 +20,11 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -29,9 +32,10 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	assert.Equal(t, "round_robin", cfg.(*Config).ClientConfig.BalancerName)
+	assert.Equal(t, arrow.DefaultPrioritizer, cfg.(*Config).Arrow.Prioritizer)
 }
 
 func TestUnmarshalConfig(t *testing.T) {
@@ -39,13 +43,13 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 10 * time.Second,
 			},
-			RetrySettings: configretry.BackOffConfig{
+			RetryConfig: configretry.BackOffConfig{
 				Enabled:             true,
 				InitialInterval:     10 * time.Second,
 				RandomizationFactor: 0.7,
@@ -53,7 +57,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueSettings: exporterhelper.QueueSettings{
+			QueueSettings: exporterhelper.QueueConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
@@ -79,20 +83,31 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "experimental",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.MustNewID("nop")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
 			},
-			Arrow: ArrowSettings{
+			BatcherConfig: exporterbatcher.Config{
+				Enabled:      true,
+				FlushTimeout: 200 * time.Millisecond,
+				MinSizeConfig: exporterbatcher.MinSizeConfig{
+					MinSizeItems: 1000,
+				},
+				MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+					MaxSizeItems: 10000,
+				},
+			},
+			Arrow: ArrowConfig{
 				NumStreams:         2,
 				MaxStreamLifetime:  2 * time.Hour,
 				PayloadCompression: configcompression.TypeZstd,
 				Zstd:               zstd.DefaultEncoderConfig(),
+				Prioritizer:        "leastloaded8",
 			},
 		}, cfg)
 }
 
-func TestArrowSettingsValidate(t *testing.T) {
-	settings := func(enabled bool, numStreams int, maxStreamLifetime time.Duration, level zstd.Level) *ArrowSettings {
-		return &ArrowSettings{
+func TestArrowConfigValidate(t *testing.T) {
+	settings := func(enabled bool, numStreams int, maxStreamLifetime time.Duration, level zstd.Level) *ArrowConfig {
+		return &ArrowConfig{
 			Disabled:          !enabled,
 			NumStreams:        numStreams,
 			MaxStreamLifetime: maxStreamLifetime,
@@ -118,16 +133,16 @@ func TestArrowSettingsValidate(t *testing.T) {
 	require.Error(t, settings(true, math.MaxInt, 10*time.Second, zstd.MaxLevel+1).Validate())
 }
 
-func TestDefaultSettingsValid(t *testing.T) {
+func TestDefaultConfigValid(t *testing.T) {
 	cfg := createDefaultConfig()
 	// this must be set by the user and config
 	// validation always checks that a value is set.
 	cfg.(*Config).Arrow.MaxStreamLifetime = 2 * time.Second
-	require.NoError(t, cfg.(*Config).Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
-func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
-	settings := ArrowSettings{
+func TestArrowConfigPayloadCompressionZstd(t *testing.T) {
+	settings := ArrowConfig{
 		PayloadCompression: configcompression.TypeZstd,
 	}
 	var config config.Config
@@ -137,9 +152,9 @@ func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
 	require.True(t, config.Zstd)
 }
 
-func TestArrowSettingsPayloadCompressionNone(t *testing.T) {
+func TestArrowConfigPayloadCompressionNone(t *testing.T) {
 	for _, value := range []string{"", "none"} {
-		settings := ArrowSettings{
+		settings := ArrowConfig{
 			PayloadCompression: configcompression.Type(value),
 		}
 		var config config.Config

@@ -1,5 +1,4 @@
 type: file_storage
-scope_name: otelcol/filestorage
 
 status:
   class: extension

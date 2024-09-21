@@ -8,7 +8,6 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -18,8 +17,6 @@ import (
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() exporter.Factory {
-	_ = view.Register(metricViews()...)
-
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -41,14 +38,14 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
+func createTracesExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	return newTracesExporter(params, cfg)
 }
 
-func createLogsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
+func createLogsExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	return newLogsExporter(params, cfg)
 }
 
-func createMetricsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Metrics, error) {
+func createMetricsExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
 	return newMetricsExporter(params, cfg)
 }

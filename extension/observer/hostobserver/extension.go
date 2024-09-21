@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/shirou/gopsutil/v3/net"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/net"
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
@@ -34,7 +34,7 @@ type endpointsLister struct {
 
 var _ extension.Extension = (*hostObserver)(nil)
 
-func newObserver(params extension.CreateSettings, config *Config) (extension.Extension, error) {
+func newObserver(params extension.Settings, config *Config) (extension.Extension, error) {
 	h := &hostObserver{
 		EndpointsWatcher: observer.NewEndpointsWatcher(
 			endpointsLister{

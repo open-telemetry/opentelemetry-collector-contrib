@@ -52,7 +52,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -81,11 +81,11 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
-	assert.NoError(t, jr.startAgent(), "Start failed")
+	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	l, err := net.Listen("udp", addr)
@@ -103,7 +103,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -119,7 +119,7 @@ func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server
 	beforeServe(server)
 	go func() {
 		err := server.Serve(lis)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}()
 	return server, lis.Addr()
 }
@@ -141,7 +141,7 @@ func TestJaegerHTTP(t *testing.T) {
 	config := &configuration{
 		AgentHTTPEndpoint: endpoint,
 	}
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -169,7 +169,7 @@ func TestJaegerHTTP(t *testing.T) {
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(consumertest.TracesSink)
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -201,7 +201,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	}, 10*time.Second, 5*time.Millisecond)
 
 	gotTraces := sink.AllTraces()
-	require.Equal(t, 1, len(gotTraces))
+	require.Len(t, gotTraces, 1)
 	assert.EqualValues(t, td, gotTraces[0])
 }
 

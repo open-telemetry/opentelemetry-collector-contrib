@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -50,7 +50,7 @@ func createMetricsReceiver(
 	rCfg := baseCfg.(*Config)
 	r := newGoogleCloudSpannerReceiver(settings.Logger, rCfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), r.Scrape, scraperhelper.WithStart(r.Start),
+	scraper, err := scraperhelper.NewScraper(metadata.Type, r.Scrape, scraperhelper.WithStart(r.Start),
 		scraperhelper.WithShutdown(r.Shutdown))
 	if err != nil {
 		return nil, err

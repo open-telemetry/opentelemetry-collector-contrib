@@ -43,6 +43,7 @@ func TestScraper(t *testing.T) {
 
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+	config.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
@@ -60,7 +61,7 @@ func TestScraper(t *testing.T) {
 	config.Metrics.ElasticsearchProcessCPUTime.Enabled = true
 	config.Metrics.ElasticsearchProcessMemoryVirtual.Enabled = true
 
-	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), config)
+	sc := newElasticSearchScraper(receivertest.NewNopSettings(), config)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -100,6 +101,7 @@ func TestScraperNoIOStats(t *testing.T) {
 
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+	config.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
@@ -117,7 +119,7 @@ func TestScraperNoIOStats(t *testing.T) {
 	config.Metrics.ElasticsearchProcessCPUTime.Enabled = true
 	config.Metrics.ElasticsearchProcessMemoryVirtual.Enabled = true
 
-	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), config)
+	sc := newElasticSearchScraper(receivertest.NewNopSettings(), config)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -148,7 +150,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	conf := createDefaultConfig().(*Config)
 	conf.SkipClusterMetrics = true
 
-	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), conf)
+	sc := newElasticSearchScraper(receivertest.NewNopSettings(), conf)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -179,7 +181,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	conf := createDefaultConfig().(*Config)
 	conf.Nodes = []string{}
 
-	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), conf)
+	sc := newElasticSearchScraper(receivertest.NewNopSettings(), conf)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -221,7 +223,7 @@ func TestScraperFailedStart(t *testing.T) {
 	conf.Username = "dev"
 	conf.Password = "dev"
 
-	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), conf)
+	sc := newElasticSearchScraper(receivertest.NewNopSettings(), conf)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -247,7 +249,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
-				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -274,7 +276,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
-				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -302,7 +304,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(nil, err404)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 
-				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -312,7 +314,7 @@ func TestScrapingError(t *testing.T) {
 				require.Contains(t, err.Error(), err404.Error())
 				require.Contains(t, err.Error(), err500.Error())
 
-				require.Equal(t, m.DataPointCount(), 0)
+				require.Equal(t, 0, m.DataPointCount())
 			},
 		},
 		{
@@ -330,7 +332,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
-				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -357,7 +359,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 
-				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -367,7 +369,7 @@ func TestScrapingError(t *testing.T) {
 				require.Contains(t, err.Error(), err404.Error())
 				require.Contains(t, err.Error(), err500.Error())
 
-				require.Equal(t, m.DataPointCount(), 0)
+				require.Equal(t, 0, m.DataPointCount())
 			},
 		},
 		{
@@ -386,7 +388,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
-				sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(receivertest.NewNopSettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 

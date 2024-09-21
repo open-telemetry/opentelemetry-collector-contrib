@@ -28,27 +28,33 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for sqlserver metrics.
 type MetricsConfig struct {
-	SqlserverBatchRequestRate            MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
-	SqlserverBatchSQLCompilationRate     MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
-	SqlserverBatchSQLRecompilationRate   MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
-	SqlserverDatabaseIoReadLatency       MetricConfig `mapstructure:"sqlserver.database.io.read_latency"`
-	SqlserverLockWaitRate                MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
-	SqlserverLockWaitTimeAvg             MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
-	SqlserverPageBufferCacheHitRatio     MetricConfig `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
-	SqlserverPageCheckpointFlushRate     MetricConfig `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
-	SqlserverPageLazyWriteRate           MetricConfig `mapstructure:"sqlserver.page.lazy_write.rate"`
-	SqlserverPageLifeExpectancy          MetricConfig `mapstructure:"sqlserver.page.life_expectancy"`
-	SqlserverPageOperationRate           MetricConfig `mapstructure:"sqlserver.page.operation.rate"`
-	SqlserverPageSplitRate               MetricConfig `mapstructure:"sqlserver.page.split.rate"`
-	SqlserverTransactionRate             MetricConfig `mapstructure:"sqlserver.transaction.rate"`
-	SqlserverTransactionWriteRate        MetricConfig `mapstructure:"sqlserver.transaction.write.rate"`
-	SqlserverTransactionLogFlushDataRate MetricConfig `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
-	SqlserverTransactionLogFlushRate     MetricConfig `mapstructure:"sqlserver.transaction_log.flush.rate"`
-	SqlserverTransactionLogFlushWaitRate MetricConfig `mapstructure:"sqlserver.transaction_log.flush.wait.rate"`
-	SqlserverTransactionLogGrowthCount   MetricConfig `mapstructure:"sqlserver.transaction_log.growth.count"`
-	SqlserverTransactionLogShrinkCount   MetricConfig `mapstructure:"sqlserver.transaction_log.shrink.count"`
-	SqlserverTransactionLogUsage         MetricConfig `mapstructure:"sqlserver.transaction_log.usage"`
-	SqlserverUserConnectionCount         MetricConfig `mapstructure:"sqlserver.user.connection.count"`
+	SqlserverBatchRequestRate                   MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
+	SqlserverBatchSQLCompilationRate            MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
+	SqlserverBatchSQLRecompilationRate          MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverDatabaseCount                      MetricConfig `mapstructure:"sqlserver.database.count"`
+	SqlserverDatabaseIo                         MetricConfig `mapstructure:"sqlserver.database.io"`
+	SqlserverDatabaseLatency                    MetricConfig `mapstructure:"sqlserver.database.latency"`
+	SqlserverDatabaseOperations                 MetricConfig `mapstructure:"sqlserver.database.operations"`
+	SqlserverLockWaitRate                       MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
+	SqlserverLockWaitTimeAvg                    MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
+	SqlserverPageBufferCacheHitRatio            MetricConfig `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
+	SqlserverPageCheckpointFlushRate            MetricConfig `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
+	SqlserverPageLazyWriteRate                  MetricConfig `mapstructure:"sqlserver.page.lazy_write.rate"`
+	SqlserverPageLifeExpectancy                 MetricConfig `mapstructure:"sqlserver.page.life_expectancy"`
+	SqlserverPageOperationRate                  MetricConfig `mapstructure:"sqlserver.page.operation.rate"`
+	SqlserverPageSplitRate                      MetricConfig `mapstructure:"sqlserver.page.split.rate"`
+	SqlserverProcessesBlocked                   MetricConfig `mapstructure:"sqlserver.processes.blocked"`
+	SqlserverResourcePoolDiskThrottledReadRate  MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
+	SqlserverResourcePoolDiskThrottledWriteRate MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
+	SqlserverTransactionRate                    MetricConfig `mapstructure:"sqlserver.transaction.rate"`
+	SqlserverTransactionWriteRate               MetricConfig `mapstructure:"sqlserver.transaction.write.rate"`
+	SqlserverTransactionLogFlushDataRate        MetricConfig `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
+	SqlserverTransactionLogFlushRate            MetricConfig `mapstructure:"sqlserver.transaction_log.flush.rate"`
+	SqlserverTransactionLogFlushWaitRate        MetricConfig `mapstructure:"sqlserver.transaction_log.flush.wait.rate"`
+	SqlserverTransactionLogGrowthCount          MetricConfig `mapstructure:"sqlserver.transaction_log.growth.count"`
+	SqlserverTransactionLogShrinkCount          MetricConfig `mapstructure:"sqlserver.transaction_log.shrink.count"`
+	SqlserverTransactionLogUsage                MetricConfig `mapstructure:"sqlserver.transaction_log.usage"`
+	SqlserverUserConnectionCount                MetricConfig `mapstructure:"sqlserver.user.connection.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -62,7 +68,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverBatchSQLRecompilationRate: MetricConfig{
 			Enabled: true,
 		},
-		SqlserverDatabaseIoReadLatency: MetricConfig{
+		SqlserverDatabaseCount: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverDatabaseIo: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverDatabaseLatency: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverDatabaseOperations: MetricConfig{
 			Enabled: false,
 		},
 		SqlserverLockWaitRate: MetricConfig{
@@ -88,6 +103,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverPageSplitRate: MetricConfig{
 			Enabled: true,
+		},
+		SqlserverProcessesBlocked: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverResourcePoolDiskThrottledReadRate: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverResourcePoolDiskThrottledWriteRate: MetricConfig{
+			Enabled: false,
 		},
 		SqlserverTransactionRate: MetricConfig{
 			Enabled: true,

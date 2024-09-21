@@ -31,13 +31,13 @@ func newDefaultConfig() component.Config {
 
 func newReceiver(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	haProxyCfg := cfg.(*Config)
 	mp := newScraper(haProxyCfg, settings)
-	s, err := scraperhelper.NewScraper(metadata.Type.String(), mp.scrape, scraperhelper.WithStart(mp.start))
+	s, err := scraperhelper.NewScraper(metadata.Type, mp.scrape, scraperhelper.WithStart(mp.start))
 	if err != nil {
 		return nil, err
 	}

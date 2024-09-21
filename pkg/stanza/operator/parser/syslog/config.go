@@ -55,6 +55,7 @@ type BaseConfig struct {
 	EnableOctetCounting          bool    `mapstructure:"enable_octet_counting,omitempty"`
 	AllowSkipPriHeader           bool    `mapstructure:"allow_skip_pri_header,omitempty"`
 	NonTransparentFramingTrailer *string `mapstructure:"non_transparent_framing_trailer,omitempty"`
+	MaxOctets                    int     `mapstructure:"max_octets,omitempty"`
 }
 
 // Build will build a JSON parser operator.
@@ -105,5 +106,6 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		enableOctetCounting:          c.EnableOctetCounting,
 		allowSkipPriHeader:           c.AllowSkipPriHeader,
 		nonTransparentFramingTrailer: c.NonTransparentFramingTrailer,
+		maxOctets:                    c.MaxOctets,
 	}, nil
 }

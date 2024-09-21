@@ -71,7 +71,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 	}
 	for _, test := range convertLogRecordToJSONTests {
 		output := convertLogRecordToJSON(test.log, test.log.Attributes())
-		require.Equal(t, output, test.expected)
+		require.Equal(t, test.expected, output)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestSetTimeStamp(t *testing.T) {
 		},
 	}
 	var err error
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())

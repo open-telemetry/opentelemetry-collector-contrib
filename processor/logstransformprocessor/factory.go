@@ -35,7 +35,7 @@ func createDefaultConfig() component.Config {
 
 func createLogsProcessor(
 	_ context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs) (processor.Logs, error) {
 	pCfg, ok := cfg.(*Config)

@@ -20,9 +20,9 @@ const (
 
 // Config defines by Coralogix.
 type Config struct {
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 
 	// Coralogix domain
 	Domain string `mapstructure:"domain"`
@@ -113,6 +113,18 @@ func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsyst
 		subsystem = c.SubSystem
 	}
 
+	if appName == "" {
+		attr, ok := res.Attributes().Get(cxAppNameAttrName)
+		if ok && attr.AsString() != "" {
+			appName = attr.AsString()
+		}
+	}
+	if subsystem == "" {
+		attr, ok := res.Attributes().Get(cxSubsystemNameAttrName)
+		if ok && attr.AsString() != "" {
+			subsystem = attr.AsString()
+		}
+	}
 	return appName, subsystem
 }
 

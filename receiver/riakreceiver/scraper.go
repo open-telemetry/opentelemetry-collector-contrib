@@ -31,7 +31,7 @@ type riakScraper struct {
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *riakScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *riakScraper {
 	return &riakScraper{
 		logger:   logger,
 		cfg:      cfg,

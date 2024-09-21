@@ -24,7 +24,7 @@ func TestReqToLog(t *testing.T) {
 		desc  string
 		sc    *bufio.Scanner
 		query url.Values
-		tt    func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.CreateSettings)
+		tt    func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.Settings)
 	}{
 		{
 			desc: "Valid query valid event",
@@ -39,7 +39,7 @@ func TestReqToLog(t *testing.T) {
 				}
 				return v
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.CreateSettings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -66,7 +66,7 @@ func TestReqToLog(t *testing.T) {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.CreateSettings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -80,8 +80,8 @@ func TestReqToLog(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			reqLog, reqLen := reqToLog(test.sc, test.query, defaultConfig, receivertest.NewNopCreateSettings())
-			test.tt(t, reqLog, reqLen, receivertest.NewNopCreateSettings())
+			reqLog, reqLen := reqToLog(test.sc, test.query, defaultConfig, receivertest.NewNopSettings())
+			test.tt(t, reqLog, reqLen, receivertest.NewNopSettings())
 		})
 	}
 }

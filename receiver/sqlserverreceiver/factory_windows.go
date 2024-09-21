@@ -19,7 +19,7 @@ import (
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	receiverCfg component.Config,
 	metricsConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -29,7 +29,7 @@ func createMetricsReceiver(
 	}
 	sqlServerScraper := newSQLServerPCScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sqlServerScraper.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type, sqlServerScraper.scrape,
 		scraperhelper.WithStart(sqlServerScraper.start),
 		scraperhelper.WithShutdown(sqlServerScraper.shutdown))
 	if err != nil {

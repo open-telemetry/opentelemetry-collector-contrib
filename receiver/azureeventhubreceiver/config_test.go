@@ -21,12 +21,14 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	assert.Len(t, cfg.Receivers, 2)
 
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r0.(*Config).Connection)

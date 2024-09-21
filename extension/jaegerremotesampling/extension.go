@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
-	"github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
+	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
+	"github.com/jaegertracing/jaeger/plugin/sampling/strategyprovider/static"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
@@ -24,7 +24,7 @@ type jrsExtension struct {
 
 	httpServer    component.Component
 	grpcServer    component.Component
-	samplingStore strategystore.StrategyStore
+	samplingStore samplingstrategy.Provider
 
 	closers []func() error
 }
@@ -48,7 +48,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 			StrategiesFile: jrse.cfg.Source.File,
 			ReloadInterval: jrse.cfg.Source.ReloadInterval,
 		}
-		ss, err := static.NewStrategyStore(opts, jrse.telemetry.Logger)
+		ss, err := static.NewProvider(opts, jrse.telemetry.Logger)
 		if err != nil {
 			return fmt.Errorf("failed to create the local file strategy store: %w", err)
 		}

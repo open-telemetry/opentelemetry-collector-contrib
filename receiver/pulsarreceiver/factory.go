@@ -81,7 +81,7 @@ type pulsarReceiverFactory struct {
 
 func (f *pulsarReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
@@ -98,7 +98,7 @@ func (f *pulsarReceiverFactory) createTracesReceiver(
 
 func (f *pulsarReceiverFactory) createMetricsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -115,7 +115,7 @@ func (f *pulsarReceiverFactory) createMetricsReceiver(
 
 func (f *pulsarReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {

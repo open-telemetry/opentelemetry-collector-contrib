@@ -1,5 +1,4 @@
 type: azuredataexplorer
-scope_name: otelcol/azuredataexplorer
 
 status:
   class: exporter

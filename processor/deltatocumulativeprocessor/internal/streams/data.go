@@ -9,38 +9,47 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/putil/pslice"
 )
 
-// Samples returns an Iterator over each sample of all streams in the metric
-func Samples[D data.Point[D]](m metrics.Data[D]) Seq[D] {
-	mid := m.Ident()
-
-	return func(yield func(Ident, D) bool) bool {
-		for i := 0; i < m.Len(); i++ {
-			dp := m.At(i)
+func Datapoints[P data.Point[P], List metrics.Data[P]](dps List) func(func(identity.Stream, P) bool) {
+	return func(yield func(identity.Stream, P) bool) {
+		mid := dps.Ident()
+		pslice.All(dps)(func(dp P) bool {
 			id := identity.OfStream(mid, dp)
-			if !yield(id, dp) {
-				break
-			}
-		}
-		return false
+			return yield(id, dp)
+		})
 	}
 }
 
-// Aggregate each point and replace it by the result
-func Aggregate[D data.Point[D]](m metrics.Data[D], aggr Aggregator[D]) error {
+type filterable[D data.Point[D]] interface {
+	metrics.Data[D]
+	Filter(func(D) bool)
+}
+
+// Apply does dps[i] = fn(dps[i]) for each item in dps.
+// If fn returns [streams.Drop], the datapoint is removed from dps instead.
+// If fn returns another error, the datapoint is also removed and the error returned eventually
+func Apply[P data.Point[P], List filterable[P]](dps List, fn func(Ident, P) (P, error)) error {
 	var errs error
 
-	// for id, dp := range Samples(m)
-	Samples(m)(func(id Ident, dp D) bool {
-		next, err := aggr.Aggregate(id, dp)
+	mid := dps.Ident()
+	dps.Filter(func(dp P) bool {
+		id := identity.OfStream(mid, dp)
+		next, err := fn(id, dp)
 		if err != nil {
-			errs = errors.Join(errs, Error(id, err))
-			return true
+			if !errors.Is(err, Drop) {
+				errs = errors.Join(errs, err)
+			}
+			return false
 		}
+
 		next.CopyTo(dp)
 		return true
 	})
 
 	return errs
 }
+
+// Drop signals the current item (stream or datapoint) is to be dropped
+var Drop = errors.New("stream dropped") //nolint:revive // Drop is a good name for a signal, see fs.SkipAll

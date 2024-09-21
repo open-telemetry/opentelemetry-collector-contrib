@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/net"
+	"github.com/shirou/gopsutil/v4/common"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/net"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -28,7 +28,7 @@ const (
 
 // scraper for Network Metrics
 type scraper struct {
-	settings  receiver.CreateSettings
+	settings  receiver.Settings
 	config    *Config
 	mb        *metadata.MetricsBuilder
 	startTime pcommon.Timestamp
@@ -43,7 +43,7 @@ type scraper struct {
 }
 
 // newNetworkScraper creates a set of Network related metrics
-func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
+func newNetworkScraper(_ context.Context, settings receiver.Settings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{
 		settings:    settings,
 		config:      cfg,

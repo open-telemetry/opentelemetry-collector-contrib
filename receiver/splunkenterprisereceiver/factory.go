@@ -54,14 +54,14 @@ func NewFactory() receiver.Factory {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := baseCfg.(*Config)
 	splunkScraper := newSplunkMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(),
+	scraper, err := scraperhelper.NewScraper(metadata.Type,
 		splunkScraper.scrape,
 		scraperhelper.WithStart(splunkScraper.start))
 	if err != nil {

@@ -1,10 +1,10 @@
 type: hostmetrics
-scope_name: otelcol/hostmetricsreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
+    development: [logs]
   distributions: [core, contrib]
   codeowners:
     active: [dmitryax, braydonk]

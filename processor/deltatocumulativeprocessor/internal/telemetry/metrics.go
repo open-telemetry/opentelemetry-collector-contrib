@@ -8,7 +8,6 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -21,17 +20,27 @@ type Telemetry struct {
 	Metrics
 }
 
-func New(meter metric.Meter) Telemetry {
-	return Telemetry{
-		Metrics: metrics(meter),
-	}
+func New(telb *metadata.TelemetryBuilder) Telemetry {
+	return Telemetry{Metrics: Metrics{
+		streams: Streams{
+			tracked: telb.DeltatocumulativeStreamsTracked,
+			limit:   telb.DeltatocumulativeStreamsLimit,
+			evicted: telb.DeltatocumulativeStreamsEvicted,
+			stale:   telb.DeltatocumulativeStreamsMaxStale,
+		},
+		dps: Datapoints{
+			total:   telb.DeltatocumulativeDatapointsProcessed,
+			dropped: telb.DeltatocumulativeDatapointsDropped,
+		},
+		gaps: telb.DeltatocumulativeGapsLength,
+	}}
 }
 
 type Streams struct {
 	tracked metric.Int64UpDownCounter
-	limit   metric.Int64ObservableGauge
+	limit   metric.Int64Gauge
 	evicted metric.Int64Counter
-	stale   metric.Int64ObservableGauge
+	stale   metric.Int64Gauge
 }
 
 type Datapoints struct {
@@ -46,69 +55,12 @@ type Metrics struct {
 	gaps metric.Int64Counter
 }
 
-func metrics(meter metric.Meter) Metrics {
-	var (
-		count  = use(meter.Int64Counter)
-		updown = use(meter.Int64UpDownCounter)
-		gauge  = use(meter.Int64ObservableGauge)
-	)
-
-	return Metrics{
-		streams: Streams{
-			tracked: updown("streams.tracked",
-				metric.WithDescription("number of streams tracked"),
-				metric.WithUnit("{stream}"),
-			),
-			limit: gauge("streams.limit",
-				metric.WithDescription("upper limit of tracked streams"),
-				metric.WithUnit("{stream}"),
-			),
-			evicted: count("streams.evicted",
-				metric.WithDescription("number of streams evicted"),
-				metric.WithUnit("{stream}"),
-			),
-			stale: gauge("streams.max_stale",
-				metric.WithDescription("duration without new samples after which streams are dropped"),
-				metric.WithUnit("s"),
-			),
-		},
-		dps: Datapoints{
-			total: count("datapoints.processed",
-				metric.WithDescription("number of datapoints processed"),
-				metric.WithUnit("{datapoint}"),
-			),
-			dropped: count("datapoints.dropped",
-				metric.WithDescription("number of dropped datapoints due to given 'reason'"),
-				metric.WithUnit("{datapoint}"),
-			),
-		},
-		gaps: count("gaps.length",
-			metric.WithDescription("total duration where data was expected but not received"),
-			metric.WithUnit("s"),
-		),
-	}
+func (tel Telemetry) WithLimit(max int64) {
+	tel.streams.limit.Record(context.Background(), max)
 }
 
-func (m Metrics) WithLimit(meter metric.Meter, max int64) {
-	then := metric.Callback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(m.streams.limit, max)
-		return nil
-	})
-	_, err := meter.RegisterCallback(then, m.streams.limit)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (m Metrics) WithStale(meter metric.Meter, max time.Duration) {
-	then := metric.Callback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(m.streams.stale, int64(max.Seconds()))
-		return nil
-	})
-	_, err := meter.RegisterCallback(then, m.streams.stale)
-	if err != nil {
-		panic(err)
-	}
+func (tel Telemetry) WithStale(max time.Duration) {
+	tel.streams.stale.Record(context.Background(), int64(max.Seconds()))
 }
 
 func ObserveItems[T any](items streams.Map[T], metrics *Metrics) Items[T] {
@@ -167,10 +119,14 @@ func (f Faults[T]) Store(id streams.Ident, v T) error {
 		return err
 	case errors.As(err, &olderStart):
 		inc(f.dps.dropped, reason("older-start"))
+		return streams.Drop
 	case errors.As(err, &outOfOrder):
 		inc(f.dps.dropped, reason("out-of-order"))
+		return streams.Drop
 	case errors.As(err, &limit):
 		inc(f.dps.dropped, reason("stream-limit"))
+		// no space to store stream, drop it instead of failing silently
+		return streams.Drop
 	case errors.As(err, &evict):
 		inc(f.streams.evicted)
 	case errors.As(err, &gap):
@@ -202,15 +158,4 @@ func dec[A addable[O], O any](a A, opts ...O) {
 
 func reason(reason string) metric.AddOption {
 	return metric.WithAttributes(attribute.String("reason", reason))
-}
-
-func use[F func(string, ...O) (M, error), M any, O any](f F) func(string, ...O) M {
-	return func(name string, opts ...O) M {
-		name = processorhelper.BuildCustomMetricName(metadata.Type.String(), name)
-		m, err := f(name, opts...)
-		if err != nil {
-			panic(err)
-		}
-		return m
-	}
 }

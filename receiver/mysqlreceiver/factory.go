@@ -45,14 +45,14 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 
 	ns := newMySQLScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start),
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start),
 		scraperhelper.WithShutdown(ns.shutdown))
 
 	if err != nil {

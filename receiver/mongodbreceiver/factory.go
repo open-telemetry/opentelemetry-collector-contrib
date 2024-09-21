@@ -5,6 +5,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,6 +17,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
+
+const defaultMongoDBPort = 27017
+
+var defaultEndpoint = "localhost:" + strconv.Itoa(defaultMongoDBPort)
 
 // NewFactory creates a factory for mongodb receiver.
 func NewFactory() receiver.Factory {
@@ -29,10 +34,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		Timeout:          time.Minute,
-		Hosts: []confignet.AddrConfig{
+		Hosts: []confignet.TCPAddrConfig{
 			{
-				Endpoint:  "localhost:27017",
-				Transport: confignet.TransportTypeTCP,
+				Endpoint: defaultEndpoint,
 			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -42,14 +46,14 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 	ms := newMongodbScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ms.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape,
 		scraperhelper.WithStart(ms.start),
 		scraperhelper.WithShutdown(ms.shutdown))
 	if err != nil {

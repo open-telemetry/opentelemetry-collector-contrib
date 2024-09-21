@@ -48,7 +48,7 @@ func (je *SapmDataSender) Start() error {
 	if je.compression == "" {
 		cfg.DisableCompression = true
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -48,7 +49,7 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 // CreateMetricsScraper creates a resource scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg internal.Config,
 ) (scraperhelper.Scraper, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
@@ -61,7 +62,7 @@ func (f *Factory) CreateMetricsScraper(
 	}
 
 	return scraperhelper.NewScraper(
-		TypeStr,
+		hostmeta.Type,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

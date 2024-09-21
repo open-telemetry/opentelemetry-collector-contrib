@@ -27,7 +27,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	traceReceiver, err := factory.CreateTracesReceiver(context.Background(), params, config, consumertest.NewNop())
 	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, traceReceiver)

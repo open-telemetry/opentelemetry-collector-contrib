@@ -6,13 +6,14 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
-	"github.com/shirou/gopsutil/v3/disk"
-	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v4/common"
+	"github.com/shirou/gopsutil/v4/disk"
+	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -30,7 +31,7 @@ const (
 
 // scraper for FileSystem Metrics
 type scraper struct {
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	fsFilter fsFilter
@@ -47,7 +48,7 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
+func newFileSystemScraper(_ context.Context, settings receiver.Settings, cfg *Config) (*scraper, error) {
 	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err
@@ -162,5 +163,8 @@ func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 
 // translateMountsRootPath translates a mountpoint from the host perspective to the chrooted perspective.
 func translateMountpoint(rootPath, mountpoint string) string {
+	if mountInfo := os.Getenv("HOST_PROC_MOUNTINFO"); mountInfo != "" {
+		return mountpoint
+	}
 	return filepath.Join(rootPath, mountpoint)
 }

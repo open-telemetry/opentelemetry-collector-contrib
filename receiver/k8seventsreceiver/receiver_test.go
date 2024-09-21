@@ -28,7 +28,7 @@ func TestNewReceiver(t *testing.T) {
 		return fake.NewSimpleClientset(), nil
 	}
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -40,7 +40,7 @@ func TestNewReceiver(t *testing.T) {
 
 	rCfg.Namespaces = []string{"test", "another_test"}
 	r1, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -55,7 +55,7 @@ func TestHandleEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		sink,
 	)
@@ -66,14 +66,14 @@ func TestHandleEvent(t *testing.T) {
 	k8sEvent := getEvent()
 	recv.handleEvent(k8sEvent)
 
-	assert.Equal(t, sink.LogRecordCount(), 1)
+	assert.Equal(t, 1, sink.LogRecordCount())
 }
 
 func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		sink,
 	)
@@ -85,7 +85,7 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
 	recv.handleEvent(k8sEvent)
 
-	assert.Equal(t, sink.LogRecordCount(), 0)
+	assert.Equal(t, 0, sink.LogRecordCount())
 }
 
 func TestGetEventTimestamp(t *testing.T) {
@@ -108,7 +108,7 @@ func TestGetEventTimestamp(t *testing.T) {
 func TestAllowEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -118,15 +118,15 @@ func TestAllowEvent(t *testing.T) {
 	k8sEvent := getEvent()
 
 	shouldAllowEvent := recv.allowEvent(k8sEvent)
-	assert.Equal(t, shouldAllowEvent, true)
+	assert.True(t, shouldAllowEvent)
 
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
 	shouldAllowEvent = recv.allowEvent(k8sEvent)
-	assert.Equal(t, shouldAllowEvent, false)
+	assert.False(t, shouldAllowEvent)
 
 	k8sEvent.FirstTimestamp = v1.Time{}
 	shouldAllowEvent = recv.allowEvent(k8sEvent)
-	assert.Equal(t, shouldAllowEvent, false)
+	assert.False(t, shouldAllowEvent)
 }
 
 func getEvent() *corev1.Event {

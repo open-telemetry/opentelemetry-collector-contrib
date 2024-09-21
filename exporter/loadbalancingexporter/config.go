@@ -17,6 +17,15 @@ const (
 	svcRouting
 	metricNameRouting
 	resourceRouting
+	streamIDRouting
+)
+
+const (
+	svcRoutingStr        = "service"
+	traceIDRoutingStr    = "traceID"
+	metricNameRoutingStr = "metric"
+	resourceRoutingStr   = "resource"
+	streamIDRoutingStr   = "streamID"
 )
 
 // Config defines configuration for the exporter.

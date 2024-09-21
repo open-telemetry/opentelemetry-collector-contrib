@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("instana")
+	Type      = component.MustNewType("instana")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 )
 
 const (

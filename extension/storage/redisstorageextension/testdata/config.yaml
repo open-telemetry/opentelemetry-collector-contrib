@@ -1,0 +1,7 @@
+redis_storage:
+  endpoint: localhost:1234
+redis_storage/all_settings:
+  endpoint: localhost:1234
+  password: passwd
+  db: 1
+  expiration: 3h

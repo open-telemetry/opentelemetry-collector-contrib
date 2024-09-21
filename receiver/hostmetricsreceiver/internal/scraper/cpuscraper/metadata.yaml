@@ -1,5 +1,4 @@
 type: hostmetricsreceiver/cpu
-scope_name: otelcol/hostmetricsreceiver/cpu
 
 parent: hostmetrics
 
@@ -29,7 +28,7 @@ metrics:
   system.cpu.utilization:
     enabled: false
     description: Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [cpu, state]

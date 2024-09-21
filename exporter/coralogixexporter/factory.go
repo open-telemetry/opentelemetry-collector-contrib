@@ -32,9 +32,9 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		DomainSettings: configgrpc.ClientConfig{
 			Compression: configcompression.TypeGzip,
 		},
@@ -61,7 +61,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTraceExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
+func createTraceExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
 	exporter, err := newTracesExporter(cfg, set)
@@ -85,7 +85,7 @@ func createTraceExporter(ctx context.Context, set exporter.CreateSettings, confi
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	oce, err := newMetricsExporter(cfg, set)
@@ -109,7 +109,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	oce, err := newLogsExporter(cfg, set)

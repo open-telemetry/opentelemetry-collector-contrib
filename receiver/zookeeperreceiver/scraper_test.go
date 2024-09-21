@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -290,7 +291,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(core)
 			z, err := newZookeeperMetricsScraper(settings, cfg)
 			require.NoError(t, err)
@@ -339,7 +340,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	z, err := newZookeeperMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	z, err := newZookeeperMetricsScraper(receivertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	require.NoError(t, z.shutdown(context.Background()))
 }
@@ -362,7 +363,7 @@ func (ms *mockedServer) mockZKServer(t *testing.T, cmdToFileMap map[string]strin
 			case <-ms.quit:
 				return
 			default:
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		}
 		reader := bufio.NewReader(conn)
@@ -372,13 +373,13 @@ func (ms *mockedServer) mockZKServer(t *testing.T, cmdToFileMap map[string]strin
 			continue
 		}
 
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		filename := cmdToFileMap[cmd]
 		out, err := os.ReadFile(filepath.Join("testdata", filename))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		_, err = conn.Write(out)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		conn.Close()
 	}

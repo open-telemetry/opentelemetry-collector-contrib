@@ -9,14 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 func TestLogEmitter(t *testing.T) {
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
+	emitter := NewLogEmitter(componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, emitter.Start(nil))
 
@@ -27,7 +28,7 @@ func TestLogEmitter(t *testing.T) {
 	in := entry.New()
 
 	go func() {
-		require.NoError(t, emitter.Process(context.Background(), in))
+		assert.NoError(t, emitter.Process(context.Background(), in))
 	}()
 
 	select {
@@ -43,7 +44,7 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 		maxBatchSize = 100
 		timeout      = time.Second
 	)
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
+	emitter := NewLogEmitter(componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, emitter.Start(nil))
 	defer func() {
@@ -55,7 +56,7 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 	go func() {
 		ctx := context.Background()
 		for _, e := range entries {
-			require.NoError(t, emitter.Process(ctx, e))
+			assert.NoError(t, emitter.Process(ctx, e))
 		}
 	}()
 
@@ -63,7 +64,7 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 
 	select {
 	case recv := <-emitter.logChan:
-		require.Equal(t, maxBatchSize, len(recv), "Length of received entries was not the same as max batch size!")
+		require.Len(t, recv, maxBatchSize, "Length of received entries was not the same as max batch size!")
 	case <-timeoutChan:
 		require.FailNow(t, "Failed to receive log entries before timeout")
 	}
@@ -74,7 +75,7 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 		flushInterval = 100 * time.Millisecond
 		timeout       = time.Second
 	)
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
+	emitter := NewLogEmitter(componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, emitter.Start(nil))
 	defer func() {
@@ -85,14 +86,14 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 
 	go func() {
 		ctx := context.Background()
-		require.NoError(t, emitter.Process(ctx, entry))
+		assert.NoError(t, emitter.Process(ctx, entry))
 	}()
 
 	timeoutChan := time.After(timeout)
 
 	select {
 	case recv := <-emitter.logChan:
-		require.Equal(t, 1, len(recv), "Should have received one entry, got %d instead", len(recv))
+		require.Len(t, recv, 1, "Should have received one entry, got %d instead", len(recv))
 	case <-timeoutChan:
 		require.FailNow(t, "Failed to receive log entry before timeout")
 	}

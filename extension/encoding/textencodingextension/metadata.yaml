@@ -1,5 +1,4 @@
 type: text_encoding
-scope_name: otelcol/textencoding
 
 status:
   class: extension

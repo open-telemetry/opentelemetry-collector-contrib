@@ -57,7 +57,7 @@ func TestAlertsReceiver(t *testing.T) {
 
 			recv, err := fact.CreateLogsReceiver(
 				context.Background(),
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -93,7 +93,7 @@ func TestAlertsReceiver(t *testing.T) {
 
 			defer resp.Body.Close()
 
-			require.Equal(t, resp.StatusCode, http.StatusOK)
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
 			require.Eventually(t, func() bool {
 				return sink.LogRecordCount() > 0
@@ -122,7 +122,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			recv, err := fact.CreateLogsReceiver(
 				context.Background(),
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -167,7 +167,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			defer resp.Body.Close()
 
-			require.Equal(t, resp.StatusCode, http.StatusOK)
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
 			require.Eventually(t, func() bool {
 				return sink.LogRecordCount() > 0
@@ -210,7 +210,7 @@ func TestAtlasPoll(t *testing.T) {
 
 	recv, err := fact.CreateLogsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		&Config{
 			Alerts: AlertConfig{
 				Enabled: true,

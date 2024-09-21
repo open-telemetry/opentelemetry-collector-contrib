@@ -83,7 +83,7 @@ resourceLogs:
             timeUnixNano: "1677821345000000000"
             traceId: ""
         scope:
-          name: otelcol/cloudflare
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver
   - resource:
       attributes:
         - key: cloudflare.zone
@@ -178,7 +178,7 @@ resourceLogs:
             timeUnixNano: "1677821345000000000"
             traceId: ""
         scope:
-          name: otelcol/cloudflare
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver
   - resource:
       attributes:
         - key: cloudflare.zone
@@ -230,4 +230,4 @@ resourceLogs:
             timeUnixNano: "1677821345000000000"
             traceId: ""
         scope:
-          name: otelcol/cloudflare
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver

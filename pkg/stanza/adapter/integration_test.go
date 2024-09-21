@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -24,9 +25,9 @@ import (
 )
 
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
-	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
-
 	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.NewNop()
+	emitter := helper.NewLogEmitter(set)
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
 			{
@@ -41,19 +42,19 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	receiverID := component.MustNewID("test")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             receiverID,
-		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &receiver{
+		set:       set,
 		id:        component.MustNewID("testReceiver"),
 		pipe:      pipe,
 		emitter:   emitter,
 		consumer:  nextConsumer,
-		logger:    zap.NewNop(),
-		converter: NewConverter(zap.NewNop()),
+		converter: NewConverter(componenttest.NewNopTelemetrySettings()),
 		obsrecv:   obsrecv,
 	}, nil
 }
@@ -151,12 +152,15 @@ func TestEmitterToConsumer(t *testing.T) {
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer func() { require.NoError(t, logsReceiver.Shutdown(context.Background())) }()
+	defer func() {
+		require.NoError(t, logsReceiver.emitter.Stop())
+		require.NoError(t, logsReceiver.Shutdown(context.Background()))
+	}()
 
 	go func() {
 		ctx := context.Background()
 		for _, e := range entries {
-			require.NoError(t, logsReceiver.emitter.Process(ctx, e))
+			assert.NoError(t, logsReceiver.emitter.Process(ctx, e))
 		}
 	}()
 

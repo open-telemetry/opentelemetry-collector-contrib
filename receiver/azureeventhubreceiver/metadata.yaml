@@ -1,13 +1,13 @@
 type: azureeventhub
-scope_name: otelcol/azureeventhubreceiver
 
 status:
   class: receiver
   stability:
-    alpha: [metrics, logs]
+    alpha: [metrics, logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, djaglowski, cparkins]
+    active: [atoulme, cparkins]
+    emeritus: [djaglowski]
     seeking_new: true
 
 tests:

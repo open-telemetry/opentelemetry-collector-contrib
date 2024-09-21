@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("splunkenterprise")
+	Type      = component.MustNewType("splunkenterprise")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 )
 
 const (
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

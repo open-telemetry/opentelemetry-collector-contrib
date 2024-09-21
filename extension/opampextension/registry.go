@@ -13,6 +13,8 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
 // customCapabilityClient is a subset of OpAMP client containing only the methods needed for the customCapabilityRegistry.
@@ -28,7 +30,7 @@ type customCapabilityRegistry struct {
 	logger                  *zap.Logger
 }
 
-var _ CustomCapabilityRegistry = (*customCapabilityRegistry)(nil)
+var _ opampcustommessages.CustomCapabilityRegistry = (*customCapabilityRegistry)(nil)
 
 func newCustomCapabilityRegistry(logger *zap.Logger, client customCapabilityClient) *customCapabilityRegistry {
 	return &customCapabilityRegistry{
@@ -40,8 +42,8 @@ func newCustomCapabilityRegistry(logger *zap.Logger, client customCapabilityClie
 }
 
 // Register implements CustomCapabilityRegistry.Register
-func (cr *customCapabilityRegistry) Register(capability string, opts ...CustomCapabilityRegisterOption) (CustomCapabilityHandler, error) {
-	optsStruct := defaultCustomCapabilityRegisterOptions()
+func (cr *customCapabilityRegistry) Register(capability string, opts ...opampcustommessages.CustomCapabilityRegisterOption) (opampcustommessages.CustomCapabilityHandler, error) {
+	optsStruct := opampcustommessages.DefaultCustomCapabilityRegisterOptions()
 	for _, opt := range opts {
 		opt(optsStruct)
 	}
@@ -151,7 +153,7 @@ type customMessageHandler struct {
 	unregistered bool
 }
 
-var _ CustomCapabilityHandler = (*customMessageHandler)(nil)
+var _ opampcustommessages.CustomCapabilityHandler = (*customMessageHandler)(nil)
 
 func newCustomMessageHandler(
 	registry *customCapabilityRegistry,

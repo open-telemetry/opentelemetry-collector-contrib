@@ -48,7 +48,7 @@ func createDefaultConfig() component.Config {
 // CreateMetricsReceiver creates zookeeper (metrics) receiver.
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -59,7 +59,7 @@ func createMetricsReceiver(
 	}
 
 	scrp, err := scraperhelper.NewScraper(
-		metadata.Type.String(),
+		metadata.Type,
 		zms.scrape,
 		scraperhelper.WithShutdown(zms.shutdown),
 	)

@@ -27,6 +27,9 @@ func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, mani
 	manifestFiles, err := os.ReadDir(manifestsDir)
 	require.NoErrorf(t, err, "failed to read collector manifests directory %s", manifestsDir)
 	host := HostEndpoint(t)
+	if host == "" {
+		require.Fail(t, "host endpoint cannot be empty")
+	}
 	var podNamespace string
 	var podLabels map[string]any
 	createdObjs := make([]*unstructured.Unstructured, 0, len(manifestFiles))

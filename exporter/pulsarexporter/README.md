@@ -49,14 +49,14 @@ The following settings can be optionally configured:
     - `hashing_scheme`: used to define the partition on where to publish a particular message. Can be set to `java_string_hash` (default) or `murmur3_32hash`. 
     - `compression_level`: one of 'default' (default), 'faster', or 'better'.
     - `compression_type`: one of 'none' (default), 'lz4', 'zlib', or 'zstd'.
-    - `max_pending_messages"`: specifies the max size of the queue holding the messages pending to receive an acknowledgment from the broker.
-    - `batch_builder_type"`: one of 'default' (default) or 'key_based'.
-    - `partitions_auto_discovery_interval"`: the time interval for the background process to discover new partitions
-    - `batching_max_publish_delay"`: specifies the time period within which the messages sent will be batched (default: 10ms)
-    - `batching_max_messages"`: specifies the maximum number of messages permitted in a batch. (default: 1000)
-    - `batching_max_size"`: specifies the maximum number of bytes permitted in a batch. (default 128 KB)
-    - `disable_block_if_queue_full"`: controls whether Send and SendAsync block if producer's message queue is full. Defaults to false.
-    - `disable_batching"`: controls whether automatic batching of messages is enabled for the producer. Defaults to false.
+    - `max_pending_messages`: specifies the max size of the queue holding the messages pending to receive an acknowledgment from the broker.
+    - `batch_builder_type`: one of 'default' (default) or 'key_based'.
+    - `partitions_auto_discovery_interval`: the time interval for the background process to discover new partitions
+    - `batching_max_publish_delay`: specifies the time period within which the messages sent will be batched (default: 10ms)
+    - `batching_max_messages`: specifies the maximum number of messages permitted in a batch. (default: 1000)
+    - `batching_max_size`: specifies the maximum number of bytes permitted in a batch. (default 128 KB)
+    - `disable_block_if_queue_full`: controls whether Send and SendAsync block if producer's message queue is full. Defaults to false.
+    - `disable_batching`: controls whether automatic batching of messages is enabled for the producer. Defaults to false.
 - `tls_trust_certs_file_path`: path to the CA cert. For a client this verifies the server certificate. Should
   only be used if `insecure` is set to true.
 - `tls_allow_insecure_connection`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)

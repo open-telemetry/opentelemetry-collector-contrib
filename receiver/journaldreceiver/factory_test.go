@@ -37,7 +37,7 @@ func TestCreateAndShutdown(t *testing.T) {
 	cfg.InputConfig.Dmesg = true           // Setting this property just to confirm availability on all platforms.
 
 	ctx := context.Background()
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	sink := new(consumertest.LogsSink)
 	receiver, err := factory.CreateLogsReceiver(ctx, settings, cfg, sink)
 

@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("podman_stats")
+	Type      = component.MustNewType("podman_stats")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 )
 
 const (
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

@@ -30,9 +30,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		GeneratorURL:    "opentelemetry-collector",
 		DefaultSeverity: "info",
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackoffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint:        "http://localhost:9093",
 			Timeout:         30 * time.Second,
@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
+func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
 	if cfg.Endpoint == "" {

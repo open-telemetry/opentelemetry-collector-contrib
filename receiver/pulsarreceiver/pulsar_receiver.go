@@ -27,11 +27,11 @@ type pulsarTracesConsumer struct {
 	cancel          context.CancelFunc
 	consumer        pulsar.Consumer
 	unmarshaler     TracesUnmarshaler
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
+func newTracesReceiver(config Config, set receiver.Settings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -79,6 +79,7 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 	unmarshaler := c.unmarshaler
 	traceConsumer := c.tracesConsumer
 
+	// TODO: Ensure returned errors are handled
 	for {
 		message, err := c.consumer.Receive(ctx)
 		if err != nil {
@@ -97,14 +98,14 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 		traces, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler traces message", zap.Error(err))
-			c.consumer.Ack(message)
+			_ = c.consumer.Ack(message)
 			return err
 		}
 
 		if err := traceConsumer.ConsumeTraces(context.Background(), traces); err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
-		c.consumer.Ack(message)
+		_ = c.consumer.Ack(message)
 	}
 }
 
@@ -125,11 +126,11 @@ type pulsarMetricsConsumer struct {
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
+func newMetricsReceiver(config Config, set receiver.Settings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -178,6 +179,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 	unmarshaler := c.unmarshaler
 	metricsConsumer := c.metricsConsumer
 
+	// TODO: Ensure returned errors are handled
 	for {
 		message, err := c.consumer.Receive(ctx)
 		if err != nil {
@@ -197,7 +199,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 		metrics, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler metrics message", zap.Error(err))
-			c.consumer.Ack(message)
+			_ = c.consumer.Ack(message)
 			return err
 		}
 
@@ -205,7 +207,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 
-		c.consumer.Ack(message)
+		_ = c.consumer.Ack(message)
 	}
 }
 
@@ -226,11 +228,11 @@ type pulsarLogsConsumer struct {
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
+func newLogsReceiver(config Config, set receiver.Settings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -297,7 +299,7 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 		logs, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler logs message", zap.Error(err))
-			c.consumer.Ack(message)
+			_ = c.consumer.Ack(message)
 			return err
 		}
 
@@ -305,7 +307,7 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 
-		c.consumer.Ack(message)
+		_ = c.consumer.Ack(message)
 	}
 }
 

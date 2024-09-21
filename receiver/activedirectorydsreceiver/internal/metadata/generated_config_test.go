@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -89,6 +88,6 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

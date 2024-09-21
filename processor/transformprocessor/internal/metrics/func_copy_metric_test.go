@@ -127,7 +127,7 @@ func Test_copyMetric(t *testing.T) {
 
 			exprFunc, err := copyMetric(tt.name, tt.desc, tt.unit)
 			assert.NoError(t, err)
-			_, err = exprFunc(nil, ottlmetric.NewTransformContext(input, ms, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			_, err = exprFunc(nil, ottlmetric.NewTransformContext(input, ms, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.NoError(t, err)
 
 			x := pmetric.NewScopeMetrics()

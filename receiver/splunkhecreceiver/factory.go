@@ -60,7 +60,7 @@ func createDefaultConfig() component.Config {
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -81,7 +81,7 @@ func createMetricsReceiver(
 // createLogsReceiver creates a logs receiver based on provided config.
 func createLogsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {

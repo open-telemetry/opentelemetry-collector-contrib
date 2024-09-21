@@ -25,7 +25,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := exporterhelper.NewDefaultQueueSettings()
+	qs := exporterhelper.NewDefaultQueueConfig()
 	qs.Enabled = false
 
 	return &Config{
@@ -34,13 +34,13 @@ func createDefaultConfig() component.Config {
 		Protocol:        DefaultProtocol,
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   qs,
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 	}
 }
 
 func createLogsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	exp, err := newLogsExporter(ctx, params, cfg.(*Config))

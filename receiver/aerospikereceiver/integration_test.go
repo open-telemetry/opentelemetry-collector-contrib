@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v6"
+	as "github.com/aerospike/aerospike-client-go/v7"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"

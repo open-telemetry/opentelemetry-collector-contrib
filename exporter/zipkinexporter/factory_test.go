@@ -24,7 +24,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	// URL doesn't have a default value so set it directly.
 	zeCfg := cfg.(*Config)
 	zeCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
-	ze, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	ze, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ze)
 }

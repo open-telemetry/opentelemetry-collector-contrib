@@ -55,7 +55,8 @@ func TestLoadConfig(t *testing.T) {
 				LogsTableName:    "otel_logs",
 				TracesTableName:  "otel_traces",
 				MetricsTableName: "otel_metrics",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				CreateSchema:     true,
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 5 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -67,12 +68,13 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				ConnectionParams: map[string]string{},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
-					NumConsumers: 1,
+					NumConsumers: 10,
 					QueueSize:    100,
 					StorageID:    &storageID,
 				},
+				AsyncInsert: true,
 			},
 		},
 	}
@@ -84,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -106,20 +108,45 @@ func TestConfig_buildDSN(t *testing.T) {
 		Username         string
 		Password         string
 		Database         string
+		Compress         string
 		ConnectionParams map[string]string
+		AsyncInsert      *bool
 	}
-	type args struct {
-		database string
+	mergeConfigWithFields := func(cfg *Config, fields fields) {
+		if fields.Endpoint != "" {
+			cfg.Endpoint = fields.Endpoint
+		}
+		if fields.Username != "" {
+			cfg.Username = fields.Username
+		}
+		if fields.Password != "" {
+			cfg.Password = configopaque.String(fields.Password)
+		}
+		if fields.Database != "" {
+			cfg.Database = fields.Database
+		}
+		if fields.ConnectionParams != nil {
+			cfg.ConnectionParams = fields.ConnectionParams
+		}
+		if fields.Compress != "" {
+			cfg.Compress = fields.Compress
+		}
+		if fields.AsyncInsert != nil {
+			cfg.AsyncInsert = *fields.AsyncInsert
+		}
 	}
+
 	type ChOptions struct {
 		Secure      bool
 		DialTimeout time.Duration
 		Compress    clickhouse.CompressionMethod
 	}
+
+	configTrue := true
+	configFalse := false
 	tests := []struct {
 		name          string
 		fields        fields
-		args          args
 		want          string
 		wantChOptions ChOptions
 		wantErr       error
@@ -129,22 +156,20 @@ func TestConfig_buildDSN(t *testing.T) {
 			fields: fields{
 				Endpoint: defaultEndpoint,
 			},
-			args: args{},
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://127.0.0.1:9000/default",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "Support tcp scheme",
 			fields: fields{
 				Endpoint: "tcp://127.0.0.1:9000",
 			},
-			args: args{},
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "tcp://127.0.0.1:9000/default",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "prefers database name from config over from DSN",
@@ -154,13 +179,10 @@ func TestConfig_buildDSN(t *testing.T) {
 				Password: "bar",
 				Database: "otel",
 			},
-			args: args{
-				database: "otel",
-			},
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://foo:bar@127.0.0.1:9000/otel",
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true&compress=lz4",
 		},
 		{
 			name: "use database name from DSN if not set in config",
@@ -168,15 +190,11 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "clickhouse://foo:bar@127.0.0.1:9000/otel",
 				Username: "foo",
 				Password: "bar",
-				Database: "",
-			},
-			args: args{
-				database: "",
 			},
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://foo:bar@127.0.0.1:9000/otel",
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true&compress=lz4",
 		},
 		{
 			name: "invalid config",
@@ -196,32 +214,29 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			args: args{},
-			want: "https://127.0.0.1:9000/default?secure=true",
+			want: "https://127.0.0.1:9000/default?async_insert=true&compress=lz4&secure=true",
 		},
 		{
 			name: "Preserve query parameters",
 			fields: fields{
-				Endpoint: "clickhouse://127.0.0.1:9000?secure=true&foo=bar",
+				Endpoint: "clickhouse://127.0.0.1:9000?secure=true&compress=lz4&foo=bar",
 			},
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			args: args{},
-			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&compress=lz4&foo=bar&secure=true",
 		},
 		{
 			name: "Parse clickhouse settings",
 			fields: fields{
-				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=lz4",
+				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=br",
 			},
 			wantChOptions: ChOptions{
 				Secure:      true,
 				DialTimeout: 30 * time.Second,
-				Compress:    clickhouse.CompressionLZ4,
+				Compress:    clickhouse.CompressionBrotli,
 			},
-			args: args{},
-			want: "https://127.0.0.1:9000/default?compress=lz4&dial_timeout=30s&secure=true",
+			want: "https://127.0.0.1:9000/default?async_insert=true&compress=br&dial_timeout=30s&secure=true",
 		},
 		{
 			name: "Should respect connection parameters",
@@ -232,45 +247,181 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			args: args{},
-			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&compress=lz4&foo=bar&secure=true",
 		},
 		{
-			name: "support replace database in DSN to default database",
+			name: "support replace database in DSN with config to override database",
 			fields: fields{
 				Endpoint: "tcp://127.0.0.1:9000/otel",
+				Database: "override",
 			},
-			args: args{
-				database: defaultDatabase,
+			want: "tcp://127.0.0.1:9000/override?async_insert=true&compress=lz4",
+		},
+		{
+			name: "when config option is missing, preserve async_insert false in DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000?async_insert=false",
 			},
-			want: "tcp://127.0.0.1:9000/default",
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
+		},
+		{
+			name: "when config option is missing, preserve async_insert true in DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000?async_insert=true",
+			},
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "ignore config option when async_insert is present in connection params as false",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?async_insert=false",
+				ConnectionParams: map[string]string{"async_insert": "false"},
+				AsyncInsert:      &configTrue,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
+		},
+		{
+			name: "ignore config option when async_insert is present in connection params as true",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?async_insert=false",
+				ConnectionParams: map[string]string{"async_insert": "true"},
+				AsyncInsert:      &configFalse,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "ignore config option when async_insert is present in DSN as false",
+			fields: fields{
+				Endpoint:    "tcp://127.0.0.1:9000?async_insert=false",
+				AsyncInsert: &configTrue,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
+		},
+		{
+			name: "use async_insert true config option when it is not present in DSN",
+			fields: fields{
+				Endpoint:    "tcp://127.0.0.1:9000",
+				AsyncInsert: &configTrue,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "use async_insert false config option when it is not present in DSN",
+			fields: fields{
+				Endpoint:    "tcp://127.0.0.1:9000",
+				AsyncInsert: &configFalse,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
+		},
+		{
+			name: "set async_insert to true when not present in config or DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000",
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "connection_params takes priority over endpoint and async_insert option.",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?async_insert=false",
+				ConnectionParams: map[string]string{"async_insert": "true"},
+				AsyncInsert:      &configFalse,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "use compress br config option when it is not present in DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000",
+				Compress: "br",
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=br",
+		},
+		{
+			name: "set compress to lz4 when not present in config or DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000",
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "connection_params takes priority over endpoint and compress option.",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?compress=none",
+				ConnectionParams: map[string]string{"compress": "br"},
+				Compress:         "lz4",
+			},
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=br",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{
-				Endpoint:         tt.fields.Endpoint,
-				Username:         tt.fields.Username,
-				Password:         configopaque.String(tt.fields.Password),
-				Database:         tt.fields.Database,
-				ConnectionParams: tt.fields.ConnectionParams,
-			}
-			got, err := cfg.buildDSN(tt.args.database)
+			cfg := createDefaultConfig().(*Config)
+			mergeConfigWithFields(cfg, tt.fields)
+			dsn, err := cfg.buildDSN()
 
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr, "buildDSN(%v)", tt.args.database)
+				assert.ErrorIs(t, err, tt.wantErr, "buildDSN()")
 			} else {
 				// Validate DSN
-				opts, err := clickhouse.ParseDSN(got)
+				opts, err := clickhouse.ParseDSN(dsn)
 				assert.NoError(t, err)
 				assert.Equalf(t, tt.wantChOptions.Secure, opts.TLS != nil, "TLSConfig is not nil")
 				assert.Equalf(t, tt.wantChOptions.DialTimeout, opts.DialTimeout, "DialTimeout is not nil")
 				if tt.wantChOptions.Compress != 0 {
 					assert.Equalf(t, tt.wantChOptions.Compress, opts.Compression.Method, "Compress is not nil")
 				}
-				assert.Equalf(t, tt.want, got, "buildDSN(%v)", tt.args.database)
+				assert.Equalf(t, tt.want, dsn, "buildDSN()")
 			}
 
+		})
+	}
+}
+
+func TestShouldCreateSchema(t *testing.T) {
+	t.Parallel()
+
+	caseDefault := createDefaultConfig().(*Config)
+	caseCreateSchemaTrue := createDefaultConfig().(*Config)
+	caseCreateSchemaTrue.CreateSchema = true
+	caseCreateSchemaFalse := createDefaultConfig().(*Config)
+	caseCreateSchemaFalse.CreateSchema = false
+
+	tests := []struct {
+		name     string
+		input    *Config
+		expected bool
+	}{
+		{
+			name:     "default",
+			input:    caseDefault,
+			expected: true,
+		},
+		{
+			name:     "true",
+			input:    caseCreateSchemaTrue,
+			expected: true,
+		},
+		{
+			name:     "false",
+			input:    caseCreateSchemaFalse,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("ShouldCreateSchema case %s", tt.name), func(t *testing.T) {
+			assert.NoError(t, component.ValidateConfig(tt))
+			assert.Equal(t, tt.expected, tt.input.shouldCreateSchema())
 		})
 	}
 }
@@ -309,10 +460,10 @@ func TestTableEngineConfigParsing(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg.(*Config).TableEngineString())
+			assert.Equal(t, tt.expected, cfg.(*Config).tableEngineString())
 		})
 	}
 }
@@ -345,7 +496,7 @@ func TestClusterString(t *testing.T) {
 			cfg.(*Config).ClusterName = tt.input
 
 			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg.(*Config).ClusterString())
+			assert.Equal(t, tt.expected, cfg.(*Config).clusterString())
 		})
 	}
 }

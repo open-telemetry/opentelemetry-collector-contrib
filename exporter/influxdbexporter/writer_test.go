@@ -17,7 +17,7 @@ import (
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -138,9 +138,9 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 			require.NoError(t, err)
 
 			if testCase.expectMultipleRequests {
-				assert.Equal(t, 2, len(httpRequests))
+				assert.Len(t, httpRequests, 2)
 			} else {
-				assert.Equal(t, 1, len(httpRequests))
+				assert.Len(t, httpRequests, 1)
 			}
 		})
 	}
@@ -166,7 +166,7 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 				Endpoint: noopHTTPServer.URL,
 			},
 		},
-		component.TelemetrySettings{})
+		componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	influxWriter.httpClient = noopHTTPServer.Client()
 	influxWriterBatch := influxWriter.NewBatch()

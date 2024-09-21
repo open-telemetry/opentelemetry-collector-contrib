@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -93,13 +93,14 @@ func TestBasicOperatorType(t *testing.T) {
 }
 
 func TestBasicOperatorLogger(t *testing.T) {
-	logger := &zap.SugaredLogger{}
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	operator := BasicOperator{
-		OperatorID:    "test-id",
-		OperatorType:  "test-type",
-		SugaredLogger: logger,
+		OperatorID:   "test-id",
+		OperatorType: "test-type",
+		set:          set,
 	}
-	require.Equal(t, logger, operator.Logger())
+	require.Equal(t, set.Logger, operator.Logger())
 }
 
 func TestBasicOperatorStart(t *testing.T) {

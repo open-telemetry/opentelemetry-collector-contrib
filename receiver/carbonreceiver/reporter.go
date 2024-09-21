@@ -24,7 +24,7 @@ type reporter struct {
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(set receiver.CreateSettings) (transport.Reporter, error) {
+func newReporter(set receiver.Settings) (transport.Reporter, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "tcp",

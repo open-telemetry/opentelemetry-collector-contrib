@@ -24,7 +24,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
@@ -40,7 +40,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = ""
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no endpoints must fail")
 }
@@ -51,7 +51,7 @@ func TestCreateNoPort(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = "localhost:"
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
 }
@@ -62,7 +62,7 @@ func TestCreateLargePort(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = "localhost:65536"
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
 }

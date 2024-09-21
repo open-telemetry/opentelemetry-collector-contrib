@@ -18,9 +18,7 @@ const (
 )
 
 func TestHistogramDecomposeNoHistogram(t *testing.T) {
-	mp := exampleIntGaugeMetric()
-	metric := mp.metric
-	resourceAttributes := mp.attributes
+	metric, resourceAttributes := exampleIntGaugeMetric()
 	metrics := pmetric.NewMetrics()
 	resourceAttributes.CopyTo(metrics.ResourceMetrics().AppendEmpty().Resource().Attributes())
 	metric.MoveTo(metrics.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())

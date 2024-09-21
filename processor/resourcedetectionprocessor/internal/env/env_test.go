@@ -16,7 +16,7 @@ import (
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
+	d, err := NewDetector(processortest.NewNopSettings(), nil)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }

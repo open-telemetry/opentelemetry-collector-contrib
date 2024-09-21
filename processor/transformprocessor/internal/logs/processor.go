@@ -12,6 +12,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
@@ -19,9 +20,10 @@ import (
 type Processor struct {
 	contexts []consumer.Logs
 	logger   *zap.Logger
+	flatMode bool
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings) (*Processor, error) {
 	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()), common.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
@@ -44,10 +46,15 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 	return &Processor{
 		contexts: contexts,
 		logger:   settings.Logger,
+		flatMode: flatMode,
 	}, nil
 }
 
 func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	if p.flatMode {
+		pdatautil.FlattenLogs(ld.ResourceLogs())
+		defer pdatautil.GroupByResourceLogs(ld.ResourceLogs())
+	}
 	for _, c := range p.contexts {
 		err := c.ConsumeLogs(ctx, ld)
 		if err != nil {

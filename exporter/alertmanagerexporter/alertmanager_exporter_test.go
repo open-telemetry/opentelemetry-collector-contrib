@@ -77,7 +77,7 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 			require.NotNil(t, am)
 
@@ -101,7 +101,7 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 
 			// test - events
 			got := am.extractEvents(traces)
-			assert.Equal(t, tt.events, len(got))
+			assert.Len(t, got, tt.events)
 		})
 	}
 }
@@ -109,7 +109,7 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 func TestAlertManagerExporterEventNameAttributes(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
 
@@ -133,16 +133,16 @@ func TestAlertManagerExporterEventNameAttributes(t *testing.T) {
 	got := am.extractEvents(traces)
 
 	// test - result length
-	assert.Equal(t, 1, len(got))
+	assert.Len(t, got, 1)
 
 	// test - count of attributes
 	assert.Equal(t, 3, got[0].spanEvent.Attributes().Len())
 	attr, b := got[0].spanEvent.Attributes().Get("attr1")
-	assert.Equal(t, true, b)
+	assert.True(t, b)
 	assert.Equal(t, "unittest-event", got[0].spanEvent.Name())
 	assert.Equal(t, "unittest-baz", attr.AsString())
 	attr, b = got[0].spanEvent.Attributes().Get("attr3")
-	assert.Equal(t, true, b)
+	assert.True(t, b)
 	assert.Equal(t, 5.14, attr.Double())
 }
 
@@ -150,7 +150,7 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.SeverityAttribute = "foo"
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
 
@@ -196,7 +196,7 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
 
@@ -227,7 +227,7 @@ func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 func TestAlertManagerExporterAlertPayload(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 
 	require.NotNil(t, am)
@@ -273,7 +273,7 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	lte, err := newTracesExporter(context.Background(), cfg, exportertest.NewNopCreateSettings())
+	lte, err := newTracesExporter(context.Background(), cfg, exportertest.NewNopSettings())
 	fmt.Println(lte)
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
@@ -320,7 +320,7 @@ func TestAlertManagerPostAlert(t *testing.T) {
 	})
 
 	cfg.Endpoint = mock.mockserver.URL
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	err := am.start(context.Background(), componenttest.NewNopHost())
 
@@ -397,7 +397,7 @@ func TestClientConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			am := newAlertManagerExporter(tt.config, set.TelemetrySettings)
 
 			exp, err := newTracesExporter(context.Background(), tt.config, set)

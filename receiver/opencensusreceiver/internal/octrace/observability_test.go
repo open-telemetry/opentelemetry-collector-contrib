@@ -42,7 +42,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneReceiverFn()
 
 	n := 20
@@ -66,7 +66,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	n := 20
@@ -92,7 +92,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	otel.SetTracerProvider(tt.TelemetrySettings().TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
@@ -109,7 +109,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 
 	// Inspection time!
 	gotSpanData := tt.SpanRecorder.Ended()
-	assert.Equal(t, n+1, len(gotSpanData))
+	assert.Len(t, gotSpanData, n+1)
 
 	receiverSpanData := gotSpanData[0]
 	assert.Len(t, receiverSpanData.Links(), 1)

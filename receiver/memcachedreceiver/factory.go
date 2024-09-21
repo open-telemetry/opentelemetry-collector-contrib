@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -54,7 +54,7 @@ func createMetricsReceiver(
 
 	ms := newMemcachedScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ms.scrape)
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape)
 	if err != nil {
 		return nil, err
 	}

@@ -31,7 +31,7 @@ func NewFactory() receiver.Factory {
 
 func newMetricsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	rCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -39,7 +39,7 @@ func newMetricsReceiver(
 
 	expVar := newExpVarScraper(cfg, set)
 	scraper, err := scraperhelper.NewScraper(
-		metadata.Type.String(),
+		metadata.Type,
 		expVar.scrape,
 		scraperhelper.WithStart(expVar.start),
 	)

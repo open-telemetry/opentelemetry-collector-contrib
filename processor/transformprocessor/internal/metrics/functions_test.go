@@ -16,29 +16,59 @@ import (
 )
 
 func Test_DataPointFunctions(t *testing.T) {
-	expected := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
-	expected["convert_sum_to_gauge"] = newConvertDatapointSumToGaugeFactory()
-	expected["convert_gauge_to_sum"] = newConvertDatapointGaugeToSumFactory()
-	expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
-	expected["convert_summary_count_val_to_sum"] = newConvertSummaryCountValToSumFactory()
-
-	actual := DataPointFunctions()
-
-	require.Equal(t, len(expected), len(actual))
-	for k := range actual {
-		assert.Contains(t, expected, k)
+	type testCase struct {
+		name        string
+		flagEnabled bool
 	}
+
+	tests := []testCase{
+		{
+			name:        "ConvertBetweenSumAndGaugeMetricContextEnabled enabled",
+			flagEnabled: true,
+		},
+		{
+			name:        "ConvertBetweenSumAndGaugeMetricContextEnabled disabled",
+			flagEnabled: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, UseConvertBetweenSumAndGaugeMetricContext, tt.flagEnabled)()
+
+			expected := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
+			expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
+			expected["convert_summary_count_val_to_sum"] = newConvertSummaryCountValToSumFactory()
+
+			if !tt.flagEnabled {
+				expected["convert_sum_to_gauge"] = newConvertDatapointSumToGaugeFactory()
+				expected["convert_gauge_to_sum"] = newConvertDatapointGaugeToSumFactory()
+			}
+
+			actual := DataPointFunctions()
+
+			require.Equal(t, len(expected), len(actual))
+			for k := range actual {
+				assert.Contains(t, expected, k)
+			}
+		},
+		)
+	}
+
 }
 
 func Test_MetricFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
 	expected["convert_sum_to_gauge"] = newConvertSumToGaugeFactory()
 	expected["convert_gauge_to_sum"] = newConvertGaugeToSumFactory()
+	expected["aggregate_on_attributes"] = newAggregateOnAttributesFactory()
+	expected["aggregate_on_attribute_value"] = newAggregateOnAttributeValueFactory()
 	expected["extract_sum_metric"] = newExtractSumMetricFactory()
 	expected["extract_count_metric"] = newExtractCountMetricFactory()
 	expected["copy_metric"] = newCopyMetricFactory()
+	expected["scale_metric"] = newScaleMetricFactory()
+	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
 
-	defer testutil.SetFeatureGateForTest(t, useConvertBetweenSumAndGaugeMetricContext, true)()
 	actual := MetricFunctions()
 	require.Equal(t, len(expected), len(actual))
 	for k := range actual {

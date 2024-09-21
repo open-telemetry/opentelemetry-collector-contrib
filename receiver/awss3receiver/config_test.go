@@ -23,13 +23,14 @@ func TestLoadConfig_Validate_Invalid(t *testing.T) {
 func TestConfig_Validate_Valid(t *testing.T) {
 	cfg := Config{
 		S3Downloader: S3DownloaderConfig{
-			Region:           "",
-			S3Bucket:         "abucket",
-			S3Prefix:         "",
-			S3Partition:      "",
-			FilePrefix:       "",
-			Endpoint:         "",
-			S3ForcePathStyle: false,
+			Region:              "",
+			S3Bucket:            "abucket",
+			S3Prefix:            "",
+			S3Partition:         "minute",
+			FilePrefix:          "",
+			Endpoint:            "",
+			EndpointPartitionID: "aws",
+			S3ForcePathStyle:    false,
 		},
 		StartTime: "2024-01-01",
 		EndTime:   "2024-01-01",
@@ -48,22 +49,46 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "bucket is required; start time is required; end time is required",
+			errorMessage: "bucket is required; starttime is required; endtime is required",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "1"),
-			errorMessage: "unable to parse start date; unable to parse end time",
+			errorMessage: "s3_partition must be either 'hour' or 'minute'; unable to parse starttime (a date), accepted formats: 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02 15:04, 2006-01-02",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				S3Downloader: S3DownloaderConfig{
-					Region:      "us-east-1",
-					S3Bucket:    "abucket",
-					S3Partition: "minute",
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
 				},
 				StartTime: "2024-01-31 15:00",
 				EndTime:   "2024-02-03",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "3"),
+			expected: &Config{
+				S3Downloader: S3DownloaderConfig{
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
+				},
+				StartTime: "2024-01-31 15:00",
+				EndTime:   "2024-02-03",
+				Encodings: []Encoding{
+					{
+						Extension: component.NewIDWithName(component.MustNewType("foo"), "bar"),
+						Suffix:    "baz",
+					},
+					{
+						Extension: component.NewIDWithName(component.MustNewType("nop"), "nop"),
+						Suffix:    "nop",
+					},
+				},
 			},
 		},
 	}
@@ -75,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.errorMessage != "" {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)

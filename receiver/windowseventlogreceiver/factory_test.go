@@ -37,7 +37,7 @@ func TestCreateAndShutdown(t *testing.T) {
 	cfg.InputConfig.Channel = "Application"  // Must be explicitly set to a valid channel.
 
 	ctx := context.Background()
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	sink := new(consumertest.LogsSink)
 	receiver, err := factory.CreateLogsReceiver(ctx, settings, cfg, sink)
 

@@ -38,7 +38,7 @@ func (pds *prometheusDataSender) Start() error {
 	cfg := factory.CreateDefaultConfig().(*prometheusexporter.Config)
 	cfg.Endpoint = pds.GetEndpoint().String()
 	cfg.Namespace = pds.namespace
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)

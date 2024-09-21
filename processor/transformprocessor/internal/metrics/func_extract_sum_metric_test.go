@@ -284,7 +284,7 @@ func Test_extractSumMetric(t *testing.T) {
 			evaluate, err := extractSumMetric(tt.monotonicity)
 			assert.NoError(t, err)
 
-			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.Equal(t, tt.wantErr, err)
 
 			if tt.want != nil {

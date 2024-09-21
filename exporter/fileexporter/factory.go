@@ -69,7 +69,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	fe := getOrCreateFileExporter(cfg, set.Logger)
@@ -86,7 +86,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	fe := getOrCreateFileExporter(cfg, set.Logger)
@@ -103,7 +103,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	fe := getOrCreateFileExporter(cfg, set.Logger)

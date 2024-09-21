@@ -41,14 +41,14 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotRiak
 	}
 
 	riakScraper := newScraper(params.Logger, cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), riakScraper.scrape, scraperhelper.WithStart(riakScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, riakScraper.scrape, scraperhelper.WithStart(riakScraper.start))
 	if err != nil {
 		return nil, err
 	}

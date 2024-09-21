@@ -20,7 +20,6 @@ This receiver has been built to support ESXi and vCenter versions:
 
 - 8
 - 7.0
-- 6.7
 
 A “Read Only” user assigned to a vSphere with permissions to the vCenter server, cluster and all subsequent resources being monitored must be specified in order for the receiver to retrieve information about them.
 
@@ -57,4 +56,11 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 ### Feature gates
 
-The `receiver.vcenter.emitPerfMetricsWithObjects` is now stable and will be removed in v0.97.0.
+**ALPHA**: `receiver.vcenter.resourcePoolMemoryUsageAttribute`
+
+The feature gate `receiver.vcenter.resourcePoolMemoryUsageAttribute` once enabled will enable the memory usage type attribute for 
+the `vcenter.resource_pool.memory.usage` metric.
+
+This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
+is v0.107.0.

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -61,7 +61,7 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
@@ -113,7 +113,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 	}
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 
@@ -190,7 +190,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -274,7 +274,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -353,7 +353,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -435,7 +435,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 

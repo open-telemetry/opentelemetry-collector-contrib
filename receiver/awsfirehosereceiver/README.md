@@ -36,9 +36,9 @@ using a Load Balancer.
 ### endpoint:
 The address:port to bind the listener to.
 
-default: `0.0.0.0:4433`
+default: `localhost:4433`
 
-The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:4433. This will become the default in a future release.
+You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:4433`. This feature gate will be removed in a future release.
 
 ### tls:
 See [documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#server-configuration) for more details.

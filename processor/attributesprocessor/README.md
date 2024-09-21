@@ -61,8 +61,9 @@ For the actions `insert`, `update` and `upsert`,
   # If the key is prefixed with `metadata.`, the values are searched
   # in the receiver's transport protocol additional information like gRPC Metadata or HTTP Headers. 
   # If the key is prefixed with `auth.`, the values are searched
-  # in the authentication information set by the server authenticator. 
+  # in the authentication information set by the server authenticator.
   # Refer to the server authenticator's documentation part of your pipeline for more information about which attributes are available.
+  # If the key is `client.address`, the value will be set to the client address. 
   # If the key doesn't exist, no action is performed.
   # If the key has multiple values the values will be joined with `;` separator.
   from_context: <other key>
@@ -190,8 +191,8 @@ must be specified with a non-empty value for a valid configuration. The `log_bod
 - For logs, one of `log_bodies`, `log_severity_texts`, `log_severity_number`, `attributes`, `resources`
 or `libraries` must be specified with a non-empty value for a valid configuration. The `span_names`, 
 `span_kinds`, `metric_names` and `services` fields are invalid.
-- For metrics, one of `metric_names` or `resources` must be specified with a valid non-empty value for
-a valid configuration. The `span_names`, `span_kinds`, `log_bodies`, `log_severity_texts`, 
+- For metrics, `metric_names` must be specified with a valid non-empty value for
+a valid configuration. The `span_names`, `span_kinds`, `resources`, `log_bodies`, `log_severity_texts`,
 `log_severity_number`, `services`, `attributes` and `libraries` fields are invalid.
 
 

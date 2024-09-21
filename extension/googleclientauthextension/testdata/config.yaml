@@ -5,3 +5,4 @@ googleclientauth/customname:
   - "https://www.something.com/hello"
   - "https://www.something.com/world"
   quota_project: other-project
+  audience: my-audience

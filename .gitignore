@@ -9,6 +9,9 @@ vendor/
 .vscode
 *.code-workspace
 
+# Project IDX
+.idx/
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -26,6 +29,7 @@ dist/
 # Miscellaneous files
 *.sw[op]
 *.DS_Store
+__debug_bin*
 
 # Coverage
 coverage/*

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
 
@@ -34,14 +35,14 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 // CreateMetricsScraper creates a scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config internal.Config,
 ) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
 	s := newPagingScraper(ctx, settings, cfg)
 
 	return scraperhelper.NewScraper(
-		TypeStr,
+		hostmeta.Type,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

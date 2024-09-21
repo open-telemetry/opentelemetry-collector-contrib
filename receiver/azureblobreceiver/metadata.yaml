@@ -1,10 +1,9 @@
 type: azureblob
-scope_name: otelcol/azureblobreceiver
 
 status:
   class: receiver
   stability:
-    development: [logs, traces]
+    alpha: [logs, traces]
   distributions: [contrib]
   codeowners:
     active: [eedorenko, mx-psi]

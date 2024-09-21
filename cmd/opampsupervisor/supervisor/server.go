@@ -13,34 +13,50 @@ import (
 )
 
 type flattenedSettings struct {
-	onMessageFunc    func(conn serverTypes.Connection, message *protobufs.AgentToServer)
-	onConnectingFunc func(request *http.Request)
-	endpoint         string
+	onMessageFunc         func(conn serverTypes.Connection, message *protobufs.AgentToServer)
+	onConnectingFunc      func(request *http.Request) (shouldConnect bool, rejectStatusCode int)
+	onConnectionCloseFunc func(conn serverTypes.Connection)
+	endpoint              string
 }
 
-func newServerSettings(fs flattenedSettings) server.StartSettings {
+func (fs flattenedSettings) toServerSettings() server.StartSettings {
 	return server.StartSettings{
 		Settings: server.Settings{
-			Callbacks: server.CallbacksStruct{
-				OnConnectingFunc: func(request *http.Request) serverTypes.ConnectionResponse {
-					if fs.onConnectingFunc != nil {
-						fs.onConnectingFunc(request)
-					}
-					return serverTypes.ConnectionResponse{
-						Accept: true,
-						ConnectionCallbacks: server.ConnectionCallbacksStruct{
-							OnMessageFunc: func(_ context.Context, conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
-								if fs.onMessageFunc != nil {
-									fs.onMessageFunc(conn, message)
-								}
-
-								return &protobufs.ServerToAgent{}
-							},
-						},
-					}
-				},
-			},
+			Callbacks: fs,
 		},
 		ListenEndpoint: fs.endpoint,
+	}
+}
+
+func (fs flattenedSettings) OnConnecting(request *http.Request) serverTypes.ConnectionResponse {
+	if fs.onConnectingFunc != nil {
+		shouldConnect, rejectStatusCode := fs.onConnectingFunc(request)
+		if !shouldConnect {
+			return serverTypes.ConnectionResponse{
+				Accept:         false,
+				HTTPStatusCode: rejectStatusCode,
+			}
+		}
+	}
+
+	return serverTypes.ConnectionResponse{
+		Accept:              true,
+		ConnectionCallbacks: fs,
+	}
+}
+
+func (fs flattenedSettings) OnConnected(_ context.Context, _ serverTypes.Connection) {}
+
+func (fs flattenedSettings) OnMessage(_ context.Context, conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+	if fs.onMessageFunc != nil {
+		fs.onMessageFunc(conn, message)
+	}
+
+	return &protobufs.ServerToAgent{}
+}
+
+func (fs flattenedSettings) OnConnectionClose(conn serverTypes.Connection) {
+	if fs.onConnectionCloseFunc != nil {
+		fs.onConnectionCloseFunc(conn)
 	}
 }

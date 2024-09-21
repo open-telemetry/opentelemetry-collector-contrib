@@ -46,6 +46,10 @@ func createDefaultConfig() component.Config {
 
 func parseResourceAttributes(endpoint string) (string, string, error) {
 	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", "", err
+	}
+
 	serverName := u.Hostname()
 	port := u.Port()
 
@@ -63,7 +67,7 @@ func parseResourceAttributes(endpoint string) (string, string, error) {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -74,7 +78,7 @@ func createMetricsReceiver(
 	}
 
 	ns := newApacheScraper(params, cfg, serverName, port)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

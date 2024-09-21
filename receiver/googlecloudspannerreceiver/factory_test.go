@@ -32,7 +32,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 	receiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		receiverConfig,
 		consumertest.NewNop(),
 	)

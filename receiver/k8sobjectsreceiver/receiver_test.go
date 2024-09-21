@@ -22,7 +22,7 @@ func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -67,7 +67,7 @@ func TestPullObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumer,
 	)
@@ -108,7 +108,7 @@ func TestWatchObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumer,
 	)
@@ -119,7 +119,7 @@ func TestWatchObject(t *testing.T) {
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs(), 0)
+	assert.Empty(t, consumer.Logs())
 	assert.Equal(t, 0, consumer.Count())
 
 	mockClient.createPods(
@@ -180,7 +180,7 @@ func TestExludeDeletedTrue(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumer,
 	)
@@ -191,7 +191,7 @@ func TestExludeDeletedTrue(t *testing.T) {
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs(), 0)
+	assert.Empty(t, consumer.Logs())
 	assert.Equal(t, 0, consumer.Count())
 
 	mockClient.deletePods(
@@ -200,7 +200,7 @@ func TestExludeDeletedTrue(t *testing.T) {
 		}, "1"),
 	)
 	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs(), 0)
+	assert.Empty(t, consumer.Logs())
 	assert.Equal(t, 0, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))

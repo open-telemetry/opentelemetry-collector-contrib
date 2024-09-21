@@ -11,6 +11,8 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
 func TestRegistry_Register(t *testing.T) {
@@ -50,7 +52,7 @@ func TestRegistry_Register(t *testing.T) {
 		sender, err := registry.Register(capabilityString)
 		require.Nil(t, sender)
 		require.ErrorIs(t, err, capabilityErr)
-		require.Len(t, registry.capabilityToMsgChannels, 0, "Setting capability failed, but callback ended up in the map anyways")
+		require.Empty(t, registry.capabilityToMsgChannels, "Setting capability failed, but callback ended up in the map anyways")
 	})
 }
 
@@ -92,14 +94,14 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		sender, err := registry.Register(capabilityString, withMaxQueuedMessages(0))
+		sender, err := registry.Register(capabilityString, opampcustommessages.WithMaxQueuedMessages(0))
 		require.NotNil(t, sender)
 		require.NoError(t, err)
 
 		// If we did not skip sending on blocked channels, we'd expect this to never return.
 		registry.ProcessMessage(customMessage)
 
-		require.Equal(t, 0, len(sender.Message()))
+		require.Empty(t, sender.Message())
 	})
 
 	t.Run("Callback is called only for its own capability", func(t *testing.T) {

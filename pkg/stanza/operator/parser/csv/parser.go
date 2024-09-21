@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -35,15 +37,13 @@ func (p *Parser) Process(ctx context.Context, e *entry.Entry) error {
 	// Dynamically generate the parse function based on a header attribute
 	h, ok := e.Attributes[p.headerAttribute]
 	if !ok {
-		err := fmt.Errorf("failed to read dynamic header attribute %s", p.headerAttribute)
-		p.Error(err)
-		return err
+		p.Logger().Error("read dynamic header attribute", zap.String("attribute", p.headerAttribute))
+		return fmt.Errorf("failed to read dynamic header attribute %s", p.headerAttribute)
 	}
 	headerString, ok := h.(string)
 	if !ok {
-		err := fmt.Errorf("header is expected to be a string but is %T", h)
-		p.Error(err)
-		return err
+		p.Logger().Error("header must be string", zap.String("type", fmt.Sprintf("%T", h)))
+		return fmt.Errorf("header is expected to be a string but is %T", h)
 	}
 	headers := strings.Split(headerString, string([]rune{p.headerDelimiter}))
 	parse := generateParseFunc(headers, p.fieldDelimiter, p.lazyQuotes, p.ignoreQuotes)

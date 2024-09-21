@@ -22,7 +22,7 @@ func NewFactory() extension.Factory {
 	)
 }
 
-func createExtension(_ context.Context, _ extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
 	return createASAPClientAuthenticator(cfg.(*Config))
 }
 

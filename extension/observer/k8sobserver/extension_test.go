@@ -35,7 +35,7 @@ func TestNewExtension(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
-	ext, err := newObserver(config, extensiontest.NewNopCreateSettings())
+	ext, err := newObserver(config, extensiontest.NewNopSettings())
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
@@ -46,7 +46,7 @@ func TestExtensionObserveServices(t *testing.T) {
 	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopCreateSettings()
+	set := extensiontest.NewNopSettings()
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
@@ -134,7 +134,7 @@ func TestExtensionObservePods(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopCreateSettings()
+	set := extensiontest.NewNopSettings()
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
@@ -217,7 +217,7 @@ func TestExtensionObserveNodes(t *testing.T) {
 	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopCreateSettings()
+	set := extensiontest.NewNopSettings()
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)

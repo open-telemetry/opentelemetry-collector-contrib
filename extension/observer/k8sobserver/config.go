@@ -36,12 +36,14 @@ type Config struct {
 	ObserveNodes bool `mapstructure:"observe_nodes"`
 	// ObserveServices determines whether to report observer service and port endpoints. `false` by default.
 	ObserveServices bool `mapstructure:"observe_services"`
+	// ObserveIngresses determines whether to report observer ingress. `false` by default.
+	ObserveIngresses bool `mapstructure:"observe_ingresses"`
 }
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices {
-		return fmt.Errorf("one of observe_pods, observe_nodes and observe_services must be true")
+	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices && !cfg.ObserveIngresses {
+		return fmt.Errorf("one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true")
 	}
 	return nil
 }

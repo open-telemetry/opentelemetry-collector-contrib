@@ -23,7 +23,7 @@ type logExporter struct {
 	telemetry    component.TelemetrySettings
 }
 
-func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, error) {
+func newLogExporter(cfg *Config, set exporter.Settings) (*logExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}

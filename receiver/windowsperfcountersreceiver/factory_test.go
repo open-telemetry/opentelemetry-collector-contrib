@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-var creationParams = receivertest.NewNopCreateSettings()
+var creationParams = receivertest.NewNopSettings()
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()

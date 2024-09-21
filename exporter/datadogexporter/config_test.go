@@ -8,172 +8,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
+
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
-
-func TestValidate(t *testing.T) {
-	idleConnTimeout := 30 * time.Second
-	maxIdleConn := 300
-	maxIdleConnPerHost := 150
-	maxConnPerHost := 250
-	ty, err := component.NewType("ty")
-	assert.NoError(t, err)
-	auth := configauth.Authentication{AuthenticatorID: component.NewID(ty)}
-
-	tests := []struct {
-		name string
-		cfg  *Config
-		err  string
-	}{
-		{
-			name: "no api::key",
-			cfg:  &Config{},
-			err:  errUnsetAPIKey.Error(),
-		},
-		{
-			name: "invalid hostname",
-			cfg: &Config{
-				API:        APIConfig{Key: "notnull"},
-				TagsConfig: TagsConfig{Hostname: "invalid_host"},
-			},
-			err: "hostname field is invalid: 'invalid_host' is not RFC1123 compliant",
-		},
-		{
-			name: "no metadata",
-			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
-				OnlyMetadata: true,
-				HostMetadata: HostMetadataConfig{Enabled: false},
-			},
-			err: errNoMetadata.Error(),
-		},
-		{
-			name: "span name remapping valid",
-			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}},
-			},
-		},
-		{
-			name: "span name remapping empty val",
-			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}},
-			},
-			err: "'' is not valid value for span name remapping",
-		},
-		{
-			name: "span name remapping empty key",
-			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}},
-			},
-			err: "'' is not valid key for span name remapping",
-		},
-		{
-			name: "ignore resources valid",
-			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{IgnoreResources: []string{"[123]"}},
-			},
-		},
-		{
-			name: "ignore resources missing bracket",
-			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{IgnoreResources: []string{"[123"}},
-			},
-			err: "'[123' is not valid resource filter regular expression",
-		},
-		{
-			name: "invalid histogram settings",
-			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
-				Metrics: MetricsConfig{
-					HistConfig: HistogramConfig{
-						Mode:             HistogramModeNoBuckets,
-						SendAggregations: false,
-					},
-				},
-			},
-			err: "'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics",
-		},
-		{
-			name: "TLS settings are valid",
-			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
-				ClientConfig: confighttp.ClientConfig{
-					TLSSetting: configtls.ClientConfig{
-						InsecureSkipVerify: true,
-					},
-				},
-			},
-		},
-		{
-			name: "With trace_buffer",
-			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{TraceBuffer: 10},
-			},
-		},
-		{
-			name: "With peer_tags",
-			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
-			},
-		},
-		{
-			name: "With confighttp client configs",
-			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
-				ClientConfig: confighttp.ClientConfig{
-					ReadBufferSize:      100,
-					WriteBufferSize:     200,
-					Timeout:             10 * time.Second,
-					IdleConnTimeout:     &idleConnTimeout,
-					MaxIdleConns:        &maxIdleConn,
-					MaxIdleConnsPerHost: &maxIdleConnPerHost,
-					MaxConnsPerHost:     &maxConnPerHost,
-					DisableKeepAlives:   true,
-					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
-				},
-			},
-		},
-
-		{
-			name: "unsupported confighttp client configs",
-			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint:             "endpoint",
-					Compression:          "gzip",
-					ProxyURL:             "proxy",
-					Auth:                 &auth,
-					Headers:              map[string]configopaque.String{"key": "val"},
-					HTTP2ReadIdleTimeout: 250,
-					HTTP2PingTimeout:     200,
-				},
-			},
-			err: "these confighttp client configs are currently not respected by Datadog exporter: auth, endpoint, compression, proxy_url, headers, http2_read_idle_timeout, http2_ping_timeout",
-		},
-	}
-	for _, testInstance := range tests {
-		t.Run(testInstance.name, func(t *testing.T) {
-			err := testInstance.cfg.Validate()
-			if testInstance.err != "" {
-				assert.EqualError(t, err, testInstance.err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
 
 func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs := NewFactory().CreateDefaultConfig().(*Config)
@@ -190,13 +28,13 @@ func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs.IdleConnTimeout = &idleConnTimeout
 	cfgWithHTTPConfigs.DisableKeepAlives = true
 	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
-	cfgWithHTTPConfigs.warnings = nil
 
 	tests := []struct {
 		name      string
 		configMap *confmap.Conf
 		cfg       *Config
 		err       string
+		field     string
 	}{
 		{
 			name: "invalid cumulative monotonic mode",
@@ -207,7 +45,8 @@ func TestUnmarshal(t *testing.T) {
 					},
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"",
+			err:   "invalid cumulative monotonic sum mode \"invalid_mode\"",
+			field: "metrics.sums.cumulative_monotonic_mode",
 		},
 		{
 			name: "invalid host metadata hostname source",
@@ -216,7 +55,8 @@ func TestUnmarshal(t *testing.T) {
 					"hostname_source": "invalid_source",
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'host_metadata.hostname_source': invalid host metadata hostname source \"invalid_source\"",
+			err:   "invalid host metadata hostname source \"invalid_source\"",
+			field: "host_metadata.hostname_source",
 		},
 		{
 			name: "invalid summary mode",
@@ -227,7 +67,8 @@ func TestUnmarshal(t *testing.T) {
 					},
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'metrics.summaries.mode': invalid summary mode \"invalid_mode\"",
+			err:   "invalid summary mode \"invalid_mode\"",
+			field: "metrics.summaries.mode",
 		},
 		{
 			name: "metrics::send_monotonic_counter custom error",
@@ -284,7 +125,7 @@ func TestUnmarshal(t *testing.T) {
 					"endpoint": "",
 				},
 			}),
-			err: errEmptyEndpoint.Error(),
+			err: datadogconfig.ErrEmptyEndpoint.Error(),
 		},
 		{
 			name: "Empty trace endpoint",
@@ -293,7 +134,7 @@ func TestUnmarshal(t *testing.T) {
 					"endpoint": "",
 				},
 			}),
-			err: errEmptyEndpoint.Error(),
+			err: datadogconfig.ErrEmptyEndpoint.Error(),
 		},
 		{
 			name: "Empty log endpoint",
@@ -302,7 +143,7 @@ func TestUnmarshal(t *testing.T) {
 					"endpoint": "",
 				},
 			}),
-			err: errEmptyEndpoint.Error(),
+			err: datadogconfig.ErrEmptyEndpoint.Error(),
 		},
 		{
 			name: "invalid initial cumulative monotonic value mode",
@@ -313,7 +154,8 @@ func TestUnmarshal(t *testing.T) {
 					},
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.initial_cumulative_monotonic_value': invalid initial value mode \"invalid_mode\"",
+			err:   "invalid initial value mode \"invalid_mode\"",
+			field: "metrics.sums.initial_cumulative_monotonic_value",
 		},
 		{
 			name: "initial cumulative monotonic value mode set with raw_value",
@@ -350,7 +192,10 @@ func TestUnmarshal(t *testing.T) {
 			cfg := f.CreateDefaultConfig().(*Config)
 			err := cfg.Unmarshal(testInstance.configMap)
 			if err != nil || testInstance.err != "" {
-				assert.EqualError(t, err, testInstance.err)
+				assert.ErrorContains(t, err, testInstance.err)
+				if testInstance.field != "" {
+					assert.ErrorContains(t, err, testInstance.field)
+				}
 			} else {
 				assert.Equal(t, testInstance.cfg, cfg)
 			}

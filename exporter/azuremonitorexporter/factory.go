@@ -50,13 +50,13 @@ func createDefaultConfig() component.Config {
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
 		SpanEventsEnabled: false,
-		QueueSettings:     exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:     exporterhelper.NewDefaultQueueConfig(),
 	}
 }
 
 func (f *factory) createTracesExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	exporterConfig, ok := cfg.(*Config)
@@ -75,7 +75,7 @@ func (f *factory) createTracesExporter(
 
 func (f *factory) createLogsExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	exporterConfig, ok := cfg.(*Config)
@@ -94,7 +94,7 @@ func (f *factory) createLogsExporter(
 
 func (f *factory) createMetricsExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	exporterConfig, ok := cfg.(*Config)

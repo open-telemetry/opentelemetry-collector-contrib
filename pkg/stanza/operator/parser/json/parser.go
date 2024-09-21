@@ -6,8 +6,9 @@ package json // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -16,7 +17,8 @@ import (
 // Parser is an operator that parses JSON.
 type Parser struct {
 	helper.ParserOperator
-	json jsoniter.API
+
+	parseInts bool
 }
 
 // Process will parse an entry for JSON.
@@ -29,12 +31,64 @@ func (p *Parser) parse(value any) (any, error) {
 	var parsedValue map[string]any
 	switch m := value.(type) {
 	case string:
-		err := p.json.UnmarshalFromString(m, &parsedValue)
-		if err != nil {
-			return nil, err
+		// when parseInts is disabled, `int` and `float` will be parsed as `float64`.
+		// when it is enabled, they will be parsed as `json.Number`, later the parser
+		// will convert them to `int` or `float64` according to the field type.
+		if p.parseInts {
+			d := json.NewDecoder(strings.NewReader(m))
+			d.UseNumber()
+			err := d.Decode(&parsedValue)
+			if err != nil {
+				return nil, err
+			}
+			convertNumbers(parsedValue)
+		} else {
+			err := json.Unmarshal([]byte(m), &parsedValue)
+			if err != nil {
+				return nil, err
+			}
 		}
 	default:
 		return nil, fmt.Errorf("type %T cannot be parsed as JSON", value)
 	}
+
 	return parsedValue, nil
+}
+
+func convertNumbers(parsedValue map[string]any) {
+	for k, v := range parsedValue {
+		switch t := v.(type) {
+		case json.Number:
+			parsedValue[k] = convertNumber(t)
+		case map[string]any:
+			convertNumbers(t)
+		case []any:
+			convertNumbersArray(t)
+		}
+	}
+}
+
+func convertNumbersArray(arr []any) {
+	for i, v := range arr {
+		switch t := v.(type) {
+		case json.Number:
+			arr[i] = convertNumber(t)
+		case map[string]any:
+			convertNumbers(t)
+		case []any:
+			convertNumbersArray(t)
+		}
+	}
+}
+
+func convertNumber(value json.Number) any {
+	i64, err := value.Int64()
+	if err == nil {
+		return i64
+	}
+	f64, err := value.Float64()
+	if err == nil {
+		return f64
+	}
+	return value.String()
 }

@@ -23,7 +23,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }

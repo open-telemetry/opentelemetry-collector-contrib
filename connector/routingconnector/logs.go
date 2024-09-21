@@ -27,7 +27,7 @@ type logsConnector struct {
 }
 
 func newLogsConnector(
-	set connector.CreateSettings,
+	set connector.Settings,
 	config component.Config,
 	logs consumer.Logs,
 ) (*logsConnector, error) {
@@ -69,7 +69,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
-		rtx := ottlresource.NewTransformContext(rlogs.Resource())
+		rtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
 
 		noRoutesMatch := true
 		for _, route := range c.router.routeSlice {

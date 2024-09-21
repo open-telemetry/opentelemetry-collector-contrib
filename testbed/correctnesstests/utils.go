@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/dataconnectors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -24,8 +25,8 @@ func CreateConfigYaml(
 	t testing.TB,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
+	connector testbed.DataConnector,
 	processors map[string]string,
-	pipelineType string,
 ) string {
 
 	// Prepare extra processor config section and comma-separated list of extra processor
@@ -42,6 +43,64 @@ func CreateConfigYaml(
 			processorsList += name
 			first = false
 		}
+	}
+
+	var pipeline1 string
+	switch sender.(type) {
+	case testbed.TraceDataSender:
+		pipeline1 = "traces"
+	case testbed.MetricDataSender:
+		pipeline1 = "metrics"
+	case testbed.LogDataSender:
+		pipeline1 = "logs"
+	default:
+		t.Error("Invalid DataSender type")
+	}
+
+	if connector != nil {
+		pipeline2 := connector.GetReceiverType()
+
+		format := `
+receivers:%v
+exporters:%v
+processors:
+  %s
+
+extensions:
+
+connectors:%v
+
+service:
+  telemetry:
+    metrics:
+      address: 127.0.0.1:%d
+    logs:
+      level: "debug"
+  extensions:
+  pipelines:
+    %s/in:
+      receivers: [%v]
+      processors: [%s]
+      exporters: [%v]
+    %s/out:
+      receivers: [%v]
+      exporters: [%v]
+`
+		return fmt.Sprintf(
+			format,
+			sender.GenConfigYAMLStr(),
+			receiver.GenConfigYAMLStr(),
+			processorsSections,
+			connector.GenConfigYAMLStr(),
+			testutil.GetAvailablePort(t),
+			pipeline1,
+			sender.ProtocolName(),
+			processorsList,
+			connector.ProtocolName(),
+			pipeline2,
+			connector.ProtocolName(),
+			receiver.ProtocolName(),
+		)
 	}
 
 	format := `
@@ -70,7 +129,7 @@ service:
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
 		testutil.GetAvailablePort(t),
-		pipelineType,
+		pipeline1,
 		sender.ProtocolName(),
 		processorsList,
 		receiver.ProtocolName(),
@@ -79,12 +138,14 @@ service:
 
 // PipelineDef holds the information necessary to run a single testbed configuration.
 type PipelineDef struct {
-	Receiver     string
-	Exporter     string
-	TestName     string
-	DataSender   testbed.DataSender
-	DataReceiver testbed.DataReceiver
-	ResourceSpec testbed.ResourceSpec
+	Receiver      string
+	Exporter      string
+	Connector     string
+	TestName      string
+	DataSender    testbed.DataSender
+	DataReceiver  testbed.DataReceiver
+	DataConnector testbed.DataConnector
+	ResourceSpec  testbed.ResourceSpec
 }
 
 // LoadPictOutputPipelineDefs generates a slice of PipelineDefs from the passed-in generated PICT file. The
@@ -167,4 +228,17 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 		t.Errorf("unknown exporter type: %s", exporter)
 	}
 	return receiver
+}
+
+func ConstructConnector(t *testing.T, connector string, receiverType string) testbed.DataConnector {
+	var dataconnector testbed.DataConnector
+	switch connector {
+	case "spanmetrics":
+		dataconnector = dataconnectors.NewSpanMetricDataConnector(receiverType)
+	case "routing":
+		dataconnector = dataconnectors.NewRoutingDataConnector(receiverType)
+	default:
+		t.Errorf("unknown connector type: %s", connector)
+	}
+	return dataconnector
 }

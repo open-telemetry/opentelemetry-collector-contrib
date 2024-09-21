@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 const (
@@ -29,7 +30,7 @@ type metricsConnector struct {
 	config Config
 
 	// Additional dimensions to add to metrics.
-	dimensions []dimension
+	dimensions []pdatautil.Dimension
 
 	keyBuf *bytes.Buffer
 
@@ -37,7 +38,7 @@ type metricsConnector struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	exceptions map[string]*excVal
+	exceptions map[string]*exception
 
 	logger *zap.Logger
 
@@ -45,9 +46,10 @@ type metricsConnector struct {
 	startTimestamp pcommon.Timestamp
 }
 
-type excVal struct {
-	count int
-	attrs pcommon.Map
+type exception struct {
+	count     int
+	attrs     pcommon.Map
+	exemplars pmetric.ExemplarSlice
 }
 
 func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsConnector {
@@ -59,7 +61,7 @@ func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsCo
 		dimensions:     newDimensions(cfg.Dimensions),
 		keyBuf:         bytes.NewBuffer(make([]byte, 0, 1024)),
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		exceptions:     make(map[string]*excVal),
+		exceptions:     make(map[string]*exception),
 	}
 }
 
@@ -91,11 +93,12 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 						eventAttrs := event.Attributes()
 
 						c.keyBuf.Reset()
-						buildKey(c.keyBuf, serviceName, span, c.dimensions, eventAttrs)
+						buildKey(c.keyBuf, serviceName, span, c.dimensions, eventAttrs, resourceAttr)
 						key := c.keyBuf.String()
 
-						attrs := buildDimensionKVs(c.dimensions, serviceName, span, eventAttrs)
-						c.addException(key, attrs)
+						attrs := buildDimensionKVs(c.dimensions, serviceName, span, eventAttrs, resourceAttr)
+						exc := c.addException(key, attrs)
+						c.addExemplar(exc, span.TraceID(), span.SpanID())
 					}
 				}
 			}
@@ -132,39 +135,57 @@ func (c *metricsConnector) collectExceptions(ilm pmetric.ScopeMetrics) error {
 	dps := mCalls.Sum().DataPoints()
 	dps.EnsureCapacity(len(c.exceptions))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, val := range c.exceptions {
-		dpCalls := dps.AppendEmpty()
-		dpCalls.SetStartTimestamp(c.startTimestamp)
-		dpCalls.SetTimestamp(timestamp)
-
-		dpCalls.SetIntValue(int64(val.count))
-
-		val.attrs.CopyTo(dpCalls.Attributes())
+	for _, exc := range c.exceptions {
+		dp := dps.AppendEmpty()
+		dp.SetStartTimestamp(c.startTimestamp)
+		dp.SetTimestamp(timestamp)
+		dp.SetIntValue(int64(exc.count))
+		for i := 0; i < exc.exemplars.Len(); i++ {
+			exc.exemplars.At(i).SetTimestamp(timestamp)
+		}
+		dp.Exemplars().EnsureCapacity(exc.exemplars.Len())
+		exc.exemplars.CopyTo(dp.Exemplars())
+		exc.attrs.CopyTo(dp.Attributes())
+		// Reset the exemplars for the next batch of spans.
+		exc.exemplars = pmetric.NewExemplarSlice()
 	}
 	return nil
 }
 
-func (c *metricsConnector) addException(excKey string, attrs pcommon.Map) {
+func (c *metricsConnector) addException(excKey string, attrs pcommon.Map) *exception {
 	exc, ok := c.exceptions[excKey]
 	if !ok {
-		c.exceptions[excKey] = &excVal{
-			count: 1,
-			attrs: attrs,
+		c.exceptions[excKey] = &exception{
+			count:     1,
+			attrs:     attrs,
+			exemplars: pmetric.NewExemplarSlice(),
 		}
-		return
+		return c.exceptions[excKey]
 	}
 	exc.count++
+	return exc
 }
 
-func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.Span, eventAttrs pcommon.Map) pcommon.Map {
+func (c *metricsConnector) addExemplar(exc *exception, traceID pcommon.TraceID, spanID pcommon.SpanID) {
+	if !c.config.Exemplars.Enabled || traceID.IsEmpty() {
+		return
+	}
+	e := exc.exemplars.AppendEmpty()
+	e.SetTraceID(traceID)
+	e.SetSpanID(spanID)
+	e.SetDoubleValue(float64(exc.count))
+}
+
+func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName string, span ptrace.Span, eventAttrs pcommon.Map, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(3 + len(dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
+	dims.PutStr(spanNameKey, span.Name())
 	dims.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	dims.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	for _, d := range dimensions {
-		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs); ok {
-			v.CopyTo(dims.PutEmpty(d.name))
+		if v, ok := pdatautil.GetDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
+			v.CopyTo(dims.PutEmpty(d.Name))
 		}
 	}
 	return dims
@@ -175,14 +196,14 @@ func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.S
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []dimension, eventAttrs pcommon.Map) {
+func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []pdatautil.Dimension, eventAttrs pcommon.Map, resourceAttrs pcommon.Map) {
 	concatDimensionValue(dest, serviceName, false)
 	concatDimensionValue(dest, span.Name(), true)
 	concatDimensionValue(dest, traceutil.SpanKindStr(span.Kind()), true)
 	concatDimensionValue(dest, traceutil.StatusCodeStr(span.Status().Code()), true)
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs); ok {
+		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
 			concatDimensionValue(dest, v.AsString(), true)
 		}
 	}

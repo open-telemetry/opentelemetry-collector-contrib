@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("sqlquery")
+	Type      = component.MustNewType("sqlquery")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 )
 
 const (

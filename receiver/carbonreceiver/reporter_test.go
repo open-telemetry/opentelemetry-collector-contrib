@@ -24,7 +24,7 @@ func TestReporterObservability(t *testing.T) {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	reporter, err := newReporter(receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	reporter, err := newReporter(receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	require.NoError(t, err)
 
 	ctx := reporter.OnDataReceived(context.Background())

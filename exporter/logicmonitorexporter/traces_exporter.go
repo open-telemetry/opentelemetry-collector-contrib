@@ -23,7 +23,7 @@ type tracesExporter struct {
 }
 
 // newTracesExporter creates new Logicmonitor Traces Exporter.
-func newTracesExporter(_ context.Context, cfg component.Config, set exporter.CreateSettings) *tracesExporter {
+func newTracesExporter(_ context.Context, cfg component.Config, set exporter.Settings) *tracesExporter {
 	oCfg := cfg.(*Config)
 
 	// client construction is deferred to start

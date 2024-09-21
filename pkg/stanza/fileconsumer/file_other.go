@@ -9,6 +9,8 @@ import (
 	"context"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
@@ -34,13 +36,17 @@ OUTER:
 				continue
 			}
 
-			// At this point, we know that the file has been rotated. However, we do not know
-			// if it was moved or truncated. If truncated, then both handles point to the same
-			// file, in which case we should only read from it using the new reader. We can use
+			// At this point, we know that the file has been rotated out of the matching pattern.
+			// However, we do not know if it was moved or truncated.
+			// If truncated, then both handles point to the same file, in which case
+			// we should only read from it using the new reader. We can use
 			// the Validate method to ensure that the file has not been truncated.
 			if !oldReader.Validate() {
+				m.set.Logger.Debug("File has been rotated(truncated)", zap.String("path", oldReader.GetFileName()))
 				continue OUTER
 			}
+			// oldreader points to the rotated file after the move/rename. We can still read from it.
+			m.set.Logger.Debug("File has been rotated(moved)", zap.String("path", oldReader.GetFileName()))
 		}
 		lostReaders = append(lostReaders, oldReader)
 	}
@@ -48,9 +54,12 @@ OUTER:
 	var lostWG sync.WaitGroup
 	for _, lostReader := range lostReaders {
 		lostWG.Add(1)
+		m.set.Logger.Debug("Reading lost file", zap.String("path", lostReader.GetFileName()))
 		go func(r *reader.Reader) {
 			defer lostWG.Done()
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, -1)
 		}(lostReader)
 	}
 	lostWG.Wait()

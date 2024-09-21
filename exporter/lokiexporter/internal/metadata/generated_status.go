@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("loki")
+	Type      = component.MustNewType("loki")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 )
 
 const (
-	LogsStability = component.StabilityLevelBeta
+	LogsStability = component.StabilityLevelDeprecated
 )

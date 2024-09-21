@@ -14,10 +14,10 @@
 This extension allows serving sampling strategies following the Jaeger's remote sampling API. This extension can be configured to proxy requests to a backing remote sampling server, which could potentially be a Jaeger Collector down the pipeline, or a static JSON file from the local file system.
 
 By default, two listeners are made available:
-- `0.0.0.0:5778`, following the legacy remote sampling endpoint as defined by Jaeger
-- `0.0.0.0:14250`, following the gRPC remote sampling endpoint, also defined by Jaeger
+- `localhost:5778`, following the legacy remote sampling endpoint as defined by Jaeger
+- `localhost:14250`, following the gRPC remote sampling endpoint, also defined by Jaeger
 
-The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:9943. This will become the default in a future release.
+You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:5778` and `0.0.0.0:14250` respectively. This feature gate will be removed in a future release.
 
 
 Note that the port `14250` will clash with the Jaeger Receiver. When both are used, it's recommended to change this extension to use another port.

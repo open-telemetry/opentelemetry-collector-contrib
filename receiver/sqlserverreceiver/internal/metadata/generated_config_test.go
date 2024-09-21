@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -26,27 +25,33 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SqlserverBatchRequestRate:            MetricConfig{Enabled: true},
-					SqlserverBatchSQLCompilationRate:     MetricConfig{Enabled: true},
-					SqlserverBatchSQLRecompilationRate:   MetricConfig{Enabled: true},
-					SqlserverDatabaseIoReadLatency:       MetricConfig{Enabled: true},
-					SqlserverLockWaitRate:                MetricConfig{Enabled: true},
-					SqlserverLockWaitTimeAvg:             MetricConfig{Enabled: true},
-					SqlserverPageBufferCacheHitRatio:     MetricConfig{Enabled: true},
-					SqlserverPageCheckpointFlushRate:     MetricConfig{Enabled: true},
-					SqlserverPageLazyWriteRate:           MetricConfig{Enabled: true},
-					SqlserverPageLifeExpectancy:          MetricConfig{Enabled: true},
-					SqlserverPageOperationRate:           MetricConfig{Enabled: true},
-					SqlserverPageSplitRate:               MetricConfig{Enabled: true},
-					SqlserverTransactionRate:             MetricConfig{Enabled: true},
-					SqlserverTransactionWriteRate:        MetricConfig{Enabled: true},
-					SqlserverTransactionLogFlushDataRate: MetricConfig{Enabled: true},
-					SqlserverTransactionLogFlushRate:     MetricConfig{Enabled: true},
-					SqlserverTransactionLogFlushWaitRate: MetricConfig{Enabled: true},
-					SqlserverTransactionLogGrowthCount:   MetricConfig{Enabled: true},
-					SqlserverTransactionLogShrinkCount:   MetricConfig{Enabled: true},
-					SqlserverTransactionLogUsage:         MetricConfig{Enabled: true},
-					SqlserverUserConnectionCount:         MetricConfig{Enabled: true},
+					SqlserverBatchRequestRate:                   MetricConfig{Enabled: true},
+					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: true},
+					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: true},
+					SqlserverDatabaseCount:                      MetricConfig{Enabled: true},
+					SqlserverDatabaseIo:                         MetricConfig{Enabled: true},
+					SqlserverDatabaseLatency:                    MetricConfig{Enabled: true},
+					SqlserverDatabaseOperations:                 MetricConfig{Enabled: true},
+					SqlserverLockWaitRate:                       MetricConfig{Enabled: true},
+					SqlserverLockWaitTimeAvg:                    MetricConfig{Enabled: true},
+					SqlserverPageBufferCacheHitRatio:            MetricConfig{Enabled: true},
+					SqlserverPageCheckpointFlushRate:            MetricConfig{Enabled: true},
+					SqlserverPageLazyWriteRate:                  MetricConfig{Enabled: true},
+					SqlserverPageLifeExpectancy:                 MetricConfig{Enabled: true},
+					SqlserverPageOperationRate:                  MetricConfig{Enabled: true},
+					SqlserverPageSplitRate:                      MetricConfig{Enabled: true},
+					SqlserverProcessesBlocked:                   MetricConfig{Enabled: true},
+					SqlserverResourcePoolDiskThrottledReadRate:  MetricConfig{Enabled: true},
+					SqlserverResourcePoolDiskThrottledWriteRate: MetricConfig{Enabled: true},
+					SqlserverTransactionRate:                    MetricConfig{Enabled: true},
+					SqlserverTransactionWriteRate:               MetricConfig{Enabled: true},
+					SqlserverTransactionLogFlushDataRate:        MetricConfig{Enabled: true},
+					SqlserverTransactionLogFlushRate:            MetricConfig{Enabled: true},
+					SqlserverTransactionLogFlushWaitRate:        MetricConfig{Enabled: true},
+					SqlserverTransactionLogGrowthCount:          MetricConfig{Enabled: true},
+					SqlserverTransactionLogShrinkCount:          MetricConfig{Enabled: true},
+					SqlserverTransactionLogUsage:                MetricConfig{Enabled: true},
+					SqlserverUserConnectionCount:                MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SqlserverComputerName: ResourceAttributeConfig{Enabled: true},
@@ -59,27 +64,33 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SqlserverBatchRequestRate:            MetricConfig{Enabled: false},
-					SqlserverBatchSQLCompilationRate:     MetricConfig{Enabled: false},
-					SqlserverBatchSQLRecompilationRate:   MetricConfig{Enabled: false},
-					SqlserverDatabaseIoReadLatency:       MetricConfig{Enabled: false},
-					SqlserverLockWaitRate:                MetricConfig{Enabled: false},
-					SqlserverLockWaitTimeAvg:             MetricConfig{Enabled: false},
-					SqlserverPageBufferCacheHitRatio:     MetricConfig{Enabled: false},
-					SqlserverPageCheckpointFlushRate:     MetricConfig{Enabled: false},
-					SqlserverPageLazyWriteRate:           MetricConfig{Enabled: false},
-					SqlserverPageLifeExpectancy:          MetricConfig{Enabled: false},
-					SqlserverPageOperationRate:           MetricConfig{Enabled: false},
-					SqlserverPageSplitRate:               MetricConfig{Enabled: false},
-					SqlserverTransactionRate:             MetricConfig{Enabled: false},
-					SqlserverTransactionWriteRate:        MetricConfig{Enabled: false},
-					SqlserverTransactionLogFlushDataRate: MetricConfig{Enabled: false},
-					SqlserverTransactionLogFlushRate:     MetricConfig{Enabled: false},
-					SqlserverTransactionLogFlushWaitRate: MetricConfig{Enabled: false},
-					SqlserverTransactionLogGrowthCount:   MetricConfig{Enabled: false},
-					SqlserverTransactionLogShrinkCount:   MetricConfig{Enabled: false},
-					SqlserverTransactionLogUsage:         MetricConfig{Enabled: false},
-					SqlserverUserConnectionCount:         MetricConfig{Enabled: false},
+					SqlserverBatchRequestRate:                   MetricConfig{Enabled: false},
+					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: false},
+					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: false},
+					SqlserverDatabaseCount:                      MetricConfig{Enabled: false},
+					SqlserverDatabaseIo:                         MetricConfig{Enabled: false},
+					SqlserverDatabaseLatency:                    MetricConfig{Enabled: false},
+					SqlserverDatabaseOperations:                 MetricConfig{Enabled: false},
+					SqlserverLockWaitRate:                       MetricConfig{Enabled: false},
+					SqlserverLockWaitTimeAvg:                    MetricConfig{Enabled: false},
+					SqlserverPageBufferCacheHitRatio:            MetricConfig{Enabled: false},
+					SqlserverPageCheckpointFlushRate:            MetricConfig{Enabled: false},
+					SqlserverPageLazyWriteRate:                  MetricConfig{Enabled: false},
+					SqlserverPageLifeExpectancy:                 MetricConfig{Enabled: false},
+					SqlserverPageOperationRate:                  MetricConfig{Enabled: false},
+					SqlserverPageSplitRate:                      MetricConfig{Enabled: false},
+					SqlserverProcessesBlocked:                   MetricConfig{Enabled: false},
+					SqlserverResourcePoolDiskThrottledReadRate:  MetricConfig{Enabled: false},
+					SqlserverResourcePoolDiskThrottledWriteRate: MetricConfig{Enabled: false},
+					SqlserverTransactionRate:                    MetricConfig{Enabled: false},
+					SqlserverTransactionWriteRate:               MetricConfig{Enabled: false},
+					SqlserverTransactionLogFlushDataRate:        MetricConfig{Enabled: false},
+					SqlserverTransactionLogFlushRate:            MetricConfig{Enabled: false},
+					SqlserverTransactionLogFlushWaitRate:        MetricConfig{Enabled: false},
+					SqlserverTransactionLogGrowthCount:          MetricConfig{Enabled: false},
+					SqlserverTransactionLogShrinkCount:          MetricConfig{Enabled: false},
+					SqlserverTransactionLogUsage:                MetricConfig{Enabled: false},
+					SqlserverUserConnectionCount:                MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SqlserverComputerName: ResourceAttributeConfig{Enabled: false},
@@ -105,7 +116,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 
@@ -153,6 +164,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

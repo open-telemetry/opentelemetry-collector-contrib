@@ -45,15 +45,18 @@ func createDefaultConfig() component.Config {
 			ReboundNeededThresholdMiB:  defaultReboundNeededThresholdMib,
 			ReboundTriggerThresholdMiB: defaultReboundTriggerThresholdMib,
 			CheckInterval:              defaultCompactionInterval,
+			CleanupOnStart:             false,
 		},
-		Timeout: time.Second,
-		FSync:   false,
+		Timeout:              time.Second,
+		FSync:                false,
+		CreateDirectory:      false,
+		DirectoryPermissions: "0750",
 	}
 }
 
 func createExtension(
 	_ context.Context,
-	params extension.CreateSettings,
+	params extension.Settings,
 	cfg component.Config,
 ) (extension.Extension, error) {
 	return newLocalFileStorage(params.Logger, cfg.(*Config))

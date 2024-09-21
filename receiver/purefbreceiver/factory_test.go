@@ -29,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")

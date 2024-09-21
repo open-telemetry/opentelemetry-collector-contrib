@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -57,22 +57,15 @@ func (ipp *inProcessCollector) Start(_ StartParams) error {
 	}
 	ipp.configFile = confFile.Name()
 
-	fmp := fileprovider.NewFactory().Create(confmap.ProviderSettings{})
-	configProvider, err := otelcol.NewConfigProvider(
-		otelcol.ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{ipp.configFile},
-				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
-			},
-		})
-	if err != nil {
-		return err
-	}
-
 	settings := otelcol.CollectorSettings{
-		BuildInfo:             component.NewDefaultBuildInfo(),
-		Factories:             func() (otelcol.Factories, error) { return ipp.factories, nil },
-		ConfigProvider:        configProvider,
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (otelcol.Factories, error) { return ipp.factories, nil },
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{ipp.configFile},
+				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
+			},
+		},
 		SkipSettingGRPCLogger: true,
 	}
 

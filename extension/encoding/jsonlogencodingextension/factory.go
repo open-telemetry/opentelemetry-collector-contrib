@@ -21,10 +21,14 @@ func NewFactory() extension.Factory {
 	)
 }
 
-func createExtension(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
-	return &jsonLogExtension{}, nil
+func createExtension(_ context.Context, _ extension.Settings, config component.Config) (extension.Extension, error) {
+	return &jsonLogExtension{
+		config: config,
+	}, nil
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Mode: JSONEncodingModeBody,
+	}
 }

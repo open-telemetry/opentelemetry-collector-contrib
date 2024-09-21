@@ -32,7 +32,7 @@ import (
 
 func TestNewWithDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	got, err := newCarbonExporter(context.Background(), cfg, exportertest.NewNopCreateSettings())
+	got, err := newCarbonExporter(context.Background(), cfg, exportertest.NewNopSettings())
 	assert.NotNil(t, got)
 	assert.NoError(t, err)
 }
@@ -42,9 +42,9 @@ func TestConsumeMetricsNoServer(t *testing.T) {
 		context.Background(),
 		&Config{
 			TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: testutil.GetAvailableLocalAddress(t)},
-			TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
+			TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 		},
-		exportertest.NewNopCreateSettings())
+		exportertest.NewNopSettings())
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	require.Error(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
@@ -62,10 +62,10 @@ func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
 		context.Background(),
 		&Config{
 			TCPAddrConfig:             confignet.TCPAddrConfig{Endpoint: addr},
-			TimeoutSettings:           exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
+			TimeoutSettings:           exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 			ResourceToTelemetryConfig: resourcetotelemetry.Settings{Enabled: true},
 		},
-		exportertest.NewNopCreateSettings())
+		exportertest.NewNopSettings())
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
@@ -128,9 +128,9 @@ func TestConsumeMetrics(t *testing.T) {
 				&Config{
 					TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: addr},
 					MaxIdleConns:    tt.numProducers,
-					TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
+					TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 				},
-				exportertest.NewNopCreateSettings())
+				exportertest.NewNopSettings())
 			require.NoError(t, err)
 			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -142,7 +142,7 @@ func TestConsumeMetrics(t *testing.T) {
 					defer writersWG.Done()
 					<-startCh
 					for j := 0; j < tt.writesPerProducer; j++ {
-						require.NoError(t, exp.ConsumeMetrics(context.Background(), tt.md))
+						assert.NoError(t, exp.ConsumeMetrics(context.Background(), tt.md))
 					}
 				}()
 			}
@@ -332,10 +332,10 @@ func (cs *carbonServer) start(t *testing.T, numExpectedReq int) {
 				// Close is expected to cause error.
 				return
 			}
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			go func(conn net.Conn) {
 				defer func() {
-					require.NoError(t, conn.Close())
+					assert.NoError(t, conn.Close())
 				}()
 
 				reader := bufio.NewReader(conn)
@@ -344,7 +344,7 @@ func (cs *carbonServer) start(t *testing.T, numExpectedReq int) {
 					if errors.Is(err, io.EOF) {
 						return
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 
 					if cs.expectedContainsValue != "" {
 						assert.Contains(t, string(buf), cs.expectedContainsValue)

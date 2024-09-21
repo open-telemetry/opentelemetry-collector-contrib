@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -25,7 +26,7 @@ var (
 // carbonreceiver implements a receiver.Metrics for Carbon plaintext, aka "line", protocol.
 // see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
 type carbonReceiver struct {
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	config   *Config
 
 	server       transport.Server
@@ -38,7 +39,7 @@ var _ receiver.Metrics = (*carbonReceiver)(nil)
 
 // newMetricsReceiver creates the Carbon receiver with the given configuration.
 func newMetricsReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -90,7 +91,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 // Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
-func (r *carbonReceiver) Start(_ context.Context, _ component.Host) error {
+func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 	server, err := buildTransportServer(*r.config)
 	if err != nil {
 		return err
@@ -98,7 +99,7 @@ func (r *carbonReceiver) Start(_ context.Context, _ component.Host) error {
 	r.server = server
 	go func() {
 		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil && !errors.Is(err, net.ErrClosed) {
-			r.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil

@@ -145,7 +145,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
@@ -212,7 +212,7 @@ func TestGetConfigFromType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			output := tt.inputDetectorConfig.GetConfigFromType(tt.detectorType)
-			assert.Equal(t, output, tt.expectedConfig)
+			assert.Equal(t, tt.expectedConfig, output)
 		})
 	}
 }

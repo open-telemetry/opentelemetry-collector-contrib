@@ -4,6 +4,8 @@
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
+	"strings"
+
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -134,7 +136,18 @@ func (config *Config) Validate() error {
 	}
 
 	return cwlogs.ValidateTagsInput(config.Tags)
+}
 
+func (config *Config) isAppSignalsEnabled() bool {
+	if config.LogGroupName == "" || config.Namespace == "" {
+		return false
+	}
+
+	if config.Namespace == appSignalsMetricNamespace && strings.HasPrefix(config.LogGroupName, appSignalsLogGroupNamePrefix) {
+		return true
+	}
+
+	return false
 }
 
 func newEMFSupportedUnits() map[string]any {

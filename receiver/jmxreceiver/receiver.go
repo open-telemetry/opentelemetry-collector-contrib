@@ -32,7 +32,7 @@ type jmxMetricReceiver struct {
 	logger       *zap.Logger
 	config       *Config
 	subprocess   *subprocess.Subprocess
-	params       receiver.CreateSettings
+	params       receiver.Settings
 	otlpReceiver receiver.Metrics
 	nextConsumer consumer.Metrics
 	configFile   string
@@ -40,7 +40,7 @@ type jmxMetricReceiver struct {
 }
 
 func newJMXMetricReceiver(
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {
@@ -199,7 +199,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 
 	config["otel.metrics.exporter"] = "otlp"
 	config["otel.exporter.otlp.endpoint"] = endpoint
-	config["otel.exporter.otlp.timeout"] = strconv.FormatInt(jmx.config.OTLPExporterConfig.Timeout.Milliseconds(), 10)
+	config["otel.exporter.otlp.timeout"] = strconv.FormatInt(jmx.config.OTLPExporterConfig.TimeoutSettings.Timeout.Milliseconds(), 10)
 
 	if len(jmx.config.OTLPExporterConfig.Headers) > 0 {
 		config["otel.exporter.otlp.headers"] = jmx.config.OTLPExporterConfig.headersToString()

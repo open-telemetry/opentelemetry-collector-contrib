@@ -35,7 +35,7 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mongodbatlasreceiver {
+func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) *mongodbatlasreceiver {
 	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
 	for _, p := range cfg.Projects {
 		p.populateIncludesAndExcludes()
@@ -51,7 +51,7 @@ func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mon
 }
 
 func newMongoDBAtlasScraper(recv *mongodbatlasreceiver) (scraperhelper.Scraper, error) {
-	return scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
+	return scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 
 func (s *mongodbatlasreceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {

@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("tencentcloud_logservice")
+	Type      = component.MustNewType("tencentcloud_logservice")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 )
 
 const (

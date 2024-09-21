@@ -26,7 +26,7 @@ func TestJobMetrics(t *testing.T) {
 	j := testutils.NewJob("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	RecordMetrics(mb, j, ts)
 	m := mb.Emit()
 

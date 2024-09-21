@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
@@ -401,7 +402,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			il, resource := createTelemetry()
 
-			tCtx := NewTransformContext(il, resource)
+			tCtx := NewTransformContext(il, resource, plog.NewScopeLogs())
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)

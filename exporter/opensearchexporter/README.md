@@ -20,8 +20,14 @@ The documents are sent using [observability catalog](https://github.com/opensear
 
 ## Configuration options
 ### Indexing Options
+The Observability indices would follow the recommended pattern for immutable data stream ingestion using
+the [data_stream](https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream) concepts.
+Index pattern will follow the next naming template `ss4o_{type}-{dataset}-{namespace}`
 - `dataset` (default=`default`) a user-provided label to classify source of telemetry. It is used to construct the name of the destination index or data stream.
 - `namespace` (default=`namespace`) a user-provided label to group telemetry. It is used to construct the name of the destination index or data stream.
+
+LogsIndex configures the index, index alias, or data stream name logs should be indexed in.
+- `logs_index` a user-provided label to specify name of the destination index or data stream.
 
 ### HTTP Connection Options
 OpenSearch export supports standard [HTTP client settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration).

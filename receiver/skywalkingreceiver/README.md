@@ -18,6 +18,10 @@ Receives trace data and metric data in [Skywalking](https://skywalking.apache.or
 
 Note: The current metrics receiver only supports receiving JVM data.
 
+## Prerequisites
+
+This receiver supports [Apache Skywalking-Java Agent](https://github.com/apache/skywalking-java) version 8.9.0+
+
 ## Getting Started
 
 By default, the Skywalking receiver will not serve any protocol. A protocol must be
@@ -25,11 +29,10 @@ named under the `protocols` object for the Skywalking receiver to start. The
 below protocols are supported, each supports an optional `endpoint`
 object configuration parameter.
 
-- `grpc` (default `endpoint` = 0.0.0.0:11800)
-- `http` (default `endpoint` = 0.0.0.0:12800)
+- `grpc` (default `endpoint` = localhost:11800)
+- `http` (default `endpoint` = localhost:12800)
 
-The `component.UseLocalHostAsDefaultHost` feature gate changes endpoints to localhost:11800 and localhost:12800 respectively.
-This will become the default in a future release.
+You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change these to `0.0.0.0:11800` and `0.0.0.0:12800`. This feature gate will be removed in a future release.
 
 
 Examples:

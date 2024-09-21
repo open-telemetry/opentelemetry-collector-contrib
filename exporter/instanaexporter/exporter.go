@@ -83,7 +83,7 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	return e.export(ctx, e.config.Endpoint, headers, req)
 }
 
-func newInstanaExporter(cfg component.Config, set exporter.CreateSettings) *instanaExporter {
+func newInstanaExporter(cfg component.Config, set exporter.Settings) *instanaExporter {
 	iCfg := cfg.(*Config)
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)", set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 	return &instanaExporter{

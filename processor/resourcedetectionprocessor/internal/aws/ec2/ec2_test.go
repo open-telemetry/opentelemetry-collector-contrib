@@ -98,7 +98,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(processortest.NewNopCreateSettings(), tt.cfg)
+			detector, err := NewDetector(processortest.NewNopSettings(), tt.cfg)
 			if tt.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, detector)
@@ -353,7 +353,7 @@ func TestEC2Tags(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, output, tt.expectedOutput)
+			assert.Equal(t, tt.expectedOutput, output)
 		})
 	}
 }

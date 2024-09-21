@@ -23,6 +23,9 @@ resourceLogs:
               - key: arrayAttrName
                 value:
                   arrayValue: {}
+              - key: span.name
+                value:
+                  stringValue: svc-a-ep1
               - key: span.kind
                 value:
                   stringValue: SPAN_KIND_SERVER
@@ -67,6 +70,9 @@ resourceLogs:
               - key: arrayAttrName
                 value:
                   arrayValue: {}
+              - key: span.name
+                value:
+                  stringValue: svc-a-ep2
               - key: span.kind
                 value:
                   stringValue: SPAN_KIND_CLIENT
@@ -115,6 +121,9 @@ resourceLogs:
               - key: arrayAttrName
                 value:
                   arrayValue: {}
+              - key: span.name
+                value:
+                  stringValue: svc-b-ep1
               - key: span.kind
                 value:
                   stringValue: SPAN_KIND_SERVER

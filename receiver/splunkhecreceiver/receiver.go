@@ -20,6 +20,7 @@ import (
 	"github.com/gorilla/mux"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
@@ -84,7 +85,7 @@ var (
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
 type splunkReceiver struct {
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	config          *Config
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
@@ -99,7 +100,7 @@ var _ receiver.Metrics = (*splunkReceiver)(nil)
 
 // newMetricsReceiver creates the Splunk HEC receiver with the given configuration.
 func newMetricsReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -144,7 +145,7 @@ func newMetricsReceiver(
 
 // newLogsReceiver creates the Splunk HEC receiver with the given configuration.
 func newLogsReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
@@ -233,7 +234,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	go func() {
 		defer r.shutdownWG.Done()
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -248,22 +249,21 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *splunkReceiver) processSuccessResponseWithAck(ctx context.Context, resp http.ResponseWriter, eventCount int, channelID string) {
+func (r *splunkReceiver) processSuccessResponseWithAck(resp http.ResponseWriter, channelID string) error {
 	if r.ackExt == nil {
 		panic("writing response with ack when ack extension is not configured")
 	}
 
 	ackID := r.ackExt.ProcessEvent(channelID)
 	r.ackExt.Ack(channelID, ackID)
-	r.processSuccessResponse(ctx, resp, eventCount, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
+	return r.processSuccessResponse(resp, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
 }
 
-func (r *splunkReceiver) processSuccessResponse(ctx context.Context, resp http.ResponseWriter, eventCount int, bodyContent []byte) {
+func (r *splunkReceiver) processSuccessResponse(resp http.ResponseWriter, bodyContent []byte) error {
 	resp.Header().Set(httpContentTypeHeader, httpJSONTypeHeader)
 	resp.WriteHeader(http.StatusOK)
-	if _, err := resp.Write(bodyContent); err != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, eventCount, err)
-	}
+	_, err := resp.Write(bodyContent)
+	return err
 }
 
 func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) {
@@ -281,7 +281,7 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	var channelID string
 	var extracted bool
-	if channelID, extracted = r.extractChannelHeader(req); extracted {
+	if channelID, extracted = r.extractChannel(req); extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
 			return
@@ -307,7 +307,9 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	queriedAcks := r.ackExt.QueryAcks(channelID, ackRequest.Acks)
 	ackString, _ := json.Marshal(queriedAcks)
-	r.processSuccessResponse(ctx, resp, 0, []byte(fmt.Sprintf(ackResponse, ackString)))
+	if err := r.processSuccessResponse(resp, []byte(fmt.Sprintf(ackResponse, ackString))); err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, err)
+	}
 }
 
 func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Request) {
@@ -327,7 +329,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	var channelID string
 	var extracted bool
-	if channelID, extracted = r.extractChannelHeader(req); extracted {
+	if channelID, extracted = r.extractChannel(req); extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
 			return
@@ -382,18 +384,32 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if consumerErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
+		var ackErr error
 		if len(channelID) > 0 && r.ackExt != nil {
-			r.processSuccessResponseWithAck(ctx, resp, ld.LogRecordCount(), channelID)
+			ackErr = r.processSuccessResponseWithAck(resp, channelID)
 		} else {
-			r.processSuccessResponse(ctx, resp, ld.LogRecordCount(), okRespBody)
+			ackErr = r.processSuccessResponse(resp, okRespBody)
 		}
-		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), slLen, nil)
+		if ackErr != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ld.LogRecordCount(), err)
+		} else {
+			r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), slLen, nil)
+		}
 	}
 }
 
-func (r *splunkReceiver) extractChannelHeader(req *http.Request) (string, bool) {
-	if headers, ok := req.Header[splunk.HTTPSplunkChannelHeader]; ok {
-		return headers[0], true
+func (r *splunkReceiver) extractChannel(req *http.Request) (string, bool) {
+	// check header
+	for k, v := range req.Header {
+		if strings.EqualFold(k, splunk.HTTPSplunkChannelHeader) {
+			return strings.ToUpper(v[0]), true
+		}
+	}
+	// check query param
+	for k, v := range req.URL.Query() {
+		if strings.EqualFold(k, "channel") {
+			return strings.ToUpper(v[0]), true
+		}
 	}
 
 	return "", false
@@ -434,7 +450,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	channelID, extracted := r.extractChannelHeader(req)
+	channelID, extracted := r.extractChannel(req)
 	if extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
@@ -511,7 +527,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
-		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 			return
@@ -521,17 +536,27 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
 
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(metricEvents), decodeErr)
 			return
 		}
 	}
 
+	var ackErr error
 	if len(channelID) > 0 && r.ackExt != nil {
-		r.processSuccessResponseWithAck(ctx, resp, len(events)+len(metricEvents), channelID)
+		ackErr = r.processSuccessResponseWithAck(resp, channelID)
 	} else {
-		r.processSuccessResponse(ctx, resp, len(events)+len(metricEvents), okRespBody)
+		ackErr = r.processSuccessResponse(resp, okRespBody)
+	}
+	if ackErr != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events)+len(metricEvents), ackErr)
+	} else {
+		if r.logsConsumer != nil {
+			r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), nil)
+		}
+		if r.metricsConsumer != nil {
+			r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
+		}
 	}
 }
 
@@ -566,9 +591,10 @@ func (r *splunkReceiver) failRequest(
 		}
 	}
 
-	if r.metricsConsumer == nil {
+	if r.logsConsumer != nil {
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
-	} else {
+	}
+	if r.metricsConsumer != nil {
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
 	}
 

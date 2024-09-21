@@ -113,15 +113,23 @@ With above guidelines, you can write code that is more portable and easier to ma
 issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
 providing the following information:
 
-* Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of
-  the code and become a code owner for the component. For vendor-specific components, it's good to have a volunteer
-  sponsor. If you can't find one, we'll assign one in a round-robin fashion. A vendor-specific component directly interfaces
-  with a vendor-specific API and is expected to be maintained by a representative of the same vendor. For non-vendor specific
-  components, having a sponsor means that your use case has been validated.
+* Who's the sponsor for your component. A sponsor is an approver or maintainer who will be the official reviewer of the code and a code owner
+  for the component. Generally, you will need to find a sponsor for the component in order for it to be accepted. For vendor-specific
+  components, a sponsor may be assigned under certain circumstances. See additional details below.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
 * The configuration options your component will accept. This will give us a better understanding of what it does, and 
   how it may be implemented.
+
+### Vendor-specific components
+
+A vendor-specific component directly interfaces with a vendor-specific API and is expected to be maintained by a representative of the same vendor.
+It is always preferred to find a sponsor. However in an effort to ensure vendor neutrality, a sponsor will be assigned to a vendor-specific
+component using a round-robin fashion if the following circumstances are met:
+
+1. A member of the OpenTelemetry project proposes to contribute and support the component on behalf of the vendor.
+2. The proposed component is either a receiver or exporter. With this, we aim to foster an interoperable ecosystem.
+3. The vendor does not yet have a component of the same kind (receiver or exporter) in the repository.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
@@ -157,28 +165,15 @@ and its contributors.
   available configuration settings so users can copy and modify them as needed.
 - Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
-- All components included in the distribution must be included in [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml) 
-  and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
-  the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
-  components number with a comment within the PR explaining as to why it can not be tested.
-- Enable [goleak checks](https://github.com/uber-go/goleak) to help ensure your component does not leak goroutines. This
-  requires adding a file named `package_test.go` to every sub-directory containing tests. This file should have the following contents by default:
-```
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-package fooreceiver
-
-import (
-	"testing"
-
-	"go.uber.org/goleak"
-)
-
-func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
-}
-```
+- All components included in the distribution must be included in
+  [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml)
+  and in the respective testing harnesses. To align with the test goal of the
+  project, components must be testable within the framework defined within the
+  folder. If a component can not be properly tested within the existing
+  framework, it must increase the non testable components number with a comment
+  within the PR explaining as to why it can not be tested. **(Note: this does
+  not automatically include any components in official release binaries. See
+  [Releasing new components](#releasing-new-components).)**
 
 - Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml).
 Here is a minimal representation:
@@ -231,18 +226,27 @@ When submitting a component to the community, consider breaking it down into sep
     * `make generate`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
+    * `make addlicense`
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
-* **Last PR** should mark the new component as `Alpha` stability and add it to the `cmd/otelcontribcol`
-  binary by updating the `cmd/otelcontribcol/builder-config.yaml` file and running `make genotelcontribcol`.
-  The component's tests must also be added as a part of its respective `component_type_tests.go` file in the `cmd/otelcontribcol` directory.
-  The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
-* Once a new component has been added to the executable, please add the component
-  to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
+* **Last PR** should mark the new component as `Alpha` stability.
+  * Update its `metadata.yaml` file.
+    * Mark the stability as `alpha`
+    * Add `contrib` to the list of distributions
+  * Add it to the `cmd/otelcontribcol` binary by updating the `cmd/otelcontribcol/builder-config.yaml` file.
+  * Please also run:
+    - `make generate`
+    - `make genotelcontribcol`
+  * The component's tests must also be added as a part of its respective `component_type_tests.go` file in the `cmd/otelcontribcol` directory.
+  * The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+* Once your component has reached `Alpha` stability, you may also submit a PR to the [OpenTelemetry Collector Releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository to include your component in future releases of the OpenTelemetry Collector `contrib` distribution.
+* Once a new component has been added to the executable:
+  * Please add the component
+    to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Releasing New Components
-After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
+After a component has been merged it must be added to the
 [OpenTelemetry Collector Contrib's release manifest.yaml](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml)
 to be included in the distributed otelcol-contrib binaries and docker images.
 
@@ -250,10 +254,9 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@crobert-1](https://github.com/crobert-1)
+* [@mwear](https://github.com/mwear)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
-* [@Aneurysm9](https://github.com/Aneurysm9)
 * [@mx-psi](https://github.com/mx-psi)
 * [@dmitryax](https://github.com/dmitryax)
 * [@evan-bradley](https://github.com/evan-bradley)
@@ -265,8 +268,8 @@ The following GitHub users are the currently available sponsors, either by being
 * [@fatsheep9146](https://github.com/fatsheep9146)
 * [@andrzej-stencel](https://github.com/andrzej-stencel)
 * [@songy23](https://github.com/songy23)
-* [@Bryan Aguilar](https://github.com/bryan-aguilar)
 * [@atoulme](https://github.com/atoulme)
+* [@crobert-1](https://github.com/crobert-1)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -375,10 +378,13 @@ The following general labels are supported:
 
 | Label                | Label in Comment     |
 |----------------------|----------------------|
+| `arm64`              | `arm64`              |
 | `good first issue`   | `good-first-issue`   |
 | `help wanted`        | `help-wanted`        |
 | `discussion needed`  | `discussion-needed`  |
 | `needs triage`       | `needs-triage`       |
+| `os:mac`             | `os:mac`             |
+| `os:windows`         | `os:windows`         |
 | `waiting for author` | `waiting-for-author` |
 
 To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
@@ -389,7 +395,13 @@ Example label comment:
 /label receiver/prometheus help-wanted -exporter/prometheus
 ```
 
-## Becoming a Code Owner
+## Membership, Roles, and Responsibilities
+
+### Membership levels
+
+See the [OpenTelemetry membership guide](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md) for information on how to become a member of the OpenTelemetry organization and the different roles available. In addition to the roles listed there we also have a Collector-specific role: code owners.
+
+### Becoming a Code Owner
 
 A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
 
@@ -402,16 +414,16 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 
 Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
-### Requirements
+#### Requirements
 
 If you would like to help and become a Code Owner you must meet the following requirements:
 
-1. [Be a member of the OpenTelemetry organization.](https://github.com/open-telemetry/community/blob/main/community-membership.md#member)
+1. [Be a member of the OpenTelemetry organization.](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#member)
 2. (Code Owner Discretion) It is best to have resolved an issue related to the component, contributed directly to the component, and/or review component PRs. How much interaction with the component is required before becoming a Code Owner is up to any existing Code Owners.
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
-### How to become a Code Owner
+#### How to become a Code Owner
 
 To become a Code Owner, open a PR with the following changes:
 
@@ -421,6 +433,14 @@ To become a Code Owner, open a PR with the following changes:
       * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make generate` to regenerate the component's README header.
 
 Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+
+### Emeritus roles
+
+Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github.
+
+In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via both Github and the CNCF Slack to confirm their status. After two weeks, if the contributor is an approver or maintainer, they may be removed from the Github review auto-assignment.
+
+If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
 
 ## Makefile Guidelines
 

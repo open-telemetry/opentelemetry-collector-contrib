@@ -21,10 +21,15 @@ const (
 	filterOPNotEquals    = "not-equals"
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
+	metadataPodIP        = "k8s.pod.ip"
 	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
-	// TODO: use k8s.cluster.uid from semconv when available, and replace clusterUID with conventions.AttributeClusterUid
-	clusterUID = "k8s.cluster.uid"
+	// TODO: use k8s.cluster.uid, container.image.repo_digests
+	// from semconv when available,
+	//   replace clusterUID with conventions.AttributeK8SClusterUID
+	//   replace containerRepoDigests with conventions.AttributeContainerImageRepoDigests
+	clusterUID                = "k8s.cluster.uid"
+	containerImageRepoDigests = "container.image.repo_digests"
 )
 
 // option represents a configuration option that can be passes.
@@ -60,6 +65,9 @@ func enabledAttributes() (attributes []string) {
 	}
 	if defaultConfig.ContainerImageName.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerImageName)
+	}
+	if defaultConfig.ContainerImageRepoDigests.Enabled {
+		attributes = append(attributes, containerImageRepoDigests)
 	}
 	if defaultConfig.ContainerImageTag.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerImageTag)
@@ -109,6 +117,9 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.K8sPodUID.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SPodUID)
 	}
+	if defaultConfig.K8sPodIP.Enabled {
+		attributes = append(attributes, metadataPodIP)
+	}
 	if defaultConfig.K8sReplicasetName.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SReplicaSetName)
 	}
@@ -140,6 +151,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.PodHostName = true
 			case metadataPodStartTime:
 				p.rules.StartTime = true
+			case metadataPodIP:
+				p.rules.PodIP = true
 			case conventions.AttributeK8SDeploymentName:
 				p.rules.DeploymentName = true
 			case conventions.AttributeK8SDeploymentUID:
@@ -172,6 +185,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerID = true
 			case conventions.AttributeContainerImageName:
 				p.rules.ContainerImageName = true
+			case containerImageRepoDigests:
+				p.rules.ContainerImageRepoDigests = true
 			case conventions.AttributeContainerImageTag:
 				p.rules.ContainerImageTag = true
 			case clusterUID:

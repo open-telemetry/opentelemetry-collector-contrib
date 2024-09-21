@@ -40,6 +40,8 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, cfg.IncludeFilePathResolved)
 	assert.False(t, cfg.IncludeFileOwnerName)
 	assert.False(t, cfg.IncludeFileOwnerGroupName)
+	assert.False(t, cfg.IncludeFileRecordNumber)
+	assert.False(t, cfg.AcquireFSLock)
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -454,7 +456,7 @@ func TestBuild(t *testing.T) {
 			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{
@@ -663,7 +665,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{
@@ -828,6 +830,12 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
 		},
 	}
 
+	return c
+}
+
+// withGzipFileSuffix is a builder-like helper for quickly setting up support for gzip compressed log files
+func (c *Config) withGzip() *Config {
+	c.Compression = "gzip"
 	return c
 }
 

@@ -8,15 +8,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
@@ -34,7 +35,7 @@ func TestStart(t *testing.T) {
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig(),
 		mockConsumer,
 	)
@@ -65,7 +66,7 @@ func TestHandleStartError(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
 	cfg.Input = NewUnstartableConfig()
 
-	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockConsumer)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = receiver.Start(context.Background(), componenttest.NewNopHost())
@@ -76,7 +77,7 @@ func TestHandleConsume(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), factory.CreateDefaultConfig(), mockConsumer)
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), factory.CreateDefaultConfig(), mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
@@ -103,7 +104,7 @@ func TestHandleConsumeRetry(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*TestConfig).BaseConfig.RetryOnFailure.Enabled = true
 	cfg.(*TestConfig).BaseConfig.RetryOnFailure.InitialInterval = 10 * time.Millisecond
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockConsumer)
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	require.NoError(t, logsReceiver.Start(context.Background(), componenttest.NewNopHost()))
@@ -121,6 +122,48 @@ func TestHandleConsumeRetry(t *testing.T) {
 	require.NoError(t, logsReceiver.Shutdown(context.Background()))
 }
 
+func TestShutdownFlush(t *testing.T) {
+	mockConsumer := &consumertest.LogsSink{}
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
+
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), factory.CreateDefaultConfig(), mockConsumer)
+	require.NoError(t, err, "receiver should successfully build")
+
+	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err, "receiver start failed")
+
+	var consumedLogCount atomic.Int32
+	closeCh := make(chan struct{})
+	stanzaReceiver := logsReceiver.(*receiver)
+	go func() {
+		for {
+			select {
+			case <-closeCh:
+				assert.NoError(t, logsReceiver.Shutdown(context.Background()))
+				fmt.Println(">> Shutdown called")
+				return
+			default:
+				err := stanzaReceiver.emitter.Process(context.Background(), entry.New())
+				assert.NoError(t, err)
+			}
+			consumedLogCount.Add(1)
+		}
+	}()
+	require.Eventually(t, func() bool {
+		return consumedLogCount.Load() > 100
+	}, 5*time.Second, 5*time.Millisecond)
+
+	close(closeCh)
+
+	// Eventually because of asynchronuous nature of the receiver.
+	require.EventuallyWithT(t,
+		func(t *assert.CollectT) {
+			assert.Equal(t, consumedLogCount.Load(), int32(mockConsumer.LogRecordCount()))
+		},
+		2*time.Second, 5*time.Millisecond,
+	)
+}
+
 func BenchmarkReadLine(b *testing.B) {
 	filePath := filepath.Join(b.TempDir(), "bench.log")
 
@@ -134,12 +177,12 @@ func BenchmarkReadLine(b *testing.B) {
 	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
-	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
+	set := componenttest.NewNopTelemetrySettings()
+	emitter := helper.NewLogEmitter(set)
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
 
-	set := componenttest.NewNopTelemetrySettings()
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
 		DefaultOutput: emitter,
@@ -201,12 +244,12 @@ func BenchmarkParseAndMap(b *testing.B) {
 	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
-	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
+	set := componenttest.NewNopTelemetrySettings()
+	emitter := helper.NewLogEmitter(set)
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
 
-	set := componenttest.NewNopTelemetrySettings()
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
 		DefaultOutput: emitter,

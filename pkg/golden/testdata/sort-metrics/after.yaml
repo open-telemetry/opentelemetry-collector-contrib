@@ -22,7 +22,7 @@ resourceMetrics:
             - key: a
               value:
                 stringValue: CCCC
-          name: otelcol/anotherfakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/anotherfakereceiver
           version: latest
   - resource:
       attributes:
@@ -47,7 +47,7 @@ resourceMetrics:
             - key: a
               value:
                 stringValue: AAAA
-          name: otelcol/fakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fakereceiver
           version: latest
       - metrics:
           - description: The number of bytes which have flowed through the network interface.
@@ -112,7 +112,7 @@ resourceMetrics:
             - key: a
               value:
                 stringValue: BBBB
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
       - metrics:
           - description: This also isn't a real metric
@@ -131,7 +131,7 @@ resourceMetrics:
             - key: a
               value:
                 stringValue: CCCC
-          name: otelcol/anotherfakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/anotherfakereceiver
           version: latest
   - resource:
       attributes:
@@ -156,5 +156,5 @@ resourceMetrics:
             - key: a
               value:
                 stringValue: AAAA
-          name: otelcol/questionablyfakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/questionablyfakereceiver
           version: latest

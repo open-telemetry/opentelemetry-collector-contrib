@@ -40,7 +40,7 @@ func (exporter *logExporter) onLogData(_ context.Context, logData plog.Logs) err
 }
 
 // Returns a new instance of the log exporter
-func newLogsExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Logs, error) {
+func newLogsExporter(config *Config, transportChannel transportChannel, set exporter.Settings) (exporter.Logs, error) {
 	exporter := &logExporter{
 		config:           config,
 		transportChannel: transportChannel,

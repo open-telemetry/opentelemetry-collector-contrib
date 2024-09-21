@@ -26,6 +26,10 @@ const (
 	errCodeThrottlingException = "ThrottlingException"
 )
 
+var (
+	containerInsightsRegexPattern = regexp.MustCompile(`^/aws/.*containerinsights/.*/(performance|prometheus)$`)
+)
+
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
 type Client struct {
@@ -33,6 +37,18 @@ type Client struct {
 	logRetention int64
 	tags         map[string]*string
 	logger       *zap.Logger
+}
+
+type ClientOption func(*cwLogClientConfig)
+
+type cwLogClientConfig struct {
+	userAgentExtras []string
+}
+
+func WithUserAgentExtras(userAgentExtras ...string) ClientOption {
+	return func(config *cwLogClientConfig) {
+		config.userAgentExtras = append(config.userAgentExtras, userAgentExtras...)
+	}
 }
 
 // Create a log client based on the actual cloudwatch logs client.
@@ -45,10 +61,19 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetent
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string, opts ...ClientOption) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
-	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, componentName))
+
+	// Loop through each option
+	option := &cwLogClientConfig{
+		userAgentExtras: []string{},
+	}
+	for _, opt := range opts {
+		opt(option)
+	}
+
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, componentName, option))
 	return newCloudWatchLogClient(client, logRetention, tags, logger)
 }
 
@@ -175,19 +200,18 @@ func (client *Client) CreateStream(logGroup, streamName *string) error {
 	return nil
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, componentName string) request.NamedHandler {
-	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName)
-	if matchContainerInsightsPattern(logGroupName) {
-		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName, "ContainerInsights")
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, componentName string, clientConfig *cwLogClientConfig) request.NamedHandler {
+	extraStrs := []string{componentName}
+	extraStrs = append(extraStrs, clientConfig.userAgentExtras...)
+
+	if containerInsightsRegexPattern.MatchString(logGroupName) {
+		extraStrs = append(extraStrs, "ContainerInsights")
 	}
+
+	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, extraStrs...)
+
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
 		Fn:   fn,
 	}
-}
-
-func matchContainerInsightsPattern(logGroupName string) bool {
-	regexP := "^/aws/.*containerinsights/.*/(performance|prometheus)$"
-	r, _ := regexp.Compile(regexP)
-	return r.MatchString(logGroupName)
 }

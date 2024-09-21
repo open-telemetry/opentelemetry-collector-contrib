@@ -33,7 +33,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	userCfg := dcfg.(Config)
 	cfg := api.DefaultConfig()
 

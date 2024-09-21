@@ -71,6 +71,51 @@ func TestAddFileResolvedFields(t *testing.T) {
 	}
 }
 
+// AddFileRecordNumber tests that the `log.file.record_number` is correctly included
+// when IncludeFileRecordNumber is set to true
+func TestAddFileRecordNumber(t *testing.T) {
+	t.Parallel()
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
+		cfg.IncludeFileRecordNumber = true
+	})
+
+	// Create a file, then start
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "testlog1\ntestlog2\ntestlog3\n")
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	e := waitForOne(t, logReceived)
+	require.Equal(t, "testlog1", e.Body)
+	require.Equal(t, int64(1), e.Attributes["log.file.record_number"])
+
+	e = waitForOne(t, logReceived)
+	require.Equal(t, "testlog2", e.Body)
+	require.Equal(t, int64(2), e.Attributes["log.file.record_number"])
+
+	e = waitForOne(t, logReceived)
+	require.Equal(t, "testlog3", e.Body)
+	require.Equal(t, int64(3), e.Attributes["log.file.record_number"])
+
+	// Write 3 more entries
+	writeString(t, temp, "testlog4\ntestlog5\ntestlog6\n")
+
+	e = waitForOne(t, logReceived)
+	require.Equal(t, "testlog4", e.Body)
+	require.Equal(t, int64(4), e.Attributes["log.file.record_number"])
+
+	e = waitForOne(t, logReceived)
+	require.Equal(t, "testlog5", e.Body)
+	require.Equal(t, int64(5), e.Attributes["log.file.record_number"])
+
+	e = waitForOne(t, logReceived)
+	require.Equal(t, "testlog6", e.Body)
+	require.Equal(t, int64(6), e.Attributes["log.file.record_number"])
+}
+
 // ReadExistingLogs tests that, when starting from beginning, we
 // read all the lines that are already there
 func TestReadExistingLogs(t *testing.T) {
@@ -144,7 +189,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
 			bytesWritten, err := temp.Write(tc.input)
-			require.Greater(t, bytesWritten, 0)
+			require.Positive(t, bytesWritten)
 			require.NoError(t, err)
 			require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 			defer func() {

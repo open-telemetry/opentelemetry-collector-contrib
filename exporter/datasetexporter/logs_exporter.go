@@ -39,7 +39,7 @@ const (
 	dataSetLogLevelFatal  = 6
 )
 
-func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := castConfig(config)
 	e, err := newDatasetExporter("logs", cfg, set)
 	if err != nil {

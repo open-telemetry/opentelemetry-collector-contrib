@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 // createMetricsReceiver creates the metric receiver for SNMP
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -61,7 +61,7 @@ func createMetricsReceiver(
 	}
 
 	snmpScraper := newScraper(params.Logger, snmpConfig, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
 	if err != nil {
 		return nil, err
 	}

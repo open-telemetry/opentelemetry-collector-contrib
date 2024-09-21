@@ -5,7 +5,7 @@
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fopamp%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fopamp) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fopamp%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fopamp) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@evan-bradley](https://www.github.com/evan-bradley), [@tigrannajaryan](https://www.github.com/tigrannajaryan) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@evan-bradley](https://www.github.com/evan-bradley), [@tigrannajaryan](https://www.github.com/tigrannajaryan), [@BinaryFissionGames](https://www.github.com/BinaryFissionGames) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -19,13 +19,24 @@ The following settings are required:
   - `ws`: The OpAMP websocket transport settings.
     - `endpoint` (no default): The OpAMP server websocket endpoint (URL).
 
-The following settings are optional:
+The following settings are optional for the websocket client:
 
 - `server`: The OpAMP server connection settings.
   - `ws`: The OpAMP websocket transport settings.
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
-- `instance_uid`: A ULID formatted as a 26 character string in canonical
+
+The following settings are optional for the HTTP client:
+
+- `server`: The OpAMP server connection settings.
+  - `http`: The OpAMP websocket transport settings.
+    - `tls`: TLS settings.
+    - `headers`: HTTP headers to set.
+    - `polling_interval`: The interval at which the extension will poll the server. Defaults to 30s.
+
+The following settings are optional for both transports:
+
+- `instance_uid`: A UUIDv7 formatted as a 36 character string in canonical
   representation. Auto-generated on start if missing. Setting this ensures the
   instance UID remains constant across process restarts.
 - `capabilities`: Keys with boolean true/false values that enable a particular OpAMP capability.
@@ -47,27 +58,9 @@ extensions:
 
 ## Custom Messages
 
-Other components may use a configured OpAMP extension to send and receive custom messages to and from an OpAMP server. Components may use the provided `components.Host` from the Start method in order to get a handle to the registry:
+Other components may use a configured OpAMP extension to send and receive custom messages to and from an OpAMP server.
 
-```go
-func Start(_ context.Context, host component.Host) error {
-	ext, ok := host.GetExtensions()[opampExtensionID]
-	if !ok {
-		return fmt.Errorf("opamp extension %q does not exist", opampExtensionID)
-	}
-
-	registry, ok := ext.(opampextension.CustomCapabilityRegistry)
-	if !ok {
-		return fmt.Errorf("extension %q is not a custom message registry", opampExtensionID)
-	}
-
-	// You can now use registry.Register to register a custom capability
-
-	return nil
-}
-```
-
-See the [custom_messages.go](./custom_messages.go) for more information on the custom message API.
+See the [opampcustommessages](../opampcustommessages/README.md) module for more information on the custom message API.
 
 ## Status
 

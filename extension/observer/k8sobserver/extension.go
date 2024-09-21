@@ -80,7 +80,7 @@ func (k *k8sObserver) Shutdown(_ context.Context) error {
 }
 
 // newObserver creates a new k8s observer extension.
-func newObserver(config *Config, set extension.CreateSettings) (extension.Extension, error) {
+func newObserver(config *Config, set extension.Settings) (extension.Extension, error) {
 	client, err := k8sconfig.MakeClient(config.APIConfig)
 	if err != nil {
 		return nil, err

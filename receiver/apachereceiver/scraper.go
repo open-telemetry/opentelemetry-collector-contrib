@@ -32,7 +32,7 @@ type apacheScraper struct {
 }
 
 func newApacheScraper(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg *Config,
 	serverName string,
 	port string,

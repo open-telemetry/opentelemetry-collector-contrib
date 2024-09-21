@@ -89,7 +89,7 @@ func TestScrape_Errors(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsConfig})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
@@ -99,7 +99,7 @@ func TestScrape_Errors(t *testing.T) {
 				pageSize = test.pageSize
 			} else {
 				pageSize = getPageSize()
-				assert.Greater(t, pageSize, uint64(0))
+				assert.Positive(t, pageSize)
 				assert.Zero(t, pageSize%4096) // page size on Windows should always be a multiple of 4KB
 			}
 
@@ -161,7 +161,7 @@ func TestStart_Error(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsConfig})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: metricsConfig})
 
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)
 

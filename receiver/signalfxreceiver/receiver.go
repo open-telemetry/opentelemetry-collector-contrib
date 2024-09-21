@@ -18,6 +18,7 @@ import (
 	"github.com/gorilla/mux"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -73,7 +74,7 @@ var (
 
 // sfxReceiver implements the receiver.Metrics for SignalFx metric protocol.
 type sfxReceiver struct {
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	config          *Config
 	metricsConsumer consumer.Metrics
 	logsConsumer    consumer.Logs
@@ -86,7 +87,7 @@ var _ receiver.Metrics = (*sfxReceiver)(nil)
 
 // New creates the SignalFx receiver with the given configuration.
 func newReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 ) (*sfxReceiver, error) {
 	transport := "http"
@@ -151,7 +152,7 @@ func (r *sfxReceiver) Start(ctx context.Context, host component.Host) error {
 	go func() {
 		defer r.shutdownWG.Done()
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil

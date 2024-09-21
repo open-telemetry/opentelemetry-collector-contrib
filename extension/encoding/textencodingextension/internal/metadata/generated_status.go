@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("text_encoding")
+	Type      = component.MustNewType("text_encoding")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension"
 )
 
 const (

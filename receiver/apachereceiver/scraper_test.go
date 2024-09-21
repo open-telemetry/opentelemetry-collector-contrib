@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -35,7 +36,7 @@ func TestScraper(t *testing.T) {
 
 	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
 	require.NoError(t, err)
-	scraper := newApacheScraper(receivertest.NewNopCreateSettings(), cfg, serverName, port)
+	scraper := newApacheScraper(receivertest.NewNopSettings(), cfg, serverName, port)
 
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -57,7 +58,7 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{
+	sc := newApacheScraper(receivertest.NewNopSettings(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.ClientConfig{
@@ -159,7 +160,7 @@ BytesPerSec: 73.12
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{}, "", "")
+		sc := newApacheScraper(receivertest.NewNopSettings(), &Config{}, "", "")
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())
@@ -189,7 +190,7 @@ Load15: 0.3
 Total Duration: 1501
 Scoreboard: S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................
 `))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		rw.WriteHeader(404)

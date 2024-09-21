@@ -38,7 +38,7 @@ type EbMetaData struct {
 	VersionLabel    string `json:"version_label"`
 }
 
-func NewDetector(_ processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	return &Detector{fs: &ebFileSystem{}, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }

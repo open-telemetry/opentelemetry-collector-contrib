@@ -13,6 +13,7 @@ import (
 
 // EventXML is the rendered xml of an event.
 type EventXML struct {
+	Original         string      `xml:"-"`
 	EventID          EventID     `xml:"System>EventID"`
 	Provider         Provider    `xml:"System>Provider"`
 	Computer         string      `xml:"System>Computer"`
@@ -31,6 +32,7 @@ type EventXML struct {
 	Security         *Security   `xml:"System>Security"`
 	Execution        *Execution  `xml:"System>Execution"`
 	EventData        EventData   `xml:"EventData"`
+	RemoteServer     string      `xml:"RemoteServer,omitempty"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
@@ -121,6 +123,10 @@ func (e *EventXML) parseBody() map[string]any {
 		"event_data":  parseEventData(e.EventData),
 	}
 
+	if e.RemoteServer != "" {
+		body["remote_server"] = e.RemoteServer
+	}
+
 	if len(details) > 0 {
 		body["details"] = details
 	}
@@ -173,15 +179,6 @@ func parseEventData(eventData EventData) map[string]any {
 	outputMap["data"] = dataMaps
 
 	return outputMap
-}
-
-// unmarshalEventXML will unmarshal EventXML from xml bytes.
-func unmarshalEventXML(bytes []byte) (EventXML, error) {
-	var eventXML EventXML
-	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
-		return EventXML{}, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
-	}
-	return eventXML, nil
 }
 
 // EventID is the identifier of the event.
@@ -261,4 +258,14 @@ func (e Execution) asMap() map[string]any {
 	}
 
 	return result
+}
+
+// unmarshalEventXML will unmarshal EventXML from xml bytes.
+func unmarshalEventXML(bytes []byte) (EventXML, error) {
+	var eventXML EventXML
+	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
+		return EventXML{}, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
+	}
+	eventXML.Original = string(bytes)
+	return eventXML, nil
 }

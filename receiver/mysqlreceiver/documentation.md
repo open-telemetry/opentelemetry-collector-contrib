@@ -519,6 +519,21 @@ The total wait time of the summarized timed events.
 | digest | Digest. | Any Str |
 | digest_text | Text before digestion. | Any Str |
 
+### mysql.table.average_row_length
+
+The average row length in bytes for a given table.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| table | Table name for event or process. | Any Str |
+| schema | The schema of the object. | Any Str |
+
 ### mysql.table.lock_wait.read.count
 
 The total table lock wait read events.
@@ -582,6 +597,37 @@ The total table lock wait write events times.
 | schema | The schema of the object. | Any Str |
 | table | Table name for event or process. | Any Str |
 | kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` |
+
+### mysql.table.rows
+
+The number of rows for a given table.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| table | Table name for event or process. | Any Str |
+| schema | The schema of the object. | Any Str |
+
+### mysql.table.size
+
+The table size in bytes for a given table.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| table | Table name for event or process. | Any Str |
+| schema | The schema of the object. | Any Str |
+| kind | The table size types. | Str: ``data``, ``index`` |
 
 ### mysql.table_open_cache
 

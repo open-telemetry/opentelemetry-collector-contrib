@@ -41,7 +41,7 @@ var errConfigNotVcenter = errors.New("config was not an vcenter receiver config"
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -52,7 +52,7 @@ func createMetricsReceiver(
 	vr := newVmwareVcenterScraper(params.Logger, cfg, params)
 
 	scraper, err := scraperhelper.NewScraper(
-		metadata.Type.String(),
+		metadata.Type,
 		vr.scrape,
 		scraperhelper.WithStart(vr.Start),
 		scraperhelper.WithShutdown(vr.Shutdown),

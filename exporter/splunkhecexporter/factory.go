@@ -77,7 +77,7 @@ func createDefaultConfig() component.Config {
 		},
 		SplunkAppName:           defaultSplunkAppName,
 		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
-		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:           exporterhelper.NewDefaultQueueConfig(),
 		BatcherConfig:           batcherCfg,
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
@@ -107,7 +107,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
@@ -120,7 +120,7 @@ func createTracesExporter(
 		cfg,
 		c.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
@@ -142,7 +142,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
@@ -155,7 +155,7 @@ func createMetricsExporter(
 		cfg,
 		c.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
@@ -176,7 +176,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
@@ -189,7 +189,7 @@ func createLogsExporter(
 		cfg,
 		c.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),

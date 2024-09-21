@@ -13,12 +13,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 	"golang.org/x/net/websocket"
+	"golang.org/x/time/rate"
 )
 
 type wsprocessor struct {
@@ -27,17 +29,19 @@ type wsprocessor struct {
 	server            *http.Server
 	shutdownWG        sync.WaitGroup
 	cs                *channelSet
+	limiter           *rate.Limiter
 }
 
 var logMarshaler = &plog.JSONMarshaler{}
 var metricMarshaler = &pmetric.JSONMarshaler{}
 var traceMarshaler = &ptrace.JSONMarshaler{}
 
-func newProcessor(settings processor.CreateSettings, config *Config) *wsprocessor {
+func newProcessor(settings processor.Settings, config *Config) *wsprocessor {
 	return &wsprocessor{
 		config:            config,
 		telemetrySettings: settings.TelemetrySettings,
 		cs:                newChannelSet(),
+		limiter:           rate.NewLimiter(config.Limit, int(config.Limit)),
 	}
 }
 
@@ -48,7 +52,7 @@ func (w *wsprocessor) Start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", w.config.Endpoint, err)
 	}
-	w.server, err = w.config.ServerConfig.ToServer(ctx, host, w.telemetrySettings, websocket.Handler(w.handleConn))
+	w.server, err = w.config.ServerConfig.ToServer(ctx, host, w.telemetrySettings, websocket.Server{Handler: w.handleConn})
 	if err != nil {
 		return err
 	}
@@ -56,7 +60,7 @@ func (w *wsprocessor) Start(ctx context.Context, host component.Host) error {
 	go func() {
 		defer w.shutdownWG.Done()
 		if errHTTP := w.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			w.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil
@@ -98,31 +102,40 @@ func (w *wsprocessor) Shutdown(ctx context.Context) error {
 }
 
 func (w *wsprocessor) ConsumeMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-	b, err := metricMarshaler.MarshalMetrics(md)
-	if err != nil {
-		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
-	} else {
-		w.cs.writeBytes(b)
+	if w.limiter.Allow() {
+		b, err := metricMarshaler.MarshalMetrics(md)
+		if err != nil {
+			w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
+		} else {
+			w.cs.writeBytes(b)
+		}
 	}
+
 	return md, nil
 }
 
 func (w *wsprocessor) ConsumeLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
-	b, err := logMarshaler.MarshalLogs(ld)
-	if err != nil {
-		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
-	} else {
-		w.cs.writeBytes(b)
+	if w.limiter.Allow() {
+		b, err := logMarshaler.MarshalLogs(ld)
+		if err != nil {
+			w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
+		} else {
+			w.cs.writeBytes(b)
+		}
 	}
+
 	return ld, nil
 }
 
 func (w *wsprocessor) ConsumeTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	b, err := traceMarshaler.MarshalTraces(td)
-	if err != nil {
-		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
-	} else {
-		w.cs.writeBytes(b)
+	if w.limiter.Allow() {
+		b, err := traceMarshaler.MarshalTraces(td)
+		if err != nil {
+			w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
+		} else {
+			w.cs.writeBytes(b)
+		}
 	}
+
 	return td, nil
 }

@@ -45,7 +45,7 @@ type sqlOpenerFunc func(dataSourceName string) (*sql.DB, error)
 func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
 		_ context.Context,
-		settings receiver.CreateSettings,
+		settings receiver.Settings,
 		cfg component.Config,
 		consumer consumer.Metrics,
 	) (receiver.Metrics, error) {

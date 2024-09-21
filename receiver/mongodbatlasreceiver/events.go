@@ -57,7 +57,7 @@ type eventRecord struct {
 	NextStartTime *time.Time `mapstructure:"next_start_time"`
 }
 
-func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consumer.Logs) *eventsReceiver {
+func newEventsReceiver(settings rcvr.Settings, c *Config, consumer consumer.Logs) *eventsReceiver {
 	r := &eventsReceiver{
 		client:        internal.NewMongoDBAtlasClient(c.PublicKey, string(c.PrivateKey), c.BackOffConfig, settings.Logger),
 		cfg:           c,

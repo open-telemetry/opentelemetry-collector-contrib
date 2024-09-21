@@ -9,7 +9,6 @@ import (
 	"net"
 	"testing"
 
-	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -20,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 )
 
 func TestExport(t *testing.T) {
@@ -58,7 +59,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, lc)
-	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	t.Cleanup(func() {
 		require.NoError(t, cc.Close())
@@ -75,7 +76,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = component.NewIDWithName(component.MustNewType("otlp"), "log")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,

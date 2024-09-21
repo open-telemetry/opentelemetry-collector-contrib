@@ -32,7 +32,7 @@ See the table below for details on each context and the fields it exposes.
 | `logs.log_record`   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md)             |
 
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
-See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
+See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for more details.
 
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked for that span.
@@ -176,6 +176,48 @@ filter/keep_good_metrics:
   metrics:
     metric:
       - 'HasAttrOnDatapoint("bad.metric", "true")'
+```
+
+## Troubleshooting
+
+When using OTTL you can enable debug logging in the collector to print out useful information,
+such as if the condition matched and the TransformContext used in the condition, to help you troubleshoot
+why a condition is not behaving as you expect. This feature is very verbose, but provides you an accurate
+view into how OTTL views the underlying data.
+
+```yaml
+receivers:
+  filelog:
+    start_at: beginning
+    include: [ /Users/tylerhelmuth/projects/opentelemetry-collector-contrib/local/test.log ]
+
+
+processors:
+  filter:
+    error_mode: ignore
+    logs:
+      log_record:
+        - body == "test"
+
+exporters:
+  debug:
+
+service:
+  telemetry:
+    logs:
+      level: debug
+  pipelines:
+    logs:
+      receivers:
+        - filelog
+      processors:
+        - filter
+      exporters:
+        - debug
+```
+
+```
+2024-05-29T16:47:04.362-0600    debug   ottl@v0.101.0/parser.go:338     condition evaluation result     {"kind": "processor", "name": "filter", "pipeline": "logs", "condition": "body == \"test\"", "match": true, "TransformContext": {"resource": {"attributes": {}, "dropped_attribute_count": 0}, "scope": {"attributes": {}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log"}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022824262063000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
 ```
 
 ## Warnings

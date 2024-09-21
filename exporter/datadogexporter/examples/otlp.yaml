@@ -19,14 +19,21 @@ exporters:
       site: ${env:DD_SITE}
       key: ${env:DD_API_KEY}
 
+connectors:
+    datadog/connector:
+
 service:
   pipelines:
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, datadog/connector]
       processors: [batch]
       exporters: [datadog]
     traces:
       receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog/connector]
+    traces/2:
+      receivers: [datadog/connector]
       processors: [batch]
       exporters: [datadog]
     logs:

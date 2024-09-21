@@ -22,11 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-const (
-	traceIDKey = "trace_id"
-	spanIDKey  = "span_id"
-)
-
 type metricFamily struct {
 	mtype pmetric.MetricType
 	// isMonotonic only applies to sums
@@ -545,7 +540,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.FilteredAttributes().EnsureCapacity(pe.Labels.Len())
 	pe.Labels.Range(func(lb labels.Label) {
 		switch strings.ToLower(lb.Name) {
-		case traceIDKey:
+		case prometheus.ExemplarTraceIDKey:
 			var tid [16]byte
 			err := decodeAndCopyToLowerBytes(tid[:], []byte(lb.Value))
 			if err == nil {
@@ -553,7 +548,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 			} else {
 				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 			}
-		case spanIDKey:
+		case prometheus.ExemplarSpanIDKey:
 			var sid [8]byte
 			err := decodeAndCopyToLowerBytes(sid[:], []byte(lb.Value))
 			if err == nil {

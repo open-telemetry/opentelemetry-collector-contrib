@@ -6,13 +6,12 @@ package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 
-	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/observ"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
 
 // Collector acts as an aggregator of LogRecords so that we don't have to
@@ -20,18 +19,20 @@ import (
 // instances from several Forward events into one to hopefully reduce
 // allocations and GC overhead.
 type Collector struct {
-	nextConsumer consumer.Logs
-	eventCh      <-chan Event
-	logger       *zap.Logger
-	obsrecv      *receiverhelper.ObsReport
+	nextConsumer     consumer.Logs
+	eventCh          <-chan Event
+	logger           *zap.Logger
+	obsrecv          *receiverhelper.ObsReport
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func newCollector(eventCh <-chan Event, next consumer.Logs, logger *zap.Logger, obsrecv *receiverhelper.ObsReport) *Collector {
+func newCollector(eventCh <-chan Event, next consumer.Logs, logger *zap.Logger, obsrecv *receiverhelper.ObsReport, telemetryBuilder *metadata.TelemetryBuilder) *Collector {
 	return &Collector{
-		nextConsumer: next,
-		eventCh:      eventCh,
-		logger:       logger,
-		obsrecv:      obsrecv,
+		nextConsumer:     next,
+		eventCh:          eventCh,
+		logger:           logger,
+		obsrecv:          obsrecv,
+		telemetryBuilder: telemetryBuilder,
 	}
 }
 
@@ -55,7 +56,7 @@ func (c *Collector) processEvents(ctx context.Context) {
 			c.fillBufferUntilChanEmpty(logSlice)
 
 			logRecordCount := out.LogRecordCount()
-			stats.Record(context.Background(), observ.RecordsGenerated.M(int64(logRecordCount)))
+			c.telemetryBuilder.FluentRecordsGenerated.Add(ctx, int64(logRecordCount))
 			obsCtx := c.obsrecv.StartLogsOp(ctx)
 			err := c.nextConsumer.ConsumeLogs(obsCtx, out)
 			c.obsrecv.EndLogsOp(obsCtx, "fluent", logRecordCount, err)

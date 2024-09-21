@@ -26,7 +26,7 @@ func newFactoryAdapter() receiver.Factory {
 
 func createLogsReceiver(
 	_ context.Context,
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	_ component.Config,
 	_ consumer.Logs,
 ) (receiver.Logs, error) {

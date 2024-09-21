@@ -25,6 +25,8 @@ const mongoPort = "27017"
 func TestIntegration(t *testing.T) {
 	t.Run("4.0", integrationTest("4_0", []string{"/setup.sh"}, func(*Config) {}))
 	t.Run("5.0", integrationTest("5_0", []string{"/setup.sh"}, func(*Config) {}))
+	t.Run("6.0", integrationTest("5_0", []string{"/setup.sh"}, func(*Config) {}))
+	t.Run("7.0", integrationTest("5_0", []string{"/setup.sh"}, func(*Config) {}))
 	t.Run("4.4lpu", integrationTest("4_4lpu", []string{"/lpu.sh"}, func(cfg *Config) {
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
@@ -56,7 +58,7 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 				cfgMod(rCfg)
 				rCfg.CollectionInterval = 2 * time.Second
 				rCfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
-				rCfg.Hosts = []confignet.AddrConfig{
+				rCfg.Hosts = []confignet.TCPAddrConfig{
 					{
 						Endpoint: fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, mongoPort)),
 					},
@@ -69,6 +71,7 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceAttributeValue("server.address"),
 		),
 	).Run
 }

@@ -33,15 +33,15 @@ func createDefaultConfig() component.Config {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 	}
 }
 
 func createTracesExporter(
 	_ context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)

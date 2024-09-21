@@ -17,16 +17,16 @@ import (
 )
 
 func TestExporter(t *testing.T) {
-	// NOTE: The data receiver/mock backend will receive and process traces
-	// as log document. This does not reduce the effectiveness of testing as
-	// the assertions can still be made without considering for data types
-	// in the mock backend. Adding support for traces in the mock data
-	// receiver is possible, however, distinguishing between traces and
-	// logs is not straightforward after the document has been encoded and
-	// doesn't add any practical benefits to the test.
 	for _, eventType := range []string{"logs", "traces"} {
 		for _, tc := range []struct {
 			name string
+
+			// batcherEnabled enables/disables the batch sender. If this is
+			// nil, then the exporter buffers data itself (legacy behavior),
+			// whereas if it is non-nil then the exporter will not perform
+			// any buffering itself.
+			batcherEnabled *bool
+
 			// restartCollector restarts the OTEL collector. Restarting
 			// the collector allows durability testing of the ES exporter
 			// based on the OTEL config used for testing.
@@ -35,19 +35,29 @@ func TestExporter(t *testing.T) {
 		}{
 			{name: "basic"},
 			{name: "es_intermittent_failure", mockESFailure: true},
+
+			{name: "batcher_enabled", batcherEnabled: ptrTo(true)},
+			{name: "batcher_enabled_es_intermittent_failure", batcherEnabled: ptrTo(true), mockESFailure: true},
+			{name: "batcher_disabled", batcherEnabled: ptrTo(false)},
+			{name: "batcher_disabled_es_intermittent_failure", batcherEnabled: ptrTo(false), mockESFailure: true},
+
 			/* TODO: Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
 			{name: "collector_restarts", restartCollector: true},
 			{name: "collector_restart_with_es_intermittent_failure", mockESFailure: true, restartCollector: true},
 			*/
 		} {
 			t.Run(fmt.Sprintf("%s/%s", eventType, tc.name), func(t *testing.T) {
-				runner(t, eventType, tc.restartCollector, tc.mockESFailure)
+				var opts []dataReceiverOption
+				if tc.batcherEnabled != nil {
+					opts = append(opts, withBatcherEnabled(*tc.batcherEnabled))
+				}
+				runner(t, eventType, tc.restartCollector, tc.mockESFailure, opts...)
 			})
 		}
 	}
 }
 
-func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool) {
+func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool, opts ...dataReceiverOption) {
 	t.Helper()
 
 	var (
@@ -64,7 +74,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		t.Fatalf("failed to create data sender for type: %s", eventType)
 	}
 
-	receiver := newElasticsearchDataReceiver(t)
+	receiver := newElasticsearchDataReceiver(t, opts...)
 	loadOpts := testbed.LoadOptions{
 		DataItemsPerSecond: 1_000,
 		ItemsPerBatch:      10,
@@ -85,7 +95,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		sender,
 		receiver,
 		collector,
-		testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), provider),
+		newCountValidator(t, provider),
 		&testbed.CorrectnessResults{},
 		testbed.WithDecisionFunc(func() error {
 			if esFailing.Load() {
@@ -129,4 +139,8 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		"backend should receive all sent items",
 	)
 	tc.ValidateData()
+}
+
+func ptrTo[T any](t T) *T {
+	return &t
 }

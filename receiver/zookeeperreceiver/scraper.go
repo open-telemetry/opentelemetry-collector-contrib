@@ -45,7 +45,7 @@ func (z *zookeeperMetricsScraper) Name() string {
 	return metadata.Type.String()
 }
 
-func newZookeeperMetricsScraper(settings receiver.CreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
+func newZookeeperMetricsScraper(settings receiver.Settings, config *Config) (*zookeeperMetricsScraper, error) {
 	_, _, err := net.SplitHostPort(config.TCPAddrConfig.Endpoint)
 	if err != nil {
 		return nil, err

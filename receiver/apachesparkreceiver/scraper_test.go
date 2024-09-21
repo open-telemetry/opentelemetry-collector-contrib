@@ -227,7 +227,7 @@ func TestScraper(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newSparkScraper(zap.NewNop(), tc.config, receivertest.NewNopCreateSettings())
+			scraper := newSparkScraper(zap.NewNop(), tc.config, receivertest.NewNopSettings())
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())

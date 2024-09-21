@@ -30,13 +30,13 @@ func TestCreateMetricsReceiverOtherOS(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				cfg.InstanceName = "instanceName"
-				cfg.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
+				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
 				require.NoError(t, cfg.Validate())
 
 				require.True(t, directDBConnectionEnabled(cfg))
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
-				params := receivertest.NewNopCreateSettings()
+				params := receivertest.NewNopSettings()
 				scrapers, err := setupScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -56,7 +56,7 @@ func TestCreateMetricsReceiverOtherOS(t *testing.T) {
 
 				r, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)

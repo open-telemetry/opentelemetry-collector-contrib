@@ -37,21 +37,21 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)
-	assert.Nil(t, err, "trace receiver can be created")
+	assert.NoError(t, err, "trace receiver can be created")
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)
-	assert.NotNil(t, err, "a trace receiver factory should not create a metric receiver")
+	assert.Error(t, err, "a trace receiver factory should not create a metric receiver")
 	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 }

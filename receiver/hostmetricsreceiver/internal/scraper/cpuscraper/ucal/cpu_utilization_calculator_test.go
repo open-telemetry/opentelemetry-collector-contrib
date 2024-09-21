@@ -6,7 +6,7 @@ package ucal
 import (
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )

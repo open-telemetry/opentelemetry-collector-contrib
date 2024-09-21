@@ -44,7 +44,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -58,7 +58,7 @@ func createMetricsReceiver(
 	}
 
 	ns := newPostgreSQLScraper(params, cfg, clientFactory)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithShutdown(ns.shutdown))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithShutdown(ns.shutdown))
 	if err != nil {
 		return nil, err
 	}

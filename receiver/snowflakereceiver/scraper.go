@@ -24,7 +24,7 @@ type snowflakeMetricsScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newSnowflakeMetricsScraper(settings receiver.CreateSettings, conf *Config) *snowflakeMetricsScraper {
+func newSnowflakeMetricsScraper(settings receiver.Settings, conf *Config) *snowflakeMetricsScraper {
 	return &snowflakeMetricsScraper{
 		settings: settings.TelemetrySettings,
 		conf:     conf,

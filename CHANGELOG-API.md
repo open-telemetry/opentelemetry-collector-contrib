@@ -7,6 +7,127 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.109.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Change the OTTL grammar to support expressing statements context via path names (#29017)
+  The `ottl.Path` interface requires a new method: `Context() string`
+- `prometheusreceiver`: Move the TargetAllocator configuration struct to an internal directory (#33146)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add support for localized time parsing into the coreinternal/timeutils (#32977)
+- `googlecloudmonitoringreceiver`: Enhancing the Google Cloud monitoring receiver to establish a client connection, scrape GCP Cloud Metrics, and transform them into an OpenTelemetry compatible format for pipeline processing. (#33762)
+  - Implements client connection to Google Cloud Monitoring API.
+  - Scrapes timeseries data based on configured metrics.
+  - Converts the data into OpenTelemetry format for use in the pipeline.
+  
+
+## v0.108.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza/operator/input/windows`: Change type name from `EvtRpcLogin` to `EvtRPCLogin`. (#34656)
+
+## v0.107.0
+
+### 🚀 New components 🚀
+
+- `googlecloudmonitoringreceiver`: Adding new component - [Google Cloud monitoring](https://cloud.google.com/monitoring/api/metrics_gcp) receiver to fetch GCP Cloud Metrics and transform to OpenTelemetry compatible format. (#33762)
+
+### 💡 Enhancements 💡
+
+- `internal/grpcutil`: Add internal/grpcutil package with gRPC-specified timeout parsing (#33688)
+- `pmetrictest`: Add support for histogram comparison options (#34521)
+- `kafkaexporter`: add an ability to partition logs based on resource attributes. (#33229)
+
+## v0.106.1
+
+## v0.106.0
+
+## v0.105.0
+
+## v0.104.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/clickhouse`: Unexport extra configuration methods. (#33647)
+- `exporter/clickhouse`: Change internal config type for `create_schema` to use a `bool` instead of `*bool` (#33694)
+- `pkg/ottl`: Changed ScopeContext, InstrumentationResourceContext, TransformContext interfaces to make SchemaURL accessible in resources and scopes on all signals (#30229)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add ByteSliceLikeGetter interface (#31929)
+
+## v0.103.0
+
+### 🛑 Breaking changes 🛑
+
+- `stanza`: remove deprecated code (#33519)
+  This change removes:
+    - adapter.LogEmitter, use helper.LogEmitter instead
+    - adapter.NewLogEmitter, use helper.NewLogEmitter instead
+    - fileconsumer.Manager's SugaredLogger struct member
+    - pipeline.DirectedPipeline's SugaredLogger struct member
+    - testutil.Logger, use zaptest.NewLogger instead
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/winperfcounters`: It is now possible to force a `watcher` to re-create the PDH query of a given counter via the `Reset()` function. (#32798)
+
+## v0.102.0
+
+### 💡 Enhancements 💡
+
+- `prometheusreceiver`: Allow to configure http client used by target allocator generated scrape targets (#18054)
+
+### 🧰 Bug fixes 🧰
+
+- `exp/metrics`: fixes staleness.Evict such that it only ever evicts actually stale metrics (#33265)
+
+## v0.101.0
+
+### 🛑 Breaking changes 🛑
+
+- `opampextension`: Move custom message interfaces to separate package (#32950)
+  Moves `CustomCapabilityRegistry`, `CustomCapabilityHandler`, and `CustomCapabilityRegisterOption` to a new module.
+  These types can now be found in the new `github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages` module.
+  
+- `pkg/stanza`: The internal logger has been changed from zap.SugaredLogger to zap.Logger. (#32177)
+  Functions accepting a SugaredLogger, and fields of type SugaredLogger, have been deprecated.
+
+### 💡 Enhancements 💡
+
+- `testbed`: Add the use of connectors to the testbed (#30165)
+
+## v0.100.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Pass TelemetrySettings to the Build method of the Builder interface (#32662, #31256)
+  The reason for this breaking change is to pass in the component.TelemetrySettings
+  so as to use them later in various ways:
+    - be able to report state statistics and telemetry in general
+    - be able to switch from SugaredLogger to Logger
+  
+
+### 🚩 Deprecations 🚩
+
+- `confmap/provider/s3`: Deprecate `s3provider.New` in favor of `s3provider.NewFactory` (#32742)
+- `confmap/provider/secretsmanager`: Deprecate `secretsmanagerprovider.New` in favor of `secretsmanagerprovider.NewFactory` (#32743)
+
+### 🚀 New components 🚀
+
+- `roundrobinconnector`: Add a roundrobin connector, that can help single thread components to scale (#32853)
+
+### 💡 Enhancements 💡
+
+- `opampextension`: Added support for other components to register custom capabilities and receive custom messages from an opamp extension (#32021)
+- `kafkaexporter`: add an ability to publish kafka messages with message key based on metric resource attributes - it will allow partitioning metrics in Kafka. (#29433, #30666, #31675)
+- `sshcheckreceiver`: Add support for running this receiver on Windows (#30650)
+
 ## v0.99.0
 
 ### 💡 Enhancements 💡

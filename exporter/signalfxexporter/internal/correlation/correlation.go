@@ -26,7 +26,7 @@ type Tracker struct {
 	once         sync.Once
 	log          *zap.Logger
 	cfg          *Config
-	params       exporter.CreateSettings
+	params       exporter.Settings
 	traceTracker *tracetracker.ActiveServiceTracker
 	pTicker      timeutils.TTicker
 	correlation  *correlationContext
@@ -39,7 +39,7 @@ type correlationContext struct {
 }
 
 // NewTracker creates a new tracker instance for correlation.
-func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.CreateSettings) *Tracker {
+func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.Settings) *Tracker {
 	return &Tracker{
 		log:         params.Logger,
 		cfg:         cfg,
@@ -48,7 +48,7 @@ func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.Cr
 	}
 }
 
-func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configopaque.String, params exporter.CreateSettings, host component.Host) (
+func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configopaque.String, params exporter.Settings, host component.Host) (
 	*correlationContext, error,
 ) {
 	corrURL, err := url.Parse(cfg.ClientConfig.Endpoint)

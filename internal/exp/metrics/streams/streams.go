@@ -3,7 +3,11 @@
 
 package streams // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+)
 
 // Sequence of streams that can be iterated upon
 type Seq[T any] func(yield func(identity.Stream, T) bool) bool
@@ -58,6 +62,20 @@ func (m HashMap[T]) Clear() {
 
 // Evictors remove the "least important" stream based on some strategy such as
 // the oldest, least active, etc.
+//
+// Returns whether a stream was evicted and if so the now gone stream id
 type Evictor interface {
-	Evict() identity.Stream
+	Evict() (gone identity.Stream, ok bool)
+}
+
+type DataPointSlice[DP DataPoint[DP]] interface {
+	Len() int
+	At(i int) DP
+	AppendEmpty() DP
+}
+
+type DataPoint[Self any] interface {
+	Timestamp() pcommon.Timestamp
+	Attributes() pcommon.Map
+	CopyTo(dest Self)
 }

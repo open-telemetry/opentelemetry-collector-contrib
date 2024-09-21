@@ -28,7 +28,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		IngestURL: defaultIngestURL,
 		IngestKey: "",
 
@@ -36,8 +36,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Timeout: 5 * time.Second,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-	})
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -54,13 +54,13 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg.IngestURL = "https://example.com:8088/otel/ingest/rest"
 	cfg.IngestKey = "1234-1234"
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateLogsExporterNoConfig(t *testing.T) {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := createLogsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }

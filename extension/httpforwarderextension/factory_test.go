@@ -52,7 +52,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.CreateExtension(
 				context.Background(),
-				extensiontest.NewNopCreateSettings(),
+				extensiontest.NewNopSettings(),
 				test.config,
 			)
 			if test.wantErr {

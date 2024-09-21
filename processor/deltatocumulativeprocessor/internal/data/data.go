@@ -6,6 +6,8 @@ package data // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 )
 
 type Point[Self any] interface {
@@ -19,8 +21,26 @@ type Point[Self any] interface {
 	Add(Self) Self
 }
 
+type Typed[Self any] interface {
+	Point[Self]
+	Number | Histogram | ExpHistogram
+}
+
 type Number struct {
 	pmetric.NumberDataPoint
+}
+
+func Zero[P Typed[P]]() P {
+	var point P
+	switch ty := any(&point).(type) {
+	case *Number:
+		ty.NumberDataPoint = pmetric.NewNumberDataPoint()
+	case *Histogram:
+		ty.HistogramDataPoint = pmetric.NewHistogramDataPoint()
+	case *ExpHistogram:
+		ty.DataPoint = pmetric.NewExponentialHistogramDataPoint()
+	}
+	return point
 }
 
 func (dp Number) Clone() Number {
@@ -52,19 +72,19 @@ func (dp Histogram) CopyTo(dst Histogram) {
 }
 
 type ExpHistogram struct {
-	pmetric.ExponentialHistogramDataPoint
+	expo.DataPoint
 }
 
 func (dp ExpHistogram) Clone() ExpHistogram {
-	clone := ExpHistogram{ExponentialHistogramDataPoint: pmetric.NewExponentialHistogramDataPoint()}
-	if dp.ExponentialHistogramDataPoint != (pmetric.ExponentialHistogramDataPoint{}) {
+	clone := ExpHistogram{DataPoint: pmetric.NewExponentialHistogramDataPoint()}
+	if dp.DataPoint != (expo.DataPoint{}) {
 		dp.CopyTo(clone)
 	}
 	return clone
 }
 
 func (dp ExpHistogram) CopyTo(dst ExpHistogram) {
-	dp.ExponentialHistogramDataPoint.CopyTo(dst.ExponentialHistogramDataPoint)
+	dp.DataPoint.CopyTo(dst.DataPoint)
 }
 
 type mustPoint[D Point[D]] struct{ _ D }

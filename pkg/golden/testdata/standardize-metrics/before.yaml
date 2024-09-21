@@ -116,7 +116,7 @@ resourceMetrics:
             - key: b
               value:
                 stringValue: BBB
-          name: otelcol/standardization
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/standardization
           version: latest
   - resource:
       attributes:
@@ -147,7 +147,7 @@ resourceMetrics:
               isMonotonic: false
             unit: "1"
         scope:
-          name: otelcol/anotherfakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/anotherfakereceiver
           version: latest
           attributes:
             - key: a
@@ -197,7 +197,7 @@ resourceMetrics:
               isMonotonic: false
             unit: "1"
         scope:
-          name: otelcol/FakeMetric
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/FakeMetric
           version: latest
           attributes:
             - key: a

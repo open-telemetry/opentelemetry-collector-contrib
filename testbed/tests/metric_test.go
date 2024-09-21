@@ -34,7 +34,7 @@ func TestMetric10kDPS(t *testing.T) {
 			receiver: datareceivers.NewCarbonDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 237,
-				ExpectedMaxRAM: 100,
+				ExpectedMaxRAM: 105,
 			},
 		},
 		{

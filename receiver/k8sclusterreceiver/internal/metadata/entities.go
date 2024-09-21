@@ -4,13 +4,15 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // GetEntityEvents processes metadata updates and returns entity events that describe the metadata changes.
-func GetEntityEvents(oldMetadata, newMetadata map[metadataPkg.ResourceID]*KubernetesMetadata, timestamp pcommon.Timestamp) metadataPkg.EntityEventsSlice {
+func GetEntityEvents(oldMetadata, newMetadata map[metadataPkg.ResourceID]*KubernetesMetadata, timestamp pcommon.Timestamp, reportingInterval time.Duration) metadataPkg.EntityEventsSlice {
 	out := metadataPkg.NewEntityEventsSlice()
 
 	for id, oldObj := range oldMetadata {
@@ -30,6 +32,9 @@ func GetEntityEvents(oldMetadata, newMetadata map[metadataPkg.ResourceID]*Kubern
 		entityEvent.ID().PutStr(newObj.ResourceIDKey, string(newObj.ResourceID))
 		state := entityEvent.SetEntityState()
 		state.SetEntityType(newObj.EntityType)
+		if reportingInterval != 0 {
+			state.SetInterval(reportingInterval)
+		}
 
 		attrs := state.Attributes()
 		for k, v := range newObj.Metadata {

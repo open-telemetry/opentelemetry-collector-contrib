@@ -1,10 +1,9 @@
 type: purefa
-scope_name: otelcol/purefareceiver
 
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
     active: [jpkrohling, dgoscn, chrroberts-pure]

@@ -65,7 +65,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: true,
 				},
@@ -132,7 +132,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
@@ -276,7 +276,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			// We need to add the default exclude rules.
@@ -507,7 +507,7 @@ func TestConfigValidateErrors(t *testing.T) {
 			cfg: &Config{
 				Realm:       "us0",
 				AccessToken: "access_token",
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:   true,
 					QueueSize: -1,
 				},
@@ -553,7 +553,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, component.UnmarshalConfig(confmap.NewFromStringMap(map[string]any{}), tt.cfg))
+			require.NoError(t, confmap.NewFromStringMap(map[string]any{}).Unmarshal(tt.cfg))
 			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
 		})
 	}

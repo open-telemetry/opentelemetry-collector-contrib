@@ -100,7 +100,7 @@ func (ex *pubsubExporter) generateClientOptions() (copts []option.ClientOption) 
 			if ex.userAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(ex.userAgent))
 			}
-			conn, _ := grpc.Dial(ex.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+			conn, _ := grpc.NewClient(ex.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			copts = append(copts, option.WithGRPCConn(conn))
 		} else {
 			copts = append(copts, option.WithEndpoint(ex.config.Endpoint))

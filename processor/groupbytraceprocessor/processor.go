@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -18,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 )
 
 // groupByTraceProcessor is a processor that keeps traces in memory for a given duration, with the expectation
@@ -33,10 +33,10 @@ import (
 // Each worker in the eventMachine also uses a ring buffer to hold the in-flight trace IDs, so that we don't hold more than the given maximum number
 // of traces in memory/storage. Items that are evicted from the buffer are discarded without warning.
 type groupByTraceProcessor struct {
-	nextConsumer consumer.Traces
-	config       Config
-	logger       *zap.Logger
-
+	nextConsumer     consumer.Traces
+	config           Config
+	logger           *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
 	// the event machine handling all operations for this processor
 	eventMachine *eventMachine
 
@@ -49,16 +49,21 @@ var _ processor.Traces = (*groupByTraceProcessor)(nil)
 const bufferSize = 10_000
 
 // newGroupByTraceProcessor returns a new processor.
-func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.Traces, config Config) *groupByTraceProcessor {
+func newGroupByTraceProcessor(set processor.Settings, nextConsumer consumer.Traces, config Config) *groupByTraceProcessor {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil
+	}
+
 	// the event machine will buffer up to N concurrent events before blocking
-	eventMachine := newEventMachine(logger, 10000, config.NumWorkers, config.NumTraces)
+	eventMachine := newEventMachine(set.Logger, 10000, config.NumWorkers, config.NumTraces, telemetryBuilder)
 
 	sp := &groupByTraceProcessor{
-		logger:       logger,
-		nextConsumer: nextConsumer,
-		config:       config,
-		eventMachine: eventMachine,
-		st:           st,
+		logger:           set.Logger,
+		nextConsumer:     nextConsumer,
+		config:           config,
+		telemetryBuilder: telemetryBuilder,
+		eventMachine:     eventMachine,
 	}
 
 	// register the callbacks
@@ -85,10 +90,9 @@ func (sp *groupByTraceProcessor) Capabilities() consumer.Capabilities {
 // Start is invoked during service startup.
 func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
 	// start these metrics, as it might take a while for them to receive their first event
-	stats.Record(context.Background(), mTracesEvicted.M(0))
-	stats.Record(context.Background(), mIncompleteReleases.M(0))
-	stats.Record(context.Background(), mNumTracesConf.M(int64(sp.config.NumTraces)))
-
+	sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 0)
+	sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 0)
+	sp.telemetryBuilder.ProcessorGroupbytraceConfNumTraces.Record(context.Background(), (int64(sp.config.NumTraces)))
 	sp.eventMachine.startInBackground()
 	return sp.st.start()
 }
@@ -124,8 +128,7 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 			typ:     traceRemoved,
 			payload: evicted,
 		})
-
-		stats.Record(context.Background(), mTracesEvicted.M(1))
+		sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
 
 		sp.logger.Info("trace evicted: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
 			zap.Stringer("traceID", evicted))
@@ -155,8 +158,7 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker 
 		// we likely received multiple batches with spans for the same trace
 		// and released this trace already
 		sp.logger.Debug("skipping the processing of expired trace", zap.Stringer("traceID", traceID))
-
-		stats.Record(context.Background(), mIncompleteReleases.M(1))
+		sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 1)
 		return nil
 	}
 
@@ -204,10 +206,9 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []ptrace.ResourceSpans) err
 		trs := trace.ResourceSpans().AppendEmpty()
 		rs.CopyTo(trs)
 	}
-	stats.Record(context.Background(),
-		mReleasedSpans.M(int64(trace.SpanCount())),
-		mReleasedTraces.M(1),
-	)
+
+	sp.telemetryBuilder.ProcessorGroupbytraceSpansReleased.Add(context.Background(), int64(trace.SpanCount()))
+	sp.telemetryBuilder.ProcessorGroupbytraceTracesReleased.Add(context.Background(), 1)
 
 	// Do async consuming not to block event worker
 	go func() {

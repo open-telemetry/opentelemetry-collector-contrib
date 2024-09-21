@@ -89,7 +89,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			assert.NoError(t, err)
 
 			wgListenAndServe.Wait()
-			assert.Equal(t, 1, len(transferChan))
+			assert.Len(t, transferChan, 1)
 		})
 	}
 }

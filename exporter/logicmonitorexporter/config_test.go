@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "apitoken"),
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 				},
@@ -117,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "bearertoken"),
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
@@ -130,7 +130,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "resource-mapping-op"),
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
@@ -151,7 +151,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -173,7 +173,7 @@ func TestUnmarshal(t *testing.T) {
 					"resource_mapping_op": "invalid_op",
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'logs.resource_mapping_op': unsupported mapping operation \"invalid_op\"",
+			err: "'logs.resource_mapping_op': unsupported mapping operation \"invalid_op\"",
 		},
 	}
 
@@ -181,9 +181,9 @@ func TestUnmarshal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := f.CreateDefaultConfig().(*Config)
-			err := component.UnmarshalConfig(tt.configMap, cfg)
+			err := tt.configMap.Unmarshal(cfg)
 			if err != nil || tt.err != "" {
-				assert.EqualError(t, err, tt.err)
+				assert.ErrorContains(t, err, tt.err)
 			} else {
 				assert.Equal(t, tt.cfg, cfg)
 			}

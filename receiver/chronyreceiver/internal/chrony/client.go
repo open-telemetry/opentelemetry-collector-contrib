@@ -11,8 +11,7 @@ import (
 	"time"
 
 	"github.com/facebook/time/ntp/chrony"
-	"github.com/tilinna/clock"
-	"go.uber.org/multierr"
+	"github.com/jonboulle/clockwork"
 )
 
 var (
@@ -77,14 +76,14 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	}
 
 	packet := chrony.NewTrackingPacket()
-	packet.SetSequence(uint32(clock.Now(ctx).UnixNano()))
+	packet.SetSequence(uint32(clockwork.FromContext(ctx).Now().UnixNano()))
 
 	if err := binary.Write(sock, binary.BigEndian, packet); err != nil {
-		return nil, multierr.Combine(err, sock.Close())
+		return nil, errors.Join(err, sock.Close())
 	}
 	data := make([]uint8, 1024)
 	if _, err := sock.Read(data); err != nil {
-		return nil, multierr.Combine(err, sock.Close())
+		return nil, errors.Join(err, sock.Close())
 	}
 
 	if err := sock.Close(); err != nil {
@@ -98,5 +97,6 @@ func (c *client) getContext(ctx context.Context) (context.Context, context.Cance
 	if c.timeout == 0 {
 		return context.WithCancel(ctx)
 	}
-	return clock.TimeoutContext(ctx, c.timeout)
+
+	return context.WithTimeout(ctx, c.timeout)
 }

@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createLogsExporter(ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	config component.Config) (exporter.Logs, error) {
 
 	s3Exporter := newS3Exporter(config.(*Config), params)
@@ -48,7 +48,7 @@ func createLogsExporter(ctx context.Context,
 }
 
 func createMetricsExporter(ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	config component.Config) (exporter.Metrics, error) {
 
 	s3Exporter := newS3Exporter(config.(*Config), params)
@@ -64,7 +64,7 @@ func createMetricsExporter(ctx context.Context,
 }
 
 func createTracesExporter(ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	config component.Config) (exporter.Traces, error) {
 
 	s3Exporter := newS3Exporter(config.(*Config), params)

@@ -119,7 +119,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("postgresql/minimal", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "minimal").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
@@ -132,7 +132,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("postgresql/pool", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "pool").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
@@ -150,7 +150,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("postgresql/all", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "all").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"

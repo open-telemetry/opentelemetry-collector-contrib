@@ -26,7 +26,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
 )
@@ -76,7 +78,7 @@ func (receiver *pubsubReceiver) generateClientOptions() (copts []option.ClientOp
 			if receiver.userAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(receiver.userAgent))
 			}
-			conn, _ := grpc.Dial(receiver.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+			conn, _ := grpc.NewClient(receiver.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			copts = append(copts, option.WithGRPCConn(conn))
 		} else {
 			copts = append(copts, option.WithEndpoint(receiver.config.Endpoint))
@@ -113,13 +115,21 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) err
 }
 
 func (receiver *pubsubReceiver) Shutdown(_ context.Context) error {
+	var err error
+	if receiver.client != nil {
+		// A canceled code means the client connection is already closed,
+		// Shutdown shouldn't return an error in that case.
+		if closeErr := receiver.client.Close(); status.Code(closeErr) != codes.Canceled {
+			err = closeErr
+		}
+	}
 	if receiver.handler == nil {
-		return nil
+		return err
 	}
 	receiver.logger.Info("Stopping Google Pubsub receiver")
 	receiver.handler.CancelNow()
 	receiver.logger.Info("Stopped Google Pubsub receiver")
-	return nil
+	return err
 }
 
 func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *pubsubpb.ReceivedMessage) error {

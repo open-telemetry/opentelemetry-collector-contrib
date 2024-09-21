@@ -205,7 +205,7 @@ type stsCalls struct {
 	getSTSCredsFromRegionEndpoint func(log *zap.Logger, sess *session.Session, region, roleArn string) *credentials.Credentials
 }
 
-// getSTSCreds gets STS credentials first from the regional endpoint, then from the primary
+// getCreds gets STS credentials first from the regional endpoint, then from the primary
 // region in the respective AWS partition if the regional endpoint is disabled.
 func (s *stsCalls) getCreds(region string, roleArn string) (*credentials.Credentials, error) {
 	sess, err := session.NewSession()

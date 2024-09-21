@@ -69,7 +69,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	registry := telemetry.NewRegistry()
 	sink := telemetrytest.NewSenderSink()
 	// preload the sender that the exporter will use
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	sender, loaded := registry.LoadOrStore(set.ID, sink)
 	require.False(t, loaded)
 	require.NotNil(t, sender)
@@ -107,7 +107,7 @@ func BenchmarkForTracesExporter(b *testing.B) {
 func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	t.Helper()
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn, registry)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(), mconn, registry)
 	if err != nil {
 		panic(err)
 	}

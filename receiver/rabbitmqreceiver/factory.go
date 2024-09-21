@@ -41,14 +41,14 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotRabbit
 	}
 
 	rabbitScraper := newScraper(params.Logger, cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), rabbitScraper.scrape, scraperhelper.WithStart(rabbitScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, rabbitScraper.scrape, scraperhelper.WithStart(rabbitScraper.start))
 	if err != nil {
 		return nil, err
 	}

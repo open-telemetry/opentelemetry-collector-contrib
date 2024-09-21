@@ -56,7 +56,7 @@ type Detector struct {
 	ec2ClientBuilder ec2ifaceBuilder
 }
 
-func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {

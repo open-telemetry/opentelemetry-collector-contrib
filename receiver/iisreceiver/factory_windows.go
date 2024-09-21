@@ -18,14 +18,14 @@ import (
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 	rcvr := newIisReceiver(params, cfg, nextConsumer)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), rcvr.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type, rcvr.scrape,
 		scraperhelper.WithStart(rcvr.start),
 		scraperhelper.WithShutdown(rcvr.shutdown))
 	if err != nil {

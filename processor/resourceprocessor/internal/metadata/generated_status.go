@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("resource")
+	Type      = component.MustNewType("resource")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 )
 
 const (

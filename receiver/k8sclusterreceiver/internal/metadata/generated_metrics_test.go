@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
@@ -313,7 +313,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "k8s.container.cpu_request":
 					assert.False(t, validatedMetrics["k8s.container.cpu_request"], "Found a duplicate in the metrics slice: k8s.container.cpu_request")
 					validatedMetrics["k8s.container.cpu_request"] = true
@@ -325,7 +325,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "k8s.container.ephemeralstorage_limit":
 					assert.False(t, validatedMetrics["k8s.container.ephemeralstorage_limit"], "Found a duplicate in the metrics slice: k8s.container.ephemeralstorage_limit")
 					validatedMetrics["k8s.container.ephemeralstorage_limit"] = true

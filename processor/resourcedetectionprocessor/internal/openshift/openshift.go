@@ -23,7 +23,7 @@ const (
 )
 
 // NewDetector returns a detector which can detect resource attributes on OpenShift 4.
-func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	userCfg := dcfg.(Config)
 
 	if err := userCfg.MergeWithDefaults(); err != nil {

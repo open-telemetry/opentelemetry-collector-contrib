@@ -47,7 +47,7 @@ func TestReceiver(t *testing.T) {
 
 			r, err := f.CreateMetricsReceiver(
 				context.Background(),
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				cfg,
 				consumertest.NewNop(),
 			)
@@ -401,7 +401,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopCreateSettings())
+			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopSettings())
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

@@ -52,7 +52,7 @@ func TestNewMetricsReceiver(t *testing.T) {
 			cfg.RecordType = testCase.recordType
 			got, err := newMetricsReceiver(
 				cfg,
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				defaultMetricsUnmarshalers(zap.NewNop()),
 				testCase.consumer,
 			)

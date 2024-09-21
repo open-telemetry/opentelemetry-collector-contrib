@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 
 func CreateTracesExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
@@ -57,6 +57,6 @@ func CreateTracesExporter(
 		dd.pushTraces,
 		consumer.ConsumeTracesFunc(dd.pushTraces),
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	)
 }

@@ -106,13 +106,23 @@ func TestInput(t *testing.T) {
 	for _, tc := range cases {
 		cfg := tc.Config.BaseConfig
 		if tc.ValidForTCP {
+			tcpCfg := NewConfigWithTCP(&cfg)
+			if tc.Name == syslog.RFC6587OctetCountingPreserveSpaceTest {
+				tcpCfg.TCP.TrimConfig.PreserveLeading = true
+				tcpCfg.TCP.TrimConfig.PreserveTrailing = true
+			}
 			t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, tc, NewConfigWithTCP(&cfg), nil, nil)
+				InputTest(t, tc, tcpCfg, nil, nil)
 			})
 		}
 		if tc.ValidForUDP {
+			udpCfg := NewConfigWithUDP(&cfg)
+			if tc.Name == syslog.RFC6587OctetCountingPreserveSpaceTest {
+				udpCfg.UDP.TrimConfig.PreserveLeading = true
+				udpCfg.UDP.TrimConfig.PreserveTrailing = true
+			}
 			t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, tc, NewConfigWithUDP(&cfg), nil, nil)
+				InputTest(t, tc, udpCfg, nil, nil)
 			})
 		}
 	}
@@ -266,6 +276,13 @@ func TestOctetFramingSplitFunc(t *testing.T) {
 			input: []byte(`17 my log LOGEND 123`),
 			steps: []splittest.Step{
 				splittest.ExpectToken(`17 my log LOGEND 123`),
+			},
+		},
+		{
+			name:  "OneLogTrailingSpace",
+			input: []byte(`84 <13>1 2024-02-28T03:32:00.313226+00:00 192.168.65.1 inactive - - -  partition is p2 `),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`84 <13>1 2024-02-28T03:32:00.313226+00:00 192.168.65.1 inactive - - -  partition is p2 `),
 			},
 		},
 		{

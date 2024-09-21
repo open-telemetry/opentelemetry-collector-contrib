@@ -1,0 +1,66 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: foo
+    scopeSpans:
+      - scope: {}
+        spans:
+          - endTimeUnixNano: "1641092646000000006"
+            kind: 3
+            name: client span
+            parentSpanId: ""
+            spanId: 83c55286956529e1
+            startTimeUnixNano: "1641092645000000006"
+            status: {}
+            traceId: b3a53e9c2ac533afc48b511c2f368dc1
+          - endTimeUnixNano: "1641092646000000006"
+            kind: 3
+            name: client span
+            parentSpanId: ""
+            spanId: bd57fe885dbc995d
+            startTimeUnixNano: "1641092645000000006"
+            status: {}
+            traceId: c6aafb2dcf4d71c81ae52e50e8f805ee
+          - endTimeUnixNano: "1641092646000000006"
+            kind: 3
+            name: client span
+            parentSpanId: ""
+            spanId: 9ceb481d4fb78ea7
+            startTimeUnixNano: "1641092645000000006"
+            status: {}
+            traceId: 7af657de319d6a57967bc241882ea94f
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: bar
+    scopeSpans:
+      - scope: {}
+        spans:
+          - endTimeUnixNano: "1641092646000000006"
+            kind: 2
+            name: server span
+            parentSpanId: 83c55286956529e1
+            spanId: 4ec10b829444ffc8
+            startTimeUnixNano: "1641092645000000006"
+            status: {}
+            traceId: b3a53e9c2ac533afc48b511c2f368dc1
+          - endTimeUnixNano: "1641092646000000006"
+            kind: 2
+            name: server span
+            parentSpanId: bd57fe885dbc995d
+            spanId: ""
+            startTimeUnixNano: "1641092645000000006"
+            status:
+              code: 2
+            traceId: c6aafb2dcf4d71c81ae52e50e8f805ee
+          - endTimeUnixNano: "1641092646000000006"
+            kind: 2
+            name: server span
+            parentSpanId: 9ceb481d4fb78ea7
+            spanId: 328a31133be32867
+            startTimeUnixNano: "1641092645000000006"
+            status: {}
+            traceId: 7af657de319d6a57967bc241882ea94f

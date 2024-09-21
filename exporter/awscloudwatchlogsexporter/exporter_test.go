@@ -342,7 +342,7 @@ func TestConsumeLogs(t *testing.T) {
 	expCfg.LogGroupName = "testGroup"
 	expCfg.LogStreamName = "testStream"
 	expCfg.MaxRetries = 0
-	exp, err := newCwLogsPusher(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newCwLogsPusher(expCfg, exportertest.NewNopSettings())
 
 	testcases := []struct {
 		id                 string
@@ -417,7 +417,7 @@ func TestNewExporterWithoutRegionErr(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.MaxRetries = 0
-	exp, err := newCwLogsExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newCwLogsExporter(expCfg, exportertest.NewNopSettings())
 	assert.Nil(t, exp)
 	assert.Error(t, err)
 }

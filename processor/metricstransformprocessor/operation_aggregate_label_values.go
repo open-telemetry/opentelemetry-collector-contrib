@@ -6,6 +6,8 @@ package metricstransformprocessor // import "github.com/open-telemetry/opentelem
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 )
 
 // aggregateLabelValuesOp aggregates points that have the label values specified in aggregated_values
@@ -22,9 +24,10 @@ func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp internalOperation) {
 		return true
 	})
 
+	ag := aggregateutil.AggGroups{}
 	newMetric := pmetric.NewMetric()
 	copyMetricDetails(metric, newMetric)
-	ag := groupDataPoints(metric, aggGroups{})
-	mergeDataPoints(newMetric, mtpOp.configOperation.AggregationType, ag)
+	aggregateutil.GroupDataPoints(metric, &ag)
+	aggregateutil.MergeDataPoints(newMetric, mtpOp.configOperation.AggregationType, ag)
 	newMetric.MoveTo(metric)
 }

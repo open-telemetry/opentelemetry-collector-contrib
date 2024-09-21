@@ -401,7 +401,7 @@ func TestHandleRequest(t *testing.T) {
 				consumer = &consumertest.LogsSink{}
 			}
 
-			set := receivertest.NewNopCreateSettings()
+			set := receivertest.NewNopSettings()
 			set.Logger = zaptest.NewLogger(t)
 			ar, err := newAlertsReceiver(set, &Config{Alerts: AlertConfig{Secret: "some_secret"}}, consumer)
 			require.NoError(t, err, "Failed to create alerts receiver")
@@ -515,7 +515,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return testClient()
 			},
 			validateEntries: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.LogRecordCount(), 1)
+				require.Equal(t, 1, logs.LogRecordCount())
 			},
 		},
 		{
@@ -572,7 +572,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return tc
 			},
 			validateEntries: func(t *testing.T, l plog.Logs) {
-				require.Equal(t, l.LogRecordCount(), 1)
+				require.Equal(t, 1, l.LogRecordCount())
 				rl := l.ResourceLogs().At(0)
 				sl := rl.ScopeLogs().At(0)
 				lr := sl.LogRecords().At(0)
@@ -589,7 +589,7 @@ func TestAlertsRetrieval(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			logSink := &consumertest.LogsSink{}
-			alertsRcvr, err := newAlertsReceiver(receivertest.NewNopCreateSettings(), tc.config(), logSink)
+			alertsRcvr, err := newAlertsReceiver(receivertest.NewNopSettings(), tc.config(), logSink)
 			require.NoError(t, err)
 			alertsRcvr.client = tc.client()
 
@@ -610,7 +610,7 @@ func TestAlertsRetrieval(t *testing.T) {
 
 func TestAlertPollingExclusions(t *testing.T) {
 	logSink := &consumertest.LogsSink{}
-	alertsRcvr, err := newAlertsReceiver(receivertest.NewNopCreateSettings(), &Config{
+	alertsRcvr, err := newAlertsReceiver(receivertest.NewNopSettings(), &Config{
 		Alerts: AlertConfig{
 			Enabled: true,
 			Mode:    alertModePoll,

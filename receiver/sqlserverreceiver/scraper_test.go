@@ -20,6 +20,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
+func enableAllScraperMetrics(cfg *Config) {
+	// Some of these metrics are enabled by default, but it's still helpful to include
+	// in the case of using a config that may have previously disabled a metric.
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIo.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseOperations.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageBufferCacheHitRatio.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = true
+}
+
 func TestEmptyScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
@@ -27,12 +51,17 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
-	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = false
-	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
+	// Disable all metrics manually that are enabled by default
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageBufferCacheHitRatio.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = false
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
 	assert.Empty(t, scrapers)
 }
 
@@ -45,15 +74,15 @@ func TestSuccessfulScrape(t *testing.T) {
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
-	// Ensure all metrics are received when all are enabled.
-	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
-	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
-	assert.NotNil(t, scrapers)
+	enableAllScraperMetrics(cfg)
+
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	assert.NotEmpty(t, scrapers)
 
 	for _, scraper := range scrapers {
 		err := scraper.Start(context.Background(), componenttest.NewNopHost())
 		assert.NoError(t, err)
-		defer func() { assert.NoError(t, scraper.Shutdown(context.Background())) }()
+		defer assert.NoError(t, scraper.Shutdown(context.Background()))
 
 		scraper.client = mockClient{
 			instanceName: scraper.instanceName,
@@ -63,7 +92,16 @@ func TestSuccessfulScrape(t *testing.T) {
 		actualMetrics, err := scraper.Scrape(context.Background())
 		assert.NoError(t, err)
 
-		expectedFile := filepath.Join("testdata", "expected_database_io.yaml")
+		var expectedFile string
+		switch scraper.sqlQuery {
+		case getSQLServerDatabaseIOQuery(scraper.instanceName):
+			expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
+		case getSQLServerPerformanceCounterQuery(scraper.instanceName):
+			expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
+		case getSQLServerPropertiesQuery(scraper.instanceName):
+			expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
+		}
+
 		// Uncomment line below to re-generate expected metrics.
 		// golden.WriteMetrics(t, expectedFile, actualMetrics)
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
@@ -72,7 +110,8 @@ func TestSuccessfulScrape(t *testing.T) {
 		assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceMetricsOrder()))
 	}
 }
 
@@ -86,15 +125,14 @@ func TestScrapeInvalidQuery(t *testing.T) {
 
 	assert.NoError(t, cfg.Validate())
 
-	// Ensure all metrics are received when all are enabled.
-	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
-	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
+	enableAllScraperMetrics(cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {
 		err := scraper.Start(context.Background(), componenttest.NewNopHost())
 		assert.NoError(t, err)
-		defer func() { assert.NoError(t, scraper.Shutdown(context.Background())) }()
+		defer assert.NoError(t, scraper.Shutdown(context.Background()))
 
 		scraper.client = mockClient{
 			instanceName: scraper.instanceName,
@@ -131,13 +169,22 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 }
 
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
-	if mc.SQL == getSQLServerDatabaseIOQuery(mc.instanceName) {
-		queryResults, err := readFile("database_io_scraped_data.txt")
-		if err != nil {
-			return nil, err
-		}
-		return queryResults, nil
+	var queryResults []sqlquery.StringMap
+	var err error
+
+	switch mc.SQL {
+	case getSQLServerDatabaseIOQuery(mc.instanceName):
+		queryResults, err = readFile("database_io_scraped_data.txt")
+	case getSQLServerPerformanceCounterQuery(mc.instanceName):
+		queryResults, err = readFile("perfCounterQueryData.txt")
+	case getSQLServerPropertiesQuery(mc.instanceName):
+		queryResults, err = readFile("propertyQueryData.txt")
+	default:
+		return nil, fmt.Errorf("No valid query found")
 	}
 
-	return nil, fmt.Errorf("No valid query found")
+	if err != nil {
+		return nil, err
+	}
+	return queryResults, nil
 }

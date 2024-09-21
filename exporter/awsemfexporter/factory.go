@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
-func createMetricsExporter(ctx context.Context, params exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
+func createMetricsExporter(ctx context.Context, params exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	expCfg := config.(*Config)
 
 	emfExp, err := newEmfExporter(expCfg, params)

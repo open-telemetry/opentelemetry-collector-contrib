@@ -25,14 +25,14 @@ type appendable struct {
 	startTimeMetricRegex   *regexp.Regexp
 	externalLabels         labels.Labels
 
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	obsrecv  *receiverhelper.ObsReport
 }
 
 // NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
 func NewAppendable(
 	sink consumer.Metrics,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	gcInterval time.Duration,
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,

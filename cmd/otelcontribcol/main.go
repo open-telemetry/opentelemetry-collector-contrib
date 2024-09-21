@@ -8,20 +8,22 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	envprovider "go.opentelemetry.io/collector/confmap/provider/envprovider"
 	fileprovider "go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	httpprovider "go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	httpsprovider "go.opentelemetry.io/collector/confmap/provider/httpsprovider"
 	yamlprovider "go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
+
+	s3provider "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider"
+	secretsmanagerprovider "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider"
 )
 
 func main() {
 	info := component.BuildInfo{
 		Command:     "otelcontribcol",
 		Description: "Local OpenTelemetry Collector Contrib binary, testing only.",
-		Version:     "0.99.0-dev",
+		Version:     "0.108.1-dev",
 	}
 
 	set := otelcol.CollectorSettings{
@@ -35,9 +37,8 @@ func main() {
 					httpprovider.NewFactory(),
 					httpsprovider.NewFactory(),
 					yamlprovider.NewFactory(),
-				},
-				ConverterFactories: []confmap.ConverterFactory{
-					expandconverter.NewFactory(),
+					s3provider.NewFactory(),
+					secretsmanagerprovider.NewFactory(),
 				},
 			},
 		},

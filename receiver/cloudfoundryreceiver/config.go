@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -45,6 +46,10 @@ func (c *Config) Validate() error {
 	err := validateURLOption("rlp_gateway.endpoint", c.RLPGateway.Endpoint)
 	if err != nil {
 		return err
+	}
+
+	if strings.TrimSpace(c.RLPGateway.ShardID) == "" {
+		return errors.New("shardID cannot be empty")
 	}
 
 	err = validateURLOption("uaa.endpoint", c.UAA.Endpoint)

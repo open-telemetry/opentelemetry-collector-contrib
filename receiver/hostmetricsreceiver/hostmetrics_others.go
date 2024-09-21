@@ -8,7 +8,7 @@ package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"fmt"
 
-	"github.com/shirou/gopsutil/v3/common"
+	"github.com/shirou/gopsutil/v4/common"
 )
 
 func validateRootPath(rootPath string) error {

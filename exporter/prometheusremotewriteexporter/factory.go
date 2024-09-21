@@ -14,9 +14,17 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+)
+
+var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.RetryOn429",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.101.0"),
+	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
 )
 
 // NewFactory creates a new Prometheus Remote Write exporter.
@@ -27,12 +35,16 @@ func NewFactory() exporter.Factory {
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
 }
 
-func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
+func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	cfg component.Config) (exporter.Metrics, error) {
 
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration")
+	}
+
+	if prwCfg.RemoteWriteQueue.NumConsumers != 0 {
+		set.Logger.Warn("Currently, remote_write_queue.num_consumers doesn't have any effect due to incompatibility with Prometheus remote write API. The value will be ignored. Please see https://github.com/open-telemetry/opentelemetry-collector/issues/2949 for more information.")
 	}
 
 	prwe, err := newPRWExporter(prwCfg, set)
@@ -52,7 +64,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{
+		exporterhelper.WithQueue(exporterhelper.QueueConfig{
 			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
@@ -74,7 +86,7 @@ func createDefaultConfig() component.Config {
 		Namespace:         "",
 		ExternalLabels:    map[string]string{},
 		MaxBatchSizeBytes: 3000000,
-		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:     retrySettings,
 		AddMetricSuffixes: true,
 		SendMetadata:      false,
@@ -83,7 +95,7 @@ func createDefaultConfig() component.Config {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
+			Timeout:         exporterhelper.NewDefaultTimeoutConfig().Timeout,
 			Headers:         map[string]configopaque.String{},
 		},
 		// TODO(jbd): Adjust the default queue size.

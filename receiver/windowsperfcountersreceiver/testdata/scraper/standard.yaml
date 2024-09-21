@@ -11,48 +11,6 @@ resourceMetrics:
                       value:
                         stringValue: "0"
                   timeUnixNano: "1646857199239674900"
-                - asDouble: 0
-                  attributes:
-                    - key: instance
-                      value:
-                        stringValue: "1"
-                  timeUnixNano: "1646857199239674900"
-                - asDouble: 0
-                  attributes:
-                    - key: instance
-                      value:
-                        stringValue: "2"
-                  timeUnixNano: "1646857199239674900"
-                - asDouble: 0
-                  attributes:
-                    - key: instance
-                      value:
-                        stringValue: "3"
-                  timeUnixNano: "1646857199239674900"
-                - asDouble: 0
-                  attributes:
-                    - key: instance
-                      value:
-                        stringValue: "4"
-                  timeUnixNano: "1646857199239674900"
-                - asDouble: 0
-                  attributes:
-                    - key: instance
-                      value:
-                        stringValue: "5"
-                  timeUnixNano: "1646857199239674900"
-                - asDouble: 0
-                  attributes:
-                    - key: instance
-                      value:
-                        stringValue: "6"
-                  timeUnixNano: "1646857199239674900"
-                - asDouble: 0
-                  attributes:
-                    - key: instance
-                      value:
-                        stringValue: "7"
-                  timeUnixNano: "1646857199239674900"
             name: cpu.idle
             unit: '%'
           - description: number of bytes committed to memory
@@ -70,12 +28,6 @@ resourceMetrics:
                     - key: instance
                       value:
                         stringValue: "1"
-                  timeUnixNano: "1646857199239674900"
-                - asDouble: 0
-                  attributes:
-                    - key: instance
-                      value:
-                        stringValue: "2"
                   timeUnixNano: "1646857199239674900"
             name: processor.time
             unit: '%'

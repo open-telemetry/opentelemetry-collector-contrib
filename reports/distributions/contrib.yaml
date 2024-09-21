@@ -8,6 +8,7 @@ components:
         - exceptions
         - failover
         - grafanacloud
+        - otlpjson
         - roundrobin
         - routing
         - servicegraph
@@ -46,10 +47,10 @@ components:
         - prometheus
         - prometheusremotewrite
         - pulsar
+        - rabbitmq
         - sapm
         - sentry
         - signalfx
-        - skywalking
         - splunk_hec
         - sumologic
         - syslog
@@ -79,9 +80,11 @@ components:
     processor:
         - attributes
         - cumulativetodelta
+        - deltatocumulative
         - deltatorate
         - experimental_metricsgeneration
         - filter
+        - geoip
         - groupbyattrs
         - groupbytrace
         - k8sattributes
@@ -124,6 +127,8 @@ components:
         - filestats
         - flinkmetrics
         - fluentforward
+        - github
+        - googlecloudmonitoring
         - googlecloudspanner
         - haproxy
         - hostmetrics

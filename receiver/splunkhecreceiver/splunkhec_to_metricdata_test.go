@@ -55,6 +55,19 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			hecConfig:       defaultTestingHecConfig,
 		},
 		{
+			name: "int_gauge_v7",
+			splunkDataPoint: func() *splunk.Event {
+				pt := buildDefaultSplunkDataPt()
+				delete(pt.Fields, "metric_name:single")
+				pt.Fields["metric_name"] = "single"
+				pt.Fields["_value"] = int64Ptr(13)
+				return pt
+
+			}(),
+			wantMetricsData: buildDefaultMetricsData(nanos),
+			hecConfig:       defaultTestingHecConfig,
+		},
+		{
 			name: "multiple",
 			splunkDataPoint: func() *splunk.Event {
 				pt := buildDefaultSplunkDataPt()

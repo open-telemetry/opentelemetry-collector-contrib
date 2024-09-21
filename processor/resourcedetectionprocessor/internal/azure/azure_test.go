@@ -6,6 +6,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,7 @@ import (
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
+	d, err := NewDetector(processortest.NewNopSettings(), dcfg)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -36,9 +37,25 @@ func TestDetectAzureAvailable(t *testing.T) {
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
 		VMScaleSetName:    "myScaleset",
+		TagsList: []azure.ComputeTagsListMetadata{
+			{
+				Name:  "tag1key",
+				Value: "value1",
+			},
+			{
+				Name:  "tag2key",
+				Value: "value2",
+			},
+		},
 	}, nil)
 
-	detector := &Detector{provider: mp, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
+	detector := &Detector{
+		provider: mp,
+		tagKeyRegexes: []*regexp.Regexp{
+			regexp.MustCompile("^tag1key$"),
+		},
+		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+	}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -55,9 +72,15 @@ func TestDetectAzureAvailable(t *testing.T) {
 		"azure.vm.size":                     "vmSize",
 		"azure.resourcegroup.name":          "resourceGroup",
 		"azure.vm.scaleset.name":            "myScaleset",
+		"azure.tag.tag1key":                 "value1",
+	}
+
+	notExpected := map[string]any{
+		"azure.tag.tag2key": "value2",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
+	assert.NotEqual(t, notExpected, res.Attributes().AsRaw())
 }
 
 func TestDetectError(t *testing.T) {

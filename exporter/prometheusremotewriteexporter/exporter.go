@@ -41,62 +41,53 @@ type prwTelemetry interface {
 }
 
 type prwTelemetryOtel struct {
-	failedTranslations   metric.Int64Counter
-	translatedTimeSeries metric.Int64Counter
-	otelAttrs            []attribute.KeyValue
+	telemetryBuilder *metadata.TelemetryBuilder
+	otelAttrs        []attribute.KeyValue
 }
 
 func (p *prwTelemetryOtel) recordTranslationFailure(ctx context.Context) {
-	p.failedTranslations.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+	p.telemetryBuilder.ExporterPrometheusremotewriteFailedTranslations.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
 }
 
 func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS int) {
-	p.translatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
+	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
 }
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	endpointURL       *url.URL
-	client            *http.Client
-	wg                *sync.WaitGroup
-	closeChan         chan struct{}
-	concurrency       int
-	userAgentHeader   string
-	maxBatchSizeBytes int
-	clientSettings    *confighttp.ClientConfig
-	settings          component.TelemetrySettings
-	retrySettings     configretry.BackOffConfig
-	wal               *prweWAL
-	exporterSettings  prometheusremotewrite.Settings
-	telemetry         prwTelemetry
+	endpointURL          *url.URL
+	client               *http.Client
+	wg                   *sync.WaitGroup
+	closeChan            chan struct{}
+	concurrency          int
+	userAgentHeader      string
+	maxBatchSizeBytes    int
+	clientSettings       *confighttp.ClientConfig
+	settings             component.TelemetrySettings
+	retrySettings        configretry.BackOffConfig
+	retryOnHTTP429       bool
+	wal                  *prweWAL
+	exporterSettings     prometheusremotewrite.Settings
+	telemetry            prwTelemetry
+	batchTimeSeriesState batchTimeSeriesState
 }
 
-func newPRWTelemetry(set exporter.CreateSettings) (prwTelemetry, error) {
-
-	meter := metadata.Meter(set.TelemetrySettings)
-	// TODO: create helper functions similar to the processor helper: BuildCustomMetricName
-	prefix := "exporter/" + metadata.Type.String() + "/"
-	failedTranslations, errFailedTranslation := meter.Int64Counter(prefix+"failed_translations",
-		metric.WithDescription("Number of translation operations that failed to translate metrics from Otel to Prometheus"),
-		metric.WithUnit("1"),
-	)
-
-	translatedTimeSeries, errTranslatedMetrics := meter.Int64Counter(prefix+"translated_time_series",
-		metric.WithDescription("Number of Prometheus time series that were translated from OTel metrics"),
-		metric.WithUnit("1"),
-	)
+func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 
 	return &prwTelemetryOtel{
-		failedTranslations:   failedTranslations,
-		translatedTimeSeries: translatedTimeSeries,
+		telemetryBuilder: telemetryBuilder,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String("exporter", set.ID.String()),
 		},
-	}, errors.Join(errFailedTranslation, errTranslatedMetrics)
+	}, nil
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
-func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, error) {
+func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err
@@ -124,6 +115,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		clientSettings:    &cfg.ClientConfig,
 		settings:          set.TelemetrySettings,
 		retrySettings:     cfg.BackOffConfig,
+		retryOnHTTP429:    retryOn429FeatureGate.IsEnabled(),
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -132,7 +124,8 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
 		},
-		telemetry: prwTelemetry,
+		telemetry:            prwTelemetry,
+		batchTimeSeriesState: newBatchTimeSericesState(),
 	}
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
@@ -217,7 +210,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	}
 
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
 	if err != nil {
 		return err
 	}
@@ -283,8 +276,9 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	if errMarshal != nil {
 		return consumererror.NewPermanent(errMarshal)
 	}
-	buf := make([]byte, len(data), cap(data))
-	compressedData := snappy.Encode(buf, data)
+	// If we don't pass a buffer large enough, Snappy Encode function will not use it and instead will allocate a new buffer.
+	// Therefore we always let Snappy decide the size of the buffer.
+	compressedData := snappy.Encode(nil, data)
 
 	// executeFunc can be used for backoff and non backoff scenarios.
 	executeFunc := func() error {
@@ -329,6 +323,13 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return rerr
 		}
+
+		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
+		// Reference: https://github.com/prometheus/prometheus/pull/12677
+		if prwe.retryOnHTTP429 && resp.StatusCode == 429 {
+			return rerr
+		}
+
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 

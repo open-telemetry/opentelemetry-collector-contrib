@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/shirou/gopsutil/v3/common"
+	"github.com/shirou/gopsutil/v4/common"
 )
 
 var gopsutilEnvVars = map[common.EnvKeyType]string{

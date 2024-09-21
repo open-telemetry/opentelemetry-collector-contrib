@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 
 func createLogsReceiver(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {

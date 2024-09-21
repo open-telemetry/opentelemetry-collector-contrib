@@ -21,8 +21,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 // childProcessCollector implements the OtelcolRunner interface as a child process on the same machine executing

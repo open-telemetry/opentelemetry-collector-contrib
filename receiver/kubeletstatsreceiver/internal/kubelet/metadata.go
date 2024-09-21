@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -52,6 +52,7 @@ type Metadata struct {
 	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
 	podResources              map[string]resources
 	containerResources        map[string]resources
+	nodeCapacity              NodeCapacity
 }
 
 type resources struct {
@@ -59,6 +60,14 @@ type resources struct {
 	cpuLimit      float64
 	memoryRequest int64
 	memoryLimit   int64
+}
+
+type NodeCapacity struct {
+	Name string
+	// node's CPU capacity in cores
+	CPUCapacity float64
+	// node's Memory capacity in bytes
+	MemoryCapacity float64
 }
 
 func getContainerResources(r *v1.ResourceRequirements) resources {
@@ -74,7 +83,7 @@ func getContainerResources(r *v1.ResourceRequirements) resources {
 	}
 }
 
-func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
+func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeCap NodeCapacity,
 	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error) Metadata {
 	m := Metadata{
 		Labels:                    getLabelsMap(labels),
@@ -82,6 +91,7 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
 		DetailedPVCResourceSetter: detailedPVCResourceSetter,
 		podResources:              make(map[string]resources),
 		containerResources:        make(map[string]resources),
+		nodeCapacity:              nodeCap,
 	}
 
 	if podsMetadata != nil {

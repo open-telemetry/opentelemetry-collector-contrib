@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/client-go/kubernetes"
@@ -44,7 +43,7 @@ func TestFactory(t *testing.T) {
 	}, rCfg)
 
 	r, err := f.CreateTracesReceiver(
-		context.Background(), receivertest.NewNopCreateSettings(),
+		context.Background(), receivertest.NewNopSettings(),
 		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -72,20 +71,20 @@ func TestFactoryDistributions(t *testing.T) {
 
 	// default
 	r := newTestReceiver(t, rCfg)
-	err := r.Start(context.Background(), componenttest.NewNopHost())
+	err := r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.Nil(t, r.resourceWatcher.osQuotaClient)
 
 	// openshift
 	rCfg.Distribution = "openshift"
 	r = newTestReceiver(t, rCfg)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.NotNil(t, r.resourceWatcher.osQuotaClient)
 }
 
 func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
-	r, err := newReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg)
+	r, err := newReceiver(context.Background(), receivertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	rcvr, ok := r.(*kubernetesReceiver)
@@ -105,7 +104,7 @@ type nopHostWithExporters struct {
 }
 
 func newNopHostWithExporters() component.Host {
-	return &nopHostWithExporters{Host: componenttest.NewNopHost()}
+	return &nopHostWithExporters{Host: newNopHost()}
 }
 
 func (n *nopHostWithExporters) GetExporters() map[component.DataType]map[component.ID]component.Component {
@@ -122,7 +121,7 @@ func TestNewSharedReceiver(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 
 	mc := consumertest.NewNop()
-	mr, err := newMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mc)
+	mr, err := newMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mc)
 	require.NoError(t, err)
 
 	// Verify that the metric consumer is correctly set.
@@ -130,7 +129,7 @@ func TestNewSharedReceiver(t *testing.T) {
 	assert.Equal(t, mc, kr.metricsConsumer)
 
 	lc := consumertest.NewNop()
-	lr, err := newLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, lc)
+	lr, err := newLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, lc)
 	require.NoError(t, err)
 
 	// Verify that the log consumer is correct set.

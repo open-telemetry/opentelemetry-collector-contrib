@@ -23,7 +23,7 @@ import (
 )
 
 type logsTransformProcessor struct {
-	logger *zap.Logger
+	set    component.TelemetrySettings
 	config *Config
 
 	consumer consumer.Logs
@@ -38,14 +38,14 @@ type logsTransformProcessor struct {
 
 func newProcessor(config *Config, nextConsumer consumer.Logs, set component.TelemetrySettings) (*logsTransformProcessor, error) {
 	p := &logsTransformProcessor{
-		logger:   set.Logger,
+		set:      set,
 		config:   config,
 		consumer: nextConsumer,
 	}
 
 	baseCfg := p.config.BaseConfig
 
-	p.emitter = helper.NewLogEmitter(p.logger.Sugar())
+	p.emitter = helper.NewLogEmitter(p.set)
 	pipe, err := pipeline.Config{
 		Operators:     baseCfg.Operators,
 		DefaultOutput: p.emitter,
@@ -64,7 +64,7 @@ func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
 }
 
 func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
-	ltp.logger.Info("Stopping logs transform processor")
+	ltp.set.Logger.Info("Stopping logs transform processor")
 	// We call the shutdown functions in reverse order, so that the last thing we started
 	// is stopped first.
 	for i := len(ltp.shutdownFns) - 1; i >= 0; i-- {
@@ -80,10 +80,10 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 
 func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) error {
 	// create all objects before starting them, since the loops (consumerLoop, converterLoop) depend on these converters not being nil.
-	ltp.converter = adapter.NewConverter(ltp.logger)
+	ltp.converter = adapter.NewConverter(ltp.set)
 
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
-	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
+	ltp.fromConverter = adapter.NewFromPdataConverter(ltp.set, wkrCount)
 
 	// data flows in this order:
 	// ConsumeLogs: receives logs and forwards them for conversion to stanza format ->
@@ -199,19 +199,19 @@ func (ltp *logsTransformProcessor) converterLoop(ctx context.Context, wg *sync.W
 	for {
 		select {
 		case <-ctx.Done():
-			ltp.logger.Debug("converter loop stopped")
+			ltp.set.Logger.Debug("converter loop stopped")
 			return
 
 		case entries, ok := <-ltp.fromConverter.OutChannel():
 			if !ok {
-				ltp.logger.Debug("fromConverter channel got closed")
+				ltp.set.Logger.Debug("fromConverter channel got closed")
 				return
 			}
 
 			for _, e := range entries {
 				// Add item to the first operator of the pipeline manually
 				if err := ltp.firstOperator.Process(ctx, e); err != nil {
-					ltp.logger.Error("processor encountered an issue with the pipeline", zap.Error(err))
+					ltp.set.Logger.Error("processor encountered an issue with the pipeline", zap.Error(err))
 					break
 				}
 			}
@@ -227,16 +227,16 @@ func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context, wg *sync.Wai
 	for {
 		select {
 		case <-ctx.Done():
-			ltp.logger.Debug("emitter loop stopped")
+			ltp.set.Logger.Debug("emitter loop stopped")
 			return
 		case e, ok := <-ltp.emitter.OutChannel():
 			if !ok {
-				ltp.logger.Debug("emitter channel got closed")
+				ltp.set.Logger.Debug("emitter channel got closed")
 				return
 			}
 
 			if err := ltp.converter.Batch(e); err != nil {
-				ltp.logger.Error("processor encountered an issue with the converter", zap.Error(err))
+				ltp.set.Logger.Error("processor encountered an issue with the converter", zap.Error(err))
 			}
 		}
 	}
@@ -249,17 +249,17 @@ func (ltp *logsTransformProcessor) consumerLoop(ctx context.Context, wg *sync.Wa
 	for {
 		select {
 		case <-ctx.Done():
-			ltp.logger.Debug("consumer loop stopped")
+			ltp.set.Logger.Debug("consumer loop stopped")
 			return
 
 		case pLogs, ok := <-ltp.converter.OutChannel():
 			if !ok {
-				ltp.logger.Debug("converter channel got closed")
+				ltp.set.Logger.Debug("converter channel got closed")
 				return
 			}
 
 			if err := ltp.consumer.ConsumeLogs(ctx, pLogs); err != nil {
-				ltp.logger.Error("processor encountered an issue with next consumer", zap.Error(err))
+				ltp.set.Logger.Error("processor encountered an issue with next consumer", zap.Error(err))
 			}
 		}
 	}

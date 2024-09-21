@@ -32,12 +32,12 @@ func TestComponentLifecycle(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		createFn func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error)
+		createFn func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error)
 	}{
 
 		{
 			name: "metrics",
-			createFn: func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetricsExporter(ctx, set, cfg)
 			},
 		},
@@ -48,11 +48,11 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 
 	for _, test := range tests {
 		t.Run(test.name+"-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+			c, err := test.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)

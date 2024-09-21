@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -42,7 +41,7 @@ func TestMetricsBuilder(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadConfig(t, test.name), settings)
 
@@ -85,7 +84,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 2)
+			assert.Equal(t, 2, attrCount)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
@@ -109,6 +108,6 @@ func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, next consumer.Metrics) (connector.Traces, error) {
+func createTracesToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, next consumer.Metrics) (connector.Traces, error) {
 	c, err := newConnector(params.Logger, params.TelemetrySettings, cfg)
 	if err != nil {
 		return nil, err

@@ -1,0 +1,83 @@
+[
+   {
+      "1.2.3.4/32" : {
+         "city" : {
+            "names" : {
+               "en" : "Boxford"
+            }
+         },
+         "continent" : {
+            "code" : "EU",
+            "names" : {
+               "de" : "Europa",
+               "en" : "Europe",
+               "es" : "Europa",
+               "fr" : "Europe",
+               "ja" : "ヨーロッパ",
+               "pt-BR" : "Europa",
+               "ru" : "Европа",
+               "zh-CN" : "欧洲"
+            }
+         },
+         "country" : {
+            "geoname_id" : 2635167,
+            "iso_code" : "GB",
+            "names" : {
+               "de" : "Vereinigtes Königreich",
+               "en" : "United Kingdom",
+               "es" : "Reino Unido",
+               "fr" : "Royaume-Uni",
+               "ja" : "イギリス",
+               "pt-BR" : "Reino Unido",
+               "ru" : "Великобритания",
+               "zh-CN" : "英国"
+            }
+         },
+         "location" : {
+            "accuracy_radius" : 100,
+            "latitude" : 1234,
+            "longitude" : 5678,
+            "time_zone" : "Europe/London"
+         },
+         "postal" : {
+            "code" : "OX1"
+         },
+         "registered_country" : {
+            "geoname_id" : 3017382,
+            "is_in_european_union" : true,
+            "iso_code" : "FR",
+            "names" : {
+               "de" : "Frankreich",
+               "en" : "France",
+               "es" : "Francia",
+               "fr" : "France",
+               "ja" : "フランス共和国",
+               "pt-BR" : "França",
+               "ru" : "Франция",
+               "zh-CN" : "法国"
+            }
+         },
+         "subdivisions" : [
+            {
+               "geoname_id" : 6269131,
+               "iso_code" : "ENG",
+               "names" : {
+                  "en" : "England",
+                  "es" : "Inglaterra",
+                  "fr" : "Angleterre",
+                  "pt-BR" : "Inglaterra"
+               }
+            },
+            {
+               "geoname_id" : 3333217,
+               "iso_code" : "WBK",
+               "names" : {
+                  "en" : "West Berkshire",
+                  "ru" : "Западный Беркшир",
+                  "zh-CN" : "西伯克郡"
+               }
+            }
+         ]
+      }
+   }
+]

@@ -1,10 +1,9 @@
 type: deltatorate
-scope_name: otelcol/deltatorate
 
 status:
   class: processor
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
     active: [Aneurysm9]

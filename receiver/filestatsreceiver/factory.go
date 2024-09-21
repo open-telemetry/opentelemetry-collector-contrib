@@ -31,14 +31,14 @@ func newDefaultConfig() component.Config {
 
 func newReceiver(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	fileStatsConfig := cfg.(*Config)
 
 	mp := newScraper(fileStatsConfig, settings)
-	s, err := scraperhelper.NewScraper(metadata.Type.String(), mp.scrape)
+	s, err := scraperhelper.NewScraper(metadata.Type, mp.scrape)
 	if err != nil {
 		return nil, err
 	}

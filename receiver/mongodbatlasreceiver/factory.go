@@ -36,7 +36,7 @@ func NewFactory() receiver.Factory {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -52,7 +52,7 @@ func createMetricsReceiver(
 
 func createCombinedLogReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {

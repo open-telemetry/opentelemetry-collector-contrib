@@ -6,7 +6,7 @@ package chronyreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
-	"github.com/tilinna/clock"
+	"github.com/jonboulle/clockwork"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -20,10 +20,10 @@ type chronyScraper struct {
 	mb     *metadata.MetricsBuilder
 }
 
-func newScraper(ctx context.Context, cfg *Config, set receiver.CreateSettings) *chronyScraper {
+func newScraper(ctx context.Context, cfg *Config, set receiver.Settings) *chronyScraper {
 	return &chronyScraper{
 		mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, set,
-			metadata.WithStartTime(pcommon.NewTimestampFromTime(clock.FromContext(ctx).Now())),
+			metadata.WithStartTime(pcommon.NewTimestampFromTime(clockwork.FromContext(ctx).Now())),
 		),
 	}
 }
@@ -34,7 +34,7 @@ func (cs *chronyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	now := pcommon.NewTimestampFromTime(clock.Now(ctx))
+	now := pcommon.NewTimestampFromTime(clockwork.FromContext(ctx).Now())
 
 	cs.mb.RecordNtpStratumDataPoint(now, int64(data.Stratum))
 	cs.mb.RecordNtpTimeCorrectionDataPoint(
