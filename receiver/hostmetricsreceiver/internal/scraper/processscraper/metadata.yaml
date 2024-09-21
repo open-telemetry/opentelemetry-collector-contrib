@@ -174,13 +174,15 @@ metrics:
   process.handles:
     enabled: false
     description: Number of handles held by the process.
-    extended_documentation: This metric is only available on Windows.
+    extended_documentation: >-
+      This metric is only available on Windows.
+      It requires Windows Management Interface to be enabled.
     unit: '{count}'
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-  
+
   process.context_switches:
     enabled: false
     description: Number of times the process has been context switched.
