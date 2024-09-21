@@ -7,7 +7,7 @@ change_type: enhancement
 component: hostmetricsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added a new featuregate hostmetrics.process.wmiParentProcessID that will use WMI to fetch parent process IDs instead of the Win32 API.
+note: Use Windows Management Interface to fetch process.ppid by default. Add `disable_wmi` config option to fallback to old behaviour.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32947]
@@ -24,4 +24,4 @@ subtext: This also made a change where the parent process ID will not be fetched
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [user]
