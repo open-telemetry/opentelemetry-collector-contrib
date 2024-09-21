@@ -348,6 +348,19 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
 
+func TestScrapeMetrics_NewError_Windows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skipf("skipping windows test on non-windows system %s", runtime.GOOS)
+	}
+
+	// process.handles metric cannot be enabled if the config disables WMI
+	mb := metadata.DefaultMetricsBuilderConfig()
+	mb.Metrics.ProcessHandles.Enabled = true
+	_, err := newProcessScraper(receivertest.NewNopSettings(), &Config{DisableWMI: true, MetricsBuilderConfig: mb})
+	require.Error(t, err)
+	require.ErrorIs(t, err, errProcessHandlesRequiresWMI)
+}
+
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 

@@ -41,6 +41,8 @@ const (
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
 )
 
+var errProcessHandlesRequiresWMI = errors.New("the process.handles metric requires the use of Windows Management Interface")
+
 type parentPidFunc func(ctx context.Context, handle processHandle, pid int32) (int32, error)
 
 // scraper for Process Metrics
@@ -57,8 +59,7 @@ type scraper struct {
 	// for mocking
 	getProcessCreateTime func(p processHandle, ctx context.Context) (int64, error)
 	getProcessHandles    func(context.Context) (processHandles, error)
-
-	getParentPid parentPidFunc
+	getParentPid         parentPidFunc
 
 	wmiProcInfoManager wmiprocinfo.Manager
 }
@@ -78,8 +79,11 @@ func newProcessScraper(settings receiver.Settings, cfg *Config) (*scraper, error
 
 	var err error
 
-	if wmiParentProcessIDFeaturegate.IsEnabled() {
-		scraper.getParentPid = scraper.getWMIParentPidFunc()
+	if runtime.GOOS == "windows" {
+		err = configureWindowsSettings(scraper)
+		if err != nil {
+			return nil, fmt.Errorf("error configuring Windows settings: %w", err)
+		}
 	}
 
 	if len(cfg.Include.Names) > 0 {
@@ -437,8 +441,12 @@ func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(ctx context.Context, 
 
 func (s *scraper) refreshWMIProcInfo() error {
 	var err error
-	if s.config.Metrics.ProcessHandles.Enabled ||
-		(s.config.ResourceAttributes.ProcessParentPid.Enabled && wmiParentProcessIDFeaturegate.IsEnabled()) {
+
+	if s.config.DisableWMI {
+		return nil
+	}
+
+	if s.config.Metrics.ProcessHandles.Enabled || s.config.ResourceAttributes.ProcessParentPid.Enabled {
 		err = s.wmiProcInfoManager.Refresh()
 		if errors.Is(err, wmiprocinfo.ErrPlatformSupport) {
 			return nil
@@ -490,4 +498,15 @@ func (s *scraper) getWMIParentPidFunc() parentPidFunc {
 		}
 		return int32(ppid64), nil
 	}
+}
+
+func configureWindowsSettings(s *scraper) error {
+	if s.config.DisableWMI {
+		if s.config.Metrics.ProcessHandles.Enabled {
+			return errProcessHandlesRequiresWMI
+		}
+	} else {
+		s.getParentPid = s.getWMIParentPidFunc()
+	}
+	return nil
 }

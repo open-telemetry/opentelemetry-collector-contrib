@@ -33,15 +33,6 @@ var (
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/28849"),
 		featuregate.WithRegisterFromVersion("v0.98.0"),
 	)
-
-	wmiParentProcessIDFeaturegateID = "hostmetrics.process.wmiParentProcessID"
-	wmiParentProcessIDFeaturegate   = featuregate.GlobalRegistry().MustRegister(
-		wmiParentProcessIDFeaturegateID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, on Windows the ParentProcessID will be fetched through a WMI query instead of a process snapshot."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32947"),
-		featuregate.WithRegisterFromVersion("v0.101.0"),
-	)
 )
 
 // Factory is the Factory for scraper.
