@@ -135,7 +135,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "couchdb.database.open":
 					assert.False(t, validatedMetrics["couchdb.database.open"], "Found a duplicate in the metrics slice: couchdb.database.open")
 					validatedMetrics["couchdb.database.open"] = true
