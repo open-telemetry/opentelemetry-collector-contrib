@@ -6,9 +6,9 @@ toolchain go1.22.7
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	// cannot use higher version: https://github.com/go-sql-driver/mysql/issues/1602
+	// https://github.com/go-sql-driver/mysql/issues/1602; https://github.com/apache/doris/pull/32177
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.108.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.109.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240918193345-a3c0565031b0
@@ -34,7 +34,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -76,8 +76,8 @@ require (
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
-	google.golang.org/grpc v1.66.2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
+	google.golang.org/grpc v1.67.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
