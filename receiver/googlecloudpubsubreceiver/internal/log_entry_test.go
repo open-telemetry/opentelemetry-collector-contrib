@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -31,7 +30,7 @@ type Log struct {
 
 func generateLog(t *testing.T, log Log) (pcommon.Resource, plog.LogRecord, error) {
 	res := pcommon.NewResource()
-	assert.NoError(t, res.Attributes().FromRaw(log.ResourceAttributes))
+	require.NoError(t, res.Attributes().FromRaw(log.ResourceAttributes))
 
 	lr := plog.NewLogRecord()
 	err := lr.Attributes().FromRaw(log.Attributes)
@@ -54,7 +53,7 @@ func generateLog(t *testing.T, log Log) (pcommon.Resource, plog.LogRecord, error
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(ots))
 	}
 
-	assert.NoError(t, lr.Body().FromRaw(log.Body))
+	require.NoError(t, lr.Body().FromRaw(log.Body))
 	lr.SetSeverityText(log.SeverityText)
 
 	lr.SetSpanID(spanIDStrToSpanIDBytes(log.SpanID))

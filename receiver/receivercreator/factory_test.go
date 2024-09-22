@@ -23,7 +23,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	lConsumer := consumertest.NewNop()
 	lReceiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, lConsumer)
-	assert.NoError(t, err, "receiver creation failed")
+	require.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
 	shared, ok := lReceiver.(*sharedcomponent.SharedComponent)
@@ -35,7 +35,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	mConsumer := consumertest.NewNop()
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mConsumer)
-	assert.NoError(t, err, "receiver creation failed")
+	require.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
 	shared, ok = mReceiver.(*sharedcomponent.SharedComponent)
@@ -48,7 +48,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	tConsumer := consumertest.NewNop()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, tConsumer)
-	assert.NoError(t, err, "receiver creation failed")
+	require.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	shared, ok = tReceiver.(*sharedcomponent.SharedComponent)

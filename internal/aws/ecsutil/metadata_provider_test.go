@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
@@ -33,7 +34,7 @@ func Test_ecsMetadata_fetchTask(t *testing.T) {
 	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: mockRestClient}
 	fetchResp, err := md.FetchTaskMetadata()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, fetchResp)
 	assert.Equal(t, "test200", fetchResp.Cluster)
 	assert.Equal(t, "arn:aws:ecs:us-west-2:803860917211:task/test200/d22aaa11bf0e4ab19c2c940a1cbabbee", fetchResp.TaskARN)
@@ -49,7 +50,7 @@ func Test_ecsMetadata_fetchContainer(t *testing.T) {
 	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: mockRestClient}
 	fetchResp, err := md.FetchContainerMetadata()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, fetchResp)
 	assert.Equal(t, "325c979aea914acd93be2fdd2429e1d9-3811061257", fetchResp.DockerID)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:123456789123:an-image/123", fetchResp.ContainerARN)

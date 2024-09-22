@@ -174,7 +174,7 @@ func TestScrape(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
-				assert.EqualError(t, err, test.expectedErr)
+				require.EqualError(t, err, test.expectedErr)
 
 				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)

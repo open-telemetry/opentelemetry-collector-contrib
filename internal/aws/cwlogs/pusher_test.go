@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +31,7 @@ func TestValidateLogEventWithMutating(t *testing.T) {
 	logEvent := NewEvent(0, "abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789")
 	logEvent.GeneratedTime = time.Now()
 	err := logEvent.Validate(zap.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Positive(t, *logEvent.InputLogEvent.Timestamp)
 	assert.Len(t, *logEvent.InputLogEvent.Message, 64-perEventHeaderBytes)
 
@@ -41,7 +42,7 @@ func TestValidateLogEventFailed(t *testing.T) {
 	logger := zap.NewNop()
 	logEvent := NewEvent(0, "")
 	err := logEvent.Validate(logger)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "empty log event message", err.Error())
 
 	invalidTimestamp := time.Now().AddDate(0, -1, 0)
@@ -251,7 +252,7 @@ func TestMultiStreamPusher(t *testing.T) {
 	assert.NoError(t, pusher.AddLogEntry(event))
 	assert.NoError(t, pusher.AddLogEntry(event))
 	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 0)
-	assert.NoError(t, pusher.ForceFlush())
+	require.NoError(t, pusher.ForceFlush())
 
 	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 1)
 	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 1)

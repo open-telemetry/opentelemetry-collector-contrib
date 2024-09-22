@@ -126,13 +126,13 @@ func TestPortsNotOpen(t *testing.T) {
 	//  this test may occasionally pass incorrectly, but it will not fail incorrectly
 	//  TODO: consider adding a way for a receiver to asynchronously signal that is ready to receive spans to eliminate races/arbitrary waits
 	l, err := net.Listen("tcp", "localhost:14250")
-	assert.NoError(t, err, "should have been able to listen on 14250.  jaeger receiver incorrectly started grpc")
+	require.NoError(t, err, "should have been able to listen on 14250.  jaeger receiver incorrectly started grpc")
 	if l != nil {
 		l.Close()
 	}
 
 	l, err = net.Listen("tcp", "localhost:14268")
-	assert.NoError(t, err, "should have been able to listen on 14268.  jaeger receiver incorrectly started thrift_http")
+	require.NoError(t, err, "should have been able to listen on 14268.  jaeger receiver incorrectly started thrift_http")
 	if l != nil {
 		l.Close()
 	}
@@ -174,7 +174,7 @@ func TestGRPCReception(t *testing.T) {
 	resp, err := cl.PostSpans(context.Background(), req, grpc.WaitForReady(true))
 
 	// verify
-	assert.NoError(t, err, "should not have failed to post spans")
+	require.NoError(t, err, "should not have failed to post spans")
 	assert.NotNil(t, resp, "response should not have been nil")
 
 	gotTraces := sink.AllTraces()
@@ -234,7 +234,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	resp, err := cl.PostSpans(context.Background(), req, grpc.WaitForReady(true))
 
 	// verify
-	assert.NoError(t, err, "should not have failed to post spans")
+	require.NoError(t, err, "should not have failed to post spans")
 	assert.NotNil(t, resp, "response should not have been nil")
 
 	gotTraces := sink.AllTraces()
@@ -352,7 +352,7 @@ func TestSampling(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	conn, err := grpc.NewClient(config.GRPCServerConfig.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer conn.Close()
 
 	cl := api_v2.NewSamplingManagerClient(conn)
@@ -360,7 +360,7 @@ func TestSampling(t *testing.T) {
 	resp, err := cl.GetSamplingStrategy(context.Background(), &api_v2.SamplingStrategyParameters{
 		ServiceName: "foo",
 	})
-	assert.Error(t, err, "expect: unknown service jaeger.api_v2.SamplingManager")
+	require.Error(t, err, "expect: unknown service jaeger.api_v2.SamplingManager")
 	assert.Nil(t, resp)
 }
 

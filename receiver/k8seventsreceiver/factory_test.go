@@ -45,7 +45,7 @@ func TestCreateReceiver(t *testing.T) {
 	)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// Override for test.
 	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {

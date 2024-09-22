@@ -18,6 +18,7 @@ import (
 
 	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
@@ -164,10 +165,10 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 
 			factory, err := newAMQPMessagingServiceFactory(tt.cfg, logger)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, factory)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				actual := factory().(*amqpMessagingService)
 				// assert that want == actual, checking individual fields (due to function pointers can't use deep equal)
 				assert.Equal(t, tt.want.connectConfig.addr, actual.connectConfig.addr)
@@ -313,7 +314,7 @@ func TestAMQPReceiveMessage(t *testing.T) {
 	service, conn := startMockedService(t)
 	conn.nextData <- []byte(amqpHelloWorldMsg)
 	msg, err := service.receiveMessage(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, msg.GetData(), []byte("Hello world!"))
 	closeMockedAMQPService(t, service, conn)
 }
@@ -324,7 +325,7 @@ func TestAMQPReceiveMessageError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 	_, err := service.receiveMessage(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	closeMockedAMQPService(t, service, conn)
 }
 
@@ -332,7 +333,7 @@ func TestAMQPAcknowledgeMessage(t *testing.T) {
 	service, conn := startMockedService(t)
 	conn.nextData <- []byte(amqpHelloWorldMsg)
 	msg, err := service.receiveMessage(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	writeCalled := make(chan struct{})
 	// Expected accept from AMQP frame for first received message
 	// "\x00\x00\x00\x1c\x02\x00\x00\x00\x00\x53\x15\xd0\x00\x00\x00\x0c\x00\x00\x00\x05\x41\x43\x40\x41\x00\x53\x24\x45"
@@ -344,7 +345,7 @@ func TestAMQPAcknowledgeMessage(t *testing.T) {
 		return len(b), nil
 	})
 	err = service.accept(context.Background(), msg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assertChannelClosed(t, writeCalled)
 	closeMockedAMQPService(t, service, conn)
 }
@@ -353,7 +354,7 @@ func TestAMQPModifyMessage(t *testing.T) {
 	service, conn := startMockedService(t)
 	conn.nextData <- []byte(amqpHelloWorldMsg)
 	msg, err := service.receiveMessage(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	writeCalled := make(chan struct{})
 	// Expected modify from AMQP frame for first received message
 	// "\x00\x00\x00\x1c\x02\x00\x00\x00\x00\x53\x15\xd0\x00\x00\x00\x0c\x00\x00\x00\x05\x41\x43\x40\x41\x00\x53\x25\x45"
@@ -365,7 +366,7 @@ func TestAMQPModifyMessage(t *testing.T) {
 		return len(b), nil
 	})
 	err = service.failed(context.Background(), msg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	select {
 	case <-writeCalled:
 	case <-time.After(10 * time.Millisecond):
@@ -437,7 +438,7 @@ func TestAMQPNewClientDialWithBadSessionResponseExpectingError(t *testing.T) {
 	}
 
 	err := service.dial(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.NotNil(t, service.client)
 	assert.Nil(t, service.session)
 	assert.Nil(t, service.receiver)
@@ -464,7 +465,7 @@ func TestAMQPNewClientDialWithBadAttachResponseExpectingError(t *testing.T) {
 	}
 
 	err := service.dial(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.NotNil(t, service.client)
 	assert.NotNil(t, service.session)
 	assert.Nil(t, service.receiver)
@@ -534,7 +535,7 @@ func TestConfigAMQPAuthenticationPlaintext(t *testing.T) {
 		return nil
 	}
 	_, err := toAMQPAuthentication(cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, called)
 }
 
@@ -578,7 +579,7 @@ func TestConfigAMQPAuthenticationXAuth2(t *testing.T) {
 		return nil
 	}
 	_, err := toAMQPAuthentication(cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, called)
 }
 
@@ -615,7 +616,7 @@ func TestConfigAMQPAuthenticationExternal(t *testing.T) {
 		return nil
 	}
 	_, err := toAMQPAuthentication(cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, called)
 }
 

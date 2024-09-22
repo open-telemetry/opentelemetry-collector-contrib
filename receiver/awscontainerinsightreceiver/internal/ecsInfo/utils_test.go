@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockHTTPClient struct {
@@ -69,7 +70,7 @@ func TestRequestSuccessWithKnownLength(t *testing.T) {
 
 	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.NotNil(t, body)
 
@@ -94,7 +95,7 @@ func TestRequestSuccessWithUnknownLength(t *testing.T) {
 
 	body, err := request(ctx, "0.0.0.0", MockHTTPClient)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.NotNil(t, body)
 

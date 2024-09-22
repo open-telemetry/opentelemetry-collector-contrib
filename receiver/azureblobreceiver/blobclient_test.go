@@ -31,7 +31,7 @@ func TestNewBlobClientFromConnectionString(t *testing.T) {
 func TestNewBlobClientFromConnectionStringError(t *testing.T) {
 	blobClient, err := newBlobClientFromConnectionString(badConnectionString, zaptest.NewLogger(t))
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, blobClient)
 }
 

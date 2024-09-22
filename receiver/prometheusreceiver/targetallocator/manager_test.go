@@ -773,7 +773,7 @@ func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 
 	err := configureSDHTTPClientConfigFromTA(httpSD, ta)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.False(t, httpSD.HTTPClientConfig.FollowRedirects)
 	assert.True(t, httpSD.HTTPClientConfig.TLSConfig.InsecureSkipVerify)

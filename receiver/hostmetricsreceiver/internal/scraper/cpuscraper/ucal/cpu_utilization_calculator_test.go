@@ -8,6 +8,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -158,7 +159,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 				previousCPUTimes: test.previousCPUTimes,
 			}
 			err := calculator.CalculateAndRecord(test.now, test.cpuTimes, recorder.record)
-			assert.ErrorIs(t, err, test.expectedError)
+			require.ErrorIs(t, err, test.expectedError)
 			assert.Len(t, recorder.cpuUtilizations, len(test.expectedUtilizations))
 			for idx, expectedUtilization := range test.expectedUtilizations {
 				assert.Equal(t, expectedUtilization.CPU, recorder.cpuUtilizations[idx].CPU)
@@ -224,7 +225,7 @@ func Test_cpuTimeByCpu(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			actualTimeStat, err := cpuTimeForCPU(test.cpuNum, test.times)
-			assert.ErrorIs(t, err, test.expectedErr)
+			require.ErrorIs(t, err, test.expectedErr)
 			assert.Equal(t, test.expectedTimeStat, actualTimeStat)
 		})
 	}

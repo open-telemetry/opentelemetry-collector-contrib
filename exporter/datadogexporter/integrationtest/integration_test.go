@@ -489,7 +489,7 @@ func TestIntegrationLogs(t *testing.T) {
 			var smap seriesSlice
 			gz := getGzipReader(t, metricsBytes)
 			dec := json.NewDecoder(gz)
-			assert.NoError(t, dec.Decode(&smap))
+			require.NoError(t, dec.Decode(&smap))
 			for _, s := range smap.Series {
 				if s.Metric == "otelcol_receiver_accepted_log_records" || s.Metric == "otelcol_exporter_sent_log_records" {
 					metricMap.Series = append(metricMap.Series, s)
@@ -523,7 +523,7 @@ func TestIntegrationLogs(t *testing.T) {
 func sendLogs(t *testing.T, numLogs int) {
 	ctx := context.Background()
 	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	lr := make([]log.Record, numLogs)
 	assert.NoError(t, logExporter.Export(ctx, lr))
 }

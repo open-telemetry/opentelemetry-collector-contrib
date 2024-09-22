@@ -44,7 +44,7 @@ func TestBearerToken(t *testing.T) {
 	token, err := RetrieveBearerToken(cfgAuth, host.GetExtensions())
 
 	// verify
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "the-token", token)
 }
 

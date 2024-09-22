@@ -56,10 +56,10 @@ func TestInvalidEndpoint(t *testing.T) {
 
 func TestUDPPortUnavailable(t *testing.T) {
 	addr, err := net.ResolveUDPAddr("udp", "localhost:0")
-	assert.NoError(t, err, "should resolve UDP address")
+	require.NoError(t, err, "should resolve UDP address")
 
 	sock, err := net.ListenUDP("udp", addr)
-	assert.NoError(t, err, "should be able to listen")
+	require.NoError(t, err, "should be able to listen")
 	defer sock.Close()
 	address := sock.LocalAddr().String()
 
@@ -72,7 +72,7 @@ func TestUDPPortUnavailable(t *testing.T) {
 		receivertest.NewNopSettings(),
 	)
 
-	assert.Error(t, err, "should have failed to create a new receiver")
+	require.Error(t, err, "should have failed to create a new receiver")
 	assert.True(t,
 		strings.Contains(err.Error(), "address already in use") || strings.Contains(err.Error(), "Only one usage of each socket address"),
 		"error message should complain about address in-use")
@@ -80,7 +80,7 @@ func TestUDPPortUnavailable(t *testing.T) {
 
 func TestCloseStopsPoller(t *testing.T) {
 	addr, err := findAvailableAddress()
-	assert.NoError(t, err, "there should be address available")
+	require.NoError(t, err, "there should be address available")
 
 	p, err := New(
 		&Config{
@@ -90,14 +90,14 @@ func TestCloseStopsPoller(t *testing.T) {
 		},
 		receivertest.NewNopSettings(),
 	)
-	assert.NoError(t, err, "poller should be created")
+	require.NoError(t, err, "poller should be created")
 
 	// start pollers
 	segChan := p.SegmentsChan()
 	p.Start(context.Background())
 
 	err = p.Close()
-	assert.NoError(t, err, "should be able to close the poller")
+	require.NoError(t, err, "should be able to close the poller")
 
 	assert.Eventuallyf(t, func() bool {
 		select {
@@ -115,7 +115,7 @@ func TestCloseStopsPoller(t *testing.T) {
 func TestSuccessfullyPollPacket(t *testing.T) {
 	receiverID := component.MustNewID("TestSuccessfullyPollPacket")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -126,7 +126,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	randString, _ := uuid.NewRandom()
 	rawData := []byte(`{"format": "json", "version": 1}` + "\n" + randString.String())
 	err = writePacket(t, addr, string(rawData))
-	assert.NoError(t, err, "can not write packet in the TestSuccessfullyPollPacket case")
+	require.NoError(t, err, "can not write packet in the TestSuccessfullyPollPacket case")
 
 	assert.Eventuallyf(t, func() bool {
 		select {
@@ -151,7 +151,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 func TestIncompletePacketNoSeparator(t *testing.T) {
 	receiverID := component.MustNewID("TestIncompletePacketNoSeparator")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -161,7 +161,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 
 	rawData := []byte(`{"format": "json", "version": 1}`) // no separator
 	err = writePacket(t, addr, string(rawData))
-	assert.NoError(t, err, "can not write packet in the TestIncompletePacketNoSeparator case")
+	require.NoError(t, err, "can not write packet in the TestIncompletePacketNoSeparator case")
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
@@ -181,7 +181,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 func TestIncompletePacketNoBody(t *testing.T) {
 	receiverID := component.MustNewID("TestIncompletePacketNoBody")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -191,7 +191,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 
 	rawData := []byte(`{"format": "json", "version": 1}` + "\n") // no body
 	err = writePacket(t, addr, string(rawData))
-	assert.NoError(t, err, "can not write packet in the TestIncompletePacketNoBody case")
+	require.NoError(t, err, "can not write packet in the TestIncompletePacketNoBody case")
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
@@ -206,7 +206,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 func TestNonJsonHeader(t *testing.T) {
 	receiverID := component.MustNewID("TestNonJsonHeader")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -216,7 +216,7 @@ func TestNonJsonHeader(t *testing.T) {
 
 	// the header (i.e. the portion before \n) is invalid
 	err = writePacket(t, addr, "nonJson\nBody")
-	assert.NoError(t, err, "can not write packet in the TestNonJsonHeader case")
+	require.NoError(t, err, "can not write packet in the TestNonJsonHeader case")
 	assert.Eventuallyf(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable
 		logs := recordedLogs.All()
@@ -236,7 +236,7 @@ func TestNonJsonHeader(t *testing.T) {
 func TestJsonInvalidHeader(t *testing.T) {
 	receiverID := component.MustNewID("TestJsonInvalidHeader")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -248,7 +248,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 	// the header (i.e. the portion before \n) is invalid
 	err = writePacket(t, addr,
 		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody")
-	assert.NoError(t, err, "can not write packet in the TestJsonInvalidHeader case")
+	require.NoError(t, err, "can not write packet in the TestJsonInvalidHeader case")
 	assert.Eventuallyf(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable
 		logs := recordedLogs.All()
@@ -272,7 +272,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
 	receiverID := component.MustNewID("TestSocketReadIrrecoverableNetError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -309,7 +309,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 func TestSocketReadTimeOutNetError(t *testing.T) {
 	receiverID := component.MustNewID("TestSocketReadTimeOutNetError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -347,7 +347,7 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 func TestSocketGenericReadError(t *testing.T) {
 	receiverID := component.MustNewID("TestSocketGenericReadError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -432,7 +432,7 @@ func createAndOptionallyStartPoller(
 	start bool,
 	set receiver.Settings) (string, Poller, *observer.ObservedLogs) {
 	addr, err := findAvailableAddress()
-	assert.NoError(t, err, "there should be address available")
+	require.NoError(t, err, "there should be address available")
 
 	logger, recorded := logSetup()
 	set.Logger = logger

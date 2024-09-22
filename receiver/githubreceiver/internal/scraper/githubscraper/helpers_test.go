@@ -17,6 +17,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/go-github/v65/github"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -717,7 +718,7 @@ func TestGetContributors(t *testing.T) {
 			client.UploadURL = url
 
 			contribs, err := ghs.getContributorCount(context.Background(), client, tc.repo)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tc.expectedCount, contribs)
 		})
 	}

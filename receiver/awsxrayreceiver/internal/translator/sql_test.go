@@ -7,12 +7,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSQLURL(t *testing.T) {
 	raw := "jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2.rds.amazonaws.com:5432/ebdb"
 	url, dbName, err := splitSQLURL(raw)
-	assert.NoError(t, err, "should succeed")
+	require.NoError(t, err, "should succeed")
 	assert.Equal(t,
 		"jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2.rds.amazonaws.com:5432",
 		url, "expected url to be the same")
@@ -24,7 +25,7 @@ func TestSQLURL(t *testing.T) {
 func TestSQLURLQueryParameter(t *testing.T) {
 	raw := "jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2.rds.amazonaws.com:5432/ebdb?myInterceptor=foo"
 	url, dbName, err := splitSQLURL(raw)
-	assert.NoError(t, err, "should succeed")
+	require.NoError(t, err, "should succeed")
 	assert.Equal(t,
 		"jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2.rds.amazonaws.com:5432",
 		url, "expected url to be the same")

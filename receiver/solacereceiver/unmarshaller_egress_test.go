@@ -27,7 +27,7 @@ var msgWithAdditionalSpan = []byte{10, 48, 10, 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 8,
 func TestMsgWithUnknownOneof(t *testing.T) {
 	unmarshallerV1, _ := newTestEgressV1Unmarshaller(t)
 	spanData, err := unmarshallerV1.unmarshalToSpanData(amqp.NewMessage(msgWithAdditionalSpan))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// expect one egress span
 	assert.Len(t, spanData.EgressSpans, 1)
 	assert.Nil(t, spanData.EgressSpans[0].GetSendSpan())
@@ -348,7 +348,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 		}
 		span := ptrace.NewSpan()
 		err := span.Attributes().FromRaw(base)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		span.SetName(name)
 		span.SetKind(ptrace.SpanKindProducer)
 		return span

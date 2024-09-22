@@ -10,6 +10,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -24,7 +25,7 @@ func TestNewReceiver_invalid_version_err(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.ProtocolVersion = "invalid"
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, r)
 }
 
@@ -53,7 +54,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 		},
 	}
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
 }
@@ -68,7 +69,7 @@ func TestNewReceiver(t *testing.T) {
 	}
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
 
@@ -80,6 +81,6 @@ func TestNewReceiver_handles_scraper_error(t *testing.T) {
 	}
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), consumertest.NewNop())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, r)
 }

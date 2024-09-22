@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -118,7 +119,7 @@ func TestStartTimeMetricMatch(t *testing.T) {
 				assert.ErrorIs(t, stma.AdjustMetrics(tt.inputs), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, stma.AdjustMetrics(tt.inputs))
+			require.NoError(t, stma.AdjustMetrics(tt.inputs))
 			for i := 0; i < tt.inputs.ResourceMetrics().Len(); i++ {
 				rm := tt.inputs.ResourceMetrics().At(i)
 				for j := 0; j < rm.ScopeMetrics().Len(); j++ {

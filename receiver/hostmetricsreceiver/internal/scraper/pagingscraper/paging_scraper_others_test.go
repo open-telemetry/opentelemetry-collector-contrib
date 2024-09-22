@@ -63,7 +63,7 @@ func TestScrape_Errors(t *testing.T) {
 			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
 			_, err = scraper.scrape(context.Background())
-			assert.EqualError(t, err, test.expectedError)
+			require.EqualError(t, err, test.expectedError)
 
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)

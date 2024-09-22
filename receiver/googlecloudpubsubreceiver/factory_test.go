@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -34,7 +35,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 
 	params := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tReceiver, "traces receiver creation failed")
 }
 
@@ -45,7 +46,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 	params := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tReceiver, "metrics receiver creation failed")
 }
 
@@ -56,7 +57,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 
 	params := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tReceiver, "logs receiver creation failed")
 }
 
@@ -66,11 +67,11 @@ func TestEnsureReceiver(t *testing.T) {
 
 	cfg.(*Config).Subscription = "projects/my-project/subscriptions/my-subscription"
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, tReceiver, mReceiver)
 	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, mReceiver, lReceiver)
 }

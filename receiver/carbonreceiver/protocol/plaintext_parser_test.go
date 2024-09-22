@@ -207,7 +207,7 @@ func TestPlaintextParser_parsePath(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantName, got.MetricName)
 				assert.Equal(t, tt.wantAttributes, got.Attributes)
 				assert.Equal(t, DefaultMetricType, got.MetricType)

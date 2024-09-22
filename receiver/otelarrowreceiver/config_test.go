@@ -22,7 +22,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, cm.Unmarshal(cfg))
+	require.NoError(t, cm.Unmarshal(cfg))
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, defaultCfg, cfg)
 }
@@ -32,7 +32,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, cm.Unmarshal(cfg))
+	require.NoError(t, cm.Unmarshal(cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, defaultOnlyGRPC, cfg)
@@ -43,7 +43,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, cm.Unmarshal(cfg))
+	require.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
@@ -91,7 +91,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, cm.Unmarshal(cfg))
+	require.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{

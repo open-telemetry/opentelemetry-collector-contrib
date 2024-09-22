@@ -105,9 +105,9 @@ func TestUnsupportedScheme(t *testing.T) {
 func TestNonExistent(t *testing.T) {
 	fp := NewTestProvider("./testdata/non-existent.yaml")
 	_, err := fp.Retrieve(context.Background(), "s3://non-exist-bucket.s3.region.amazonaws.com/key", nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/non-exist-key.yaml", nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.non-exist-region.amazonaws.com/key", nil)
 	assert.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
@@ -116,7 +116,7 @@ func TestNonExistent(t *testing.T) {
 func TestInvalidYAML(t *testing.T) {
 	fp := NewTestProvider("./testdata/invalid-otel-config.yaml")
 	_, err := fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/key", nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 

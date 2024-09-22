@@ -29,7 +29,7 @@ func TestValidate(t *testing.T) {
 	maxIdleConnPerHost := 150
 	maxConnPerHost := 250
 	ty, err := component.NewType("ty")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	auth := configauth.Authentication{AuthenticatorID: component.NewID(ty)}
 
 	tests := []struct {
@@ -364,9 +364,9 @@ func TestUnmarshal(t *testing.T) {
 			cfg := CreateDefaultConfig().(*Config)
 			err := cfg.Unmarshal(testInstance.configMap)
 			if err != nil || testInstance.err != "" {
-				assert.ErrorContains(t, err, testInstance.err)
+				require.ErrorContains(t, err, testInstance.err)
 				if testInstance.field != "" {
-					assert.ErrorContains(t, err, testInstance.field)
+					require.ErrorContains(t, err, testInstance.field)
 				}
 			} else {
 				assert.Equal(t, testInstance.cfg, cfg)

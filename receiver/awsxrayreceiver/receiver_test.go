@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -40,7 +41,7 @@ const (
 
 func TestProxyCreationFailed(t *testing.T) {
 	addr, err := findAvailableUDPAddress()
-	assert.NoError(t, err, "there should be address available")
+	require.NoError(t, err, "there should be address available")
 
 	sink := new(consumertest.TracesSink)
 	_, err = newReceiver(
@@ -86,7 +87,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 
 	receiverID := component.MustNewID("TestSegmentsPassedToConsumer")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -99,10 +100,10 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	}()
 
 	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
-	assert.NoError(t, err, "can not read raw segment")
+	require.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))
-	assert.NoError(t, err, "can not write packet in the happy case")
+	require.NoError(t, err, "can not write packet in the happy case")
 
 	sink := rcvr.(*xrayReceiver).consumer.(*consumertest.TracesSink)
 
@@ -117,7 +118,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 func TestTranslatorErrorsOut(t *testing.T) {
 	receiverID := component.MustNewID("TestTranslatorErrorsOut")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -130,7 +131,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	}()
 
 	err = writePacket(t, addr, segmentHeader+"invalidSegment")
-	assert.NoError(t, err, "can not write packet in the "+receiverID.String()+" case")
+	require.NoError(t, err, "can not write packet in the "+receiverID.String()+" case")
 
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
@@ -144,7 +145,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	receiverID := component.MustNewID("TestSegmentsConsumerErrorsOut")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -157,10 +158,10 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	}()
 
 	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
-	assert.NoError(t, err, "can not read raw segment")
+	require.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))
-	assert.NoError(t, err, "can not write packet")
+	require.NoError(t, err, "can not write packet")
 
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
@@ -174,7 +175,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 func TestPollerCloseError(t *testing.T) {
 	receiverID := component.MustNewID("TestPollerCloseError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -192,7 +193,7 @@ func TestPollerCloseError(t *testing.T) {
 func TestProxyCloseError(t *testing.T) {
 	receiverID := component.MustNewID("TestPollerCloseError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -210,7 +211,7 @@ func TestProxyCloseError(t *testing.T) {
 func TestBothPollerAndProxyCloseError(t *testing.T) {
 	receiverID := component.MustNewID("TestBothPollerAndProxyCloseError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
-	assert.NoError(t, err, "SetupTelemetry should succeed")
+	require.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -223,7 +224,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = mProxy
 	err = rcvr.Shutdown(context.Background())
-	assert.ErrorIs(t, err, mPoller.closeErr, "expected error")
+	require.ErrorIs(t, err, mPoller.closeErr, "expected error")
 	assert.ErrorIs(t, err, mProxy.closeErr, "expected error")
 }
 
@@ -265,7 +266,7 @@ func createAndOptionallyStartReceiver(
 	start bool,
 	set receiver.Settings) (string, receiver.Traces, *observer.ObservedLogs) {
 	addr, err := findAvailableUDPAddress()
-	assert.NoError(t, err, "there should be address available")
+	require.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
 	var sink consumer.Traces

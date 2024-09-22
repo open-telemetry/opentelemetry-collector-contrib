@@ -57,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.wantErr == nil {
-				assert.NoError(t, component.ValidateConfig(cfg))
+				require.NoError(t, component.ValidateConfig(cfg))
 			} else {
 				assert.Equal(t, tt.wantErr, component.ValidateConfig(cfg))
 			}

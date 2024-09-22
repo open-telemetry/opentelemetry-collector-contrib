@@ -102,7 +102,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 		require.NoError(t, err)
 
 		err = p.ConsumeTraces(ctx, buildBadSampleTrace())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		metrics := msink.AllMetrics()
 		assert.NotEmpty(t, metrics)
@@ -338,9 +338,9 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			resAttr := pcommon.NewMap()
-			assert.NoError(t, resAttr.FromRaw(tc.resourceAttrMap))
+			require.NoError(t, resAttr.FromRaw(tc.resourceAttrMap))
 			span0 := ptrace.NewSpan()
-			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
+			require.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
 			buf := &bytes.Buffer{}
 			buildKey(buf, "ab", span0, tc.optionalDims, pcommon.NewMap(), resAttr)

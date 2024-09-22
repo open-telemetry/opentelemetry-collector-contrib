@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const validFile = `Filename				Type		Size		Used		Priority
@@ -25,7 +26,7 @@ const invalidFile = `INVALID				Type		Size		Used		Priority
 func TestGetPageFileStats_ValidFile(t *testing.T) {
 	assert := assert.New(t)
 	stats, err := parseSwapsFile(strings.NewReader(validFile))
-	assert.NoError(err)
+	require.NoError(t, err)
 
 	assert.Equal(pageFileStats{
 		deviceName: "/dev/dm-2",

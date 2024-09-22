@@ -67,7 +67,7 @@ func creteConnectorNativeWithCfg(t *testing.T, cfg *Config) (*traceToMetricConne
 
 	cfg.Traces.BucketInterval = 1 * time.Second
 	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	connector, ok := tconn.(*traceToMetricConnectorNative)
 	require.True(t, ok)
@@ -88,12 +88,12 @@ func TestContainerTagsNative(t *testing.T) {
 	trace1 := generateTrace()
 
 	err = connector.ConsumeTraces(context.Background(), trace1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Send two traces to ensure unique container tags are added to the cache
 	trace2 := generateTrace()
 	err = connector.ConsumeTraces(context.Background(), trace2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	for {
 		if len(metricsSink.AllMetrics()) > 0 {
@@ -178,7 +178,7 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	s4.SetParentSpanID(testSpanID1)
 
 	err = connector.ConsumeTraces(context.Background(), td)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	timeout := time.Now().Add(1 * time.Minute)
 	for time.Now().Before(timeout) {

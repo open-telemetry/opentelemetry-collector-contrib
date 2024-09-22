@@ -50,7 +50,7 @@ func TestTopicScraper_createsScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, ms)
 }
 
@@ -61,7 +61,7 @@ func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NotNil(t, ms)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = ms.Scrape(context.Background())
 	assert.Error(t, err)
 }
@@ -73,7 +73,7 @@ func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NotNil(t, ms)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = ms.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
@@ -83,7 +83,7 @@ func TestTopicScraper_startScraperCreatesClient(t *testing.T) {
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NotNil(t, ms)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = ms.Start(context.Background(), nil)
 	assert.NoError(t, err)
 }
@@ -94,7 +94,7 @@ func TestTopicScraper_createScraperHandles_invalid_topicMatch(t *testing.T) {
 	ms, err := createTopicsScraper(context.Background(), Config{
 		TopicMatch: "[",
 	}, sc, receivertest.NewNopSettings())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, ms)
 }
 
@@ -113,7 +113,7 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	}
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	md, err := scraper.scrape(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias"); ok {

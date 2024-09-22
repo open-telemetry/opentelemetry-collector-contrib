@@ -10,6 +10,7 @@ import (
 
 	cinfo "github.com/google/cadvisor/info/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
@@ -121,7 +122,7 @@ func TestFSStatsWithAllowList(t *testing.T) {
 
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
-	assert.NoError(t, enc.Encode(result))
+	require.NoError(t, enc.Encode(result))
 	containerType := containerinsight.TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -57,6 +58,6 @@ func TestCreatingMetricsReceiver(t *testing.T) {
 		},
 		consumertest.NewNop(),
 	)
-	assert.NoError(t, err, "Must not error creating metrics receiver")
+	require.NoError(t, err, "Must not error creating metrics receiver")
 	assert.NotNil(t, mem, "Must have a valid metrics receiver client")
 }

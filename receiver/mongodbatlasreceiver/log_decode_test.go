@@ -187,7 +187,7 @@ func TestDecode5_0InvalidLog(t *testing.T) {
 	require.NoError(t, gzipWriter.Close())
 
 	entries, err := decodeLogs(zaptest.NewLogger(t), "5.0", zippedBuffer)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, []model.LogEntry{
 		{
@@ -407,7 +407,7 @@ func TestDecodeAudit4_2InvalidLog(t *testing.T) {
 	require.NoError(t, gzipWriter.Close())
 
 	entries, err := decodeAuditJSON(zaptest.NewLogger(t), zippedBuffer)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	require.Equal(t, []model.AuditLog{
 		{
@@ -616,7 +616,7 @@ func TestDecodeAudit5_0InvalidLog(t *testing.T) {
 	require.NoError(t, gzipWriter.Close())
 
 	entries, err := decodeAuditJSON(zaptest.NewLogger(t), zippedBuffer)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	require.Equal(t, []model.AuditLog{
 		{

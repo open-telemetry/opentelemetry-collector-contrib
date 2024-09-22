@@ -51,7 +51,7 @@ func TestBrokerScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, bs)
 }
 
@@ -59,7 +59,7 @@ func TestBrokerScraperStart(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	sc := sarama.NewConfig()
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, bs)
 	assert.NoError(t, bs.Start(context.Background(), nil))
 }
@@ -70,7 +70,7 @@ func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 	}
 	sc := sarama.NewConfig()
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, bs)
 	_, err = bs.Scrape(context.Background())
 	assert.Error(t, err)
@@ -82,7 +82,7 @@ func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 	}
 	sc := sarama.NewConfig()
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, bs)
 	err = bs.Shutdown(context.Background())
 	assert.NoError(t, err)
@@ -101,7 +101,7 @@ func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 	}
 	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
 	md, err := bs.scrape(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	_, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias")
@@ -122,7 +122,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	}
 	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
 	md, err := bs.scrape(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias"); ok {
@@ -144,6 +144,6 @@ func TestBrokersScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, bs)
 }

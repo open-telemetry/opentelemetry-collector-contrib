@@ -353,7 +353,7 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp, err := client.Push(context.Background(), tt.body)
-			assert.NoError(t, err, "should not have failed to post logs")
+			require.NoError(t, err, "should not have failed to post logs")
 			assert.NotNil(t, resp, "response should not have been nil")
 
 			gotLogs := sink.AllLogs()

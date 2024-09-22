@@ -9,6 +9,7 @@ import (
 
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewDatabaseFromClient(t *testing.T) {
@@ -28,7 +29,7 @@ func TestNewDatabase(t *testing.T) {
 
 	database, err := NewDatabase(ctx, databaseID, "../../testdata/serviceAccount.json")
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, database.Client())
 	assert.Equal(t, databaseID, database.DatabaseID())
 }
@@ -39,7 +40,7 @@ func TestNewDatabaseWithError(t *testing.T) {
 
 	database, err := NewDatabase(ctx, databaseID, "does not exist")
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, database)
 }
 
@@ -51,7 +52,7 @@ func TestNewDatabaseWithNoCredentialsFilePath(t *testing.T) {
 
 	database, err := NewDatabase(ctx, databaseID, "")
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, database.Client())
 	assert.Equal(t, databaseID, database.DatabaseID())
 }

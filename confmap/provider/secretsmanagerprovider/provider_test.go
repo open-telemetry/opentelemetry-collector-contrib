@@ -41,7 +41,7 @@ func TestSecretsManagerFetchSecret(t *testing.T) {
 	assert.NoError(t, fp.Shutdown(context.Background()))
 
 	value, err := result.AsRaw()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, value)
 	assert.Equal(t, secretValue, value)
 }
@@ -58,7 +58,7 @@ func TestFetchSecretsManagerFieldValidJson(t *testing.T) {
 	assert.NoError(t, fp.Shutdown(context.Background()))
 
 	value, err := result.AsRaw()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, value)
 	assert.Equal(t, secretValue, value)
 }
@@ -70,7 +70,7 @@ func TestFetchSecretsManagerFieldInvalidJson(t *testing.T) {
 	fp := NewTestProvider(secretValue)
 	_, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 

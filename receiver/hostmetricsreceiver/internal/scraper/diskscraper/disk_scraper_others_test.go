@@ -48,7 +48,7 @@ func TestScrape_Others(t *testing.T) {
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 
 			_, err = scraper.scrape(context.Background())
-			assert.EqualError(t, err, test.expectedErr)
+			require.EqualError(t, err, test.expectedErr)
 
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)

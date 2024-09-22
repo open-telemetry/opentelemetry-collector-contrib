@@ -32,10 +32,10 @@ func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
 	ddr, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err, "Traces receiver should be created")
+	require.NoError(t, err, "Traces receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err, "Server should start")
+	require.NoError(t, err, "Server should start")
 
 	err = ddr.Shutdown(context.Background())
 	assert.NoError(t, err, "Server should stop")
@@ -46,10 +46,10 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
 	ddr, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err, "Metrics receiver should be created")
+	require.NoError(t, err, "Metrics receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err, "Server should start")
+	require.NoError(t, err, "Server should start")
 
 	err = ddr.Shutdown(context.Background())
 	assert.NoError(t, err, "Server should stop")
@@ -359,7 +359,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	}
 
 	pb, err := metricsPayloadV2.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	req, err := http.NewRequest(
 		http.MethodPost,
@@ -436,7 +436,7 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 	}
 
 	pb, err := sketchPayload.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	req, err := http.NewRequest(
 		http.MethodPost,
@@ -537,7 +537,7 @@ func TestStats_EndToEnd(t *testing.T) {
 	}
 
 	payload, err := clientStatsPayload.MarshalMsg(nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	req, err := http.NewRequest(
 		http.MethodPost,

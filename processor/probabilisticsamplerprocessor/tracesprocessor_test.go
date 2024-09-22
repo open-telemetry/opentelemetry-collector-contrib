@@ -156,7 +156,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 				return
 			}
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, 1) {
-				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
+				require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			}
 			sampled := sink.spanCount
 			actualPercentageSamplingPercentage := float32(sampled) / float32(tt.numBatches*tt.numTracesPerBatch) * 100.0

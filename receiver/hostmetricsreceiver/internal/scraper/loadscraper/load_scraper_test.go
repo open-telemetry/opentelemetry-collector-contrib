@@ -93,7 +93,7 @@ func TestScrape(t *testing.T) {
 
 		md, err := scraper.scrape(context.Background())
 		if test.expectedErr != "" {
-			assert.EqualError(t, err, test.expectedErr)
+			require.EqualError(t, err, test.expectedErr)
 
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
@@ -109,7 +109,7 @@ func TestScrape(t *testing.T) {
 
 		if test.bootTimeFunc != nil {
 			actualBootTime, err := scraper.bootTime(context.Background())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, uint64(bootTime), actualBootTime)
 		}
 		// expect 3 metrics

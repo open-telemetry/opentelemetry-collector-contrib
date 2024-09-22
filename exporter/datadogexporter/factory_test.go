@@ -211,7 +211,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopSettings(),
 			cfg,
 		)
-		assert.EqualError(t, err, "API Key validation failed")
+		require.EqualError(t, err, "API Key validation failed")
 		assert.Nil(t, mexp)
 
 		texp, err := factory.CreateTracesExporter(
@@ -219,7 +219,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopSettings(),
 			cfg,
 		)
-		assert.EqualError(t, err, "API Key validation failed")
+		require.EqualError(t, err, "API Key validation failed")
 		assert.Nil(t, texp)
 
 		lexp, err := factory.CreateLogsExporter(

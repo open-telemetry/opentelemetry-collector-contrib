@@ -41,7 +41,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		cfg,
 		consumertest.NewNop(),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	castedReceiver, ok := receiver.(*solaceTracesReceiver)
 	assert.True(t, ok)
 	assert.Equal(t, castedReceiver.config, cfg)
@@ -108,6 +108,6 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 		cfg,
 		consumertest.NewNop(),
 	)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, receiver)
 }

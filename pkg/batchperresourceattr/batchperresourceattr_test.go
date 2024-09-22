@@ -136,7 +136,7 @@ func TestSplitMetricsOneResourceMetrics(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	bpr := NewBatchPerResourceMetrics("attr_key", sink)
-	assert.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
+	require.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
 	outBatches := sink.AllMetrics()
 	require.Len(t, outBatches, 1)
 	assert.Equal(t, expected, outBatches[0])
@@ -176,7 +176,7 @@ func TestSplitMetricsSameResource(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	bpr := NewBatchPerResourceMetrics("same_attr_val", sink)
-	assert.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
+	require.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
 	outBatches := sink.AllMetrics()
 	require.Len(t, outBatches, 1)
 	assert.Equal(t, expected, outBatches[0])
@@ -226,7 +226,7 @@ func TestSplitMetricsIntoDifferentBatchesWithMultipleKeys(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	bpr := NewMultiBatchPerResourceMetrics([]string{"attr_key", "attr_key2"}, sink)
-	assert.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
+	require.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
 	outBatches := sink.AllMetrics()
 	require.Len(t, outBatches, 6)
 	sortMetrics(outBatches, "attr_key")

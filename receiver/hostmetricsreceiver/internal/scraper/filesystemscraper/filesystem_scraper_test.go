@@ -412,7 +412,7 @@ func TestScrape(t *testing.T) {
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			m, err := findMetricByName(metrics, "system.filesystem.usage")
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assertFileSystemUsageMetricValid(
 				t,
 				m,

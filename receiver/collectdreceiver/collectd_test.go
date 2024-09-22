@@ -32,7 +32,7 @@ func TestDecodeEvent(t *testing.T) {
 
 	for _, cdr := range records {
 		err := cdr.appendToMetrics(zap.NewNop(), scopeMetrics, map[string]string{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 0, metrics.MetricCount())
 	}
 }
@@ -49,7 +49,7 @@ func TestDecodeMetrics(t *testing.T) {
 
 	for _, cdr := range records {
 		err = cdr.appendToMetrics(zap.NewNop(), scopeMemtrics, map[string]string{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 	assert.Equal(t, 10, metrics.MetricCount())
 

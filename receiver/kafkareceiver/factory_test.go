@@ -21,7 +21,7 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, []string{defaultBroker}, cfg.Brokers)
 	assert.Equal(t, defaultGroupID, cfg.GroupID)
 	assert.Equal(t, defaultClientID, cfg.ClientID)

@@ -454,7 +454,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				next,
 			)
 			assert.NotNil(t, mgp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
@@ -646,7 +646,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 
 	// Load initial value
 	reset()
-	assert.NoError(b, p.ConsumeMetrics(context.Background(), metrics))
+	require.NoError(b, p.ConsumeMetrics(context.Background(), metrics))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

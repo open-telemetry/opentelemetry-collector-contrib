@@ -122,7 +122,7 @@ func Test_NewPRWExporter(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, prwe)
 			assert.NotNil(t, prwe.exporterSettings)
 			assert.NotNil(t, prwe.endpointURL)
@@ -963,7 +963,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	}
 
 	prwe, perr := newPRWExporter(cfg, set)
-	assert.NoError(t, perr)
+	require.NoError(t, perr)
 
 	nopHost := componenttest.NewNopHost()
 	ctx := context.Background()
@@ -1005,9 +1005,9 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 
 	// Read all the indices.
 	firstIndex, ierr := wal.FirstIndex()
-	assert.NoError(t, ierr)
+	require.NoError(t, ierr)
 	lastIndex, ierr := wal.LastIndex()
-	assert.NoError(t, ierr)
+	require.NoError(t, ierr)
 
 	var reqs []*prompb.WriteRequest
 	for i := firstIndex; i <= lastIndex; i++ {

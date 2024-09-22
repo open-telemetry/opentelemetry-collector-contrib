@@ -52,7 +52,7 @@ func TestNewLogsProcessor(t *testing.T) {
 				assert.Nil(t, got)
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, got)
 			}
 		})

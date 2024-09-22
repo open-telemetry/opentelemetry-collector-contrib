@@ -426,7 +426,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
 	rcv, err := newMetricsReceiver(receivertest.NewNopSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
 	w := httptest.NewRecorder()

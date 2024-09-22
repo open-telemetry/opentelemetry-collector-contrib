@@ -11,6 +11,7 @@ import (
 
 	"bitbucket.org/atlassian/go-asap/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // mockRoundTripper copies the request headers to the response.
@@ -46,11 +47,11 @@ func TestRoundTripper(t *testing.T) {
 	}
 
 	asapAuth, err := createASAPClientAuthenticator(cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	base := &mockRoundTripper{}
 	roundTripper, err := asapAuth.RoundTripper(base)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, roundTripper)
 
 	req := &http.Request{Method: "Get", Header: map[string][]string{}}
@@ -73,11 +74,11 @@ func TestRPCAuth(t *testing.T) {
 	}
 
 	asapAuth, err := createASAPClientAuthenticator(cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Setup credentials
 	credentials, err := asapAuth.PerRPCCredentials()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, credentials)
 	assert.True(t, credentials.RequireTransportSecurity())
 
@@ -97,7 +98,7 @@ func validateAsapJWT(t *testing.T, cfg *Config, jwt string) {
 	)
 	token, err := asap.ParseToken(jwt)
 	assert.NotNil(t, token)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = validator.Validate(token)
 	assert.NoError(t, err)

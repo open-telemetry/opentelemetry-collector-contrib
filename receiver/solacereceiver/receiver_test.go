@@ -207,7 +207,7 @@ func TestReceiveMessage(t *testing.T) {
 			if testCase.expectedErr != nil {
 				assert.Equal(t, testCase.expectedErr, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.True(t, receiveMessagesCalled)
 			if testCase.receiveMessageErr == nil {
@@ -248,7 +248,7 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 		return trace, nil
 	}
 	err := receiver.receiveMessages(ctx, messagingService)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, receiveMessagesCalled)
 	assert.True(t, unmarshalCalled)
 	assert.True(t, ackCalled)
@@ -381,11 +381,11 @@ func TestReceiverLifecycle(t *testing.T) {
 	}
 	// start the receiver
 	err := receiver.Start(context.Background(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assertChannelClosed(t, dialCalled)
 	assertChannelClosed(t, receiveMessagesCalled)
 	err = receiver.Shutdown(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assertChannelClosed(t, closeCalled)
 	// we error on receive message, so we should not report any additional metrics
 	tt.assertMetrics(t, []metricdata.Metrics{
@@ -490,7 +490,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	}
 	// start the receiver
 	err := receiver.Start(context.Background(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// expect factory to be called twice
 	assertChannelClosed(t, factoryDone)
@@ -501,7 +501,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	// assert failed reconnections
 
 	err = receiver.Shutdown(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// we error on dial, should never get to receive messages
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
@@ -579,7 +579,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	}
 	// start the receiver
 	err := receiver.Start(context.Background(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// expect dial to be called twice
 	assertChannelClosed(t, dialDone)
@@ -847,7 +847,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			case <-time.After(delay):
 				require.Fail(t, "receiveMessage did not return after delay interval")
 			case err := <-receiveMessageComplete:
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.True(t, ackCalled)
 			if tc.validation != nil {
@@ -1083,7 +1083,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 	case <-time.After(2 * retryInterval * time.Duration(retryCount)):
 		require.Fail(t, "receiveMessage did not return after some time")
 	case err := <-receiveMessageComplete:
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 	assert.True(t, ackCalled)
 	tt.assertMetrics(t, []metricdata.Metrics{

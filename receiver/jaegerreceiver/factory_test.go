@@ -48,7 +48,7 @@ func TestCreateReceiver(t *testing.T) {
 	}
 	set := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-	assert.NoError(t, err, "receiver creation failed")
+	require.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
@@ -68,7 +68,7 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 
 	set := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-	assert.NoError(t, err, "receiver creation failed")
+	require.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
@@ -90,7 +90,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	set := receivertest.NewNopSettings()
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
-	assert.NoError(t, err, "unexpected error creating receiver")
+	require.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, "0.0.0.0:14250", r.(*jReceiver).config.GRPCServerConfig.NetAddr.Endpoint, "grpc port should be default")
 }
 
@@ -143,7 +143,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	set := receivertest.NewNopSettings()
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
-	assert.NoError(t, err, "unexpected error creating receiver")
+	require.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, "localhost:14268", r.(*jReceiver).config.HTTPServerConfig.Endpoint, "http port should be default")
 }
 
@@ -157,7 +157,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	set := receivertest.NewNopSettings()
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
-	assert.NoError(t, err, "unexpected error creating receiver")
+	require.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, "0.0.0.0:6832", r.(*jReceiver).config.AgentBinaryThrift.Endpoint, "thrift port should be default")
 }
 
@@ -171,6 +171,6 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	set := receivertest.NewNopSettings()
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
-	assert.NoError(t, err, "unexpected error creating receiver")
+	require.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, "0.0.0.0:6831", r.(*jReceiver).config.AgentCompactThrift.Endpoint, "thrift port should be default")
 }

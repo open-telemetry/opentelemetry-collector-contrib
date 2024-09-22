@@ -53,7 +53,7 @@ func TestCreateProcessors(t *testing.T) {
 				cfg,
 				consumertest.NewNop())
 			// Not implemented error
-			assert.Error(t, tErr)
+			require.Error(t, tErr)
 			assert.Nil(t, tp)
 
 			mp, mErr := factory.CreateMetricsProcessor(

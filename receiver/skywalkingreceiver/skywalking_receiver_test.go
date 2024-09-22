@@ -118,7 +118,7 @@ func TestGRPCReception(t *testing.T) {
 		t.Fatalf("cannot send data in sync mode: %v", err)
 	}
 	// verify
-	assert.NoError(t, err, "send skywalking segment successful.")
+	require.NoError(t, err, "send skywalking segment successful.")
 	assert.NotNil(t, commands)
 }
 
@@ -149,7 +149,7 @@ func TestHttpReception(t *testing.T) {
 		t.Fatalf("cannot send data in sync mode: %v", err)
 	}
 	// verify
-	assert.NoError(t, err, "send skywalking segment successful.")
+	require.NoError(t, err, "send skywalking segment successful.")
 	assert.NotNil(t, response)
 
 }

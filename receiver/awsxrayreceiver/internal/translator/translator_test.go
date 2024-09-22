@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -111,7 +112,7 @@ func TestTranslation(t *testing.T) {
 			verification: func(testCase string,
 				_ *awsxray.Segment,
 				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
-				assert.NoError(t, err, testCase+": translation should've succeeded")
+				require.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
@@ -164,7 +165,7 @@ func TestTranslation(t *testing.T) {
 				}
 				for k, v := range subseg7df6.Metadata {
 					m, err := json.Marshal(v)
-					assert.NoError(t, err, "metadata marshaling failed")
+					require.NoError(t, err, "metadata marshaling failed")
 					childSpan7df6Attrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				assert.Equal(t, 3, childSpan7df6Attrs.Len(), testCase+": childSpan7df6Attrs has incorrect size")
@@ -187,7 +188,7 @@ func TestTranslation(t *testing.T) {
 
 				subseg7318 := seg.Subsegments[0].Subsegments[0]
 				childSpan7318Attrs := pcommon.NewMap()
-				assert.NoError(t, childSpan7318Attrs.FromRaw(map[string]any{
+				require.NoError(t, childSpan7318Attrs.FromRaw(map[string]any{
 					awsxray.AWSServiceAttribute:                    *subseg7318.Name,
 					conventions.AttributeHTTPResponseContentLength: int64(subseg7318.HTTP.Response.ContentLength.(float64)),
 					conventions.AttributeHTTPStatusCode:            *subseg7318.HTTP.Response.Status,
@@ -249,7 +250,7 @@ func TestTranslation(t *testing.T) {
 				childSpan417bAttrs := pcommon.NewMap()
 				for k, v := range subseg417b.Metadata {
 					m, err := json.Marshal(v)
-					assert.NoError(t, err, "metadata marshaling failed")
+					require.NoError(t, err, "metadata marshaling failed")
 					childSpan417bAttrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpan417b := perSpanProperties{
@@ -271,7 +272,7 @@ func TestTranslation(t *testing.T) {
 				childSpan0cabAttrs := pcommon.NewMap()
 				for k, v := range subseg0cab.Metadata {
 					m, err := json.Marshal(v)
-					assert.NoError(t, err, "metadata marshaling failed")
+					require.NoError(t, err, "metadata marshaling failed")
 					childSpan0cabAttrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpan0cab := perSpanProperties{
@@ -293,7 +294,7 @@ func TestTranslation(t *testing.T) {
 				childSpanF8dbAttrs := pcommon.NewMap()
 				for k, v := range subsegF8db.Metadata {
 					m, err := json.Marshal(v)
-					assert.NoError(t, err, "metadata marshaling failed")
+					require.NoError(t, err, "metadata marshaling failed")
 					childSpanF8dbAttrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpanF8db := perSpanProperties{
@@ -315,7 +316,7 @@ func TestTranslation(t *testing.T) {
 				childSpanE2deAttrs := pcommon.NewMap()
 				for k, v := range subsegE2de.Metadata {
 					m, err := json.Marshal(v)
-					assert.NoError(t, err, "metadata marshaling failed")
+					require.NoError(t, err, "metadata marshaling failed")
 					childSpanE2deAttrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpanE2de := perSpanProperties{
@@ -383,7 +384,7 @@ func TestTranslation(t *testing.T) {
 
 				subseg7163 := seg.Subsegments[0].Subsegments[1]
 				childSpan7163Attrs := pcommon.NewMap()
-				assert.NoError(t, childSpan7163Attrs.FromRaw(map[string]any{
+				require.NoError(t, childSpan7163Attrs.FromRaw(map[string]any{
 					awsxray.AWSServiceAttribute:                    *subseg7163.Name,
 					conventions.AttributeHTTPStatusCode:            *subseg7163.HTTP.Response.Status,
 					conventions.AttributeHTTPResponseContentLength: int64(subseg7163.HTTP.Response.ContentLength.(float64)),
@@ -518,7 +519,7 @@ func TestTranslation(t *testing.T) {
 			verification: func(testCase string,
 				_ *awsxray.Segment,
 				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
-				assert.NoError(t, err, testCase+": translation should've succeeded")
+				require.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					"one segment should translate to 1 ResourceSpans")
 
@@ -558,7 +559,7 @@ func TestTranslation(t *testing.T) {
 			verification: func(testCase string,
 				_ *awsxray.Segment,
 				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
-				assert.NoError(t, err, testCase+": translation should've succeeded")
+				require.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
@@ -612,7 +613,7 @@ func TestTranslation(t *testing.T) {
 			verification: func(testCase string,
 				_ *awsxray.Segment,
 				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
-				assert.NoError(t, err, testCase+": translation should've succeeded")
+				require.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
@@ -652,7 +653,7 @@ func TestTranslation(t *testing.T) {
 			verification: func(testCase string,
 				_ *awsxray.Segment,
 				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
-				assert.NoError(t, err, testCase+": translation should've succeeded")
+				require.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
@@ -722,7 +723,7 @@ func TestTranslation(t *testing.T) {
 			verification: func(testCase string,
 				_ *awsxray.Segment,
 				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
-				assert.NoError(t, err, testCase+": translation should've succeeded")
+				require.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
@@ -771,7 +772,7 @@ func TestTranslation(t *testing.T) {
 			verification: func(testCase string,
 				_ *awsxray.Segment,
 				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
-				assert.NoError(t, err, testCase+": translation should've succeeded")
+				require.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
@@ -820,7 +821,7 @@ func TestTranslation(t *testing.T) {
 			verification: func(testCase string,
 				_ *awsxray.Segment,
 				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
-				assert.NoError(t, err, testCase+": translation should've succeeded")
+				require.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
@@ -889,7 +890,7 @@ func TestTranslation(t *testing.T) {
 			verification: func(testCase string,
 				_ *awsxray.Segment,
 				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
-				assert.NoError(t, err, testCase+": translation should've succeeded")
+				require.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
@@ -947,7 +948,7 @@ func TestTranslation(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.testCase, func(t *testing.T) {
 			content, err := os.ReadFile(tc.samplePath)
-			assert.NoError(t, err, "can not read raw segment")
+			require.NoError(t, err, "can not read raw segment")
 			assert.NotEmpty(t, content, "content length is 0")
 
 			var (
@@ -958,7 +959,7 @@ func TestTranslation(t *testing.T) {
 				err = json.Unmarshal(content, &actualSeg)
 				// the correctness of the actual segment
 				// has been verified in the tracesegment_test.go
-				assert.NoError(t, err, "failed to unmarhal raw segment")
+				require.NoError(t, err, "failed to unmarhal raw segment")
 				expectedRs = initResourceSpans(t,
 					&actualSeg,
 					tc.expectedResourceAttrs(&actualSeg),
@@ -1033,7 +1034,7 @@ func initResourceSpans(t *testing.T, expectedSeg *awsxray.Segment,
 	rs := ptrace.NewResourceSpans()
 
 	if len(resourceAttrs) > 0 {
-		assert.NoError(t, rs.Resource().Attributes().FromRaw(resourceAttrs))
+		require.NoError(t, rs.Resource().Attributes().FromRaw(resourceAttrs))
 	} else {
 		rs.Resource().Attributes().Clear()
 		rs.Resource().Attributes().EnsureCapacity(initAttrCapacity)
@@ -1098,7 +1099,7 @@ func TestDecodeXRayTraceID(t *testing.T) {
 	// invalid format
 	traceID = "1-5f84c7a1-e7d1852db"
 	_, err = decodeXRayTraceID(&traceID)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// null point
 	_, err = decodeXRayTraceID(nil)
@@ -1117,7 +1118,7 @@ func TestDecodeXRaySpanID(t *testing.T) {
 	// invalid format
 	spanID = "12345566"
 	_, err = decodeXRaySpanID(&spanID)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// null point
 	_, err = decodeXRaySpanID(nil)

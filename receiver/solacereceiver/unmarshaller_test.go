@@ -330,7 +330,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.err.Error())
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			if tt.want != nil {

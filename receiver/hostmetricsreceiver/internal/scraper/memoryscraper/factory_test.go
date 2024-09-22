@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -23,6 +24,6 @@ func TestCreateMetricsScraper(t *testing.T) {
 
 	scraper, err := factory.CreateMetricsScraper(context.Background(), receivertest.NewNopSettings(), cfg)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, scraper)
 }

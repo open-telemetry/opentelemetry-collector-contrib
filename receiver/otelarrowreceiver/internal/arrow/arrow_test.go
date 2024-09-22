@@ -482,7 +482,7 @@ func TestBoundedQueueWithPdataHeaders(t *testing.T) {
 					Name:  "otlp-pdata-size",
 					Value: tt.pdataSize,
 				})
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				batch.Headers = make([]byte, hpb.Len())
 				copy(batch.Headers, hpb.Bytes())
 			}

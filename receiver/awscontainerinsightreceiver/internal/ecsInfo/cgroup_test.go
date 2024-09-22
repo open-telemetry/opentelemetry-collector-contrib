@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -51,7 +52,7 @@ func TestGetCGroupPathForTask(t *testing.T) {
 			if tt.err != nil {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantRes, got)
 			}
 		})
@@ -102,7 +103,7 @@ func TestGetCGroupPathFromARN(t *testing.T) {
 			if tt.err != nil {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantRes, got)
 			}
 		})
@@ -155,7 +156,7 @@ func TestGetCGroupMountPoint(t *testing.T) {
 			if tt.err != nil {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantRes, got)
 			}
 		})

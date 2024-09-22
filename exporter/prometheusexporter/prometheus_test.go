@@ -126,7 +126,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		ServerName: "localhost",
 	}
 	tls, err := tlscs.LoadTLSConfig(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tls,
@@ -149,7 +149,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	md := testdata.GenerateMetricsOneMetric()
 	assert.NotNil(t, md)
 
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	rsp, err := httpClient.Get("https://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
@@ -192,7 +192,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	factory := NewFactory()
 	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
@@ -276,7 +276,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	factory := NewFactory()
 	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
@@ -295,7 +295,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(128, "metric_1_", "cpu-exporter", "localhost:8080")))
 
 	for delta := 0; delta <= 20; delta += 10 {
-		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
+		require.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
 
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
@@ -437,7 +437,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	factory := NewFactory()
 	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))

@@ -324,10 +324,10 @@ func TestAlertManagerPostAlert(t *testing.T) {
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	err := am.start(context.Background(), componenttest.NewNopHost())
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = am.postAlert(context.Background(), alerts)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	if mock.fooCalledSuccessfully == false {
 		t.Errorf("mock server wasn't called")
 	}

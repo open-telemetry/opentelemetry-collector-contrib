@@ -45,12 +45,12 @@ func TestNewLogsExporter(t *testing.T) {
 		Project:  "demo-project",
 		Logstore: "demo-logstore",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, got)
 
 	// This will put trace data to send buffer and return success.
 	err = got.ConsumeLogs(context.Background(), createSimpleLogData(3))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	time.Sleep(time.Second * 4)
 }
 

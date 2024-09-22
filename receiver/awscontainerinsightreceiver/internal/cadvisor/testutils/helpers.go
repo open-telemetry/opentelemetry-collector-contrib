@@ -11,15 +11,16 @@ import (
 
 	cinfo "github.com/google/cadvisor/info/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func LoadContainerInfo(t *testing.T, file string) []*cinfo.ContainerInfo {
 	info, err := os.ReadFile(file)
-	assert.NoError(t, err, "Fail to read file content")
+	require.NoError(t, err, "Fail to read file content")
 
 	containers := map[string]*cinfo.ContainerInfo{}
 	err = json.Unmarshal(info, &containers)
-	assert.NoError(t, err, "Fail to parse json string")
+	require.NoError(t, err, "Fail to parse json string")
 
 	result := make([]*cinfo.ContainerInfo, len(containers))
 	i := 0

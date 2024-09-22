@@ -12,6 +12,7 @@ import (
 
 	"github.com/Azure/azure-event-hubs-go/v3/persist"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -20,7 +21,7 @@ func TestStorageOffsetPersisterUnknownCheckpoint(t *testing.T) {
 	s := storageCheckpointPersister{storageClient: client}
 	// check we have no match
 	checkpoint, err := s.Read("foo", "bar", "foobar", "foobarfoo")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, checkpoint)
 	assert.Equal(t, "-1", checkpoint.Offset)
 }
@@ -34,9 +35,9 @@ func TestStorageOffsetPersisterWithKnownCheckpoint(t *testing.T) {
 		EnqueueTime:    time.Now(),
 	}
 	err := s.Write("foo", "bar", "foobar", "foobarfoo", checkpoint)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	read, err := s.Read("foo", "bar", "foobar", "foobarfoo")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, checkpoint.Offset, read.Offset)
 	assert.Equal(t, checkpoint.SequenceNumber, read.SequenceNumber)
 	assert.True(t, checkpoint.EnqueueTime.Equal(read.EnqueueTime))

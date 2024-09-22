@@ -72,12 +72,12 @@ func TestRegexParserConfigBuildParser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.config.BuildParser()
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, got)
 				return
 			}
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, got)
 		})
 	}

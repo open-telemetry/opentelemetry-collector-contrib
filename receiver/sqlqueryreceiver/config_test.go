@@ -187,7 +187,7 @@ func TestConfig_Validate_Multierr(t *testing.T) {
 
 	err = component.ValidateConfig(cfg)
 
-	assert.ErrorContains(t, err, "invalid metric config with metric_name 'my.metric'")
+	require.ErrorContains(t, err, "invalid metric config with metric_name 'my.metric'")
 	assert.ErrorContains(t, err, "metric config has unsupported value_type: 'xint'")
 	assert.ErrorContains(t, err, "metric config has unsupported data_type: 'xgauge'")
 	assert.ErrorContains(t, err, "metric config has unsupported aggregation: 'xcumulative'")

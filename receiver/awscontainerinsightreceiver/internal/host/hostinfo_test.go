@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -79,7 +80,7 @@ func TestInfo(t *testing.T) {
 	}
 	m, err := NewInfo(ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt)
 	assert.Nil(t, m)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// test the case when aws session fails to initialize
 	nodeCapacityCreatorOpt = func(m *Info) {
@@ -94,7 +95,7 @@ func TestInfo(t *testing.T) {
 	}
 	m, err = NewInfo(ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
 	assert.Nil(t, m)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
@@ -122,7 +123,7 @@ func TestInfo(t *testing.T) {
 	}
 	m, err = NewInfo(ci.EKS, time.Minute, zap.NewNop(), awsSessionCreatorOpt,
 		nodeCapacityCreatorOpt, ec2MetadataCreatorOpt, ebsVolumeCreatorOpt, ec2TagsCreatorOpt)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, m)
 
 	// befoe ebsVolume and ec2Tags are initialized
@@ -153,7 +154,7 @@ func TestInfoForECS(t *testing.T) {
 	}
 	m, err := NewInfo(ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt)
 	assert.Nil(t, m)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// test the case when aws session fails to initialize
 	nodeCapacityCreatorOpt = func(m *Info) {
@@ -168,7 +169,7 @@ func TestInfoForECS(t *testing.T) {
 	}
 	m, err = NewInfo(ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
 	assert.Nil(t, m)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
@@ -196,7 +197,7 @@ func TestInfoForECS(t *testing.T) {
 	}
 	m, err = NewInfo(ci.ECS, time.Minute, zap.NewNop(), awsSessionCreatorOpt,
 		nodeCapacityCreatorOpt, ec2MetadataCreatorOpt, ebsVolumeCreatorOpt, ec2TagsCreatorOpt)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, m)
 
 	// befoe ebsVolume and ec2Tags are initialized

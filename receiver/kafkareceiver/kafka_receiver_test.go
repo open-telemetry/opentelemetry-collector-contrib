@@ -428,7 +428,7 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 }
 
@@ -745,7 +745,7 @@ func TestNewLogsReceiver_encoding_err(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 }
 
@@ -768,7 +768,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 }
 

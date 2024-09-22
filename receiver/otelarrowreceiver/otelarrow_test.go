@@ -280,7 +280,7 @@ func TestStandardShutdown(t *testing.T) {
 	ctx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFn()
 	err = r.Shutdown(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Remember how many spans the sink received. This number should not change after this
 	// point because after Shutdown() returns the component is not allowed to produce
@@ -390,7 +390,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 			// Note that gRPC GracefulShutdown() does not actually use the context
 			// for cancelation.
 			err = r.Shutdown(context.Background())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// recvWG ensures the stream has been read before the test exits.
 			recvWG.Wait()
@@ -890,7 +890,7 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 
 	// Now shutdown the receiver, while continuing sending traces to it.
 	err = r.Shutdown(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Ensure that calls to Recv() get canceled
 	for {

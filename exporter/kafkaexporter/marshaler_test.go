@@ -489,7 +489,7 @@ func TestTracesEncodingMarshaler(t *testing.T) {
 	}
 	assert.Equal(t, "trace_encoding", m.Encoding())
 	data, err := m.Marshal(ptrace.NewTraces(), "topic")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
 
@@ -519,7 +519,7 @@ func TestMetricsEncodingMarshaler(t *testing.T) {
 	}
 	assert.Equal(t, "metric_encoding", m.Encoding())
 	data, err := m.Marshal(pmetric.NewMetrics(), "topic")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
 
@@ -549,7 +549,7 @@ func TestLogsEncodingMarshaler(t *testing.T) {
 	}
 	assert.Equal(t, "log_encoding", m.Encoding())
 	data, err := m.Marshal(plog.NewLogs(), "topic")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
 

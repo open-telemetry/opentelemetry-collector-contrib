@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
@@ -21,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	assert.Equal(t, metadata.Type, factory.Type())
 }
@@ -52,6 +54,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)
-	assert.Error(t, err, "a trace receiver factory should not create a metric receiver")
+	require.Error(t, err, "a trace receiver factory should not create a metric receiver")
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 }

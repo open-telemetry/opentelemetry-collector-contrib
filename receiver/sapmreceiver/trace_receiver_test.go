@@ -246,7 +246,7 @@ func compressZstd(reqBytes []byte) ([]byte, error) {
 func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) receiver.Traces {
 	params := receivertest.NewNopSettings()
 	sr, err := newReceiver(params, config, sink)
-	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
+	require.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
 
 	require.NoError(t, sr.Start(context.Background(), &nopHost{
@@ -346,7 +346,7 @@ func TestReception(t *testing.T) {
 			resp, err := sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.compression, tt.args.useTLS, "")
 			require.NoError(t, err)
 			assert.Equal(t, 200, resp.StatusCode)
-			assert.NoError(t, resp.Body.Close())
+			require.NoError(t, resp.Body.Close())
 			t.Log("SAPM Request Received")
 
 			// retrieve received traces
@@ -412,7 +412,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			resp, err := sendSapm(config.Endpoint, sapm, "gzip", false, tt.token)
 			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
 			assert.Equal(t, 200, resp.StatusCode)
-			assert.NoError(t, resp.Body.Close())
+			require.NoError(t, resp.Body.Close())
 
 			got := sink.AllTraces()
 			assert.Len(t, got, 1)

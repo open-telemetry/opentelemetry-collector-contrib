@@ -50,12 +50,12 @@ func TestCreateReceiver(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 	set := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
-	assert.NoError(t, err, "trace receiver creation failed")
+	require.NoError(t, err, "trace receiver creation failed")
 	assert.NotNil(t, tReceiver, "trace receiver creation failed")
 
 	metricSink := new(consumertest.MetricsSink)
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, metricSink)
-	assert.NoError(t, err, "metric receiver creation failed")
+	require.NoError(t, err, "metric receiver creation failed")
 	assert.NotNil(t, mReceiver, "metric receiver creation failed")
 
 }
@@ -73,12 +73,12 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	set := receivertest.NewNopSettings()
 	traceSink := new(consumertest.TracesSink)
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
-	assert.NoError(t, err, "trace receiver creation failed")
+	require.NoError(t, err, "trace receiver creation failed")
 	assert.NotNil(t, tReceiver, "trace receiver creation failed")
 
 	metricSink := new(consumertest.MetricsSink)
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, metricSink)
-	assert.NoError(t, err, "metric receiver creation failed")
+	require.NoError(t, err, "metric receiver creation failed")
 	assert.NotNil(t, mReceiver, "metric receiver creation failed")
 }
 
@@ -95,7 +95,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 	set := receivertest.NewNopSettings()
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
-	assert.NoError(t, err, "unexpected error creating receiver")
+	require.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, 11800, r.(*sharedcomponent.SharedComponent).
 		Unwrap().(*swReceiver).config.CollectorGRPCPort, "grpc port should be default")
 }
@@ -152,7 +152,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	set := receivertest.NewNopSettings()
 	traceSink := new(consumertest.TracesSink)
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
-	assert.NoError(t, err, "unexpected error creating receiver")
+	require.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, 12800, r.(*sharedcomponent.SharedComponent).
 		Unwrap().(*swReceiver).config.CollectorHTTPPort, "http port should be default")
 }

@@ -42,11 +42,11 @@ func TestCreateAndShutdown(t *testing.T) {
 	receiver, err := factory.CreateLogsReceiver(ctx, settings, cfg, sink)
 
 	if runtime.GOOS == "linux" {
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, receiver)
 		assert.NoError(t, receiver.Shutdown(ctx))
 	} else {
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.IsType(t, pipeline.ErrSignalNotSupported, err)
 		assert.Nil(t, receiver)
 	}

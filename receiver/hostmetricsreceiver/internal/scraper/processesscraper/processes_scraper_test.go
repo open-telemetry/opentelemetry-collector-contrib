@@ -68,7 +68,7 @@ func TestScrape(t *testing.T) {
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			assert.NoError(t, err, "Failed to initialize processes scraper: %v", err)
+			require.NoError(t, err, "Failed to initialize processes scraper: %v", err)
 
 			// Override scraper methods if we are mocking out for this test case
 			if test.getMiscStats != nil {
@@ -89,7 +89,7 @@ func TestScrape(t *testing.T) {
 			}
 
 			if (expectProcessesCountMetric || expectProcessesCreatedMetric) && test.expectedErr != "" {
-				assert.EqualError(t, err, test.expectedErr)
+				require.EqualError(t, err, test.expectedErr)
 
 				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.Truef(t, isPartial, "expected partial scrape error, have %+v", err)
@@ -103,7 +103,7 @@ func TestScrape(t *testing.T) {
 			}
 
 			if test.expectedErr == "" {
-				assert.NoErrorf(t, err, "Failed to scrape metrics: %v", err)
+				require.NoErrorf(t, err, "Failed to scrape metrics: %v", err)
 			}
 
 			assert.Equal(t, expectedMetricCount, md.MetricCount())
@@ -153,7 +153,7 @@ func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 
 func validateStartTime(t *testing.T, metrics pmetric.MetricSlice) {
 	startTime, err := host.BootTime()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	for i := 0; i < metricsLength; i++ {
 		internal.AssertSumMetricStartTimeEquals(t, metrics.At(i), pcommon.Timestamp(startTime*1e9))
 	}

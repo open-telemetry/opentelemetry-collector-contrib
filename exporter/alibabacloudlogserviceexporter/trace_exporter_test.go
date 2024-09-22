@@ -37,6 +37,6 @@ func TestNewTracesExporter(t *testing.T) {
 func TestNewFailsWithEmptyTracesExporterName(t *testing.T) {
 
 	got, err := newTracesExporter(exportertest.NewNopSettings(), &Config{})
-	assert.Error(t, err)
+	require.Error(t, err)
 	require.Nil(t, got)
 }

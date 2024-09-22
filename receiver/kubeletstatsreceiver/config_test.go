@@ -300,7 +300,7 @@ func TestLoadConfig(t *testing.T) {
 			if tt.expectedValidationErr != "" {
 				assert.EqualError(t, err, tt.expectedValidationErr)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, cfg)
 			}
 

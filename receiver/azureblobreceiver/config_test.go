@@ -18,7 +18,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Len(t, cfg.Receivers, 2)
 
 	receiver := cfg.Receivers[component.NewID(metadata.Type)]
-	assert.NoError(t, componenttest.CheckConfigStruct(receiver))
+	require.NoError(t, componenttest.CheckConfigStruct(receiver))
 	assert.Equal(
 		t,
 		&Config{
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 		receiver)
 
 	receiver = cfg.Receivers[component.NewIDWithName(metadata.Type, "2")].(*Config)
-	assert.NoError(t, componenttest.CheckConfigStruct(receiver))
+	require.NoError(t, componenttest.CheckConfigStruct(receiver))
 	assert.Equal(
 		t,
 		&Config{

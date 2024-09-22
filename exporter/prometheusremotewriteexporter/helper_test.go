@@ -9,6 +9,7 @@ import (
 
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test_batchTimeSeries checks batchTimeSeries return the correct number of requests
@@ -65,7 +66,7 @@ func Test_batchTimeSeries(t *testing.T) {
 				return
 			}
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, requests, tt.numExpectedRequests)
 			if tt.numExpectedRequests <= 1 {
 				assert.Equal(t, math.MaxInt, state.nextTimeSeriesBufferSize)

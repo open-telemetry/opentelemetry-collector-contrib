@@ -127,7 +127,7 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	}
 	ehHandler.hub = &mockHubWrapper{}
 
-	assert.NoError(t, ehHandler.run(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ehHandler.run(context.Background(), componenttest.NewNopHost()))
 
 	now := time.Now()
 	err = ehHandler.newMessageHandler(context.Background(), &eventhub.Event{
@@ -145,7 +145,7 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 		},
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, sink.AllLogs(), 1)
 	assert.Equal(t, 1, sink.AllLogs()[0].LogRecordCount())
 	assert.Equal(t, []byte("hello"), sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Bytes().AsRaw())

@@ -43,7 +43,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 
 	logClient := makeLogsServiceClient(t, logSink)
 	resp, err := logClient.Export(context.Background(), plogotlp.NewExportRequest())
-	assert.NoError(t, err, "Failed to export trace: %v", err)
+	require.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
@@ -53,7 +53,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	logClient := makeLogsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := logClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
+	require.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 }
 

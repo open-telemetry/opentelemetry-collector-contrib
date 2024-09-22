@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 
@@ -25,8 +26,8 @@ func TestInvalidEndpoint(t *testing.T) {
 		},
 		componenttest.NewNopTelemetrySettings(),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = x.Start(context.Background(), componenttest.NewNopHost())
-	defer assert.NoError(t, x.Shutdown(context.Background()))
+	defer require.NoError(t, x.Shutdown(context.Background()))
 	assert.Error(t, err)
 }

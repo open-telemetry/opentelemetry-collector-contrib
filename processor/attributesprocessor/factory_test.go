@@ -67,7 +67,7 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	oCfg.Actions = []attraction.ActionKeyValue{
 		{Action: attraction.DELETE},

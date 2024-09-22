@@ -32,7 +32,7 @@ func TestCreateReceiver(t *testing.T) {
 	set := receivertest.NewNopSettings()
 	tReceiver, err := createTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NotNil(t, tReceiver)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	mReceiver, err := createMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.NotNil(t, mReceiver)

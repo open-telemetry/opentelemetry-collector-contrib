@@ -279,7 +279,7 @@ func TestE2E(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.NoError(t, tc.log())
+			require.NoError(t, tc.log())
 			entries := observed.TakeAll()
 			require.Len(t, entries, 1)
 			assert.Equal(t, tc.wantLevel, entries[0].Level)

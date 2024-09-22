@@ -94,7 +94,7 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 	for i := range metricTestCases {
 		tc := metricTestCases[i]
 		t.Run(tc.name, func(t *testing.T) {
-			assert.NoError(t, mp.ConsumeMetrics(context.Background(), tc.input))
+			require.NoError(t, mp.ConsumeMetrics(context.Background(), tc.input))
 			assert.EqualValues(t, tc.output, tc.input)
 		})
 	}

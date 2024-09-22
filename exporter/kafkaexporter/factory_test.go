@@ -90,7 +90,7 @@ func TestCreateMetricExporter(t *testing.T) {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
-			assert.NoError(t, err, "Must not error")
+			require.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
@@ -155,7 +155,7 @@ func TestCreateLogExporter(t *testing.T) {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
-			assert.NoError(t, err, "Must not error")
+			require.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
@@ -220,7 +220,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
 				return
 			}
-			assert.NoError(t, err, "Must not error")
+			require.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})

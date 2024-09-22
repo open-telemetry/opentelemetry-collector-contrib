@@ -91,7 +91,7 @@ func TestScrape(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
-				assert.EqualError(t, err, test.expectedErr)
+				require.EqualError(t, err, test.expectedErr)
 
 				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
@@ -227,7 +227,7 @@ func TestScrape_CpuUtilizationError(t *testing.T) {
 	// 2nd scrape will trigger utilization metrics calculation
 	md, err := scraper.scrape(context.Background())
 	var partialScrapeErr scrapererror.PartialScrapeError
-	assert.ErrorAs(t, err, &partialScrapeErr)
+	require.ErrorAs(t, err, &partialScrapeErr)
 	assert.Equal(t, 0, md.MetricCount())
 }
 

@@ -50,7 +50,7 @@ func TestNewConnector(t *testing.T) {
 
 func TestTraceToTraceConnector(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() {
 		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
 	}()

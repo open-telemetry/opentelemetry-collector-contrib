@@ -46,7 +46,7 @@ func BenchmarkPeerTags_Native(b *testing.B) {
 
 func BenchmarkPeerTags_Legacy(b *testing.B) {
 	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 	defer func() {
 		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
 	}()

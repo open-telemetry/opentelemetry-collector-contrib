@@ -34,7 +34,7 @@ func TestCreateReceiver(t *testing.T) {
 	creationSet := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
@@ -84,10 +84,10 @@ func TestCreateTracesReceiver(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			tr, err := factory.CreateTracesReceiver(ctx, creationSet, tt.cfg, sink)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, tr)
 			if tt.wantErr {
-				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				require.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, tr.Shutdown(context.Background()))
 			} else {
 				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
@@ -140,7 +140,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
 			mr, err := factory.CreateMetricsReceiver(ctx, creationSet, tt.cfg, sink)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, mr)
 			if tt.wantErr {
 				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
@@ -202,11 +202,11 @@ func TestCreateLogReceiver(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, mr)
 
 			if tt.wantStartErr {
-				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				require.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))
 			} else {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))

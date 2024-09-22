@@ -53,7 +53,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	scCfgs, err := scraper.ToPrometheusReceiverConfig(host, prFactory)
 
 	// verify
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, scCfgs, 1)
 	assert.EqualValues(t, "the-token", scCfgs[0].HTTPClientConfig.BearerToken)
 	assert.Equal(t, "array01", scCfgs[0].Params.Get("endpoint"))

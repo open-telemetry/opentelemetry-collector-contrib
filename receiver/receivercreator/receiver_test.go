@@ -109,7 +109,7 @@ func TestMockedEndToEnd(t *testing.T) {
 		m.SetName("my-metric")
 		m.SetDescription("My metric")
 		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(123)
-		assert.NoError(t, example.ConsumeMetrics(context.Background(), md))
+		require.NoError(t, example.ConsumeMetrics(context.Background(), md))
 	}
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().

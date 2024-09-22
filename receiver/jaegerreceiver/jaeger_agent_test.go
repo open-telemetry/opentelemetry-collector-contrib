@@ -56,7 +56,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
-	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
+	require.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
 	require.NoError(t, jr.Shutdown(context.Background()))
 }
@@ -89,7 +89,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	l, err := net.Listen("udp", addr)
-	assert.Error(t, err, "should not have been able to listen to the port")
+	require.Error(t, err, "should not have been able to listen to the port")
 
 	if l != nil {
 		l.Close()
@@ -107,7 +107,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
-	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
+	require.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
 	require.NoError(t, jr.Shutdown(context.Background()))
 }
@@ -146,7 +146,7 @@ func TestJaegerHTTP(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
+	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
 
 	// allow http server to start
 	assert.Eventually(t, func() bool {
@@ -160,7 +160,7 @@ func TestJaegerHTTP(t *testing.T) {
 	}, 10*time.Second, 5*time.Millisecond, "failed to wait for the port to be open")
 
 	resp, err := http.Get(fmt.Sprintf("http://%s/sampling?service=test", endpoint))
-	assert.NoError(t, err, "should not have failed to make request")
+	require.NoError(t, err, "should not have failed to make request")
 	assert.NotNil(t, resp)
 	defer resp.Body.Close()
 	assert.Equal(t, 500, resp.StatusCode, "should have returned 200")

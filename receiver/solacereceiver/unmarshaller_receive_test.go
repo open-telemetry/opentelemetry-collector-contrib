@@ -730,9 +730,9 @@ func TestReceiveUnmarshallerReceiveBaggageString(t *testing.T) {
 			u, _ := newTestReceiveV1Unmarshaller(t)
 			err := u.unmarshalBaggage(actual, testCase.baggage)
 			if testCase.errStr == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.ErrorContains(t, err, testCase.errStr)
+				require.ErrorContains(t, err, testCase.errStr)
 			}
 			if testCase.expected != nil {
 				expected := pcommon.NewMap()

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
@@ -713,7 +714,7 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 			// Add the instance/job to the input metrics.
 			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
 			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
-			assert.NoError(t, ma.AdjustMetrics(adjusted))
+			require.NoError(t, ma.AdjustMetrics(adjusted))
 
 			// Add the instance/job to the expected metrics as well.
 			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)

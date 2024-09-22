@@ -16,6 +16,7 @@ import (
 	"github.com/google/cadvisor/manager"
 	"github.com/google/cadvisor/utils/sysfs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
@@ -87,7 +88,7 @@ func TestGetMetrics(t *testing.T) {
 
 	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(newMockCreateManager(t)), k8sdecoratorOption)
 	assert.NotNil(t, c)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, c.GetMetrics())
 }
 
@@ -107,7 +108,7 @@ func TestGetMetricsNoClusterName(t *testing.T) {
 
 	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(newMockCreateManager(t)), k8sdecoratorOption)
 	assert.NotNil(t, c)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, c.GetMetrics())
 }
 

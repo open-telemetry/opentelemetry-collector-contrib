@@ -72,11 +72,11 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			ts := time.Date(2020, 2, 20, 20, 20, 20, 20, time.UTC)
 			err = gc.SendMetric(client.Metric{
 				Name: "test.metric", Value: 1, Timestamp: ts})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			runtime.Gosched()
 
 			err = gc.Disconnect()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			mr.wgMetricsProcessed.Wait()
 
@@ -87,7 +87,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			}, 10*time.Second, 500*time.Millisecond)
 
 			err = svr.Close()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			wgListenAndServe.Wait()
 

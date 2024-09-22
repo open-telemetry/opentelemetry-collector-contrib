@@ -14,6 +14,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIntegrationInternalMetrics(t *testing.T) {
@@ -85,7 +86,7 @@ func TestIntegrationInternalMetrics(t *testing.T) {
 			var metrics seriesSlice
 			gz := getGzipReader(t, metricsBytes)
 			dec := json.NewDecoder(gz)
-			assert.NoError(t, dec.Decode(&metrics))
+			require.NoError(t, dec.Decode(&metrics))
 			for _, s := range metrics.Series {
 				if _, ok := expectedMetrics[s.Metric]; ok {
 					metricMap[s.Metric] = s

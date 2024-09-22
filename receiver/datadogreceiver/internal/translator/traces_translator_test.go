@@ -70,7 +70,7 @@ var data = [2]any{
 
 func getTraces(t *testing.T) (traces pb.Traces) {
 	payload, err := vmsgp.Marshal(&data)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	if err2 := traces.UnmarshalMsgDictionary(payload); err2 != nil {
 		t.Fatal(err)
 	}

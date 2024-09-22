@@ -539,7 +539,7 @@ func TestConvertToValueMap(t *testing.T) {
 
 func TestConvertToValueArray(t *testing.T) {
 	value := pcommon.NewValueEmpty()
-	assert.NoError(t, convertToValue(zap.NewNop(), []any{"foo"}, value))
+	require.NoError(t, convertToValue(zap.NewNop(), []any{"foo"}, value))
 	arrValue := pcommon.NewValueSlice()
 	arr := arrValue.Slice()
 	arr.AppendEmpty().SetStr("foo")

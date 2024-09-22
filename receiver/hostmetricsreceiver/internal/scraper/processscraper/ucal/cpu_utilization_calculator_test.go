@@ -9,6 +9,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -125,7 +126,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 			if test.shouldError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.InDelta(t, test.expectedUtilization.System, recorder.cpuUtilization.System, 0.00001)
 				assert.InDelta(t, test.expectedUtilization.User, recorder.cpuUtilization.User, 0.00001)
 				assert.InDelta(t, test.expectedUtilization.Iowait, recorder.cpuUtilization.Iowait, 0.00001)

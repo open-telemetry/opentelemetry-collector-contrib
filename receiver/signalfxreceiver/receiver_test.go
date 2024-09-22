@@ -606,11 +606,11 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			defer resp.Body.Close()
 
 			var bodyStr string
-			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			require.NoError(t, json.Unmarshal(respBytes, &bodyStr))
 
 			tt.assertResponse(t, resp.StatusCode, bodyStr)
 		})
@@ -681,7 +681,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		ServerName: "localhost",
 	}
 	tls, errTLS := tlscs.LoadTLSConfig(context.Background())
-	assert.NoError(t, errTLS)
+	require.NoError(t, errTLS)
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tls,
@@ -794,11 +794,11 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			defer resp.Body.Close()
 
 			var bodyStr string
-			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			require.NoError(t, json.Unmarshal(respBytes, &bodyStr))
 
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 			assert.Equal(t, responseOK, bodyStr)
@@ -873,11 +873,11 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			defer resp.Body.Close()
 
 			var bodyStr string
-			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			require.NoError(t, json.Unmarshal(respBytes, &bodyStr))
 
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 			assert.Equal(t, responseOK, bodyStr)

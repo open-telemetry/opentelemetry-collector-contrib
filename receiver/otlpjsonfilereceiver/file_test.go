@@ -43,17 +43,17 @@ func TestFileTracesReceiver(t *testing.T) {
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.TracesSink)
 	receiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
 
 	td := testdata.GenerateTraces(2)
 	marshaler := &ptrace.JSONMarshaler{}
 	b, err := marshaler.MarshalTraces(td)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), b, 0600)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, sink.AllTraces(), 1)
@@ -70,17 +70,17 @@ func TestFileMetricsReceiver(t *testing.T) {
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	md := testdata.GenerateMetrics(5)
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, sink.AllMetrics(), 1)
@@ -100,17 +100,17 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	md := testdata.GenerateMetrics(5)
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Wait for the first poll to complete.
 	time.Sleep(cfg.Config.PollInterval + time.Second)
@@ -135,17 +135,17 @@ func TestFileLogsReceiver(t *testing.T) {
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.LogsSink)
 	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ld := testdata.GenerateLogs(5)
 	marshaler := &plog.JSONMarshaler{}
 	b, err := marshaler.MarshalLogs(ld)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), b, 0600)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, sink.AllLogs(), 1)
@@ -200,39 +200,39 @@ func TestFileMixedSignals(t *testing.T) {
 	cs := receivertest.NewNopSettings()
 	ms := new(consumertest.MetricsSink)
 	mr, err := factory.CreateMetricsReceiver(context.Background(), cs, cfg, ms)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = mr.Start(context.Background(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	ts := new(consumertest.TracesSink)
 	tr, err := factory.CreateTracesReceiver(context.Background(), cs, cfg, ts)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = tr.Start(context.Background(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	ls := new(consumertest.LogsSink)
 	lr, err := factory.CreateLogsReceiver(context.Background(), cs, cfg, ls)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = lr.Start(context.Background(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	md := testdata.GenerateMetrics(5)
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	td := testdata.GenerateTraces(2)
 	tmarshaler := &ptrace.JSONMarshaler{}
 	b2, err := tmarshaler.MarshalTraces(td)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	ld := testdata.GenerateLogs(5)
 	lmarshaler := &plog.JSONMarshaler{}
 	b3, err := lmarshaler.MarshalLogs(ld)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	b = append(b, '\n')
 	b = append(b, b2...)
 	b = append(b, '\n')
 	b = append(b, b3...)
 	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, ms.AllMetrics(), 1)
@@ -242,9 +242,9 @@ func TestFileMixedSignals(t *testing.T) {
 	require.Len(t, ls.AllLogs(), 1)
 	assert.EqualValues(t, ld, ls.AllLogs()[0])
 	err = mr.Shutdown(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = tr.Shutdown(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = lr.Shutdown(context.Background())
 	assert.NoError(t, err)
 }

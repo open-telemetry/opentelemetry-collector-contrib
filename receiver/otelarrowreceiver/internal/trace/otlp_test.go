@@ -51,7 +51,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	traceClient := makeTraceServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := traceClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
+	require.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 }
 

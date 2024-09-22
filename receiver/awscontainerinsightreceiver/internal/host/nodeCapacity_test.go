@@ -12,6 +12,7 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +25,7 @@ func TestNodeCapacity(t *testing.T) {
 	}
 	nc, err := newNodeCapacity(zap.NewNop(), lstatOption)
 	assert.Nil(t, nc)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// can't set environment variables
 	lstatOption = func(nc *nodeCapacity) {
@@ -45,7 +46,7 @@ func TestNodeCapacity(t *testing.T) {
 	}
 	nc, err = newNodeCapacity(zap.NewNop(), lstatOption, virtualMemOption, cpuInfoOption)
 	assert.NotNil(t, nc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(0), nc.getMemoryCapacity())
 	assert.Equal(t, int64(0), nc.getNumCores())
 
@@ -67,7 +68,7 @@ func TestNodeCapacity(t *testing.T) {
 	}
 	nc, err = newNodeCapacity(zap.NewNop(), lstatOption, virtualMemOption, cpuInfoOption)
 	assert.NotNil(t, nc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(1024), nc.getMemoryCapacity())
 	assert.Equal(t, int64(2), nc.getNumCores())
 }

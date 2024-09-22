@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -109,11 +110,11 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	conn := &Conn{}
 	se, err := conn.newAWSSession(logger, roleArn, region)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, se)
 	roleArn = ""
 	se, err = conn.newAWSSession(logger, roleArn, region)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, se)
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "regional")
@@ -151,7 +152,7 @@ func TestGetSTSCreds(t *testing.T) {
 	region := "fake_region"
 	roleArn := ""
 	_, err := getSTSCreds(logger, region, roleArn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err = getSTSCreds(logger, region, roleArn)
 	assert.Error(t, err)

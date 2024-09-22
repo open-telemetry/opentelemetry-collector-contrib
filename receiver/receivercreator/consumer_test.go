@@ -193,10 +193,10 @@ func TestNewEnhancingConsumer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := newEnhancingConsumer(tt.args.resources, tt.args.resourceAttributes, tt.args.env, tt.args.endpoint, tt.args.nextLogs, tt.args.nextMetrics, tt.args.nextTraces)
 			if tt.expectedError != "" {
-				assert.EqualError(t, err, tt.expectedError)
+				require.EqualError(t, err, tt.expectedError)
 				assert.Nil(t, got)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, got)
 			}
 		})

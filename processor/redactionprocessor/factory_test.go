@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -22,7 +23,7 @@ func TestCreateTestProcessor(t *testing.T) {
 	cfg := &Config{}
 
 	tp, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.True(t, tp.Capabilities().MutatesData)
 }
@@ -40,7 +41,7 @@ func TestCreateTestMetricsProcessor(t *testing.T) {
 	cfg := &Config{}
 
 	tp, err := createMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.True(t, tp.Capabilities().MutatesData)
 }

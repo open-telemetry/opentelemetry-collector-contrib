@@ -360,7 +360,7 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 	md, err := scraper.scrape(context.Background())
-	assert.EqualError(t, err, "err1")
+	require.EqualError(t, err, "err1")
 	assert.Equal(t, 0, md.ResourceMetrics().Len())
 	assert.False(t, scrapererror.IsPartialScrapeError(err))
 }
@@ -908,7 +908,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
-			assert.EqualError(t, err, test.expectedError)
+			require.EqualError(t, err, test.expectedError)
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
@@ -1266,11 +1266,11 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 
 			// scrape the first time
 			_, err = scraper.scrape(context.Background())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// scrape second time to get utilization
 			md, err := scraper.scrape(context.Background())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for k := 0; k < md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len(); k++ {
 				fmt.Println(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(k).Name())

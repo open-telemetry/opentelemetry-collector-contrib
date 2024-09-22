@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
 )
@@ -15,7 +16,7 @@ func TestSplitHeaderBodyWithSeparatorExists(t *testing.T) {
 	buf := []byte(`{"format":"json", "version":1}` + "\nBody")
 
 	header, body, err := SplitHeaderBody(buf)
-	assert.NoError(t, err, "should split correctly")
+	require.NoError(t, err, "should split correctly")
 
 	assert.Equal(t, &Header{
 		Format:  "json",
@@ -30,7 +31,7 @@ func TestSplitHeaderBodyWithSeparatorDoesNotExist(t *testing.T) {
 	_, _, err := SplitHeaderBody(buf)
 
 	var errRecv *recvErr.ErrRecoverable
-	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
+	require.ErrorAs(t, err, &errRecv, "should return recoverable error")
 	assert.EqualError(t, err,
 		fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", buf),
 		"expected error messages")
@@ -40,7 +41,7 @@ func TestSplitHeaderBodyNilBuf(t *testing.T) {
 	_, _, err := SplitHeaderBody(nil)
 
 	var errRecv *recvErr.ErrRecoverable
-	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
+	require.ErrorAs(t, err, &errRecv, "should return recoverable error")
 	assert.EqualError(t, err, "buffer to split is nil",
 		"expected error messages")
 }
@@ -51,7 +52,7 @@ func TestSplitHeaderBodyNonJsonHeader(t *testing.T) {
 	_, _, err := SplitHeaderBody(buf)
 
 	var errRecv *recvErr.ErrRecoverable
-	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
+	require.ErrorAs(t, err, &errRecv, "should return recoverable error")
 	assert.Contains(t, err.Error(), "invalid character 'o'")
 }
 
@@ -59,7 +60,7 @@ func TestSplitHeaderBodyEmptyBody(t *testing.T) {
 	buf := []byte(`{"format":"json", "version":1}` + "\n")
 
 	header, body, err := SplitHeaderBody(buf)
-	assert.NoError(t, err, "should split correctly")
+	require.NoError(t, err, "should split correctly")
 
 	assert.Equal(t, &Header{
 		Format:  "json",
@@ -72,10 +73,10 @@ func TestSplitHeaderBodyInvalidJsonHeader(t *testing.T) {
 	buf := []byte(`{"format":"json", "version":20}` + "\n")
 
 	_, _, err := SplitHeaderBody(buf)
-	assert.Error(t, err, "should fail because version is invalid")
+	require.Error(t, err, "should fail because version is invalid")
 
 	var errRecv *recvErr.ErrRecoverable
-	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
+	require.ErrorAs(t, err, &errRecv, "should return recoverable error")
 	assert.Contains(t, err.Error(),
 		fmt.Sprintf("invalid header %+v", Header{
 			Format:  "json",

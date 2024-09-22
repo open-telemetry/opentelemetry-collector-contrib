@@ -43,9 +43,9 @@ func TestCreateReceiver(t *testing.T) {
 		context.Background(), receivertest.NewNopSettings(),
 		rCfg, consumertest.NewNop(),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// Override for test.
 	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
@@ -55,6 +55,6 @@ func TestCreateReceiver(t *testing.T) {
 		receivertest.NewNopSettings(),
 		rCfg, consumertest.NewNop(),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, r)
 }

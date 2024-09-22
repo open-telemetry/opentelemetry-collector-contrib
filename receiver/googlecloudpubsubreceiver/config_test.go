@@ -63,13 +63,13 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigValidation(t *testing.T) {
 	factory := NewFactory()
 	c := factory.CreateDefaultConfig().(*Config)
-	assert.Error(t, c.validateForTrace())
-	assert.Error(t, c.validateForLog())
-	assert.Error(t, c.validateForMetric())
+	require.Error(t, c.validateForTrace())
+	require.Error(t, c.validateForLog())
+	require.Error(t, c.validateForMetric())
 	c.Subscription = "projects/000project/subscriptions/my-subscription"
-	assert.Error(t, c.validate())
+	require.Error(t, c.validate())
 	c.Subscription = "projects/my-project/topics/my-topic"
-	assert.Error(t, c.validate())
+	require.Error(t, c.validate())
 	c.Subscription = "projects/my-project/subscriptions/my-subscription"
 	assert.NoError(t, c.validate())
 }
@@ -78,16 +78,16 @@ func TestTraceConfigValidation(t *testing.T) {
 	factory := NewFactory()
 	c := factory.CreateDefaultConfig().(*Config)
 	c.Subscription = "projects/my-project/subscriptions/my-subscription"
-	assert.NoError(t, c.validateForTrace())
+	require.NoError(t, c.validateForTrace())
 
 	c.Encoding = "otlp_proto_metric"
-	assert.Error(t, c.validateForTrace())
+	require.Error(t, c.validateForTrace())
 	c.Encoding = "otlp_proto_log"
-	assert.Error(t, c.validateForTrace())
+	require.Error(t, c.validateForTrace())
 	c.Encoding = "raw_text"
-	assert.Error(t, c.validateForTrace())
+	require.Error(t, c.validateForTrace())
 	c.Encoding = "raw_json"
-	assert.Error(t, c.validateForTrace())
+	require.Error(t, c.validateForTrace())
 
 	c.Encoding = "otlp_proto_trace"
 	assert.NoError(t, c.validateForTrace())
@@ -97,16 +97,16 @@ func TestMetricConfigValidation(t *testing.T) {
 	factory := NewFactory()
 	c := factory.CreateDefaultConfig().(*Config)
 	c.Subscription = "projects/my-project/subscriptions/my-subscription"
-	assert.NoError(t, c.validateForMetric())
+	require.NoError(t, c.validateForMetric())
 
 	c.Encoding = "otlp_proto_trace"
-	assert.Error(t, c.validateForMetric())
+	require.Error(t, c.validateForMetric())
 	c.Encoding = "otlp_proto_log"
-	assert.Error(t, c.validateForMetric())
+	require.Error(t, c.validateForMetric())
 	c.Encoding = "raw_text"
-	assert.Error(t, c.validateForMetric())
+	require.Error(t, c.validateForMetric())
 	c.Encoding = "raw_json"
-	assert.Error(t, c.validateForMetric())
+	require.Error(t, c.validateForMetric())
 
 	c.Encoding = "otlp_proto_metric"
 	assert.NoError(t, c.validateForMetric())
@@ -116,12 +116,12 @@ func TestLogConfigValidation(t *testing.T) {
 	factory := NewFactory()
 	c := factory.CreateDefaultConfig().(*Config)
 	c.Subscription = "projects/my-project/subscriptions/my-subscription"
-	assert.NoError(t, c.validateForLog())
+	require.NoError(t, c.validateForLog())
 
 	c.Encoding = "otlp_proto_trace"
-	assert.Error(t, c.validateForLog())
+	require.Error(t, c.validateForLog())
 	c.Encoding = "otlp_proto_metric"
-	assert.Error(t, c.validateForLog())
+	require.Error(t, c.validateForLog())
 
 	c.Encoding = "raw_text"
 	assert.NoError(t, c.validateForLog())

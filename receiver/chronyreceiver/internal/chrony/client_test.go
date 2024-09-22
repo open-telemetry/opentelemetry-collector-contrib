@@ -27,7 +27,7 @@ func newMockConn(tb testing.TB, serverReaderFn, serverWriterFn func(net.Conn) er
 		wg.Wait()
 		assert.NoError(tb, server.Close(), "Must not error when closing server connection")
 	})
-	assert.NoError(tb, server.SetDeadline(time.Now().Add(time.Second)), "Must not error when assigning deadline")
+	require.NoError(tb, server.SetDeadline(time.Now().Add(time.Second)), "Must not error when assigning deadline")
 
 	go func() {
 		defer wg.Done()
@@ -71,10 +71,10 @@ func TestNew(t *testing.T) {
 			t.Parallel()
 			cl, err := New(tc.addr, time.Second)
 			if tc.toError {
-				assert.Error(t, err, "Must error")
+				require.Error(t, err, "Must error")
 				assert.Nil(t, cl, "Must have a nil client")
 			} else {
-				assert.NoError(t, err, "Must not error")
+				require.NoError(t, err, "Must not error")
 				assert.NotNil(t, cl, "Must have a client")
 			}
 		})

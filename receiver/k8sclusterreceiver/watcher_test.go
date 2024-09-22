@@ -126,7 +126,7 @@ func TestIsKindSupported(t *testing.T) {
 				logger: zap.NewNop(),
 			}
 			supported, err := rw.isKindSupported(tt.gvk)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, supported)
 		})
 	}
@@ -195,7 +195,7 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 				config:        &Config{},
 			}
 
-			assert.NoError(t, rw.prepareSharedInformerFactory())
+			require.NoError(t, rw.prepareSharedInformerFactory())
 
 			// Make sure no warning or error logs are raised
 			assert.Equal(t, 0, logs.Len())

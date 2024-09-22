@@ -34,16 +34,16 @@ func TestNewFactory(t *testing.T) {
 
 func TestGetInstanceName(t *testing.T) {
 	instanceName, err := getInstanceName("oracle://example.com:1521/mydb")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "example.com:1521/mydb", instanceName)
 
 	// Should fail on non-encoded special characters
 	_, err = getInstanceName("oracle://username1:p@ssw%rd@example1.com:1521/mydb")
-	assert.ErrorContains(t, err, "invalid URL escape")
+	require.ErrorContains(t, err, "invalid URL escape")
 
 	// Should succeed when special characters are encoded
 	instanceName, err = getInstanceName("oracle://username1:p@ssword%25-_1@example1.com:1521/mydb")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "example1.com:1521/mydb", instanceName)
 }
 

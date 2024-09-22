@@ -300,7 +300,7 @@ func TestNewTracesExporter(t *testing.T) {
 	// The client should have been created correctly
 	f := NewFactory()
 	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, exp)
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -120,7 +121,7 @@ func TestChronyScraper(t *testing.T) {
 
 			metrics, err := scraper.scrape(ctx)
 
-			assert.ErrorIs(t, err, tc.err, "Must match the expected error")
+			require.ErrorIs(t, err, tc.err, "Must match the expected error")
 			assert.EqualValues(t, tc.metrics, metrics, "Must match the expected metrics")
 			chronym.AssertExpectations(t)
 		})

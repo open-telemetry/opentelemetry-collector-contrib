@@ -65,7 +65,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	ctx := context.Background()
 	cs := extensiontest.NewNopSettings()
 	ext, err := createExtension(ctx, cs, cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, ext)
 
 	host := &nopHost{
@@ -75,7 +75,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	}
 
 	err = ext.Start(ctx, host)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var resp *http.Response
 	require.Eventually(t, func() bool {
@@ -86,7 +86,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 		return err == nil
 	}, 3*time.Second, 10*time.Millisecond)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "Passed", resp.Header.Get("Test"))

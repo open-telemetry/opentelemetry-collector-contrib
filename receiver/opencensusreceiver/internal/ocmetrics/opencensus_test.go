@@ -54,7 +54,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	defer metricsClientDoneFn()
 	md := testdata.GenerateMetrics(1)
 	node, resource, metrics := opencensus.ResourceMetricsToOC(md.ResourceMetrics().At(0))
-	assert.NoError(t, metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: node, Resource: resource, Metrics: metrics}))
+	require.NoError(t, metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: node, Resource: resource, Metrics: metrics}))
 
 	assert.Eventually(t, func() bool {
 		return len(metricSink.AllMetrics()) != 0

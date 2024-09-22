@@ -96,7 +96,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	for i := range testCases {
 		tt := testCases[i]
 		t.Run(tt.name, func(t *testing.T) {
-			assert.NoError(t, tp.ConsumeTraces(context.Background(), tt.input))
+			require.NoError(t, tp.ConsumeTraces(context.Background(), tt.input))
 			assert.EqualValues(t, tt.output, tt.input)
 		})
 	}

@@ -50,7 +50,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	defer traceClientDoneFn()
 	td := testdata.GenerateTraces(1)
 	node, resource, spans := opencensus.ResourceSpansToOC(td.ResourceSpans().At(0))
-	assert.NoError(t, traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node, Resource: resource, Spans: spans}))
+	require.NoError(t, traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node, Resource: resource, Spans: spans}))
 
 	assert.Eventually(t, func() bool {
 		return len(spanSink.AllTraces()) != 0

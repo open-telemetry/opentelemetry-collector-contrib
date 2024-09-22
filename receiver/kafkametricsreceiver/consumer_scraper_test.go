@@ -47,7 +47,7 @@ func TestConsumerScraper_createConsumerScraper(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cs)
 }
 
@@ -57,7 +57,7 @@ func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
 	}
 	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cs)
 	_, err = cs.Scrape(context.Background())
 	assert.Error(t, err)
@@ -69,7 +69,7 @@ func TestConsumerScraper_scrape_handles_nil_client(t *testing.T) {
 	}
 	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cs)
 	err = cs.Shutdown(context.Background())
 	assert.NoError(t, err)
@@ -87,7 +87,7 @@ func TestConsumerScraper_scrape_handles_clusterAdmin_error(t *testing.T) {
 	}
 	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cs)
 	_, err = cs.Scrape(context.Background())
 	assert.Error(t, err)
@@ -98,7 +98,7 @@ func TestConsumerScraperStart(t *testing.T) {
 	newClusterAdmin = mockNewClusterAdmin
 	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cs)
 	err = cs.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -111,7 +111,7 @@ func TestConsumerScraper_createScraper_handles_invalid_topic_match(t *testing.T)
 	cs, err := createConsumerScraper(context.Background(), Config{
 		TopicMatch: "[",
 	}, sc, receivertest.NewNopSettings())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cs)
 }
 
@@ -122,7 +122,7 @@ func TestConsumerScraper_createScraper_handles_invalid_group_match(t *testing.T)
 	cs, err := createConsumerScraper(context.Background(), Config{
 		GroupMatch: "[",
 	}, sc, receivertest.NewNopSettings())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cs)
 }
 
@@ -137,7 +137,7 @@ func TestConsumerScraper_scrape(t *testing.T) {
 	}
 	require.NoError(t, cs.start(context.Background(), componenttest.NewNopHost()))
 	md, err := cs.scrape(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, md)
 }
 

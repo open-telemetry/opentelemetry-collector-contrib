@@ -214,7 +214,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErr != "" {
-				assert.ErrorContains(t, cfg.(*Config).Validate(), tt.expectedErr)
+				require.ErrorContains(t, cfg.(*Config).Validate(), tt.expectedErr)
 				assert.Equal(t, tt.expected, cfg)
 				return
 			}

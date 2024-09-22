@@ -594,7 +594,7 @@ func runLogsTest(
 	// test
 	ctx := context.Background()
 	processor, err := newRedaction(ctx, config, zaptest.NewLogger(t))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	outBatch, err := processor.processLogs(ctx, inBatch)
 
 	// verify

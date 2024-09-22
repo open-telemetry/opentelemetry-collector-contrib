@@ -63,13 +63,13 @@ func TestReceiver(t *testing.T) {
 	_, err := srv.GServer.CreateTopic(ctx, &pb.Topic{
 		Name: "projects/my-project/topics/otlp",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = srv.GServer.CreateSubscription(ctx, &pb.Subscription{
 		Topic:              "projects/my-project/topics/otlp",
 		Name:               "projects/my-project/subscriptions/otlp",
 		AckDeadlineSeconds: 10,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	core, _ := observer.New(zap.WarnLevel)
 	params := receivertest.NewNopSettings()

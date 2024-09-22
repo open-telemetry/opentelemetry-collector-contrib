@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -18,7 +19,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg.(*Config).Endpoint = "http://localhost:0"
 
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tReceiver, "traces receiver creation failed")
 }
 
@@ -28,6 +29,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.(*Config).Endpoint = "http://localhost:0"
 
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tReceiver, "metrics receiver creation failed")
 }
