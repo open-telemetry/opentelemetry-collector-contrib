@@ -5,13 +5,13 @@ go 1.22.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.109.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/component v0.109.1-0.20240920203249-d17559b6e89a
 	go.opentelemetry.io/collector/confmap v1.15.1-0.20240920203249-d17559b6e89a
-	go.opentelemetry.io/collector/consumer v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/consumer v0.109.1-0.20240920203249-d17559b6e89a
+	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240920203249-d17559b6e89a
 	go.opentelemetry.io/collector/pdata v1.15.1-0.20240920203249-d17559b6e89a
-	go.opentelemetry.io/collector/receiver v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/semconv v0.109.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/receiver v0.109.1-0.20240920203249-d17559b6e89a
+	go.opentelemetry.io/collector/semconv v0.109.1-0.20240920203249-d17559b6e89a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	k8s.io/api v0.31.1
@@ -53,10 +53,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.109.1-0.20240918193345-a3c0565031b0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240920203249-d17559b6e89a // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.1-0.20240920203249-d17559b6e89a // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.109.1-0.20240920203249-d17559b6e89a // indirect
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.109.1-0.20240920203249-d17559b6e89a // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
