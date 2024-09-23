@@ -75,10 +75,10 @@ github.com/xdg-go/scram v1.1.2/go.mod h1:RT/sEzTbU5y00aCK8UOx6R7YryM0iF1N2MOmC3k
 github.com/xdg-go/stringprep v1.0.4 h1:XLI/Ng3O1Atzq0oBs3TWm+5ZVgkq2aqdlvP9JtoZ6c8=
 github.com/xdg-go/stringprep v1.0.4/go.mod h1:mPGuuIYwz7CmR2bT9j4GbQqutWS1zV24gijq1dTyGkM=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240918193345-a3c0565031b0 h1:CQvddvqKKGw4pH/3NWbmx/5MyIUEZS1rDzwB0L8fps8=
-go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240918193345-a3c0565031b0/go.mod h1:6zlLIyOoRpJJ+0bEKrlZOZon3rOp5Jrz9fMdR4twOS4=
-go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240918193345-a3c0565031b0 h1:BqbK7KQXiKh37lfCstr5X41Ddjuj2MWlhG5ytpguNV0=
-go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240918193345-a3c0565031b0/go.mod h1:T3pOF5UemLzmYgY7QpiZuDRrihJ8lyXB0cDe6j1F1Ek=
+go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240920203249-d17559b6e89a h1:xK8vcpEjn7MvAqfeWnRtoJ2sElykWFyCftzQaEYHNgM=
+go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240920203249-d17559b6e89a/go.mod h1:6zlLIyOoRpJJ+0bEKrlZOZon3rOp5Jrz9fMdR4twOS4=
+go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240920203249-d17559b6e89a h1:SPKJoK6sV0/8xWGE5rjycdQwEWRmJLwiLK03wu0T++s=
+go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240920203249-d17559b6e89a/go.mod h1:T3pOF5UemLzmYgY7QpiZuDRrihJ8lyXB0cDe6j1F1Ek=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=

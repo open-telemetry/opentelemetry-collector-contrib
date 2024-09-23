@@ -109,12 +109,12 @@ func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, host co
 
 func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host component.Host) error {
 	var err error
-	var serverOpts []grpc.ServerOption
+	var serverOpts []configgrpc.ToServerOption
 
 	if r.netReporter != nil {
-		serverOpts = append(serverOpts, grpc.StatsHandler(r.netReporter.Handler()))
+		serverOpts = append(serverOpts, configgrpc.WithGrpcServerOption(grpc.StatsHandler(r.netReporter.Handler())))
 	}
-	r.serverGRPC, err = r.cfg.GRPC.ToServer(ctx, host, r.settings.TelemetrySettings, serverOpts...)
+	r.serverGRPC, err = r.cfg.GRPC.ToServerWithOptions(ctx, host, r.settings.TelemetrySettings, serverOpts...)
 	if err != nil {
 		return err
 	}
