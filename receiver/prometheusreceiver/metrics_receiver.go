@@ -75,19 +75,23 @@ type pReceiver struct {
 	unregisterMetrics func()
 	skipOffsetting    bool // for testing only
 	apiServer         *http.Server
+	registry          *prometheus.Registry
 }
 
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) *pReceiver {
+	registry := prometheus.NewRegistry()
+	registerer := prometheus.WrapRegistererWith(
+		prometheus.Labels{"receiver": set.ID.String()},
+		registry)
 	pr := &pReceiver{
 		cfg:                 cfg,
 		consumer:            next,
 		settings:            set,
 		configLoaded:        make(chan struct{}),
 		targetAllocatorStop: make(chan struct{}),
-		registerer: prometheus.WrapRegistererWith(
-			prometheus.Labels{"receiver": set.ID.String()},
-			prometheus.DefaultRegisterer),
+		registerer:          registerer,
+		registry:            registry,
 	}
 	return pr
 }
@@ -391,14 +395,14 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		Flags:          make(map[string]string),
 		MaxConnections: maxConnections,
 		IsAgent:        true,
-		Registerer:     r.registerer,
-		Gatherer:      prometheus.DefaultGatherer,
+		Registerer:     r.registry,
+		Gatherer:       r.registry,
 	}
 
 	// Creates the API object in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L314-L354
 	// Anything not defined by the options above will be nil, such as o.QueryEngine, o.Storage, etc. IsAgent=true, so these being nil is expected by Prometheus.
-	factorySPr := func(_ context.Context) api_v1.ScrapePoolsRetriever { return r.scrapeManager }
-	factoryTr := func(_ context.Context) api_v1.TargetRetriever { return r.scrapeManager }
+	factorySPr := func(_ context.Context) api_v1.ScrapePoolsRetriever { return o.ScrapeManager }
+	factoryTr := func(_ context.Context) api_v1.TargetRetriever { return o.ScrapeManager }
 	factoryAr := func(_ context.Context) api_v1.AlertmanagerRetriever { return nil }
 	FactoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
 	var app storage.Appendable

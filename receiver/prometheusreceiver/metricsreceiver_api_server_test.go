@@ -33,10 +33,6 @@ type scrapePoolsData struct {
 	ScrapePools []string `json:"scrapePools"`
 }
 
-type prometheusConfigData struct {
-	PrometheusConfigYAML string `json:"yaml"`
-}
-
 func TestPrometheusAPIServer(t *testing.T) {
 	targets := []*testData{
 		{
@@ -76,15 +72,15 @@ func TestPrometheusAPIServer(t *testing.T) {
 		})
 	}
 
-		mp.wg.Wait()
+	mp.wg.Wait()
 
-		for _, endpoint := range endpoints {
-			testScrapePools(t, endpoint)
-			testTargets(t, endpoint)
-			testTargetsMetadata(t, endpoint)
-			testPrometheusConfig(t, endpoint)
-			testMetricsEndpoint(t, endpoint)
-		}
+	for _, endpoint := range endpoints {
+		testScrapePools(t, endpoint)
+		testTargets(t, endpoint)
+		testTargetsMetadata(t, endpoint)
+		testPrometheusConfig(t, endpoint)
+		testMetricsEndpoint(t, endpoint)
+	}
 }
 
 func callAPI(endpoint, path string) (*apiResponse, error) {
