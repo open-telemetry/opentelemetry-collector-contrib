@@ -4,6 +4,9 @@
 package githubreceiver
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/traces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"path/filepath"
 	"testing"
 	"time"
@@ -40,8 +43,16 @@ func TestLoadConfig(t *testing.T) {
 	defaultConfigGitHubScraper.(*Config).Scrapers = map[string]internal.Config{
 		metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
+	defaultConfigGitHubReceiver.(*Config).Traces = traces.Config{
+		WebhookReceiver: webhookeventreceiver.Config{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint: "localhost:999",
+			},
+			Path: "/github-test",
+		},
+	}
 
-	assert.Equal(t, defaultConfigGitHubScraper, r0)
+	assert.Equal(t, defaultConfigGitHubReceiver, r0)
 
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 	expectedConfig := &Config{
@@ -52,9 +63,42 @@ func TestLoadConfig(t *testing.T) {
 		Scrapers: map[string]internal.Config{
 			metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 		},
+		Traces: traces.Config{
+			WebhookReceiver: webhookeventreceiver.Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:999",
+				},
+				Path: "/github-test",
+			},
+		},
 	}
 
 	assert.Equal(t, expectedConfig, r1)
+}
+
+func TestLoadConfig_Traces(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-traces.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Len(t, cfg.Receivers, 2)
+
+	r0 := cfg.Receivers[component.NewID(metadata.Type)]
+	defaultConfigGitHubReceiver := factory.CreateDefaultConfig()
+	defaultConfigGitHubReceiver.(*Config).Scrapers = map[string]internal.Config{
+		githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
+	}
+
+	assert.Equal(t, "localhost:999", r0.(*Config).Traces.WebhookReceiver.ServerConfig.Endpoint)
+	assert.Equal(t, "/github-test", r0.(*Config).Traces.WebhookReceiver.Path)
 }
 
 func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
@@ -88,6 +132,7 @@ func TestConfig_Unmarshal(t *testing.T) {
 		ControllerConfig     scraperhelper.ControllerConfig
 		Scrapers             map[string]internal.Config
 		MetricsBuilderConfig metadata.MetricsBuilderConfig
+		Traces               traces.Config
 	}
 
 	type args struct {

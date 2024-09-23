@@ -1,0 +1,3 @@
+endpoint: "localhost:999"
+secret: "my real secret"
+path: "/ghaevents-for-real"

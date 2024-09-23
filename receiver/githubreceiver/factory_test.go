@@ -33,7 +33,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
-	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, fmt.Errorf("telemetry type is not supported"))
 	assert.Nil(t, tReceiver)
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())

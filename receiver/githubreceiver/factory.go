@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/scraper/githubscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/traces"
 )
 
 // This file implements a factory for the github receiver
@@ -33,6 +34,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
+		// TODO: enable this when createWebhookTracesReceiver creates a valid receiver
+		// receiver.WithTraces(createWebhookTracesReceiver, metadata.TracesStability),
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
@@ -56,6 +59,7 @@ func createDefaultConfig() component.Config {
 		// TODO: aqp completely remove these comments if the metrics build config
 		// needs to be defined in each scraper
 		// MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Traces: traces.Config{},
 	}
 }
 

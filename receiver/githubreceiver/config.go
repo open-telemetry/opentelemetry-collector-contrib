@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/traces"
 )
 
 const (
@@ -24,6 +25,7 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Scrapers                       map[string]internal.Config `mapstructure:"scrapers"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Traces                         traces.Config `mapstructure:"traces"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -33,6 +35,9 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if len(cfg.Scrapers) == 0 {
 		return errors.New("must specify at least one scraper")
+	}
+	if traceErr := cfg.Traces.Validate(); traceErr != nil {
+		return traceErr
 	}
 	return nil
 }
