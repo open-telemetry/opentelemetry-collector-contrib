@@ -37,22 +37,22 @@ require (
 	go.opentelemetry.io/collector/confmap v1.16.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.16.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.16.0
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.109.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.110.0
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.110.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.110.0
 	go.opentelemetry.io/collector/connector v0.110.0
 	go.opentelemetry.io/collector/exporter v0.110.0
-	go.opentelemetry.io/collector/exporter/debugexporter v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.109.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/exporter/debugexporter v0.110.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.110.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.110.0
 	go.opentelemetry.io/collector/extension v0.110.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.110.0
 	go.opentelemetry.io/collector/otelcol v0.110.0
 	go.opentelemetry.io/collector/processor v0.110.0
-	go.opentelemetry.io/collector/processor/batchprocessor v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.109.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/processor/batchprocessor v0.110.0
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.110.0
 	go.opentelemetry.io/collector/receiver v0.110.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.109.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.110.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.25.0
 )
@@ -238,7 +238,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.110.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.110.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.16.0 // indirect
-	go.opentelemetry.io/collector/config/configgrpc v0.109.1-0.20240923174701-20f73e2294b5 // indirect
+	go.opentelemetry.io/collector/config/configgrpc v0.110.0 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.110.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.16.0 // indirect
