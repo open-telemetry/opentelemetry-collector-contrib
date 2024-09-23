@@ -2,8 +2,6 @@
 
 beta_modules=(
   "go.opentelemetry.io/collector"
-  "go.opentelemetry.io/collector/internal/globalgates"
-  "go.opentelemetry.io/collector/internal/globalsignal"
   "go.opentelemetry.io/collector/cmd/builder"
   "go.opentelemetry.io/collector/cmd/mdatagen"
   "go.opentelemetry.io/collector/component"
@@ -17,7 +15,6 @@ beta_modules=(
   "go.opentelemetry.io/collector/config/configgrpc"
   "go.opentelemetry.io/collector/config/confighttp"
   "go.opentelemetry.io/collector/config/configtelemetry"
-  "go.opentelemetry.io/collector/config/internal"
   "go.opentelemetry.io/collector/connector"
   "go.opentelemetry.io/collector/connector/connectorprofiles"
   "go.opentelemetry.io/collector/connector/forwardconnector"
