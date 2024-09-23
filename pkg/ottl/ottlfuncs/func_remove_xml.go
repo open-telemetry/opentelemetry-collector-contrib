@@ -30,36 +30,24 @@ func createRemoveXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, fmt.Errorf("RemoveXML args must be of type *RemoveXMLAguments[K]")
 	}
 
+	if err := validateXPath(args.XPath); err != nil {
+		return nil, err
+	}
+
 	return removeXML(args.Target, args.XPath), nil
 }
 
-// removeXML returns a `pcommon.String` that is a result of renaming the target XML  or s
+// removeXML returns a XML formatted string that is a result of removing all matching nodes from the target XML.
+// This currently supports removal of elements, attributes, text values, comments, and CharData.
 func removeXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		targetVal, err := target.Get(ctx, tCtx)
-		if err != nil {
+		var doc *xmlquery.Node
+		if targetVal, err := target.Get(ctx, tCtx); err != nil {
+			return nil, err
+		} else if doc, err = parseNodesXML(targetVal); err != nil {
 			return nil, err
 		}
-
-		// Validate the xpath
-		_, err = xpath.Compile(xPath)
-		if err != nil {
-			return nil, fmt.Errorf("invalid xpath: %w", err)
-		}
-
-		// Check if the xml starts with a declaration node
-		preserveDeclearation := strings.HasPrefix(targetVal, "<?xml")
-
-		top, err := xmlquery.Parse(strings.NewReader(targetVal))
-		if err != nil {
-			return nil, fmt.Errorf("parse xml: %w", err)
-		}
-
-		if !preserveDeclearation {
-			xmlquery.RemoveFromTree(top.FirstChild)
-		}
-
-		xmlquery.FindEach(top, xPath, func(_ int, n *xmlquery.Node) {
+		xmlquery.FindEach(doc, xPath, func(_ int, n *xmlquery.Node) {
 			switch n.Type {
 			case xmlquery.ElementNode:
 				xmlquery.RemoveFromTree(n)
@@ -73,7 +61,29 @@ func removeXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K
 				xmlquery.RemoveFromTree(n)
 			}
 		})
-
-		return top.OutputXML(false), nil
+		return doc.OutputXML(false), nil
 	}
+}
+
+func validateXPath(xPath string) error {
+	_, err := xpath.Compile(xPath)
+	if err != nil {
+		return fmt.Errorf("invalid xpath: %w", err)
+	}
+	return nil
+}
+
+// Aside from parsing the XML document, this function also ensures that
+// the XML declaration is included in the result only if it was present in
+// the original document.
+func parseNodesXML(targetVal string) (*xmlquery.Node, error) {
+	preserveDeclearation := strings.HasPrefix(targetVal, "<?xml")
+	top, err := xmlquery.Parse(strings.NewReader(targetVal))
+	if err != nil {
+		return nil, fmt.Errorf("parse xml: %w", err)
+	}
+	if !preserveDeclearation {
+		xmlquery.RemoveFromTree(top.FirstChild)
+	}
+	return top, nil
 }

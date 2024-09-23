@@ -1293,7 +1293,7 @@ Examples:
 The `RemoveXML` Converter returns an edited version of an XML string with selected elements removed.
 
 `target` is a Getter that returns a string. This string should be in XML format.
-If `target` is not a string, nil, or cannot be parsed as XML, `ParseXML` will return an error.
+If `target` is not a string, nil, or is not valid xml, `RemoveXML` will return an error.
 
 `xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
 selects one or more elements to remove from the XML document.

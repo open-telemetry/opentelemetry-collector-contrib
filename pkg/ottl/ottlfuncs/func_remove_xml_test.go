@@ -150,33 +150,39 @@ func Test_RemoveXML(t *testing.T) {
 	}
 }
 
-func Test_RemoveXML_InvalidXML(t *testing.T) {
-	target := ottl.StandardStringGetter[any]{
+func TestCreateRemoveXMLFunc(t *testing.T) {
+	factory := NewRemoveXMLFactory[any]()
+	fCtx := ottl.FunctionContext{}
+
+	// Invalid arg type
+	exprFunc, err := factory.CreateFunction(fCtx, nil)
+	assert.Error(t, err)
+	assert.Nil(t, exprFunc)
+
+	// Invalid XPath should error on function creation
+	exprFunc, err = factory.CreateFunction(
+		fCtx, &RemoveXMLArguments[any]{
+			XPath: "!",
+		})
+	assert.Error(t, err)
+	assert.Nil(t, exprFunc)
+
+	// Invalid XML should error on function execution
+	exprFunc, err = factory.CreateFunction(
+		fCtx, &RemoveXMLArguments[any]{
+			Target: invalidXMLGetter(),
+			XPath:  "/",
+		})
+	assert.NoError(t, err)
+	assert.NotNil(t, exprFunc)
+	_, err = exprFunc(context.Background(), nil)
+	assert.Error(t, err)
+}
+
+func invalidXMLGetter() ottl.StandardStringGetter[any] {
+	return ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return `<a>>>>>>>`, nil
 		},
 	}
-	exprFunc := removeXML(target, "/foo")
-	_, err := exprFunc(context.Background(), nil)
-	assert.Error(t, err)
-}
-
-func Test_RemoveXML_InvalidXPath(t *testing.T) {
-	target := ottl.StandardStringGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return `<a></a>`, nil
-		},
-	}
-	exprFunc := removeXML(target, "!")
-	_, err := exprFunc(context.Background(), nil)
-	assert.Error(t, err)
-}
-
-func TestCreateRemoveXMLFunc(t *testing.T) {
-	exprFunc, err := createRemoveXMLFunction[any](ottl.FunctionContext{}, &RemoveXMLArguments[any]{})
-	assert.NoError(t, err)
-	assert.NotNil(t, exprFunc)
-
-	_, err = createRemoveXMLFunction[any](ottl.FunctionContext{}, nil)
-	assert.Error(t, err)
 }
