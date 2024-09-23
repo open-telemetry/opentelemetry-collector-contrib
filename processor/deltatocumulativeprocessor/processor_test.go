@@ -21,14 +21,13 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	self "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest/compare"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testdata/random"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func setup(t *testing.T, cfg *self.Config) (processor.Metrics, *consumertest.MetricsSink) {
@@ -301,7 +300,6 @@ func TestIgnore(t *testing.T) {
 	out := open("out.yaml")
 
 	ctx := context.Background()
-
 
 	err := proc.ConsumeMetrics(ctx, in)
 	require.NoError(t, err)
