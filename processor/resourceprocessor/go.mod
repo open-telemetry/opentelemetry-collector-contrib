@@ -7,10 +7,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.109.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/confmap v1.16.0
 	go.opentelemetry.io/collector/consumer v0.109.1-0.20240923174701-20f73e2294b5
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/pdata v1.15.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/pdata v1.16.0
 	go.opentelemetry.io/collector/processor v0.109.1-0.20240923174701-20f73e2294b5
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -35,7 +35,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.109.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	go.opentelemetry.io/collector/client v1.15.1-0.20240923174701-20f73e2294b5 // indirect
+	go.opentelemetry.io/collector/client v1.16.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.109.1-0.20240923174701-20f73e2294b5 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240923174701-20f73e2294b5 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.1-0.20240923174701-20f73e2294b5 // indirect

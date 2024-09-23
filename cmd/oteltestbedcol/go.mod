@@ -35,8 +35,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.109.0
 	go.opentelemetry.io/collector/component v0.110.0
 	go.opentelemetry.io/collector/confmap v1.16.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.16.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.16.0
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.109.1-0.20240923174701-20f73e2294b5
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.109.1-0.20240923174701-20f73e2294b5
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.109.1-0.20240923174701-20f73e2294b5
@@ -240,7 +240,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.109.1-0.20240923174701-20f73e2294b5 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.110.0 // indirect
-	go.opentelemetry.io/collector/config/confignet v0.109.1-0.20240923174701-20f73e2294b5 // indirect
+	go.opentelemetry.io/collector/config/confignet v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.16.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.0 // indirect

@@ -8,10 +8,10 @@ require (
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/confmap v1.16.0
 	go.opentelemetry.io/collector/consumer v0.109.1-0.20240923174701-20f73e2294b5
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/pdata v1.15.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/pdata v1.16.0
 	go.opentelemetry.io/collector/receiver v0.109.1-0.20240923174701-20f73e2294b5
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0

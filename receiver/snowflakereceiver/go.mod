@@ -10,12 +10,12 @@ require (
 	github.com/snowflakedb/gosnowflake v1.11.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/config/configopaque v1.16.0
+	go.opentelemetry.io/collector/confmap v1.16.0
 	go.opentelemetry.io/collector/consumer v0.109.1-0.20240923174701-20f73e2294b5
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240923174701-20f73e2294b5
 	go.opentelemetry.io/collector/filter v0.109.1-0.20240923174701-20f73e2294b5
-	go.opentelemetry.io/collector/pdata v1.15.1-0.20240923174701-20f73e2294b5
+	go.opentelemetry.io/collector/pdata v1.16.0
 	go.opentelemetry.io/collector/receiver v0.109.1-0.20240923174701-20f73e2294b5
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
