@@ -202,7 +202,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 
-				upsertDataPoint := func(dp dataPoint, dpValue pcommon.Value) error {
+				upsertDataPoint := func(dp dataPoint) error {
 					fIndex, err := e.getMetricDataPointIndex(resource, scope, dp)
 					if err != nil {
 						return err
@@ -212,7 +212,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 
 					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource,
-						resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), metric, dp, dpValue); err != nil {
+						resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), metric, dp); err != nil {
 						return err
 					}
 					return nil
@@ -223,12 +223,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val, err := numberToValue(dp)
-						if err != nil {
-							errs = append(errs, err)
-							continue
-						}
-						if err := upsertDataPoint(dp, val); err != nil {
+						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -237,12 +232,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val, err := numberToValue(dp)
-						if err != nil {
-							errs = append(errs, err)
-							continue
-						}
-						if err := upsertDataPoint(dp, val); err != nil {
+						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -251,8 +241,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val := exponentialHistogramToValue(dp)
-						if err := upsertDataPoint(dp, val); err != nil {
+						if err := upsertDataPoint(exponentialHistogramDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -261,12 +250,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val, err := histogramToValue(dp)
-						if err != nil {
-							errs = append(errs, err)
-							continue
-						}
-						if err := upsertDataPoint(dp, val); err != nil {
+						if err := upsertDataPoint(histogramDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -275,8 +259,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val := summaryToValue(dp)
-						if err := upsertDataPoint(dp, val); err != nil {
+						if err := upsertDataPoint(summaryDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
