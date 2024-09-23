@@ -1472,11 +1472,11 @@ Examples:
 
 ### Time
 
-`Time(target, format, Optional[location])`
+`Time(target, format, Optional[location], Optional[locale])`
 
 The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
 
-`target` is a string. `format` is a string, `location` is an optional string.
+`target` is a string. `format` is a string, `location` is an optional string, `locale` is an optional string.
 
 If either `target` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the `target` and `format` do not follow the parsing rules used by this parser, an error is returned.
 
@@ -1535,6 +1535,17 @@ Examples:
 - `Time("1986-10-01T00:17:33 MST", "%Y-%m-%dT%H:%M:%S %Z")`
 - `Time("2012-11-01T22:08:41+0000 EST", "%Y-%m-%dT%H:%M:%S%z %Z")`
 - `Time("2023-05-26 12:34:56", "%Y-%m-%d %H:%M:%S", "America/New_York")`
+
+`locale` specifies the input language of the `target` value. It is used to interpret timestamp values written in a specific language, 
+ensuring that the function can correctly parse the localized month names, day names, and periods of the day based on the provided language.
+
+The value must be a well-formed BCP 47 language tag, and a known [CLDR](https://cldr.unicode.org) v45 locale.
+If not supplied, English (`en`) is used.
+
+Examples:
+
+- `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
+- `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
 
 ### TraceID
 
