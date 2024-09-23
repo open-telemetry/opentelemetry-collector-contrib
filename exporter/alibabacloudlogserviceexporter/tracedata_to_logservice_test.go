@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 type logKeyValuePair struct {
@@ -89,7 +89,7 @@ func fillResource(resource pcommon.Resource) {
 	attrs.PutStr(conventions.AttributeHostName, "xxx.et15")
 	attrs.PutStr(conventions.AttributeContainerName, "signup_aggregator")
 	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
+	attrs.PutStr(conventions.AttributeContainerImageTags, "v1")
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.PutStr(conventions.AttributeCloudAccountID, "999999998")
 	attrs.PutStr(conventions.AttributeCloudRegion, "us-west-2")
@@ -98,9 +98,9 @@ func fillResource(resource pcommon.Resource) {
 
 func fillHTTPClientSpan(span ptrace.Span) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
-	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeHTTPStatusCode] = 200
+	attributes[conventions.AttributeHTTPRequestMethod] = "GET"
+	attributes[conventions.AttributeURLFull] = "https://api.example.com/users/junit"
+	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
 	endTime := time.Unix(12300, 123456789)
 	startTime := endTime.Add(-90 * time.Second)
 	constructSpanAttributes(attributes).CopyTo(span.Attributes())
@@ -130,10 +130,10 @@ func fillHTTPClientSpan(span ptrace.Span) {
 
 func fillHTTPServerSpan(span ptrace.Span) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
-	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventions.AttributeHTTPStatusCode] = 200
+	attributes[conventions.AttributeHTTPRequestMethod] = "GET"
+	attributes[conventions.AttributeURLFull] = "https://api.example.com/users/junit"
+	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
+	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
 	endTime := time.Unix(12300, 123456789)
 	startTime := endTime.Add(-90 * time.Second)
 	constructSpanAttributes(attributes).CopyTo(span.Attributes())
