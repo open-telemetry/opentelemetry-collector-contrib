@@ -11,7 +11,6 @@ import (
 	"syscall"
 
 	"golang.org/x/sys/windows"
-	"golang.org/x/sys/windows/svc"
 )
 
 var (
@@ -26,26 +25,9 @@ func sendShutdownSignal(process *os.Process) error {
 	// signaling with os.Interrupt is not supported on windows systems,
 	// so we need to use the windows API to properly send a graceful shutdown signal.
 	// See: https://learn.microsoft.com/en-us/windows/console/generateconsolectrlevent
-	isService, err := svc.IsWindowsService()
-	if err != nil {
-		return fmt.Errorf("isWindowsService: %w", err)
-	}
-
-	if isService {
-		if err := allocConsole(); err != nil {
-			return fmt.Errorf("allocConsole: %w", err)
-		}
-	}
-
 	r, _, e := ctrlEventProc.Call(syscall.CTRL_BREAK_EVENT, uintptr(process.Pid))
 	if r == 0 {
 		return fmt.Errorf("sendShutdownSignal to PID '%d': %w", process.Pid, e)
-	}
-
-	if isService {
-		if err := freeConsole(); err != nil {
-			return fmt.Errorf("freeConsole: %w", err)
-		}
 	}
 
 	return nil
