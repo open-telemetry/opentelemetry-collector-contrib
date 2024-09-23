@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.109.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs v0.109.0
 	github.com/relvacode/iso8601 v1.4.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
@@ -160,6 +161,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs => ../../pkg/translator/azurelogs
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 

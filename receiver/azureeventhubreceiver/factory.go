@@ -115,7 +115,7 @@ func (f *eventhubReceiverFactory) getReceiver(
 			if logFormat(receiverConfig.Format) == rawLogFormat {
 				logsUnmarshaler = newRawLogsUnmarshaler(settings.Logger)
 			} else {
-				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger)
+				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.ApplySemanticConventions)
 			}
 		case component.DataTypeMetrics:
 			if logFormat(receiverConfig.Format) == rawLogFormat {
