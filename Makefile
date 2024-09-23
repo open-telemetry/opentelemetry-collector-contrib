@@ -397,7 +397,7 @@ define updatehelper
 endef
 
 
-.PHONY: update-ote`l
+.PHONY: update-otel
 update-otel:$(MULTIMOD)
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
