@@ -1948,13 +1948,14 @@ func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, p.Aggregate("test.metric:1|c", testAddr01))
 	require.NoError(t, p.Aggregate("test.metric:3|c", testAddr02))
-	require.Equal(t, 1, len(p.instrumentsByAddress))
+	require.Len(t, p.instrumentsByAddress, 1)
+
 	for k := range p.instrumentsByAddress {
 		assert.Equal(t, "1.2.3.4", k.String)
 		assert.Equal(t, "udp", k.Network)
 	}
 	metrics := p.GetMetrics()
-	require.Equal(t, 1, len(metrics))
+	require.Len(t, metrics, 1)
 
 	value := metrics[0].Metrics.
 		ResourceMetrics().At(0).
