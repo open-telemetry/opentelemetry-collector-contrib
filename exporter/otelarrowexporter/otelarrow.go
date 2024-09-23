@@ -11,6 +11,7 @@ import (
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -106,14 +107,17 @@ func (e *baseExporter) setMetadata(md metadata.MD) {
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
-	dialOpts := []grpc.DialOption{
-		grpc.WithUserAgent(e.userAgent),
+	dialOpts := []configgrpc.ToClientConnOption{
+		configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent)),
 	}
 	if e.netReporter != nil {
-		dialOpts = append(dialOpts, grpc.WithStatsHandler(e.netReporter.Handler()))
+		dialOpts = append(dialOpts, configgrpc.WithGrpcDialOption(grpc.WithStatsHandler(e.netReporter.Handler())))
 	}
-	dialOpts = append(dialOpts, e.config.UserDialOptions...)
-	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host, e.settings.TelemetrySettings, dialOpts...); err != nil {
+	for _, opt := range e.config.UserDialOptions {
+		dialOpts = append(dialOpts, configgrpc.WithGrpcDialOption(opt))
+	}
+
+	if e.clientConn, err = e.config.ClientConfig.ToClientConnWithOptions(ctx, host, e.settings.TelemetrySettings, dialOpts...); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
