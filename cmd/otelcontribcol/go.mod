@@ -41,7 +41,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.110.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.110.0
@@ -1253,8 +1252,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver => ../../receiver/googlecloudpubsubreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter => ../../exporter/sumologicexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter => ../../exporter/instanaexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter => ../../exporter/honeycombmarkerexporter
 
