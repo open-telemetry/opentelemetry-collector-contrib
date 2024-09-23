@@ -179,7 +179,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
+		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
 		wg.Done()
 	}()
 
@@ -223,7 +223,7 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
+		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
 		wg.Done()
 	}()
 
@@ -255,7 +255,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	}
 	go func() {
 		err := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		require.Error(t, err)
+		assert.Error(t, err)
 		wg.Done()
 	}()
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
@@ -519,7 +519,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
+		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
 		wg.Done()
 	}()
 
@@ -562,7 +562,7 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
+		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
 		wg.Done()
 	}()
 
@@ -594,7 +594,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	}
 	go func() {
 		err := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		require.Error(t, err)
+		assert.Error(t, err)
 		wg.Done()
 	}()
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
@@ -872,7 +872,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
+		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
 		wg.Done()
 	}()
 
@@ -915,7 +915,7 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
+		assert.NoError(t, c.ConsumeClaim(testSession, groupClaim))
 		wg.Done()
 	}()
 
@@ -947,7 +947,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	}
 	go func() {
 		err := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		require.Error(t, err)
+		assert.Error(t, err)
 		wg.Done()
 	}()
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}

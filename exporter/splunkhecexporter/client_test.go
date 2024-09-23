@@ -229,7 +229,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -282,7 +282,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -342,7 +342,7 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -1287,7 +1287,7 @@ func TestErrorReceived(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -1376,7 +1376,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1415,7 +1415,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1450,7 +1450,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
