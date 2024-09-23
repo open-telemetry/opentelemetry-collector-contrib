@@ -13,7 +13,7 @@ import (
 
 func TestPublisherOpenPreexisting(t *testing.T) {
 	publisher := Publisher{handle: 5}
-	err := publisher.Open("")
+	err := publisher.Open("provider_name_does_not_matter_for_this_test")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "publisher handle is already open")
 	require.True(t, publisher.Valid())

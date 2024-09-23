@@ -461,7 +461,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 			Encoding:            test.encoding,
 			PartitionTracesByID: test.partitionTracesByID,
 		})
-		require.NoError(t, err, fmt.Sprintf("Must have %s marshaler", test.encoding))
+		require.NoErrorf(t, err, "Must have %s marshaler", test.encoding)
 
 		msg, err := marshaler.Marshal(traces, t.Name())
 		require.NoError(t, err, "Must have marshaled the data without error")
