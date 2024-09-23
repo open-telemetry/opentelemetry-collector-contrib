@@ -36,6 +36,15 @@ func GetService(sname string) (*Service, error) {
 		service: service,
 	}
 
+	// populate metric fields
+	if err = s.getStatus(); err != nil {
+		return nil, err
+	}
+
+	if err = s.getConfig(); err != nil {
+		return nil, err
+	}
+
 	return &s, nil
 }
 
