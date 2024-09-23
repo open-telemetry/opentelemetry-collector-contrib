@@ -61,6 +61,7 @@ type k8sResolver struct {
 
 	endpoints         []string
 	onChangeCallbacks []func([]string)
+	returnNames       bool
 
 	stopCh             chan struct{}
 	updateLock         sync.RWMutex
@@ -75,6 +76,7 @@ func newK8sResolver(clt kubernetes.Interface,
 	service string,
 	ports []int32,
 	timeout time.Duration,
+	returnNames bool,
 	tb *metadata.TelemetryBuilder,
 ) (*k8sResolver, error) {
 	if len(service) == 0 {
@@ -115,9 +117,10 @@ func newK8sResolver(clt kubernetes.Interface,
 
 	epsStore := &sync.Map{}
 	h := &handler{
-		endpoints: epsStore,
-		logger:    logger,
-		telemetry: tb,
+		endpoints:   epsStore,
+		logger:      logger,
+		telemetry:   tb,
+		returnNames: returnNames,
 	}
 	r := &k8sResolver{
 		logger:         logger,
@@ -131,6 +134,7 @@ func newK8sResolver(clt kubernetes.Interface,
 		stopCh:         make(chan struct{}),
 		lwTimeout:      timeout,
 		telemetry:      tb,
+		returnNames:    returnNames,
 	}
 	h.callback = r.resolve
 
@@ -187,13 +191,19 @@ func (r *k8sResolver) resolve(ctx context.Context) ([]string, error) {
 	defer r.shutdownWg.Done()
 
 	var backends []string
-	r.endpointsStore.Range(func(address, _ any) bool {
-		addr := address.(string)
+	var ep string
+	r.endpointsStore.Range(func(host, _ any) bool {
+		switch r.returnNames {
+		case true:
+			ep = fmt.Sprintf("%s.%s.%s", host, r.svcName, r.svcNs)
+		default:
+			ep = host.(string)
+		}
 		if len(r.port) == 0 {
-			backends = append(backends, addr)
+			backends = append(backends, ep)
 		} else {
 			for _, port := range r.port {
-				backends = append(backends, net.JoinHostPort(addr, strconv.FormatInt(int64(port), 10)))
+				backends = append(backends, net.JoinHostPort(ep, strconv.FormatInt(int64(port), 10)))
 			}
 		}
 		return true
