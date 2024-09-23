@@ -38,7 +38,7 @@ func (ws *windowsService) Execute(args []string, requests <-chan svc.ChangeReque
 
 	changes <- svc.Status{State: svc.StartPending}
 	if err = ws.start(elog); err != nil {
-		elog.Error(3, fmt.Sprintf("failed to start service: %v", err))
+		_ = elog.Error(3, fmt.Sprintf("failed to start service: %v", err))
 		return false, uint32(windows.ERROR_EXCEPTION_IN_SERVICE) // 1064: ERROR_EXCEPTION_IN_SERVICE
 	}
 	changes <- svc.Status{State: svc.Running, Accepts: svc.AcceptStop | svc.AcceptShutdown}
@@ -55,7 +55,7 @@ func (ws *windowsService) Execute(args []string, requests <-chan svc.ChangeReque
 			return false, 0
 
 		default:
-			elog.Error(3, fmt.Sprintf("unexpected service control request #%d", req.Cmd))
+			_ = elog.Error(3, fmt.Sprintf("unexpected service control request #%d", req.Cmd))
 			return false, uint32(windows.ERROR_INVALID_SERVICE_CONTROL) // 1052: ERROR_INVALID_SERVICE_CONTROL
 		}
 	}
@@ -126,7 +126,7 @@ func (w windowsEventLogCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) 
 func (w windowsEventLogCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 	buf, err := w.encoder.EncodeEntry(ent, fields)
 	if err != nil {
-		w.elog.Warning(2, fmt.Sprintf("failed encoding log entry %v\r\n", err))
+		_ = w.elog.Warning(2, fmt.Sprintf("failed encoding log entry %v\r\n", err))
 		return err
 	}
 	msg := buf.String()

@@ -16,9 +16,7 @@ import (
 var (
 	kernel32API = windows.NewLazySystemDLL("kernel32.dll")
 
-	ctrlEventProc    = kernel32API.NewProc("GenerateConsoleCtrlEvent")
-	allocConsoleProc = kernel32API.NewProc("AllocConsole")
-	freeConsoleProc  = kernel32API.NewProc("FreeConsole")
+	ctrlEventProc = kernel32API.NewProc("GenerateConsoleCtrlEvent")
 )
 
 func sendShutdownSignal(process *os.Process) error {
@@ -40,24 +38,4 @@ func sysProcAttrs() *syscall.SysProcAttr {
 	return &syscall.SysProcAttr{
 		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 	}
-}
-
-func allocConsole() error {
-	// windows services don't get created with a console
-	// need to allocate a console in order to send CTRL_BREAK_EVENT to agent sub process
-	ret, _, err := allocConsoleProc.Call()
-	if ret == 0 {
-		return err
-	}
-	return nil
-}
-
-func freeConsole() error {
-	// windows services don't run with console, so we want to clean it up
-	// only keep console around while it is strictly necessary
-	ret, _, err := freeConsoleProc.Call()
-	if ret == 0 {
-		return err
-	}
-	return nil
 }

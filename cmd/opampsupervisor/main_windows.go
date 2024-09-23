@@ -9,9 +9,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 )
 
 var (
@@ -35,7 +36,7 @@ func run() error {
 			// this means that the process is not running as a service, so run interactively.
 
 			// deallocate console if we're not running as service
-			if err := freeConsole(); err != nil {
+			if err = freeConsole(); err != nil {
 				return fmt.Errorf("free console: %w", err)
 			}
 			return runInteractive()
