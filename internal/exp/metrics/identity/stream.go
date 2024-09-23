@@ -33,7 +33,3 @@ func OfStream[DataPoint attrPoint](m Metric, dp DataPoint) Stream {
 type attrPoint interface {
 	Attributes() pcommon.Map
 }
-
-func Compare[T interface{ Hash() hash.Hash64 }](a, b T) int {
-	return int(a.Hash().Sum64() - b.Hash().Sum64())
-}
