@@ -8,10 +8,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.109.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240920203249-d17559b6e89a
+	go.opentelemetry.io/collector/confmap v1.15.1-0.20240920203249-d17559b6e89a
 	go.opentelemetry.io/collector/exporter v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/pdata v1.15.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/pdata v1.15.1-0.20240920203249-d17559b6e89a
 	go.opentelemetry.io/collector/pdata/testdata v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/semconv v0.109.1-0.20240918193345-a3c0565031b0
 	go.uber.org/zap v1.27.0
@@ -42,7 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.15.1-0.20240918193345-a3c0565031b0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.15.1-0.20240920203249-d17559b6e89a // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240918193345-a3c0565031b0 // indirect
 	go.opentelemetry.io/collector/consumer v0.109.1-0.20240918193345-a3c0565031b0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.1-0.20240918193345-a3c0565031b0 // indirect

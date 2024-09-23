@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/config/configgrpc v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/confmap v1.15.1-0.20240920203249-d17559b6e89a
 	go.opentelemetry.io/collector/extension v0.109.1-0.20240918193345-a3c0565031b0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -33,18 +33,18 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	go.opentelemetry.io/collector/client v1.15.1-0.20240918193345-a3c0565031b0 // indirect
+	go.opentelemetry.io/collector/client v1.15.1-0.20240920203249-d17559b6e89a // indirect
 	go.opentelemetry.io/collector/config/configauth v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.15.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/config/confignet v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240918193345-a3c0565031b0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.15.1-0.20240920203249-d17559b6e89a // indirect
+	go.opentelemetry.io/collector/config/confignet v0.109.1-0.20240920203249-d17559b6e89a // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240920203249-d17559b6e89a // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240918193345-a3c0565031b0 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240920203249-d17559b6e89a // indirect
 	go.opentelemetry.io/collector/config/internal v0.109.1-0.20240918193345-a3c0565031b0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.15.1-0.20240918193345-a3c0565031b0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.15.1-0.20240920203249-d17559b6e89a // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/pdata v1.15.1-0.20240918193345-a3c0565031b0 // indirect
+	go.opentelemetry.io/collector/pdata v1.15.1-0.20240920203249-d17559b6e89a // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.55.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect

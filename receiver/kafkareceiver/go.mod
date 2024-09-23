@@ -19,11 +19,11 @@ require (
 	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/component/componentstatus v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240920203249-d17559b6e89a
+	go.opentelemetry.io/collector/confmap v1.15.1-0.20240920203249-d17559b6e89a
 	go.opentelemetry.io/collector/consumer v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/pdata v1.15.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/pdata v1.15.1-0.20240920203249-d17559b6e89a
 	go.opentelemetry.io/collector/pdata/testdata v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/receiver v0.109.1-0.20240918193345-a3c0565031b0
 	go.opentelemetry.io/collector/semconv v0.109.1-0.20240918193345-a3c0565031b0
@@ -76,8 +76,8 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.15.1-0.20240918193345-a3c0565031b0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240920203249-d17559b6e89a // indirect
+	go.opentelemetry.io/collector/config/configretry v1.15.1-0.20240920203249-d17559b6e89a // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.1-0.20240918193345-a3c0565031b0 // indirect
 	go.opentelemetry.io/collector/exporter v0.109.1-0.20240918193345-a3c0565031b0 // indirect
 	go.opentelemetry.io/collector/extension v0.109.1-0.20240918193345-a3c0565031b0 // indirect
