@@ -119,7 +119,7 @@ func integrationTest(version string, jar string) func(*testing.T) {
 				}
 				rCfg.OTLPExporterConfig = otlpExporterConfig{
 					Endpoint: "127.0.0.1:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: time.Second,
 					},
 				}
@@ -145,7 +145,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 		TargetSystem:       "jvm",
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 1000 * time.Millisecond,
 			},
 		},

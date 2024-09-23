@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
@@ -429,22 +429,25 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 	case []byte:
 		result = hex.EncodeToString(v)
 	case pcommon.Map:
-		result, err = jsoniter.MarshalToString(v.AsRaw())
+		resultBytes, err := json.Marshal(v.AsRaw())
 		if err != nil {
 			return nil, err
 		}
+		result = string(resultBytes)
 	case pcommon.Slice:
-		result, err = jsoniter.MarshalToString(v.AsRaw())
+		resultBytes, err := json.Marshal(v.AsRaw())
 		if err != nil {
 			return nil, err
 		}
+		result = string(resultBytes)
 	case pcommon.Value:
 		result = v.AsString()
 	default:
-		result, err = jsoniter.MarshalToString(v)
+		resultBytes, err := json.Marshal(v)
 		if err != nil {
 			return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
 		}
+		result = string(resultBytes)
 	}
 	return &result, nil
 }
