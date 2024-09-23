@@ -59,7 +59,7 @@ func TestRouteDataPoint(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ds := routeDataPoint(pmetric.NewNumberDataPoint(), plog.NewScopeLogs().Scope(), plog.NewResourceLogs().Resource(), "", tc.otel)
+			ds := routeDataPoint(numberDataPoint{pmetric.NewNumberDataPoint()}, plog.NewScopeLogs().Scope(), plog.NewResourceLogs().Resource(), "", tc.otel)
 			assert.Equal(t, tc.want, ds)
 		})
 	}

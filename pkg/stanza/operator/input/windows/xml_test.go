@@ -479,6 +479,7 @@ func TestUnmarshalWithEventData(t *testing.T) {
 				{Name: "Source", Value: "RulesEngine"}},
 		},
 		Keywords: []string{"0x80000000000000"},
+		Original: string(data),
 	}
 
 	require.Equal(t, xml, event)
@@ -516,6 +517,7 @@ func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
 		Keywords:  []string{"0x80000000000000"},
 		Security:  &Security{},
 		Execution: &Execution{},
+		Original:  string(data),
 	}
 
 	require.Equal(t, xml, event)
@@ -554,6 +556,7 @@ func TestUnmarshalWithUserData(t *testing.T) {
 			ProcessID: 1472,
 			ThreadID:  7784,
 		},
+		Original: string(data),
 	}
 
 	require.Equal(t, xml, event)

@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -93,8 +93,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1,
 				Duration:      10 * time.Minute,
 				Tags: []model.KeyValue{
-					model.String(conventions.OtelStatusDescription, "Stale indices"),
-					model.String(conventions.OtelStatusCode, "ERROR"),
+					model.String(conventions.AttributeOTelStatusDescription, "Stale indices"),
+					model.String(conventions.AttributeOTelStatusCode, "ERROR"),
 					model.Bool("error", true),
 				},
 				References: []model.SpanRef{
@@ -112,8 +112,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1.Add(10 * time.Minute),
 				Duration:      2 * time.Second,
 				Tags: []model.KeyValue{
-					model.String(conventions.OtelStatusDescription, "Frontend crash"),
-					model.String(conventions.OtelStatusCode, "ERROR"),
+					model.String(conventions.AttributeOTelStatusDescription, "Frontend crash"),
+					model.String(conventions.AttributeOTelStatusCode, "ERROR"),
 					model.Bool("error", true),
 				},
 			},

@@ -4,6 +4,7 @@
 package timeutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -28,27 +29,15 @@ func ParseStrptime(layout string, value any, location *time.Location) (time.Time
 	return ParseGotime(goLayout, value, location)
 }
 
-// ParseLocalizedStrptime is like ParseStrptime, but instead of parsing a formatted time in
-// English, it parses a value in foreign language, and returns the [time.Time] it represents.
-// The language argument must be a well-formed BCP 47 language tag (e.g.: "en", "en-US"), and
-// a known CLDR locale.
+// ParseLocalizedStrptime is like ParseLocalizedGotime, but instead of using the native Go time layout,
+// it uses the ctime-like format.
 func ParseLocalizedStrptime(layout string, value any, location *time.Location, language string) (time.Time, error) {
 	goLayout, err := strptime.ToNative(layout)
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	stringValue, err := convertParsingValue(value)
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	translatedVal, err := lunes.Translate(goLayout, stringValue, language)
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	return ParseGotime(goLayout, translatedVal, location)
+	return ParseLocalizedGotime(goLayout, value, location, language)
 }
 
 func GetLocation(location *string, layout *string) (*time.Location, error) {
@@ -67,6 +56,24 @@ func GetLocation(location *string, layout *string) (*time.Location, error) {
 	}
 
 	return time.Local, nil
+}
+
+// ParseLocalizedGotime is like ParseGotime, but instead of parsing a formatted time in
+// English, it parses a value in foreign language, and returns the [time.Time] it represents.
+// The language argument must be a well-formed BCP 47 language tag (e.g.: "en", "en-US"), and
+// a known CLDR locale.
+func ParseLocalizedGotime(layout string, value any, location *time.Location, language string) (time.Time, error) {
+	stringValue, err := convertParsingValue(value)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	translatedVal, err := lunes.Translate(layout, stringValue, language)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return ParseGotime(layout, translatedVal, location)
 }
 
 func ParseGotime(layout string, value any, location *time.Location) (time.Time, error) {
@@ -153,6 +160,22 @@ func ValidateGotime(layout string) error {
 	}
 
 	return nil
+}
+
+// ValidateLocale checks the given locale and returns an error if the language tag
+// is not supported by the localized parser functions.
+func ValidateLocale(locale string) error {
+	_, err := lunes.NewDefaultLocale(locale)
+	if err == nil {
+		return nil
+	}
+
+	var e *lunes.ErrUnsupportedLocale
+	if errors.As(err, &e) {
+		return fmt.Errorf("unsupported locale '%s', value must be a supported BCP 47 language tag", locale)
+	}
+
+	return fmt.Errorf("invalid locale '%s': %w", locale, err)
 }
 
 // Allows tests to override with deterministic value
