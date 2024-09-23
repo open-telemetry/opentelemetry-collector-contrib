@@ -3184,23 +3184,23 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.AwsVolumeID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ContainerCsiPluginName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.csi.plugin.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCsiPluginName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ContainerCsiPluginName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.csi.plugin.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCsiPluginName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ContainerCsiVolumeID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.csi.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCsiVolumeID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ContainerCsiVolumeID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.csi.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCsiVolumeID.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.CsiDriver.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["csi.driver"] = filter.CreateFilter(mbc.ResourceAttributes.CsiDriver.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.CsiDriver.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["csi.driver"] = filter.CreateFilter(mbc.ResourceAttributes.CsiDriver.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.CsiVolumeHandle.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["csi.volume.handle"] = filter.CreateFilter(mbc.ResourceAttributes.CsiVolumeHandle.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.CsiVolumeHandle.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["csi.volume.handle"] = filter.CreateFilter(mbc.ResourceAttributes.CsiVolumeHandle.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.FsType.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.MetricsInclude)

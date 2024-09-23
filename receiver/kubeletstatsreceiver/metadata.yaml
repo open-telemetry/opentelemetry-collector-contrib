@@ -69,12 +69,12 @@ resource_attributes:
     description: "Glusterfs volume path"
     enabled: true
     type: string
-  csi.volume.handle:
-    description: "CSI volume handle"
+  container.csi.volume.id:
+    description: "Container Storage Interface volume ID"
     enabled: true
     type: string
-  csi.driver:
-    description: "CSI driver"
+  container.csi.plugin.name:
+    description: "Container Storage Interface plugin name"
     enabled: true
     type: string
 

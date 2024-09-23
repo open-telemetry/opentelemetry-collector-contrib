@@ -28,24 +28,24 @@ func (rb *ResourceBuilder) SetAwsVolumeID(val string) {
 	}
 }
 
+// SetContainerCsiPluginName sets provided value as "container.csi.plugin.name" attribute.
+func (rb *ResourceBuilder) SetContainerCsiPluginName(val string) {
+	if rb.config.ContainerCsiPluginName.Enabled {
+		rb.res.Attributes().PutStr("container.csi.plugin.name", val)
+	}
+}
+
+// SetContainerCsiVolumeID sets provided value as "container.csi.volume.id" attribute.
+func (rb *ResourceBuilder) SetContainerCsiVolumeID(val string) {
+	if rb.config.ContainerCsiVolumeID.Enabled {
+		rb.res.Attributes().PutStr("container.csi.volume.id", val)
+	}
+}
+
 // SetContainerID sets provided value as "container.id" attribute.
 func (rb *ResourceBuilder) SetContainerID(val string) {
 	if rb.config.ContainerID.Enabled {
 		rb.res.Attributes().PutStr("container.id", val)
-	}
-}
-
-// SetCsiDriver sets provided value as "csi.driver" attribute.
-func (rb *ResourceBuilder) SetCsiDriver(val string) {
-	if rb.config.CsiDriver.Enabled {
-		rb.res.Attributes().PutStr("csi.driver", val)
-	}
-}
-
-// SetCsiVolumeHandle sets provided value as "csi.volume.handle" attribute.
-func (rb *ResourceBuilder) SetCsiVolumeHandle(val string) {
-	if rb.config.CsiVolumeHandle.Enabled {
-		rb.res.Attributes().PutStr("csi.volume.handle", val)
 	}
 }
 

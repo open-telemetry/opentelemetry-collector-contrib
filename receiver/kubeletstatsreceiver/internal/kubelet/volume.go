@@ -99,11 +99,9 @@ func glusterfsDims(rb *metadata.ResourceBuilder, vs v1.GlusterfsVolumeSource) {
 }
 
 func csiPersistentVolumeDims(rb *metadata.ResourceBuilder, vs v1.CSIPersistentVolumeSource) {
-	rb.SetK8sVolumeType(labelValueCSIPersistentVolume)
-
 	// CSI specific labels.
-	rb.SetCsiVolumeHandle(vs.VolumeHandle)
-	rb.SetCsiDriver(vs.Driver)
+	rb.SetContainerCsiVolumeID(vs.VolumeHandle)
+	rb.SetContainerCsiPluginName(vs.Driver)
 	rb.SetFsType(vs.FSType)
 
 	// CSI driver specific labels.

@@ -14,9 +14,9 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
 			rb.SetAwsVolumeID("aws.volume.id-val")
+			rb.SetContainerCsiPluginName("container.csi.plugin.name-val")
+			rb.SetContainerCsiVolumeID("container.csi.volume.id-val")
 			rb.SetContainerID("container.id-val")
-			rb.SetCsiDriver("csi.driver-val")
-			rb.SetCsiVolumeHandle("csi.volume.handle-val")
 			rb.SetFsType("fs.type-val")
 			rb.SetGcePdName("gce.pd.name-val")
 			rb.SetGlusterfsEndpointsName("glusterfs.endpoints.name-val")
@@ -51,20 +51,20 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "aws.volume.id-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("container.csi.plugin.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "container.csi.plugin.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("container.csi.volume.id")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "container.csi.volume.id-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("container.id")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "container.id-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("csi.driver")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "csi.driver-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("csi.volume.handle")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "csi.volume.handle-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("fs.type")
 			assert.True(t, ok)

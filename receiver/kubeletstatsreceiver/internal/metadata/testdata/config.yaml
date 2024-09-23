@@ -124,11 +124,11 @@ all_set:
   resource_attributes:
     aws.volume.id:
       enabled: true
+    container.csi.plugin.name:
+      enabled: true
+    container.csi.volume.id:
+      enabled: true
     container.id:
-      enabled: true
-    csi.driver:
-      enabled: true
-    csi.volume.handle:
       enabled: true
     fs.type:
       enabled: true
@@ -281,11 +281,11 @@ none_set:
   resource_attributes:
     aws.volume.id:
       enabled: false
+    container.csi.plugin.name:
+      enabled: false
+    container.csi.volume.id:
+      enabled: false
     container.id:
-      enabled: false
-    csi.driver:
-      enabled: false
-    csi.volume.handle:
       enabled: false
     fs.type:
       enabled: false
@@ -319,15 +319,15 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    container.csi.plugin.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.csi.volume.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     container.id:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    csi.driver:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    csi.volume.handle:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -389,18 +389,18 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "aws.volume.id-val"
+    container.csi.plugin.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.csi.plugin.name-val"
+    container.csi.volume.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.csi.volume.id-val"
     container.id:
       enabled: true
       metrics_exclude:
         - strict: "container.id-val"
-    csi.driver:
-      enabled: true
-      metrics_exclude:
-        - strict: "csi.driver-val"
-    csi.volume.handle:
-      enabled: true
-      metrics_exclude:
-        - strict: "csi.volume.handle-val"
     fs.type:
       enabled: true
       metrics_exclude:

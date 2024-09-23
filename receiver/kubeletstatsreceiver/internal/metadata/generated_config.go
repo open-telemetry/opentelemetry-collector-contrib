@@ -304,9 +304,9 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for kubeletstats resource attributes.
 type ResourceAttributesConfig struct {
 	AwsVolumeID                  ResourceAttributeConfig `mapstructure:"aws.volume.id"`
+	ContainerCsiPluginName       ResourceAttributeConfig `mapstructure:"container.csi.plugin.name"`
+	ContainerCsiVolumeID         ResourceAttributeConfig `mapstructure:"container.csi.volume.id"`
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
-	CsiDriver                    ResourceAttributeConfig `mapstructure:"csi.driver"`
-	CsiVolumeHandle              ResourceAttributeConfig `mapstructure:"csi.volume.handle"`
 	FsType                       ResourceAttributeConfig `mapstructure:"fs.type"`
 	GcePdName                    ResourceAttributeConfig `mapstructure:"gce.pd.name"`
 	GlusterfsEndpointsName       ResourceAttributeConfig `mapstructure:"glusterfs.endpoints.name"`
@@ -327,13 +327,13 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		AwsVolumeID: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		ContainerCsiPluginName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ContainerCsiVolumeID: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		ContainerID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		CsiDriver: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		CsiVolumeHandle: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		FsType: ResourceAttributeConfig{

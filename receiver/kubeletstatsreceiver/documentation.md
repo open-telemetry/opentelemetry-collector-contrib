@@ -535,9 +535,9 @@ The time since the pod started
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | aws.volume.id | The id of the AWS Volume | Any Str | true |
+| container.csi.plugin.name | Container Storage Interface plugin name | Any Str | true |
+| container.csi.volume.id | Container Storage Interface volume ID | Any Str | true |
 | container.id | Container id used to identify container | Any Str | true |
-| csi.driver | CSI driver | Any Str | true |
-| csi.volume.handle | CSI volume handle | Any Str | true |
 | fs.type | The filesystem type of the Volume | Any Str | true |
 | gce.pd.name | The name of the persistent disk in GCE | Any Str | true |
 | glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | Any Str | true |
