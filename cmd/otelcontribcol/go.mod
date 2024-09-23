@@ -664,6 +664,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.109.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.109.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.109.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs v0.109.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.109.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.109.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.109.0 // indirect
@@ -1324,6 +1325,8 @@ replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristre
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs => ../../pkg/translator/azurelogs
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ../../internal/collectd
@@ -1383,5 +1386,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbi
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver => ../../receiver/githubreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil => ../../internal/grpcutil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs => ../../pkg/translator/azurelogs
