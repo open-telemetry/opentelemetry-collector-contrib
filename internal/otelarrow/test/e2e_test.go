@@ -96,9 +96,9 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	if tc.expectDeadline {
 		// expect allows 1/6 of the deadline to elapse in transit,
 		// so 1m becomes 50s.
-		expect := tc.expCfg.Timeout * 5 / 6
+		expect := tc.expCfg.TimeoutSettings.Timeout * 5 / 6
 		require.Less(tc.t, expect, timeout)
-		require.Greater(tc.t, tc.expCfg.Timeout, timeout)
+		require.Greater(tc.t, tc.expCfg.TimeoutSettings.Timeout, timeout)
 	}
 
 	return tc.sink.ConsumeTraces(ctx, td)
