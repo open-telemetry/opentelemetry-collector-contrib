@@ -27,6 +27,9 @@ func run() error {
 	if err := allocConsole(); err != nil {
 		return fmt.Errorf("alloc console: %w", err)
 	}
+	defer func() {
+		_ = freeConsole()
+	}()
 
 	// No need to supply service name when startup is invoked through
 	// the Service Control Manager directly.
@@ -35,16 +38,14 @@ func run() error {
 			// Per https://learn.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-startservicectrldispatchera#return-value
 			// this means that the process is not running as a service, so run interactively.
 
-			// deallocate console if we're not running as service
+			// manually free console before running interactively
 			if err = freeConsole(); err != nil {
 				return fmt.Errorf("free console: %w", err)
 			}
 			return runInteractive()
 		}
-
 		return fmt.Errorf("failed to start supervisor: %w", err)
 	}
-
 	return nil
 }
 
@@ -58,7 +59,7 @@ func allocConsole() error {
 	return nil
 }
 
-// deallocate console once we're done with it
+// free console once we're done with it
 func freeConsole() error {
 	ret, _, err := freeConsoleProc.Call()
 	if ret == 0 {
