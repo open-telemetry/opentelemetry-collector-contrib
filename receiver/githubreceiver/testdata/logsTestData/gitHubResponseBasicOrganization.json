@@ -1,0 +1,28 @@
+[
+  {
+    "@timestamp": 1725456356934,
+    "_document_id": "CYErKZzPaf9j8zecxwUpSw",
+    "action": "hook.destroy",
+    "active": true,
+    "actor": "justinianvoss22",
+    "actor_id": 90650155,
+    "actor_is_bot": false,
+    "business": "justin-voss-observiq",
+    "business_id": 217999,
+    "config": {
+      "content_type": "form",
+      "insecure_ssl": "0"
+    },
+    "created_at": 1725456356934,
+    "events": [],
+    "hook_id": 499840283,
+    "name": "webhook",
+    "operation_type": "remove",
+    "org": "Justin-Organization-observIQ",
+    "org_id": 179841732,
+    "public_repo": true,
+    "repo": "Justin-Organization-observIQ/Justin-Repo-observIQ",
+    "repo_id": 849960746,
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+  }
+]

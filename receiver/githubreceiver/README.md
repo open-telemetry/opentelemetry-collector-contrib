@@ -47,30 +47,30 @@ A more complete example using the GitHub scrapers with authentication is as foll
 
 ```yaml
 extensions:
-    bearertokenauth/github:
-        token: ${env:GH_PAT}
+  bearertokenauth/github:
+    token: ${env:GH_PAT}
 
 receivers:
-    github:
-        initial_delay: 1s
-        collection_interval: 60s
-        scrapers:
-            github:
-                metrics:
-                    vcs.repository.contributor.count:
-                        enabled: true
-                github_org: myfancyorg
-                search_query: "org:myfancyorg topic:o11yalltheway" #Recommended optional query override, defaults to "{org,user}:<github_org>"
-                endpoint: "https://selfmanagedenterpriseserver.com"
-                auth:
-                    authenticator: bearertokenauth/github
-service:
-    extensions: [bearertokenauth/github]
-    pipelines:
+  github:
+    initial_delay: 1s
+    collection_interval: 60s
+    scrapers:
+      github:
         metrics:
-            receivers: [..., github]
-            processors: []
-            exporters: [...]
+          vcs.repository.contributor.count:
+            enabled: true
+        github_org: myfancyorg
+        search_query: "org:myfancyorg topic:o11yalltheway" #Recommended optional query override, defaults to "{org,user}:<github_org>"
+        endpoint: "https://selfmanagedenterpriseserver.com"
+        auth:
+          authenticator: bearertokenauth/github
+service:
+  extensions: [bearertokenauth/github]
+  pipelines:
+    metrics:
+      receivers: [..., github]
+      processors: []
+      exporters: [...]
 ```
 
 A Grafana Dashboard exists on the marketplace for metrics from this receiver
@@ -80,11 +80,11 @@ and can be found
 ## Scraping
 
 > Important:
-> * The GitHub scraper does not emit metrics for branches that have not had
+>
+> - The GitHub scraper does not emit metrics for branches that have not had
 >   changes since creation from the default branch (trunk).
-> * Due to GitHub API limitations, it is possible for the branch time metric to
+> - Due to GitHub API limitations, it is possible for the branch time metric to
 >   change when rebases occur, recreating the commits with new timestamps.
-
 
 <!-- TODO: Combine this documentation once the scraper code is restructured due scope change -->
 
@@ -92,3 +92,9 @@ For additional context on GitHub scraper limitations and inner workings please
 see the [Scraping README][ghsread].
 
 [ghsread]: internal/scraper/githubscraper/README.md#github-limitations
+
+### Logs
+
+The GitHub Receiver supports GitHub audit logs for both Enterprise and Organization entities. GitHub provides comprehensive audit logs, which include detailed information about various events, such as repository changes, user activities, security settings, and access management. Although GitHub does not provide dedicated audit logs for individual User accounts, events related to user activities can still be captured through existing log types (like repository, actions, and security events). This ensures that all log types - enterprise, organization, and user, are available for analysis.
+
+<!-- TODO: Finish logs documentation -->

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -34,6 +35,7 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 
@@ -56,6 +58,7 @@ func createDefaultConfig() component.Config {
 		// TODO: aqp completely remove these comments if the metrics build config
 		// needs to be defined in each scraper
 		// MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		PollInterval: time.Second * 60,
 	}
 }
 
@@ -85,6 +88,22 @@ func createMetricsReceiver(
 		consumer,
 		addScraperOpts...,
 	)
+}
+
+// Create the logs receiver according to the OTEL conventions taking in the
+// context, receiver params, configuration from the component, and consumer (process or exporter)
+func createLogsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	rConf component.Config,
+	consumer consumer.Logs,
+) (receiver.Logs, error) {
+	cfg := rConf.(*Config)
+	rcvr, err := newGitHubLogsReceiver(cfg, params.Logger, consumer)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create an log receiver instance: %w", err)
+	}
+	return rcvr, nil
 }
 
 func createAddScraperOpts(
