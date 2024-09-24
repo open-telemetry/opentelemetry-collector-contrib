@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
@@ -18,12 +17,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
-func newPipelineMap[T any](tp component.Type, consumers ...T) map[component.ID]T {
-	ret := make(map[component.ID]T, len(consumers))
+func newPipelineMap[T any](signal pipeline.Signal, consumers ...T) map[pipeline.ID]T {
+	ret := make(map[pipeline.ID]T, len(consumers))
 	for i, cons := range consumers {
-		ret[component.NewIDWithName(tp, strconv.Itoa(i))] = cons
+		ret[pipeline.NewIDWithName(signal, strconv.Itoa(i))] = cons
 	}
 	return ret
 }
@@ -40,7 +40,7 @@ func TestLogsRoundRobin(t *testing.T) {
 	sink1 := new(consumertest.LogsSink)
 	sink2 := new(consumertest.LogsSink)
 	sink3 := new(consumertest.LogsSink)
-	logs, err := f.CreateLogsToLogs(ctx, set, cfg, connector.NewLogsRouter(newPipelineMap[consumer.Logs](component.DataTypeLogs, sink1, sink2, sink3)))
+	logs, err := f.CreateLogsToLogs(ctx, set, cfg, connector.NewLogsRouter(newPipelineMap[consumer.Logs](pipeline.SignalLogs, sink1, sink2, sink3)))
 	assert.NoError(t, err)
 	assert.NotNil(t, logs)
 
@@ -77,7 +77,7 @@ func TestMetricsRoundRobin(t *testing.T) {
 	sink1 := new(consumertest.MetricsSink)
 	sink2 := new(consumertest.MetricsSink)
 	sink3 := new(consumertest.MetricsSink)
-	metrics, err := f.CreateMetricsToMetrics(ctx, set, cfg, connector.NewMetricsRouter(newPipelineMap[consumer.Metrics](component.DataTypeMetrics, sink1, sink2, sink3)))
+	metrics, err := f.CreateMetricsToMetrics(ctx, set, cfg, connector.NewMetricsRouter(newPipelineMap[consumer.Metrics](pipeline.SignalMetrics, sink1, sink2, sink3)))
 	assert.NoError(t, err)
 	assert.NotNil(t, metrics)
 
@@ -114,7 +114,7 @@ func TestTracesRoundRobin(t *testing.T) {
 	sink1 := new(consumertest.TracesSink)
 	sink2 := new(consumertest.TracesSink)
 	sink3 := new(consumertest.TracesSink)
-	traces, err := f.CreateTracesToTraces(ctx, set, cfg, connector.NewTracesRouter(newPipelineMap[consumer.Traces](component.DataTypeTraces, sink1, sink2, sink3)))
+	traces, err := f.CreateTracesToTraces(ctx, set, cfg, connector.NewTracesRouter(newPipelineMap[consumer.Traces](pipeline.SignalTraces, sink1, sink2, sink3)))
 	assert.NoError(t, err)
 	assert.NotNil(t, traces)
 
