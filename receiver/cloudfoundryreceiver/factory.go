@@ -29,7 +29,9 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -73,4 +75,14 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 	c := cfg.(*Config)
 	return newCloudFoundryLogsReceiver(params, *c, nextConsumer)
+}
+
+func createTracesReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Traces,
+) (receiver.Traces, error) {
+	c := cfg.(*Config)
+	return newCloudFoundryTracesReceiver(params, *c, nextConsumer)
 }

@@ -81,6 +81,30 @@ func (rgc *EnvelopeStreamFactory) CreateLogsStream(ctx context.Context, baseShar
 	return stream
 }
 
+func (rgc *EnvelopeStreamFactory) CreateTracesStream(ctx context.Context, baseShardID string) loggregator.EnvelopeStream {
+	newShardID := baseShardID + "_traces"
+
+	selectors := []*loggregator_v2.Selector{
+		{
+			Message: &loggregator_v2.Selector_Timer{
+				Timer: &loggregator_v2.TimerSelector{},
+			},
+		},
+	}
+	// if selectLogs {
+	// 	selectors = append(selectors, &loggregator_v2.Selector{
+	// 		Message: &loggregator_v2.Selector_Log{
+	// 			Log: &loggregator_v2.LogSelector{},
+	// 		},
+	// 	})
+	// }
+	stream := rgc.rlpGatewayClient.Stream(ctx, &loggregator_v2.EgressBatchRequest{
+		ShardId:   newShardID,
+		Selectors: selectors,
+	})
+	return stream
+}
+
 type authorizationProvider struct {
 	logger            *zap.Logger
 	authTokenProvider *UAATokenProvider
