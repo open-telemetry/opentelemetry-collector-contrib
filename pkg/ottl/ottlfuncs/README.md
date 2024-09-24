@@ -1072,9 +1072,11 @@ Examples:
 
 The `MarshalKeyValue` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
 
-`target` is a Getter that returns a `pcommon.Map`. `delimiter` is an optional string that is used to join keys and values, the default is `=`. `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
+- `target` is a Getter that returns a `pcommon.Map`. 
+- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
+- `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
 
-For example, the following map `{ "k1": "v1", "k2": "v2", "k3": "v3" }` will use default delimiters and be parsed into the following map:
+For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be parsed into the following map:
 
 ```
 "k1=v1 k2=v2 k3=v3"
