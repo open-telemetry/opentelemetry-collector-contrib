@@ -1,9 +1,15 @@
 github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.57.0 h1:Yd3LQLXehMKqn1t8jaIYRNB4qJ0HvEN2C0VfyiuUXWQ=
 github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.57.0/go.mod h1:hOSTTBSDZtpwElWFyLTbnN09ZEBsqYdplYC3jHnplm0=
+github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.57.1 h1:bqJR34GElznrNEIqG1Vg/SILwT0m0QOERcAS3pHfmmI=
+github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.57.1/go.mod h1:k0LZ+69jbxh7KFS/izNeXptl3zRn1K1DZf/aBlxerrU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.57.0 h1:KvEk3AhTDgK7k/5qsXwlpu9hhyILnFlbRMlMrAXRbCA=
 github.com/DataDog/datadog-agent/pkg/util/log v0.57.0/go.mod h1:hbnC1/6rgDpm4XglmLb+8RR5VejoxorxrQxXTnhpsws=
+github.com/DataDog/datadog-agent/pkg/util/log v0.57.1 h1:mtjKQgRGFkh9GgbZEQnTSqiR/3P9xGTR4133rF1q3h4=
+github.com/DataDog/datadog-agent/pkg/util/log v0.57.1/go.mod h1:vu17skDblZ5bD7/kQdTZkJlItdW/pEkTGoDVNcHKZuE=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.57.0 h1:l90E3CLHb4UtjCeT/lkIPga588gBac+ZZvKdlNikf+g=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.57.0/go.mod h1:krOxbYZc4KKE7bdEDu10lLSQBjdeSFS/XDSclsaSf1Y=
+github.com/DataDog/datadog-agent/pkg/util/scrubber v0.57.1 h1:GHdkBqXB54tTM6pMkFf21DBmi5cSLloHNWEM7Pi8p78=
+github.com/DataDog/datadog-agent/pkg/util/scrubber v0.57.1/go.mod h1:krOxbYZc4KKE7bdEDu10lLSQBjdeSFS/XDSclsaSf1Y=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 h1:kHaBemcxl8o/pQ5VM1c8PVE1PubbNx3mjUr09OqWGCs=
