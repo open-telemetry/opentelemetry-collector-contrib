@@ -17,10 +17,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-    "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-    // "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+	// "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"go.uber.org/zap"
 
@@ -90,10 +90,10 @@ func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 		mb:       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 		mutex:    &sync.Mutex{},
 		// Credential functions for dependency injection
-		azDefaultCredentialsFunc:        azidentity.NewDefaultAzureCredential,
-		azIDCredentialsFunc:             azidentity.NewClientSecretCredential,
-		azIDWorkloadFunc:                azidentity.NewWorkloadIdentityCredential,
-		azManagedIdentityFunc:           azidentity.NewManagedIdentityCredential,
+		azDefaultCredentialsFunc: azidentity.NewDefaultAzureCredential,
+		azIDCredentialsFunc:      azidentity.NewClientSecretCredential,
+		azIDWorkloadFunc:         azidentity.NewWorkloadIdentityCredential,
+		azManagedIdentityFunc:    azidentity.NewManagedIdentityCredential,
 		// ARM client functions for dependency injection
 		armClientFunc:                   armresources.NewClient,
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
@@ -102,22 +102,22 @@ func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 }
 
 type azureScraper struct {
-	cred                         azcore.TokenCredential
-	clientResources              armClient
-	clientMetricsDefinitions     metricsDefinitionsClientInterface
-	clientMetricsValues          metricsValuesClient
-	cfg                          *Config
-	settings                     component.TelemetrySettings
-	resources                    map[string]*azureResource
-	resourcesUpdated             time.Time
-	mb                           *metadata.MetricsBuilder
-	armClientOptions             *arm.ClientOptions
-	mutex                        *sync.Mutex
-	azDefaultCredentialsFunc     func(options *azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
-	azIDCredentialsFunc          func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
-	azIDWorkloadFunc             func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
-	azManagedIdentityFunc        func(options *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
-	armClientFunc                func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
+	cred                            azcore.TokenCredential
+	clientResources                 armClient
+	clientMetricsDefinitions        metricsDefinitionsClientInterface
+	clientMetricsValues             metricsValuesClient
+	cfg                             *Config
+	settings                        component.TelemetrySettings
+	resources                       map[string]*azureResource
+	resourcesUpdated                time.Time
+	mb                              *metadata.MetricsBuilder
+	armClientOptions                *arm.ClientOptions
+	mutex                           *sync.Mutex
+	azDefaultCredentialsFunc        func(options *azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
+	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
+	azIDWorkloadFunc                func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
+	azManagedIdentityFunc           func(options *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
+	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
 	armMonitorDefinitionsClientFunc func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	armMonitorMetricsClientFunc     func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
 }
