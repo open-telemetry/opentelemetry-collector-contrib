@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
+	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
@@ -48,6 +49,10 @@ type traceToMetricConnectorNative struct {
 	// resulting from ingested traces.
 	statsout chan *pb.StatsPayload
 
+	// obfuscator is used to obfuscate sensitive data from various span
+	// tags based on their type.
+	obfuscator *obfuscate.Obfuscator
+
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
 
@@ -73,6 +78,8 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 	}
 
 	tcfg := getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator)
+	oconf := tcfg.Obfuscation.Export(tcfg)
+	oconf.Statsd = metricsClient
 	return &traceToMetricConnectorNative{
 		logger:          set.Logger,
 		translator:      trans,
@@ -82,6 +89,7 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 		concentrator:    stats.NewConcentrator(tcfg, statsWriter, time.Now(), metricsClient),
 		statsout:        statsout,
 		metricsConsumer: metricsConsumer,
+		obfuscator:      obfuscate.NewObfuscator(oconf),
 		exit:            make(chan struct{}),
 	}, nil
 }
@@ -103,8 +111,9 @@ func (c *traceToMetricConnectorNative) Shutdown(context.Context) error {
 		return nil
 	}
 	c.logger.Info("Shutting down datadog connector")
-	c.logger.Info("Stopping concentrator")
-	// stop the concentrator and wait for the run loop to exit
+	c.logger.Info("Stopping obfuscator and concentrator")
+	// stop the obfuscator and concentrator and wait for the run loop to exit
+	c.obfuscator.Stop()
 	c.concentrator.Stop()
 	c.exit <- struct{}{} // signal exit
 	<-c.exit             // wait for close
@@ -135,6 +144,15 @@ func (c *traceToMetricConnectorNative) run() {
 			if len(stats.Stats) == 0 {
 				continue
 			}
+
+			for _, csp := range stats.Stats {
+				for _, group := range csp.Stats {
+					for _, b := range group.Stats {
+						c.obfuscateStatsGroup(b)
+					}
+				}
+			}
+
 			var mx pmetric.Metrics
 			var err error
 
@@ -156,5 +174,22 @@ func (c *traceToMetricConnectorNative) run() {
 		case <-c.exit:
 			return
 		}
+	}
+}
+
+// fork of https://github.com/DataDog/datadog-agent/blob/7642cf1aa659f82744038602044a8a00aa1a0dfb/pkg/trace/agent/obfuscate.go#L109
+func (c *traceToMetricConnectorNative) obfuscateStatsGroup(b *pb.ClientGroupedStats) {
+	o := c.obfuscator
+	switch b.Type {
+	case "sql", "cassandra":
+		oq, err := o.ObfuscateSQLString(b.Resource)
+		if err != nil {
+			c.logger.Error(fmt.Sprintf("Error obfuscating stats group resource %q: %v", b.Resource, err))
+			b.Resource = "Non-parsable SQL query"
+		} else {
+			b.Resource = oq.Query
+		}
+	case "redis":
+		b.Resource = o.QuantizeRedisString(b.Resource)
 	}
 }
