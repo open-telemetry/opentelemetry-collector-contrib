@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
@@ -339,7 +340,7 @@ func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfig
 	}
 
 	e, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
-	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}
 	if e == nil {

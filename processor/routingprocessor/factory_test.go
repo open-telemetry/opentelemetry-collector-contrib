@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -143,11 +144,11 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			component.MustNewIDWithName("otlp", "traces"): otlpTracesExporter,
 		},
-		component.DataTypeMetrics: {
+		pipeline.SignalMetrics: {
 			component.MustNewIDWithName("otlp", "metrics"): otlpMetricsExporter,
 		},
 	})
@@ -209,17 +210,17 @@ func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.T
 
 type mockHost struct {
 	component.Host
-	exps map[component.DataType]map[component.ID]component.Component
+	exps map[pipeline.Signal]map[component.ID]component.Component
 }
 
-func newMockHost(exps map[component.DataType]map[component.ID]component.Component) component.Host {
+func newMockHost(exps map[pipeline.Signal]map[component.ID]component.Component) component.Host {
 	return &mockHost{
 		Host: componenttest.NewNopHost(),
 		exps: exps,
 	}
 }
 
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (m *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return m.exps
 }
 

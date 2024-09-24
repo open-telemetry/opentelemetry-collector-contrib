@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -608,7 +609,7 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 		var exps []component.Component
 		for _, createFn := range createFns {
 			exp, err := createFn(ctx, expCreateSettings, cfg)
-			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			if errors.Is(err, pipeline.ErrSignalNotSupported) {
 				continue
 			}
 			require.NoError(t, err)
@@ -699,7 +700,7 @@ func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn
 
 	for _, createFn := range createFns {
 		r, err := createFn(ctx, expCreateSettings, getConfigFn())
-		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, pipeline.ErrSignalNotSupported) {
 			continue
 		}
 		if r == nil {
