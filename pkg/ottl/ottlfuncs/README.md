@@ -446,6 +446,7 @@ Available Converters:
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
 - [ParseXML](#parsexml)
+- [ParseBytes](#parsebytes)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -1285,7 +1286,23 @@ Examples:
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
+### ParseBytes
 
+`ParseBytes(value)`
+
+The `ParseBytes` Converter converts `value` from a humanized, string representation of bytes, into the number of bytes it represents.
+
+The returned type is int64.
+
+If `value` is another type or parsing failed nil is always returned.
+
+Examples:
+
+- `ParseBytes(attributes["system.memory.total"])`
+
+- `ParseBytes("1.24GB")`
+
+- `ParseBytes("1,500 KiB")`
 
 ### Seconds
 
