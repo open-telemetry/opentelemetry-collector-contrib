@@ -11,7 +11,7 @@ require (
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
-	github.com/leodido/go-syslog/v4 v4.1.0
+	github.com/leodido/go-syslog/v4 v4.2.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.110.0
