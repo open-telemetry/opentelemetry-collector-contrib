@@ -10,6 +10,8 @@ github.com/Microsoft/hcsshim v0.11.4 h1:68vKo2VN8DE9AdN4tnkWnmdhqdbpUFM8OF3Airm7
 github.com/Microsoft/hcsshim v0.11.4/go.mod h1:smjE4dvqPX9Zldna+t5FG3rnoHhaB7QYxPRqGcpAD9w=
 github.com/aerospike/aerospike-client-go/v7 v7.7.0 h1:5gjuzV2+sXLYcVRwWKoU0YTSovuLvntfn3ezH5GgJDA=
 github.com/aerospike/aerospike-client-go/v7 v7.7.0/go.mod h1:uCbSYMpjlRcH/9f26VSF/luzDDXrcDaV8c6/WIcKtT4=
+github.com/aerospike/aerospike-client-go/v7 v7.7.1 h1:lcskBtPZYe6ESObhIEQEp4XO1axYZpaFD3ie4iwr6tg=
+github.com/aerospike/aerospike-client-go/v7 v7.7.1/go.mod h1:STlBtOkKT8nmp7iD+sEkr/JGEOu+4e2jGlNN0Jiu2a4=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
