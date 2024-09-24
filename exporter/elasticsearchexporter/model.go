@@ -304,6 +304,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, true)
 	}
 
+	// Emit _doc_count if data point contains attribute _doc_count: true
 	if val, ok := dp.Attributes().Get("_doc_count"); ok && val.Bool() {
 		docCount := dp.DocCount()
 		document.AddInt("_doc_count", int64(docCount)) // FIXME: by default it will take the last one, should it be changed to max, or it doesn't matter?
@@ -864,10 +865,6 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 	hasher.Write(timestampBuf)
 
 	hasher.Write([]byte(unit))
-
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, docCount)
-	hasher.Write(buf)
 
 	mapHashExcludeDataStreamAttr(hasher, scopeAttrs)
 	mapHashExcludeDataStreamAttr(hasher, dp.Attributes())
