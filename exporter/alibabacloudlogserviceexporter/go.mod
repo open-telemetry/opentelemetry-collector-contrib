@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/aliyun/aliyun-log-go-sdk v0.1.83
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.109.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.110.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.110.0
 	go.opentelemetry.io/collector/config/configopaque v1.16.0
