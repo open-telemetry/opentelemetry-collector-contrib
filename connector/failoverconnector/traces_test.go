@@ -10,30 +10,30 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var errTracesConsumer = errors.New("Error from ConsumeTraces")
 
 func TestTracesRegisterConsumers(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.TracesSink
-	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
-	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
-	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+	tracesThird := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
+		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    25 * time.Millisecond,
 		RetryGap:         5 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
-	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
 		tracesFirst:  &sinkFirst,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,
@@ -63,19 +63,19 @@ func TestTracesRegisterConsumers(t *testing.T) {
 func TestTracesWithValidFailover(t *testing.T) {
 	var sinkSecond, sinkThird consumertest.TracesSink
 
-	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
-	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
-	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+	tracesThird := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/third")
 	noOp := consumertest.NewNop()
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
+		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    50 * time.Millisecond,
 		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
-	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
 		tracesFirst:  noOp,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,
@@ -101,19 +101,19 @@ func TestTracesWithValidFailover(t *testing.T) {
 
 func TestTracesWithFailoverError(t *testing.T) {
 	var sinkSecond, sinkThird consumertest.TracesSink
-	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
-	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
-	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+	tracesThird := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/third")
 	noOp := consumertest.NewNop()
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
+		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    50 * time.Millisecond,
 		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
-	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
 		tracesFirst:  noOp,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,
