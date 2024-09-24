@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/IBM/sarama v1.43.3
-	github.com/apache/thrift v0.20.0
+	github.com/apache/thrift v0.21.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.60.0
 	github.com/json-iterator/go v1.1.12
