@@ -300,7 +300,9 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 			document.AddTimestamp("start_timestamp", dp.StartTimestamp())
 		}
 		document.AddString("unit", metric.Unit())
-		document.AddInt("_doc_count", int64(docCount))
+		if val, ok := dp.Attributes().Get("_doc_count"); ok && val.Bool() {
+			document.AddInt("_doc_count", int64(docCount))
+		}
 
 		m.encodeAttributesOTelMode(&document, dp.Attributes(), true)
 		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, true)
