@@ -81,7 +81,7 @@ func Test_marshalKeyValue(t *testing.T) {
 			target: ottl.StandardPMapGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return map[string]any{
-						"key1": "value1",
+						"key1":    "value1",
 						"key2,,,": "value2,,,,,,",
 					}, nil
 				},
