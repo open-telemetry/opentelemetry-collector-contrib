@@ -9,30 +9,30 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logs0 := component.NewIDWithName(component.DataTypeLogs, "0")
-	logs1 := component.NewIDWithName(component.DataTypeLogs, "1")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{logsDefault},
+		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where attributes["X-Tenant"] == "acme"`,
-				Pipelines: []component.ID{logs0},
+				Pipelines: []pipeline.ID{logs0},
 			},
 			{
 				Statement: `route() where attributes["X-Tenant"] == "*"`,
-				Pipelines: []component.ID{logs0, logs1},
+				Pipelines: []pipeline.ID{logs0, logs1},
 			},
 		},
 	}
@@ -41,7 +41,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: &defaultSink,
 		logs0:       &sink0,
 		logs1:       &sink1,
@@ -76,31 +76,31 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 }
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logs0 := component.NewIDWithName(component.DataTypeLogs, "0")
-	logs1 := component.NewIDWithName(component.DataTypeLogs, "1")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{logsDefault},
+		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where IsMatch(attributes["X-Tenant"], ".*acme") == true`,
-				Pipelines: []component.ID{logs0},
+				Pipelines: []pipeline.ID{logs0},
 			},
 			{
 				Statement: `route() where IsMatch(attributes["X-Tenant"], "_acme") == true`,
-				Pipelines: []component.ID{logs1},
+				Pipelines: []pipeline.ID{logs1},
 			},
 			{
 				Statement: `route() where attributes["X-Tenant"] == "ecorp"`,
-				Pipelines: []component.ID{logsDefault, logs0},
+				Pipelines: []pipeline.ID{logsDefault, logs0},
 			},
 		},
 	}
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: &defaultSink,
 		logs0:       &sink0,
 		logs1:       &sink1,
@@ -231,24 +231,24 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 }
 
 func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logs0 := component.NewIDWithName(component.DataTypeLogs, "0")
-	logs1 := component.NewIDWithName(component.DataTypeLogs, "1")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{logsDefault},
+		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where IsMatch(attributes["X-Tenant"], ".*acme") == true`,
-				Pipelines: []component.ID{logs0},
+				Pipelines: []pipeline.ID{logs0},
 			},
 			{
 				Statement: `route() where IsMatch(attributes["X-Tenant"], "_acme") == true`,
-				Pipelines: []component.ID{logs1},
+				Pipelines: []pipeline.ID{logs1},
 			},
 			{
 				Statement: `route() where attributes["X-Tenant"] == "ecorp"`,
-				Pipelines: []component.ID{logsDefault, logs0},
+				Pipelines: []pipeline.ID{logsDefault, logs0},
 			},
 		},
 		MatchOnce: true,
@@ -256,7 +256,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: &defaultSink,
 		logs0:       &sink0,
 		logs1:       &sink1,
@@ -383,22 +383,22 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 }
 
 func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logsOther := component.NewIDWithName(component.DataTypeLogs, "other")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logsOther := pipeline.NewIDWithName(pipeline.SignalLogs, "other")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{logsDefault},
+		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `delete_key(attributes, "X-Tenant") where attributes["X-Tenant"] == "acme"`,
-				Pipelines: []component.ID{logsOther},
+				Pipelines: []pipeline.ID{logsOther},
 			},
 		},
 	}
 
 	var sink0, sink1 consumertest.LogsSink
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: &sink0,
 		logsOther:   &sink1,
 	})
@@ -439,17 +439,17 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 }
 
 func TestLogsConnectorCapabilities(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logsOther := component.NewIDWithName(component.DataTypeLogs, "other")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logsOther := pipeline.NewIDWithName(pipeline.SignalLogs, "other")
 
 	cfg := &Config{
 		Table: []RoutingTableItem{{
 			Statement: `route() where attributes["X-Tenant"] == "acme"`,
-			Pipelines: []component.ID{logsOther},
+			Pipelines: []pipeline.ID{logsOther},
 		}},
 	}
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: consumertest.NewNop(),
 		logsOther:   consumertest.NewNop(),
 	})
