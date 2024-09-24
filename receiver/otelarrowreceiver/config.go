@@ -21,8 +21,8 @@ type Protocols struct {
 
 type AdmissionConfig struct {
 	// RequestLimitMiB limits the number of requests that are received by the stream based on
-	// request size information available. Request size is used to control how much traffic we admit
-	// for processing, but does not control how much memory is used during request processing.
+	// uncompressed request size. Request size is used to control how much traffic we admit
+	// for processing.
 	RequestLimitMiB uint64 `mapstructure:"request_limit_mib"`
 
 	// WaiterLimit is the limit on the number of waiters waiting to be processed and consumed.
