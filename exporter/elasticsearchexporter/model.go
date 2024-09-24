@@ -307,7 +307,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	// Emit _doc_count if data point contains attribute _doc_count: true
 	if val, ok := dp.Attributes().Get("_doc_count"); ok && val.Bool() {
 		docCount := dp.DocCount()
-		document.AddInt("_doc_count", int64(docCount)) // FIXME: by default it will take the last one, should it be changed to max, or it doesn't matter?
+		document.AddInt("_doc_count", int64(docCount))
 	}
 
 	switch value.Type() {
