@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestExporterLogs(t *testing.T) {
@@ -1445,7 +1446,7 @@ func (h *mockHost) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
 }
 
-func (h *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (h *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	panic(fmt.Errorf("expected call to GetExporters"))
 }
 
