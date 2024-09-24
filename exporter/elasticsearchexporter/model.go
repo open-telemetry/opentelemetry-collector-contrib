@@ -286,10 +286,8 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		return err
 	}
 
-	docCount := dp.DocCount()
-
 	// documents is per-resource. Therefore, there is no need to hash resource attributes
-	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit(), docCount)
+	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit())
 	var (
 		document objmodel.Document
 		ok       bool
@@ -300,13 +298,15 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 			document.AddTimestamp("start_timestamp", dp.StartTimestamp())
 		}
 		document.AddString("unit", metric.Unit())
-		if val, ok := dp.Attributes().Get("_doc_count"); ok && val.Bool() {
-			document.AddInt("_doc_count", int64(docCount))
-		}
 
 		m.encodeAttributesOTelMode(&document, dp.Attributes(), true)
 		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL, true)
 		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL, true)
+	}
+
+	if val, ok := dp.Attributes().Get("_doc_count"); ok && val.Bool() {
+		docCount := dp.DocCount()
+		document.AddInt("_doc_count", int64(docCount)) // FIXME: by default it will take the last one, should it be changed to max, or it doesn't matter?
 	}
 
 	switch value.Type() {
@@ -853,7 +853,7 @@ func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	return hasher.Sum32()
 }
 
-func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string, docCount uint64) uint32 {
+func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
