@@ -71,7 +71,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20240626203959-61d1e3462e30 // indirect
-	github.com/apache/thrift v0.20.0 // indirect
+	github.com/apache/thrift v0.21.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go v1.54.19 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -160,7 +160,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/leodido/go-syslog/v4 v4.1.0 // indirect
+	github.com/leodido/go-syslog/v4 v4.2.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b // indirect
 	github.com/linode/linodego v1.37.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c // indirect

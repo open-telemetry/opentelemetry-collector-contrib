@@ -80,13 +80,13 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.132 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.57.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.57.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.57.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.57.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.57.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.57.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.57.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.57.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.57.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.57.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.57.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.57.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.30.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.13 // indirect
@@ -97,7 +97,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20240626203959-61d1e3462e30 // indirect
-	github.com/apache/thrift v0.20.0 // indirect
+	github.com/apache/thrift v0.21.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go v1.54.19 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -186,7 +186,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/leodido/go-syslog/v4 v4.1.0 // indirect
+	github.com/leodido/go-syslog/v4 v4.2.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b // indirect
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
 	github.com/linode/linodego v1.37.0 // indirect
