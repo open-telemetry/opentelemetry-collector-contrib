@@ -39,7 +39,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.5.1 // indirect
+	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.132 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.57.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.57.0 // indirect
