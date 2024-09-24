@@ -7,6 +7,7 @@ import (
 	"context"
 	"math"
 	"math/rand"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	self "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest/compare"
@@ -281,4 +283,28 @@ func stream() SumBuilder {
 	sum := random.Sum()
 	_, base := sum.Stream()
 	return SumBuilder{Metric: sum, base: base}
+}
+
+func TestIgnore(t *testing.T) {
+	proc, sink := setup(t, nil)
+
+	dir := "./testdata/notemporality-ignored"
+	open := func(file string) pmetric.Metrics {
+		t.Helper()
+		md, err := golden.ReadMetrics(filepath.Join(dir, file))
+		require.NoError(t, err)
+		return md
+	}
+
+	in := open("in.yaml")
+	out := open("out.yaml")
+
+	ctx := context.Background()
+
+	err := proc.ConsumeMetrics(ctx, in)
+	require.NoError(t, err)
+
+	if diff := compare.Diff([]pmetric.Metrics{out}, sink.AllMetrics()); diff != "" {
+		t.Fatal(diff)
+	}
 }
