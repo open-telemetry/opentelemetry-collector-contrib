@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -517,7 +518,7 @@ func verifyReceiverLifecycle(t *testing.T, factory receiver.Factory, getConfigFn
 
 	for _, createFn := range createFns {
 		firstRcvr, err := createFn(ctx, receiverCreateSet, getConfigFn())
-		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, pipeline.ErrSignalNotSupported) {
 			continue
 		}
 		require.NoError(t, err)
@@ -548,7 +549,7 @@ func verifyReceiverShutdown(tb testing.TB, factory receiver.Factory, getConfigFn
 
 	for _, createFn := range createFns {
 		r, err := createFn(ctx, receiverCreateSet, getConfigFn())
-		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, pipeline.ErrSignalNotSupported) {
 			continue
 		}
 		if r == nil {
