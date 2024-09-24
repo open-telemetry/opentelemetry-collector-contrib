@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -60,7 +61,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	}
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }
 
@@ -75,7 +76,7 @@ func TestCreateTracesReceiverNoMetrics(t *testing.T) {
 	}
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }
 
@@ -99,6 +100,6 @@ func TestCreateLogsReceiver(t *testing.T) {
 
 	tReceiver, err := factory.CreateLogsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }
