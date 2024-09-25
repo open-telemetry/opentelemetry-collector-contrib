@@ -300,9 +300,6 @@ func Test_e2e_editors(t *testing.T) {
 	}
 }
 
-
-
-
 func Test_e2e_converters(t *testing.T) {
 	tests := []struct {
 		statement string
