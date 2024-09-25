@@ -16,7 +16,43 @@ issues: [35332]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Please use the processors to handle desired metric transformations instead.
+  Please use the processors to handle desired metric transformations instead. Find guidance and examples below for each transformation type.
+  - rename_dimension_keys - Use the metricstransform processor's rename label functionality.
+    - Example for one metric: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-labels
+    - Example for multiple/all metrics: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-labels-for-multiple-metrics
+
+  - rename_metrics - Use the metrictransform processor's rename metric functionality instead.
+    - Example for one metric: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-metric
+    - Example for multiple metrics: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
+
+  - multiply_int. divide_int, multiply_float - Use the metrictransform processor's scale value functionality instead.
+    - Example: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#scale-value
+
+  - convert_values - Use the transform processor's Double or Int converter on a DataPoint context instead.
+    - Double converter: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#double
+    - Int converter: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#int
+
+  - copy_metrics - Use the metricstransform processor's insert functionality instead.
+    - Example for copying all datapoints to a new metric: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#create-a-new-metric-from-an-existing-metric
+    - Example for conditionally copying datapoints: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#create-a-new-metric-from-an-existing-metric-with-matching-label-values
+
+  - split_metric - Use the metricstransform processor's insert functionality to create the new metrics instead. Use the filter processor to drop the original metrics that are no longer required.
+    - Refer to the replacement guidance for the `copy_metrics` and `drop_metrics` translation rules.
+
+  - aggregate_metric - Use the transform processor's `aggregate_on_attributes` function with the metric context instead.
+    - Reference: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#aggregate_on_attributes
+
+  - calculate_new_metric
+
+  - drop_metrics - Use the filter processor to drop metrics by name instead.
+    - Example here for dropping metrics by name and value: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#dropping-specific-metric-and-value
+
+  - delta_metric - Use the cumulativetodelta processor to create delta metrics from cumulative metrics instead.
+    - Example here for specifying which metrics to create new delta metrics for: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/cumulativetodeltaprocessor#examples
+
+  - drop_dimensions - Use the transform processor's delete_keys function with the datapoint context to drop metric attributes instead.
+    - Example and description here: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#delete_key
+    - Dropping attributes conditionally, based upon the metric name or dimension value, can be done using a "where" clause with the given example.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
