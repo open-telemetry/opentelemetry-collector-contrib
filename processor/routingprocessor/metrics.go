@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -66,7 +67,7 @@ func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
 	if !ok {
 		return fmt.Errorf("unable to get exporters")
 	}
-	err := p.router.registerExporters(ge.GetExporters()[component.DataTypeMetrics])
+	err := p.router.registerExporters(ge.GetExportersWithSignal()[pipeline.SignalMetrics])
 	if err != nil {
 		return err
 	}

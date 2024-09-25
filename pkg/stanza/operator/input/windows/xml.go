@@ -13,6 +13,7 @@ import (
 
 // EventXML is the rendered xml of an event.
 type EventXML struct {
+	Original         string      `xml:"-"`
 	EventID          EventID     `xml:"System>EventID"`
 	Provider         Provider    `xml:"System>Provider"`
 	Computer         string      `xml:"System>Computer"`
@@ -180,15 +181,6 @@ func parseEventData(eventData EventData) map[string]any {
 	return outputMap
 }
 
-// unmarshalEventXML will unmarshal EventXML from xml bytes.
-func unmarshalEventXML(bytes []byte) (EventXML, error) {
-	var eventXML EventXML
-	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
-		return EventXML{}, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
-	}
-	return eventXML, nil
-}
-
 // EventID is the identifier of the event.
 type EventID struct {
 	Qualifiers uint16 `xml:"Qualifiers,attr"`
@@ -266,4 +258,14 @@ func (e Execution) asMap() map[string]any {
 	}
 
 	return result
+}
+
+// unmarshalEventXML will unmarshal EventXML from xml bytes.
+func unmarshalEventXML(bytes []byte) (EventXML, error) {
+	var eventXML EventXML
+	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
+		return EventXML{}, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
+	}
+	eventXML.Original = string(bytes)
+	return eventXML, nil
 }
