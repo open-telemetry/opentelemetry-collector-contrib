@@ -76,7 +76,7 @@ GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 TESTIFYLINT         := $(TOOLS_BIN_DIR)/testifylint
 
-GOTESTSUM_OPT?= --rerun-fails=1 --debug
+GOTESTSUM_OPT?= --debug
 TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run
 
 # BUILD_TYPE should be one of (dev, release).
