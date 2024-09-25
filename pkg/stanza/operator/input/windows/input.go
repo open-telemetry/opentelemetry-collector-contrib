@@ -216,6 +216,16 @@ func (i *Input) read(ctx context.Context) int {
 	events, err := i.subscription.Read(i.maxReads)
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
+		if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
+			i.Logger().Info("Resubscribing, closing remote subscription")
+			closeErr := i.subscription.Close()
+			if closeErr != nil {
+				i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
+				return 0
+			}
+			i.Logger().Info("Resubscribing, creating remote subscription")
+			i.subscription = NewRemoteSubscription(i.remote.Server)
+		}
 		return 0
 	}
 
@@ -232,8 +242,6 @@ func (i *Input) read(ctx context.Context) int {
 
 // processEvent will process and send an event retrieved from windows event log.
 func (i *Input) processEvent(ctx context.Context, event Event) {
-	remoteServer := i.remote.Server
-
 	var providerName string // The provider name is only retrieved if needed.
 	if !i.raw || len(i.excludeProviders) > 0 {
 		var err error
@@ -253,13 +261,12 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 	}
 
 	if i.raw {
-		rawEvent, err := event.RenderRaw(i.buffer)
+		rawEvent, err := event.RenderSimple(i.buffer)
 		if err != nil {
 			i.Logger().Error("Failed to render raw event", zap.Error(err))
 			return
 		}
 
-		rawEvent.RemoteServer = remoteServer
 		i.sendEventRaw(ctx, rawEvent)
 		return
 	}
@@ -275,7 +282,6 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 	if publisher.Valid() {
 		formattedEvent, err := event.RenderFormatted(i.buffer, publisher)
 		if err == nil {
-			formattedEvent.RemoteServer = remoteServer
 			i.sendEvent(ctx, formattedEvent)
 			return
 		}
@@ -290,7 +296,6 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 		return
 	}
 
-	simpleEvent.RemoteServer = remoteServer
 	i.sendEvent(ctx, simpleEvent)
 }
 
@@ -309,9 +314,8 @@ func (i *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 }
 
 // sendEventRaw will send EventRaw as an entry to the operator's output.
-func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
-	body := eventRaw.parseBody()
-	entry, err := i.NewEntry(body)
+func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventXML) {
+	entry, err := i.NewEntry(eventRaw.Original)
 	if err != nil {
 		i.Logger().Error("Failed to create entry", zap.Error(err))
 		return
