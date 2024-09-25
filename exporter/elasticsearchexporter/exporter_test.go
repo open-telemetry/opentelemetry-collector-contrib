@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestExporterLogs(t *testing.T) {
@@ -941,10 +942,56 @@ func TestExporterMetrics(t *testing.T) {
 
 		assert.Len(t, rec.Items(), 1)
 		doc := rec.Items()[0].Document
-		// Workaround TSDB limitation by stringifying array values
-		assert.Equal(t, `{"some.record.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.Equal(t, `{"some.scope.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.Equal(t, `{"some.resource.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+		assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
+
+	t.Run("otel mode _doc_count", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		sumMetric := scopeMetric.Metrics().AppendEmpty()
+		sumMetric.SetName("sum")
+		sumDP := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+		sumDP.SetIntValue(0)
+
+		summaryMetric := scopeMetric.Metrics().AppendEmpty()
+		summaryMetric.SetName("summary")
+		summaryDP := summaryMetric.SetEmptySummary().DataPoints().AppendEmpty()
+		summaryDP.SetSum(1)
+		summaryDP.SetCount(10)
+		fillAttributeMap(summaryDP.Attributes(), map[string]any{
+			"_doc_count": true,
+		})
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(2)
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.summary":"summary_metrics"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"attributes":{"_doc_count":true},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+
 	})
 
 	t.Run("publish summary", func(t *testing.T) {
@@ -1445,7 +1492,7 @@ func (h *mockHost) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
 }
 
-func (h *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (h *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	panic(fmt.Errorf("expected call to GetExporters"))
 }
 

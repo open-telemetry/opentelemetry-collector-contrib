@@ -119,6 +119,11 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 					newSpan.Attributes().PutStr(k, v)
 				}
 			}
+			for k, v := range span.GetMetrics() {
+				if k = translateDatadogKeyToOTel(k); len(k) > 0 {
+					newSpan.Attributes().PutDouble(k, v)
+				}
+			}
 
 			switch span.Meta[datadogSpanKindKey] {
 			case "server":
