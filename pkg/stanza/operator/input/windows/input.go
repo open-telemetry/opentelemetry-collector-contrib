@@ -216,6 +216,16 @@ func (i *Input) read(ctx context.Context) int {
 	events, err := i.subscription.Read(i.maxReads)
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
+		if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
+			i.Logger().Info("Resubscribing, closing remote subscription")
+			closeErr := i.subscription.Close()
+			if closeErr != nil {
+				i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
+				return 0
+			}
+			i.Logger().Info("Resubscribing, creating remote subscription")
+			i.subscription = NewRemoteSubscription(i.remote.Server)
+		}
 		return 0
 	}
 
@@ -232,65 +242,61 @@ func (i *Input) read(ctx context.Context) int {
 
 // processEvent will process and send an event retrieved from windows event log.
 func (i *Input) processEvent(ctx context.Context, event Event) {
-	remoteServer := i.remote.Server
+	var providerName string // The provider name is only retrieved if needed.
+	if !i.raw || len(i.excludeProviders) > 0 {
+		var err error
+		providerName, err = event.GetPublisherName(i.buffer)
+		if err != nil {
+			i.Logger().Error("Failed to get provider name", zap.Error(err))
+			return
+		}
+	}
 
-	if i.raw {
-		if len(i.excludeProviders) > 0 {
-			simpleEvent, err := event.RenderSimple(i.buffer)
-			if err != nil {
-				i.Logger().Error("Failed to render simple event", zap.Error(err))
+	if len(i.excludeProviders) > 0 {
+		for _, excludeProvider := range i.excludeProviders {
+			if providerName == excludeProvider {
 				return
 			}
-
-			for _, excludeProvider := range i.excludeProviders {
-				if simpleEvent.Provider.Name == excludeProvider {
-					return
-				}
-			}
 		}
+	}
 
-		rawEvent, err := event.RenderRaw(i.buffer)
+	if i.raw {
+		rawEvent, err := event.RenderSimple(i.buffer)
 		if err != nil {
 			i.Logger().Error("Failed to render raw event", zap.Error(err))
 			return
 		}
-		rawEvent.RemoteServer = remoteServer
+
 		i.sendEventRaw(ctx, rawEvent)
 		return
 	}
+
+	publisher, openPublisherErr := i.publisherCache.get(providerName)
+	if openPublisherErr != nil {
+		// This happens only the first time the code fails to open the publisher.
+		i.Logger().Warn(
+			"Failed to open event source, respective log entries cannot be formatted",
+			zap.String("provider", providerName), zap.Error(openPublisherErr))
+	}
+
+	if publisher.Valid() {
+		formattedEvent, err := event.RenderFormatted(i.buffer, publisher)
+		if err == nil {
+			i.sendEvent(ctx, formattedEvent)
+			return
+		}
+
+		i.Logger().Error("Failed to render formatted event", zap.Error(err))
+	}
+
+	// Falling back to simple event (non-formatted).
 	simpleEvent, err := event.RenderSimple(i.buffer)
 	if err != nil {
 		i.Logger().Error("Failed to render simple event", zap.Error(err))
 		return
 	}
-	simpleEvent.RemoteServer = remoteServer
 
-	for _, excludeProvider := range i.excludeProviders {
-		if simpleEvent.Provider.Name == excludeProvider {
-			return
-		}
-	}
-
-	publisher, openPublisherErr := i.publisherCache.get(simpleEvent.Provider.Name)
-	if openPublisherErr != nil {
-		i.Logger().Warn(
-			"Failed to open event source, respective log entries cannot be formatted",
-			zap.String("provider", simpleEvent.Provider.Name), zap.Error(openPublisherErr))
-	}
-
-	if !publisher.Valid() {
-		i.sendEvent(ctx, simpleEvent)
-		return
-	}
-
-	formattedEvent, err := event.RenderFormatted(i.buffer, publisher)
-	if err != nil {
-		i.Logger().Error("Failed to render formatted event", zap.Error(err))
-		i.sendEvent(ctx, simpleEvent)
-		return
-	}
-	formattedEvent.RemoteServer = remoteServer
-	i.sendEvent(ctx, formattedEvent)
+	i.sendEvent(ctx, simpleEvent)
 }
 
 // sendEvent will send EventXML as an entry to the operator's output.
@@ -308,9 +314,8 @@ func (i *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 }
 
 // sendEventRaw will send EventRaw as an entry to the operator's output.
-func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
-	body := eventRaw.parseBody()
-	entry, err := i.NewEntry(body)
+func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventXML) {
+	entry, err := i.NewEntry(eventRaw.Original)
 	if err != nil {
 		i.Logger().Error("Failed to create entry", zap.Error(err))
 		return

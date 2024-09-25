@@ -34,6 +34,7 @@ package objmodel // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"encoding/hex"
 	"io"
+	"maps"
 	"math"
 	"sort"
 	"strings"
@@ -48,7 +49,8 @@ import (
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
 // into a JSON document that can be processed by Elasticsearch.
 type Document struct {
-	fields []field
+	fields           []field
+	dynamicTemplates map[string]string
 }
 
 type field struct {
@@ -81,6 +83,7 @@ const (
 	KindObject
 	KindTimestamp
 	KindIgnore
+	KindUnflattenableObject // Unflattenable object is an object that should not be flattened at serialization time
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
@@ -105,13 +108,24 @@ func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 
 	fields := make([]field, 0, am.Len())
 	fields = appendAttributeFields(fields, path, am)
-	return Document{fields}
+	return Document{fields: fields}
 }
 
 func (doc *Document) Clone() *Document {
 	fields := make([]field, len(doc.fields))
 	copy(fields, doc.fields)
-	return &Document{fields}
+	return &Document{fields: fields, dynamicTemplates: maps.Clone(doc.dynamicTemplates)}
+}
+
+func (doc *Document) AddDynamicTemplate(path, template string) {
+	if doc.dynamicTemplates == nil {
+		doc.dynamicTemplates = make(map[string]string)
+	}
+	doc.dynamicTemplates[path] = template
+}
+
+func (doc *Document) DynamicTemplates() map[string]string {
+	return doc.dynamicTemplates
 }
 
 // AddTimestamp adds a raw timestamp value to the Document.
@@ -241,11 +255,19 @@ func (doc *Document) Dedup() {
 	}
 }
 
+func newJSONVisitor(w io.Writer) *json.Visitor {
+	v := json.NewVisitor(w)
+	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
+	// This is required to generate the correct dynamic mapping in ES.
+	v.SetExplicitRadixPoint(true)
+	return v
+}
+
 // Serialize writes the document to the given writer. The serializer will create nested objects if dedot is true.
 //
 // NOTE: The documented MUST be sorted if dedot is true.
 func (doc *Document) Serialize(w io.Writer, dedot bool, otel bool) error {
-	v := json.NewVisitor(w)
+	v := newJSONVisitor(w)
 	return doc.iterJSON(v, dedot, otel)
 }
 
@@ -293,6 +315,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 // for current use cases and the proper fix will be slightly too complex. YAGNI.
 var otelPrefixSet = map[string]struct{}{
 	"attributes.": {},
+	"metrics.":    {},
 }
 
 func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
@@ -422,6 +445,12 @@ func TimestampValue(ts time.Time) Value {
 	return Value{kind: KindTimestamp, ts: ts}
 }
 
+// UnflattenableObjectValue creates a unflattenable object from a map
+func UnflattenableObjectValue(m pcommon.Map) Value {
+	sub := DocumentFromAttributes(m)
+	return Value{kind: KindUnflattenableObject, doc: sub}
+}
+
 // ValueFromAttribute converts a AttributeValue into a value.
 func ValueFromAttribute(attr pcommon.Value) Value {
 	switch attr.Type() {
@@ -506,6 +535,11 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 			return w.OnNil()
 		}
 		return v.doc.iterJSON(w, dedot, otel)
+	case KindUnflattenableObject:
+		if len(v.doc.fields) == 0 {
+			return w.OnNil()
+		}
+		return v.doc.iterJSON(w, true, otel)
 	case KindArr:
 		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
 			return err

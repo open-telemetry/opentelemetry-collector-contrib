@@ -11,10 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
@@ -47,7 +50,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateTracesReceiverWrongConfig(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), nil, nil)
-	assert.Equal(t, component.ErrDataTypeIsNotSupported, err)
+	assert.Equal(t, pipeline.ErrSignalNotSupported, err)
 }
 
 func TestCreateTracesReceiverBadConfigNoAuth(t *testing.T) {
@@ -88,7 +91,9 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 	defer func() {
 		require.NoError(t, provider.Shutdown(context.Background()))
 	}()
-	set.TelemetrySettings.MeterProvider = provider
+	set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+		return provider
+	}
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()

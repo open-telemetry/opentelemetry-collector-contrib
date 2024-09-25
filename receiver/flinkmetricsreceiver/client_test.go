@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -142,7 +143,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -159,7 +160,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 				jobmanagerMetricValuesData := loadAPIResponseData(t, apiResponses, jobmanagerMetricValues)
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(jobmanagerMetricValuesData)
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -211,7 +212,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte(`{`))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -229,12 +230,12 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if match, _ := regexp.MatchString(taskmanagerIDsRegex, r.URL.Path); match {
 						_, err := w.Write(taskmanagerIDs)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -253,13 +254,13 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if match, _ := regexp.MatchString(taskmanagerIDsRegex, r.URL.Path); match {
 						_, err := w.Write(taskmanagerIDs)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 
 					if match, _ := regexp.MatchString(taskmanagerMetricNamesRegex, r.URL.Path); match {
 						_, err := w.Write(taskmanagerMetricValuesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 				}))
@@ -312,7 +313,7 @@ func TestGetJobsMetrics(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte(`{`))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -330,11 +331,11 @@ func TestGetJobsMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if r.URL.Path == jobsOverviewEndpoint {
 						_, err := w.Write(jobsOverviewData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					_, err := w.Write([]byte(`{`))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -353,12 +354,12 @@ func TestGetJobsMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if r.URL.Path == jobsOverviewEndpoint {
 						_, err := w.Write(jobsOverviewData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(jobsMetricNamesRegex, r.URL.Path); match {
 						_, err := w.Write(jobsMetricValuesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 				}))
@@ -414,7 +415,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -432,11 +433,11 @@ func TestGetSubtasksMetrics(t *testing.T) {
 					jobsData := loadAPIResponseData(t, apiResponses, jobsIDs)
 					if r.URL.Path == jobsEndpoint {
 						_, err := w.Write(jobsData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -455,16 +456,16 @@ func TestGetSubtasksMetrics(t *testing.T) {
 					jobsWithIDData := loadAPIResponseData(t, apiResponses, jobsWithID)
 					if r.URL.Path == jobsEndpoint {
 						_, err := w.Write(jobsData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(jobsWithIDRegex, r.URL.Path); match {
 						_, err := w.Write(jobsWithIDData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -484,21 +485,21 @@ func TestGetSubtasksMetrics(t *testing.T) {
 					verticesData := loadAPIResponseData(t, apiResponses, vertices)
 					if r.URL.Path == jobsEndpoint {
 						_, err := w.Write(jobsData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(jobsWithIDRegex, r.URL.Path); match {
 						_, err := w.Write(jobsWithIDData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(verticesRegex, r.URL.Path); match {
 						_, err := w.Write(verticesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -519,22 +520,22 @@ func TestGetSubtasksMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if r.URL.Path == jobsEndpoint {
 						_, err := w.Write(jobsData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(jobsWithIDRegex, r.URL.Path); match {
 						_, err := w.Write(jobsWithIDData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(verticesRegex, r.URL.Path); match {
 						_, err := w.Write(verticesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(subtaskMetricNamesRegex, r.URL.Path); match {
 						_, err := w.Write(subtaskMetricValuesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 				}))
@@ -544,7 +545,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				var e *models.JobsResponse
 				_ = json.Unmarshal(jobsData, &e)
-				require.EqualValues(t, e.Jobs[0].ID, "54a5c6e527e00e1bb861272a39fe13e4")
+				require.EqualValues(t, "54a5c6e527e00e1bb861272a39fe13e4", e.Jobs[0].ID)
 
 				// Load the valid data into a struct to compare
 				var expected *models.MetricsResponse

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
@@ -256,21 +257,9 @@ func TestPipelineAggregateStatusVerbose(t *testing.T) {
 func TestAggregateStatusExtensions(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 
-	extsID := component.MustNewID("extensions")
-	extInstanceID1 := &componentstatus.InstanceID{
-		ID:   component.MustNewID("ext1"),
-		Kind: component.KindExtension,
-		PipelineIDs: map[component.ID]struct{}{
-			extsID: {},
-		},
-	}
-	extInstanceID2 := &componentstatus.InstanceID{
-		ID:   component.MustNewID("ext2"),
-		Kind: component.KindExtension,
-		PipelineIDs: map[component.ID]struct{}{
-			extsID: {},
-		},
-	}
+	extsID := pipeline.MustNewID("extensions")
+	extInstanceID1 := componentstatus.NewInstanceIDWithPipelineIDs(component.MustNewID("ext1"), component.KindExtension).WithPipelineIDs(extsID)
+	extInstanceID2 := componentstatus.NewInstanceIDWithPipelineIDs(component.MustNewID("ext2"), component.KindExtension).WithPipelineIDs(extsID)
 	extInstanceIDs := []*componentstatus.InstanceID{extInstanceID1, extInstanceID2}
 
 	testhelpers.SeedAggregator(agg, extInstanceIDs, componentstatus.StatusOK)
@@ -536,10 +525,10 @@ func assertErrorEventsRecvdMatch(t *testing.T,
 }
 
 func toComponentKey(id *componentstatus.InstanceID) string {
-	return fmt.Sprintf("%s:%s", strings.ToLower(id.Kind.String()), id.ID)
+	return fmt.Sprintf("%s:%s", strings.ToLower(id.Kind().String()), id.ComponentID())
 }
 
-func toPipelineKey(id component.ID) string {
+func toPipelineKey(id pipeline.ID) string {
 	return fmt.Sprintf("pipeline:%s", id.String())
 }
 

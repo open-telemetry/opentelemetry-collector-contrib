@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -118,7 +119,7 @@ func TestGetNewToken(t *testing.T) {
 				err := tc.GetNewToken(context.Background())
 				require.EqualError(t, err, "non 200 code returned 401")
 				hasToken := tc.HasToken()
-				require.Equal(t, hasToken, false)
+				require.False(t, hasToken)
 			},
 		},
 		{
@@ -127,7 +128,7 @@ func TestGetNewToken(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("[{}]"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -136,7 +137,7 @@ func TestGetNewToken(t *testing.T) {
 				err := tc.GetNewToken(context.Background())
 				require.Contains(t, err.Error(), "failed to decode response payload")
 				hasToken := tc.HasToken()
-				require.Equal(t, hasToken, false)
+				require.False(t, hasToken)
 			},
 		},
 		{
@@ -147,7 +148,7 @@ func TestGetNewToken(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(data)
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -156,7 +157,7 @@ func TestGetNewToken(t *testing.T) {
 				err := tc.GetNewToken(context.Background())
 				require.NoError(t, err)
 				hasToken := tc.HasToken()
-				require.Equal(t, hasToken, true)
+				require.True(t, hasToken)
 			},
 		},
 	}
@@ -181,7 +182,7 @@ func TestGetVirtualServers(t *testing.T) {
 						w.WriteHeader(http.StatusUnauthorized)
 					} else {
 						_, err := w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}))
 				defer ts.Close()
@@ -202,11 +203,11 @@ func TestGetVirtualServers(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "stats") {
 						_, err = w.Write([]byte("[{}]"))
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					} else {
 						_, err = w.Write(data)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -229,7 +230,7 @@ func TestGetVirtualServers(t *testing.T) {
 					} else {
 						_, err = w.Write(data)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -249,7 +250,7 @@ func TestGetVirtualServers(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if strings.HasSuffix(r.RequestURI, "stats") {
 						_, err := w.Write(statsData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					} else {
 						w.WriteHeader(http.StatusUnauthorized)
 					}
@@ -279,7 +280,7 @@ func TestGetVirtualServers(t *testing.T) {
 					} else {
 						_, err = w.Write([]byte("[{}]"))
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -306,7 +307,7 @@ func TestGetVirtualServers(t *testing.T) {
 					} else {
 						_, err = w.Write([]byte("{}"))
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -335,7 +336,7 @@ func TestGetVirtualServers(t *testing.T) {
 					} else {
 						_, err = w.Write(data)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -358,7 +359,7 @@ func TestGetVirtualServers(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -404,7 +405,7 @@ func TestGetPools(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("[{}]"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -423,7 +424,7 @@ func TestGetPools(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(data)
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -445,7 +446,7 @@ func TestGetPools(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -495,7 +496,7 @@ func TestGetPoolMembers(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("[{}]"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -519,7 +520,7 @@ func TestGetPoolMembers(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if strings.Contains(r.RequestURI, "~Common~dev") {
 						_, err := w.Write(data1)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					} else {
 						w.WriteHeader(http.StatusUnauthorized)
 					}
@@ -547,7 +548,7 @@ func TestGetPoolMembers(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if strings.Contains(r.RequestURI, "~Common~dev") {
 						_, err := w.Write([]byte("{}"))
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					} else {
 						w.WriteHeader(http.StatusUnauthorized)
 					}
@@ -581,7 +582,7 @@ func TestGetPoolMembers(t *testing.T) {
 					} else {
 						_, err = w.Write(data2)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -607,7 +608,7 @@ func TestGetPoolMembers(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -657,7 +658,7 @@ func TestGetNodes(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("[{}]"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -676,7 +677,7 @@ func TestGetNodes(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(data)
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -698,7 +699,7 @@ func TestGetNodes(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 

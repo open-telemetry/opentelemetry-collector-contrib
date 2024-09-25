@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -124,8 +125,10 @@ func TestNewReceiver(t *testing.T) {
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
 		},
-		Endpoint:         "unix:///run/some.sock",
-		DockerAPIVersion: defaultDockerAPIVersion,
+		Config: docker.Config{
+			Endpoint:         "unix:///run/some.sock",
+			DockerAPIVersion: defaultDockerAPIVersion,
+		},
 	}
 	mr := newMetricsReceiver(receivertest.NewNopSettings(), cfg)
 	assert.NotNil(t, mr)
@@ -137,8 +140,10 @@ func TestErrorsInStart(t *testing.T) {
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
 		},
-		Endpoint:         unreachable,
-		DockerAPIVersion: defaultDockerAPIVersion,
+		Config: docker.Config{
+			Endpoint:         unreachable,
+			DockerAPIVersion: defaultDockerAPIVersion,
+		},
 	}
 	recv := newMetricsReceiver(receivertest.NewNopSettings(), cfg)
 	assert.NotNil(t, recv)
@@ -155,7 +160,6 @@ func TestErrorsInStart(t *testing.T) {
 }
 
 func TestScrapeV2(t *testing.T) {
-
 	testCases := []struct {
 		desc                string
 		expectedMetricsFile string

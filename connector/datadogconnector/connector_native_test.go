@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -104,7 +104,7 @@ func TestContainerTagsNative(t *testing.T) {
 
 	// check if the container tags are added to the metrics
 	metrics := metricsSink.AllMetrics()
-	assert.Equal(t, 1, len(metrics))
+	assert.Len(t, metrics, 1)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
@@ -117,7 +117,7 @@ func TestContainerTagsNative(t *testing.T) {
 	require.NoError(t, err)
 
 	tags := sp.Stats[0].Tags
-	assert.Equal(t, 3, len(tags))
+	assert.Len(t, tags, 3)
 	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
 }
 
@@ -145,6 +145,8 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	td := ptrace.NewTraces()
 	res := td.ResourceSpans().AppendEmpty().Resource()
 	res.Attributes().PutStr("service.name", "svc")
+	res.Attributes().PutStr(semconv.AttributeDeploymentEnvironmentName, "my-env")
+
 	ss := td.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
 	// Root span
 	s1 := ss.AppendEmpty()
@@ -187,7 +189,7 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	}
 
 	metrics := metricsSink.AllMetrics()
-	require.Equal(t, 1, len(metrics))
+	require.Len(t, metrics, 1)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
@@ -200,6 +202,7 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, sp.Stats, 1)
 	assert.Len(t, sp.Stats[0].Stats, 1)
+	assert.Equal(t, "my-env", sp.Stats[0].Env)
 	assert.Len(t, sp.Stats[0].Stats[0].Stats, 3)
 	cgss := sp.Stats[0].Stats[0].Stats
 	sort.Slice(cgss, func(i, j int) bool {

@@ -41,7 +41,7 @@ func TestMetadata_ToLabelValuesMetadata(t *testing.T) {
 				require.NotNil(t, valuesMetadata)
 				require.NoError(t, err)
 
-				assert.Equal(t, 1, len(valuesMetadata))
+				assert.Len(t, valuesMetadata, 1)
 			}
 		})
 	}
@@ -80,7 +80,7 @@ func TestMetadata_ToMetricValuesMetadata(t *testing.T) {
 				require.NotNil(t, valuesMetadata)
 				require.NoError(t, err)
 
-				assert.Equal(t, 1, len(valuesMetadata))
+				assert.Len(t, valuesMetadata, 1)
 			}
 		})
 	}
@@ -137,8 +137,8 @@ func TestMetadata_MetricsMetadata(t *testing.T) {
 				assert.Equal(t, md.MetricNamePrefix, metricsMetadata.MetricNamePrefix)
 				assert.Equal(t, md.TimestampColumnName, metricsMetadata.TimestampColumnName)
 				assert.Equal(t, md.HighCardinality, metricsMetadata.HighCardinality)
-				assert.Equal(t, 1, len(metricsMetadata.QueryLabelValuesMetadata))
-				assert.Equal(t, 1, len(metricsMetadata.QueryMetricValuesMetadata))
+				assert.Len(t, metricsMetadata.QueryLabelValuesMetadata, 1)
+				assert.Len(t, metricsMetadata.QueryMetricValuesMetadata, 1)
 			}
 		})
 	}

@@ -57,7 +57,8 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -93,7 +94,8 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -145,7 +147,8 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -187,7 +190,8 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -220,7 +224,8 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -316,7 +321,7 @@ func printLogs(allLogs []plog.Logs) {
 
 func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, existingLogID, newLogCount int) {
 	for newLogID := existingLogID + 1; newLogID <= existingLogID+newLogCount; newLogID++ {
-		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body) values (%d, now(), 'another log %d');", newLogID, newLogID)
+		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body, attribute) values (%d, now(), 'another log %d', 'TLSv1.2');", newLogID, newLogID)
 		returnValue, returnMessageReader, err := container.Exec(context.Background(), []string{
 			"psql", "-U", "otel", "-c", query,
 		})
@@ -607,18 +612,28 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 }
 
 func testAllSimpleLogs(t *testing.T, logs []plog.Logs) {
-	assert.Equal(t, 1, len(logs))
+	assert.Len(t, logs, 1)
 	assert.Equal(t, 1, logs[0].ResourceLogs().Len())
 	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
-	expectedEntries := []string{
+	expectedLogBodies := []string{
 		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6197 4 \"-\" \"-\" 445af8e6c428303f -",
 		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6205 5 \"-\" \"-\" 3285f43cd4baa202 -",
 		"- - - [03/Jun/2022:21:59:29 +0000] \"GET /api/health HTTP/1.1\" 200 6233 4 \"-\" \"-\" 579e8362d3185b61 -",
 		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6207 5 \"-\" \"-\" 8c6ac61ae66e509f -",
 		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6200 4 \"-\" \"-\" c163495861e873d8 -",
 	}
-	assert.Equal(t, len(expectedEntries), logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
-	for i := range expectedEntries {
-		assert.Equal(t, expectedEntries[i], logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i).Body().Str())
+	expectedLogAttributes := []string{
+		"TLSv1.2",
+		"TLSv1",
+		"TLSv1.2",
+		"TLSv1",
+		"TLSv1.2",
+	}
+	assert.Equal(t, len(expectedLogBodies), logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+	for i := range expectedLogBodies {
+		logRecord := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i)
+		assert.Equal(t, expectedLogBodies[i], logRecord.Body().Str())
+		logAttribute, _ := logRecord.Attributes().Get("attribute")
+		assert.Equal(t, expectedLogAttributes[i], logAttribute.Str())
 	}
 }

@@ -83,9 +83,9 @@ func TestHandleMetricsPayloadV2(t *testing.T) {
 			series, err := mt.HandleSeriesV2Payload(req)
 			require.NoError(t, err)
 			require.NoError(t, err, "Failed to parse metrics payload")
-			require.Equal(t, tt.expectedSeriesCount, len(series))
+			require.Len(t, series, tt.expectedSeriesCount)
 			for i, s := range series {
-				require.Equal(t, tt.expectedPointsCounts[i], len(s.Points))
+				require.Len(t, s.Points, tt.expectedPointsCounts[i])
 			}
 		})
 	}

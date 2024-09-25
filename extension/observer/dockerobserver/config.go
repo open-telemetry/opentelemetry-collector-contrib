@@ -4,7 +4,6 @@
 package dockerobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -15,16 +14,7 @@ import (
 
 // Config defines configuration for docker observer
 type Config struct {
-
-	// The URL of the docker server.  Default is "unix:///var/run/docker.sock" on non-Windows
-	// and "npipe:////./pipe/docker_engine" on Windows
-	Endpoint string `mapstructure:"endpoint"`
-
-	// The maximum amount of time to wait for docker API responses.  Default is 5s
-	Timeout time.Duration `mapstructure:"timeout"`
-
-	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
-	ExcludedImages []string `mapstructure:"excluded_images"`
+	docker.Config `mapstructure:",squash"`
 
 	// If true, the "Config.Hostname" field (if present) of the docker
 	// container will be used as the discovered host that is used to configure
@@ -47,15 +37,9 @@ type Config struct {
 	// through the docker event listener example: cache_sync_interval: "20m"
 	// Default: "60m"
 	CacheSyncInterval time.Duration `mapstructure:"cache_sync_interval"`
-
-	// Docker client API version. Default is 1.22
-	DockerAPIVersion string `mapstructure:"api_version"`
 }
 
 func (config Config) Validate() error {
-	if config.Endpoint == "" {
-		return errors.New("endpoint must be specified")
-	}
 	if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
 		return err
 	}
@@ -71,14 +55,12 @@ func (config Config) Validate() error {
 func (config *Config) Unmarshal(conf *confmap.Conf) error {
 	err := conf.Unmarshal(config)
 	if err != nil {
-		if floatAPIVersion, ok := conf.Get("api_version").(float64); ok {
-			return fmt.Errorf(
-				"%w.\n\nHint: You may want to wrap the 'api_version' value in quotes (api_version: \"%1.2f\")",
-				err,
-				floatAPIVersion,
-			)
-		}
 		return err
 	}
-	return nil
+
+	if len(config.ExcludedImages) == 0 {
+		config.ExcludedImages = nil
+	}
+
+	return err
 }

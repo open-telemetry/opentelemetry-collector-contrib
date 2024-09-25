@@ -205,9 +205,9 @@ func TestLoadConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			if tt.disallowRegex {
-				require.Nil(t, featuregate.GlobalRegistry().Set(disallowFieldExtractConfigRegex.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(disallowFieldExtractConfigRegex.ID(), true))
 				t.Cleanup(func() {
-					require.Nil(t, featuregate.GlobalRegistry().Set(disallowFieldExtractConfigRegex.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(disallowFieldExtractConfigRegex.ID(), false))
 				})
 			}
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

@@ -5,7 +5,6 @@ package sampling
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -187,7 +186,7 @@ func TestRValueSyntax(t *testing.T) {
 			rnd, err := RValueToRandomness(test.in)
 
 			if test.expectErr != nil {
-				require.True(t, errors.Is(err, test.expectErr),
+				require.ErrorIs(t, err, test.expectErr,
 					"%q: not expecting %v wanted %v", test.in, err, test.expectErr,
 				)
 				require.Equal(t, must(RValueToRandomness("00000000000000")), rnd)
@@ -241,7 +240,7 @@ func TestTValueSyntax(t *testing.T) {
 			_, err := TValueToThreshold(test.in)
 
 			if test.expectErr != nil {
-				require.True(t, errors.Is(err, test.expectErr),
+				require.ErrorIs(t, err, test.expectErr,
 					"%q: not expecting %v wanted %v", test.in, err, test.expectErr,
 				)
 			} else {
