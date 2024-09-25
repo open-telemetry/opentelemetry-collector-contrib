@@ -1,5 +1,4 @@
 type: groupbyattrs
-scope_name: otelcol/groupbyattrs
 
 status:
   class: processor

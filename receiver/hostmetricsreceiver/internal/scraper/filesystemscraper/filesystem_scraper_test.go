@@ -30,6 +30,7 @@ func TestScrape(t *testing.T) {
 		name                     string
 		config                   Config
 		rootPath                 string
+		osEnv                    map[string]string
 		bootTimeFunc             func(context.Context) (uint64, error)
 		partitionsFunc           func(context.Context, bool) ([]disk.PartitionStat, error)
 		usageFunc                func(context.Context, string) (*disk.UsageStat, error)
@@ -196,6 +197,43 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
+			name: "RootPath at /hostfs but HOST_PROC_MOUNTINFO is set",
+			osEnv: map[string]string{
+				"HOST_PROC_MOUNTINFO": "/proc/1/self",
+			},
+			config: Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+			rootPath: filepath.Join("/", "hostfs"),
+			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
+				if s != "mount_point_a" {
+					return nil, errors.New("mountpoint translated according to RootPath")
+				}
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+				}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+			expectedDeviceAttributes: []map[string]pcommon.Value{
+				{
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+			},
+		},
+		{
 			name: "Invalid Include Device Filter",
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -314,7 +352,9 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
+			for k, v := range test.osEnv {
+				t.Setenv(k, v)
+			}
 			test.config.SetRootPath(test.rootPath)
 			scraper, err := newFileSystemScraper(context.Background(), receivertest.NewNopSettings(), &test.config)
 			if test.newErrRegex != "" {

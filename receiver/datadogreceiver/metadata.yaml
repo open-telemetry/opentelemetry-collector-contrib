@@ -1,5 +1,4 @@
 type: datadog
-scope_name: otelcol/datadogreceiver
 
 status:
   class: receiver
@@ -12,3 +11,5 @@ status:
 
 tests:
   skip_lifecycle: true # Skip lifecycle tests since there are multiple receivers that run on the same port
+  goleak:
+    skip: true # see https://github.com/cihub/seelog/issues/182

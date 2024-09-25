@@ -562,6 +562,10 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		now, stats.Total.MergeOperations.TotalDocs, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
+	r.mb.RecordElasticsearchIndexOperationsMergeCurrentDataPoint(
+		now, stats.Total.MergeOperations.Current, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
 	r.mb.RecordElasticsearchIndexShardsSizeDataPoint(
 		now, stats.Total.StoreInfo.SizeInBy, metadata.AttributeIndexAggregationTypeTotal,
 	)

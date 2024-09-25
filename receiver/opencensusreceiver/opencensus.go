@@ -18,6 +18,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -81,7 +82,7 @@ func newOpenCensusReceiver(
 // it also enables the metrics receiver too.
 func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	ocr.serverGRPC, err = ocr.grpcServerSettings.ToServer(ctx, host, ocr.settings.TelemetrySettings)
+	ocr.serverGRPC, err = ocr.grpcServerSettings.ToServerWithOptions(ctx, host, ocr.settings.TelemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -146,19 +147,19 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 		startWG.Done()
 		// Check for cmux.ErrServerClosed, because during the shutdown this is not properly close before closing the cmux,
 		if err := ocr.serverGRPC.Serve(grpcL); !errors.Is(err, grpc.ErrServerStopped) && !errors.Is(err, cmux.ErrServerClosed) && err != nil {
-			ocr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	go func() {
 		startWG.Done()
 		if err := ocr.serverHTTP.Serve(httpL); !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, cmux.ErrServerClosed) && err != nil {
-			ocr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	go func() {
 		startWG.Done()
 		if err := ocr.multiplexer.Serve(); !errors.Is(err, cmux.ErrServerClosed) && !errors.Is(err, cmux.ErrListenerClosed) && err != nil {
-			ocr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 
@@ -175,7 +176,7 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 
 	if ocr.serverGRPC == nil {
 		var err error
-		ocr.serverGRPC, err = ocr.grpcServerSettings.ToServer(context.Background(), host, ocr.settings.TelemetrySettings)
+		ocr.serverGRPC, err = ocr.grpcServerSettings.ToServerWithOptions(context.Background(), host, ocr.settings.TelemetrySettings)
 		if err != nil {
 			return err
 		}

@@ -316,7 +316,8 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 							IsMonotonic: true,
 							DataPoints: []metricdata.DataPoint[int64]{
 								{
-									Value: 1,
+									Value:      1,
+									Attributes: u.metricAttrs,
 								},
 							},
 						},
@@ -439,7 +440,8 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -930,7 +932,8 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -945,6 +948,6 @@ func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1
 	tt := setupTestTelemetry()
 	builder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
 	require.NoError(t, err)
-	metricAttr := attribute.NewSet(attribute.String("broker_component_name", tt.NewSettings().ID.Name()))
+	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
 	return &brokerTraceEgressUnmarshallerV1{zap.NewNop(), builder, metricAttr}, tt
 }

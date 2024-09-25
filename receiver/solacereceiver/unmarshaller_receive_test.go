@@ -70,7 +70,8 @@ func TestReceiveUnmarshallerMapResourceSpan(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -345,7 +346,8 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -618,7 +620,8 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.unmarshallingErrors,
+								Value:      tt.unmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -675,7 +678,8 @@ func TestReceiveUnmarshallerRGMID(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.numErr,
+								Value:      tt.numErr,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -758,7 +762,7 @@ func TestReceiveUnmarshallerInsertUserProperty(t *testing.T) {
 			&receive_v1.SpanData_UserPropertyValue_BoolValue{BoolValue: true},
 			pcommon.ValueTypeBool,
 			func(val pcommon.Value) {
-				assert.Equal(t, true, val.Bool())
+				assert.True(t, val.Bool())
 			},
 		},
 		{
@@ -910,7 +914,8 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value: 1,
+						Value:      1,
+						Attributes: u.metricAttrs,
 					},
 				},
 			},
@@ -922,6 +927,6 @@ func newTestReceiveV1Unmarshaller(t *testing.T) (*brokerTraceReceiveUnmarshaller
 	tt := setupTestTelemetry()
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
 	require.NoError(t, err)
-	metricAttr := attribute.NewSet(attribute.String("broker_component_name", tt.NewSettings().ID.Name()))
+	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
 	return &brokerTraceReceiveUnmarshallerV1{zap.NewNop(), telemetryBuilder, metricAttr}, tt
 }

@@ -1,5 +1,4 @@
 type: solarwindsapmsettings
-scope_name: otelcol/solarwindsapmsettings
 
 status:
   class: extension

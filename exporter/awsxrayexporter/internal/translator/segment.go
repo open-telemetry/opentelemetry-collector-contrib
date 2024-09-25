@@ -770,8 +770,12 @@ func fixAnnotationKey(key string) string {
 }
 
 func trimAwsSdkPrefix(name string, span ptrace.Span) string {
-	if isAwsSdkSpan(span) && strings.HasPrefix(name, "AWS.SDK.") {
-		return strings.TrimPrefix(name, "AWS.SDK.")
+	if isAwsSdkSpan(span) {
+		if strings.HasPrefix(name, "AWS.SDK.") {
+			return strings.TrimPrefix(name, "AWS.SDK.")
+		} else if strings.HasPrefix(name, "AWS::") {
+			return strings.TrimPrefix(name, "AWS::")
+		}
 	}
 	return name
 }

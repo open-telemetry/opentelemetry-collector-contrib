@@ -1,5 +1,4 @@
 type: span
-scope_name: otelcol/span
 
 status:
   class: processor

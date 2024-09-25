@@ -1,5 +1,4 @@
 type: docker_stats
-scope_name: otelcol/dockerstatsreceiver
 
 status:
   class: receiver

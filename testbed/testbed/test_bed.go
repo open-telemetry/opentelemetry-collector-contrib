@@ -22,7 +22,7 @@ import (
 func Start(resultsSummary TestResultsSummary) error {
 	dir, err := filepath.Abs("results")
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 	resultsSummary.Init(dir)
 
@@ -66,7 +66,7 @@ func DoTestMain(m *testing.M, resultsSummary TestResultsSummary) {
 	err := Start(resultsSummary)
 
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	res := m.Run()

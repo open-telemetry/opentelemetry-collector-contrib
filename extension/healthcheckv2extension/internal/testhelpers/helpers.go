@@ -5,6 +5,8 @@ package testhelpers // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
@@ -13,43 +15,25 @@ import (
 // PipelineMetadata groups together component and instance IDs for a hypothetical pipeline used
 // for testing purposes.
 type PipelineMetadata struct {
-	PipelineID  component.ID
-	ReceiverID  *component.InstanceID
-	ProcessorID *component.InstanceID
-	ExporterID  *component.InstanceID
+	PipelineID  pipeline.ID
+	ReceiverID  *componentstatus.InstanceID
+	ProcessorID *componentstatus.InstanceID
+	ExporterID  *componentstatus.InstanceID
 }
 
 // InstanceIDs returns a slice of instanceIDs for components within the hypothetical pipeline.
-func (p *PipelineMetadata) InstanceIDs() []*component.InstanceID {
-	return []*component.InstanceID{p.ReceiverID, p.ProcessorID, p.ExporterID}
+func (p *PipelineMetadata) InstanceIDs() []*componentstatus.InstanceID {
+	return []*componentstatus.InstanceID{p.ReceiverID, p.ProcessorID, p.ExporterID}
 }
 
 // NewPipelineMetadata returns a metadata for a hypothetical pipeline.
 func NewPipelineMetadata(typestr string) *PipelineMetadata {
-	pipelineID := component.MustNewID(typestr)
+	pipelineID := pipeline.MustNewID(typestr)
 	return &PipelineMetadata{
-		PipelineID: pipelineID,
-		ReceiverID: &component.InstanceID{
-			ID:   component.NewIDWithName(component.MustNewType(typestr), "in"),
-			Kind: component.KindReceiver,
-			PipelineIDs: map[component.ID]struct{}{
-				pipelineID: {},
-			},
-		},
-		ProcessorID: &component.InstanceID{
-			ID:   component.MustNewID("batch"),
-			Kind: component.KindProcessor,
-			PipelineIDs: map[component.ID]struct{}{
-				pipelineID: {},
-			},
-		},
-		ExporterID: &component.InstanceID{
-			ID:   component.NewIDWithName(component.MustNewType(typestr), "out"),
-			Kind: component.KindExporter,
-			PipelineIDs: map[component.ID]struct{}{
-				pipelineID: {},
-			},
-		},
+		PipelineID:  pipelineID,
+		ReceiverID:  componentstatus.NewInstanceIDWithPipelineIDs(component.NewIDWithName(component.MustNewType(typestr), "in"), component.KindReceiver).WithPipelineIDs(pipelineID),
+		ProcessorID: componentstatus.NewInstanceIDWithPipelineIDs(component.MustNewID("batch"), component.KindProcessor).WithPipelineIDs(pipelineID),
+		ExporterID:  componentstatus.NewInstanceIDWithPipelineIDs(component.NewIDWithName(component.MustNewType(typestr), "out"), component.KindExporter).WithPipelineIDs(pipelineID),
 	}
 }
 
@@ -65,12 +49,12 @@ func NewPipelines(typestrs ...string) map[string]*PipelineMetadata {
 // SeedAggregator records a status event for each instanceID.
 func SeedAggregator(
 	agg *status.Aggregator,
-	instanceIDs []*component.InstanceID,
-	statuses ...component.Status,
+	instanceIDs []*componentstatus.InstanceID,
+	statuses ...componentstatus.Status,
 ) {
 	for _, st := range statuses {
 		for _, id := range instanceIDs {
-			agg.RecordStatus(id, component.NewStatusEvent(st))
+			agg.RecordStatus(id, componentstatus.NewEvent(st))
 		}
 	}
 }

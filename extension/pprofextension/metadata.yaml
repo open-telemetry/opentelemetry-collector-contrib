@@ -1,5 +1,4 @@
 type: pprof
-scope_name: otelcol/pprof
 
 status:
   class: extension

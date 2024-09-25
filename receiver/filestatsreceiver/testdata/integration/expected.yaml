@@ -27,7 +27,7 @@ resourceMetrics:
             name: file.size
             unit: b
         scope:
-          name: otelcol/filestatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
           version: latest
   - resource:
       attributes:
@@ -57,5 +57,5 @@ resourceMetrics:
             name: file.size
             unit: b
         scope:
-          name: otelcol/filestatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
           version: latest

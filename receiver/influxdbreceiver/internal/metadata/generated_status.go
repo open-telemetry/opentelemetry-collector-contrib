@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("influxdb")
+	Type      = component.MustNewType("influxdb")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
 )
 
 const (

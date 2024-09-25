@@ -1,10 +1,9 @@
 type: otelarrow
-scope_name: otelcol/otelarrow
 
 status:
   class: exporter
   stability:
-    alpha: [traces, metrics, logs]
+    beta: [traces, metrics, logs]
   distributions: []
   codeowners:
     active: [jmacd, moh-osman3, lquerel]

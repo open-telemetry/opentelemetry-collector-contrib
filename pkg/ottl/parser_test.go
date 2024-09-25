@@ -13,12 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -90,6 +85,167 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:      "editor with map",
+			statement: `fff({"stringAttr": "value", "intAttr": 3, "floatAttr": 2.5, "boolAttr": true})`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "fff",
+					Arguments: []argument{
+						{
+							Value: value{
+								Map: &mapValue{
+									Values: []mapItem{
+										{
+											Key:   ottltest.Strp("stringAttr"),
+											Value: &value{String: ottltest.Strp("value")},
+										},
+										{
+											Key: ottltest.Strp("intAttr"),
+											Value: &value{
+												Literal: &mathExprLiteral{
+													Int: ottltest.Intp(3),
+												},
+											},
+										},
+										{
+											Key: ottltest.Strp("floatAttr"),
+											Value: &value{
+												Literal: &mathExprLiteral{
+													Float: ottltest.Floatp(2.5),
+												},
+											},
+										},
+										{
+											Key:   ottltest.Strp("boolAttr"),
+											Value: &value{Bool: (*boolean)(ottltest.Boolp(true))},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "editor with empty map",
+			statement: `fff({})`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "fff",
+					Arguments: []argument{
+						{
+							Value: value{
+								Map: &mapValue{
+									Values: nil,
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "editor with converter with a map",
+			statement: `fff(GetSomething({"foo":"bar"}))`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "fff",
+					Arguments: []argument{
+						{
+							Value: value{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "GetSomething",
+										Arguments: []argument{
+											{
+												Value: value{
+													Map: &mapValue{
+														Values: []mapItem{
+															{
+																Key:   ottltest.Strp("foo"),
+																Value: &value{String: ottltest.Strp("bar")},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "editor with nested map",
+			statement: `fff({"mapAttr": {"foo": "bar", "get": bear.honey, "arrayAttr":["foo", "bar"]}})`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "fff",
+					Arguments: []argument{
+						{
+							Value: value{
+								Map: &mapValue{
+									Values: []mapItem{
+										{
+											Key: ottltest.Strp("mapAttr"),
+											Value: &value{
+												Map: &mapValue{
+													Values: []mapItem{
+														{
+															Key:   ottltest.Strp("foo"),
+															Value: &value{String: ottltest.Strp("bar")},
+														},
+														{
+															Key: ottltest.Strp("get"),
+															Value: &value{
+																Literal: &mathExprLiteral{
+																	Path: &path{
+																		Context: "bear",
+																		Fields: []field{
+																			{
+																				Name: "honey",
+																			},
+																		},
+																	},
+																},
+															},
+														},
+														{
+															Key: ottltest.Strp("arrayAttr"),
+															Value: &value{
+																List: &list{
+																	Values: []value{
+																		{
+																			String: ottltest.Strp("foo"),
+																		},
+																		{
+																			String: ottltest.Strp("bar"),
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
 			name:      "complex editor",
 			statement: `set("foo", GetSomething(bear.honey))`,
 			expected: &parsedStatement{
@@ -111,10 +267,8 @@ func Test_parse(t *testing.T) {
 												Value: value{
 													Literal: &mathExprLiteral{
 														Path: &path{
+															Context: "bear",
 															Fields: []field{
-																{
-																	Name: "bear",
-																},
 																{
 																	Name: "honey",
 																},
@@ -144,10 +298,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "attributes",
 												Keys: []key{
@@ -158,6 +310,42 @@ func Test_parse(t *testing.T) {
 											},
 											{
 												Name: "cat",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Value: value{
+								String: ottltest.Strp("dog"),
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "single field segment",
+			statement: `set(attributes["bar"], "dog")`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "set",
+					Arguments: []argument{
+						{
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &path{
+										Context: "",
+										Fields: []field{
+											{
+												Name: "attributes",
+												Keys: []key{
+													{
+														String: ottltest.Strp("bar"),
+													},
+												},
 											},
 										},
 									},
@@ -311,10 +499,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "bar",
 												Keys: []key{
@@ -367,10 +553,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "attributes",
 												Keys: []key{
@@ -430,10 +614,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "attributes",
 												Keys: []key{
@@ -493,10 +675,8 @@ func Test_parse(t *testing.T) {
 							Value: value{
 								Literal: &mathExprLiteral{
 									Path: &path{
+										Context: "foo",
 										Fields: []field{
-											{
-												Name: "foo",
-											},
 											{
 												Name: "attributes",
 												Keys: []key{
@@ -2054,11 +2234,10 @@ func Test_Condition_Eval(t *testing.T) {
 
 func Test_Statements_Execute_Error(t *testing.T) {
 	tests := []struct {
-		name          string
-		condition     boolExpressionEvaluator[any]
-		function      ExprFunc[any]
-		errorMode     ErrorMode
-		expectedSpans []expectedSpan
+		name      string
+		condition boolExpressionEvaluator[any]
+		function  ExprFunc[any]
+		errorMode ErrorMode
 	}{
 		{
 			name: "IgnoreError error from condition",
@@ -2069,31 +2248,6 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, nil
 			},
 			errorMode: IgnoreError,
-			expectedSpans: []expectedSpan{
-				{
-					name: "ottl/StatementExecution",
-					attributes: []attribute.KeyValue{
-						{
-							Key:   "statement",
-							Value: attribute.StringValue("test"),
-						},
-						{
-							Key:   "condition.matched",
-							Value: attribute.BoolValue(false),
-						},
-					},
-					status: trace.Status{
-						Code:        codes.Error,
-						Description: "failed to execute statement 'test': test",
-					},
-				},
-				{
-					name: "ottl/StatementSequenceExecution",
-					status: trace.Status{
-						Code: codes.Ok,
-					},
-				},
-			},
 		},
 		{
 			name: "PropagateError error from condition",
@@ -2104,32 +2258,6 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, nil
 			},
 			errorMode: PropagateError,
-			expectedSpans: []expectedSpan{
-				{
-					name: "ottl/StatementExecution",
-					attributes: []attribute.KeyValue{
-						{
-							Key:   "statement",
-							Value: attribute.StringValue("test"),
-						},
-						{
-							Key:   "condition.matched",
-							Value: attribute.BoolValue(false),
-						},
-					},
-					status: trace.Status{
-						Code:        codes.Error,
-						Description: "failed to execute statement 'test': test",
-					},
-				},
-				{
-					name: "ottl/StatementSequenceExecution",
-					status: trace.Status{
-						Code:        codes.Error,
-						Description: "failed to execute statement 'test': test",
-					},
-				},
-			},
 		},
 		{
 			name: "IgnoreError error from function",
@@ -2140,31 +2268,6 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: IgnoreError,
-			expectedSpans: []expectedSpan{
-				{
-					name: "ottl/StatementExecution",
-					attributes: []attribute.KeyValue{
-						{
-							Key:   "statement",
-							Value: attribute.StringValue("test"),
-						},
-						{
-							Key:   "condition.matched",
-							Value: attribute.BoolValue(true),
-						},
-					},
-					status: trace.Status{
-						Code:        codes.Error,
-						Description: "failed to execute statement 'test': test",
-					},
-				},
-				{
-					name: "ottl/StatementSequenceExecution",
-					status: trace.Status{
-						Code: codes.Ok,
-					},
-				},
-			},
 		},
 		{
 			name: "PropagateError error from function",
@@ -2175,32 +2278,6 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: PropagateError,
-			expectedSpans: []expectedSpan{
-				{
-					name: "ottl/StatementExecution",
-					attributes: []attribute.KeyValue{
-						{
-							Key:   "statement",
-							Value: attribute.StringValue("test"),
-						},
-						{
-							Key:   "condition.matched",
-							Value: attribute.BoolValue(true),
-						},
-					},
-					status: trace.Status{
-						Code:        codes.Error,
-						Description: "failed to execute statement 'test': test",
-					},
-				},
-				{
-					name: "ottl/StatementSequenceExecution",
-					status: trace.Status{
-						Code:        codes.Error,
-						Description: "failed to execute statement 'test': test",
-					},
-				},
-			},
 		},
 		{
 			name: "SilentError error from condition",
@@ -2211,31 +2288,6 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, nil
 			},
 			errorMode: SilentError,
-			expectedSpans: []expectedSpan{
-				{
-					name: "ottl/StatementExecution",
-					attributes: []attribute.KeyValue{
-						{
-							Key:   "statement",
-							Value: attribute.StringValue("test"),
-						},
-						{
-							Key:   "condition.matched",
-							Value: attribute.BoolValue(false),
-						},
-					},
-					status: trace.Status{
-						Code:        codes.Error,
-						Description: "failed to execute statement 'test': test",
-					},
-				},
-				{
-					name: "ottl/StatementSequenceExecution",
-					status: trace.Status{
-						Code: codes.Ok,
-					},
-				},
-			},
 		},
 		{
 			name: "SilentError error from function",
@@ -2246,31 +2298,6 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: SilentError,
-			expectedSpans: []expectedSpan{
-				{
-					name: "ottl/StatementExecution",
-					attributes: []attribute.KeyValue{
-						{
-							Key:   "statement",
-							Value: attribute.StringValue("test"),
-						},
-						{
-							Key:   "condition.matched",
-							Value: attribute.BoolValue(true),
-						},
-					},
-					status: trace.Status{
-						Code:        codes.Error,
-						Description: "failed to execute statement 'test': test",
-					},
-				},
-				{
-					name: "ottl/StatementSequenceExecution",
-					status: trace.Status{
-						Code: codes.Ok,
-					},
-				},
-			},
 		},
 	}
 	for _, tt := range tests {
@@ -2280,29 +2307,17 @@ func Test_Statements_Execute_Error(t *testing.T) {
 					{
 						condition: BoolExpr[any]{tt.condition},
 						function:  Expr[any]{exprFunc: tt.function},
-						origText:  "test",
 					},
 				},
 				errorMode:         tt.errorMode,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 			}
-			spanRecorder := tracetest.NewSpanRecorder()
-			statements.telemetrySettings.TracerProvider = trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
-			statements.tracer = statements.telemetrySettings.TracerProvider.Tracer("ottl")
 
 			err := statements.Execute(context.Background(), nil)
 			if tt.errorMode == PropagateError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-			}
-
-			require.Len(t, spanRecorder.Ended(), len(tt.expectedSpans))
-
-			for i, es := range tt.expectedSpans {
-				require.Equal(t, es.name, spanRecorder.Ended()[i].Name())
-				require.Equal(t, es.attributes, spanRecorder.Ended()[i].Attributes())
-				require.Equal(t, es.status, spanRecorder.Ended()[i].Status())
 			}
 		})
 	}
@@ -2506,10 +2521,4 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 			}
 		})
 	}
-}
-
-type expectedSpan struct {
-	name       string
-	attributes []attribute.KeyValue
-	status     trace.Status
 }

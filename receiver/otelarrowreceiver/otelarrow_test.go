@@ -131,7 +131,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 		assert.Equal(t, ingestionState.expectedCode, errStatus.Code())
 	}
 
-	require.Equal(t, expectedReceivedBatches, len(sink.AllTraces()))
+	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
 	expectedIngestionBlockedRPCs := 1
 	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
@@ -354,12 +354,12 @@ func TestOTelArrowShutdown(t *testing.T) {
 				for time.Since(start) < 5*time.Second {
 					td := testdata.GenerateTraces(1)
 					batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
-					require.NoError(t, batchErr)
-					require.NoError(t, stream.Send(batch))
+					assert.NoError(t, batchErr)
+					assert.NoError(t, stream.Send(batch))
 				}
 
 				if cooperative {
-					require.NoError(t, stream.CloseSend())
+					assert.NoError(t, stream.CloseSend())
 				}
 			}()
 
@@ -710,7 +710,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, ocr.Shutdown(context.Background()))
 
-	assert.Equal(t, 0, len(sink.AllTraces()))
+	assert.Empty(t, sink.AllTraces())
 }
 
 func TestConcurrentArrowReceiver(t *testing.T) {
@@ -746,7 +746,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 			client := arrowpb.NewArrowTracesServiceClient(cc)
 			stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			producer := arrowRecord.NewProducer()
 
 			var headerBuf bytes.Buffer
@@ -762,21 +762,21 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 					Name:  "seq",
 					Value: fmt.Sprint(i),
 				})
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				batch, err := producer.BatchArrowRecordsFromTraces(td)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				batch.Headers = headerBuf.Bytes()
 
 				err = stream.Send(batch)
 
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				resp, err := stream.Recv()
-				require.NoError(t, err)
-				require.Equal(t, batch.BatchId, resp.BatchId)
-				require.Equal(t, arrowpb.StatusCode_OK, resp.StatusCode)
+				assert.NoError(t, err)
+				assert.Equal(t, batch.BatchId, resp.BatchId)
+				assert.Equal(t, arrowpb.StatusCode_OK, resp.StatusCode)
 			}
 		}()
 	}
@@ -789,7 +789,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 	// Two spans per stream/item.
 	require.Equal(t, itemsPerStream*numStreams*2, sink.SpanCount())
-	require.Equal(t, itemsPerStream*numStreams, len(sink.Metadatas()))
+	require.Len(t, sink.Metadatas(), itemsPerStream*numStreams)
 
 	for _, md := range sink.Metadatas() {
 		val, err := strconv.Atoi(md.Get("seq")[0])
@@ -854,17 +854,17 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 			}
 			td := testdata.GenerateTraces(1)
 			batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, batchErr)
+			assert.NoError(t, batchErr)
 
 			sendErr := stream.Send(batch)
 			select {
 			case <-ctx.Done():
 				if sendErr != nil {
-					require.ErrorIs(t, sendErr, io.EOF)
+					assert.ErrorIs(t, sendErr, io.EOF)
 				}
 				return
 			default:
-				require.NoError(t, sendErr)
+				assert.NoError(t, sendErr)
 			}
 		}
 	}()

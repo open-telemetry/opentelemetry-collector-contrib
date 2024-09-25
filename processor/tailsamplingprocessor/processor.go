@@ -83,8 +83,9 @@ type Option func(*tailSamplingSpanProcessor)
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(ctx context.Context, settings component.TelemetrySettings, nextConsumer consumer.Traces, cfg Config, opts ...Option) (processor.Traces, error) {
-	telemetry, err := metadata.NewTelemetryBuilder(settings)
+func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config, opts ...Option) (processor.Traces, error) {
+	telemetrySettings := set.TelemetrySettings
+	telemetry, err := metadata.NewTelemetryBuilder(telemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +103,7 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		nextConsumer:   nextConsumer,
 		maxNumTraces:   cfg.NumTraces,
 		sampledIDCache: sampledDecisions,
-		logger:         settings.Logger,
+		logger:         telemetrySettings.Logger,
 		numTracesOnMap: &atomic.Uint64{},
 		deleteChan:     make(chan pcommon.TraceID, cfg.NumTraces),
 	}
@@ -119,6 +120,7 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 	if tsp.policies == nil {
 		policyNames := map[string]bool{}
 		tsp.policies = make([]*policy, len(cfg.PolicyCfgs))
+		componentID := set.ID.Name()
 		for i := range cfg.PolicyCfgs {
 			policyCfg := &cfg.PolicyCfgs[i]
 
@@ -127,14 +129,18 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 			}
 			policyNames[policyCfg.Name] = true
 
-			eval, err := getPolicyEvaluator(settings, policyCfg)
+			eval, err := getPolicyEvaluator(telemetrySettings, policyCfg)
 			if err != nil {
 				return nil, err
+			}
+			uniquePolicyName := policyCfg.Name
+			if componentID != "" {
+				uniquePolicyName = fmt.Sprintf("%s.%s", componentID, policyCfg.Name)
 			}
 			p := &policy{
 				name:      policyCfg.Name,
 				evaluator: eval,
-				attribute: metric.WithAttributes(attribute.String("policy", policyCfg.Name)),
+				attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
 			}
 			tsp.policies[i] = p
 		}
@@ -225,7 +231,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewTraceStateFilter(settings, tsfCfg.Key, tsfCfg.Values), nil
 	case BooleanAttribute:
 		bafCfg := cfg.BooleanAttributeCfg
-		return sampling.NewBooleanAttributeFilter(settings, bafCfg.Key, bafCfg.Value), nil
+		return sampling.NewBooleanAttributeFilter(settings, bafCfg.Key, bafCfg.Value, bafCfg.InvertMatch), nil
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
 		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)

@@ -5,7 +5,6 @@ package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 )
 
@@ -43,26 +42,26 @@ func ValidateRetentionValue(input int64) error {
 // Check if the tags input is valid
 func ValidateTagsInput(input map[string]*string) error {
 	if input != nil && len(input) < 1 {
-		return fmt.Errorf("invalid amount of items. Please input at least 1 tag or remove the tag field")
+		return errors.New("invalid amount of items. Please input at least 1 tag or remove the tag field")
 	}
 	if len(input) > 50 {
-		return fmt.Errorf("invalid amount of items. Please input at most 50 tags")
+		return errors.New("invalid amount of items. Please input at most 50 tags")
 	}
 	// The regex for the Key and Value requires "alphanumerics, whitespace, and _.:/=+-!" as noted here: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogGroup.html#:~:text=%5E(%5B%5Cp%7BL%7D%5Cp%7BZ%7D%5Cp%7BN%7D_.%3A/%3D%2B%5C%2D%40%5D%2B)%24
 	validKeyPattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
 	validValuePattern := regexp.MustCompile(`^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
 	for key, value := range input {
 		if len(key) < 1 || len(key) > 128 {
-			return fmt.Errorf("key - " + key + " has an invalid length. Please use keys with a length of 1 to 128 characters")
+			return errors.New("key - " + key + " has an invalid length. Please use keys with a length of 1 to 128 characters")
 		}
 		if len(*value) < 1 || len(*value) > 256 {
-			return fmt.Errorf("value - " + *value + " has an invalid length. Please use values with a length of 1 to 256 characters")
+			return errors.New("value - " + *value + " has an invalid length. Please use values with a length of 1 to 256 characters")
 		}
 		if !validKeyPattern.MatchString(key) {
-			return fmt.Errorf("key - " + key + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
+			return errors.New("key - " + key + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
 		}
 		if !validValuePattern.MatchString(*value) {
-			return fmt.Errorf("value - " + *value + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
+			return errors.New("value - " + *value + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
 		}
 	}
 

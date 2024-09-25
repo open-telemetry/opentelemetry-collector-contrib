@@ -53,10 +53,10 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      false,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
 				Index:     "",
@@ -73,14 +73,14 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-				},
+					}
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -123,10 +123,10 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				Index:     "",
@@ -143,14 +143,14 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-				},
+					}
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -193,10 +193,10 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				Index:     "",
@@ -213,14 +213,14 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-				},
+					}
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -395,8 +395,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := tt.config.Validate()
-			assert.EqualError(t, err, tt.err)
+			assert.EqualError(t, component.ValidateConfig(tt.config), tt.err)
 		})
 	}
 }
@@ -405,13 +404,13 @@ func TestConfig_Validate_Environment(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://test:9200")
 		config := withDefaultConfig()
-		err := config.Validate()
+		err := component.ValidateConfig(config)
 		require.NoError(t, err)
 	})
 	t.Run("invalid", func(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://valid:9200, *:!")
 		config := withDefaultConfig()
-		err := config.Validate()
+		err := component.ValidateConfig(config)
 		assert.EqualError(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
 	})
 }
@@ -420,6 +419,14 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
 	for _, fn := range fns {
 		fn(cfg)
+	}
+	return cfg
+}
+
+func withDefaultHTTPClientConfig(fns ...func(config *confighttp.ClientConfig)) confighttp.ClientConfig {
+	cfg := confighttp.NewDefaultClientConfig()
+	for _, fn := range fns {
+		fn(&cfg)
 	}
 	return cfg
 }

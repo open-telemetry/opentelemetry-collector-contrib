@@ -1,5 +1,4 @@
 type: nsxt
-scope_name: otelcol/nsxtreceiver
 
 status:
   class: receiver

@@ -69,7 +69,7 @@ service:
       exporters: [file]`
 
 	require.NoError(t, s.createTemplates())
-	require.NoError(t, s.loadInitialMergedConfig())
+	require.NoError(t, s.loadAndWriteInitialMergedConfig())
 
 	configChanged, err := s.composeMergedConfig(&protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
@@ -104,10 +104,12 @@ func Test_onMessage(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: initialID},
 			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
 		}
+		require.NoError(t, s.createTemplates())
 
 		s.onMessage(context.Background(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
@@ -131,9 +133,11 @@ func Test_onMessage(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: testUUID},
 			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 		}
+		require.NoError(t, s.createTemplates())
 
 		s.onMessage(context.Background(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
@@ -175,6 +179,7 @@ func Test_onMessage(t *testing.T) {
 			hasNewConfig:                 make(chan struct{}, 1),
 			persistentState:              &persistentState{InstanceID: testUUID},
 			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    agentConnAtomic,
 			agentHealthCheckEndpoint:     "localhost:8000",
@@ -231,6 +236,61 @@ func Test_onMessage(t *testing.T) {
 		require.True(t, gotMessage, "Message was not sent to agent")
 	})
 
+	t.Run("Processes all ServerToAgent fields", func(t *testing.T) {
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "runtime.type",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "test",
+						},
+					},
+				},
+			},
+		})
+		initialID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		newID := uuid.MustParse("018fef3f-14a8-73ef-b63e-3b96b146ea38")
+		s := Supervisor{
+			logger:                       zap.NewNop(),
+			pidProvider:                  defaultPIDProvider{},
+			config:                       config.Supervisor{},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: initialID},
+			agentDescription:             agentDesc,
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			agentHealthCheckEndpoint:     "localhost:8000",
+			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+		}
+		require.NoError(t, s.createTemplates())
+
+		s.onMessage(context.Background(), &types.MessageData{
+			AgentIdentification: &protobufs.AgentIdentification{
+				NewInstanceUid: newID[:],
+			},
+			RemoteConfig: &protobufs.AgentRemoteConfig{
+				Config: &protobufs.AgentConfigMap{
+					ConfigMap: map[string]*protobufs.AgentConfigFile{
+						"": {
+							Body: []byte(""),
+						},
+					},
+				},
+			},
+			OwnMetricsConnSettings: &protobufs.TelemetryConnectionSettings{
+				DestinationEndpoint: "http://localhost:4318",
+			},
+		})
+
+		require.Equal(t, newID, s.persistentState.InstanceID)
+		t.Log(s.mergedConfig.Load())
+		require.Contains(t, s.mergedConfig.Load(), "prometheus/own_metrics")
+		require.Contains(t, s.mergedConfig.Load(), newID.String())
+		require.Contains(t, s.mergedConfig.Load(), "runtime.type: test")
+	})
 }
 
 func Test_handleAgentOpAMPMessage(t *testing.T) {

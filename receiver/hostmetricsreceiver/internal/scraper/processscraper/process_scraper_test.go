@@ -110,8 +110,8 @@ func TestScrape(t *testing.T) {
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				noProcessesErrored := scraperErr.Failed
-				require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
-				require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
+				require.Positivef(t, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
+				require.Positivef(t, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
 			}
 
 			require.Greater(t, md.ResourceMetrics().Len(), 1)

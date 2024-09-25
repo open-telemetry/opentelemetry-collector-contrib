@@ -73,11 +73,12 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Christos Markou](https://github.com/ChrsMark), Elastic
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
+- [Paulo Janotti](https://github.com/pjanotti), Splunk
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
 
-- [Alolita Sharma](https://github.com/alolita), AWS
+- [Alolita Sharma](https://github.com/alolita), Apple
 - [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Punya Biswal](https://github.com/punya), Google
@@ -86,7 +87,6 @@ Emeritus Triagers:
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
 - [Antoine Toulme](https://github.com/atoulme), Splunk
-- [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Matt Wear](https://github.com/mwear), Lightstep
@@ -95,9 +95,10 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 Emeritus Approvers:
 
+- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
+- [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
 - [Przemek Maciolek](https://github.com/pmm-sumo)
 - [Ruslan Kovalov](https://github.com/kovrus)
-- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
@@ -109,14 +110,14 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
-- [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
+- [Sean Marciniak](https://github.com/MovieStoreGuy), Splunk
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Maintainers
 
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
-Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
+Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md).
 
 ## PRs and Reviews
 

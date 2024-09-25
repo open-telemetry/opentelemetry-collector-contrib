@@ -105,7 +105,7 @@ func (cfg *Config) Validate() error {
 			conventions.AttributeK8SNodeName, conventions.AttributeK8SNodeUID,
 			conventions.AttributeK8SContainerName, conventions.AttributeContainerID,
 			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag,
-			clusterUID:
+			containerImageRepoDigests, clusterUID:
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 		}
@@ -143,8 +143,8 @@ type ExtractConfig struct {
 	//   k8s.daemonset.name, k8s.daemonset.uid,
 	//   k8s.job.name, k8s.job.uid, k8s.cronjob.name,
 	//   k8s.statefulset.name, k8s.statefulset.uid,
-	//   k8s.container.name, container.image.name,
-	//   container.image.tag, container.id
+	//   k8s.container.name, container.id, container.image.name,
+	//   container.image.tag, container.image.repo_digests
 	//   k8s.cluster.uid
 	//
 	// Specifying anything other than these values will result in an error.
@@ -229,7 +229,7 @@ type FieldExtractConfig struct {
 	Regex string `mapstructure:"regex"`
 
 	// From represents the source of the labels/annotations.
-	// Allowed values are "pod" and "namespace". The default is pod.
+	// Allowed values are "pod", "namespace", and "node". The default is pod.
 	From string `mapstructure:"from"`
 }
 

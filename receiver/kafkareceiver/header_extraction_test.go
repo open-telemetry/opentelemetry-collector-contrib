@@ -215,6 +215,6 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 
 func validateHeader(t *testing.T, rs pcommon.Resource, headerKey string, headerValue string) {
 	val, ok := rs.Attributes().Get(headerKey)
-	assert.Equal(t, ok, true)
+	assert.True(t, ok)
 	assert.Equal(t, val.Str(), headerValue)
 }

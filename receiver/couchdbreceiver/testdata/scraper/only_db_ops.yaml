@@ -28,5 +28,5 @@ resourceMetrics:
               isMonotonic: true
             unit: '{operations}'
         scope:
-          name: otelcol/couchdbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver
           version: latest

@@ -43,6 +43,7 @@ func TestScraper(t *testing.T) {
 
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+	config.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
@@ -100,6 +101,7 @@ func TestScraperNoIOStats(t *testing.T) {
 
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+	config.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
@@ -312,7 +314,7 @@ func TestScrapingError(t *testing.T) {
 				require.Contains(t, err.Error(), err404.Error())
 				require.Contains(t, err.Error(), err500.Error())
 
-				require.Equal(t, m.DataPointCount(), 0)
+				require.Equal(t, 0, m.DataPointCount())
 			},
 		},
 		{
@@ -367,7 +369,7 @@ func TestScrapingError(t *testing.T) {
 				require.Contains(t, err.Error(), err404.Error())
 				require.Contains(t, err.Error(), err500.Error())
 
-				require.Equal(t, m.DataPointCount(), 0)
+				require.Equal(t, 0, m.DataPointCount())
 			},
 		},
 		{

@@ -1,5 +1,4 @@
 type: oidc
-scope_name: otelcol/oidcauth
 
 status:
   class: extension

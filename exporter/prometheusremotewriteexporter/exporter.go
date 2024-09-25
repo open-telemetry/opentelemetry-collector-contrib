@@ -55,20 +55,21 @@ func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	endpointURL       *url.URL
-	client            *http.Client
-	wg                *sync.WaitGroup
-	closeChan         chan struct{}
-	concurrency       int
-	userAgentHeader   string
-	maxBatchSizeBytes int
-	clientSettings    *confighttp.ClientConfig
-	settings          component.TelemetrySettings
-	retrySettings     configretry.BackOffConfig
-	retryOnHTTP429    bool
-	wal               *prweWAL
-	exporterSettings  prometheusremotewrite.Settings
-	telemetry         prwTelemetry
+	endpointURL          *url.URL
+	client               *http.Client
+	wg                   *sync.WaitGroup
+	closeChan            chan struct{}
+	concurrency          int
+	userAgentHeader      string
+	maxBatchSizeBytes    int
+	clientSettings       *confighttp.ClientConfig
+	settings             component.TelemetrySettings
+	retrySettings        configretry.BackOffConfig
+	retryOnHTTP429       bool
+	wal                  *prweWAL
+	exporterSettings     prometheusremotewrite.Settings
+	telemetry            prwTelemetry
+	batchTimeSeriesState batchTimeSeriesState
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -123,7 +124,8 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
 		},
-		telemetry: prwTelemetry,
+		telemetry:            prwTelemetry,
+		batchTimeSeriesState: newBatchTimeSericesState(),
 	}
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
@@ -208,7 +210,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	}
 
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
 	if err != nil {
 		return err
 	}

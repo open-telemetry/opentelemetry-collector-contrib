@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("apachespark")
+	Type      = component.MustNewType("apachespark")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver"
 )
 
 const (

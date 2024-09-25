@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -23,6 +23,7 @@ import (
 type Commander struct {
 	logger  *zap.Logger
 	cfg     config.Agent
+	logsDir string
 	args    []string
 	cmd     *exec.Cmd
 	doneCh  chan struct{}
@@ -30,9 +31,10 @@ type Commander struct {
 	running *atomic.Int64
 }
 
-func NewCommander(logger *zap.Logger, cfg config.Agent, args ...string) (*Commander, error) {
+func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
 		logger:  logger,
+		logsDir: logsDir,
 		cfg:     cfg,
 		args:    args,
 		running: &atomic.Int64{},
@@ -69,27 +71,29 @@ func (c *Commander) Start(ctx context.Context) error {
 
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
-	logFilePath := "agent.log"
-	logFile, err := os.Create(logFilePath)
+	logFilePath := filepath.Join(c.logsDir, "agent.log")
+	stdoutFile, err := os.Create(logFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
 	}
 
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
+	c.cmd.SysProcAttr = sysProcAttrs()
 
 	// Capture standard output and standard error.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
-	c.cmd.Stdout = logFile
-	c.cmd.Stderr = logFile
+	c.cmd.Stdout = stdoutFile
+	c.cmd.Stderr = stdoutFile
 
 	if err := c.cmd.Start(); err != nil {
+		stdoutFile.Close()
 		return err
 	}
 
 	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 	c.running.Store(1)
 
-	go c.watch()
+	go c.watch(stdoutFile)
 
 	return nil
 }
@@ -103,7 +107,9 @@ func (c *Commander) Restart(ctx context.Context) error {
 	return c.Start(ctx)
 }
 
-func (c *Commander) watch() {
+func (c *Commander) watch(stdoutFile *os.File) {
+	defer stdoutFile.Close()
+
 	err := c.cmd.Wait()
 
 	// cmd.Wait returns an exec.ExitError when the Collector exits unsuccessfully or stops
@@ -157,7 +163,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 	c.logger.Debug("Stopping agent process", zap.Int("pid", pid))
 
 	// Gracefully signal process to stop.
-	if err := c.cmd.Process.Signal(syscall.SIGTERM); err != nil {
+	if err := sendShutdownSignal(c.cmd.Process); err != nil {
 		return err
 	}
 
@@ -178,7 +184,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 		c.logger.Debug(
 			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
 			zap.Int("pid", pid))
-		if innerErr = c.cmd.Process.Signal(syscall.SIGKILL); innerErr != nil {
+		if innerErr = c.cmd.Process.Signal(os.Kill); innerErr != nil {
 			return
 		}
 	}()

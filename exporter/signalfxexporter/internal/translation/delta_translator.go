@@ -20,8 +20,13 @@ func newDeltaTranslator(ttl int64, done chan struct{}) *deltaTranslator {
 		sweepIntervalSeconds = 1
 	}
 	m := ttlmap.New(sweepIntervalSeconds, ttl, done)
-	m.Start()
 	return &deltaTranslator{prevPts: m}
+}
+
+func (t *deltaTranslator) start() {
+	if t.prevPts != nil {
+		t.prevPts.Start()
+	}
 }
 
 func (t *deltaTranslator) translate(pts []*sfxpb.DataPoint, tr Rule) []*sfxpb.DataPoint {
@@ -62,6 +67,12 @@ func (t *deltaTranslator) deltaPt(deltaMetricName string, currPt *sfxpb.DataPoin
 		return nil
 	}
 	return deltaPt
+}
+
+func (t *deltaTranslator) shutdown() {
+	if t.prevPts != nil {
+		t.prevPts.Shutdown()
+	}
 }
 
 func doubleDeltaPt(currPt *sfxpb.DataPoint, prevPt *sfxpb.DataPoint, deltaMetricName string) *sfxpb.DataPoint {

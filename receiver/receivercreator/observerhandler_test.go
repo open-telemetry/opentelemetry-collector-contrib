@@ -9,11 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -465,21 +466,22 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (m *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	m.t.Fatal("GetExporters")
 	return nil
 }
 
 func newMockRunner(t *testing.T) *mockRunner {
 	cs := receivertest.NewNopSettings()
-	cs.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
-		require.NoError(t, event.Err())
-	}
 	return &mockRunner{
 		receiverRunner: receiverRunner{
 			params:      cs,
 			idNamespace: component.MustNewIDWithName("some_type", "some.name"),
-			host:        newMockHost(t, componenttest.NewNopHost()),
+			host: newMockHost(t, &reportingHost{
+				reportFunc: func(event *componentstatus.Event) {
+					require.NoError(t, event.Err())
+				},
+			}),
 		},
 	}
 }
@@ -502,4 +504,26 @@ func newObserverHandler(
 		nextMetricsConsumer:   nextMetrics,
 		nextTracesConsumer:    nextTraces,
 	}, mr
+}
+
+var _ componentstatus.Reporter = (*reportingHost)(nil)
+
+type reportingHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *reportingHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return nil
+}
+
+func (nh *reportingHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *reportingHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *reportingHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

@@ -12,7 +12,11 @@ import (
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
@@ -48,6 +52,9 @@ type kafkaTracesConsumer struct {
 	messageMarking    MessageMarking
 	headerExtraction  bool
 	headers           []string
+	minFetchSize      int32
+	defaultFetchSize  int32
+	maxFetchSize      int32
 }
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
@@ -66,6 +73,9 @@ type kafkaMetricsConsumer struct {
 	messageMarking    MessageMarking
 	headerExtraction  bool
 	headers           []string
+	minFetchSize      int32
+	defaultFetchSize  int32
+	maxFetchSize      int32
 }
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
@@ -84,17 +94,16 @@ type kafkaLogsConsumer struct {
 	messageMarking    MessageMarking
 	headerExtraction  bool
 	headers           []string
+	minFetchSize      int32
+	defaultFetchSize  int32
+	maxFetchSize      int32
 }
 
 var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
 var _ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
 var _ receiver.Logs = (*kafkaLogsConsumer)(nil)
 
-func newTracesReceiver(config Config, set receiver.Settings, unmarshaler TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
-	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-
+func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -104,13 +113,15 @@ func newTracesReceiver(config Config, set receiver.Settings, unmarshaler TracesU
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
-		unmarshaler:       unmarshaler,
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 		telemetryBuilder:  telemetryBuilder,
+		minFetchSize:      config.MinFetchSize,
+		defaultFetchSize:  config.DefaultFetchSize,
+		maxFetchSize:      config.MaxFetchSize,
 	}, nil
 }
 
@@ -124,6 +135,9 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
 	saramaConfig.Consumer.Group.Session.Timeout = config.SessionTimeout
 	saramaConfig.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
+	saramaConfig.Consumer.Fetch.Min = config.MinFetchSize
+	saramaConfig.Consumer.Fetch.Default = config.DefaultFetchSize
+	saramaConfig.Consumer.Fetch.Max = config.MaxFetchSize
 
 	var err error
 	if saramaConfig.Consumer.Offsets.Initial, err = toSaramaInitialOffset(config.InitialOffset); err != nil {
@@ -143,7 +157,7 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
 }
 
-func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -153,6 +167,22 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 	})
 	if err != nil {
 		return err
+	}
+	// extensions take precedence over internal encodings
+	if unmarshaler, errExt := loadEncodingExtension[ptrace.Unmarshaler](
+		host,
+		c.config.Encoding,
+	); errExt == nil {
+		c.unmarshaler = &tracesEncodingUnmarshaler{
+			unmarshaler: *unmarshaler,
+			encoding:    c.config.Encoding,
+		}
+	}
+	if unmarshaler, ok := defaultTracesUnmarshalers()[c.config.Encoding]; c.unmarshaler == nil && ok {
+		c.unmarshaler = unmarshaler
+	}
+	if c.unmarshaler == nil {
+		return errUnrecognizedEncoding
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
@@ -179,7 +209,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, consumerGroup); !errors.Is(err, context.Canceled) {
-			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	<-consumerGroup.ready
@@ -213,11 +243,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
-	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-
+func newMetricsReceiver(config Config, set receiver.Settings, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -227,17 +253,19 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler Metric
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
-		unmarshaler:       unmarshaler,
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 		telemetryBuilder:  telemetryBuilder,
+		minFetchSize:      config.MinFetchSize,
+		defaultFetchSize:  config.DefaultFetchSize,
+		maxFetchSize:      config.MaxFetchSize,
 	}, nil
 }
 
-func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -247,6 +275,22 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error 
 	})
 	if err != nil {
 		return err
+	}
+	// extensions take precedence over internal encodings
+	if unmarshaler, errExt := loadEncodingExtension[pmetric.Unmarshaler](
+		host,
+		c.config.Encoding,
+	); errExt == nil {
+		c.unmarshaler = &metricsEncodingUnmarshaler{
+			unmarshaler: *unmarshaler,
+			encoding:    c.config.Encoding,
+		}
+	}
+	if unmarshaler, ok := defaultMetricsUnmarshalers()[c.config.Encoding]; c.unmarshaler == nil && ok {
+		c.unmarshaler = unmarshaler
+	}
+	if c.unmarshaler == nil {
+		return errUnrecognizedEncoding
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
@@ -273,7 +317,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error 
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
-			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	<-metricsConsumerGroup.ready
@@ -307,11 +351,7 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
-	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-
+func newLogsReceiver(config Config, set receiver.Settings, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -321,17 +361,19 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmar
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
-		unmarshaler:       unmarshaler,
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 		telemetryBuilder:  telemetryBuilder,
+		minFetchSize:      config.MinFetchSize,
+		defaultFetchSize:  config.DefaultFetchSize,
+		maxFetchSize:      config.MaxFetchSize,
 	}, nil
 }
 
-func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -341,6 +383,25 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
 	})
 	if err != nil {
 		return err
+	}
+	// extensions take precedence over internal encodings
+	if unmarshaler, errExt := loadEncodingExtension[plog.Unmarshaler](
+		host,
+		c.config.Encoding,
+	); errExt == nil {
+		c.unmarshaler = &logsEncodingUnmarshaler{
+			unmarshaler: *unmarshaler,
+			encoding:    c.config.Encoding,
+		}
+	}
+	if unmarshaler, errInt := getLogsUnmarshaler(
+		c.config.Encoding,
+		defaultLogsUnmarshalers(c.settings.BuildInfo.Version, c.settings.Logger),
+	); c.unmarshaler == nil && errInt == nil {
+		c.unmarshaler = unmarshaler
+	}
+	if c.unmarshaler == nil {
+		return errUnrecognizedEncoding
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
@@ -367,7 +428,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
-			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	<-logsConsumerGroup.ready
@@ -697,4 +758,31 @@ func toSaramaInitialOffset(initialOffset string) (int64, error) {
 	default:
 		return 0, errInvalidInitialOffset
 	}
+}
+
+// loadEncodingExtension tries to load an available extension for the given encoding.
+func loadEncodingExtension[T any](host component.Host, encoding string) (*T, error) {
+	extensionID, err := encodingToComponentID(encoding)
+	if err != nil {
+		return nil, err
+	}
+	encodingExtension, ok := host.GetExtensions()[*extensionID]
+	if !ok {
+		return nil, fmt.Errorf("unknown encoding extension %q", encoding)
+	}
+	unmarshaler, ok := encodingExtension.(T)
+	if !ok {
+		return nil, fmt.Errorf("extension %q is not an unmarshaler", encoding)
+	}
+	return &unmarshaler, nil
+}
+
+// encodingToComponentID converts an encoding string to a component ID using the given encoding as type.
+func encodingToComponentID(encoding string) (*component.ID, error) {
+	componentType, err := component.NewType(encoding)
+	if err != nil {
+		return nil, fmt.Errorf("invalid component type: %w", err)
+	}
+	id := component.NewID(componentType)
+	return &id, nil
 }
