@@ -138,6 +138,21 @@ func (u unhealthyTestChannel) onConsume(ctx context.Context) error {
 	}
 }
 
+type blockingTestChannel struct {
+	t  *testing.T
+	cf func(context.Context)
+}
+
+func newBlockingTestChannel(t *testing.T, cf func(context.Context)) *blockingTestChannel {
+	return &blockingTestChannel{t: t, cf: cf}
+}
+
+func (h blockingTestChannel) onConsume(ctx context.Context) error {
+	h.cf(ctx)
+	<-ctx.Done()
+	return status.Error(codes.DeadlineExceeded, ctx.Err().Error())
+}
+
 type recvResult struct {
 	payload *arrowpb.BatchArrowRecords
 	err     error
@@ -299,6 +314,14 @@ func statusUnavailableFor(batchID int64, msg string) *arrowpb.BatchStatus {
 	return &arrowpb.BatchStatus{
 		BatchId:       batchID,
 		StatusCode:    arrowpb.StatusCode_UNAVAILABLE,
+		StatusMessage: msg,
+	}
+}
+
+func statusDeadlineExceededFor(batchID int64, msg string) *arrowpb.BatchStatus {
+	return &arrowpb.BatchStatus{
+		BatchId:       batchID,
+		StatusCode:    arrowpb.StatusCode_DEADLINE_EXCEEDED,
 		StatusMessage: msg,
 	}
 }
@@ -603,6 +626,50 @@ func TestReceiverSendError(t *testing.T) {
 	requireUnavailableStatus(t, err)
 }
 
+func TestReceiverTimeoutError(t *testing.T) {
+	tc := newBlockingTestChannel(t, func(ctx context.Context) {
+		deadline, has := ctx.Deadline()
+		require.True(t, has, "context has deadline")
+		timeout := time.Until(deadline)
+		require.Less(t, time.Second/2, timeout)
+		require.GreaterOrEqual(t, time.Second, timeout)
+	})
+	ctc := newCommonTestCase(t, tc)
+
+	ld := testdata.GenerateLogs(2)
+	batch, err := ctc.testProducer.BatchArrowRecordsFromLogs(ld)
+	require.NoError(t, err)
+
+	ctc.stream.EXPECT().Send(statusDeadlineExceededFor(batch.BatchId, "context deadline exceeded")).Times(1).Return(nil)
+
+	var hpb bytes.Buffer
+	hpe := hpack.NewEncoder(&hpb)
+	err = hpe.WriteField(hpack.HeaderField{
+		Name:  "grpc-timeout",
+		Value: "1000m",
+	})
+	assert.NoError(t, err)
+	batch.Headers = make([]byte, hpb.Len())
+	copy(batch.Headers, hpb.Bytes())
+
+	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.putBatch(batch, nil)
+
+	assert.EqualValues(t, ld, (<-ctc.consume).Data)
+
+	start := time.Now()
+	for time.Since(start) < 5*time.Second {
+		if ctc.ctrl.Satisfied() {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+
+	close(ctc.receive)
+	err = ctc.wait()
+	require.NoError(t, err)
+}
+
 func TestReceiverConsumeError(t *testing.T) {
 	stdTesting := otelAssert.NewStdUnitTest(t)
 
@@ -784,7 +851,7 @@ func TestReceiverEOF(t *testing.T) {
 			expectData = append(expectData, td)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -797,7 +864,7 @@ func TestReceiverEOF(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		require.NoError(t, ctc.wait())
+		assert.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -851,7 +918,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 			td := testdata.GenerateTraces(2)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -863,7 +930,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 							Name:  key,
 							Value: val,
 						})
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}
 
@@ -879,7 +946,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Add(1)
 
 	go func() {
-		require.NoError(t, ctc.wait())
+		assert.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -1243,7 +1310,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			td := testdata.GenerateTraces(2)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -1256,7 +1323,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 							Name:  strings.ToLower(key),
 							Value: val,
 						})
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}
 

@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
@@ -83,7 +84,7 @@ func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component
 	return h.extensions
 }
 
-func (h hostWithExtensions) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (h hostWithExtensions) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	panic("unsupported")
 }
 

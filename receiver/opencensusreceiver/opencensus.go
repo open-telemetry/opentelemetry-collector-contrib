@@ -82,7 +82,7 @@ func newOpenCensusReceiver(
 // it also enables the metrics receiver too.
 func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	ocr.serverGRPC, err = ocr.grpcServerSettings.ToServer(ctx, host, ocr.settings.TelemetrySettings)
+	ocr.serverGRPC, err = ocr.grpcServerSettings.ToServerWithOptions(ctx, host, ocr.settings.TelemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 
 	if ocr.serverGRPC == nil {
 		var err error
-		ocr.serverGRPC, err = ocr.grpcServerSettings.ToServer(context.Background(), host, ocr.settings.TelemetrySettings)
+		ocr.serverGRPC, err = ocr.grpcServerSettings.ToServerWithOptions(context.Background(), host, ocr.settings.TelemetrySettings)
 		if err != nil {
 			return err
 		}

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -212,7 +212,7 @@ func TestAddsRequiredAttributes(t *testing.T) {
 
 			lines := body.Lines
 			for _, line := range lines {
-				assert.Greater(t, line.Timestamp, int64(0))
+				assert.Positive(t, line.Timestamp)
 				assert.Equal(t, "info", line.Level)
 				assert.Equal(t, "", line.App)
 				assert.Equal(t, "minimal attribute log", line.Line)

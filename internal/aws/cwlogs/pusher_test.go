@@ -31,7 +31,7 @@ func TestValidateLogEventWithMutating(t *testing.T) {
 	logEvent.GeneratedTime = time.Now()
 	err := logEvent.Validate(zap.NewNop())
 	assert.NoError(t, err)
-	assert.Greater(t, *logEvent.InputLogEvent.Timestamp, int64(0))
+	assert.Positive(t, *logEvent.InputLogEvent.Timestamp)
 	assert.Len(t, *logEvent.InputLogEvent.Message, 64-perEventHeaderBytes)
 
 	maxEventPayloadBytes = defaultMaxEventPayloadBytes

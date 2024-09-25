@@ -298,7 +298,7 @@ func TestOnlyMetadata(t *testing.T) {
 	cfg := &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 
 		API:          APIConfig{Key: "notnull"},
 		Metrics:      MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},

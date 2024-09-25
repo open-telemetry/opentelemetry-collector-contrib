@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
 )
@@ -35,7 +36,7 @@ func (h hostWithEncoding) GetExtensions() map[component.ID]component.Component {
 	return h.encodings
 }
 
-func (h hostWithEncoding) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (h hostWithEncoding) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	panic("unsupported")
 }
 

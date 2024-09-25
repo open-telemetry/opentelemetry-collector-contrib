@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -101,7 +102,7 @@ func TestGetStatsDetails(t *testing.T) {
 		// Setup test server
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, err := w.Write(data)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		}))
 		defer ts.Close()
 
