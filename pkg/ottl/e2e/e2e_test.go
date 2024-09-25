@@ -845,6 +845,28 @@ func Test_e2e_converters(t *testing.T) {
 				m.PutStr("user_agent.version", "7.81.0")
 			},
 		},
+		{
+			statement: `set(attributes["test"], Associate(attributes["things"], ["name"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				thing1 := m.PutEmptyMap("foo")
+				thing1.PutStr("name", "foo")
+				thing1.PutInt("value", 2)
+
+				thing2 := m.PutEmptyMap("bar")
+				thing2.PutStr("name", "bar")
+				thing2.PutInt("value", 5)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Associate(attributes["things"], ["name"], ["value"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutInt("foo", 2)
+				m.PutInt("bar", 5)
+
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1035,6 +1057,17 @@ func constructLogTransformContext() ottllog.TransformContext {
 	v.SetStr("val")
 	m2 := m.PutEmptyMap("nested")
 	m2.PutStr("test", "pass")
+
+	s2 := logRecord.Attributes().PutEmptySlice("things")
+	o1 := s2.AppendEmpty()
+	thing1 := o1.SetEmptyMap()
+	thing1.PutStr("name", "foo")
+	thing1.PutInt("value", 2)
+
+	o2 := s2.AppendEmpty()
+	thing2 := o2.SetEmptyMap()
+	thing2.PutStr("name", "bar")
+	thing2.PutInt("value", 5)
 
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
