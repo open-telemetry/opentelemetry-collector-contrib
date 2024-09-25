@@ -35,7 +35,6 @@ components:
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
-        - instana
         - kafka
         - loadbalancing
         - logicmonitor
