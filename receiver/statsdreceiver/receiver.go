@@ -107,6 +107,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 		r.config.EnableMetricType,
 		r.config.EnableSimpleTags,
 		r.config.IsMonotonicCounter,
+		r.config.EnableIPOnlyAggregation,
 		r.config.TimerHistogramMapping,
 	)
 	if err != nil {
