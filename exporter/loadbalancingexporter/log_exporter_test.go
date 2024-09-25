@@ -466,7 +466,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 				return
 			case <-ticker.C:
 				go func() {
-					require.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
+					assert.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
 				}()
 			}
 		}

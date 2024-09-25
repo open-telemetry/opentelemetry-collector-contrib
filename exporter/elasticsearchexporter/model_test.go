@@ -101,16 +101,15 @@ func TestEncodeMetric(t *testing.T) {
 
 	var docsBytes [][]byte
 	for i := 0; i < metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len(); i++ {
-		val, err := numberToValue(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i))
-		require.NoError(t, err)
-		err = model.upsertMetricDataPointValue(docs,
+		err := model.upsertMetricDataPointValue(
+			docs,
 			metrics.ResourceMetrics().At(0).Resource(),
 			"",
 			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
 			"",
 			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0),
-			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i),
-			val)
+			numberDataPoint{metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i)},
+		)
 		require.NoError(t, err)
 	}
 

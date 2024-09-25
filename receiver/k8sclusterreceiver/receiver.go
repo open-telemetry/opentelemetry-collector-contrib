@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
@@ -39,7 +40,7 @@ type kubernetesReceiver struct {
 }
 
 type getExporters interface {
-	GetExporters() map[component.DataType]map[component.ID]component.Component
+	GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
@@ -53,10 +54,10 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	if !ok {
 		return fmt.Errorf("unable to get exporters")
 	}
-	exporters := ge.GetExporters()
+	exporters := ge.GetExportersWithSignal()
 
 	if err := kr.resourceWatcher.setupMetadataExporters(
-		exporters[component.DataTypeMetrics], kr.config.MetadataExporters); err != nil {
+		exporters[pipeline.SignalMetrics], kr.config.MetadataExporters); err != nil {
 		return err
 	}
 
