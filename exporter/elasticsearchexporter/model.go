@@ -89,6 +89,7 @@ type dataPoint interface {
 	Attributes() pcommon.Map
 	Value() (pcommon.Value, error)
 	DynamicTemplate(pmetric.Metric) string
+	DocCount() uint64
 }
 
 const (
@@ -284,6 +285,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	if err != nil {
 		return err
 	}
+
 	// documents is per-resource. Therefore, there is no need to hash resource attributes
 	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit())
 	var (
@@ -300,6 +302,12 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		m.encodeAttributesOTelMode(&document, dp.Attributes())
 		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+	}
+
+	// Emit _doc_count if data point contains attribute _doc_count: true
+	if val, ok := dp.Attributes().Get("_doc_count"); ok && val.Bool() {
+		docCount := dp.DocCount()
+		document.AddInt("_doc_count", int64(docCount))
 	}
 
 	switch value.Type() {
@@ -340,6 +348,10 @@ func (dp summaryDataPoint) DynamicTemplate(_ pmetric.Metric) string {
 	return "summary_metrics"
 }
 
+func (dp summaryDataPoint) DocCount() uint64 {
+	return dp.Count()
+}
+
 type exponentialHistogramDataPoint struct {
 	pmetric.ExponentialHistogramDataPoint
 }
@@ -367,6 +379,10 @@ func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string
 	return "histogram"
 }
 
+func (dp exponentialHistogramDataPoint) DocCount() uint64 {
+	return dp.Count()
+}
+
 type histogramDataPoint struct {
 	pmetric.HistogramDataPoint
 }
@@ -377,6 +393,10 @@ func (dp histogramDataPoint) Value() (pcommon.Value, error) {
 
 func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
 	return "histogram"
+}
+
+func (dp histogramDataPoint) DocCount() uint64 {
+	return dp.HistogramDataPoint.Count()
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
@@ -473,6 +493,10 @@ func (dp numberDataPoint) DynamicTemplate(metric pmetric.Metric) string {
 		}
 	}
 	return ""
+}
+
+func (dp numberDataPoint) DocCount() uint64 {
+	return 1
 }
 
 var errInvalidNumberDataPoint = errors.New("invalid number data point")
