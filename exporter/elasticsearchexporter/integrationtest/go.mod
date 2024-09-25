@@ -43,7 +43,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect
 	github.com/elastic/go-elasticsearch/v7 v7.17.10 // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.14.0 // indirect
+	github.com/elastic/go-elasticsearch/v8 v8.15.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/go-structform v0.0.12 // indirect
 	github.com/elastic/go-sysinfo v1.14.0 // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jaegertracing/jaeger v1.60.0 // indirect
+	github.com/jaegertracing/jaeger v1.61.0 // indirect
 	github.com/jonboulle/clockwork v0.4.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

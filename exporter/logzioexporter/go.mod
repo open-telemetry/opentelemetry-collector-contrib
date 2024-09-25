@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/jaegertracing/jaeger v1.60.0
+	github.com/jaegertracing/jaeger v1.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.110.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.110.0
@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.110.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1
 	google.golang.org/protobuf v1.34.2
 )
 
