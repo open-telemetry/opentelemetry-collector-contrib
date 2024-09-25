@@ -41,7 +41,7 @@ func getMetricValue(metric pmetric.Metric) float64 {
 }
 
 // generateMetrics creates a new metric based on the given rule and add it to the Resource Metric.
-// The value for newly calculated metrics is always a floting point number and the dataType is set
+// The value for newly calculated metrics is always a floating point number and the dataType is set
 // as MetricTypeDoubleGauge.
 func generateMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internalRule, logger *zap.Logger) {
 	ilms := rm.ScopeMetrics()
@@ -53,14 +53,23 @@ func generateMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internal
 			if metric.Name() == rule.metric1 {
 				newMetric := appendMetric(ilm, rule.name, rule.unit)
 				newMetric.SetEmptyGauge()
-				addDoubleGaugeDataPoints(metric, newMetric, operand2, rule.operation, logger)
+				addDoubleDataPoints(metric, newMetric, operand2, rule.operation, logger)
 			}
 		}
 	}
 }
 
-func addDoubleGaugeDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 float64, operation string, logger *zap.Logger) {
-	dataPoints := from.Gauge().DataPoints()
+// Note: the to metric must be a gauge.
+func addDoubleDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 float64, operation string, logger *zap.Logger) {
+	var dataPoints pmetric.NumberDataPointSlice
+
+	switch metricType := from.Type(); metricType {
+	case pmetric.MetricTypeGauge:
+		dataPoints = from.Gauge().DataPoints()
+	case pmetric.MetricTypeSum:
+		dataPoints = from.Sum().DataPoints()
+	}
+
 	for i := 0; i < dataPoints.Len(); i++ {
 		fromDataPoint := dataPoints.At(i)
 		var operand1 float64

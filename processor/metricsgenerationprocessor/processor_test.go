@@ -5,6 +5,7 @@ package metricsgenerationprocessor
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -14,6 +15,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 type testMetric struct {
@@ -383,4 +387,45 @@ func getOutputForIntGaugeTest() pmetric.Metrics {
 	neweDoubleDataPoint.SetDoubleValue(105)
 
 	return intGaugeOutputMetrics
+}
+
+func TestSumCalculateNewMetric(t *testing.T) {
+	next := new(consumertest.MetricsSink)
+	cfg := &Config{
+		Rules: []Rule{
+			{
+				Name:      "system.filesystem.capacity",
+				Unit:      "bytes",
+				Type:      "calculate",
+				Metric1:   "system.filesystem.usage",
+				Metric2:   "system.filesystem.utilization",
+				Operation: "divide",
+			},
+		},
+	}
+	factory := NewFactory()
+	mgp, err := factory.CreateMetricsProcessor(
+		context.Background(),
+		processortest.NewNopSettings(),
+		cfg,
+		next,
+	)
+	assert.NotNil(t, mgp)
+	assert.NoError(t, err)
+
+	assert.True(t, mgp.Capabilities().MutatesData)
+	require.NoError(t, mgp.Start(context.Background(), nil))
+
+	inputMetrics, err := golden.ReadMetrics(filepath.Join(".", "testdata", "filesystem_metrics_input.yaml"))
+	assert.NoError(t, err)
+
+	err = mgp.ConsumeMetrics(context.Background(), inputMetrics)
+	assert.NoError(t, err)
+
+	got := next.AllMetrics()
+	// golden.WriteMetrics(t, filepath.Join(".", "testdata", "filesystem_metrics_expected.yaml"), got[0])
+	expected, err := golden.ReadMetrics(filepath.Join(".", "testdata", "filesystem_metrics_expected.yaml"))
+	assert.NoError(t, err)
+	assert.Len(t, got, 1)
+	pmetrictest.CompareMetrics(expected, got[0])
 }
