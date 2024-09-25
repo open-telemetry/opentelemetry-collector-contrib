@@ -69,6 +69,9 @@ func (n *opampNotifier) Start(_ context.Context, host component.Host) error {
 	if err != nil {
 		return fmt.Errorf("failed to register custom capability: %w", err)
 	}
+	if handler == nil {
+		return errors.New("custom capability handler is nil")
+	}
 	n.handler = handler
 	return nil
 }

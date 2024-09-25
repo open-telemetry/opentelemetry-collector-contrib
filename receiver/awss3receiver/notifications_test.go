@@ -25,9 +25,10 @@ import (
 type mockCustomCapabilityRegistry struct {
 	component.Component
 
-	shouldFailRegister  bool
-	shouldReturnPending func() bool
-	shouldFailSend      bool
+	shouldFailRegister             bool
+	shouldRegisterReturnNilHandler bool
+	shouldReturnPending            func() bool
+	shouldFailSend                 bool
 
 	sendMessageCalls int
 
@@ -63,13 +64,12 @@ func (h hostWithCustomCapabilityRegistry) GetExtensions() map[component.ID]compo
 	}
 }
 
-func (h hostWithCustomCapabilityRegistry) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	panic("unsupported")
-}
-
 func (m *mockCustomCapabilityRegistry) Register(_ string, _ ...opampcustommessages.CustomCapabilityRegisterOption) (handler opampcustommessages.CustomCapabilityHandler, err error) {
 	if m.shouldFailRegister {
 		return nil, fmt.Errorf("register failed")
+	}
+	if m.shouldRegisterReturnNilHandler {
+		return nil, nil
 	}
 	return m, nil
 }
@@ -122,6 +122,15 @@ func Test_opampNotifier_Start(t *testing.T) {
 			host: hostWithCustomCapabilityRegistry{
 				extension: &mockCustomCapabilityRegistry{
 					shouldFailRegister: true,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "register returns nil handler",
+			host: hostWithCustomCapabilityRegistry{
+				extension: &mockCustomCapabilityRegistry{
+					shouldRegisterReturnNilHandler: true,
 				},
 			},
 			wantErr: true,
