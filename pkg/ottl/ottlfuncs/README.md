@@ -446,6 +446,7 @@ Available Converters:
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
 - [ParseXML](#parsexml)
+- [RemoveXML](#removexml)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -1285,7 +1286,70 @@ Examples:
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
+### RemoveXML
 
+`RemoveXML(target, xpath)`
+
+The `RemoveXML` Converter returns an edited version of an XML string with selected elements removed.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `RemoveXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements to remove from the XML document.
+
+For example, the XPath `/Log/Record[./Name/@type="archive"]` applied to the following XML document:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00001</ID>
+    <Name type="archive"></Name>
+    <Data>Some data</Data>
+  </Record>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+will return:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+Examples:
+
+Delete the attribute "foo" from the elements with tag "a"
+
+- `RemoveXML(body, "/a/@foo")`
+
+Delete all elements with tag "b" that are children of elements with tag "a"
+
+- `RemoveXML(body, "/a/b")`
+
+Delete all elements with tag "b" that are children of elements with tag "a" and have the attribute "foo" with value "bar"
+
+- `RemoveXML(body, "/a/b[@foo='bar']")`
+
+Delete all comments
+
+- `RemoveXML(body, "//comment()")`
+
+Delete text from nodes that contain the word "sensitive"
+
+- `RemoveXML(body, "//*[contains(text(), 'sensitive')]")`
 
 ### Seconds
 
@@ -1490,6 +1554,10 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
+|`%i` | Timezone as +/-HH | -07 |
+|`%j` | Timezone as +/-HH:MM | -07:00 |
+|`%k` | Timezone as +/-HH:MM:SS | -07:00:00 |
+|`%w` | Timezone as +/-HHMMSS | -070000 |
 |`%D`, `%x` | Short MM/DD/YYYY date, equivalent to %m/%d/%y | 01/21/2031 |
 |`%F` | Short YYYY-MM-DD date, equivalent to %Y-%m-%d | 2031-01-21 |
 |`%T`,`%X` | ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S | 02:55:02 |
