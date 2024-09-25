@@ -181,6 +181,7 @@ func agentPayloadFromTraces(traces *pb.Traces) (agentPayload pb.AgentPayload) {
 		payload := &pb.TracerPayload{
 			LanguageName:    fmt.Sprintf("%d", i),
 			LanguageVersion: fmt.Sprintf("%d", i),
+			ContainerID:     fmt.Sprintf("%d", i),
 			Chunks:          traceChunksFromTraces(*traces),
 			TracerVersion:   fmt.Sprintf("%d", i),
 		}
