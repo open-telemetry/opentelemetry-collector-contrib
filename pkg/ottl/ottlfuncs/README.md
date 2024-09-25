@@ -1349,11 +1349,11 @@ a direct representation of XML data. Users are encouraged to simplify their XML 
 
 See other functions which may be useful for preparing XML documents:
 
-- `ElementizeAttributesXML`
-- `ElementizeValuesXML`
+- `ConvertAttributesToElementsXML`
+- `ConvertTextToElementsXML`
 - `RemoveXML`
-- `AssociateXML`
-- `AddElementXML`
+- `InsertXML`
+- `GetXML`
 
 #### Formal Definitions
 
@@ -1370,8 +1370,7 @@ An element has "extraneous text content" when it contains both text and element 
 
 #### Parsing logic
 
-1. The Converter will NOT error due to the presence of attributes or extraneous text content.
-   However, it will omit those values from the result.
+1. Declaration elements, attributes, comments, and extraneous text content are ignored.
 2. Elements which contain a value are converted into key/value pairs.
    e.g. `<foo>bar</foo>` becomes `"foo": "bar"`
 3. Elements which contain child elements are converted into a key/value pair where the value is a map.
@@ -1435,6 +1434,23 @@ Parse a Simplified XML document with multiple elements of the same tag:
 <a>
   <b>1</b>
   <b>2</b>
+</a>
+```
+
+```json
+{
+  "a": {
+    "b": ["1", "2"]
+  }
+}
+```
+
+Parse a Simplified XML document with CDATA element:
+
+```xml
+<a>
+  <b>1</b>
+  <b><![CDATA[2]]></b>
 </a>
 ```
 
