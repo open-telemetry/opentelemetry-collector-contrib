@@ -128,7 +128,7 @@ Limit 100;
 - Find spans with specific attribute.
 
 ```sql
-SELECT Timestamp as log_time,
+SELECT Timestamp,
        TraceId,
        SpanId,
        ParentSpanId,
@@ -156,7 +156,7 @@ WITH
     '391dae938234560b16bb63f51501cb6f' as trace_id,
     (SELECT min(Start) FROM otel_traces_trace_id_ts WHERE TraceId = trace_id) as start,
     (SELECT max(End) + 1 FROM otel_traces_trace_id_ts WHERE TraceId = trace_id) as end
-SELECT Timestamp as log_time,
+SELECT Timestamp,
        TraceId,
        SpanId,
        ParentSpanId,
@@ -180,7 +180,7 @@ Limit 100;
 - Find spans is error.
 
 ```sql
-SELECT Timestamp as log_time,
+SELECT Timestamp,
        TraceId,
        SpanId,
        ParentSpanId,
@@ -196,7 +196,7 @@ SELECT Timestamp as log_time,
        toString(Links.TraceId)
 FROM otel_traces
 WHERE ServiceName = 'clickhouse-exporter'
-  AND StatusCode = 'STATUS_CODE_ERROR'
+  AND StatusCode = 'Error'
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
@@ -204,7 +204,7 @@ Limit 100;
 - Find slow spans.
 
 ```sql
-SELECT Timestamp as log_time,
+SELECT Timestamp,
        TraceId,
        SpanId,
        ParentSpanId,
