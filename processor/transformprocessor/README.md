@@ -405,7 +405,9 @@ This function requires 2 arguments:
       4. Intersecting Boundaries:       [10, 15, 20]                          
       5. Number of Intersecting Boundaries: 3
       6. Using the formula: $count/numOfIntersections=10/3=3r1$
+      
       _Uniform Allocation:_
+      
       7. Start with zeros:          [0, 0, 0, 0, 0]
       8. Allocate 3 to each:        [0, 3, 3, 3, 0]
       9. Distribute remainder $r$ 1:    [0, 4, 3, 3, 0]
