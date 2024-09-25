@@ -81,6 +81,10 @@ message SpanData {
     string protocol = 7;
     optional string protocol_version = 8;
 
+    // Partition number of the queue the message is being delivered from,
+    // if the associated queue is a partitioned queue
+    optional uint32 partition_number = 9;
+
     enum Outcome {
       ACCEPTED = 0;
       REJECTED = 1;
@@ -115,6 +119,10 @@ message SpanData {
       IngressSelectorInfo ingress_selector_info = 7;
       AdminActionInfo admin_action_info = 8;
     }
+    
+    // Partition number of the queue the message is being deleted from, 
+    // if the associated queue is a partitioned queue
+    optional uint32 partition_number = 9;
   }
 
   // The presence of this message implies the reason for the span is that a

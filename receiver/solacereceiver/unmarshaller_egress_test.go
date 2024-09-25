@@ -331,6 +331,7 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	// creates a base attribute map that additional data can be added to
 	// does not include outcome or source. Attributes will override all fields in base
+	somePartitionNumber := uint32(123)
 	getSpan := func(attributes map[string]any, name string) ptrace.Span {
 		base := map[string]any{
 			"messaging.system":                  "SolacePubSub+",
@@ -342,6 +343,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 			"messaging.solace.client_name":      "someName",
 			"messaging.solace.message_replayed": false,
 			"messaging.solace.send.outcome":     "accepted",
+			"messaging.solace.partition_number": 123,
 		}
 		for key, val := range attributes {
 			base[key] = val
@@ -360,6 +362,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 		base.ProtocolVersion = &protocolVersion
 		base.ConsumerClientUsername = "someUser"
 		base.ConsumerClientName = "someName"
+		base.PartitionNumber = &somePartitionNumber
 		return base
 	}
 	tests := []struct {
@@ -485,11 +488,13 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 	// creates a base attribute map that additional data can be added to
 	// does not include outcome or source. Attributes will override all fields in base
+	somePartitionNumber := uint32(123)
 	getSpan := func(attributes map[string]any, name string) ptrace.Span {
 		base := map[string]any{
-			"messaging.system":         "SolacePubSub+",
-			"messaging.operation.name": "delete",
-			"messaging.operation.type": "delete",
+			"messaging.system":                  "SolacePubSub+",
+			"messaging.operation.name":          "delete",
+			"messaging.operation.type":          "delete",
+			"messaging.solace.partition_number": 123,
 		}
 		for key, val := range attributes {
 			base[key] = val
@@ -504,6 +509,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 	// sets the common fields from getAttributes
 	getDeleteSpan := func(base *egress_v1.SpanData_DeleteSpan) *egress_v1.SpanData_DeleteSpan {
 		// just return the base back
+		base.PartitionNumber = &somePartitionNumber
 		return base
 	}
 	tests := []struct {

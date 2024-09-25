@@ -145,6 +145,10 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		return base
 	}
 
+	// test partition numbers
+	someSourcePartitionNumber := uint32(123)
+	someDestinationPartitionNumber := uint32(456)
+
 	tests := []struct {
 		name                        string
 		spanData                    *move_v1.SpanData
@@ -268,17 +272,23 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				Destination: &move_v1.SpanData_DestinationQueueName{
 					DestinationQueueName: "destQueue",
 				},
-				TypeInfo: &move_v1.SpanData_TtlExpiredInfo{},
+				TypeInfo:                   &move_v1.SpanData_TtlExpiredInfo{},
+				ReplicationGroupMessageId:  []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
+				SourcePartitionNumber:      &someSourcePartitionNumber,
+				DestinationPartitionNumber: &someDestinationPartitionNumber,
 			}),
 			want: getSpan(map[string]any{
-				"messaging.system":                  "SolacePubSub+",
-				"messaging.operation.name":          "move",
-				"messaging.operation.type":          "move",
-				"messaging.source.name":             "sourceQueue",
-				"messaging.solace.source.kind":      "queue",
-				"messaging.destination.name":        "destQueue",
-				"messaging.solace.destination.kind": "queue",
-				"messaging.solace.operation.reason": "ttl_expired",
+				"messaging.system":                              "SolacePubSub+",
+				"messaging.operation.name":                      "move",
+				"messaging.operation.type":                      "move",
+				"messaging.source.name":                         "sourceQueue",
+				"messaging.solace.source.kind":                  "queue",
+				"messaging.destination.name":                    "destQueue",
+				"messaging.solace.destination.kind":             "queue",
+				"messaging.solace.operation.reason":             "ttl_expired",
+				"messaging.solace.replication_group_message_id": "rmid1:00010-40910192431-40516479-90a9c4e1",
+				"messaging.solace.source.partition_number":      123,
+				"messaging.solace.destination.partition_number": 456,
 			}, "sourceQueue move"),
 		},
 		{

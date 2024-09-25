@@ -4,12 +4,15 @@
 package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 
 import (
+	"context"
+	"encoding/hex"
 	"errors"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
@@ -143,6 +146,7 @@ const (
 	destinationNameAttrKey             = "messaging.destination.name"
 	clientUsernameAttrKey              = "messaging.solace.client_username"
 	clientNameAttrKey                  = "messaging.solace.client_name"
+	partitionNumberKey                 = "messaging.solace.partition_number"
 	replicationGroupMessageIDAttrKey   = "messaging.solace.replication_group_message_id"
 	priorityAttrKey                    = "messaging.solace.priority"
 	ttlAttrKey                         = "messaging.solace.ttl"
@@ -178,4 +182,21 @@ func setResourceSpanAttributes(attrMap pcommon.Map, routerName, version string, 
 	if messageVpnName != nil {
 		attrMap.PutStr(messageVpnNameAttrKey, *messageVpnName)
 	}
+}
+
+func rgmidToString(rgmid []byte, otelMetricAttrs attribute.Set, telemetryBuilder *metadata.TelemetryBuilder, logger *zap.Logger) string {
+	// rgmid[0] is the version of the rgmid
+	if len(rgmid) != 17 || rgmid[0] != 1 {
+		// may be cases where the rgmid is empty or nil, len(rgmid) will return 0 if nil
+		if len(rgmid) > 0 {
+			logger.Warn("Received invalid length or version for rgmid", zap.Int8("version", int8(rgmid[0])), zap.Int("length", len(rgmid)))
+			telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(otelMetricAttrs))
+		}
+		return hex.EncodeToString(rgmid)
+	}
+	rgmidEncoded := make([]byte, 32)
+	hex.Encode(rgmidEncoded, rgmid[1:])
+	// format: rmid1:aaaaa-bbbbbbbbbbb-cccccccc-dddddddd
+	rgmidString := "rmid1:" + string(rgmidEncoded[0:5]) + "-" + string(rgmidEncoded[5:16]) + "-" + string(rgmidEncoded[16:24]) + "-" + string(rgmidEncoded[24:32])
+	return rgmidString
 }

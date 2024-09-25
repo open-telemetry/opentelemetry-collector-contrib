@@ -179,6 +179,11 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 	attributes.PutStr(clientNameAttrKey, sendSpan.ConsumerClientName)
 	attributes.PutBool(replayedKey, sendSpan.ReplayedMsg)
 
+	// include the partition number, if available
+	if sendSpan.PartitionNumber != nil {
+		attributes.PutInt(partitionNumberKey, int64(*sendSpan.PartitionNumber))
+	}
+
 	var outcome string
 	switch sendSpan.Outcome {
 	case egress_v1.SpanData_SendSpan_ACCEPTED:
@@ -230,6 +235,11 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 	attributes.PutStr(systemAttrKey, systemAttrValue)
 	attributes.PutStr(operationNameAttrKey, spanOperationName)
 	attributes.PutStr(operationTypeAttrKey, spanOperationType)
+
+	// include the partition number, if available
+	if deleteSpan.PartitionNumber != nil {
+		attributes.PutInt(partitionNumberKey, int64(*deleteSpan.PartitionNumber))
+	}
 
 	// Don't fatal out when we don't have a valid Endpoint name, instead just log and increment stats
 	var endpointName string

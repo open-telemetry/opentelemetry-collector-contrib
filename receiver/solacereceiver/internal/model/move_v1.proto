@@ -75,6 +75,27 @@ message SpanData {
   // The SolOS version of the broker generating the message. All elements of
   // egress_spans will always have been created by the same broker version.
   string solos_version = 15;
+  
+  // The message's globally unique Replication Group Message ID, in binary
+  // format. This will not be present if the message is being discarded.
+  // The format of these bytes are:
+  // byte[0]: Version.
+  // byte[1:len-1]: Binary representation of a replication group message ID in
+  // the specified version.
+  // This should only be treated as opaque data by applications. If comparing
+  // two ID's and the versions are the same, then the ID's are the same if the
+  // remaining bytes are the same. If the versions are different, no comparison
+  // can be made.
+
+ optional bytes replication_group_message_id = 16;
+ 
+  // Partition number of queue the message is being moved from, 
+  // if the associated queue is a partitioned queue
+  optional uint32 source_partition_number = 17;
+  
+  // Partition number of the destination DMQ the message is being moved to,
+  // if the associated queue is a partitioned queue
+  optional uint32 destination_partition_number = 18;
 }
 
 

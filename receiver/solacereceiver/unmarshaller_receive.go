@@ -25,7 +25,7 @@ import (
 type brokerTraceReceiveUnmarshallerV1 struct {
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
-	metricAttrs      attribute.Set // othere Otel attributes (to add to the metrics)
+	metricAttrs      attribute.Set // other Otel attributes (to add to the metrics)
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal
@@ -156,7 +156,8 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 	}
 	attrMap.PutStr(deliveryModeAttrKey, deliveryMode)
 
-	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
+	// rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
+	rgmid := rgmidToString(spanData.ReplicationGroupMessageId, u.metricAttrs, u.telemetryBuilder, u.logger)
 	if len(rgmid) > 0 {
 		attrMap.PutStr(replicationGroupMessageIDAttrKey, rgmid)
 	}

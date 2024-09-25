@@ -96,11 +96,13 @@ func (u *brokerTraceMoveUnmarshallerV1) mapMoveSpanTracingInfo(spanData *move_v1
 
 func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.SpanData, span ptrace.Span) {
 	const (
-		sourceNameKey          = "messaging.source.name"
-		sourceKindKey          = "messaging.solace.source.kind"
-		destinationNameKey     = "messaging.destination.name"
-		destinationKindKey     = "messaging.solace.destination.kind"
-		moveOperationReasonKey = "messaging.solace.operation.reason"
+		sourceNameKey                 = "messaging.source.name"
+		sourceKindKey                 = "messaging.solace.source.kind"
+		destinationNameKey            = "messaging.destination.name"
+		destinationKindKey            = "messaging.solace.destination.kind"
+		moveOperationReasonKey        = "messaging.solace.operation.reason"
+		sourcePartitionNumberKey      = "messaging.solace.source.partition_number"
+		destinationPartitionNumberKey = "messaging.solace.destination.partition_number"
 	)
 	const (
 		spanOperationName     = "move"
@@ -120,6 +122,22 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 	attributes.PutStr(systemAttrKey, systemAttrValue)
 	attributes.PutStr(operationNameAttrKey, spanOperationName)
 	attributes.PutStr(operationTypeAttrKey, spanOperationType)
+
+	// map the replication group ID for the move span
+	rgmid := rgmidToString(moveSpan.ReplicationGroupMessageId, u.metricAttrs, u.telemetryBuilder, u.logger)
+	if len(rgmid) > 0 {
+		attributes.PutStr(replicationGroupMessageIDAttrKey, rgmid)
+	}
+
+	// source queue partition number
+	if moveSpan.SourcePartitionNumber != nil {
+		attributes.PutInt(sourcePartitionNumberKey, int64(*moveSpan.SourcePartitionNumber))
+	}
+
+	// destination queue partition number
+	if moveSpan.DestinationPartitionNumber != nil {
+		attributes.PutInt(destinationPartitionNumberKey, int64(*moveSpan.DestinationPartitionNumber))
+	}
 
 	// set source endpoint information
 	// don't fatal out when we receive invalid endpoint name, instead just log and increment stats
