@@ -3,7 +3,6 @@
 package metadata
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
