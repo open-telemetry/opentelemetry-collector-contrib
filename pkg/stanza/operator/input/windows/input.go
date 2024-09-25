@@ -233,26 +233,22 @@ func (i *Input) read(ctx context.Context) int {
 
 // processEvent will process and send an event retrieved from windows event log.
 func (i *Input) processEvent(ctx context.Context, event Event) {
-	if i.supressRenderingInfo {
-		simpleEvent, err := event.RenderSimple(i.buffer)
-		if err != nil {
-			i.Logger().Error("Failed to render simple event", zap.Error(err))
-			return
-		}
-
-		if _, exclude := i.excludeProviders[simpleEvent.Provider.Name]; exclude {
-			return
-		}
-		i.sendEvent(ctx, simpleEvent)
-		return
-	}
-
 	providerName, err := event.GetPublisherName(i.buffer)
 	if err != nil {
 		i.Logger().Error("Failed to get provider name", zap.Error(err))
 		return
 	}
 	if _, exclude := i.excludeProviders[providerName]; exclude {
+		return
+	}
+
+	if i.supressRenderingInfo {
+		simpleEvent, simpleErr := event.RenderSimple(i.buffer)
+		if simpleErr != nil {
+			i.Logger().Error("Failed to render simple event", zap.Error(simpleErr))
+			return
+		}
+		i.sendEvent(ctx, simpleEvent)
 		return
 	}
 
@@ -284,7 +280,6 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 
 // sendEvent will send EventXML as an entry to the operator's output.
 func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) {
-	// body := eventXML.parseBody()
 	var body any = eventXML.Original
 	if !i.raw {
 		body = formattedBody(eventXML)

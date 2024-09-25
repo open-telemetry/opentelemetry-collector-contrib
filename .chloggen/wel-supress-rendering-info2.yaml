@@ -17,7 +17,7 @@ issues: [34720]
 # Use pipe (|) for multiline entries.
 subtext: |
   Previously, this flag controlled two behaviors simultaneously:
-    1. Whether or not the body of the log record was an xml string or structured object.
+    1. Whether or not the body of the log record was an XML string or structured object.
     2. Whether or not rendering info was resolved.
   A separate 'suppress_rendering_info' option now controls rendering info resolution.
   This is considered a breaking change because users setting only the 'raw' flag without also setting the
