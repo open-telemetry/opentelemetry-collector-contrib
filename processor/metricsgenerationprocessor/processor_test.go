@@ -427,5 +427,9 @@ func TestSumCalculateNewMetric(t *testing.T) {
 	expected, err := golden.ReadMetrics(filepath.Join(".", "testdata", "filesystem_metrics_expected.yaml"))
 	assert.NoError(t, err)
 	assert.Len(t, got, 1)
-	pmetrictest.CompareMetrics(expected, got[0])
+	err = pmetrictest.CompareMetrics(expected, got[0],
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp())
+	assert.NoError(t, err)
 }
