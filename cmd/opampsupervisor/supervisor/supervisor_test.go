@@ -1268,6 +1268,8 @@ func (mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettings
 	return nil
 }
 
+func (mockOpAMPClient) SetFlags(flags protobufs.AgentToServerFlags) {}
+
 func (m mockOpAMPClient) SetCustomCapabilities(customCapabilities *protobufs.CustomCapabilities) error {
 	if m.setCustomCapabilitiesFunc != nil {
 		return m.setCustomCapabilitiesFunc(customCapabilities)
