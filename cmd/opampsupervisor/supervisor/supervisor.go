@@ -66,6 +66,15 @@ const (
 
 const maxBufferedCustomMessages = 10
 
+type configState struct {
+	mergedConfig   string
+	emptyConfigMap bool
+}
+
+func (c *configState) equal(other *configState) bool {
+	return other.mergedConfig == c.mergedConfig && other.emptyConfigMap == c.emptyConfigMap
+}
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -107,7 +116,7 @@ type Supervisor struct {
 	agentHealthCheckEndpoint string
 
 	// Supervisor-assembled config to be given to the Collector.
-	mergedConfig *atomic.Value
+	cfgState *atomic.Value
 
 	// Final effective config of the Collector.
 	effectiveConfig *atomic.Value
@@ -142,7 +151,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		pidProvider:                  defaultPIDProvider{},
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
-		mergedConfig:                 &atomic.Value{},
+		cfgState:                     &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
 		doneChan:                     make(chan struct{}),
@@ -802,8 +811,8 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	}
 
 	// write the initial merged config to disk
-	cfg := s.mergedConfig.Load().(string)
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
+	cfgState := s.cfgState.Load().(*configState)
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
@@ -815,9 +824,11 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 	cfgStr, ok := s.effectiveConfig.Load().(string)
 	if !ok {
-		cfgStr, ok = s.mergedConfig.Load().(string)
+		cfgState, ok := s.cfgState.Load().(*configState)
 		if !ok {
 			cfgStr = ""
+		} else {
+			cfgStr = cfgState.mergedConfig
 		}
 	}
 
@@ -948,11 +959,16 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 	}
 
 	// Check if supervisor's merged config is changed.
-	newMergedConfig := string(newMergedConfigBytes)
+
+	newConfigState := &configState{
+		mergedConfig:   string(newMergedConfigBytes),
+		emptyConfigMap: len(config.GetConfig().GetConfigMap()) == 0,
+	}
+
 	configChanged = false
 
-	oldConfig := s.mergedConfig.Swap(newMergedConfig)
-	if oldConfig == nil || oldConfig.(string) != newMergedConfig {
+	oldConfigState := s.cfgState.Swap(newConfigState)
+	if oldConfigState == nil || !oldConfigState.(*configState).equal(newConfigState) {
 		s.logger.Debug("Merged config changed.")
 		configChanged = true
 	}
@@ -972,6 +988,12 @@ func (s *Supervisor) handleRestartCommand() error {
 }
 
 func (s *Supervisor) startAgent() {
+	if s.cfgState.Load().(*configState).emptyConfigMap {
+		// Don't start the agent if there is no config to run
+		s.logger.Info("No config present, not starting agent.")
+		return
+	}
+
 	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
@@ -1113,14 +1135,14 @@ func (s *Supervisor) runAgentProcess() {
 
 func (s *Supervisor) stopAgentApplyConfig() {
 	s.logger.Debug("Stopping the agent to apply new config")
-	cfg := s.mergedConfig.Load().(string)
+	cfgState := s.cfgState.Load().(*configState)
 	err := s.commander.Stop(context.Background())
 
 	if err != nil {
 		s.logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 }
