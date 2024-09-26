@@ -238,6 +238,10 @@ func (e *elasticsearchExporter) pushMetricsData(
 						}
 					}
 				case pmetric.MetricTypeExponentialHistogram:
+					if metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
+						errs = append(errs, errors.New("cumulative temporality exponential histograms are not supported"))
+						continue
+					}
 					dps := metric.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
@@ -247,6 +251,10 @@ func (e *elasticsearchExporter) pushMetricsData(
 						}
 					}
 				case pmetric.MetricTypeHistogram:
+					if metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
+						errs = append(errs, errors.New("cumulative temporality histograms are not supported"))
+						continue
+					}
 					dps := metric.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)

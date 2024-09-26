@@ -797,6 +797,64 @@ func TestExporterMetrics(t *testing.T) {
 		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
+	t.Run("publish histogram cumulative temporality", func(t *testing.T) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			require.Fail(t, "unexpected request")
+			return nil, nil
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooHistogram := fooMetric.SetEmptyHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		fooDps := fooHistogram.DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+
+		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		assert.ErrorContains(t, err, "cumulative temporality histograms are not supported")
+	})
+
+	t.Run("publish exponential histogram cumulative temporality", func(t *testing.T) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			require.Fail(t, "unexpected request")
+			return nil, nil
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooHistogram := fooMetric.SetEmptyExponentialHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		fooDps := fooHistogram.DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.SetZeroCount(2)
+		fooDp.Positive().SetOffset(1)
+		fooDp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+
+		fooDp.Negative().SetOffset(1)
+		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+
+		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		assert.ErrorContains(t, err, "cumulative temporality exponential histograms are not supported")
+	})
+
 	t.Run("publish only valid data points", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
