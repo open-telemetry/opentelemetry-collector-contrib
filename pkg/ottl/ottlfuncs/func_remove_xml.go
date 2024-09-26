@@ -82,7 +82,7 @@ func parseNodesXML(targetVal string) (*xmlquery.Node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse xml: %w", err)
 	}
-	if !preserveDeclearation {
+	if !preserveDeclearation && top.FirstChild != nil {
 		xmlquery.RemoveFromTree(top.FirstChild)
 	}
 	return top, nil
