@@ -1252,6 +1252,95 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 	require.FileExists(t, filepath.Join(storageDir, "effective.yaml"))
 }
 
+func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
+	agentCfgChan := make(chan string, 1)
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						select {
+						case agentCfgChan <- string(config.Body):
+						default:
+						}
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "healthcheck_port", map[string]string{
+		"url":              server.addr,
+		"healthcheck_port": "12345",
+	})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	select {
+	case <-agentCfgChan:
+	case <-time.After(1 * time.Second):
+		require.FailNow(t, "timed out waitng for agent to report its initial config")
+	}
+
+	// Use health check endpoint to determine if the collector is actually running
+	require.Eventually(t, func() bool {
+		resp, err := http.DefaultClient.Get("http://localhost:12345")
+		if err != nil {
+			t.Logf("Failed agent healthcheck request: %s", err)
+			return false
+		}
+		require.NoError(t, resp.Body.Close())
+		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 3*time.Second, 100*time.Millisecond)
+
+	// Send empty config
+	emptyHash := sha256.Sum256([]byte{})
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{},
+			},
+			ConfigHash: emptyHash[:],
+		},
+	})
+
+	select {
+	case <-agentCfgChan:
+	case <-time.After(1 * time.Second):
+		require.FailNow(t, "timed out waitng for agent to report its noop config")
+	}
+
+	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
+	time.Sleep(250 * time.Millisecond)
+	_, err := http.DefaultClient.Get("http://localhost:12345")
+	require.ErrorContains(t, err, "connection refused")
+
+}
+
 func findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 
