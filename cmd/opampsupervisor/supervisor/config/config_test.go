@@ -242,6 +242,7 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					HealthCheckPort:         65536,
+					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -268,6 +269,7 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					HealthCheckPort:         0,
+					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -293,6 +295,7 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					HealthCheckPort:         29848,
+					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
