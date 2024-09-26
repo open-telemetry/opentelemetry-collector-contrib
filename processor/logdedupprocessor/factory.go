@@ -7,11 +7,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/observiq/bindplane-agent/expr"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
@@ -31,7 +32,7 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 		return nil, fmt.Errorf("invalid config type: %+v", cfg)
 	}
 
-	condition, err := expr.NewOTTLLogRecordCondition(processorCfg.Condition, settings.TelemetrySettings)
+	condition, err := filterottl.NewBoolExprForLog([]string{processorCfg.Condition}, filterottl.StandardLogFuncs(), ottl.PropagateError, settings.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid condition: %w", err)
 	}

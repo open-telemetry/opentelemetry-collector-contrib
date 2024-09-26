@@ -10,17 +10,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/observiq/bindplane-agent/expr"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
@@ -36,6 +36,7 @@ func Test_newProcessor(t *testing.T) {
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
 				Interval:          defaultInterval,
+				Condition:         defaultCondition,
 				Timezone:          "bad timezone",
 			},
 			expected:    nil,
@@ -65,7 +66,7 @@ func Test_newProcessor(t *testing.T) {
 				tc.expected.nextConsumer = logsSink
 			}
 
-			actual, err := newProcessor(tc.cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, settings)
+			actual, err := newProcessor(tc.cfg, getCondition(t, tc.cfg.Condition), logsSink, settings)
 			if tc.expectedErr != nil {
 				require.ErrorContains(t, err, tc.expectedErr.Error())
 				require.Nil(t, actual)
@@ -90,10 +91,11 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
 		Timezone:          defaultTimezone,
+		Condition:         defaultCondition,
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, settings)
+	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, settings)
 	require.NoError(t, err)
 
 	// Start then stop the processor checking for errors
@@ -115,13 +117,14 @@ func TestShutdownBeforeStart(t *testing.T) {
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
 		Timezone:          defaultTimezone,
+		Condition:         defaultCondition,
 		ExcludeFields: []string{
 			fmt.Sprintf("%s.remove_me", attributeField),
 		},
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, settings)
+	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, settings)
 	require.NoError(t, err)
 	require.NotPanics(t, func() {
 		err := p.Shutdown(context.Background())
@@ -136,13 +139,14 @@ func TestProcessorConsume(t *testing.T) {
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
 		Timezone:          defaultTimezone,
+		Condition:         defaultCondition,
 		ExcludeFields: []string{
 			fmt.Sprintf("%s.remove_me", attributeField),
 		},
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, settings)
+	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, settings)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -201,10 +205,11 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
 		Timezone:          defaultTimezone,
+		Condition:         defaultCondition,
 	}
 
 	// Create & start a processor
-	p, err := newProcessor(cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, processortest.NewNopSettings())
+	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, processortest.NewNopSettings())
 	require.NoError(t, err)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -230,7 +235,6 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 
 func TestProcessorConsumeCondition(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	logger := zap.NewNop()
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -241,11 +245,8 @@ func TestProcessorConsumeCondition(t *testing.T) {
 		},
 	}
 
-	condition, err := expr.NewOTTLLogRecordCondition(cfg.Condition, component.TelemetrySettings{Logger: logger})
-	require.NoError(t, err)
-
 	// Create a processor
-	p, err := newProcessor(cfg, condition, logsSink, processortest.NewNopSettings())
+	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, processortest.NewNopSettings())
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -322,4 +323,10 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	// Cleanup
 	err = p.Shutdown(context.Background())
 	require.NoError(t, err)
+}
+
+func getCondition(t *testing.T, conditionString string) expr.BoolExpr[ottllog.TransformContext] {
+	condition, err := filterottl.NewBoolExprForLog([]string{conditionString}, filterottl.StandardLogFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	return condition
 }

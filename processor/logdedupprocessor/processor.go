@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/observiq/bindplane-agent/expr"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
@@ -23,7 +23,7 @@ import (
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
 type logDedupProcessor struct {
 	emitInterval    time.Duration
-	condition       *expr.OTTLCondition[ottllog.TransformContext]
+	condition       expr.BoolExpr[ottllog.TransformContext]
 	conditionString string
 	aggregator      *logAggregator
 	remover         *fieldRemover
@@ -34,7 +34,7 @@ type logDedupProcessor struct {
 	mux             sync.Mutex
 }
 
-func newProcessor(cfg *Config, condition *expr.OTTLCondition[ottllog.TransformContext], nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
+func newProcessor(cfg *Config, condition expr.BoolExpr[ottllog.TransformContext], nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
@@ -98,21 +98,19 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 			logs := sl.LogRecords()
 
 			logs.RemoveIf(func(logRecord plog.LogRecord) bool {
-				var conditionMatch bool
-				if p.conditionString == "true" || p.conditionString == "" {
-					conditionMatch = true
-				} else {
-					logCtx := ottllog.NewTransformContext(
-						logRecord,
-						scope,
-						resource,
-						sl,
-						rl,
-					)
-					logMatch, err := p.condition.Match(ctx, logCtx)
-					conditionMatch = err == nil && logMatch
+				// no need to evaluate condition if it is "true"
+				conditionMatch := p.conditionString == "true"
+				if !conditionMatch {
+					logCtx := ottllog.NewTransformContext(logRecord, scope, resource, sl, rl)
+					logMatch, err := p.condition.Eval(ctx, logCtx)
+					if err != nil {
+						p.logger.Error("error matching condition", zap.Error(err))
+						return false
+					}
+					conditionMatch = logMatch
 				}
-				// only aggregate logs that match condition
+
+				// only aggregate logs that match the condition
 				if conditionMatch {
 					// Remove excluded fields if any
 					p.remover.RemoveFields(logRecord)
