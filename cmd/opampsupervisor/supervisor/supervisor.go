@@ -169,7 +169,8 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
-	packageManager, err := newPackageManager(s.config.Agent.Executable, s.config.Storage.Directory)
+	// TODO: Move to start after bootstrapping
+	packageManager, err := newPackageManager(s.config.Agent.Executable, s.config.Storage.Directory, "v0.110.0")
 	if err != nil {
 		return nil, fmt.Errorf("error creating package state manager: %w", err)
 	}
@@ -649,11 +650,11 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		newServerConfig.Headers = s.getHeadersFromSettings(settings.Headers)
 	}
 	if settings.Certificate != nil {
-		if len(settings.Certificate.CaPublicKey) != 0 {
-			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaPublicKey)
+		if len(settings.Certificate.CaCert) != 0 {
+			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaCert)
 		}
-		if len(settings.Certificate.PublicKey) != 0 {
-			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.PublicKey)
+		if len(settings.Certificate.Cert) != 0 {
+			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.Cert)
 		}
 		if len(settings.Certificate.PrivateKey) != 0 {
 			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
@@ -1370,7 +1371,7 @@ func (s *Supervisor) processPackagesAvailableMessage(ctx context.Context, msg *p
 		return errors.New("No top-level package in PackagesAvailable message, ignoring...")
 	}
 
-	if bytes.Equal(topLevelPkg.Hash, s.packageManager.agentHash) {
+	if bytes.Equal(topLevelPkg.Hash, s.packageManager.topLevelHash) {
 		// We already have this package, nothing to do
 		// TODO: Debug log
 		return nil
