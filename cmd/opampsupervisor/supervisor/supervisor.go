@@ -396,11 +396,11 @@ func (s *Supervisor) startOpAMPClient() error {
 
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
-	parsedUrl, err := url.Parse(s.config.Server.Endpoint)
+	parsedURL, err := url.Parse(s.config.Server.Endpoint)
 	if err != nil {
 		return fmt.Errorf("parse server endpoint: %w", err)
 	}
-	if parsedUrl.Scheme == "wss" || parsedUrl.Scheme == "https" {
+	if parsedURL.Scheme == "wss" || parsedURL.Scheme == "https" {
 		tlsConfig, err = s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
 		if err != nil {
 			return err
