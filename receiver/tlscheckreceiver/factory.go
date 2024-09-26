@@ -1,0 +1,53 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver"
+
+import (
+	"context"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	// "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
+)
+
+// NewFactory creates a new filestats receiver factory.
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		metadata.Type,
+		newDefaultConfig,
+		receiver.WithMetrics(newReceiver, metadata.MetricsStability))
+}
+
+func newDefaultConfig() component.Config {
+	return &Config{
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Targets:              []*targetConfig{},
+	}
+}
+
+func newReceiver(
+	_ context.Context,
+	settings receiver.Settings,
+	cfg component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	tlsCheckConfig := cfg.(*Config)
+
+	mp := newScraper(tlsCheckConfig, settings)
+	s, err := scraperhelper.NewScraper(metadata.Type, mp.scrape)
+	if err != nil {
+		return nil, err
+	}
+	opt := scraperhelper.AddScraper(s)
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&tlsCheckConfig.ControllerConfig,
+		settings,
+		consumer,
+		opt,
+	)
+}
