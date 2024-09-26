@@ -1,9 +1,9 @@
 package supervisor
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -26,9 +26,7 @@ var (
 	// https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#packages
 	agentPackageKey = ""
 
-	packageMetadataFileName   = "metadata.yaml"
-	packageContentFileName    = "content"
-	packageStateFileName      = "package-state.yaml"
+	packagesStateFileName     = "package-state.yaml"
 	lastPackageStatusFileName = "last-reported-package-statuses.proto"
 )
 
@@ -94,24 +92,56 @@ func newPackageManager(agentPath string, storageDir string, agentVersion string)
 }
 
 func (p *packageManager) setAgentVersion(agentVersion string) {
-	p.agentVersion = agentVersion
+	p.topLevelVersion = agentVersion
 }
 
-func (packageManager) AllPackagesHash() ([]byte, error) {
-	return nil, fmt.Errorf("unimplemented")
+func (p packageManager) AllPackagesHash() ([]byte, error) {
+	return p.packageState.allPackagesHash, nil
 }
-func (packageManager) SetAllPackagesHash(hash []byte) error {
-	return fmt.Errorf("unimplemented")
+
+func (p packageManager) SetAllPackagesHash(hash []byte) error {
+	p.packageState.allPackagesHash = hash
+	return savePackageState(p.packagesStatusPath(), p.packageState)
 }
+
 func (packageManager) Packages() ([]string, error) {
-	return nil, fmt.Errorf("unimplemented")
+	return []string{agentPackageKey}, nil
 }
-func (packageManager) PackageState(packageName string) (state types.PackageState, err error) {
-	return state, fmt.Errorf("unimplemented")
+
+func (p packageManager) PackageState(packageName string) (state types.PackageState, err error) {
+	if packageName != agentPackageKey {
+		return types.PackageState{
+			Exists:  true,
+			Type:    protobufs.PackageType_PackageType_TopLevel,
+			Hash:    p.topLevelHash,
+			Version: p.topLevelVersion,
+		}, nil
+	}
+
+	return types.PackageState{
+		Exists: false,
+	}, nil
 }
-func (packageManager) SetPackageState(packageName string, state types.PackageState) error {
-	return fmt.Errorf("unimplemented")
+
+func (p *packageManager) SetPackageState(packageName string, state types.PackageState) error {
+	if packageName != agentPackageKey {
+		return fmt.Errorf("package %q does not exist", packageName)
+	}
+
+	if !state.Exists {
+		return fmt.Errorf("agent package must be marked as existing")
+	}
+
+	if state.Type != protobufs.PackageType_PackageType_TopLevel {
+		return fmt.Errorf("agent package must be marked as top level")
+	}
+
+	p.topLevelHash = state.Hash
+	p.topLevelVersion = state.Version
+
+	return nil
 }
+
 func (packageManager) CreatePackage(packageName string, typ protobufs.PackageType) error {
 	if packageName != agentPackageKey {
 		return fmt.Errorf("only agent package is supported")
@@ -119,17 +149,20 @@ func (packageManager) CreatePackage(packageName string, typ protobufs.PackageTyp
 
 	return fmt.Errorf("agent package already exists")
 }
-func (p packageManager) FileContentHash(packageName string) ([]byte, error) {
+
+func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 	if packageName != agentPackageKey {
 		return nil, nil
 	}
 
 	return p.topLevelHash, nil
 }
-func (packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash []byte) error {
+
+func (p *packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash []byte) error {
 	return fmt.Errorf("unimplemented")
 }
-func (packageManager) DeletePackage(packageName string) error {
+
+func (p *packageManager) DeletePackage(packageName string) error {
 	if packageName != agentPackageKey {
 		// We only take the agent package, so we don't take it.
 		return nil
@@ -138,7 +171,8 @@ func (packageManager) DeletePackage(packageName string) error {
 	// We will never delete the agent package.
 	return errors.New("cannot delete top-level package")
 }
-func (p packageManager) LastReportedStatuses() (*protobufs.PackageStatuses, error) {
+
+func (p *packageManager) LastReportedStatuses() (*protobufs.PackageStatuses, error) {
 	lastStatusBytes, err := os.ReadFile(p.lastPackageStatusPath())
 	if err != nil {
 		return nil, fmt.Errorf("read last package statuses: %w", err)
@@ -168,16 +202,12 @@ func (p packageManager) SetLastReportedStatuses(statuses *protobufs.PackageStatu
 }
 
 func (p *packageManager) lastPackageStatusPath() string {
-	return filepath.Join(p.storageDir)
+	return filepath.Join(p.storageDir, lastPackageStatusFileName)
 }
 
-// func (p *packageManager) setServerOfferedPackage(version string, hash, allHash []byte) error {
-// 	p.packageState.serverOfferedAgentHash = hash
-// 	p.packageState.serverOfferedAgentVersion = version
-// 	p.packageState.allPackagesHash = allHash
-
-// 	return savePackageState(p.packageStatePath, p.packageState)
-// }
+func (p *packageManager) packagesStatusPath() string {
+	return filepath.Join(p.storageDir, packagesStateFileName)
+}
 
 func downloadPackageContent(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -205,7 +235,7 @@ func downloadPackageContent(ctx context.Context, url string) ([]byte, error) {
 
 func verifyPackageIntegrity(packageBytes, expectedHash []byte) error {
 	actualHash := sha256.Sum256(packageBytes)
-	if subtle.ConstantTimeCompare(actualHash[:], expectedHash) == 0 {
+	if bytes.Equal(actualHash[:], expectedHash) {
 		return errors.New("invalid hash for package")
 	}
 
