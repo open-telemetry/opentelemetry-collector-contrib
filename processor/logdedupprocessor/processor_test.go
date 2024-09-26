@@ -10,13 +10,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/observiq/bindplane-agent/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.uber.org/zap"
 )
 
 func Test_newProcessor(t *testing.T) {
@@ -59,7 +63,7 @@ func Test_newProcessor(t *testing.T) {
 				tc.expected.nextConsumer = logsSink
 			}
 
-			actual, err := newProcessor(tc.cfg, logsSink, settings)
+			actual, err := newProcessor(tc.cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, settings)
 			if tc.expectedErr != nil {
 				require.ErrorContains(t, err, tc.expectedErr.Error())
 				require.Nil(t, actual)
@@ -87,7 +91,7 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, settings)
+	p, err := newProcessor(cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, settings)
 	require.NoError(t, err)
 
 	// Start then stop the processor checking for errors
@@ -115,7 +119,7 @@ func TestShutdownBeforeStart(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, settings)
+	p, err := newProcessor(cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, settings)
 	require.NoError(t, err)
 	require.NotPanics(t, func() {
 		err := p.Shutdown(context.Background())
@@ -136,7 +140,7 @@ func TestProcessorConsume(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, settings)
+	p, err := newProcessor(cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, settings)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -198,7 +202,7 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	}
 
 	// Create & start a processor
-	p, err := newProcessor(cfg, logsSink, processortest.NewNopSettings())
+	p, err := newProcessor(cfg, &expr.OTTLCondition[ottllog.TransformContext]{}, logsSink, processortest.NewNopSettings())
 	require.NoError(t, err)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -220,4 +224,100 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	// Ensure the logs are exported
 	exportedLogs := logsSink.AllLogs()
 	require.Len(t, exportedLogs, 1)
+}
+
+func TestProcessorConsumeCondition(t *testing.T) {
+	logsSink := &consumertest.LogsSink{}
+	logger := zap.NewNop()
+	cfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          1 * time.Second,
+		Timezone:          defaultTimezone,
+		Condition:         `(attributes["ID"] == 1)`,
+		ExcludeFields: []string{
+			fmt.Sprintf("%s.remove_me", attributeField),
+		},
+	}
+
+	condition, err := expr.NewOTTLLogRecordCondition(cfg.Condition, component.TelemetrySettings{Logger: logger})
+	require.NoError(t, err)
+
+	// Create a processor
+	p, err := newProcessor(cfg, condition, logsSink, processortest.NewNopSettings())
+	require.NoError(t, err)
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// Create plog payload
+	logRecord1 := generateTestLogRecord(t, "Body of the log1")
+	logRecord2 := generateTestLogRecord(t, "Body of the log1")
+	logRecord3 := generateTestLogRecord(t, "Body of the log2")
+	logRecord4 := generateTestLogRecord(t, "Body of the log2")
+
+	// Differ by timestamps
+	logRecord1.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Minute)))
+	logRecord2.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(2 * time.Minute)))
+	logRecord3.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(3 * time.Minute)))
+	logRecord4.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(4 * time.Minute)))
+
+	// Set ID attributes to use for condition
+	logRecord1.Attributes().PutInt("ID", 1)
+	logRecord2.Attributes().PutInt("ID", 1)
+	logRecord3.Attributes().PutInt("ID", 2)
+	logRecord4.Attributes().PutInt("ID", 2)
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	logRecord1.CopyTo(sl.LogRecords().AppendEmpty())
+	logRecord3.CopyTo(sl.LogRecords().AppendEmpty())
+	logRecord2.CopyTo(sl.LogRecords().AppendEmpty())
+	logRecord4.CopyTo(sl.LogRecords().AppendEmpty())
+
+	// Consume the payload
+	err = p.ConsumeLogs(context.Background(), logs)
+	require.NoError(t, err)
+
+	// Wait for the logs to be emitted
+	require.Eventually(t, func() bool {
+		return logsSink.LogRecordCount() > 2
+	}, 3*time.Second, 200*time.Millisecond)
+
+	allSinkLogs := logsSink.AllLogs()
+	require.Len(t, allSinkLogs, 2)
+
+	consumedLogs := allSinkLogs[0]
+	require.Equal(t, 2, consumedLogs.LogRecordCount())
+
+	require.Equal(t, 1, consumedLogs.ResourceLogs().Len())
+	consumedRl := consumedLogs.ResourceLogs().At(0)
+	require.Equal(t, 1, consumedRl.ScopeLogs().Len())
+	consumedSl := consumedRl.ScopeLogs().At(0)
+	require.Equal(t, 2, consumedSl.LogRecords().Len())
+
+	for i := 0; i < consumedSl.LogRecords().Len(); i++ {
+		consumedLogRecord := consumedSl.LogRecords().At(i)
+		ID, ok := consumedLogRecord.Attributes().Get("ID")
+		require.True(t, ok)
+		require.Equal(t, int64(2), ID.Int())
+	}
+
+	dedupedLogs := allSinkLogs[1]
+	require.Equal(t, 1, dedupedLogs.LogRecordCount())
+
+	require.Equal(t, 1, dedupedLogs.ResourceLogs().Len())
+	dedupedRl := dedupedLogs.ResourceLogs().At(0)
+	require.Equal(t, 1, dedupedRl.ScopeLogs().Len())
+	dedupedSl := dedupedRl.ScopeLogs().At(0)
+	require.Equal(t, 1, dedupedSl.LogRecords().Len())
+	dedupedLogRecord := dedupedSl.LogRecords().At(0)
+
+	countVal, ok := dedupedLogRecord.Attributes().Get(cfg.LogCountAttribute)
+	require.True(t, ok)
+	require.Equal(t, int64(2), countVal.Int())
+
+	// Cleanup
+	err = p.Shutdown(context.Background())
+	require.NoError(t, err)
 }

@@ -15,22 +15,26 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 
+	"github.com/observiq/bindplane-agent/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
 type logDedupProcessor struct {
-	emitInterval time.Duration
-	aggregator   *logAggregator
-	remover      *fieldRemover
-	nextConsumer consumer.Logs
-	logger       *zap.Logger
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
-	mux          sync.Mutex
+	emitInterval    time.Duration
+	condition       *expr.OTTLCondition[ottllog.TransformContext]
+	conditionString string
+	aggregator      *logAggregator
+	remover         *fieldRemover
+	nextConsumer    consumer.Logs
+	logger          *zap.Logger
+	cancel          context.CancelFunc
+	wg              sync.WaitGroup
+	mux             sync.Mutex
 }
 
-func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
+func newProcessor(cfg *Config, condition *expr.OTTLCondition[ottllog.TransformContext], nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
@@ -43,11 +47,13 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 	}
 
 	return &logDedupProcessor{
-		emitInterval: cfg.Interval,
-		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder),
-		remover:      newFieldRemover(cfg.ExcludeFields),
-		nextConsumer: nextConsumer,
-		logger:       settings.Logger,
+		emitInterval:    cfg.Interval,
+		condition:       condition,
+		conditionString: cfg.Condition,
+		aggregator:      newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder),
+		remover:         newFieldRemover(cfg.ExcludeFields),
+		nextConsumer:    nextConsumer,
+		logger:          settings.Logger,
 	}, nil
 }
 
@@ -78,7 +84,7 @@ func (p *logDedupProcessor) Shutdown(_ context.Context) error {
 }
 
 // ConsumeLogs processes the logs.
-func (p *logDedupProcessor) ConsumeLogs(_ context.Context, pl plog.Logs) error {
+func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
@@ -89,15 +95,41 @@ func (p *logDedupProcessor) ConsumeLogs(_ context.Context, pl plog.Logs) error {
 		for j := 0; j < rl.ScopeLogs().Len(); j++ {
 			sl := rl.ScopeLogs().At(j)
 			scope := sl.Scope()
+			logs := sl.LogRecords()
 
-			for k := 0; k < sl.LogRecords().Len(); k++ {
-				logRecord := sl.LogRecords().At(k)
-				// Remove excluded fields if any
-				p.remover.RemoveFields(logRecord)
+			logs.RemoveIf(func(logRecord plog.LogRecord) bool {
+				var conditionMatch bool
+				if p.conditionString == "true" || p.conditionString == "" {
+					conditionMatch = true
+				} else {
+					logCtx := ottllog.NewTransformContext(
+						logRecord,
+						scope,
+						resource,
+						sl,
+						rl,
+					)
+					logMatch, err := p.condition.Match(ctx, logCtx)
+					conditionMatch = err == nil && logMatch
+				}
+				// only aggregate logs that match condition
+				if conditionMatch {
+					// Remove excluded fields if any
+					p.remover.RemoveFields(logRecord)
 
-				// Add the log to the aggregator
-				p.aggregator.Add(resource, scope, logRecord)
-			}
+					// Add the log to the aggregator
+					p.aggregator.Add(resource, scope, logRecord)
+				}
+				return conditionMatch
+			})
+		}
+	}
+
+	// immediately consume any logs that didn't match the condition
+	if pl.LogRecordCount() > 0 {
+		err := p.nextConsumer.ConsumeLogs(ctx, pl)
+		if err != nil {
+			p.logger.Error("failed to consume logs", zap.Error(err))
 		}
 	}
 

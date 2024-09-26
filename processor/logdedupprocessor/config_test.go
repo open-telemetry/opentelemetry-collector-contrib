@@ -90,6 +90,7 @@ func TestValidateConfig(t *testing.T) {
 				LogCountAttribute: defaultLogCountAttribute,
 				Interval:          defaultInterval,
 				Timezone:          defaultTimezone,
+				Condition:         defaultCondition,
 				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
 			},
 			expectedErr: nil,
