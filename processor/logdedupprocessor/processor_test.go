@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/observiq/bindplane-agent/expr"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -21,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
 func Test_newProcessor(t *testing.T) {
@@ -45,6 +46,7 @@ func Test_newProcessor(t *testing.T) {
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
 				Interval:          defaultInterval,
+				Condition:         defaultCondition,
 				Timezone:          defaultTimezone,
 			},
 			expected: &logDedupProcessor{
