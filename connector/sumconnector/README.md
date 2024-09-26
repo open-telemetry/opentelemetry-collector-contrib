@@ -27,11 +27,11 @@ The `sum` connector can be used to sum attribute values from spans, span events,
 
 If you are not already familiar with connectors, you may find it helpful to first visit the [Connectors README](https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md).
 
-### Configuration
-
-#### Basic configuration
+### Basic configuration
 
 This configuration will sum numerical values found within the attribute `attribute.with.numerical.value` of any log telemetry routed to the connector. It will then output a metric time series with the name `my.example.metric.name` with those summed values.
+
+Note: Values found within an attribute will be converted into a float regardless of their original type before being summed and output as a metric value. Non-convertible strings will be dropped and not included.
 
 ```yaml
 receivers:
@@ -58,15 +58,15 @@ service:
 
 The sum connector has three required configuration settings and numerous optional settings
 
-- Telemetry type: Nested below the `sum:` connector declaration. Declared as `logs:` in the [Basic Example](#basic-configuration). 
+- Telemetry type: Nested below the `sum:` connector declaration. Declared as `logs:` in the [Basic Example](#basic-configuration).
   - Can be any of `spans`, `spanevents`, `metrics`, `datapoints`, or `logs`.
 - Metric name: Nested below the telemetry type; this is the metric name the sum connector will output summed values to. Declared as `my.example.metric.name` in the [Basic Example](#basic-configuration)
 - `source_attribute`: A specific attribute to search for within the source telemetry being fed to the connector. This attribute is where the connector will look for numerical values to sum into the output metric value. Declared as `attribute.with.numerical.value` in the [Basic Example](#basic-configuration)
 
 #### Optional Settings
 
-- `conditions`: [OTTL syntax](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md) can be used to provide conditions for processing incoming telemetry. Conditions are ORed together, so if any condition is met the attribute's value will be included in the resulting sum. 
-- `attributes`: Declaration of attributes to include. Any of these attributes found will generate a separate sum for each set of unique combination of attribute values and output as its own datapoint in the metric time series. 
+- `conditions`: [OTTL syntax](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md) can be used to provide conditions for processing incoming telemetry. Conditions are ORed together, so if any condition is met the attribute's value will be included in the resulting sum.
+- `attributes`: Declaration of attributes to include. Any of these attributes found will generate a separate sum for each set of unique combination of attribute values and output as its own datapoint in the metric time series.
   - `key`: (required for `attributes`) the attribute name to match against
   - `default_value`: (optional for `attributes`) a default value for the attribute when no matches are found. The `default_value` value can be of type string, integer, or float.
 
