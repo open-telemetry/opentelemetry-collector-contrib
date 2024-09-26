@@ -67,7 +67,9 @@ const (
 const maxBufferedCustomMessages = 10
 
 type configState struct {
-	mergedConfig   string
+	// Supervisor-assembled config to be given to the Collector.
+	mergedConfig string
+	// true if the server provided configmap was empty
 	emptyConfigMap bool
 }
 
@@ -115,7 +117,7 @@ type Supervisor struct {
 	// will listen on for health check requests from the Supervisor.
 	agentHealthCheckEndpoint string
 
-	// Supervisor-assembled config to be given to the Collector.
+	// Internal config state for agent use. See the configState struct for more details.
 	cfgState *atomic.Value
 
 	// Final effective config of the Collector.
