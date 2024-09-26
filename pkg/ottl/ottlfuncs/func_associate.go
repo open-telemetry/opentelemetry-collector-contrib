@@ -9,26 +9,26 @@ import (
 	"golang.org/x/net/context"
 )
 
-type AssociateArguments[K any] struct {
+type SliceToMapArguments[K any] struct {
 	Target    ottl.Getter[K]
 	KeyPath   []string
 	ValuePath ottl.Optional[[]string]
 }
 
-func NewAssociateFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Associate", &AssociateArguments[K]{}, createAssociateFunction[K])
+func NewSliceToMapFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("SliceToMap", &SliceToMapArguments[K]{}, sliceToMapFunction[K])
 }
 
-func createAssociateFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*AssociateArguments[K])
+func sliceToMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*SliceToMapArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("AssociateFactory args must be of type *AssociateArguments[K")
+		return nil, fmt.Errorf("AssociateFactory args must be of type *SliceToMapArguments[K")
 	}
 
-	return Associate(args.Target, args.KeyPath, args.ValuePath)
+	return SliceToMap(args.Target, args.KeyPath, args.ValuePath)
 }
 
-func Associate[K any](target ottl.Getter[K], keyPath []string, valuePath ottl.Optional[[]string]) (ottl.ExprFunc[K], error) {
+func SliceToMap[K any](target ottl.Getter[K], keyPath []string, valuePath ottl.Optional[[]string]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		if len(keyPath) == 0 {
 			return nil, fmt.Errorf("key path must contain at least one element")
@@ -40,16 +40,16 @@ func Associate[K any](target ottl.Getter[K], keyPath []string, valuePath ottl.Op
 
 		switch v := val.(type) {
 		case []any:
-			return associate(v, keyPath, valuePath)
+			return sliceToMap(v, keyPath, valuePath)
 		case pcommon.Slice:
-			return associate(v.AsRaw(), keyPath, valuePath)
+			return sliceToMap(v.AsRaw(), keyPath, valuePath)
 		default:
-			return nil, fmt.Errorf("unsupported type provided to Associate function: %T", v)
+			return nil, fmt.Errorf("unsupported type provided to SliceToMap function: %T", v)
 		}
 	}, nil
 }
 
-func associate(v []any, keyPath []string, valuePath ottl.Optional[[]string]) (any, error) {
+func sliceToMap(v []any, keyPath []string, valuePath ottl.Optional[[]string]) (any, error) {
 	result := make(map[string]any, len(v))
 	for _, elem := range v {
 		switch e := elem.(type) {

@@ -450,6 +450,7 @@ Available Converters:
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SHA512](#sha512)
+- [SliceToMap](#slicetomap)
 - [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
@@ -1356,6 +1357,59 @@ Examples:
 - `SHA512(attributes["device.name"])`
 
 - `SHA512("name")`
+
+### SliceToMap
+
+`SliceToMap(target, keyPath, Optional[valuePath])`
+
+The `SliceToMap` converter converts a slice of objects to a map. The name of the keys for the map entries
+is determined by `keyPath`, which points to the value of an attribute within each slice item. Note that
+the `keyPath` must resolve to a string value, otherwise the converter will not be able to convert the item
+to a map entry.
+The optional `valuePath` determines which attribute should be used as the value for the map entry. If no
+`valuePath` is defined, the value of the map entry will be the same as the original slice item.
+
+Examples:
+
+The examples below will convert the following input: 
+
+```yaml
+attributes:
+  hello: world
+  things:
+    - name: foo
+      value: 2
+    - name: bar
+      value: 5
+```
+
+- `SliceToMap(attributes["things"], ["name"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo:
+      name: foo
+      value: 2
+    bar:
+      name: bar
+      value: 5
+```
+
+- `Associate(attributes["things"], ["name"], ["details", "value"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo: 2
+    bar: 5
+```
 
 ### Sort
 

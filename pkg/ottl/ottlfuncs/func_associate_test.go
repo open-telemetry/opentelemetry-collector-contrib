@@ -206,7 +206,7 @@ func Test_Associate(t *testing.T) {
 			value: func() any {
 				return pcommon.NewMap()
 			},
-			wantErr: "unsupported type provided to Associate function: pcommon.Map",
+			wantErr: "unsupported type provided to SliceToMap function: pcommon.Map",
 		},
 		{
 			name:    "slice containing unsupported value type",
@@ -235,7 +235,7 @@ func Test_Associate(t *testing.T) {
 			if len(tt.valuePath) > 0 {
 				valuePathOptional = ottl.NewTestingOptional(tt.valuePath)
 			}
-			associateFunc, err := createAssociateFunction[any](ottl.FunctionContext{}, &AssociateArguments[any]{
+			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &SliceToMapArguments[any]{
 				Target: &ottl.StandardGetSetter[any]{
 					Getter: func(ctx context.Context, tCtx any) (any, error) {
 						return tt.value(), nil

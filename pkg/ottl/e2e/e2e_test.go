@@ -846,7 +846,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Associate(attributes["things"], ["name"]))`,
+			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["name"]))`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				thing1 := m.PutEmptyMap("foo")
@@ -859,7 +859,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Associate(attributes["things"], ["name"], ["value"]))`,
+			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["name"], ["value"]))`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutInt("foo", 2)
