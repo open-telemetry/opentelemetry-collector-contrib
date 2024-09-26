@@ -10,7 +10,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -197,14 +196,6 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
 
-	// TODO: Move to start after bootstrapping
-	packageManager, err := newPackageManager(s.config.Agent.Executable, s.config.Storage.Directory, "v0.110.0")
-	if err != nil {
-		return nil, fmt.Errorf("error creating package state manager: %w", err)
-	}
-
-	s.packageManager = packageManager
-
 	return s, nil
 }
 
@@ -226,6 +217,14 @@ func (s *Supervisor) Start() error {
 			return fmt.Errorf("could not find port for health check: %w", err)
 		}
 	}
+
+	// TODO: Pass in agent version
+	packageManager, err := newPackageManager(s.config.Agent.Executable, s.config.Storage.Directory, "v0.110.0", s)
+	if err != nil {
+		return fmt.Errorf("error creating package state manager: %w", err)
+	}
+
+	s.packageManager = packageManager
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
@@ -1331,10 +1330,9 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.PackagesAvailable != nil {
-		err := s.processPackagesAvailableMessage(ctx, msg.PackagesAvailable)
-		if err != nil {
-			s.logger.Error("Failed to process PackagesAvailable message", zap.Error(err))
-		}
+		msg.PackageSyncer.Sync(context.Background())
+		// TODO: Should we wait for the sync to be done somehow? Should it be in a separate goroutine
+		<-msg.PackageSyncer.Done()
 	}
 
 	// Update the agent config if any messages have touched the config
@@ -1439,97 +1437,6 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 	}
 
 	return configChanged
-}
-
-func (s *Supervisor) processPackagesAvailableMessage(ctx context.Context, msg *protobufs.PackagesAvailable) error {
-	var topLevelPkg *protobufs.PackageAvailable
-
-	for k, v := range msg.GetPackages() {
-		if k == agentPackageKey && v.Type == protobufs.PackageType_PackageType_TopLevel {
-			topLevelPkg = v
-			break
-		}
-	}
-
-	if topLevelPkg == nil {
-		return errors.New("No top-level package in PackagesAvailable message, ignoring...")
-	}
-
-	if bytes.Equal(topLevelPkg.Hash, s.packageManager.topLevelHash) {
-		// We already have this package, nothing to do
-		// TODO: Debug log
-		return nil
-	}
-
-	// TODO: Async download, send "installing" status
-
-	b, err := downloadPackageContent(ctx, topLevelPkg.File.DownloadUrl)
-	if err != nil {
-		return fmt.Errorf("download package: %w", err)
-	}
-
-	err = verifyPackageIntegrity(b, topLevelPkg.File.ContentHash)
-	if err != nil {
-		return fmt.Errorf("verify package integrity: %w", err)
-	}
-
-	// We expect the file signature to be two space separated b64 payloads.
-	// The first part will be the certificate, and the second will be the signature.
-	parts := bytes.SplitN(topLevelPkg.File.Signature, []byte(" "), 2)
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid format for package signature")
-	}
-
-	err = verifyPackageSignature(b, parts[0], parts[1])
-	if err != nil {
-		return fmt.Errorf("verify package signature: %w", err)
-	}
-
-	s.stopAgentProcess(ctx)
-	// We always want to start the agent process again, even if we fail to write the agent file
-	defer s.startAgentProcess()
-
-	agentBackupPath := filepath.Join(s.config.Storage.Directory, "collector.bak")
-	err = os.WriteFile(agentBackupPath, b, 0600)
-	if err != nil {
-		return fmt.Errorf("create agent backup: %w", err)
-	}
-
-	f, err := os.OpenFile(s.config.Agent.Executable, os.O_WRONLY|os.O_TRUNC, 0700)
-	if err != nil {
-		return fmt.Errorf("open file: %w", err)
-	}
-	defer f.Close()
-
-	if _, err := io.Copy(f, bytes.NewBuffer(b)); err != nil {
-		restoreErr := restoreBackup(agentBackupPath, s.config.Agent.Executable)
-		return errors.Join(fmt.Errorf("write package to file: %w", err), restoreErr)
-	}
-
-	// TODO: Send installed status
-	// TODO: Update agent hash
-
-	return nil
-}
-
-func restoreBackup(backupPath, restorePath string) error {
-	backupFile, err := os.Open(backupPath)
-	if err != nil {
-		return fmt.Errorf("open backup file: %w", err)
-	}
-	defer backupFile.Close()
-
-	restoreFile, err := os.OpenFile(restorePath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
-	if err != nil {
-		return fmt.Errorf("open restore file: %w", err)
-	}
-	defer restoreFile.Close()
-
-	if _, err := io.Copy(restoreFile, backupFile); err != nil {
-		return fmt.Errorf("copy backup file to restore file: %w", err)
-	}
-
-	return nil
 }
 
 func (s *Supervisor) persistentStateFilePath() string {
