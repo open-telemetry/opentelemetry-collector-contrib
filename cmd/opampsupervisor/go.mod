@@ -208,3 +208,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.3.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/open-telemetry/opamp-go => github.com/observIQ/opamp-go v0.7.1-0.20240925161853-e80775042541
