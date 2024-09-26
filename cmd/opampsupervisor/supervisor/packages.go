@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	"github.com/sigstore/cosign/v2/pkg/oci/static"
 	"google.golang.org/protobuf/proto"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -31,7 +31,7 @@ var (
 )
 
 type packageState struct {
-	allPackagesHash []byte
+	allPackagesHash []byte `yaml:"all_packages_hash"`
 }
 
 type packageMetadata struct {
@@ -42,24 +42,24 @@ type packageMetadata struct {
 
 // packageManager manages the persistent state of downloadable packages.
 // It persists the packages to the file system.
-// The general structure is like this:
-//
-//	  ${storage_dir}
-//		 |- package-state.yaml
-//		 |- last-reported-package-statuses.proto
-//		 |- packages
-//			|- {package_name}
-//			   | metadata.yaml
-//			   | content
+// Currently, it only allows for a single top-level package containing the agent
+// to be received.
 type packageManager struct {
 	packageState    *packageState
 	topLevelHash    []byte
 	topLevelVersion string
 
 	storageDir string
+	agentPath  string
+	am         agentManager
 }
 
-func newPackageManager(agentPath string, storageDir string, agentVersion string) (*packageManager, error) {
+type agentManager interface {
+	stopAgentProcess(context.Context)
+	startAgentProcess()
+}
+
+func newPackageManager(agentPath string, storageDir string, agentVersion string, am agentManager) (*packageManager, error) {
 	// Read actual hash of the on-disk agent
 	f, err := os.Open(agentPath)
 	if err != nil {
@@ -88,6 +88,8 @@ func newPackageManager(agentPath string, storageDir string, agentVersion string)
 		topLevelHash:    agentHash,
 		topLevelVersion: agentVersion,
 		storageDir:      storageDir,
+		agentPath:       agentPath,
+		am:              am,
 	}, nil
 }
 
@@ -158,13 +160,58 @@ func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 	return p.topLevelHash, nil
 }
 
-func (p *packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash []byte) error {
-	return fmt.Errorf("unimplemented")
+func (p *packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash, signature []byte) error {
+	if packageName != agentPackageKey {
+		return fmt.Errorf("package does not exist")
+	}
+
+	by, err := io.ReadAll(data)
+	if err != nil {
+		return fmt.Errorf("read package bytes: %w", err)
+	}
+
+	if err := verifyPackageIntegrity(by, contentHash); err != nil {
+		return fmt.Errorf("could not verify package integrity: %w", err)
+	}
+
+	b64Cert, b64Signature, err := parsePackageSignature(signature)
+	if err != nil {
+		return fmt.Errorf("could not parse package signature: %w", err)
+	}
+
+	if err := verifyPackageSignature(ctx, by, b64Cert, b64Signature); err != nil {
+		return fmt.Errorf("could not verify package signature: %w", err)
+	}
+
+	// overwrite agent process
+	p.am.stopAgentProcess(ctx)
+	// We always want to start the agent process again, even if we fail to write the agent file
+	defer p.am.startAgentProcess()
+
+	// Create a backup in case we fail to write the agent
+	agentBackupPath := filepath.Join(p.storageDir, "collector.bak")
+	err = os.WriteFile(agentBackupPath, by, 0600)
+	if err != nil {
+		return fmt.Errorf("create agent backup: %w", err)
+	}
+
+	f, err := os.OpenFile(p.agentPath, os.O_WRONLY|os.O_TRUNC, 0700)
+	if err != nil {
+		return fmt.Errorf("open file: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, bytes.NewBuffer(by)); err != nil {
+		restoreErr := restoreBackup(agentBackupPath, p.agentPath)
+		return errors.Join(fmt.Errorf("write package to file: %w", err), restoreErr)
+	}
+
+	return nil
 }
 
 func (p *packageManager) DeletePackage(packageName string) error {
 	if packageName != agentPackageKey {
-		// We only take the agent package, so we don't take it.
+		// We only take the agent package, so the package already doesn't exist.
 		return nil
 	}
 
@@ -173,6 +220,7 @@ func (p *packageManager) DeletePackage(packageName string) error {
 }
 
 func (p *packageManager) LastReportedStatuses() (*protobufs.PackageStatuses, error) {
+	// TODO: What to do if no package status exists
 	lastStatusBytes, err := os.ReadFile(p.lastPackageStatusPath())
 	if err != nil {
 		return nil, fmt.Errorf("read last package statuses: %w", err)
@@ -209,28 +257,37 @@ func (p *packageManager) packagesStatusPath() string {
 	return filepath.Join(p.storageDir, packagesStateFileName)
 }
 
-func downloadPackageContent(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func loadPackageState(path string) (*packageState, error) {
+	by, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+		return nil, fmt.Errorf("read file: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	var pkgState packageState
+	if err := yaml.Unmarshal(by, &pkgState); err != nil {
+		return nil, fmt.Errorf("unmarshal yaml: %w", err)
+	}
+
+	return &pkgState, nil
+}
+
+func savePackageState(path string, ps *packageState) error {
+	by, err := yaml.Marshal(ps)
 	if err != nil {
-		return nil, fmt.Errorf("do request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode > 299 || resp.StatusCode < 200 {
-		return nil, fmt.Errorf("got non-200 status: %d", resp.StatusCode)
+		return fmt.Errorf("marshal yaml: %w", err)
 	}
 
-	b, err := io.ReadAll(resp.Body)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		return nil, fmt.Errorf("read body: %w", err)
+		return fmt.Errorf("open file: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := f.Write(by); err != nil {
+		return fmt.Errorf("write package state: %w", err)
 	}
 
-	return b, nil
+	return nil
 }
 
 func verifyPackageIntegrity(packageBytes, expectedHash []byte) error {
@@ -242,8 +299,17 @@ func verifyPackageIntegrity(packageBytes, expectedHash []byte) error {
 	return nil
 }
 
+func parsePackageSignature(signature []byte) (b64Cert, b64Signature []byte, err error) {
+	splitSignature := bytes.SplitN(signature, []byte(" "), 2)
+	if len(splitSignature) != 2 {
+		return nil, nil, fmt.Errorf("signature must be formatted as a space separated cert and signature")
+	}
+
+	return splitSignature[0], splitSignature[1], nil
+}
+
 // sig is the decoded signature of
-func verifyPackageSignature(packageBytes, b64Cert, b64Signature []byte) error {
+func verifyPackageSignature(ctx context.Context, packageBytes, b64Cert, b64Signature []byte) error {
 	// TODO: allow specifying from config
 	rootCerts, err := fulcio.GetRoots()
 	if err != nil {
@@ -281,7 +347,7 @@ func verifyPackageSignature(packageBytes, b64Cert, b64Signature []byte) error {
 		return fmt.Errorf("create signature: %w", err)
 	}
 
-	_, err = cosign.VerifyBlobSignature(context.TODO(), ociSig, co)
+	_, err = cosign.VerifyBlobSignature(ctx, ociSig, co)
 	if err != nil {
 		return fmt.Errorf("verify blob: %w", err)
 	}
@@ -289,10 +355,22 @@ func verifyPackageSignature(packageBytes, b64Cert, b64Signature []byte) error {
 	return nil
 }
 
-func loadPackageState(path string) (*packageState, error) {
-	return nil, fmt.Errorf("unimplemented")
-}
+func restoreBackup(backupPath, restorePath string) error {
+	backupFile, err := os.Open(backupPath)
+	if err != nil {
+		return fmt.Errorf("open backup file: %w", err)
+	}
+	defer backupFile.Close()
 
-func savePackageState(path string, ps *packageState) error {
-	return fmt.Errorf("unimplemented")
+	restoreFile, err := os.OpenFile(restorePath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
+	if err != nil {
+		return fmt.Errorf("open restore file: %w", err)
+	}
+	defer restoreFile.Close()
+
+	if _, err := io.Copy(restoreFile, backupFile); err != nil {
+		return fmt.Errorf("copy backup file to restore file: %w", err)
+	}
+
+	return nil
 }
