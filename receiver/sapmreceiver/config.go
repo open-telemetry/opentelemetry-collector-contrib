@@ -13,5 +13,9 @@ import (
 type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
+	// Deprecated: `access_token_passthrough` is deprecated.
+	// Please enable include_metadata in the receiver and add the following config to the batch processor:
+	// batch:
+	// 	 metadata_keys: [X-Sf-Token]
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 }
