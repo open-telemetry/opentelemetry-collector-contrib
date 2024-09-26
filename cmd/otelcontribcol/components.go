@@ -53,7 +53,6 @@ import (
 	googlemanagedprometheusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
 	honeycombmarkerexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
 	influxdbexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
-	instanaexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	kafkaexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	loadbalancingexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	logicmonitorexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
@@ -159,6 +158,7 @@ import (
 	flinkmetricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 	fluentforwardreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	githubreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
+	googlecloudmonitoringreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver"
 	googlecloudpubsubreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 	googlecloudspannerreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 	haproxyreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver"
@@ -332,6 +332,7 @@ func components() (otelcol.Factories, error) {
 		flinkmetricsreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		githubreceiver.NewFactory(),
+		googlecloudmonitoringreceiver.NewFactory(),
 		googlecloudpubsubreceiver.NewFactory(),
 		googlecloudspannerreceiver.NewFactory(),
 		haproxyreceiver.NewFactory(),
@@ -428,6 +429,7 @@ func components() (otelcol.Factories, error) {
 	factories.ReceiverModules[flinkmetricsreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.110.0"
 	factories.ReceiverModules[fluentforwardreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.110.0"
 	factories.ReceiverModules[githubreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver v0.110.0"
+	factories.ReceiverModules[googlecloudmonitoringreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver v0.110.0"
 	factories.ReceiverModules[googlecloudpubsubreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.110.0"
 	factories.ReceiverModules[googlecloudspannerreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.110.0"
 	factories.ReceiverModules[haproxyreceiver.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.110.0"
@@ -517,7 +519,6 @@ func components() (otelcol.Factories, error) {
 		googlemanagedprometheusexporter.NewFactory(),
 		honeycombmarkerexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
-		instanaexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		logicmonitorexporter.NewFactory(),
@@ -570,7 +571,6 @@ func components() (otelcol.Factories, error) {
 	factories.ExporterModules[googlemanagedprometheusexporter.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.110.0"
 	factories.ExporterModules[honeycombmarkerexporter.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter v0.110.0"
 	factories.ExporterModules[influxdbexporter.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.110.0"
-	factories.ExporterModules[instanaexporter.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.110.0"
 	factories.ExporterModules[kafkaexporter.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.110.0"
 	factories.ExporterModules[loadbalancingexporter.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.110.0"
 	factories.ExporterModules[logicmonitorexporter.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.110.0"
