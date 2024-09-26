@@ -42,18 +42,23 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 	}
 
 	input := &Input{
-		InputOperator:        inputOperator,
-		buffer:               NewBuffer(),
-		channel:              c.Channel,
-		maxReads:             c.MaxReads,
-		startAt:              c.StartAt,
-		pollInterval:         c.PollInterval,
-		raw:                  c.Raw,
-		supressRenderingInfo: c.SupressRenderingInfo,
-		excludeProviders:     excludeProvidersSet(c.ExcludeProviders),
-		remote:               c.Remote,
+		InputOperator:    inputOperator,
+		buffer:           NewBuffer(),
+		channel:          c.Channel,
+		maxReads:         c.MaxReads,
+		startAt:          c.StartAt,
+		pollInterval:     c.PollInterval,
+		raw:              c.Raw,
+		excludeProviders: excludeProvidersSet(c.ExcludeProviders),
+		remote:           c.Remote,
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
+
+	if c.SuppressRenderingInfo {
+		input.processEvent = input.processEventWithoutRenderingInfo
+	} else {
+		input.processEvent = input.processEventWithRenderingInfo
+	}
 
 	return input, nil
 }
