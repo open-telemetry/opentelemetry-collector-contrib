@@ -158,6 +158,10 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 }
 
 func (m *Manager) applyCfg() error {
+	scrapeConfigs, err := m.promCfg.GetScrapeConfigs()
+	if err != nil {
+		return fmt.Errorf("could not get scrape configs: %w", err)
+	}
 	if !m.enableNativeHistograms {
 		// Enforce scraping classic histograms to avoid dropping them.
 		for _, scrapeConfig := range m.promCfg.ScrapeConfigs {
@@ -170,7 +174,7 @@ func (m *Manager) applyCfg() error {
 	}
 
 	discoveryCfg := make(map[string]discovery.Configs)
-	for _, scrapeConfig := range m.promCfg.ScrapeConfigs {
+	for _, scrapeConfig := range scrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
 		m.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
 	}

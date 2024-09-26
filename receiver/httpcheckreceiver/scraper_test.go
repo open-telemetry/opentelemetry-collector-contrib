@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -27,7 +28,7 @@ func newMockServer(t *testing.T, responseCode int) *httptest.Server {
 		// This could be expanded if the checks for the server include
 		// parsing the response content
 		_, err := rw.Write([]byte(``))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 }
 

@@ -90,7 +90,7 @@ func TestListDatabaseNames(t *testing.T) {
 		}
 		dbNames, err := client.ListDatabaseNames(context.Background(), bson.D{})
 		require.NoError(t, err)
-		require.Equal(t, dbNames[0], "admin")
+		require.Equal(t, "admin", dbNames[0])
 	})
 
 }

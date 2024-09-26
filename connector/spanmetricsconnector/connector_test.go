@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 const (
@@ -113,7 +114,7 @@ func verifyExemplarsExist(t testing.TB, input pmetric.Metrics) bool {
 				dps := metric.Histogram().DataPoints()
 				for dp := 0; dp < dps.Len(); dp++ {
 					d := dps.At(dp)
-					assert.Greater(t, d.Exemplars().Len(), 0)
+					assert.Positive(t, d.Exemplars().Len())
 				}
 			}
 		}
@@ -550,7 +551,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
-		optionalDims    []dimension
+		optionalDims    []pdatautil.Dimension
 		resourceAttrMap map[string]any
 		spanAttrMap     map[string]any
 		wantKey         string
@@ -561,22 +562,22 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "neither span nor resource contains key, dim provides default",
-			optionalDims: []dimension{
-				{name: "foo", value: &defaultFoo},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo", Value: &defaultFoo},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides no default",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
 		},
 		{
 			name: "span attribute contains dimension",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			spanAttrMap: map[string]any{
 				"foo": 99,
@@ -585,8 +586,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "resource attribute contains dimension",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			resourceAttrMap: map[string]any{
 				"foo": 99,
@@ -595,8 +596,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "both span and resource attribute contains dimension, should prefer span attribute",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			spanAttrMap: map[string]any{
 				"foo": 100,
@@ -658,7 +659,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	for i := 0; i < concurrency; i++ {
 		go func() {
 			err := p.Shutdown(ctx)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			wg.Done()
 		}()
 	}
@@ -1644,26 +1645,26 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
-					assert.Greater(t, dps.Len(), 0)
+					assert.Positive(t, dps.Len())
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, 1, dp.Exemplars().Len())
 						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
 					}
 				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
-					assert.Greater(t, dps.Len(), 0)
+					assert.Positive(t, dps.Len())
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, 1, dp.Exemplars().Len())
 						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dps := metric.ExponentialHistogram().DataPoints()
-					assert.Greater(t, dps.Len(), 0)
+					assert.Positive(t, dps.Len())
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, 1, dp.Exemplars().Len())
 						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
 					}
 				default:

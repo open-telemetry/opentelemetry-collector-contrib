@@ -82,7 +82,7 @@ func TestBearerAuthenticator(t *testing.T) {
 	expectedMd := map[string]string{
 		"authorization": fmt.Sprintf("Bearer %s", string(cfg.BearerToken)),
 	}
-	assert.Equal(t, md, expectedMd)
+	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
 	assert.True(t, credential.RequireTransportSecurity())
 
@@ -123,7 +123,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	expectedMd := map[string]string{
 		"authorization": tokenStr,
 	}
-	assert.Equal(t, md, expectedMd)
+	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
 	assert.True(t, credential.RequireTransportSecurity())
 
@@ -133,7 +133,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(context.Background())
 	expectedMd["authorization"] = tokenStr + "test"
-	assert.Equal(t, md, expectedMd)
+	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
 
 	// change file content back
@@ -143,7 +143,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	md, err = credential.GetRequestMetadata(context.Background())
 	expectedMd["authorization"] = tokenStr
 	time.Sleep(5 * time.Second)
-	assert.Equal(t, md, expectedMd)
+	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
 
 	assert.NoError(t, bauth.Shutdown(context.Background()))

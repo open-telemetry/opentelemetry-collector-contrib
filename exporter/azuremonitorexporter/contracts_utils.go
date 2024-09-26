@@ -6,7 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon" // Applies resource attributes values to data properties
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 const (

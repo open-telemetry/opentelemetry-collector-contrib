@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -229,7 +229,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -282,7 +282,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -342,7 +342,7 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -1287,7 +1287,7 @@ func TestErrorReceived(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -1376,7 +1376,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1415,7 +1415,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1450,7 +1450,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1509,7 +1509,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().Len())
 			},
 		},
@@ -1523,8 +1523,8 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
-				require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
+				require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 			},
 		},

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 const targetExternalLabels = `
@@ -803,19 +803,19 @@ func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	sms := rms[0].ScopeMetrics()
-	require.Equal(t, sms.Len(), 3, "Three scope metrics should be present")
+	require.Equal(t, 3, sms.Len(), "Three scope metrics should be present")
 	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
 		return a.Scope().Name() < b.Scope().Name()
 	})
-	require.Equal(t, sms.At(0).Scope().Name(), "fake.scope.name")
-	require.Equal(t, sms.At(0).Scope().Version(), "v0.1.0")
-	require.Equal(t, sms.At(0).Scope().Attributes().Len(), 0)
-	require.Equal(t, sms.At(1).Scope().Name(), "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver")
-	require.Equal(t, sms.At(1).Scope().Attributes().Len(), 0)
-	require.Equal(t, sms.At(2).Scope().Name(), "scope.with.attributes")
-	require.Equal(t, sms.At(2).Scope().Version(), "v1.5.0")
-	require.Equal(t, sms.At(2).Scope().Attributes().Len(), 1)
+	require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
+	require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
+	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
+	require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
+	require.Equal(t, "scope.with.attributes", sms.At(2).Scope().Name())
+	require.Equal(t, "v1.5.0", sms.At(2).Scope().Version())
+	require.Equal(t, 1, sms.At(2).Scope().Attributes().Len())
 	scopeAttrVal, found := sms.At(2).Scope().Attributes().Get("animal")
 	require.True(t, found)
-	require.Equal(t, scopeAttrVal.Str(), "bear")
+	require.Equal(t, "bear", scopeAttrVal.Str())
 }

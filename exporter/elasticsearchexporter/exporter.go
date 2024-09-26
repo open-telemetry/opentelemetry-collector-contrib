@@ -42,11 +42,7 @@ func newExporter(
 	set exporter.Settings,
 	index string,
 	dynamicIndex bool,
-) (*elasticsearchExporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
+) *elasticsearchExporter {
 	model := &encodeModel{
 		dedot: cfg.Mapping.Dedot,
 		mode:  cfg.MappingMode(),
@@ -72,7 +68,7 @@ func newExporter(
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
 		otel:           otel,
-	}, nil
+	}
 }
 
 func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) error {
@@ -206,7 +202,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 
-				upsertDataPoint := func(dp dataPoint, dpValue pcommon.Value) error {
+				upsertDataPoint := func(dp dataPoint) error {
 					fIndex, err := e.getMetricDataPointIndex(resource, scope, dp)
 					if err != nil {
 						return err
@@ -216,24 +212,18 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 
 					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource,
-						resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), metric, dp, dpValue); err != nil {
+						resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), metric, dp); err != nil {
 						return err
 					}
 					return nil
 				}
 
-				// TODO: support exponential histogram
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val, err := numberToValue(dp)
-						if err != nil {
-							errs = append(errs, err)
-							continue
-						}
-						if err := upsertDataPoint(dp, val); err != nil {
+						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -242,12 +232,16 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val, err := numberToValue(dp)
-						if err != nil {
+						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
-						if err := upsertDataPoint(dp, val); err != nil {
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						if err := upsertDataPoint(exponentialHistogramDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -256,12 +250,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val, err := histogramToValue(dp)
-						if err != nil {
-							errs = append(errs, err)
-							continue
-						}
-						if err := upsertDataPoint(dp, val); err != nil {
+						if err := upsertDataPoint(histogramDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -270,8 +259,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						val := summaryToValue(dp)
-						if err := upsertDataPoint(dp, val); err != nil {
+						if err := upsertDataPoint(summaryDataPoint{dp}); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -361,6 +349,12 @@ func (e *elasticsearchExporter) pushTraceData(
 					}
 					errs = append(errs, err)
 				}
+				for ii := 0; ii < span.Events().Len(); ii++ {
+					spanEvent := span.Events().At(ii)
+					if err := e.pushSpanEvent(ctx, resource, il.SchemaUrl(), span, spanEvent, scope, scopeSpan.SchemaUrl(), session); err != nil {
+						errs = append(errs, err)
+					}
+				}
 			}
 		}
 	}
@@ -401,4 +395,38 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
+}
+
+func (e *elasticsearchExporter) pushSpanEvent(
+	ctx context.Context,
+	resource pcommon.Resource,
+	resourceSchemaURL string,
+	span ptrace.Span,
+	spanEvent ptrace.SpanEvent,
+	scope pcommon.InstrumentationScope,
+	scopeSchemaURL string,
+	bulkIndexerSession bulkIndexerSession,
+) error {
+	fIndex := e.index
+	if e.dynamicIndex {
+		fIndex = routeSpanEvent(spanEvent, scope, resource, fIndex, e.otel)
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
+		if err != nil {
+			return err
+		}
+		fIndex = formattedIndex
+	}
+
+	document := e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL)
+	if document == nil {
+		return nil
+	}
+	docBytes, err := e.model.encodeDocument(*document)
+	if err != nil {
+		return err
+	}
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(docBytes), nil)
 }

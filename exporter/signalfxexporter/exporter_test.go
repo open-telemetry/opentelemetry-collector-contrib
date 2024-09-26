@@ -807,7 +807,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 				defer receivedTokens.Unlock()
 				return len(receivedTokens.tokens) == 1
 			}, 1*time.Second, 10*time.Millisecond)
-			assert.Equal(t, receivedTokens.tokens[0], tt.expectedToken)
+			assert.Equal(t, tt.expectedToken, receivedTokens.tokens[0])
 		})
 	}
 }
@@ -1446,7 +1446,7 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	for _, dp := range dps {
 		if dp.Metric == "cpu.num_processors" || dp.Metric == "cpu.idle" {
 			intVal := dp.Value.IntValue
-			require.NotNil(t, intVal, fmt.Sprintf("unexpected nil IntValue for %q", dp.Metric))
+			require.NotNilf(t, intVal, "unexpected nil IntValue for %q", dp.Metric)
 			found[dp.Metric] = *intVal
 		} else {
 			// account for unexpected w/ test-failing placeholder

@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
@@ -626,7 +626,7 @@ func compareDoubleValue(doubleVal float64) numberPointComparator {
 
 func assertNormalNan() numberPointComparator {
 	return func(t *testing.T, numberDataPoint pmetric.NumberDataPoint) {
-		assert.Equal(t, math.Float64bits(numberDataPoint.DoubleValue()), value.NormalNaN,
+		assert.Equal(t, value.NormalNaN, math.Float64bits(numberDataPoint.DoubleValue()),
 			"Metric double value is not normalNaN as expected")
 	}
 }
@@ -663,7 +663,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 				assert.Equal(t, quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile(),
 					"Summary quantile do not match")
 				if math.IsNaN(quantiles[i][1]) {
-					assert.Equal(t, math.Float64bits(summaryDataPoint.QuantileValues().At(i).Value()), value.NormalNaN,
+					assert.Equal(t, value.NormalNaN, math.Float64bits(summaryDataPoint.QuantileValues().At(i).Value()),
 						"Summary quantile value is not normalNaN as expected")
 				} else {
 					assert.Equal(t, quantiles[i][1], summaryDataPoint.QuantileValues().At(i).Value(),
