@@ -197,7 +197,8 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
 
-	packageManager, err := newPackageManager(s.config.Agent.Executable, s.config.Storage.Directory)
+	// TODO: Move to start after bootstrapping
+	packageManager, err := newPackageManager(s.config.Agent.Executable, s.config.Storage.Directory, "v0.110.0")
 	if err != nil {
 		return nil, fmt.Errorf("error creating package state manager: %w", err)
 	}
@@ -1454,7 +1455,7 @@ func (s *Supervisor) processPackagesAvailableMessage(ctx context.Context, msg *p
 		return errors.New("No top-level package in PackagesAvailable message, ignoring...")
 	}
 
-	if bytes.Equal(topLevelPkg.Hash, s.packageManager.agentHash) {
+	if bytes.Equal(topLevelPkg.Hash, s.packageManager.topLevelHash) {
 		// We already have this package, nothing to do
 		// TODO: Debug log
 		return nil
