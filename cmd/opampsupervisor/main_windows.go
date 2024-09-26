@@ -25,7 +25,13 @@ var (
 func run() error {
 	// always allocate a console in case we're running as service
 	if err := allocConsole(); err != nil {
-		return fmt.Errorf("alloc console: %w", err)
+		if !errors.Is(err, windows.ERROR_ACCESS_DENIED) {
+			// Per https://learn.microsoft.com/en-us/windows/console/allocconsole#remarks
+			// AllocConsole fails with this error when there's already a console attached, such as not being ran as service
+			// ignore this error and only return other errors
+			return fmt.Errorf("alloc console: %w", err)
+		}
+
 	}
 	defer func() {
 		_ = freeConsole()
@@ -38,10 +44,6 @@ func run() error {
 			// Per https://learn.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-startservicectrldispatchera#return-value
 			// this means that the process is not running as a service, so run interactively.
 
-			// manually free console before running interactively
-			if err = freeConsole(); err != nil {
-				return fmt.Errorf("free console: %w", err)
-			}
 			return runInteractive()
 		}
 		return fmt.Errorf("failed to start supervisor: %w", err)

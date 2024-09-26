@@ -28,7 +28,7 @@ const (
 //
 // To test locally:
 // * Build the supervisor and collector binaries:
-//   - go build
+//   - cd cmd/opampsupervisor; go build
 //   - make otelcontribcol
 //
 // * Install the Windows service
@@ -70,7 +70,7 @@ func TestSupervisorAsService(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond)
 
 	// verify supervisor service started & healthy
-	// Read the events from the otelcorecol source and check that they were emitted after the service
+	// Read the events from the opampsupervisor source and check that they were emitted after the service
 	// command started. This is a simple validation that the messages are being logged on the
 	// Windows event log.
 	cmd := exec.Command("wevtutil.exe", "qe", "Application", "/c:1", "/rd:true", "/f:RenderedXml", "/q:*[System[Provider[@Name='opampsupervisor']]]")

@@ -28,18 +28,18 @@ func (ws *windowsService) Execute(args []string, requests <-chan svc.ChangeReque
 	// The first argument supplied to service.Execute is the service name. If this is
 	// not provided for some reason, raise a relevant error to the system event log
 	if len(args) == 0 {
-		return false, uint32(windows.ERROR_INVALID_SERVICENAME) // 1213: ERROR_INVALID_SERVICENAME
+		return false, uint32(windows.ERROR_INVALID_SERVICENAME)
 	}
 
 	elog, err := openEventLog(args[0])
 	if err != nil {
-		return false, uint32(windows.ERROR_EVENTLOG_CANT_START) // 1501: ERROR_EVENTLOG_CANT_START
+		return false, uint32(windows.ERROR_EVENTLOG_CANT_START)
 	}
 
 	changes <- svc.Status{State: svc.StartPending}
 	if err = ws.start(elog); err != nil {
 		_ = elog.Error(3, fmt.Sprintf("failed to start service: %v", err))
-		return false, uint32(windows.ERROR_EXCEPTION_IN_SERVICE) // 1064: ERROR_EXCEPTION_IN_SERVICE
+		return false, uint32(windows.ERROR_EXCEPTION_IN_SERVICE)
 	}
 	changes <- svc.Status{State: svc.Running, Accepts: svc.AcceptStop | svc.AcceptShutdown}
 
@@ -56,7 +56,7 @@ func (ws *windowsService) Execute(args []string, requests <-chan svc.ChangeReque
 
 		default:
 			_ = elog.Error(3, fmt.Sprintf("unexpected service control request #%d", req.Cmd))
-			return false, uint32(windows.ERROR_INVALID_SERVICE_CONTROL) // 1052: ERROR_INVALID_SERVICE_CONTROL
+			return false, uint32(windows.ERROR_INVALID_SERVICE_CONTROL)
 		}
 	}
 
