@@ -797,7 +797,8 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: system.filesystem.utilization
             unit: "1"
-          - gauge:
+          - name: system.filesystem.capacity
+            sum:
               dataPoints:
                 - asDouble: 4.046309679639759e+11
                   attributes:
@@ -1198,7 +1199,6 @@ resourceMetrics:
                         stringValue: autofs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: system.filesystem.capacity
             unit: bytes
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper
