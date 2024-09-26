@@ -409,6 +409,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
+- [AddElementXML](#addelementxml)
 - [Base64Decode](#base64decode)
 - [Decode](#decode)
 - [Concat](#concat)
@@ -467,6 +468,30 @@ Available Converters:
 - [UserAgent](#useragent)
 - [UUID](#UUID)
 - [Year](#year)
+
+### AddElementXML
+
+`AddElementXML(target, xpath, name)`
+
+The `AddElementXML` Converter returns an edited version of an XML string with child elements added to selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `AddElementXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements.
+
+`name` is a string that specifies the name of the child element to add.
+
+Examples:
+
+Add an element "foo" to the root of the document
+
+- `AddElementXML(body, "/", "foo")`
+
+Add an element "bar" to any element called "foo"
+
+- `AddElementXML(body, "//foo", "bar")`
 
 ### Base64Decode (Deprecated)
 

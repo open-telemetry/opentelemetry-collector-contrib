@@ -306,6 +306,12 @@ func Test_e2e_converters(t *testing.T) {
 		want      func(tCtx ottllog.TransformContext)
 	}{
 		{
+			statement: `set(attributes["test"], AddElementXML("<a></a>", "/a", "b"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "<a><b></b></a>")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")

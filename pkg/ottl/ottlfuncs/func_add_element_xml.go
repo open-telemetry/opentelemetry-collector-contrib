@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/antchfx/xmlquery"
@@ -15,6 +16,7 @@ import (
 type AddElementXMLArguments[K any] struct {
 	Target ottl.StringGetter[K]
 	XPath  string
+	Name   string
 }
 
 func NewAddElementXMLFactory[K any]() ottl.Factory[K] {
@@ -32,12 +34,16 @@ func createAddElementXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argum
 		return nil, err
 	}
 
-	return addElementXML(args.Target, args.XPath), nil
+	if args.Name == "" {
+		return nil, fmt.Errorf("AddElementXML name must be non-empty")
+	}
+
+	return addElementXML(args.Target, args.XPath, args.Name), nil
 }
 
-// addElementXML returns a XML formatted string that is a result of removing all matching nodes from the target XML.
-// This currently supports removal of elements, attributes, text values, comments, and CharData.
-func addElementXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K] {
+// addElementXML returns a XML formatted string that is a result of adding a child element to all matching elements
+// in the target XML.
+func addElementXML[K any](target ottl.StringGetter[K], xPath string, name string) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		var doc *xmlquery.Node
 		if targetVal, err := target.Get(ctx, tCtx); err != nil {
@@ -45,20 +51,18 @@ func addElementXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFu
 		} else if doc, err = parseNodesXML(targetVal); err != nil {
 			return nil, err
 		}
+		var errs []error
 		xmlquery.FindEach(doc, xPath, func(_ int, n *xmlquery.Node) {
 			switch n.Type {
-			case xmlquery.ElementNode:
-				xmlquery.RemoveFromTree(n)
-			case xmlquery.AttributeNode:
-				n.Parent.RemoveAttr(n.Data)
-			case xmlquery.TextNode:
-				n.Data = ""
-			case xmlquery.CommentNode:
-				xmlquery.RemoveFromTree(n)
-			case xmlquery.CharDataNode:
-				xmlquery.RemoveFromTree(n)
+			case xmlquery.ElementNode, xmlquery.DocumentNode:
+				xmlquery.AddChild(n, &xmlquery.Node{
+					Type: xmlquery.ElementNode,
+					Data: name,
+				})
+			default:
+				errs = append(errs, fmt.Errorf("AddElementXML XPath selected non-element: %q", n.Data))
 			}
 		})
-		return doc.OutputXML(false), nil
+		return doc.OutputXML(false), errors.Join(errs...)
 	}
 }
