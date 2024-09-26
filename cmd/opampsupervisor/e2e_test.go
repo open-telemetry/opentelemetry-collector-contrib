@@ -345,20 +345,10 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
-	// Verify the collector is running by checking the metrics endpoint
-	require.Eventually(t, func() bool {
-		resp, err := http.DefaultClient.Get("http://localhost:12345")
-		if err != nil {
-			t.Logf("Failed agent healthcheck request: %s", err)
-			return false
-		}
-		require.NoError(t, resp.Body.Close())
-		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
-			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
-			return false
-		}
-		return true
-	}, 3*time.Second, 100*time.Millisecond)
+	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
+	time.Sleep(250 * time.Millisecond)
+	_, err := http.DefaultClient.Get("http://localhost:12345")
+	require.ErrorContains(t, err, "connection refused")
 
 	// Start the server and wait for the supervisor to connect
 	server.start()
