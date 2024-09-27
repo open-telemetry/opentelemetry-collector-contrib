@@ -137,6 +137,9 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	if err := mergedConfig.Unmarshal(receiverCfg); err != nil {
 		return nil, "", fmt.Errorf("failed to load %q template config: %w", receiver.id.String(), err)
 	}
+	if err := component.ValidateConfig(receiverCfg); err != nil {
+		return nil, "", fmt.Errorf("invalid runtime receiver config: receivers::%s: %w", receiver.id, err)
+	}
 	return receiverCfg, targetEndpoint, nil
 }
 
