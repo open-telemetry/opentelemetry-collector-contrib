@@ -38,7 +38,7 @@ func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.M
 		}
 	}
 
-	if err := persister.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
+	if err := persister.Set(ctx, key, buf.Bytes()); err != nil {
 		errs = append(errs, fmt.Errorf("persist known files: %w", err))
 	}
 
