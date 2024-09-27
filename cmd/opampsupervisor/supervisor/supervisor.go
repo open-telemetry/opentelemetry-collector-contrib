@@ -150,6 +150,7 @@ type Supervisor struct {
 
 func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
 	s := &Supervisor{
+		config:                       cfg,
 		logger:                       logger,
 		pidProvider:                  defaultPIDProvider{},
 		hasNewConfig:                 make(chan struct{}, 1),

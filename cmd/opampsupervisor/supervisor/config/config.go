@@ -18,6 +18,7 @@ import (
 	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap/zapcore"
 )
 
 // Supervisor is the Supervisor config file format.
@@ -26,6 +27,7 @@ type Supervisor struct {
 	Agent        Agent
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
+	Telemetry    Telemetry    `mapstructure:"telemetry"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -183,6 +185,16 @@ func (a Agent) Validate() error {
 type AgentDescription struct {
 	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+}
+
+type Telemetry struct {
+	// TODO: flesh out other configurable telemetry options
+	Logs Logs `mapstructure:"logs"`
+}
+
+type Logs struct {
+	Level       zapcore.Level `mapstructure:"level"`
+	OutputPaths []string      `mapstructure:"output_paths"`
 }
 
 // DefaultSupervisor returns the default supervisor config
