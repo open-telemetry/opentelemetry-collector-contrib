@@ -271,7 +271,7 @@ func TestTracesToMetrics(t *testing.T) {
 }
 
 // The test input file has a repetitive structure:
-// - There are four resources, each with six metrics, each with four data point.
+// - There are four resources, each with six metrics, each with four data points.
 // - The four resources have the following sets of attributes:
 //   - resource.required: foo, resource.optional: bar
 //   - resource.required: foo, resource.optional: notbar
