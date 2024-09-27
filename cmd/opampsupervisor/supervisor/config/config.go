@@ -155,6 +155,7 @@ type Agent struct {
 	Description             AgentDescription `mapstructure:"description"`
 	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
 	HealthCheckPort         int              `mapstructure:"health_check_port"`
+	Containerized           bool             `mapstructure:"containerized"`
 }
 
 func (a Agent) Validate() error {
@@ -229,6 +230,7 @@ func DefaultSupervisor() Supervisor {
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
+			Containerized:           false,
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
