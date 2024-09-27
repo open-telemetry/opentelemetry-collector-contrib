@@ -239,7 +239,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					if metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
-						errs = append(errs, errors.New("dropping cumulative temporality exponential histogram"))
+						errs = append(errs, fmt.Errorf("dropping cumulative temporality exponential histogram %s", metric.Name()))
 						continue
 					}
 					dps := metric.ExponentialHistogram().DataPoints()
