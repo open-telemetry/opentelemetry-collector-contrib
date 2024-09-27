@@ -331,7 +331,6 @@ func verifyPackageSignature(ctx context.Context, checkOpts *cosign.CheckOpts, pa
 }
 
 func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOpts, error) {
-	// TODO: allow specifying certs from config
 	rootCerts, err := fulcio.GetRoots()
 	if err != nil {
 		return nil, fmt.Errorf("fetch root certs: %w", err)
