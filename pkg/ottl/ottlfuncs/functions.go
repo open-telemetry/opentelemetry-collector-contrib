@@ -46,6 +46,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewExtractPatternsFactory[K](),
 		NewExtractGrokPatternsFactory[K](),
 		NewFnvFactory[K](),
+		NewGetXMLFactory[K](),
 		NewHourFactory[K](),
 		NewHoursFactory[K](),
 		NewIntFactory[K](),
