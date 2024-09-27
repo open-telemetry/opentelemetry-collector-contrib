@@ -25,6 +25,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -41,6 +42,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/healthchecker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
 var (
@@ -148,10 +150,8 @@ type Supervisor struct {
 	opampServerPort int
 }
 
-func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
+func NewSupervisor(configFile string) (*Supervisor, error) {
 	s := &Supervisor{
-		config:                       cfg,
-		logger:                       logger,
 		pidProvider:                  defaultPIDProvider{},
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
@@ -166,15 +166,32 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 
 	s.config = cfg
 
+=======
+	if err := s.loadConfig(configFile); err != nil {
+		return nil, fmt.Errorf("error loading config: %w", err)
+	}
+
+	if err := s.config.Validate(); err != nil {
+		return nil, fmt.Errorf("error validating config: %w", err)
+	}
+
+>>>>>>> 4aa3ba6ab9 (create logger in NewSupervisor)
 	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
+
+	logger, err := telemetry.NewLogger(s.config.Telemetry.Logs)
+	if err != nil {
+		return nil, fmt.Errorf("error creating logger: %w", err)
+	}
+	s.logger = logger
 
 	return s, nil
 }
@@ -254,6 +271,28 @@ func (s *Supervisor) createTemplates() error {
 	}
 	if s.ownTelemetryTemplate, err = template.New("owntelemetry").Parse(ownTelemetryTpl); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *Supervisor) loadConfig(configFile string) error {
+	if configFile == "" {
+		return errors.New("path to config file cannot be empty")
+	}
+
+	k := koanf.New("::")
+	if err := k.Load(file.Provider(configFile), yaml.Parser()); err != nil {
+		return err
+	}
+
+	decodeConf := koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	}
+
+	s.config = config.DefaultSupervisor()
+	if err := k.UnmarshalWithConf("", &s.config, decodeConf); err != nil {
+		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
 
 	return nil
