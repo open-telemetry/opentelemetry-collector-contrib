@@ -20,25 +20,14 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	// "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
-)
-
-const (
-	attributeLocation      = "location"
-	attributeName          = "name"
-	attributeResourceGroup = "resource_group"
-	attributeResourceType  = "type"
-	metadataPrefix         = "metadata_"
-	tagPrefix              = "tags_"
 )
 
 var (
@@ -61,17 +50,26 @@ var (
 	}
 )
 
+const (
+	attributeLocation      = "location"
+	attributeName          = "name"
+	attributeResourceGroup = "resource_group"
+	attributeResourceType  = "type"
+	metadataPrefix         = "metadata_"
+	tagPrefix              = "tags_"
+)
+
 // azureResource represents an Azure resource with its attributes, tags, and metrics definitions.
 type azureResource struct {
 	attributes                map[string]*string
-	tags                      map[string]*string
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
+	tags                      map[string]*string
 }
 
 // metricsCompositeKey uniquely identifies a set of metrics definitions based on time grain and dimensions.
 type metricsCompositeKey struct {
-	dimensions string // Comma-separated sorted dimensions
+	dimensions string // comma separated sorted dimensions
 	timeGrain  string
 }
 
@@ -127,18 +125,18 @@ type armClient interface {
 }
 
 func (s *azureScraper) getArmClientOptions() *arm.ClientOptions {
-	var cloudConfig cloud.Configuration
+	var cloudToUse cloud.Configuration
 	switch s.cfg.Cloud {
 	case azureGovernmentCloud:
-		cloudConfig = cloud.AzureGovernment
+		cloudToUse = cloud.AzureGovernment
 	case azureChinaCloud:
-		cloudConfig = cloud.AzureChina
+		cloudToUse = cloud.AzureChina
 	default:
-		cloudConfig = cloud.AzurePublic
+		cloudToUse = cloud.AzurePublic
 	}
 	return &arm.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
-			Cloud: cloudConfig,
+			Cloud: cloudToUse,
 		},
 	}
 }
