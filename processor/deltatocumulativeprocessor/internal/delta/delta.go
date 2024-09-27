@@ -82,3 +82,20 @@ type ErrGap struct {
 func (e ErrGap) Error() string {
 	return fmt.Sprintf("gap in stream from %s to %s. samples were likely lost in transit", e.From, e.To)
 }
+
+// AccumulateInto adds state and dp, storing the result in state
+//
+//	state = state + dp
+func AccumulateInto[P data.Point[P]](state P, dp P) error {
+	switch {
+	case dp.StartTimestamp() < state.StartTimestamp():
+		// belongs to older series
+		return ErrOlderStart{Start: state.StartTimestamp(), Sample: dp.StartTimestamp()}
+	case dp.Timestamp() <= state.Timestamp():
+		// out of order
+		return ErrOutOfOrder{Last: state.Timestamp(), Sample: dp.Timestamp()}
+	}
+
+	state.Add(dp)
+	return nil
+}
