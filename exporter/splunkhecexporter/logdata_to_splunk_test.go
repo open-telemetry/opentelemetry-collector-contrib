@@ -153,18 +153,18 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			},
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
-				return &Config{
-					HecToOtelAttrs: splunk.HecToOtelAttrs{
-						Source:     "mysource",
-						SourceType: "mysourcetype",
-						Index:      "myindex",
-						Host:       "myhost",
-					},
-					HecFields: OtelToHecFields{
-						SeverityNumber: "myseveritynum",
-						SeverityText:   "myseverity",
-					},
+				config := createDefaultConfig().(*Config)
+				config.HecToOtelAttrs = splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
 				}
+				config.HecFields = OtelToHecFields{
+					SeverityNumber: "myseveritynum",
+					SeverityText:   "myseverity",
+				}
+				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
 				func() *splunk.Event {
