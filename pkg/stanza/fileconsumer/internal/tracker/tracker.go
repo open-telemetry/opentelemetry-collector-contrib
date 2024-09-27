@@ -31,7 +31,7 @@ type Tracker interface {
 	EndPoll()
 	EndConsume() int
 	TotalReaders() int
-	SetPersister(persister operator.Persister)
+	EnableArchiving(persister operator.Persister)
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -148,7 +148,7 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 	return
 }
 
-func (t *fileTracker) SetPersister(persister operator.Persister) {
+func (t *fileTracker) EnableArchiving(persister operator.Persister) {
 	t.persister = persister
 }
 
@@ -257,4 +257,4 @@ func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
 
-func (t *noStateTracker) SetPersister(operator.Persister) {}
+func (t *noStateTracker) EnableArchiving(operator.Persister) {}

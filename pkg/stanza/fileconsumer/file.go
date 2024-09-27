@@ -59,7 +59,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 			m.readerFactory.FromBeginning = true
 			m.tracker.LoadMetadata(offsets)
 		}
-		m.tracker.SetPersister(persister)
+		m.tracker.EnableArchiving(persister)
 	} else if m.pollsToArchive > 0 {
 		return fmt.Errorf("archiving is not supported in memory, please use a storage extension")
 	}
