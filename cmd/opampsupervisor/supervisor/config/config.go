@@ -225,7 +225,7 @@ func (a Agent) Validate() error {
 }
 
 type AgentSignature struct {
-	// TODO: Certificate paths?
+	// TODO: Certificate paths? The certificate can be specified via SIGSTORE_ROOT_FILE for now
 	CertGithubWorkflowRepository string                   `mapstructure:"github_workflow_repository"`
 	Identities                   []AgentSignatureIdentity `mapstructure:"identities"`
 }
