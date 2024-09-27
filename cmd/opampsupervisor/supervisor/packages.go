@@ -86,6 +86,9 @@ func newPackageManager(agentPath, storageDir, agentVersion string, signatureOpts
 	}
 
 	checkOpts, err := createCosignCheckOpts(signatureOpts)
+	if err != nil {
+		return nil, fmt.Errorf("create signature verification options: %w", err)
+	}
 
 	return &packageManager{
 		packageState:    state,
