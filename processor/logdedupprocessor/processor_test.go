@@ -66,7 +66,7 @@ func Test_newProcessor(t *testing.T) {
 				tc.expected.nextConsumer = logsSink
 			}
 
-			actual, err := newProcessor(tc.cfg, getCondition(t, tc.cfg.Condition), logsSink, settings)
+			actual, err := newProcessor(tc.cfg, logsSink, settings)
 			if tc.expectedErr != nil {
 				require.ErrorContains(t, err, tc.expectedErr.Error())
 				require.Nil(t, actual)
@@ -95,7 +95,8 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, settings)
+	p, err := newProcessor(cfg, logsSink, settings)
+	p.matchFunc = p.dedupAll
 	require.NoError(t, err)
 
 	// Start then stop the processor checking for errors
@@ -124,7 +125,8 @@ func TestShutdownBeforeStart(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, settings)
+	p, err := newProcessor(cfg, logsSink, settings)
+	p.matchFunc = p.dedupAll
 	require.NoError(t, err)
 	require.NotPanics(t, func() {
 		err := p.Shutdown(context.Background())
@@ -146,7 +148,8 @@ func TestProcessorConsume(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, settings)
+	p, err := newProcessor(cfg, logsSink, settings)
+	p.matchFunc = p.dedupAll
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -209,7 +212,8 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	}
 
 	// Create & start a processor
-	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, processortest.NewNopSettings())
+	p, err := newProcessor(cfg, logsSink, processortest.NewNopSettings())
+	p.matchFunc = p.dedupAll
 	require.NoError(t, err)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -246,7 +250,9 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, getCondition(t, cfg.Condition), logsSink, processortest.NewNopSettings())
+	p, err := newProcessor(cfg, logsSink, processortest.NewNopSettings())
+	p.condition = getCondition(t, cfg.Condition)
+	p.matchFunc = p.dedupMatches
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())

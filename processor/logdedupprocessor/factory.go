@@ -32,10 +32,21 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 		return nil, fmt.Errorf("invalid config type: %+v", cfg)
 	}
 
-	condition, err := filterottl.NewBoolExprForLog([]string{processorCfg.Condition}, filterottl.StandardLogFuncs(), ottl.PropagateError, settings.TelemetrySettings)
+	processor, err := newProcessor(processorCfg, consumer, settings)
 	if err != nil {
-		return nil, fmt.Errorf("invalid condition: %w", err)
+		return nil, fmt.Errorf("error creating processor: %w", err)
 	}
 
-	return newProcessor(processorCfg, condition, consumer, settings)
+	if processorCfg.Condition == defaultCondition {
+		processor.matchFunc = processor.dedupAll
+	} else {
+		condition, err := filterottl.NewBoolExprForLog([]string{processorCfg.Condition}, filterottl.StandardLogFuncs(), ottl.PropagateError, settings.TelemetrySettings)
+		if err != nil {
+			return nil, fmt.Errorf("invalid condition: %w", err)
+		}
+		processor.condition = condition
+		processor.matchFunc = processor.dedupMatches
+	}
+
+	return processor, nil
 }

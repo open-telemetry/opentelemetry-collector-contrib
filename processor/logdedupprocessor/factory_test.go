@@ -38,6 +38,16 @@ func TestCreateLogs(t *testing.T) {
 			expectedErr: "invalid config type",
 		},
 		{
+			name: "valid custom condition",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Condition:         "false",
+			},
+		},
+		{
 			name: "invalid condition",
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,

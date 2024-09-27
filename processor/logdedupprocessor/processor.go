@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
@@ -22,19 +23,19 @@ import (
 
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
 type logDedupProcessor struct {
-	emitInterval    time.Duration
-	condition       expr.BoolExpr[ottllog.TransformContext]
-	conditionString string
-	aggregator      *logAggregator
-	remover         *fieldRemover
-	nextConsumer    consumer.Logs
-	logger          *zap.Logger
-	cancel          context.CancelFunc
-	wg              sync.WaitGroup
-	mux             sync.Mutex
+	emitInterval time.Duration
+	condition    expr.BoolExpr[ottllog.TransformContext]
+	matchFunc    func(context.Context, plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource, plog.ScopeLogs, plog.ResourceLogs) bool
+	aggregator   *logAggregator
+	remover      *fieldRemover
+	nextConsumer consumer.Logs
+	logger       *zap.Logger
+	cancel       context.CancelFunc
+	wg           sync.WaitGroup
+	mux          sync.Mutex
 }
 
-func newProcessor(cfg *Config, condition expr.BoolExpr[ottllog.TransformContext], nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
+func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
@@ -47,13 +48,11 @@ func newProcessor(cfg *Config, condition expr.BoolExpr[ottllog.TransformContext]
 	}
 
 	return &logDedupProcessor{
-		emitInterval:    cfg.Interval,
-		condition:       condition,
-		conditionString: cfg.Condition,
-		aggregator:      newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder),
-		remover:         newFieldRemover(cfg.ExcludeFields),
-		nextConsumer:    nextConsumer,
-		logger:          settings.Logger,
+		emitInterval: cfg.Interval,
+		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder),
+		remover:      newFieldRemover(cfg.ExcludeFields),
+		nextConsumer: nextConsumer,
+		logger:       settings.Logger,
 	}, nil
 }
 
@@ -98,27 +97,7 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 			logs := sl.LogRecords()
 
 			logs.RemoveIf(func(logRecord plog.LogRecord) bool {
-				// no need to evaluate condition if it is "true"
-				conditionMatch := p.conditionString == "true"
-				if !conditionMatch {
-					logCtx := ottllog.NewTransformContext(logRecord, scope, resource, sl, rl)
-					logMatch, err := p.condition.Eval(ctx, logCtx)
-					if err != nil {
-						p.logger.Error("error matching condition", zap.Error(err))
-						return false
-					}
-					conditionMatch = logMatch
-				}
-
-				// only aggregate logs that match the condition
-				if conditionMatch {
-					// Remove excluded fields if any
-					p.remover.RemoveFields(logRecord)
-
-					// Add the log to the aggregator
-					p.aggregator.Add(resource, scope, logRecord)
-				}
-				return conditionMatch
+				return p.matchFunc(ctx, logRecord, scope, resource, sl, rl)
 			})
 		}
 	}
@@ -132,6 +111,26 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 	}
 
 	return nil
+}
+
+func (p *logDedupProcessor) dedupMatches(ctx context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource, sl plog.ScopeLogs, rl plog.ResourceLogs) bool {
+	logCtx := ottllog.NewTransformContext(logRecord, scope, resource, sl, rl)
+	logMatch, err := p.condition.Eval(ctx, logCtx)
+	if err != nil {
+		p.logger.Error("error matching condition", zap.Error(err))
+		return false
+	}
+	if logMatch {
+		p.remover.RemoveFields(logRecord)
+		p.aggregator.Add(resource, scope, logRecord)
+	}
+	return logMatch
+}
+
+func (p *logDedupProcessor) dedupAll(_ context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource, _ plog.ScopeLogs, _ plog.ResourceLogs) bool {
+	p.remover.RemoveFields(logRecord)
+	p.aggregator.Add(resource, scope, logRecord)
+	return true
 }
 
 // handleExportInterval sends metrics at the configured interval.
