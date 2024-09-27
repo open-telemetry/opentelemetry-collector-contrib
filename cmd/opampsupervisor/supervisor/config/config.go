@@ -237,3 +237,25 @@ func DefaultSupervisor() Supervisor {
 		},
 	}
 }
+
+func LoadConfig(configFile string) (Supervisor, error) {
+	if configFile == "" {
+		return Supervisor{}, errors.New("path to config file cannot be empty")
+	}
+
+	k := koanf.New("::")
+	if err := k.Load(file.Provider(configFile), yaml.Parser()); err != nil {
+		return Supervisor{}, err
+	}
+
+	decodeConf := koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	}
+
+	cfg := DefaultSupervisor()
+	if err := k.UnmarshalWithConf("", &cfg, decodeConf); err != nil {
+		return Supervisor{}, fmt.Errorf("cannot parse %v: %w", configFile, err)
+	}
+
+	return cfg, nil
+}

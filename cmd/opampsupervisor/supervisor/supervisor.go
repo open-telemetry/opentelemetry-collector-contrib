@@ -42,7 +42,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/healthchecker"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
 var (
@@ -150,8 +149,10 @@ type Supervisor struct {
 	opampServerPort int
 }
 
-func NewSupervisor(configFile string) (*Supervisor, error) {
+func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
 	s := &Supervisor{
+		config:                       cfg,
+		logger:                       logger,
 		pidProvider:                  defaultPIDProvider{},
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
@@ -166,32 +167,14 @@ func NewSupervisor(configFile string) (*Supervisor, error) {
 		return nil, err
 	}
 
-<<<<<<< HEAD
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
-
 	s.config = cfg
 
-=======
-	if err := s.loadConfig(configFile); err != nil {
-		return nil, fmt.Errorf("error loading config: %w", err)
-	}
-
-	if err := s.config.Validate(); err != nil {
-		return nil, fmt.Errorf("error validating config: %w", err)
-	}
-
->>>>>>> 4aa3ba6ab9 (create logger in NewSupervisor)
 	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
-
-	logger, err := telemetry.NewLogger(s.config.Telemetry.Logs)
-	if err != nil {
-		return nil, fmt.Errorf("error creating logger: %w", err)
-	}
-	s.logger = logger
 
 	return s, nil
 }

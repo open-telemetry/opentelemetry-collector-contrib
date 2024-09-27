@@ -10,13 +10,14 @@ import (
 	"os/signal"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
 func main() {
 	configFlag := flag.String("config", "", "Path to a supervisor configuration file")
 	flag.Parse()
 
-<<<<<<< HEAD
 	// load & validate config
 	cfg, err := config.Load(*configFlag)
 	if err != nil {
@@ -34,11 +35,6 @@ func main() {
 		logger.Error(err.Error())
 		os.Exit(-1)
 		return
-=======
-	supervisor, err := supervisor.NewSupervisor(*configFlag)
-	if err != nil {
-		log.Fatal("failed to create new supervisor: %w", err)
->>>>>>> 4aa3ba6ab9 (create logger in NewSupervisor)
 	}
 
 	err = supervisor.Start()
