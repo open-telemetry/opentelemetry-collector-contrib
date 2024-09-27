@@ -7,13 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
-	"os"
-	"runtime"
-	"sort"
-	"strings"
-	"sync"
-
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -27,6 +20,12 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
+	"net/http"
+	"os"
+	"runtime"
+	"sort"
+	"strings"
+	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
@@ -112,6 +111,10 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
+	if err := o.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
+		o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
+	}
+
 	o.logger.Debug("Starting OpAMP client...")
 
 	if err := o.opampClient.Start(context.Background(), settings); err != nil {
@@ -119,6 +122,10 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	}
 
 	o.logger.Debug("OpAMP client started")
+
+	if err := o.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true}); err != nil {
+		o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
+	}
 
 	return nil
 }
@@ -132,8 +139,17 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	if o.opampClient == nil {
 		return nil
 	}
+	err := o.opampClient.SetHealth(
+		&protobufs.ComponentHealth{
+			Healthy: false, LastError: "Agent is shut down",
+		},
+	)
+
+	if err != nil {
+		o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
+	}
 	o.logger.Debug("Stopping OpAMP client...")
-	err := o.opampClient.Stop(ctx)
+	err = o.opampClient.Stop(ctx)
 	// Opamp-go considers this an error, but the collector does not.
 	// https://github.com/open-telemetry/opamp-go/issues/255
 	if err != nil && strings.EqualFold(err.Error(), "cannot stop because not started") {
