@@ -5,43 +5,44 @@ package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/KimMachineGun/automemlimit/memlimit"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/automaxprocs/maxprocs"
-	"go.uber.org/zap"
+)
+
+type (
+	undoFunc        func()
+	runtimeModifier func() (undoFunc, error)
 )
 
 type cgroupRuntimeExtension struct {
 	config *Config
-	logger *zap.Logger
 
-	maxProcsUndoFn func()
+	maxProcsFn     runtimeModifier
+	undoMaxProcsFn undoFunc
+
+	memLimitFn     runtimeModifier
+	undoMemLimitFn undoFunc
 }
 
-func newCgroupRuntime(cfg *Config, set component.TelemetrySettings) *cgroupRuntimeExtension {
+func newCgroupRuntime(cfg *Config, maxProcsFn runtimeModifier, memLimitFn runtimeModifier) *cgroupRuntimeExtension {
 	return &cgroupRuntimeExtension{
-		config: cfg,
-		logger: set.Logger,
+		config:     cfg,
+		maxProcsFn: maxProcsFn,
+		memLimitFn: memLimitFn,
 	}
 }
 
 func (c *cgroupRuntimeExtension) Start(ctx context.Context, host component.Host) error {
+	var err error
 	if c.config.GoMaxProcs.Enable {
-		undo, err := maxprocs.Set(maxprocs.Logger(func(str string, params ...interface{}) {
-			c.logger.Debug(fmt.Sprintf(str, params))
-		}))
+		c.undoMaxProcsFn, err = c.maxProcsFn()
 		if err != nil {
 			return err
 		}
-		c.maxProcsUndoFn = undo
 	}
 
 	if c.config.GoMemLimit.Enable {
-		// TODO: set logger bridge
-		fmt.Println("setting go mem limit")
-		_, err := memlimit.SetGoMemLimitWithOpts(memlimit.WithRatio(c.config.GoMemLimit.Ratio))
+		c.undoMemLimitFn, err = c.memLimitFn()
 		if err != nil {
 			return err
 		}
@@ -50,8 +51,11 @@ func (c *cgroupRuntimeExtension) Start(ctx context.Context, host component.Host)
 }
 
 func (c *cgroupRuntimeExtension) Shutdown(_ context.Context) error {
-	if c.maxProcsUndoFn != nil {
-		c.maxProcsUndoFn()
+	if c.undoMaxProcsFn != nil {
+		c.undoMaxProcsFn()
+	}
+	if c.undoMemLimitFn != nil {
+		c.undoMemLimitFn()
 	}
 
 	return nil
