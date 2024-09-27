@@ -360,7 +360,7 @@ service:
 
 		s := Supervisor{
 			logger:      zap.NewNop(),
-			pidProvider: defaultPIDProvider{},
+			pidProvider: staticPIDProvider(88888),
 			config: config.Supervisor{
 				Storage: config.Storage{
 					Directory: configStorageDir,
@@ -378,7 +378,7 @@ service:
 			doneChan:                     make(chan struct{}),
 		}
 
-		require.Nil(t, s.createTemplates())
+		require.NoError(t, s.createTemplates())
 
 		s.agentDescription.Store(&protobufs.AgentDescription{
 			IdentifyingAttributes:    []*protobufs.KeyValue{},
@@ -392,10 +392,7 @@ service:
 		fileContent, err := os.ReadFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile))
 		require.NoError(t, err)
 		assert.Contains(t, string(fileContent), testConfigMessage)
-		// replace the ppid as that changes with each run
-		ppIDRegex := regexp.MustCompile(`ppid: [0-9]*`)
-		gotMergedConfig := ppIDRegex.ReplaceAll([]byte(s.mergedConfig.Load().(string)), []byte("ppid: 88888"))
-		assert.Equal(t, expectedMergedConfig, string(gotMergedConfig))
+		assert.Equal(t, expectedMergedConfig, s.mergedConfig.Load())
 		assert.True(t, remoteConfigStatusUpdated)
 	})
 	t.Run("RemoteConfig - Remote Config message is processed but OpAmp Client fails", func(t *testing.T) {
@@ -462,7 +459,7 @@ service:
 
 		s := Supervisor{
 			logger:      zap.NewNop(),
-			pidProvider: defaultPIDProvider{},
+			pidProvider: staticPIDProvider(88888),
 			config: config.Supervisor{
 				Storage: config.Storage{
 					Directory: configStorageDir,
@@ -494,10 +491,7 @@ service:
 		fileContent, err := os.ReadFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile))
 		require.NoError(t, err)
 		assert.Contains(t, string(fileContent), testConfigMessage)
-		// replace the ppid as that changes with each run
-		ppIDRegex := regexp.MustCompile(`ppid: [0-9]*`)
-		gotMergedConfig := ppIDRegex.ReplaceAll([]byte(s.mergedConfig.Load().(string)), []byte("ppid: 88888"))
-		assert.Equal(t, expectedMergedConfig, string(gotMergedConfig))
+		assert.Equal(t, expectedMergedConfig, s.mergedConfig.Load())
 		assert.True(t, remoteConfigStatusUpdated)
 	})
 	t.Run("RemoteConfig - Invalid Remote Config message is detected and status is set appropriately", func(t *testing.T) {
@@ -993,7 +987,7 @@ func TestSupervisor_findRandomPort(t *testing.T) {
 	s := Supervisor{}
 	port, err := s.findRandomPort()
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotZero(t, port)
 }
 
@@ -1025,7 +1019,7 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 
 		s.agentDescription = agentDesc
 
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		configChanged := s.setupOwnMetrics(context.Background(), &protobufs.TelemetryConnectionSettings{
 			DestinationEndpoint: "",
@@ -1060,7 +1054,7 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 
 		s.agentDescription = agentDesc
 
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		configChanged := s.setupOwnMetrics(context.Background(), &protobufs.TelemetryConnectionSettings{
 			DestinationEndpoint: "localhost",
@@ -1303,6 +1297,6 @@ service:
 
 	noopConfig, err := s.composeNoopConfig()
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, expectedConfig, string(noopConfig))
 }
