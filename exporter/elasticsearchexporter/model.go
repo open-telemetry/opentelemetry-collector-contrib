@@ -384,6 +384,9 @@ func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	if hasHint(dp.Attributes(), hintAggregateMetricDouble) {
+		return "summary" // FIXME: waiting for rebase
+	}
 	return "histogram"
 }
 
@@ -407,6 +410,9 @@ func (dp histogramDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	if hasHint(dp.Attributes(), hintAggregateMetricDouble) {
+		return "summary" // FIXME: waiting for rebase
+	}
 	return "histogram"
 }
 
