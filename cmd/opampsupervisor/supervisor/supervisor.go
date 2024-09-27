@@ -281,7 +281,8 @@ func (s *Supervisor) Start() error {
 		return err
 	}
 
-	if err = s.getBootstrapInfo(); err != nil {
+	agentVersion, err := s.getBootstrapInfo()
+	if err != nil {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
@@ -293,8 +294,13 @@ func (s *Supervisor) Start() error {
 		}
 	}
 
-	// TODO: Pass in agent version
-	packageManager, err := newPackageManager(s.config.Agent.Executable, s.config.Storage.Directory, "v0.110.0", s)
+	packageManager, err := newPackageManager(
+		s.config.Agent.Executable,
+		s.config.Storage.Directory,
+		agentVersion,
+		s.config.Agent.Signature,
+		s,
+	)
 	if err != nil {
 		return fmt.Errorf("error creating package state manager: %w", err)
 	}
@@ -362,20 +368,20 @@ func (s *Supervisor) createTemplates() error {
 // an OpAMP extension, obtains the agent description, then
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
-func (s *Supervisor) getBootstrapInfo() (err error) {
+func (s *Supervisor) getBootstrapInfo() (_ string, err error) {
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	bootstrapConfig, err := s.composeNoopConfig()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
 	if err != nil {
-		return fmt.Errorf("failed to write agent config: %w", err)
+		return "", fmt.Errorf("failed to write agent config: %w", err)
 	}
 
 	srv := server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
@@ -383,6 +389,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	done := make(chan error, 1)
 	var connected atomic.Bool
 	var doneReported atomic.Bool
+	var agentVersion string
 
 	// Start a one-shot server to get the Collector's agent description
 	// and available components using the Collector's OpAMP extension.
@@ -415,7 +422,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 						}
 						instanceIDSeen = true
 					case semconv.AttributeServiceVersion:
-						s.packageManager.setAgentVersion(attr.Value.GetStringValue())
+						agentVersion = attr.Value.GetStringValue()
 					}
 				}
 
@@ -457,7 +464,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		},
 	}.toServerSettings())
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	defer func() {
@@ -473,11 +480,11 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		"--config", s.agentConfigFilePath(),
 	)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if err = cmd.Start(context.Background()); err != nil {
-		return err
+		return "", err
 	}
 
 	defer func() {
@@ -489,12 +496,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	select {
 	case <-time.After(s.config.Agent.BootstrapTimeout):
 		if connected.Load() {
-			return errors.New("collector connected but never responded with an AgentDescription message")
+			return "", errors.New("collector connected but never responded with an AgentDescription message")
 		} else {
-			return errors.New("collector's OpAMP client never connected to the Supervisor")
+			return "", errors.New("collector's OpAMP client never connected to the Supervisor")
 		}
 	case err = <-done:
-		return err
+		return agentVersion, err
 	}
 }
 
@@ -707,12 +714,6 @@ func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
 	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
 	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
 	s.agentDescription.Store(ad)
-
-	for _, attr := range ad.IdentifyingAttributes {
-		if attr.Key == semconv.AttributeServiceVersion {
-			s.packageManager.setAgentVersion(attr.Value.GetStringValue())
-		}
-	}
 }
 
 // setAvailableComponents sets the available components of the OpAMP agent
@@ -1492,7 +1493,10 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.PackagesAvailable != nil {
-		msg.PackageSyncer.Sync(context.Background())
+		err := msg.PackageSyncer.Sync(context.Background())
+		if err != nil {
+			s.logger.Error("Failed to sync PackagesAvailable message", zap.Error(err))
+		}
 		// TODO: Should we wait for the sync to be done somehow? Should it be in a separate goroutine
 		<-msg.PackageSyncer.Done()
 	}

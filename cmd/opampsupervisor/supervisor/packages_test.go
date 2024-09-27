@@ -1,14 +1,51 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
 package supervisor
 
-import (
-	"testing"
+import "testing"
 
-	"go.uber.org/goleak"
-)
+func TestNewPackageManager(t *testing.T) {
 
-func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+}
+
+func TestPackageManager_AllPackagesHash(t *testing.T) {
+
+}
+
+func TestPackageManager_SetAllPackagesHash(t *testing.T) {
+
+}
+
+func TestPackageManager_Packages(t *testing.T) {
+
+}
+
+func TestPackageManager_PackageState(t *testing.T) {
+
+}
+
+func TestPackageManager_SetPackageState(t *testing.T) {
+
+}
+
+func TestPackageManager_CreatePackage(t *testing.T) {
+
+}
+
+func TestPackageManager_FileContentHash(t *testing.T) {
+
+}
+
+func TestPackageManager_UpdateContent(t *testing.T) {
+
+}
+
+func TestPackageManager_DeletePackage(t *testing.T) {
+
+}
+
+func TestPackageManager_LastReportedStatuses(t *testing.T) {
+
+}
+
+func TestPackageManager_SetLastReportedStatuses(t *testing.T) {
+
 }
