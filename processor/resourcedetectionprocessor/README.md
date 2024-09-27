@@ -508,11 +508,34 @@ processors:
     override: false
 ```
 
+### Kubeadm Metadata
+
+Queries the K8S api server to retrieve the following node resource attributes:
+
+    * k8s.cluster.name
+
+The following permissions are required:
+```yaml
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
+```
+
+| Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
+| ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| auth_type | string | No       | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
+| node_from_env_var | string | Yes      | `K8S_NODE_NAME` | The environment variable name that holds the name of the node to retrieve metadata from. Default value is `K8S_NODE_NAME`. You can set the env dynamically on the workload definition using the downward API; see example     
+
 ### K8S Node Metadata
 
 Queries the K8S api server to retrieve the following node resource attributes:
 
     * k8s.node.uid
+    * k8s.node.name
 
 The following permissions are required:
 ```yaml
