@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace string) func(
+func routeWithDefaults(defaultDSType string) func(
 	pcommon.Map,
 	pcommon.Map,
 	pcommon.Map,
@@ -29,8 +29,8 @@ func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace strin
 		// 1. read data_stream.* from attributes
 		// 2. read elasticsearch.index.* from attributes
 		// 3. use default hardcoded data_stream.*
-		dataset, datasetExists := getFromAttributes(dataStreamDataset, defaultDSDataset, recordAttr, scopeAttr, resourceAttr)
-		namespace, namespaceExists := getFromAttributes(dataStreamNamespace, defaultDSNamespace, recordAttr, scopeAttr, resourceAttr)
+		dataset, datasetExists := getFromAttributes(dataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
+		namespace, namespaceExists := getFromAttributes(dataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
 		dataStreamMode := datasetExists || namespaceExists
 		if !dataStreamMode {
 			prefix, prefixExists := getFromAttributes(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
@@ -62,7 +62,7 @@ func routeLogRecord(
 	fIndex string,
 	otel bool,
 ) string {
-	route := routeWithDefaults(defaultDataStreamTypeLogs, defaultDataStreamDataset, defaultDataStreamNamespace)
+	route := routeWithDefaults(defaultDataStreamTypeLogs)
 	return route(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel)
 }
 
@@ -75,7 +75,7 @@ func routeDataPoint(
 	fIndex string,
 	otel bool,
 ) string {
-	route := routeWithDefaults(defaultDataStreamTypeMetrics, defaultDataStreamDataset, defaultDataStreamNamespace)
+	route := routeWithDefaults(defaultDataStreamTypeMetrics)
 	return route(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel)
 }
 
@@ -88,6 +88,20 @@ func routeSpan(
 	fIndex string,
 	otel bool,
 ) string {
-	route := routeWithDefaults(defaultDataStreamTypeTraces, defaultDataStreamDataset, defaultDataStreamNamespace)
+	route := routeWithDefaults(defaultDataStreamTypeTraces)
 	return route(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel)
+}
+
+// routeSpanEvent returns the name of the index to send the span event to according to data stream routing attributes.
+// This function may mutate record attributes.
+func routeSpanEvent(
+	spanEvent ptrace.SpanEvent,
+	scope pcommon.InstrumentationScope,
+	resource pcommon.Resource,
+	fIndex string,
+	otel bool,
+) string {
+	// span events are sent to logs-*, not traces-*
+	route := routeWithDefaults(defaultDataStreamTypeLogs)
+	return route(spanEvent.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel)
 }

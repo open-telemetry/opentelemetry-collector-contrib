@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
 const (
@@ -40,10 +42,10 @@ const (
 )
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
-	if ddTracerVersion := req.Header.Get("Datadog-Meta-Tracer-Version"); ddTracerVersion != "" {
+	if ddTracerVersion := req.Header.Get(header.TracerVersion); ddTracerVersion != "" {
 		attrs.PutStr(semconv.AttributeTelemetrySDKVersion, "Datadog-"+ddTracerVersion)
 	}
-	if ddTracerLang := req.Header.Get("Datadog-Meta-Lang"); ddTracerLang != "" {
+	if ddTracerLang := req.Header.Get(header.Lang); ddTracerLang != "" {
 		otelLang := ddTracerLang
 		if ddTracerLang == ".NET" {
 			otelLang = "dotnet"
@@ -115,6 +117,11 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			for k, v := range span.GetMeta() {
 				if k = translateDatadogKeyToOTel(k); len(k) > 0 {
 					newSpan.Attributes().PutStr(k, v)
+				}
+			}
+			for k, v := range span.GetMetrics() {
+				if k = translateDatadogKeyToOTel(k); len(k) > 0 {
+					newSpan.Attributes().PutDouble(k, v)
 				}
 			}
 
@@ -211,9 +218,10 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 		appVersion := appVersionFromTraceChunks(traceChunks)
 
 		tracerPayload := &pb.TracerPayload{
-			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
-			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
-			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
+			LanguageName:    req.Header.Get(header.Lang),
+			LanguageVersion: req.Header.Get(header.LangVersion),
+			TracerVersion:   req.Header.Get(header.TracerVersion),
+			ContainerID:     req.Header.Get(header.ContainerID),
 			Chunks:          traceChunks,
 			AppVersion:      appVersion,
 		}
@@ -225,9 +233,9 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 			return nil, err
 		}
 		tracerPayload := &pb.TracerPayload{
-			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
-			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
-			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
+			LanguageName:    req.Header.Get(header.Lang),
+			LanguageVersion: req.Header.Get(header.LangVersion),
+			TracerVersion:   req.Header.Get(header.TracerVersion),
 			Chunks:          traceChunksFromSpans(spans),
 		}
 		tracerPayloads = append(tracerPayloads, tracerPayload)
@@ -253,9 +261,9 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 		traceChunks := traceChunksFromTraces(traces)
 		appVersion := appVersionFromTraceChunks(traceChunks)
 		tracerPayload := &pb.TracerPayload{
-			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
-			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
-			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
+			LanguageName:    req.Header.Get(header.Lang),
+			LanguageVersion: req.Header.Get(header.LangVersion),
+			TracerVersion:   req.Header.Get(header.TracerVersion),
 			Chunks:          traceChunks,
 			AppVersion:      appVersion,
 		}

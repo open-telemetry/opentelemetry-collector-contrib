@@ -249,22 +249,21 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *splunkReceiver) processSuccessResponseWithAck(ctx context.Context, resp http.ResponseWriter, eventCount int, channelID string) {
+func (r *splunkReceiver) processSuccessResponseWithAck(resp http.ResponseWriter, channelID string) error {
 	if r.ackExt == nil {
 		panic("writing response with ack when ack extension is not configured")
 	}
 
 	ackID := r.ackExt.ProcessEvent(channelID)
 	r.ackExt.Ack(channelID, ackID)
-	r.processSuccessResponse(ctx, resp, eventCount, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
+	return r.processSuccessResponse(resp, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
 }
 
-func (r *splunkReceiver) processSuccessResponse(ctx context.Context, resp http.ResponseWriter, eventCount int, bodyContent []byte) {
+func (r *splunkReceiver) processSuccessResponse(resp http.ResponseWriter, bodyContent []byte) error {
 	resp.Header().Set(httpContentTypeHeader, httpJSONTypeHeader)
 	resp.WriteHeader(http.StatusOK)
-	if _, err := resp.Write(bodyContent); err != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, eventCount, err)
-	}
+	_, err := resp.Write(bodyContent)
+	return err
 }
 
 func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) {
@@ -308,7 +307,9 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	queriedAcks := r.ackExt.QueryAcks(channelID, ackRequest.Acks)
 	ackString, _ := json.Marshal(queriedAcks)
-	r.processSuccessResponse(ctx, resp, 0, []byte(fmt.Sprintf(ackResponse, ackString)))
+	if err := r.processSuccessResponse(resp, []byte(fmt.Sprintf(ackResponse, ackString))); err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, err)
+	}
 }
 
 func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Request) {
@@ -383,12 +384,17 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if consumerErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
+		var ackErr error
 		if len(channelID) > 0 && r.ackExt != nil {
-			r.processSuccessResponseWithAck(ctx, resp, ld.LogRecordCount(), channelID)
+			ackErr = r.processSuccessResponseWithAck(resp, channelID)
 		} else {
-			r.processSuccessResponse(ctx, resp, ld.LogRecordCount(), okRespBody)
+			ackErr = r.processSuccessResponse(resp, okRespBody)
 		}
-		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), slLen, nil)
+		if ackErr != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ld.LogRecordCount(), err)
+		} else {
+			r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), slLen, nil)
+		}
 	}
 }
 
@@ -521,7 +527,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
-		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 			return
@@ -531,17 +536,27 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
 
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(metricEvents), decodeErr)
 			return
 		}
 	}
 
+	var ackErr error
 	if len(channelID) > 0 && r.ackExt != nil {
-		r.processSuccessResponseWithAck(ctx, resp, len(events)+len(metricEvents), channelID)
+		ackErr = r.processSuccessResponseWithAck(resp, channelID)
 	} else {
-		r.processSuccessResponse(ctx, resp, len(events)+len(metricEvents), okRespBody)
+		ackErr = r.processSuccessResponse(resp, okRespBody)
+	}
+	if ackErr != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events)+len(metricEvents), ackErr)
+	} else {
+		if r.logsConsumer != nil {
+			r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), nil)
+		}
+		if r.metricsConsumer != nil {
+			r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
+		}
 	}
 }
 
@@ -576,9 +591,10 @@ func (r *splunkReceiver) failRequest(
 		}
 	}
 
-	if r.metricsConsumer == nil {
+	if r.logsConsumer != nil {
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
-	} else {
+	}
+	if r.metricsConsumer != nil {
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
 	}
 

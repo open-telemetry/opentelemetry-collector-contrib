@@ -113,10 +113,10 @@ func TestQueueOverflow(t *testing.T) {
 	}
 	// number of dropped records
 	assert.Equal(t, 5, logs.Len())
-	assert.Equal(t, 20, len(sender.queue))
+	assert.Len(t, sender.queue, 20)
 	sender.send()
 	// only one batch succeeded
-	assert.Equal(t, 15, len(sender.queue))
+	assert.Len(t, sender.queue, 15)
 	// verify that sent back of queue
 	for _, record := range sender.queue {
 		assert.Greater(t, *record.SegmentsSentCount, int64(5))

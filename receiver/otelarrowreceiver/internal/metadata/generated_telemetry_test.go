@@ -14,6 +14,7 @@ import (
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 type mockMeter struct {
@@ -43,6 +44,9 @@ func (m mockTracerProvider) Tracer(name string, opts ...trace.TracerOption) trac
 
 func TestProviders(t *testing.T) {
 	set := component.TelemetrySettings{
+		LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider {
+			return mockMeterProvider{}
+		},
 		MeterProvider:  mockMeterProvider{},
 		TracerProvider: mockTracerProvider{},
 	}
@@ -64,13 +68,16 @@ func TestProviders(t *testing.T) {
 
 func TestNewTelemetryBuilder(t *testing.T) {
 	set := component.TelemetrySettings{
+		LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider {
+			return mockMeterProvider{}
+		},
 		MeterProvider:  mockMeterProvider{},
 		TracerProvider: mockTracerProvider{},
 	}
 	applied := false
-	_, err := NewTelemetryBuilder(set, func(b *TelemetryBuilder) {
+	_, err := NewTelemetryBuilder(set, telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
 		applied = true
-	})
+	}))
 	require.NoError(t, err)
 	require.True(t, applied)
 }

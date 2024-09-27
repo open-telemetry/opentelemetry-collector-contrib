@@ -248,7 +248,7 @@ func TestAccumulateMetrics(t *testing.T) {
 			v := m.(*accumulatedValue)
 			vLabels, vTS, vValue, vTemporality, vIsMonotonic := getMetricProperties(ilm2.Metrics().At(0))
 
-			require.Equal(t, v.scope.Name(), "test")
+			require.Equal(t, "test", v.scope.Name())
 			require.Equal(t, v.value.Type(), ilm2.Metrics().At(0).Type())
 			vLabels.Range(func(k string, v pcommon.Value) bool {
 				r, _ := m2Labels.Get(k)
@@ -360,7 +360,7 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 			v := m.(*accumulatedValue)
 			vLabels, vTS, vValue, vTemporality, vIsMonotonic := getMetricProperties(v.value)
 
-			require.Equal(t, v.scope.Name(), "test")
+			require.Equal(t, "test", v.scope.Name())
 			require.Equal(t, v.value.Type(), ilm.Metrics().At(0).Type())
 			require.Equal(t, v.value.Type(), ilm.Metrics().At(1).Type())
 
@@ -373,7 +373,7 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 			require.Equal(t, mValue, vValue)
 			require.Equal(t, dataPointValue1+dataPointValue2, vValue)
 			require.Equal(t, pmetric.AggregationTemporalityCumulative, vTemporality)
-			require.Equal(t, true, vIsMonotonic)
+			require.True(t, vIsMonotonic)
 
 			require.Equal(t, ts3.Unix(), vTS.Unix())
 		})

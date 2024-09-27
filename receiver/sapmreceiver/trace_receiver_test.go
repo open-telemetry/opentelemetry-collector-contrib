@@ -26,9 +26,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -93,8 +94,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1,
 				Duration:      10 * time.Minute,
 				Tags: []model.KeyValue{
-					model.String(conventions.OtelStatusDescription, "Stale indices"),
-					model.String(conventions.OtelStatusCode, "ERROR"),
+					model.String(conventions.AttributeOTelStatusDescription, "Stale indices"),
+					model.String(conventions.AttributeOTelStatusCode, "ERROR"),
 					model.Bool("error", true),
 				},
 				References: []model.SpanRef{
@@ -112,8 +113,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1.Add(10 * time.Minute),
 				Duration:      2 * time.Second,
 				Tags: []model.KeyValue{
-					model.String(conventions.OtelStatusDescription, "Frontend crash"),
-					model.String(conventions.OtelStatusCode, "ERROR"),
+					model.String(conventions.AttributeOTelStatusDescription, "Frontend crash"),
+					model.String(conventions.AttributeOTelStatusCode, "ERROR"),
 					model.Bool("error", true),
 				},
 			},
@@ -350,7 +351,7 @@ func TestReception(t *testing.T) {
 
 			// retrieve received traces
 			got := sink.AllTraces()
-			assert.Equal(t, 1, len(got))
+			assert.Len(t, got, 1)
 
 			// compare what we got to what we wanted
 			t.Log("Comparing expected data to trace data")
@@ -414,7 +415,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			assert.NoError(t, resp.Body.Close())
 
 			got := sink.AllTraces()
-			assert.Equal(t, 1, len(got))
+			assert.Len(t, got, 1)
 
 			received := got[0].ResourceSpans()
 			for i := 0; i < received.Len(); i++ {
@@ -445,7 +446,7 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

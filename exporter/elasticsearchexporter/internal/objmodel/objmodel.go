@@ -255,11 +255,19 @@ func (doc *Document) Dedup() {
 	}
 }
 
+func newJSONVisitor(w io.Writer) *json.Visitor {
+	v := json.NewVisitor(w)
+	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
+	// This is required to generate the correct dynamic mapping in ES.
+	v.SetExplicitRadixPoint(true)
+	return v
+}
+
 // Serialize writes the document to the given writer. The serializer will create nested objects if dedot is true.
 //
 // NOTE: The documented MUST be sorted if dedot is true.
 func (doc *Document) Serialize(w io.Writer, dedot bool, otel bool) error {
-	v := json.NewVisitor(w)
+	v := newJSONVisitor(w)
 	return doc.iterJSON(v, dedot, otel)
 }
 

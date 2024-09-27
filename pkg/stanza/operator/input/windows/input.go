@@ -29,7 +29,7 @@ type Input struct {
 	maxReads            int
 	startAt             string
 	raw                 bool
-	excludeProviders    []string
+	excludeProviders    map[string]struct{}
 	pollInterval        time.Duration
 	persister           operator.Persister
 	publisherCache      publisherCache
@@ -39,6 +39,7 @@ type Input struct {
 	remote              RemoteConfig
 	remoteSessionHandle windows.Handle
 	startRemoteSession  func() error
+	processEvent        func(context.Context, Event)
 }
 
 // newInput creates a new Input operator.
@@ -216,6 +217,16 @@ func (i *Input) read(ctx context.Context) int {
 	events, err := i.subscription.Read(i.maxReads)
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
+		if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
+			i.Logger().Info("Resubscribing, closing remote subscription")
+			closeErr := i.subscription.Close()
+			if closeErr != nil {
+				i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
+				return 0
+			}
+			i.Logger().Info("Resubscribing, creating remote subscription")
+			i.subscription = NewRemoteSubscription(i.remote.Server)
+		}
 		return 0
 	}
 
@@ -230,95 +241,93 @@ func (i *Input) read(ctx context.Context) int {
 	return len(events)
 }
 
-// processEvent will process and send an event retrieved from windows event log.
-func (i *Input) processEvent(ctx context.Context, event Event) {
-	remoteServer := i.remote.Server
-
-	if i.raw {
-		if len(i.excludeProviders) > 0 {
-			simpleEvent, err := event.RenderSimple(i.buffer)
-			if err != nil {
-				i.Logger().Error("Failed to render simple event", zap.Error(err))
-				return
-			}
-
-			for _, excludeProvider := range i.excludeProviders {
-				if simpleEvent.Provider.Name == excludeProvider {
-					return
-				}
-			}
-		}
-
-		rawEvent, err := event.RenderRaw(i.buffer)
-		if err != nil {
-			i.Logger().Error("Failed to render raw event", zap.Error(err))
-			return
-		}
-		rawEvent.RemoteServer = remoteServer
-		i.sendEventRaw(ctx, rawEvent)
-		return
+func (i *Input) getPublisherName(event Event) (name string, excluded bool) {
+	providerName, err := event.GetPublisherName(i.buffer)
+	if err != nil {
+		i.Logger().Error("Failed to get provider name", zap.Error(err))
+		return "", true
 	}
+	if _, exclude := i.excludeProviders[providerName]; exclude {
+		return "", true
+	}
+
+	return providerName, false
+}
+
+func (i *Input) renderSimpleAndSend(ctx context.Context, event Event) {
 	simpleEvent, err := event.RenderSimple(i.buffer)
 	if err != nil {
 		i.Logger().Error("Failed to render simple event", zap.Error(err))
 		return
 	}
-	simpleEvent.RemoteServer = remoteServer
+	i.sendEvent(ctx, simpleEvent)
+}
 
-	for _, excludeProvider := range i.excludeProviders {
-		if simpleEvent.Provider.Name == excludeProvider {
-			return
-		}
+func (i *Input) renderDeepAndSend(ctx context.Context, event Event, publisher Publisher) {
+	deepEvent, err := event.RenderDeep(i.buffer, publisher)
+	if err == nil {
+		i.sendEvent(ctx, deepEvent)
+		return
+	}
+	i.Logger().Error("Failed to render formatted event", zap.Error(err))
+	i.renderSimpleAndSend(ctx, event)
+}
+
+// processEvent will process and send an event retrieved from windows event log.
+func (i *Input) processEventWithoutRenderingInfo(ctx context.Context, event Event) {
+	if len(i.excludeProviders) == 0 {
+		i.renderSimpleAndSend(ctx, event)
+		return
+	}
+	if _, exclude := i.getPublisherName(event); exclude {
+		return
+	}
+	i.renderSimpleAndSend(ctx, event)
+}
+
+func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) {
+	providerName, exclude := i.getPublisherName(event)
+	if exclude {
+		return
 	}
 
-	publisher, openPublisherErr := i.publisherCache.get(simpleEvent.Provider.Name)
-	if openPublisherErr != nil {
+	publisher, err := i.publisherCache.get(providerName)
+	if err != nil {
 		i.Logger().Warn(
 			"Failed to open event source, respective log entries cannot be formatted",
-			zap.String("provider", simpleEvent.Provider.Name), zap.Error(openPublisherErr))
-	}
-
-	if !publisher.Valid() {
-		i.sendEvent(ctx, simpleEvent)
+			zap.String("provider", providerName), zap.Error(err))
+		i.renderSimpleAndSend(ctx, event)
 		return
 	}
 
-	formattedEvent, err := event.RenderFormatted(i.buffer, publisher)
-	if err != nil {
-		i.Logger().Error("Failed to render formatted event", zap.Error(err))
-		i.sendEvent(ctx, simpleEvent)
+	if publisher.Valid() {
+		i.renderDeepAndSend(ctx, event, publisher)
 		return
 	}
-	formattedEvent.RemoteServer = remoteServer
-	i.sendEvent(ctx, formattedEvent)
+	i.renderSimpleAndSend(ctx, event)
 }
 
 // sendEvent will send EventXML as an entry to the operator's output.
-func (i *Input) sendEvent(ctx context.Context, eventXML EventXML) {
-	body := eventXML.parseBody()
-	entry, err := i.NewEntry(body)
+func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) {
+	var body any = eventXML.Original
+	if !i.raw {
+		body = formattedBody(eventXML)
+	}
+
+	e, err := i.NewEntry(body)
 	if err != nil {
 		i.Logger().Error("Failed to create entry", zap.Error(err))
 		return
 	}
 
-	entry.Timestamp = eventXML.parseTimestamp()
-	entry.Severity = eventXML.parseRenderedSeverity()
-	_ = i.Write(ctx, entry)
-}
+	e.Timestamp = parseTimestamp(eventXML.TimeCreated.SystemTime)
+	e.Severity = parseSeverity(eventXML.RenderedLevel, eventXML.Level)
 
-// sendEventRaw will send EventRaw as an entry to the operator's output.
-func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
-	body := eventRaw.parseBody()
-	entry, err := i.NewEntry(body)
-	if err != nil {
-		i.Logger().Error("Failed to create entry", zap.Error(err))
-		return
+	if i.remote.Server != "" {
+		e.Attributes["server.address"] = i.remote.Server
 	}
 
-	entry.Timestamp = eventRaw.parseTimestamp()
-	entry.Severity = eventRaw.parseRenderedSeverity()
-	_ = i.Write(ctx, entry)
+	_ = i.Write(ctx, e)
 }
 
 // getBookmarkXML will get the bookmark xml from the offsets database.

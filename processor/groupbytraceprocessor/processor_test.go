@@ -126,7 +126,7 @@ func TestInternalCacheLimit(t *testing.T) {
 	wg.Wait()
 
 	// verify
-	assert.Equal(t, 5, len(receivedTraceIDs))
+	assert.Len(t, receivedTraceIDs, 5)
 
 	for i := 5; i > 0; i-- { // last 5 traces
 		traceID := pcommon.TraceID(traceIDs[i])
@@ -152,7 +152,7 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// verify
 	assert.NotNil(t, p)
-	assert.Equal(t, true, caps.MutatesData)
+	assert.True(t, caps.MutatesData)
 }
 
 func TestProcessBatchDoesntFail(t *testing.T) {
@@ -253,7 +253,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	err = p.markAsReleased(traceID, p.eventMachine.workers[workerIndexForTraceID(traceID, config.NumWorkers)].fire)
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
@@ -290,7 +290,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	err := p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]}, p.eventMachine.workers[0])
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestAddSpansToExistingTrace(t *testing.T) {
@@ -385,7 +385,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	)
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
@@ -412,7 +412,7 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	err := p.onTraceRemoved(traceID)
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
