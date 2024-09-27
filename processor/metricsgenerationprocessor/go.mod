@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.110.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.110.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.110.0
 	go.opentelemetry.io/collector/confmap v1.16.0
