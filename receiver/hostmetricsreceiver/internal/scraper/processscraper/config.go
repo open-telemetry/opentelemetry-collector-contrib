@@ -46,6 +46,11 @@ type Config struct {
 	// ScrapeProcessDelay is used to indicate the minimum amount of time a process must be running
 	// before metrics are scraped for it.  The default value is 0 seconds (0s)
 	ScrapeProcessDelay time.Duration `mapstructure:"scrape_process_delay"`
+
+	// DisableWMI toggles the use of Windows Management Interface to fetch certain process information on Windows.
+	// WMI should only need be disabled in a scenario where the Windows Management Interface is not enabled on the system.
+	// This configuration has no effect on non-Windows systems.
+	DisableWMI bool `mapstructure:"disable_wmi"`
 }
 
 type MatchConfig struct {
