@@ -188,7 +188,7 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	//                   start
 	//                   index
 
-	if t.pollsToArchive == 0 {
+	if t.pollsToArchive == 0 || t.persister == nil {
 		return
 	}
 	key := fmt.Sprintf("knownFiles%d", t.archiveIndex)
