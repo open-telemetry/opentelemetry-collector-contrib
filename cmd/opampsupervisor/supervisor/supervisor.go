@@ -25,7 +25,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -254,28 +253,6 @@ func (s *Supervisor) createTemplates() error {
 	}
 	if s.ownTelemetryTemplate, err = template.New("owntelemetry").Parse(ownTelemetryTpl); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (s *Supervisor) loadConfig(configFile string) error {
-	if configFile == "" {
-		return errors.New("path to config file cannot be empty")
-	}
-
-	k := koanf.New("::")
-	if err := k.Load(file.Provider(configFile), yaml.Parser()); err != nil {
-		return err
-	}
-
-	decodeConf := koanf.UnmarshalConf{
-		Tag: "mapstructure",
-	}
-
-	s.config = config.DefaultSupervisor()
-	if err := k.UnmarshalWithConf("", &s.config, decodeConf); err != nil {
-		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
 
 	return nil
