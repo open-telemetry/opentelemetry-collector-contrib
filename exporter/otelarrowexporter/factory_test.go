@@ -6,7 +6,6 @@ package otelarrowexporter
 import (
 	"context"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
@@ -38,9 +37,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, configcompression.TypeZstd, ocfg.Compression)
 	assert.Equal(t, ArrowConfig{
 		Disabled:           false,
-		NumStreams:         runtime.NumCPU(),
-		MaxStreamLifetime:  time.Hour,
-		PayloadCompression: "",
+		NumStreams:         1,
+		MaxStreamLifetime:  30 * time.Second,
+		PayloadCompression: "zstd",
 		Zstd:               zstd.DefaultEncoderConfig(),
 		Prioritizer:        arrow.DefaultPrioritizer,
 	}, ocfg.Arrow)
