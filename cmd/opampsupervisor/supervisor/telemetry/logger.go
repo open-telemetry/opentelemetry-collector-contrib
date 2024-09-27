@@ -7,6 +7,7 @@ import (
 
 func NewLogger(cfg config.Logs) (*zap.Logger, error) {
 	zapCfg := zap.NewProductionConfig()
+
 	zapCfg.Level = zap.NewAtomicLevelAt(cfg.Level)
 	zapCfg.OutputPaths = cfg.OutputPaths
 

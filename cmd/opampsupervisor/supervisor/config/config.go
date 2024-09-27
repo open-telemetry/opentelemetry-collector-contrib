@@ -229,5 +229,11 @@ func DefaultSupervisor() Supervisor {
 			OrphanDetectionInterval: 5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 		},
+		Telemetry: Telemetry{
+			Logs: Logs{
+				Level:       zapcore.InfoLevel,
+				OutputPaths: []string{"stdout", "stderr"},
+			},
+		},
 	}
 }
