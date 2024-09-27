@@ -35,8 +35,7 @@ func createGetXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	return getXML(args.Target, args.XPath), nil
 }
 
-// getXML returns a XML formatted string that is a result of removing all matching nodes from the target XML.
-// This currently supports removal of elements, attributes, text values, comments, and CharData.
+// getXML returns a XML formatted string that is a result of matching elements from the target XML.
 func getXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		var doc *xmlquery.Node
