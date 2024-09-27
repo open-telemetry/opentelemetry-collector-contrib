@@ -91,6 +91,12 @@ func Test_RemoveXML(t *testing.T) {
 			xPath:    "//text()['*delete*']",
 			want:     `<?xml version="1.0" encoding="UTF-8"?><a></a>`,
 		},
+		{
+			name:     "ignore empty",
+			document: ``,
+			xPath:    "/",
+			want:     ``,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
