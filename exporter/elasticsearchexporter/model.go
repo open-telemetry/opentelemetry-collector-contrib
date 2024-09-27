@@ -304,8 +304,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 	}
 
-	// Emit _doc_count if data point contains attribute _doc_count: true
-	if val, ok := dp.Attributes().Get("_doc_count"); ok && val.Bool() {
+	if hasHint(dp.Attributes(), hintDocCount) {
 		docCount := dp.DocCount()
 		document.AddInt("_doc_count", int64(docCount))
 	}
