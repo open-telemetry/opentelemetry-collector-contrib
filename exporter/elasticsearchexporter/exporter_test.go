@@ -802,7 +802,7 @@ func TestExporterMetrics(t *testing.T) {
 	})
 
 	t.Run("publish histogram cumulative temporality", func(t *testing.T) {
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+		server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 			require.Fail(t, "unexpected request")
 			return nil, nil
 		})
@@ -829,7 +829,7 @@ func TestExporterMetrics(t *testing.T) {
 	})
 
 	t.Run("publish exponential histogram cumulative temporality", func(t *testing.T) {
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+		server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 			require.Fail(t, "unexpected request")
 			return nil, nil
 		})
