@@ -477,7 +477,7 @@ service:
 			doneChan:                     make(chan struct{}),
 		}
 
-		require.Nil(t, s.createTemplates())
+		require.NoError(t, s.createTemplates())
 
 		s.agentDescription.Store(&protobufs.AgentDescription{
 			IdentifyingAttributes:    []*protobufs.KeyValue{},
@@ -546,7 +546,7 @@ service:
 			doneChan:                     make(chan struct{}),
 		}
 
-		require.Nil(t, s.createTemplates())
+		require.NoError(t, s.createTemplates())
 
 		s.agentDescription.Store(&protobufs.AgentDescription{
 			IdentifyingAttributes:    []*protobufs.KeyValue{},
