@@ -14,6 +14,100 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+func Test_copyOtelAttrs(t *testing.T) {
+	tests := []struct {
+		name             string
+		configDataFn     func() *Config
+		wantConfigDataFn func() *Config
+	}{
+		{
+			name: "defaults",
+			configDataFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+			wantConfigDataFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+		},
+		{
+			name: "override hec_metadata_to_otel_attrs",
+			configDataFn: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+
+				cfg.HecToOtelAttrs.Index = "testIndex"
+				cfg.HecToOtelAttrs.Source = "testSource"
+				cfg.HecToOtelAttrs.SourceType = "testSourceType"
+				cfg.HecToOtelAttrs.Host = "testHost"
+
+				return cfg
+			},
+			wantConfigDataFn: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+
+				cfg.HecToOtelAttrs.Index = "testIndex"
+				cfg.HecToOtelAttrs.Source = "testSource"
+				cfg.HecToOtelAttrs.SourceType = "testSourceType"
+				cfg.HecToOtelAttrs.Host = "testHost"
+
+				cfg.OtelAttrsToHec.Index = "testIndex"
+				cfg.OtelAttrsToHec.Source = "testSource"
+				cfg.OtelAttrsToHec.SourceType = "testSourceType"
+				cfg.OtelAttrsToHec.Host = "testHost"
+
+				return cfg
+			},
+		},
+		{
+			name: "partial otel_attrs_to_hec_metadata",
+			configDataFn: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+
+				cfg.OtelAttrsToHec.Source = "testSource"
+				cfg.OtelAttrsToHec.Index = "testIndex"
+
+				return cfg
+			},
+			wantConfigDataFn: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+
+				cfg.OtelAttrsToHec.Source = "testSource"
+				cfg.OtelAttrsToHec.Index = "testIndex"
+
+				return cfg
+			},
+		},
+		{
+			name: "prefer otel_attrs_to_hec_metadata",
+			configDataFn: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+
+				cfg.HecToOtelAttrs.Index = "hecIndex"
+
+				cfg.OtelAttrsToHec.Index = "otelIndex"
+
+				return cfg
+			},
+			wantConfigDataFn: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+
+				cfg.HecToOtelAttrs.Index = "hecIndex"
+
+				cfg.OtelAttrsToHec.Index = "otelIndex"
+
+				return cfg
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := tt.configDataFn()
+			copyOtelAttrs(cfg)
+			assert.Equal(t, tt.wantConfigDataFn(), cfg)
+		})
+	}
+}
+
 func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 	ts := pcommon.Timestamp(123)
 
