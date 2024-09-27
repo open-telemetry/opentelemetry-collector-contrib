@@ -13,9 +13,6 @@
 
 This processor is used to deduplicate logs by detecting identical logs over a range of time and emitting a single log with the count of logs that were deduplicated.
 
-## Supported pipelines
-- Logs
-
 ## How It Works
 1. The user configures the log deduplication processor in the desired logs pipeline.
 2. All logs are sent to the processor. Each log for which `condition` evaluates true is aggregated over the configured `interval`. Logs are considered identical if they have the same body, resource attributes, severity, and log attributes.
