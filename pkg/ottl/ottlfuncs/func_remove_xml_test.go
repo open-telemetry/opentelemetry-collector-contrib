@@ -94,12 +94,19 @@ func Test_RemoveXML(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return tt.document, nil
-				},
-			}
-			exprFunc := removeXML(target, tt.xPath)
+			factory := NewRemoveXMLFactory[any]()
+			exprFunc, err := factory.CreateFunction(
+				ottl.FunctionContext{},
+				&RemoveXMLArguments[any]{
+					Target: ottl.StandardStringGetter[any]{
+						Getter: func(_ context.Context, _ any) (any, error) {
+							return tt.document, nil
+						},
+					},
+					XPath: tt.xPath,
+				})
+			assert.NoError(t, err)
+
 			result, err := exprFunc(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
