@@ -12,9 +12,6 @@ import (
 	"unsafe"
 )
 
-// errUnknownNextFrame is an error returned when a systemcall indicates the next frame is 0 bytes.
-var errUnknownNextFrame = errors.New("the buffer size needed by the next frame of a render syscall was 0, unable to determine size of next frame")
-
 // systemPropertiesRenderContext stores a custom rendering context to get only the event properties.
 var systemPropertiesRenderContext = uintptr(0)
 var systemPropertiesRenderContextErr error
@@ -72,54 +69,54 @@ func utf16PtrToString(s *uint16) string {
 	return string(utf16.Decode(slice))
 }
 
+// NewEvent will create a new event from an event handle.
+func NewEvent(handle uintptr) Event {
+	return Event{
+		handle: handle,
+	}
+}
+
 // RenderSimple will render the event as EventXML without formatted info.
-func (e *Event) RenderSimple(buffer Buffer) (EventXML, error) {
+func (e *Event) RenderSimple(buffer Buffer) (*EventXML, error) {
 	if e.handle == 0 {
-		return EventXML{}, fmt.Errorf("event handle does not exist")
+		return nil, fmt.Errorf("event handle does not exist")
 	}
 
 	bufferUsed, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
-	if errors.Is(err, ErrorInsufficientBuffer) {
-		buffer.UpdateSizeBytes(*bufferUsed)
-		return e.RenderSimple(buffer)
-	}
-
 	if err != nil {
-		return EventXML{}, fmt.Errorf("syscall to 'EvtRender' failed: %w", err)
+		if errors.Is(err, ErrorInsufficientBuffer) {
+			buffer.UpdateSizeBytes(*bufferUsed)
+			return e.RenderSimple(buffer)
+		}
+		return nil, fmt.Errorf("syscall to 'EvtRender' failed: %w", err)
 	}
 
 	bytes, err := buffer.ReadBytes(*bufferUsed)
 	if err != nil {
-		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
+		return nil, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}
 
 	return unmarshalEventXML(bytes)
 }
 
-// RenderFormatted will render the event as EventXML with formatted info.
-func (e *Event) RenderFormatted(buffer Buffer, publisher Publisher) (EventXML, error) {
+// RenderDeep will render the event as EventXML with all available formatted info.
+func (e *Event) RenderDeep(buffer Buffer, publisher Publisher) (*EventXML, error) {
 	if e.handle == 0 {
-		return EventXML{}, fmt.Errorf("event handle does not exist")
+		return nil, fmt.Errorf("event handle does not exist")
 	}
 
 	bufferUsed, err := evtFormatMessage(publisher.handle, e.handle, 0, 0, 0, EvtFormatMessageXML, buffer.SizeWide(), buffer.FirstByte())
-	if errors.Is(err, ErrorInsufficientBuffer) {
-		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
-		if *bufferUsed == 0 {
-			return EventXML{}, errUnknownNextFrame
-		}
-
-		buffer.UpdateSizeWide(*bufferUsed)
-		return e.RenderFormatted(buffer, publisher)
-	}
-
 	if err != nil {
-		return EventXML{}, fmt.Errorf("syscall to 'EvtFormatMessage' failed: %w", err)
+		if errors.Is(err, ErrorInsufficientBuffer) {
+			buffer.UpdateSizeWide(*bufferUsed)
+			return e.RenderDeep(buffer, publisher)
+		}
+		return nil, fmt.Errorf("syscall to 'EvtFormatMessage' failed: %w", err)
 	}
 
 	bytes, err := buffer.ReadWideChars(*bufferUsed)
 	if err != nil {
-		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
+		return nil, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}
 
 	return unmarshalEventXML(bytes)
@@ -137,34 +134,4 @@ func (e *Event) Close() error {
 
 	e.handle = 0
 	return nil
-}
-
-func (e *Event) RenderRaw(buffer Buffer) (EventRaw, error) {
-	if e.handle == 0 {
-		return EventRaw{}, fmt.Errorf("event handle does not exist")
-	}
-
-	bufferUsed, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
-	if errors.Is(err, ErrorInsufficientBuffer) {
-		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
-		if *bufferUsed == 0 {
-			return EventRaw{}, errUnknownNextFrame
-		}
-
-		buffer.UpdateSizeBytes(*bufferUsed)
-		return e.RenderRaw(buffer)
-	}
-	bytes, err := buffer.ReadBytes(*bufferUsed)
-	if err != nil {
-		return EventRaw{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
-	}
-
-	return unmarshalEventRaw(bytes)
-}
-
-// NewEvent will create a new event from an event handle.
-func NewEvent(handle uintptr) Event {
-	return Event{
-		handle: handle,
-	}
 }
