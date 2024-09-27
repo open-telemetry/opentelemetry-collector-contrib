@@ -357,6 +357,14 @@ type exponentialHistogramDataPoint struct {
 }
 
 func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
+	if hasHint(dp.Attributes(), hintAggregateMetricDouble) {
+		vm := pcommon.NewValueMap()
+		m := vm.Map()
+		m.PutDouble("sum", dp.Sum())
+		m.PutInt("count", int64(dp.Count()))
+		return vm, nil
+	}
+
 	counts, values := exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
 
 	vm := pcommon.NewValueMap()
@@ -388,6 +396,13 @@ type histogramDataPoint struct {
 }
 
 func (dp histogramDataPoint) Value() (pcommon.Value, error) {
+	if hasHint(dp.Attributes(), hintAggregateMetricDouble) {
+		vm := pcommon.NewValueMap()
+		m := vm.Map()
+		m.PutDouble("sum", dp.Sum())
+		m.PutInt("count", int64(dp.Count()))
+		return vm, nil
+	}
 	return histogramToValue(dp.HistogramDataPoint)
 }
 
@@ -514,6 +529,8 @@ func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resour
 		switch key {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
 			return true
+		case mappingHintsAttrKey:
+			return true
 		}
 		return false
 	})
@@ -540,6 +557,8 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 		switch key {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
 			return true
+		case mappingHintsAttrKey:
+			return true
 		}
 		return false
 	})
@@ -556,6 +575,8 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 			// updated by the router.
 			// Move them to the top of the document and remove them from the record
 			document.AddAttribute(key, val)
+			return true
+		case mappingHintsAttrKey:
 			return true
 		}
 		return false
@@ -858,6 +879,8 @@ func mapHashExcludeDataStreamAttr(hasher hash.Hash, m pcommon.Map) {
 	m.Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		case mappingHintsAttrKey: // FIXME: refactor, change func name, do not use in ecs mode
 			return true
 		}
 		hasher.Write([]byte(k))
