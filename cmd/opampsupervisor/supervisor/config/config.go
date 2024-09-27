@@ -96,6 +96,7 @@ type Capabilities struct {
 	ReportsOwnMetrics              bool `mapstructure:"reports_own_metrics"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
+	ReportsPackageStatuses         bool `mapstructure:"reports_package_statuses"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -131,6 +132,10 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 
 	if c.AcceptsPackageAvailable {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
+	}
+
+	if c.ReportsPackageStatuses {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
 	}
 
 	return supportedCapabilities
@@ -175,9 +180,7 @@ type Agent struct {
 	HealthCheckPort         int              `mapstructure:"health_check_port"`
 	OpAMPServerPort         int              `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
-	// SigningKeyPaths is a list of paths to cosign signing keys.
-	// These keys will be used to verify agent packages offered by the remote server.
-	SigningKeyPaths []string `mapstructure:"signing_key_paths"`
+	Signature               AgentSignature   `mapstructure:"signature"`
 }
 
 func (a Agent) Validate() error {
@@ -210,11 +213,55 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
-	for i, p := range a.SigningKeyPaths {
-		_, err := os.Stat(p)
-		if err != nil {
-			return fmt.Errorf("could not stat agent::signing_key_paths[%d] path: %w", i, err)
+	if a.ConfigApplyTimeout <= 0 {
+		return errors.New("agent::config_apply_timeout must be valid duration")
+	}
+
+	if err := a.Signature.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type AgentSignature struct {
+	// TODO: Certificate paths?
+	CertGithubWorkflowRepository string                   `mapstructure:"github_workflow_repository"`
+	Identities                   []AgentSignatureIdentity `mapstructure:"identities"`
+}
+
+func (a AgentSignature) Validate() error {
+	for i, ident := range a.Identities {
+		if err := ident.Validate(); err != nil {
+			return fmt.Errorf("agent::identities[%d]: %w", i, err)
 		}
+	}
+
+	return nil
+}
+
+type AgentSignatureIdentity struct {
+	Issuer        string `mapstructure:"issuer"`
+	Subject       string `mapstructure:"subject"`
+	IssuerRegExp  string `mapstructure:"issuer_regex"`
+	SubjectRegExp string `mapstructure:"subject_regex"`
+}
+
+func (a AgentSignatureIdentity) Validate() error {
+	if a.Issuer != "" && a.IssuerRegExp != "" {
+		return errors.New("cannot specify both issuer and issuer_regex")
+	}
+
+	if a.Subject != "" && a.SubjectRegExp != "" {
+		return errors.New("cannot specify both subject and subject_regex")
+	}
+
+	if a.Issuer == "" && a.IssuerRegExp == "" {
+		return errors.New("must specify one of issuer or issuer_regex")
+	}
+
+	if a.Subject == "" && a.SubjectRegExp == "" {
+		return errors.New("must specify one of subject or subject_regex")
 	}
 
 	return nil
@@ -261,6 +308,7 @@ func DefaultSupervisor() Supervisor {
 			ReportsOwnMetrics:              true,
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
+			ReportsPackageStatuses:         false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -270,6 +318,15 @@ func DefaultSupervisor() Supervisor {
 			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
+			Signature: AgentSignature{
+				CertGithubWorkflowRepository: "open-telemetry/opentelemetry-collector-releases",
+				Identities: []AgentSignatureIdentity{
+					{
+						Issuer:        "https://token.actions.githubusercontent.com",
+						SubjectRegExp: `^https://github.com/open-telemetry/opentelemetry-collector-releases/.github/workflows/base-release.yaml@refs/tags/[^/]*$`,
+					},
+				},
+			},
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
