@@ -73,3 +73,6 @@ All fields are optional.
 | observe_nodes | bool | `false` | Whether to report observer k8s.node endpoints. If `true` and `node` is specified it will only discover node endpoints whose `metadata.name` matches the provided node name. If `true` and `node` isn't specified, it will discover all available node endpoints. Please note that Collector connectivity to nodes is dependent on your cluster configuration and isn't guaranteed.| 
 | observe_services | bool | `false` | Whether to report observer k8s.service endpoints.|
 | observe_ingresses | bool | `false` | Whether to report observer k8s.ingress endpoints.|  
+
+More complete configuration examples on how to use this observer along with the `receiver_creator`,
+can be found at the [Receiver Creator](../../../receiver/receivercreator/README.md)'s documentation.
