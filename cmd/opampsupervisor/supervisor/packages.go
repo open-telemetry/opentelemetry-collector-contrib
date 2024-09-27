@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/fulcio"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	"github.com/sigstore/cosign/v2/pkg/oci/static"
@@ -51,6 +52,7 @@ type packageManager struct {
 
 	storageDir string
 	agentPath  string
+	checkOpts  *cosign.CheckOpts
 	am         agentManager
 }
 
@@ -59,7 +61,7 @@ type agentManager interface {
 	startAgentProcess()
 }
 
-func newPackageManager(agentPath string, storageDir string, agentVersion string, am agentManager) (*packageManager, error) {
+func newPackageManager(agentPath, storageDir, agentVersion string, signatureOpts config.AgentSignature, am agentManager) (*packageManager, error) {
 	// Read actual hash of the on-disk agent
 	f, err := os.Open(agentPath)
 	if err != nil {
@@ -83,18 +85,17 @@ func newPackageManager(agentPath string, storageDir string, agentVersion string,
 		return nil, fmt.Errorf("load package state: %w", err)
 	}
 
+	checkOpts, err := createCosignCheckOpts(signatureOpts)
+
 	return &packageManager{
 		packageState:    state,
 		topLevelHash:    agentHash,
 		topLevelVersion: agentVersion,
 		storageDir:      storageDir,
 		agentPath:       agentPath,
+		checkOpts:       checkOpts,
 		am:              am,
 	}, nil
-}
-
-func (p *packageManager) setAgentVersion(agentVersion string) {
-	p.topLevelVersion = agentVersion
 }
 
 func (p packageManager) AllPackagesHash() ([]byte, error) {
@@ -179,7 +180,7 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		return fmt.Errorf("could not parse package signature: %w", err)
 	}
 
-	if err := verifyPackageSignature(ctx, by, b64Cert, b64Signature); err != nil {
+	if err := verifyPackageSignature(ctx, p.checkOpts, by, b64Cert, b64Signature); err != nil {
 		return fmt.Errorf("could not verify package signature: %w", err)
 	}
 
@@ -309,33 +310,7 @@ func parsePackageSignature(signature []byte) (b64Cert, b64Signature []byte, err 
 }
 
 // sig is the decoded signature of
-func verifyPackageSignature(ctx context.Context, packageBytes, b64Cert, b64Signature []byte) error {
-	// TODO: allow specifying from config
-	rootCerts, err := fulcio.GetRoots()
-	if err != nil {
-		return fmt.Errorf("fetch root certs: %w", err)
-	}
-
-	// TODO: allow specifying from config
-	intermediateCerts, err := fulcio.GetIntermediates()
-	if err != nil {
-		return fmt.Errorf("fetch intermediate certs: %w", err)
-	}
-
-	co := &cosign.CheckOpts{
-		RootCerts:         rootCerts,
-		IntermediateCerts: intermediateCerts,
-		// TODO: Make configurable
-		CertGithubWorkflowRepository: "open-telemetry/opentelemetry-collector-releases",
-		// TODO: Make allowed identities configurable
-		Identities: []cosign.Identity{
-			{
-				SubjectRegExp: `^https://github.com/open-telemetry/opentelemetry-collector-releases/.github/workflows/base-release.yaml@refs/tags/[^/]*$`,
-				Issuer:        "https://token.actions.githubusercontent.com",
-			},
-		},
-	}
-
+func verifyPackageSignature(ctx context.Context, checkOpts *cosign.CheckOpts, packageBytes, b64Cert, b64Signature []byte) error {
 	decodedCert, err := base64.StdEncoding.AppendDecode(nil, b64Cert)
 	if err != nil {
 		return fmt.Errorf("b64 decode cert: %w", err)
@@ -347,12 +322,42 @@ func verifyPackageSignature(ctx context.Context, packageBytes, b64Cert, b64Signa
 		return fmt.Errorf("create signature: %w", err)
 	}
 
-	_, err = cosign.VerifyBlobSignature(ctx, ociSig, co)
+	_, err = cosign.VerifyBlobSignature(ctx, ociSig, checkOpts)
 	if err != nil {
 		return fmt.Errorf("verify blob: %w", err)
 	}
 
 	return nil
+}
+
+func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOpts, error) {
+	// TODO: allow specifying certs from config
+	rootCerts, err := fulcio.GetRoots()
+	if err != nil {
+		return nil, fmt.Errorf("fetch root certs: %w", err)
+	}
+
+	intermediateCerts, err := fulcio.GetIntermediates()
+	if err != nil {
+		return nil, fmt.Errorf("fetch intermediate certs: %w", err)
+	}
+
+	identities := make([]cosign.Identity, 0, len(signatureOpts.Identities))
+	for _, ident := range signatureOpts.Identities {
+		identities = append(identities, cosign.Identity{
+			Issuer:        ident.Issuer,
+			IssuerRegExp:  ident.IssuerRegExp,
+			Subject:       ident.Subject,
+			SubjectRegExp: ident.SubjectRegExp,
+		})
+	}
+
+	return &cosign.CheckOpts{
+		RootCerts:                    rootCerts,
+		IntermediateCerts:            intermediateCerts,
+		CertGithubWorkflowRepository: signatureOpts.CertGithubWorkflowRepository,
+		Identities:                   identities,
+	}, nil
 }
 
 func restoreBackup(backupPath, restorePath string) error {
