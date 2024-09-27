@@ -34,14 +34,14 @@ func newCgroupRuntime(cfg *Config, maxProcsFn runtimeModifier, memLimitFn runtim
 
 func (c *cgroupRuntimeExtension) Start(ctx context.Context, host component.Host) error {
 	var err error
-	if c.config.GoMaxProcs.Enable {
+	if c.config.GoMaxProcs.Enabled {
 		c.undoMaxProcsFn, err = c.maxProcsFn()
 		if err != nil {
 			return err
 		}
 	}
 
-	if c.config.GoMemLimit.Enable {
+	if c.config.GoMemLimit.Enabled {
 		c.undoMemLimitFn, err = c.memLimitFn()
 		if err != nil {
 			return err

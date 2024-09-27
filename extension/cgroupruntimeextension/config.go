@@ -10,12 +10,12 @@ type Config struct {
 }
 
 type GoMaxProcsConfig struct {
-	Enable bool `mapstructure:"enable"`
+	Enabled bool `mapstructure:"enable"`
 }
 
 type GoMemLimitConfig struct {
-	Enable bool    `mapstructure:"enable"`
-	Ratio  float64 `mapstructure:"ratio"`
+	Enabled bool    `mapstructure:"enable"`
+	Ratio   float64 `mapstructure:"ratio"`
 }
 
 // Validate checks if the extension configuration is valid

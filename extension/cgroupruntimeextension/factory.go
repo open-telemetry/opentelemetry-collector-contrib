@@ -28,10 +28,10 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		GoMaxProcs: GoMaxProcsConfig{
-			Enable: true,
+			Enabled: true,
 		},
 		GoMemLimit: GoMemLimitConfig{
-			Enable: true,
+			Enabled: true,
 			// By default, it sets `GOMEMLIMIT` to 90% of cgroup's memory limit.
 			Ratio: 0.9,
 		},

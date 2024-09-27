@@ -21,11 +21,11 @@ func TestExtension(t *testing.T) {
 			name: "all enabled",
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
-					Enable: true,
+					Enabled: true,
 				},
 				GoMemLimit: GoMemLimitConfig{
-					Enable: true,
-					Ratio:  0.5,
+					Enabled: true,
+					Ratio:   0.5,
 				},
 			},
 			expectedCalls: 4,
@@ -34,10 +34,10 @@ func TestExtension(t *testing.T) {
 			name: "everything disabled",
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
-					Enable: false,
+					Enabled: false,
 				},
 				GoMemLimit: GoMemLimitConfig{
-					Enable: false,
+					Enabled: false,
 				},
 			},
 			expectedCalls: 0,
