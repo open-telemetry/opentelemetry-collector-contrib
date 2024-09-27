@@ -57,21 +57,21 @@ type option struct {
 	pollsToArchive int
 }
 
-type optionFunc func(*option)
+type OptionFunc func(*option)
 
-func WithMaxBatchFiles(maxBatchFiles int) optionFunc {
+func WithMaxBatchFiles(maxBatchFiles int) OptionFunc {
 	return func(fto *option) {
 		fto.maxBatchFiles = maxBatchFiles
 	}
 }
 
-func WithPollsToArchive(pollsToArchive int) optionFunc {
+func WithPollsToArchive(pollsToArchive int) OptionFunc {
 	return func(fto *option) {
 		fto.pollsToArchive = pollsToArchive
 	}
 }
 
-func NewFileTracker(set component.TelemetrySettings, opts ...optionFunc) Tracker {
+func NewFileTracker(set component.TelemetrySettings, opts ...OptionFunc) Tracker {
 	option := &option{}
 	for _, opt := range opts {
 		opt(option)
@@ -195,8 +195,7 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	if err := checkpoint.SaveKey(context.Background(), t.persister, metadata.Get(), key); err != nil {
 		t.set.Logger.Error("error faced while saving to the archive", zap.Error(err))
 	}
-	t.archiveIndex += 1                // increment the index
-	t.archiveIndex %= t.pollsToArchive // ring buffer
+	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
 }
 
 // noStateTracker only tracks the current polled files. Once the poll is
@@ -208,7 +207,7 @@ type noStateTracker struct {
 	currentPollFiles *fileset.Fileset[*reader.Reader]
 }
 
-func NewNoStateTracker(set component.TelemetrySettings, opts ...optionFunc) Tracker {
+func NewNoStateTracker(set component.TelemetrySettings, opts ...OptionFunc) Tracker {
 	option := &option{}
 	for _, opt := range opts {
 		opt(option)
