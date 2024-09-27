@@ -825,7 +825,7 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 
 		err := exporter.ConsumeMetrics(context.Background(), metrics)
-		assert.ErrorContains(t, err, "dropping cumulative temporality histogram")
+		assert.ErrorContains(t, err, "dropping cumulative temporality histogram \"metric.foo\"")
 	})
 
 	t.Run("publish exponential histogram cumulative temporality", func(t *testing.T) {
@@ -856,7 +856,7 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
 
 		err := exporter.ConsumeMetrics(context.Background(), metrics)
-		assert.ErrorContains(t, err, "dropping cumulative temporality exponential histogram")
+		assert.ErrorContains(t, err, "dropping cumulative temporality exponential histogram \"metric.foo\"")
 	})
 
 	t.Run("publish only valid data points", func(t *testing.T) {
