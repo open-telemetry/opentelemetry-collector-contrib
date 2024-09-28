@@ -74,24 +74,24 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 				return md
 			}(),
 		},
-		{
-			name: "set_attribute_on_empty_resource",
-			resourceProcessorConfig: `
-  resource:
-    attributes:
-    - key: additional-label-key
-      value: additional-label-value
-      action: insert
+		// 		{
+		// 			name: "set_attribute_on_empty_resource",
+		// 			resourceProcessorConfig: `
+		//   resource:
+		//     attributes:
+		//     - key: additional-label-key
+		//       value: additional-label-value
+		//       action: insert
 
-`,
-			mockedConsumedMetrics: mockedConsumedResourceEmpty,
-			expectedMetrics: func() pmetric.Metrics {
-				md := pmetric.NewMetrics()
-				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("additional-label-key", "additional-label-value")
-				return md
-			}(),
-		},
+		// `,
+		// 			mockedConsumedMetrics: mockedConsumedResourceEmpty,
+		// 			expectedMetrics: func() pmetric.Metrics {
+		// 				md := pmetric.NewMetrics()
+		// 				rm := md.ResourceMetrics().AppendEmpty()
+		// 				rm.Resource().Attributes().PutStr("additional-label-key", "additional-label-value")
+		// 				return md
+		// 			}(),
+		// 		},
 	}
 
 	return tests

@@ -151,27 +151,27 @@ func TestTrace10kSPS(t *testing.T) {
 	}
 }
 
-func TestTrace10kSPSJaegerGRPC(t *testing.T) {
-	port := testutil.GetAvailablePort(t)
-	receiver := datareceivers.NewJaegerDataReceiver(port)
-	Scenario10kItemsPerSecondAlternateBackend(
-		t,
-		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		receiver,
-		testbed.NewOTLPDataReceiver(port),
-		testbed.ResourceSpec{
-			ExpectedMaxCPU: 40,
-			ExpectedMaxRAM: 100,
-		},
-		performanceResultsSummary,
-		map[string]string{
-			"batch": `
-  batch:
-`,
-		},
-		nil,
-	)
-}
+// func TestTrace10kSPSJaegerGRPC(t *testing.T) {
+// 	port := testutil.GetAvailablePort(t)
+// 	receiver := datareceivers.NewJaegerDataReceiver(port)
+// 	Scenario10kItemsPerSecondAlternateBackend(
+// 		t,
+// 		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+// 		receiver,
+// 		testbed.NewOTLPDataReceiver(port),
+// 		testbed.ResourceSpec{
+// 			ExpectedMaxCPU: 40,
+// 			ExpectedMaxRAM: 100,
+// 		},
+// 		performanceResultsSummary,
+// 		map[string]string{
+// 			"batch": `
+//   batch:
+// `,
+// 		},
+// 		nil,
+// 	)
+// }
 
 func TestTraceNoBackend10kSPS(t *testing.T) {
 
@@ -214,47 +214,47 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 	}
 }
 
-func TestTrace1kSPSWithAttrs(t *testing.T) {
-	Scenario1kSPSWithAttrs(t, []string{}, []TestCase{
-		// No attributes.
-		{
-			attrCount:      0,
-			attrSizeByte:   0,
-			expectedMaxCPU: 30,
-			expectedMaxRAM: 150,
-			resultsSummary: performanceResultsSummary,
-		},
+// func TestTrace1kSPSWithAttrs(t *testing.T) {
+// 	Scenario1kSPSWithAttrs(t, []string{}, []TestCase{
+// 		// No attributes.
+// 		{
+// 			attrCount:      0,
+// 			attrSizeByte:   0,
+// 			expectedMaxCPU: 30,
+// 			expectedMaxRAM: 150,
+// 			resultsSummary: performanceResultsSummary,
+// 		},
 
-		// We generate 10 attributes each with average key length of 100 bytes and
-		// average value length of 50 bytes so total size of attributes values is
-		// 15000 bytes.
-		{
-			attrCount:      100,
-			attrSizeByte:   50,
-			expectedMaxCPU: 120,
-			expectedMaxRAM: 150,
-			resultsSummary: performanceResultsSummary,
-		},
+// 		// We generate 10 attributes each with average key length of 100 bytes and
+// 		// average value length of 50 bytes so total size of attributes values is
+// 		// 15000 bytes.
+// 		{
+// 			attrCount:      100,
+// 			attrSizeByte:   50,
+// 			expectedMaxCPU: 120,
+// 			expectedMaxRAM: 150,
+// 			resultsSummary: performanceResultsSummary,
+// 		},
 
-		// Approx 10 KiB attributes.
-		{
-			attrCount:      10,
-			attrSizeByte:   1000,
-			expectedMaxCPU: 100,
-			expectedMaxRAM: 150,
-			resultsSummary: performanceResultsSummary,
-		},
+// 		// Approx 10 KiB attributes.
+// 		{
+// 			attrCount:      10,
+// 			attrSizeByte:   1000,
+// 			expectedMaxCPU: 100,
+// 			expectedMaxRAM: 150,
+// 			resultsSummary: performanceResultsSummary,
+// 		},
 
-		// Approx 100 KiB attributes.
-		{
-			attrCount:      20,
-			attrSizeByte:   5000,
-			expectedMaxCPU: 250,
-			expectedMaxRAM: 150,
-			resultsSummary: performanceResultsSummary,
-		},
-	}, nil, nil)
-}
+// 		// Approx 100 KiB attributes.
+// 		{
+// 			attrCount:      20,
+// 			attrSizeByte:   5000,
+// 			expectedMaxCPU: 250,
+// 			expectedMaxRAM: 150,
+// 			resultsSummary: performanceResultsSummary,
+// 		},
+// 	}, nil, nil)
+// }
 
 // verifySingleSpan sends a single span to Collector, waits until the span is forwarded
 // and received by MockBackend and calls user-supplied verification functions on

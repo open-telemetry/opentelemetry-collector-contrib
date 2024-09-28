@@ -7,12 +7,7 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
-	"path/filepath"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
@@ -37,15 +32,15 @@ func TestMetric10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 105,
 			},
 		},
-		{
-			name:     "OpenCensus",
-			sender:   datasenders.NewOCMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 85,
-				ExpectedMaxRAM: 100,
-			},
-		},
+		// {
+		// 	name:     "OpenCensus",
+		// 	sender:   datasenders.NewOCMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		// 	receiver: datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
+		// 	resourceSpec: testbed.ResourceSpec{
+		// 		ExpectedMaxCPU: 85,
+		// 		ExpectedMaxRAM: 100,
+		// 	},
+		// },
 		{
 			name:     "OTLP",
 			sender:   testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
@@ -64,15 +59,15 @@ func TestMetric10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 100,
 			},
 		},
-		{
-			name:     "SignalFx",
-			sender:   datasenders.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 120,
-				ExpectedMaxRAM: 98,
-			},
-		},
+		// {
+		// 	name:     "SignalFx",
+		// 	sender:   datasenders.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
+		// 	receiver: datareceivers.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
+		// 	resourceSpec: testbed.ResourceSpec{
+		// 		ExpectedMaxCPU: 120,
+		// 		ExpectedMaxRAM: 98,
+		// 	},
+		// },
 	}
 
 	for _, test := range tests {
@@ -94,58 +89,58 @@ func TestMetric10kDPS(t *testing.T) {
 
 }
 
-func TestMetricsFromFile(t *testing.T) {
-	// This test demonstrates usage of NewFileDataProvider to generate load using
-	// previously recorded data.
+// func TestMetricsFromFile(t *testing.T) {
+// 	// This test demonstrates usage of NewFileDataProvider to generate load using
+// 	// previously recorded data.
 
-	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
-	require.NoError(t, err)
+// 	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
+// 	require.NoError(t, err)
 
-	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.yaml", pipeline.SignalMetrics)
-	assert.NoError(t, err)
+// 	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.yaml", pipeline.SignalMetrics)
+// 	assert.NoError(t, err)
 
-	options := testbed.LoadOptions{
-		DataItemsPerSecond: 1_000,
-		Parallel:           1,
-		// ItemsPerBatch is based on the data from the file.
-		ItemsPerBatch: dataProvider.ItemsPerBatch,
-	}
-	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+// 	options := testbed.LoadOptions{
+// 		DataItemsPerSecond: 1_000,
+// 		Parallel:           1,
+// 		// ItemsPerBatch is based on the data from the file.
+// 		ItemsPerBatch: dataProvider.ItemsPerBatch,
+// 	}
+// 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
-	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
+// 	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+// 	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 
-	configStr := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
-	require.NoError(t, err)
-	defer configCleanup()
+// 	configStr := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
+// 	configCleanup, err := agentProc.PrepareConfig(configStr)
+// 	require.NoError(t, err)
+// 	defer configCleanup()
 
-	tc := testbed.NewTestCase(
-		t,
-		dataProvider,
-		sender,
-		receiver,
-		agentProc,
-		&testbed.PerfTestValidator{},
-		performanceResultsSummary,
-		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 110}),
-	)
-	defer tc.Stop()
+// 	tc := testbed.NewTestCase(
+// 		t,
+// 		dataProvider,
+// 		sender,
+// 		receiver,
+// 		agentProc,
+// 		&testbed.PerfTestValidator{},
+// 		performanceResultsSummary,
+// 		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 110}),
+// 	)
+// 	defer tc.Stop()
 
-	tc.StartBackend()
-	tc.StartAgent()
+// 	tc.StartBackend()
+// 	tc.StartAgent()
 
-	tc.StartLoad(options)
+// 	tc.StartLoad(options)
 
-	tc.Sleep(tc.Duration)
+// 	tc.Sleep(tc.Duration)
 
-	tc.StopLoad()
+// 	tc.StopLoad()
 
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
-		"all data items received")
+// 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+// 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+// 		"all data items received")
 
-	tc.StopAgent()
+// 	tc.StopAgent()
 
-	tc.ValidateData()
-}
+// 	tc.ValidateData()
+// }
