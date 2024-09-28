@@ -40,8 +40,7 @@ func TestLogsExporter_New(t *testing.T) {
 
 	failWithMsg := func(msg string) validate {
 		return func(t *testing.T, _ *logsExporter, err error) {
-			require.Error(t, err)
-			require.Contains(t, err.Error(), msg)
+			require.ErrorContains(t, err, msg)
 		}
 	}
 

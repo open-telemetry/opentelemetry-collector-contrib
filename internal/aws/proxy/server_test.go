@@ -207,7 +207,7 @@ func TestCantGetServiceEndpoint(t *testing.T) {
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-	assert.Contains(t, err.Error(), "invalid region")
+	assert.ErrorContains(t, err, "invalid region")
 }
 
 func TestAWSEndpointInvalid(t *testing.T) {
@@ -222,7 +222,7 @@ func TestAWSEndpointInvalid(t *testing.T) {
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-	assert.Contains(t, err.Error(), "unable to parse AWS service endpoint")
+	assert.ErrorContains(t, err, "unable to parse AWS service endpoint")
 }
 
 func TestCanCreateTransport(t *testing.T) {
@@ -237,7 +237,7 @@ func TestCanCreateTransport(t *testing.T) {
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-	assert.Contains(t, err.Error(), "failed to parse proxy URL")
+	assert.ErrorContains(t, err, "failed to parse proxy URL")
 }
 
 func TestGetServiceEndpointInvalidAWSConfig(t *testing.T) {
