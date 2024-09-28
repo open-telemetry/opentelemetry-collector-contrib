@@ -7,8 +7,8 @@ package sqlqueryreceiver
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"io"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -38,305 +38,381 @@ const (
 	postgresqlPort = "5432"
 	oraclePort     = "1521"
 	mysqlPort      = "3306"
+	sqlServerPort  = "1433"
 )
 
-func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
-	// Start Postgres container.
-	externalPort := "15430"
-	dbContainer := startPostgresDbContainer(t, externalPort)
-	defer func() {
-		require.NoError(t, dbContainer.Terminate(context.Background()))
-	}()
-
-	// Start the SQL Query receiver.
-	receiverCreateSettings := receivertest.NewNopSettings()
-	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
-	config.CollectionInterval = time.Second
-	config.Queries = []sqlquery.Query{
-		{
-			SQL: "select * from simple_logs where id > $1",
-			Logs: []sqlquery.LogsCfg{
-				{
-					BodyColumn:       "body",
-					AttributeColumns: []string{"attribute"},
-				},
-			},
-			TrackingColumn:     "id",
-			TrackingStartValue: "0",
-		},
-	}
-	host := componenttest.NewNopHost()
-	err := receiver.Start(context.Background(), host)
-	require.NoError(t, err)
-
-	// Verify there's 5 logs received.
-	require.Eventuallyf(
-		t,
-		func() bool {
-			return consumer.LogRecordCount() > 0
-		},
-		1*time.Minute,
-		1*time.Second,
-		"failed to receive more than 0 logs",
-	)
-	require.Equal(t, 5, consumer.LogRecordCount())
-	testAllSimpleLogs(t, consumer.AllLogs())
-
-	// Stop the SQL Query receiver.
-	err = receiver.Shutdown(context.Background())
-	require.NoError(t, err)
-
-	// Start new SQL Query receiver with the same configuration.
-	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
-	config.CollectionInterval = time.Second
-	config.Queries = []sqlquery.Query{
-		{
-			SQL: "select * from simple_logs where id > $1",
-			Logs: []sqlquery.LogsCfg{
-				{
-					BodyColumn:       "body",
-					AttributeColumns: []string{"attribute"},
-				},
-			},
-			TrackingColumn:     "id",
-			TrackingStartValue: "0",
-		},
-	}
-	err = receiver.Start(context.Background(), host)
-	require.NoError(t, err)
-
-	// Wait for some logs to come in.
-	require.Eventuallyf(
-		t,
-		func() bool {
-			return consumer.LogRecordCount() > 0
-		},
-		1*time.Minute,
-		1*time.Second,
-		"failed to receive more than 0 logs",
-	)
-
-	// stop the SQL Query receiver
-	err = receiver.Shutdown(context.Background())
-	require.NoError(t, err)
-
-	// Verify that the same logs are collected again.
-	require.Equal(t, 5, consumer.LogRecordCount())
-	testAllSimpleLogs(t, consumer.AllLogs())
+type DbEngine struct {
+	Port                     string
+	SqlParameter             string
+	CheckCompatibility       func(t *testing.T)
+	ConnectionString         func(host string, externalPort nat.Port) string
+	Driver                   string
+	CurrentTimestampFunction string
+	ConvertColumnName        func(string) string
+	ContainerRequest         testcontainers.ContainerRequest
 }
 
-func TestPostgresIntegrationLogsTrackingByTimestampColumnWithoutStorage(t *testing.T) {
-	// Start Postgres container.
-	externalPort := "15432"
-	dbContainer := startPostgresDbContainer(t, externalPort)
-	defer func() {
-		require.NoError(t, dbContainer.Terminate(context.Background()))
-	}()
-
-	// Start the SQL Query receiver.
-	receiverCreateSettings := receivertest.NewNopSettings()
-	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
-	config.CollectionInterval = 100 * time.Millisecond
-	config.Queries = []sqlquery.Query{
-		{
-			SQL: "select * from simple_logs where insert_time > $1 order by insert_time asc",
-			Logs: []sqlquery.LogsCfg{
-				{
-					BodyColumn:       "body",
-					AttributeColumns: []string{"attribute"},
-				},
+var (
+	Postgres = DbEngine{
+		Port:         postgresqlPort,
+		SqlParameter: "$1",
+		CheckCompatibility: func(t *testing.T) {
+			// No compatibility checks needed for Postgres
+		},
+		ConnectionString: func(host string, externalPort nat.Port) string {
+			return fmt.Sprintf("host=%s port=%s user=otel password=otel sslmode=disable", host, externalPort.Port())
+		},
+		Driver:                   "postgres",
+		CurrentTimestampFunction: "now()",
+		ConvertColumnName:        func(name string) string { return name },
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "postgres:9.6.24",
+			Env: map[string]string{
+				"POSTGRES_USER":     "root",
+				"POSTGRES_PASSWORD": "otel",
+				"POSTGRES_DB":       "otel",
 			},
-			TrackingColumn:     "insert_time",
-			TrackingStartValue: "2022-06-03 21:00:00+00",
+			Files: []testcontainers.ContainerFile{{
+				HostFilePath:      filepath.Join("testdata", "integration", "postgresql", "init.sql"),
+				ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
+				FileMode:          700,
+			}},
+			ExposedPorts: []string{postgresqlPort},
+			WaitingFor: wait.ForListeningPort(postgresqlPort).
+				WithStartupTimeout(2 * time.Minute),
 		},
 	}
-	host := componenttest.NewNopHost()
-	err := receiver.Start(context.Background(), host)
-	require.NoError(t, err)
-
-	// Verify there's 5 logs received.
-	require.Eventuallyf(
-		t,
-		func() bool {
-			return consumer.LogRecordCount() > 0
+	MySql = DbEngine{
+		Port:         mysqlPort,
+		SqlParameter: "?",
+		CheckCompatibility: func(t *testing.T) {
+			// No compatibility checks needed for MySql
 		},
-		1*time.Minute,
-		500*time.Millisecond,
-		"failed to receive more than 0 logs",
-	)
-	require.Equal(t, 5, consumer.LogRecordCount())
-	testAllSimpleLogs(t, consumer.AllLogs())
+		ConnectionString: func(host string, externalPort nat.Port) string {
+			return fmt.Sprintf("otel:otel@tcp(%s:%s)/otel", host, externalPort.Port())
+		},
+		Driver:                   "mysql",
+		CurrentTimestampFunction: "now()",
+		ConvertColumnName:        func(name string) string { return name },
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "mysql:8.0.33",
+			Env: map[string]string{
+				"MYSQL_USER":          "otel",
+				"MYSQL_PASSWORD":      "otel",
+				"MYSQL_ROOT_PASSWORD": "otel",
+				"MYSQL_DATABASE":      "otel",
+			},
+			Files: []testcontainers.ContainerFile{{
+				HostFilePath:      filepath.Join("testdata", "integration", "mysql", "init.sql"),
+				ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
+				FileMode:          700,
+			}},
+			ExposedPorts: []string{mysqlPort},
+			WaitingFor:   wait.ForListeningPort(mysqlPort).WithStartupTimeout(2 * time.Minute),
+		},
+	}
+	Oracle = DbEngine{
+		Port:         oraclePort,
+		SqlParameter: ":1",
+		CheckCompatibility: func(t *testing.T) {
+			if runtime.GOARCH == "arm64" {
+				t.Skip("Incompatible with arm64")
+			}
+			t.Skip("Skipping the test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27577 is fixed")
+		},
+		ConnectionString: func(host string, externalPort nat.Port) string {
+			return fmt.Sprintf("oracle://otel:p@ssw%%25rd@%s:%s/XE", host, externalPort.Port())
+		},
+		Driver:                   "oracle",
+		CurrentTimestampFunction: "SYSTIMESTAMP",
+		ConvertColumnName:        func(name string) string { return strings.ToUpper(name) },
+		ContainerRequest: testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context:    filepath.Join("testdata", "integration", "oracle"),
+				Dockerfile: "Dockerfile.oracledb",
+			},
+			ExposedPorts: []string{oraclePort},
+			WaitingFor:   wait.NewHealthStrategy().WithStartupTimeout(30 * time.Minute),
+		},
+	}
+	SqlServer = DbEngine{
+		Port:         sqlServerPort,
+		SqlParameter: "@p1",
+		CheckCompatibility: func(t *testing.T) {
+			if runtime.GOARCH == "arm64" {
+				t.Skip("Incompatible with arm64")
+			}
+			t.Skip("Skipping the test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27577 is fixed")
+		},
+		ConnectionString: func(host string, externalPort nat.Port) string {
+			return fmt.Sprintf("sqlserver://otel:YourStrong%%21Passw0rd@%s:%s?database=otel", host, externalPort.Port())
+		},
+		Driver:                   "sqlserver",
+		CurrentTimestampFunction: "GETDATE()",
+		ConvertColumnName:        func(name string) string { return name },
+		ContainerRequest: testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context:    filepath.Join("testdata", "integration", "sqlserver"),
+				Dockerfile: "Dockerfile",
+			},
+			Env: map[string]string{
+				"ACCEPT_EULA": "Y",
+				"SA_PASSWORD": "YourStrong!Passw0rd",
+			},
+			ExposedPorts: []string{sqlServerPort},
+			WaitingFor: wait.ForAll(
+				wait.ForListeningPort(sqlServerPort),
+				wait.ForLog("Initiation of otel database is complete"),
+			).WithDeadline(5 * time.Minute),
+		},
+	}
+)
 
-	// Stop the SQL Query receiver.
-	err = receiver.Shutdown(context.Background())
-	require.NoError(t, err)
+func TestIntegrationLogsTrackingWithStorage(t *testing.T) {
+	tests := []struct {
+		name   string
+		engine DbEngine
+	}{
+		{name: "Postgres", engine: Postgres},
+		{name: "MySQL", engine: MySql},
+		{name: "SqlServer", engine: SqlServer},
+		{name: "Oracle", engine: Oracle},
+	}
+
+	for _, tt := range tests {
+		trackingColumn := tt.engine.ConvertColumnName("id")
+		trackingStartValue := "0"
+		t.Run(tt.name, func(t *testing.T) {
+			tt.engine.CheckCompatibility(t)
+			dbContainer, dbHost, externalPort := startDbContainerWithConfig(t, tt.engine)
+			defer func() {
+				require.NoError(t, dbContainer.Terminate(context.Background()))
+			}()
+
+			storageDir := t.TempDir()
+			storageExtension := storagetest.NewFileBackedStorageExtension("test", storageDir)
+
+			receiverCreateSettings := receivertest.NewNopSettings()
+			receiver, config, consumer := createTestLogsReceiver(t, tt.engine.Driver, tt.engine.ConnectionString(dbHost, externalPort), receiverCreateSettings)
+			config.CollectionInterval = time.Second
+			config.Telemetry.Logs.Query = true
+			config.StorageID = &storageExtension.ID
+			config.Queries = []sqlquery.Query{
+				{
+					SQL: fmt.Sprintf("select * from simple_logs where %s > %s", trackingColumn, tt.engine.SqlParameter),
+					Logs: []sqlquery.LogsCfg{
+						{
+							BodyColumn:       tt.engine.ConvertColumnName("body"),
+							AttributeColumns: []string{tt.engine.ConvertColumnName("attribute")},
+						},
+					},
+					TrackingColumn:     trackingColumn,
+					TrackingStartValue: trackingStartValue,
+				},
+			}
+
+			host := storagetest.NewStorageHost().WithExtension(storageExtension.ID, storageExtension)
+			err := receiver.Start(context.Background(), host)
+			require.NoError(t, err)
+
+			require.Eventuallyf(
+				t,
+				func() bool {
+					return consumer.LogRecordCount() > 0
+				},
+				1*time.Minute,
+				1*time.Second,
+				"failed to receive more than 0 logs",
+			)
+
+			err = receiver.Shutdown(context.Background())
+			require.NoError(t, err)
+
+			initialLogCount := 5
+			require.Equal(t, initialLogCount, consumer.LogRecordCount())
+			testAllSimpleLogs(t, consumer.AllLogs(), tt.engine.ConvertColumnName("attribute"))
+
+			receiver, config, consumer = createTestLogsReceiver(t, tt.engine.Driver, tt.engine.ConnectionString(dbHost, externalPort), receiverCreateSettings)
+			config.CollectionInterval = time.Second
+			config.Telemetry.Logs.Query = true
+			config.StorageID = &storageExtension.ID
+			config.Queries = []sqlquery.Query{
+				{
+					SQL: fmt.Sprintf("select * from simple_logs where %s > %s", trackingColumn, tt.engine.SqlParameter),
+					Logs: []sqlquery.LogsCfg{
+						{
+							BodyColumn:       tt.engine.ConvertColumnName("body"),
+							AttributeColumns: []string{tt.engine.ConvertColumnName("attribute")},
+						},
+					},
+					TrackingColumn:     trackingColumn,
+					TrackingStartValue: trackingStartValue,
+				},
+			}
+			err = receiver.Start(context.Background(), host)
+			require.NoError(t, err)
+
+			time.Sleep(5 * time.Second)
+
+			err = receiver.Shutdown(context.Background())
+			require.NoError(t, err)
+
+			require.Equal(t, 0, consumer.LogRecordCount())
+
+			newLogCount := 3
+			insertSimpleLogs(t, tt.engine, dbContainer, initialLogCount, newLogCount)
+
+			receiver, config, consumer = createTestLogsReceiver(t, tt.engine.Driver, tt.engine.ConnectionString(dbHost, externalPort), receiverCreateSettings)
+			config.CollectionInterval = time.Second
+			config.Telemetry.Logs.Query = true
+			config.StorageID = &storageExtension.ID
+			config.Queries = []sqlquery.Query{
+				{
+					SQL: fmt.Sprintf("select * from simple_logs where %s > %s", trackingColumn, tt.engine.SqlParameter),
+					Logs: []sqlquery.LogsCfg{
+						{
+							BodyColumn:       tt.engine.ConvertColumnName("body"),
+							AttributeColumns: []string{tt.engine.ConvertColumnName("attribute")},
+						},
+					},
+					TrackingColumn:     trackingColumn,
+					TrackingStartValue: trackingStartValue,
+				},
+			}
+			err = receiver.Start(context.Background(), host)
+			require.NoError(t, err)
+
+			require.Eventuallyf(
+				t,
+				func() bool {
+					return consumer.LogRecordCount() > 0
+				},
+				1*time.Minute,
+				1*time.Second,
+				"failed to receive more than 0 logs",
+			)
+
+			err = receiver.Shutdown(context.Background())
+			require.NoError(t, err)
+
+			require.Equal(t, newLogCount, consumer.LogRecordCount())
+		})
+	}
 }
 
-func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
-	// start Postgres container
-	externalPort := "15431"
-	dbContainer := startPostgresDbContainer(t, externalPort)
-	defer func() {
-		require.NoError(t, dbContainer.Terminate(context.Background()))
-	}()
-
-	// create a File Storage extension writing to a temporary directory in local filesystem
-	storageDir := t.TempDir()
-	storageExtension := storagetest.NewFileBackedStorageExtension("test", storageDir)
-
-	// create SQL Query receiver configured with the File Storage extension
-	receiverCreateSettings := receivertest.NewNopSettings()
-	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
-	config.CollectionInterval = time.Second
-	config.StorageID = &storageExtension.ID
-	config.Queries = []sqlquery.Query{
-		{
-			SQL: "select * from simple_logs where id > $1",
-			Logs: []sqlquery.LogsCfg{
-				{
-					BodyColumn:       "body",
-					AttributeColumns: []string{"attribute"},
-				},
-			},
-			TrackingColumn:     "id",
-			TrackingStartValue: "0",
-		},
+func TestIntegrationLogsTrackingWithoutStorage(t *testing.T) {
+	tests := []struct {
+		name                     string
+		engine                   DbEngine
+		trackingColumn           string
+		trackingStartValue       string
+		trackingStartValueFormat string
+	}{
+		{name: "PostgresById", engine: Postgres, trackingColumn: "id", trackingStartValue: "0", trackingStartValueFormat: ""},
+		{name: "MySQLById", engine: MySql, trackingColumn: "id", trackingStartValue: "0", trackingStartValueFormat: ""},
+		{name: "SqlServerById", engine: SqlServer, trackingColumn: "id", trackingStartValue: "0", trackingStartValueFormat: ""},
+		{name: "OracleById", engine: Oracle, trackingColumn: "ID", trackingStartValue: "0", trackingStartValueFormat: ""},
+		{name: "PostgresByTimestamp", engine: Postgres, trackingColumn: "insert_time", trackingStartValue: "2022-06-03 21:00:00+00", trackingStartValueFormat: ""},
+		{name: "MySQLByTimestamp", engine: MySql, trackingColumn: "insert_time", trackingStartValue: "2022-06-03 21:00:00", trackingStartValueFormat: ""},
+		{name: "SqlServerByTimestamp", engine: SqlServer, trackingColumn: "insert_time", trackingStartValue: "2022-06-03 21:00:00", trackingStartValueFormat: ""},
+		{name: "OracleByTimestamp", engine: Oracle, trackingColumn: "INSERT_TIME", trackingStartValue: "2022-06-03T21:00:00.000Z", trackingStartValueFormat: "TO_TIMESTAMP_TZ(:1, 'YYYY-MM-DD\"T\"HH24:MI:SS.FF6TZH:TZM')"},
 	}
 
-	// start the SQL Query receiver
-	host := storagetest.NewStorageHost().WithExtension(storageExtension.ID, storageExtension)
-	err := receiver.Start(context.Background(), host)
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.engine.CheckCompatibility(t)
+			dbContainer, dbHost, externalPort := startDbContainerWithConfig(t, tt.engine)
+			defer func() {
+				require.NoError(t, dbContainer.Terminate(context.Background()))
+			}()
 
-	// Wait for logs to come in.
-	require.Eventuallyf(
-		t,
-		func() bool {
-			return consumer.LogRecordCount() > 0
-		},
-		1*time.Minute,
-		1*time.Second,
-		"failed to receive more than 0 logs",
-	)
+			receiverCreateSettings := receivertest.NewNopSettings()
+			receiver, config, consumer := createTestLogsReceiver(t, tt.engine.Driver, tt.engine.ConnectionString(dbHost, externalPort), receiverCreateSettings)
+			config.CollectionInterval = 100 * time.Millisecond
+			config.Telemetry.Logs.Query = true
 
-	// stop the SQL Query receiver
-	err = receiver.Shutdown(context.Background())
-	require.NoError(t, err)
+			trackingColumn := tt.engine.ConvertColumnName(tt.trackingColumn)
+			trackingColumnParameter := tt.engine.SqlParameter
+			if tt.trackingStartValueFormat != "" {
+				trackingColumnParameter = tt.trackingStartValueFormat
+			}
 
-	// verify there's 5 logs received
-	initialLogCount := 5
-	require.Equal(t, initialLogCount, consumer.LogRecordCount())
-	testAllSimpleLogs(t, consumer.AllLogs())
-
-	// start the SQL Query receiver again
-	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
-	config.CollectionInterval = time.Second
-	config.StorageID = &storageExtension.ID
-	config.Queries = []sqlquery.Query{
-		{
-			SQL: "select * from simple_logs where id > $1",
-			Logs: []sqlquery.LogsCfg{
+			config.Queries = []sqlquery.Query{
 				{
-					BodyColumn:       "body",
-					AttributeColumns: []string{"attribute"},
+					SQL: fmt.Sprintf("select * from simple_logs where %s > %s order by %s asc", trackingColumn, trackingColumnParameter, trackingColumn),
+					Logs: []sqlquery.LogsCfg{
+						{
+							BodyColumn:       tt.engine.ConvertColumnName("body"),
+							AttributeColumns: []string{tt.engine.ConvertColumnName("attribute")},
+						},
+					},
+					TrackingColumn:     trackingColumn,
+					TrackingStartValue: tt.trackingStartValue,
 				},
-			},
-			TrackingColumn:     "id",
-			TrackingStartValue: "0",
-		},
-	}
-	err = receiver.Start(context.Background(), host)
-	require.NoError(t, err)
+			}
+			host := componenttest.NewNopHost()
+			err := receiver.Start(context.Background(), host)
+			require.NoError(t, err)
 
-	// Wait for some logs to come in.
-	time.Sleep(5 * time.Second)
-
-	// stop the SQL Query receiver
-	err = receiver.Shutdown(context.Background())
-	require.NoError(t, err)
-
-	// Verify that no new logs came in
-	require.Equal(t, 0, consumer.LogRecordCount())
-
-	// write a number of new logs to the database
-	newLogCount := 3
-	insertPostgresSimpleLogs(t, dbContainer, initialLogCount, newLogCount)
-
-	// start the SQL Query receiver again
-	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
-	config.CollectionInterval = time.Second
-	config.StorageID = &storageExtension.ID
-	config.Queries = []sqlquery.Query{
-		{
-			SQL: "select * from simple_logs where id > $1",
-			Logs: []sqlquery.LogsCfg{
-				{
-					BodyColumn:       "body",
-					AttributeColumns: []string{"attribute"},
+			require.Eventuallyf(
+				t,
+				func() bool {
+					return consumer.LogRecordCount() > 0
 				},
-			},
-			TrackingColumn:     "id",
-			TrackingStartValue: "0",
-		},
+				1*time.Minute,
+				500*time.Millisecond,
+				"failed to receive more than 0 logs",
+			)
+			require.Equal(t, 5, consumer.LogRecordCount())
+			testAllSimpleLogs(t, consumer.AllLogs(), tt.engine.ConvertColumnName("attribute"))
+
+			err = receiver.Shutdown(context.Background())
+			require.NoError(t, err)
+		})
 	}
-	err = receiver.Start(context.Background(), host)
-	require.NoError(t, err)
-
-	// Wait for new logs to come in.
-	require.Eventuallyf(
-		t,
-		func() bool {
-			return consumer.LogRecordCount() > 0
-		},
-		1*time.Minute,
-		1*time.Second,
-		"failed to receive more than 0 logs",
-	)
-
-	// stop the SQL Query receiver
-	err = receiver.Shutdown(context.Background())
-	require.NoError(t, err)
-
-	// Verify that the newly added logs were received.
-	require.Equal(t, newLogCount, consumer.LogRecordCount())
-	printLogs(consumer.AllLogs())
 }
 
-func startPostgresDbContainer(t *testing.T, externalPort string) testcontainers.Container {
-	req := testcontainers.ContainerRequest{
-		Image: "postgres:9.6.24",
-		Env: map[string]string{
-			"POSTGRES_USER":     "root",
-			"POSTGRES_PASSWORD": "otel",
-			"POSTGRES_DB":       "otel",
-		},
-		Files: []testcontainers.ContainerFile{{
-			HostFilePath:      filepath.Join("testdata", "integration", "postgresql", "init.sql"),
-			ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
-			FileMode:          700,
-		}},
-		ExposedPorts: []string{externalPort + ":" + postgresqlPort},
-		WaitingFor: wait.ForListeningPort(nat.Port(postgresqlPort)).
-			WithStartupTimeout(2 * time.Minute),
-	}
-
+func startDbContainerWithConfig(t *testing.T, engine DbEngine) (testcontainers.Container, string, nat.Port) {
+	ctx := context.Background()
 	container, err := testcontainers.GenericContainer(
-		context.Background(),
+		ctx,
 		testcontainers.GenericContainerRequest{
-			ContainerRequest: req,
+			ContainerRequest: engine.ContainerRequest,
 			Started:          true,
 		},
 	)
 	require.NoError(t, err)
-	return container
+	dbPort, err := container.MappedPort(ctx, nat.Port(engine.Port))
+	require.NoError(t, err)
+	host, err := container.Host(ctx)
+	require.NoError(t, err)
+	return container, host, dbPort
 }
 
-func createTestLogsReceiverForPostgres(t *testing.T, externalPort string, receiverCreateSettings receiver.Settings) (*logsReceiver, *Config, *consumertest.LogsSink) {
+func insertSimpleLogs(t *testing.T, engine DbEngine, container testcontainers.Container, existingLogID, newLogCount int) {
+	externalPort, err := container.MappedPort(context.Background(), nat.Port(engine.Port))
+	require.NoError(t, err)
+
+	host, err := container.Host(context.Background())
+	require.NoError(t, err)
+
+	db, err := sql.Open(engine.Driver, engine.ConnectionString(host, externalPort))
+	require.NoError(t, err)
+	defer db.Close()
+
+	for newLogID := existingLogID + 1; newLogID <= existingLogID+newLogCount; newLogID++ {
+		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body, attribute) values (%d, %s, 'another log %d', 'TLSv1.2')", newLogID, engine.CurrentTimestampFunction, newLogID)
+		_, err := db.Exec(query)
+		require.NoError(t, err)
+	}
+
+}
+
+func createTestLogsReceiver(t *testing.T, driver, dataSource string, receiverCreateSettings receiver.Settings) (*logsReceiver, *Config, *consumertest.LogsSink) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
-	config.CollectionInterval = time.Second
-	config.Driver = "postgres"
-	config.DataSource = fmt.Sprintf("host=localhost port=%s user=otel password=otel sslmode=disable", externalPort)
+	config.Driver = driver
+	config.DataSource = dataSource
 
 	consumer := &consumertest.LogsSink{}
 	receiverCreateSettings.Logger = zap.NewExample()
@@ -350,65 +426,44 @@ func createTestLogsReceiverForPostgres(t *testing.T, externalPort string, receiv
 	return receiver.(*logsReceiver), config, consumer
 }
 
-func printLogs(allLogs []plog.Logs) {
-	for logIndex := 0; logIndex < len(allLogs); logIndex++ {
-		logs := allLogs[logIndex]
-		for resourceIndex := 0; resourceIndex < logs.ResourceLogs().Len(); resourceIndex++ {
-			resource := logs.ResourceLogs().At(resourceIndex)
-			for scopeIndex := 0; scopeIndex < resource.ScopeLogs().Len(); scopeIndex++ {
-				scope := resource.ScopeLogs().At(scopeIndex)
-				for recordIndex := 0; recordIndex < scope.LogRecords().Len(); recordIndex++ {
-					logRecord := scope.LogRecords().At(recordIndex)
-					fmt.Printf("log %v resource %v scope %v log %v body: %v\n", logIndex, resourceIndex, scopeIndex, recordIndex, logRecord.Body().Str())
-				}
-			}
-		}
+func testAllSimpleLogs(t *testing.T, logs []plog.Logs, attributeColumnName string) {
+	assert.Len(t, logs, 1)
+	assert.Equal(t, 1, logs[0].ResourceLogs().Len())
+	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
+	expectedLogBodies := []string{
+		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6197 4 \"-\" \"-\" 445af8e6c428303f -",
+		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6205 5 \"-\" \"-\" 3285f43cd4baa202 -",
+		"- - - [03/Jun/2022:21:59:29 +0000] \"GET /api/health HTTP/1.1\" 200 6233 4 \"-\" \"-\" 579e8362d3185b61 -",
+		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6207 5 \"-\" \"-\" 8c6ac61ae66e509f -",
+		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6200 4 \"-\" \"-\" c163495861e873d8 -",
 	}
-}
-
-func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, existingLogID, newLogCount int) {
-	for newLogID := existingLogID + 1; newLogID <= existingLogID+newLogCount; newLogID++ {
-		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body, attribute) values (%d, now(), 'another log %d', 'TLSv1.2');", newLogID, newLogID)
-		returnValue, returnMessageReader, err := container.Exec(context.Background(), []string{
-			"psql", "-U", "otel", "-c", query,
-		})
-		require.NoError(t, err)
-		returnMessageBuffer := new(strings.Builder)
-		_, err = io.Copy(returnMessageBuffer, returnMessageReader)
-		require.NoError(t, err)
-		returnMessage := returnMessageBuffer.String()
-
-		assert.Equal(t, 0, returnValue)
-		assert.Contains(t, returnMessage, "INSERT 0 1")
+	expectedLogAttributes := []string{
+		"TLSv1.2",
+		"TLSv1",
+		"TLSv1.2",
+		"TLSv1",
+		"TLSv1.2",
+	}
+	assert.Equal(t, len(expectedLogBodies), logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+	for i := range expectedLogBodies {
+		logRecord := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i)
+		assert.Equal(t, expectedLogBodies[i], logRecord.Body().Str())
+		logAttribute, _ := logRecord.Attributes().Get(attributeColumnName)
+		assert.Equal(t, expectedLogAttributes[i], logAttribute.Str())
 	}
 }
 
 func TestPostgresqlIntegrationMetrics(t *testing.T) {
+	Postgres.CheckCompatibility(t)
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
-			testcontainers.ContainerRequest{
-				Image: "postgres:9.6.24",
-				Env: map[string]string{
-					"POSTGRES_USER":     "root",
-					"POSTGRES_PASSWORD": "otel",
-					"POSTGRES_DB":       "otel",
-				},
-				Files: []testcontainers.ContainerFile{{
-					HostFilePath:      filepath.Join("testdata", "integration", "postgresql", "init.sql"),
-					ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
-					FileMode:          700,
-				}},
-				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForListeningPort(nat.Port(postgresqlPort)).
-					WithStartupTimeout(2 * time.Minute),
-			}),
+			Postgres.ContainerRequest),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.Driver = "postgres"
-				rCfg.DataSource = fmt.Sprintf("host=%s port=%s user=otel password=otel sslmode=disable",
-					ci.Host(t), ci.MappedPort(t, postgresqlPort))
+				rCfg.Driver = Postgres.Driver
+				rCfg.DataSource = Postgres.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, Postgres.Port)))
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
@@ -497,34 +552,20 @@ func TestPostgresqlIntegrationMetrics(t *testing.T) {
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
 // test the receiver itself.
 func TestOracleDBIntegrationMetrics(t *testing.T) {
-	t.Skip("Skipping the test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27577 is fixed")
-	if runtime.GOARCH == "arm64" {
-		t.Skip("Incompatible with arm64")
-	}
+	Oracle.CheckCompatibility(t)
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
-			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "integration", "oracle"),
-					Dockerfile: "Dockerfile.oracledb",
-				},
-				ExposedPorts: []string{oraclePort},
-				// The Oracle DB container takes close to 10 minutes on a local machine
-				// to do the default setup, so the best way to account for startup time
-				// is to wait for the container to be healthy before continuing test.
-				WaitingFor: wait.NewHealthStrategy().WithStartupTimeout(30 * time.Minute),
-			}),
+			Oracle.ContainerRequest),
 		scraperinttest.WithCreateContainerTimeout(30*time.Minute),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.Driver = "oracle"
-				rCfg.DataSource = fmt.Sprintf("oracle://otel:p@ssw%%25rd@%s:%s/XE",
-					ci.Host(t), ci.MappedPort(t, oraclePort))
+				rCfg.Driver = Oracle.Driver
+				rCfg.DataSource = Oracle.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, Oracle.Port)))
 				rCfg.Queries = []sqlquery.Query{
 					{
-						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from sys.movie group by genre",
+						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from movie group by genre",
 						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:       "genre.count",
@@ -554,34 +595,18 @@ func TestOracleDBIntegrationMetrics(t *testing.T) {
 }
 
 func TestMysqlIntegrationMetrics(t *testing.T) {
+	MySql.CheckCompatibility(t)
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		scraperinttest.WithContainerRequest(
-			testcontainers.ContainerRequest{
-				Image: "mysql:8.0.33",
-				Env: map[string]string{
-					"MYSQL_USER":          "otel",
-					"MYSQL_PASSWORD":      "otel",
-					"MYSQL_ROOT_PASSWORD": "otel",
-					"MYSQL_DATABASE":      "otel",
-				},
-				Files: []testcontainers.ContainerFile{{
-					HostFilePath:      filepath.Join("testdata", "integration", "mysql", "init.sql"),
-					ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
-					FileMode:          700,
-				}},
-				ExposedPorts: []string{mysqlPort},
-				WaitingFor:   wait.ForListeningPort(nat.Port(mysqlPort)).WithStartupTimeout(2 * time.Minute),
-			}),
+		scraperinttest.WithContainerRequest(MySql.ContainerRequest),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.Driver = "mysql"
-				rCfg.DataSource = fmt.Sprintf("otel:otel@tcp(%s:%s)/otel",
-					ci.Host(t), ci.MappedPort(t, mysqlPort))
+				rCfg.Driver = MySql.Driver
+				rCfg.DataSource = MySql.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, MySql.Port)))
 				rCfg.Queries = []sqlquery.Query{
 					{
-						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
+						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre order by genre desc",
 						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:       "genre.count",
@@ -649,38 +674,51 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 					},
 				}
 			}),
-		scraperinttest.WithExpectedFile(
-			filepath.Join("testdata", "integration", "mysql", "expected.yaml"),
-		),
+		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", "mysql", "expected.yaml")),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
 }
 
-func testAllSimpleLogs(t *testing.T, logs []plog.Logs) {
-	assert.Len(t, logs, 1)
-	assert.Equal(t, 1, logs[0].ResourceLogs().Len())
-	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
-	expectedLogBodies := []string{
-		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6197 4 \"-\" \"-\" 445af8e6c428303f -",
-		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6205 5 \"-\" \"-\" 3285f43cd4baa202 -",
-		"- - - [03/Jun/2022:21:59:29 +0000] \"GET /api/health HTTP/1.1\" 200 6233 4 \"-\" \"-\" 579e8362d3185b61 -",
-		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6207 5 \"-\" \"-\" 8c6ac61ae66e509f -",
-		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6200 4 \"-\" \"-\" c163495861e873d8 -",
-	}
-	expectedLogAttributes := []string{
-		"TLSv1.2",
-		"TLSv1",
-		"TLSv1.2",
-		"TLSv1",
-		"TLSv1.2",
-	}
-	assert.Equal(t, len(expectedLogBodies), logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
-	for i := range expectedLogBodies {
-		logRecord := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i)
-		assert.Equal(t, expectedLogBodies[i], logRecord.Body().Str())
-		logAttribute, _ := logRecord.Attributes().Get("attribute")
-		assert.Equal(t, expectedLogAttributes[i], logAttribute.Str())
-	}
+func TestSqlServerIntegrationMetrics(t *testing.T) {
+	SqlServer.CheckCompatibility(t)
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithContainerRequest(SqlServer.ContainerRequest),
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.Driver = SqlServer.Driver
+				rCfg.DataSource = SqlServer.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, SqlServer.Port)))
+				rCfg.Queries = []sqlquery.Query{
+					{
+						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from movie group by genre order by genre",
+						Metrics: []sqlquery.MetricCfg{
+							{
+								MetricName:       "genre.count",
+								ValueColumn:      "count",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:       "genre.imdb",
+								ValueColumn:      "avg",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+						},
+					},
+				}
+			}),
+		scraperinttest.WithExpectedFile(
+			filepath.Join("testdata", "integration", "sqlserver", "expected.yaml"),
+		),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreMetricsOrder(),
+		),
+	).Run(t)
 }
