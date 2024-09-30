@@ -367,7 +367,7 @@ func newExponentialHistogramDataPoint(dp pmetric.ExponentialHistogramDataPoint) 
 }
 
 func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
-	if dp.hasMappingHint(hintAggregateMetricDouble) {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
@@ -394,7 +394,7 @@ func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	if dp.hasMappingHint(hintAggregateMetricDouble) {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
 		return "summary"
 	}
 	return "histogram"
@@ -414,7 +414,7 @@ func newHistogramDataPoint(dp pmetric.HistogramDataPoint) histogramDataPoint {
 }
 
 func (dp histogramDataPoint) Value() (pcommon.Value, error) {
-	if dp.hasMappingHint(hintAggregateMetricDouble) {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
@@ -425,7 +425,7 @@ func (dp histogramDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	if dp.hasMappingHint(hintAggregateMetricDouble) {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
 		return "summary"
 	}
 	return "histogram"

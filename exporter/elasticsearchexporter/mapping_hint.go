@@ -33,6 +33,6 @@ func newMappingHintGetter(attr pcommon.Map) (g mappingHintGetter) {
 	return
 }
 
-func (g mappingHintGetter) hasMappingHint(hint mappingHint) bool {
+func (g mappingHintGetter) HasMappingHint(hint mappingHint) bool {
 	return slices.Contains(g.hints, hint)
 }
