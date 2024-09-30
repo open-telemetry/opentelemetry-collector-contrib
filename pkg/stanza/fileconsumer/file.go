@@ -77,7 +77,9 @@ func (m *Manager) Stop() error {
 		m.cancel = nil
 	}
 	m.wg.Wait()
-	m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	if m.tracker != nil {
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	}
 	if m.persister != nil {
 		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
 			m.set.Logger.Error("save offsets", zap.Error(err))

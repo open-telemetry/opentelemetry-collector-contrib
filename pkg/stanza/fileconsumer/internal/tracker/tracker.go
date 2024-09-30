@@ -40,9 +40,8 @@ type fileTracker struct {
 }
 
 type option struct {
-	maxBatchFiles  int
-	pollsToArchive int
-	noTracking     bool
+	maxBatchFiles int
+	noTracking    bool
 }
 
 type OptionFunc func(*option)
