@@ -4,6 +4,7 @@
 package opampextension
 
 import (
+	"github.com/open-telemetry/opamp-go/protobufs"
 	"path/filepath"
 	"testing"
 	"time"
@@ -285,6 +286,44 @@ func TestConfig_Validate(t *testing.T) {
 				Capabilities: tt.fields.Capabilities,
 			}
 			tt.wantErr(t, cfg.Validate())
+		})
+	}
+}
+
+func TestCapabilities_toAgentCapabilities(t *testing.T) {
+	type fields struct {
+		ReportsEffectiveConfig bool
+		ReportsHealth          bool
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   protobufs.AgentCapabilities
+	}{
+		{
+			name: "default capabilities",
+			fields: fields{
+				ReportsEffectiveConfig: false,
+				ReportsHealth:          false,
+			},
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
+		},
+		{
+			name: "all supported capabilities enabled",
+			fields: fields{
+				ReportsEffectiveConfig: true,
+				ReportsHealth:          true,
+			},
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			caps := Capabilities{
+				ReportsEffectiveConfig: tt.fields.ReportsEffectiveConfig,
+				ReportsHealth:          tt.fields.ReportsHealth,
+			}
+			assert.Equalf(t, tt.want, caps.toAgentCapabilities(), "toAgentCapabilities()")
 		})
 	}
 }
