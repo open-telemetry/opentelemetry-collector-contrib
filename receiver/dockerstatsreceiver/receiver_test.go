@@ -150,13 +150,11 @@ func TestErrorsInStart(t *testing.T) {
 
 	cfg.Endpoint = "..not/a/valid/endpoint"
 	err := recv.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unable to parse docker host")
+	assert.ErrorContains(t, err, "unable to parse docker host")
 
 	cfg.Endpoint = unreachable
 	err = recv.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "context deadline exceeded")
+	assert.ErrorContains(t, err, "context deadline exceeded")
 }
 
 func TestScrapeV2(t *testing.T) {
