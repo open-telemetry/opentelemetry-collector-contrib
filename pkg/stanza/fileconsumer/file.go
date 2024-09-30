@@ -30,6 +30,7 @@ type Manager struct {
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
+	noTracking    bool
 
 	pollInterval  time.Duration
 	persister     operator.Persister
@@ -59,6 +60,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 			m.tracker.LoadMetadata(offsets)
 		}
 	}
+
+	// instantiate the tracker
+	m.instantiateTracker()
 
 	// Start polling goroutine
 	m.startPoller(ctx)
@@ -260,4 +264,8 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	}
 	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 	return r, nil
+}
+
+func (m *Manager) instantiateTracker() {
+	m.tracker = tracker.NewFileTracker(m.set, tracker.WithMaxBatchFiles(m.maxBatchFiles), tracker.WithNoTracking(m.noTracking))
 }
