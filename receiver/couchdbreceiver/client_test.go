@@ -48,8 +48,7 @@ func TestNewCouchDBClient(t *testing.T) {
 			componenttest.NewNopHost(),
 			componenttest.NewNopTelemetrySettings())
 
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create HTTP Client: ")
+		require.ErrorContains(t, err, "failed to create HTTP Client: ")
 		require.Nil(t, couchdbClient)
 	})
 	t.Run("no error", func(t *testing.T) {
@@ -87,27 +86,24 @@ func TestGet(t *testing.T) {
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "invalid port ")
+		require.ErrorContains(t, err, "invalid port ")
 	})
 	t.Run("invalid endpoint", func(t *testing.T) {
 		url := ts.URL + "/invalid_endpoint"
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "404 Not Found")
+		require.ErrorContains(t, err, "404 Not Found")
 	})
 	t.Run("invalid body", func(t *testing.T) {
 		url := ts.URL + "/invalid_body"
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "failed to read response body ")
+		require.ErrorContains(t, err, "failed to read response body ")
 	})
 	t.Run("401 Unauthorized", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
@@ -127,8 +123,7 @@ func TestGet(t *testing.T) {
 
 		result, err := couchdbClient.Get(url)
 		require.Nil(t, result)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "401 Unauthorized")
+		require.ErrorContains(t, err, "401 Unauthorized")
 	})
 	t.Run("no error", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"

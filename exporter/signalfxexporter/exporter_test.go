@@ -218,7 +218,7 @@ func TestConsumeMetrics(t *testing.T) {
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
 				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.Contains(t, err.Error(), "response content")
+				assert.ErrorContains(t, err, "response content")
 				return
 			}
 
@@ -1843,7 +1843,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
 				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.Contains(t, err.Error(), "response content")
+				assert.ErrorContains(t, err, "response content")
 				return
 			}
 
