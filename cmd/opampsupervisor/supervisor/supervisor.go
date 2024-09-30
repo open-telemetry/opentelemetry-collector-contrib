@@ -426,10 +426,11 @@ func (s *Supervisor) startOpAMPClient() error {
 
 	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
 	settings := types.StartSettings{
-		OpAMPServerURL: s.config.Server.Endpoint,
-		Header:         s.config.Server.Headers,
-		TLSConfig:      tlsConfig,
-		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
+		OpAMPServerURL:        s.config.Server.Endpoint,
+		Header:                s.config.Server.Headers,
+		TLSConfig:             tlsConfig,
+		InstanceUid:           types.InstanceUid(s.persistentState.InstanceID),
+		PackagesStateProvider: s.packageManager,
 		Callbacks: types.Callbacks{
 			OnConnect: func(_ context.Context) {
 				s.logger.Debug("Connected to the server.")
