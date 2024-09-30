@@ -1647,6 +1647,120 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
+func TestSupervisorUpgradesAgent(t *testing.T) {
+	tmpDir := t.TempDir()
+	storageDir := filepath.Join(tmpDir, "storage")
+
+	agentIDChan := make(chan []byte, 1)
+	packageStatusesChan := make(chan *protobufs.PackageStatuses, 1)
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				select {
+				case agentIDChan <- message.InstanceUid:
+				default:
+				}
+
+				if message.PackageStatuses != nil {
+					select {
+					case packageStatusesChan <- message.PackageStatuses:
+					default:
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		},
+	)
+
+	s := newSupervisor(t, "upgrade", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	agentVersion := "0.110.0"
+	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/otelcol-contrib_0.110.0_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
+	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/otelcol-contrib_0.110.0_%s_%s.tar.gz.sig", runtime.GOOS, runtime.GOARCH)
+	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/otelcol-contrib_0.110.0_%s_%s.tar.gz.pem", runtime.GOOS, runtime.GOARCH)
+
+	r, err := http.Get(agentURL)
+	require.NoError(t, err)
+
+	hasher := sha256.New()
+	_, err = io.Copy(hasher, r.Body)
+	require.NoError(t, err)
+	require.NoError(t, r.Body.Close())
+
+	hash := hasher.Sum(nil)
+
+	cert := getFileContents(t, agentCertURL)
+	sig := getFileContents(t, agentSigURL)
+
+	signatureField := bytes.Join([][]byte{cert, sig}, []byte(" "))
+
+	<-packageStatusesChan
+	agentID := <-agentIDChan
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		InstanceUid: agentID,
+		PackagesAvailable: &protobufs.PackagesAvailable{
+			Packages: map[string]*protobufs.PackageAvailable{
+				"": {
+					Type:    protobufs.PackageType_PackageType_TopLevel,
+					Version: "v" + agentVersion,
+					Hash:    []byte{0x01, 0x02},
+					File: &protobufs.DownloadableFile{
+						DownloadUrl: agentURL,
+						ContentHash: hash,
+						Signature:   signatureField,
+					},
+				},
+			},
+			AllPackagesHash: []byte{0x03, 0x04},
+		},
+	})
+
+	// Wait for new package statuses
+	ps := <-packageStatusesChan
+	require.Equal(t, &protobufs.PackageStatuses{
+		Packages: map[string]*protobufs.PackageStatus{
+			"": {
+				Name:                 "",
+				AgentHasVersion:      "",
+				AgentHasHash:         nil,
+				ServerOfferedVersion: "v" + agentVersion,
+				ServerOfferedHash:    []byte{0x01, 0x02},
+				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installing,
+			},
+		},
+		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+	}, ps)
+
+	ps = <-packageStatusesChan
+	require.Equal(t, &protobufs.PackageStatuses{
+		Packages: map[string]*protobufs.PackageStatus{
+			"": {
+				Name:                 "",
+				AgentHasVersion:      "v" + agentVersion,
+				AgentHasHash:         hash,
+				ServerOfferedVersion: "v" + agentVersion,
+				ServerOfferedHash:    hash,
+				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installed,
+			},
+		},
+		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
+	}, ps)
+}
+
 func findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -1661,4 +1775,15 @@ func findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func getFileContents(t *testing.T, url string) []byte {
+	r, err := http.Get(url)
+	require.NoError(t, err)
+	defer r.Body.Close()
+
+	by, err := io.ReadAll(r.Body)
+	require.NoError(t, err)
+
+	return by
 }

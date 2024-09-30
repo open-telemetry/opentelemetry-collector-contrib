@@ -14,6 +14,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.2
 	github.com/open-telemetry/opamp-go v0.18.0
 	github.com/sigstore/cosign/v2 v2.4.0
+	github.com/sigstore/rekor v1.3.6
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/config/configopaque v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/config/configtls v1.24.1-0.20250121185328-fbefb22cc2b3
@@ -157,7 +158,6 @@ require (
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
 	github.com/sigstore/fulcio v1.5.1 // indirect
 	github.com/sigstore/protobuf-specs v0.3.2 // indirect
-	github.com/sigstore/rekor v1.3.6 // indirect
 	github.com/sigstore/sigstore v1.8.8 // indirect
 	github.com/sigstore/timestamp-authority v1.2.2 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
@@ -208,5 +208,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.3.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-replace github.com/open-telemetry/opamp-go => github.com/observIQ/opamp-go v0.7.1-0.20240925161853-e80775042541
