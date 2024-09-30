@@ -67,9 +67,7 @@ func toKeyValueString[K any](target ottl.PMapGetter[K], d ottl.Optional[string],
 			return nil, err
 		}
 
-		kvString := convertMapToKV(source, delimiter, pairDelimiter, sortOutput)
-
-		return kvString, nil
+		return convertMapToKV(source, delimiter, pairDelimiter, sortOutput), nil
 	}, nil
 }
 
