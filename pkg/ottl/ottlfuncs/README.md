@@ -1633,13 +1633,14 @@ Examples:
 
 ### ToKeyValueString
 
-`ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter])`
+`ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter], Optional[sort_output])`
 
 The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
 
 - `target` is a Getter that returns a `pcommon.Map`. 
 - `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
 - `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
+- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead. 
 
 For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
 
@@ -1666,7 +1667,7 @@ For example, `{"k1":"v1","k2":"v=2","k3"="\"v=3\""}` will be converted to:
 Examples:
 
 - `ToKeyValueString(body)`
-- `ToKeyValueString(body, ":", ",")`
+- `ToKeyValueString(body, ":", ",", true)`
 
 ### TraceID
 

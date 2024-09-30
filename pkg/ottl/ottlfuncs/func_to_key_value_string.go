@@ -18,6 +18,7 @@ type ToKeyValueStringArguments[K any] struct {
 	Target        ottl.PMapGetter[K]
 	Delimiter     ottl.Optional[string]
 	PairDelimiter ottl.Optional[string]
+	SortOutput    ottl.Optional[bool]
 }
 
 func NewToKeyValueStringFactory[K any]() ottl.Factory[K] {
@@ -31,10 +32,10 @@ func createToKeyValueStringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Ar
 		return nil, fmt.Errorf("ToKeyValueStringFactory args must be of type *ToKeyValueStringArguments[K]")
 	}
 
-	return toKeyValueString[K](args.Target, args.Delimiter, args.PairDelimiter)
+	return toKeyValueString[K](args.Target, args.Delimiter, args.PairDelimiter, args.SortOutput)
 }
 
-func toKeyValueString[K any](target ottl.PMapGetter[K], d ottl.Optional[string], p ottl.Optional[string]) (ottl.ExprFunc[K], error) {
+func toKeyValueString[K any](target ottl.PMapGetter[K], d ottl.Optional[string], p ottl.Optional[string], s ottl.Optional[bool]) (ottl.ExprFunc[K], error) {
 	delimiter := "="
 	if !d.IsEmpty() {
 		if d.Get() == "" {
@@ -55,43 +56,58 @@ func toKeyValueString[K any](target ottl.PMapGetter[K], d ottl.Optional[string],
 		return nil, fmt.Errorf("pair delimiter %q cannot be equal to delimiter %q", pairDelimiter, delimiter)
 	}
 
+	sortOutput := false
+	if !s.IsEmpty() {
+		sortOutput = s.Get()
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		source, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		kvString := convertMapToKV(source, delimiter, pairDelimiter)
+		kvString := convertMapToKV(source, delimiter, pairDelimiter, sortOutput)
 
 		return kvString, nil
 	}, nil
 }
 
 // convertMapToKV converts a pcommon.Map to a key value string
-func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string) string {
-	var kvStrings []string
-	var keyValues []struct {
-		key string
-		val pcommon.Value
-	}
+func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string, sortOutput bool) string {
 
-	// Sort by keys
-	target.Range(func(k string, v pcommon.Value) bool {
-		keyValues = append(keyValues, struct {
+	var kvStrings []string
+	if sortOutput {
+		var keyValues []struct {
 			key string
 			val pcommon.Value
-		}{key: k, val: v})
-		return true
-	})
-	gosort.Slice(keyValues, func(i, j int) bool {
-		return keyValues[i].key < keyValues[j].key
-	})
+		}
 
-	// Convert KV pairs
-	for _, kv := range keyValues {
-		k := escapeAndQuoteKV(kv.key, delimiter, pairDelimiter)
-		vStr := escapeAndQuoteKV(kv.val.AsString(), delimiter, pairDelimiter)
-		kvStrings = append(kvStrings, fmt.Sprintf("%s%s%v", k, delimiter, vStr))
+		// Sort by keys
+		target.Range(func(k string, v pcommon.Value) bool {
+			keyValues = append(keyValues, struct {
+				key string
+				val pcommon.Value
+			}{key: k, val: v})
+			return true
+		})
+		gosort.Slice(keyValues, func(i, j int) bool {
+			return keyValues[i].key < keyValues[j].key
+		})
+
+		// Convert KV pairs
+		for _, kv := range keyValues {
+			k := escapeAndQuoteKV(kv.key, delimiter, pairDelimiter)
+			vStr := escapeAndQuoteKV(kv.val.AsString(), delimiter, pairDelimiter)
+			kvStrings = append(kvStrings, fmt.Sprintf("%s%s%v", k, delimiter, vStr))
+		}
+	} else {
+		target.Range(func(k string, v pcommon.Value) bool {
+			key := escapeAndQuoteKV(k, delimiter, pairDelimiter)
+			vStr := escapeAndQuoteKV(v.AsString(), delimiter, pairDelimiter)
+			kvStrings = append(kvStrings, fmt.Sprintf("%s%s%v", key, delimiter, vStr))
+			return true
+		})
 	}
 
 	return strings.Join(kvStrings, pairDelimiter)

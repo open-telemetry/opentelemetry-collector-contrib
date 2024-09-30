@@ -172,7 +172,7 @@ func Test_toKeyValueString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := toKeyValueString[any](tt.target, tt.delimiter, tt.pairDelimiter)
+			exprFunc, err := toKeyValueString[any](tt.target, tt.delimiter, tt.pairDelimiter, ottl.NewTestingOptional[bool](true))
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), nil)
@@ -197,11 +197,11 @@ func Test_toKeyValueString_equal_delimiters(t *testing.T) {
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("=")
-	_, err := toKeyValueString[any](target, delimiter, pairDelimiter)
+	_, err := toKeyValueString[any](target, delimiter, pairDelimiter, ottl.NewTestingOptional[bool](false))
 	assert.Error(t, err)
 
 	delimiter = ottl.NewTestingOptional[string](" ")
-	_, err = toKeyValueString[any](target, delimiter, ottl.Optional[string]{})
+	_, err = toKeyValueString[any](target, delimiter, ottl.Optional[string]{}, ottl.NewTestingOptional[bool](false))
 	assert.Error(t, err)
 }
 
@@ -213,7 +213,7 @@ func Test_toKeyValueString_bad_target(t *testing.T) {
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
-	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter)
+	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter, ottl.NewTestingOptional[bool](false))
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	assert.Error(t, err)
@@ -227,7 +227,7 @@ func Test_toKeyValueString_empty_target(t *testing.T) {
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
-	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter)
+	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter, ottl.NewTestingOptional[bool](false))
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	assert.Error(t, err)
@@ -241,9 +241,9 @@ func Test_toKeyValueString_empty_delimiters(t *testing.T) {
 	}
 	delimiter := ottl.NewTestingOptional[string]("")
 
-	_, err := toKeyValueString[any](target, delimiter, ottl.Optional[string]{})
+	_, err := toKeyValueString[any](target, delimiter, ottl.Optional[string]{}, ottl.NewTestingOptional[bool](false))
 	assert.ErrorContains(t, err, "delimiter cannot be set to an empty string")
 
-	_, err = toKeyValueString[any](target, ottl.Optional[string]{}, delimiter)
+	_, err = toKeyValueString[any](target, ottl.Optional[string]{}, delimiter, ottl.NewTestingOptional[bool](false))
 	assert.ErrorContains(t, err, "pair delimiter cannot be set to an empty string")
 }
