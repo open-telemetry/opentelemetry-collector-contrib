@@ -111,7 +111,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if err := o.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
+	if err := o.setHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
 		o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 	}
 
@@ -123,7 +123,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 
 	o.logger.Debug("OpAMP client started")
 
-	if err := o.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true}); err != nil {
+	if err := o.setHealth(&protobufs.ComponentHealth{Healthy: true}); err != nil {
 		o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 	}
 
@@ -140,7 +140,7 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	err := o.opampClient.SetHealth(
+	err := o.setHealth(
 		&protobufs.ComponentHealth{
 			Healthy: false, LastError: "Agent is shut down",
 		},
@@ -336,4 +336,11 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	if msg.CustomMessage != nil {
 		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
 	}
+}
+
+func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) error {
+	if o.capabilities.ReportsHealth && o.opampClient != nil {
+		return o.opampClient.SetHealth(ch)
+	}
+	return nil
 }
