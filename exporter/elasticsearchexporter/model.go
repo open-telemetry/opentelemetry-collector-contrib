@@ -876,7 +876,7 @@ func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
 	hasher.Write(timestampBuf)
 
-	mapHashExcludeDataStreamAttr(hasher, attributes)
+	mapHashExcludeReservedAttrs(hasher, attributes, false)
 
 	return hasher.Sum32()
 }
@@ -893,21 +893,23 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 
 	hasher.Write([]byte(unit))
 
-	mapHashExcludeDataStreamAttr(hasher, scopeAttrs)
-	mapHashExcludeDataStreamAttr(hasher, dp.Attributes())
+	mapHashExcludeReservedAttrs(hasher, scopeAttrs, true)
+	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), true)
 
 	return hasher.Sum32()
 }
 
-// mapHashExcludeDataStreamAttr is mapHash but ignoring DS attributes.
-// It is useful for cases where index is already considered during routing and no need to be considered in hashing.
-func mapHashExcludeDataStreamAttr(hasher hash.Hash, m pcommon.Map) {
+// mapHashExcludeReservedAttrs is mapHash but ignoring some reserved attributes.
+// e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
+func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, otel bool) {
 	m.Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
 			return true
-		case mappingHintsAttrKey: // FIXME: refactor, change func name, do not use in ecs mode
-			return true
+		case mappingHintsAttrKey:
+			if otel {
+				return true
+			}
 		}
 		hasher.Write([]byte(k))
 		valueHash(hasher, v)
