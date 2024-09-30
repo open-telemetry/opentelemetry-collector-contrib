@@ -142,6 +142,20 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	return err
 }
 
+func (o *opampAgent) Dependencies() []component.ID {
+	if o.cfg.Server == nil {
+		return nil
+	}
+
+	var emptyComponentID component.ID
+	authID := o.cfg.Server.GetAuthExtensionID()
+	if authID == emptyComponentID {
+		return nil
+	}
+
+	return []component.ID{authID}
+}
+
 func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
 	if o.capabilities.ReportsEffectiveConfig {
 		o.updateEffectiveConfig(conf)

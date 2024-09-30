@@ -150,6 +150,17 @@ func (s OpAMPServer) GetEndpoint() string {
 	return ""
 }
 
+func (s OpAMPServer) GetAuthExtensionID() component.ID {
+	if s.WS != nil {
+		return s.WS.Auth
+	} else if s.HTTP != nil {
+		return s.HTTP.Auth
+	}
+
+	var emptyComponentID component.ID
+	return emptyComponentID
+}
+
 func (s OpAMPServer) GetPollingInterval() time.Duration {
 	if s.HTTP != nil && s.HTTP.PollingInterval > 0 {
 		return s.HTTP.PollingInterval
