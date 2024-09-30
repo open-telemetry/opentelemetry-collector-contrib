@@ -156,7 +156,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeLogRecord(record, scope, resource, fIndex, e.otel)
+		fIndex = routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -313,7 +313,7 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 ) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeDataPoint(dataPoint, scope, resource, fIndex, e.otel)
+		fIndex = routeDataPoint(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -387,7 +387,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpan(span, scope, resource, fIndex, e.otel)
+		fIndex = routeSpan(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, span.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -417,7 +417,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpanEvent(spanEvent, scope, resource, fIndex, e.otel)
+		fIndex = routeSpanEvent(spanEvent.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
