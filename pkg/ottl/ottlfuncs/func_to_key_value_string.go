@@ -97,20 +97,22 @@ func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string, 
 
 		// Convert KV pairs
 		for _, kv := range keyValues {
-			k := escapeAndQuoteKV(kv.key, delimiter, pairDelimiter)
-			vStr := escapeAndQuoteKV(kv.val.AsString(), delimiter, pairDelimiter)
-			kvStrings = append(kvStrings, fmt.Sprintf("%s%s%v", k, delimiter, vStr))
+			kvStrings = append(kvStrings, buildKVString(kv.key, kv.val, delimiter, pairDelimiter))
 		}
 	} else {
 		target.Range(func(k string, v pcommon.Value) bool {
-			key := escapeAndQuoteKV(k, delimiter, pairDelimiter)
-			vStr := escapeAndQuoteKV(v.AsString(), delimiter, pairDelimiter)
-			kvStrings = append(kvStrings, fmt.Sprintf("%s%s%v", key, delimiter, vStr))
+			kvStrings = append(kvStrings, buildKVString(k, v, delimiter, pairDelimiter))
 			return true
 		})
 	}
 
 	return strings.Join(kvStrings, pairDelimiter)
+}
+
+func buildKVString(k string, v pcommon.Value, delimiter string, pairDelimiter string) string {
+	key := escapeAndQuoteKV(k, delimiter, pairDelimiter)
+	value := escapeAndQuoteKV(v.AsString(), delimiter, pairDelimiter)
+	return fmt.Sprintf("%s%s%v", key, delimiter, value)
 }
 
 func escapeAndQuoteKV(s string, delimiter string, pairDelimiter string) string {
