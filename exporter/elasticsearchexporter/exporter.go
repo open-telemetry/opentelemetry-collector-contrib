@@ -223,7 +223,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newNumberDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -232,7 +232,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newNumberDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -245,7 +245,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(exponentialHistogramDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newExponentialHistogramDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -258,7 +258,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(histogramDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newHistogramDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -267,7 +267,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(summaryDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newSummaryDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}

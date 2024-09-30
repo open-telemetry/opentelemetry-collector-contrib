@@ -1,6 +1,10 @@
 package elasticsearchexporter
 
-import "go.opentelemetry.io/collector/pdata/pcommon"
+import (
+	"slices"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
 
 const (
 	mappingHintsAttrKey = "elasticsearch.mapping.hints"
@@ -13,19 +17,22 @@ const (
 	hintDocCount              mappingHint = "_doc_count"
 )
 
-func hasHint(attrs pcommon.Map, hint mappingHint) (found bool) {
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		if k != mappingHintsAttrKey || v.Type() != pcommon.ValueTypeSlice {
-			return true
-		}
-		slice := v.Slice()
-		for i := 0; i < slice.Len(); i++ {
-			if slice.At(i).Str() == string(hint) {
-				found = true
-				return false
-			}
-		}
-		return true
-	})
+type mappingHintGetter struct {
+	hints []mappingHint
+}
+
+func newMappingHintGetter(attr pcommon.Map) (g mappingHintGetter) {
+	v, ok := attr.Get(mappingHintsAttrKey)
+	if !ok || v.Type() != pcommon.ValueTypeSlice {
+		return
+	}
+	slice := v.Slice()
+	for i := 0; i < slice.Len(); i++ {
+		g.hints = append(g.hints, mappingHint(slice.At(i).Str()))
+	}
 	return
+}
+
+func (g mappingHintGetter) hasMappingHint(hint mappingHint) bool {
+	return slices.Contains(g.hints, hint)
 }

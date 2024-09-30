@@ -90,6 +90,7 @@ type dataPoint interface {
 	Value() (pcommon.Value, error)
 	DynamicTemplate(pmetric.Metric) string
 	DocCount() uint64
+	hasMappingHint(mappingHint) bool
 }
 
 const (
@@ -304,7 +305,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 	}
 
-	if hasHint(dp.Attributes(), hintDocCount) {
+	if dp.hasMappingHint(hintDocCount) {
 		docCount := dp.DocCount()
 		document.AddInt("_doc_count", int64(docCount))
 	}
@@ -331,6 +332,11 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 
 type summaryDataPoint struct {
 	pmetric.SummaryDataPoint
+	mappingHintGetter
+}
+
+func newSummaryDataPoint(dp pmetric.SummaryDataPoint) summaryDataPoint {
+	return summaryDataPoint{SummaryDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
 }
 
 func (dp summaryDataPoint) Value() (pcommon.Value, error) {
@@ -353,10 +359,15 @@ func (dp summaryDataPoint) DocCount() uint64 {
 
 type exponentialHistogramDataPoint struct {
 	pmetric.ExponentialHistogramDataPoint
+	mappingHintGetter
+}
+
+func newExponentialHistogramDataPoint(dp pmetric.ExponentialHistogramDataPoint) exponentialHistogramDataPoint {
+	return exponentialHistogramDataPoint{ExponentialHistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
 }
 
 func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
-	if hasHint(dp.Attributes(), hintAggregateMetricDouble) {
+	if dp.hasMappingHint(hintAggregateMetricDouble) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
@@ -383,7 +394,7 @@ func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	if hasHint(dp.Attributes(), hintAggregateMetricDouble) {
+	if dp.hasMappingHint(hintAggregateMetricDouble) {
 		return "summary"
 	}
 	return "histogram"
@@ -395,10 +406,15 @@ func (dp exponentialHistogramDataPoint) DocCount() uint64 {
 
 type histogramDataPoint struct {
 	pmetric.HistogramDataPoint
+	mappingHintGetter
+}
+
+func newHistogramDataPoint(dp pmetric.HistogramDataPoint) histogramDataPoint {
+	return histogramDataPoint{HistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
 }
 
 func (dp histogramDataPoint) Value() (pcommon.Value, error) {
-	if hasHint(dp.Attributes(), hintAggregateMetricDouble) {
+	if dp.hasMappingHint(hintAggregateMetricDouble) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
@@ -409,7 +425,7 @@ func (dp histogramDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	if hasHint(dp.Attributes(), hintAggregateMetricDouble) {
+	if dp.hasMappingHint(hintAggregateMetricDouble) {
 		return "summary"
 	}
 	return "histogram"
@@ -469,6 +485,11 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 
 type numberDataPoint struct {
 	pmetric.NumberDataPoint
+	mappingHintGetter
+}
+
+func newNumberDataPoint(dp pmetric.NumberDataPoint) numberDataPoint {
+	return numberDataPoint{NumberDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
 }
 
 func (dp numberDataPoint) Value() (pcommon.Value, error) {
