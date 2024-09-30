@@ -1641,15 +1641,27 @@ The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `str
 - `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
 - `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
 
-For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be parsed into the following map:
+For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
 
 ```
-"k1=v1 k2=v2 k3=v3"
+`k1=v1 k2=v2 k3=v3`
 ```
 
-**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to `Flatten(target)` before using this function. 
+**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function. 
+
+For example, `{"k1":"v1","k2":{"k3":"v3","k4":["v4","v5"]}}` will be converted to:
+
+```
+`k1=v1 k2={\"k3\":\"v3\",\"k4\":[\"v4\",\"v5\"]}`
+```
 
 **Note:** If any keys or values contain either delimiter, they will be double quoted. If any double quotes are present in the quoted value, they will be escaped.
+
+For example, `{"k1":"v1","k2":"v=2","k3"="\"v=3\""}` will be converted to:
+
+```
+`k1=v1 k2="v=2" k3="\"v=3\""`
+```
 
 Examples:
 
