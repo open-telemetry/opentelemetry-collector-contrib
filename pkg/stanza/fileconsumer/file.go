@@ -269,5 +269,9 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 }
 
 func (m *Manager) instantiateTracker() {
-	m.tracker = tracker.NewFileTracker(m.set, tracker.WithMaxBatchFiles(m.maxBatchFiles), tracker.WithNoTracking(m.noTracking))
+	opts := []tracker.OptionFunc{tracker.WithMaxBatchFiles(m.maxBatchFiles)}
+	if m.noTracking {
+		opts = append(opts, tracker.WithNoTracking())
+	}
+	m.tracker = tracker.NewFileTracker(m.set, opts...)
 }

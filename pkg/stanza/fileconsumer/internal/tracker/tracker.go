@@ -52,9 +52,9 @@ func WithMaxBatchFiles(maxBatchFiles int) OptionFunc {
 	}
 }
 
-func WithNoTracking(noTracking bool) OptionFunc {
+func WithNoTracking() OptionFunc {
 	return func(fto *option) {
-		fto.noTracking = noTracking
+		fto.noTracking = true
 	}
 }
 
