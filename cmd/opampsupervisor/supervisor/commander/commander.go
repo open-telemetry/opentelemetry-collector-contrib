@@ -136,12 +136,14 @@ func (c *Commander) startContainerized() error {
 	}
 	c.running.Store(1)
 
+	colLogger := c.logger.Named("collector")
+
 	// capture agent output
 	go func() {
 		scanner := bufio.NewScanner(stdoutPipe)
 		for scanner.Scan() {
 			line := scanner.Text()
-			c.logger.Info(line)
+			colLogger.Info(line)
 		}
 		if err := scanner.Err(); err != nil {
 			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
@@ -151,7 +153,7 @@ func (c *Commander) startContainerized() error {
 		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
 			line := scanner.Text()
-			c.logger.Info(line)
+			colLogger.Info(line)
 		}
 		if err := scanner.Err(); err != nil {
 			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
