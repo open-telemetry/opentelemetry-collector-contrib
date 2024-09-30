@@ -7,6 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"runtime"
+	"sort"
+	"strings"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -20,12 +27,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
-	"net/http"
-	"os"
-	"runtime"
-	"sort"
-	"strings"
-	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
