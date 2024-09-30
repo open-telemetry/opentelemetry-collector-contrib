@@ -436,7 +436,6 @@ Available Converters:
 - [Len](#len)
 - [Log](#log)
 - [MD5](#md5)
-- [MarshalKeyValue](#marshalkeyvalue)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
 - [Minute](#minute)
@@ -459,6 +458,7 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
+- [ToKeyValueString](#toKeyValueString)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -1066,32 +1066,6 @@ Examples:
 
 **Note:** According to the National Institute of Standards and Technology (NIST), MD5 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer a SHA-2 family function (e.g. SHA-256, SHA-512) whenever possible.
 
-### MarshalKeyValue
-
-`MarshalKeyValue(target, Optional[delimiter], Optional[pair_delimiter])`
-
-The `MarshalKeyValue` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
-
-- `target` is a Getter that returns a `pcommon.Map`. 
-- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
-- `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
-
-For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be parsed into the following map:
-
-```
-"k1=v1 k2=v2 k3=v3"
-```
-
-**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to `Flatten(target)` before using this function. 
-
-**Note:** If any keys or values contain either delimiter, they will be double quoted. If any double quotes are present in the quoted value, they will be escaped.
-
-Examples:
-
-- `MarshalKeyValue(body)`
-- `MarshalKeyValue(body, ":", ",")`
-
-
 ### Microseconds
 
 `Microseconds(value)`
@@ -1656,6 +1630,31 @@ Examples:
 
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
+
+### ToKeyValueString
+
+`ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter])`
+
+The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
+
+- `target` is a Getter that returns a `pcommon.Map`. 
+- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
+- `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
+
+For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be parsed into the following map:
+
+```
+"k1=v1 k2=v2 k3=v3"
+```
+
+**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to `Flatten(target)` before using this function. 
+
+**Note:** If any keys or values contain either delimiter, they will be double quoted. If any double quotes are present in the quoted value, they will be escaped.
+
+Examples:
+
+- `ToKeyValueString(body)`
+- `ToKeyValueString(body, ":", ",")`
 
 ### TraceID
 

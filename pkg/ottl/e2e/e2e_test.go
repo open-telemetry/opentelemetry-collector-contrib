@@ -616,25 +616,25 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], MarshalKeyValue(ParseKeyValue("k1=v1 k2=v2")))`,
+			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2")))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "k1=v1 k2=v2")
 			},
 		},
 		{
-			statement: `set(attributes["test"], MarshalKeyValue(ParseKeyValue("k1:v1,k2:v2", ":" , ","), ":", ","))`,
+			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1:v1,k2:v2", ":" , ","), ":", ","))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "k1:v1,k2:v2")
 			},
 		},
 		{
-			statement: `set(attributes["test"], MarshalKeyValue(ParseKeyValue("k1=v1 k2=v2"), "!", "+"))`,
+			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2"), "!", "+"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "k1!v1+k2!v2")
 			},
 		},
 		{
-			statement: `set(attributes["test"], MarshalKeyValue(ParseKeyValue("k1=v1 k2=v2=v3")))`,
+			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2=v3")))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "k1=v1 k2=\"v2=v3\"")
 			},

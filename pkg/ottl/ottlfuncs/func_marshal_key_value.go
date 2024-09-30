@@ -14,27 +14,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type MarshalKeyValueArguments[K any] struct {
+type ToKeyValueStringArguments[K any] struct {
 	Target        ottl.PMapGetter[K]
 	Delimiter     ottl.Optional[string]
 	PairDelimiter ottl.Optional[string]
 }
 
-func NewMarshalKeyValueFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("MarshalKeyValue", &MarshalKeyValueArguments[K]{}, createMarshalKeyValueFunction[K])
+func NewToKeyValueStringFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("ToKeyValueString", &ToKeyValueStringArguments[K]{}, createToKeyValueStringFunction[K])
 }
 
-func createMarshalKeyValueFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*MarshalKeyValueArguments[K])
+func createToKeyValueStringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*ToKeyValueStringArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("MarshalKeyValueFactory args must be of type *MarshalKeyValueArguments[K]")
+		return nil, fmt.Errorf("ToKeyValueStringFactory args must be of type *ToKeyValueStringArguments[K]")
 	}
 
-	return marshalKeyValue[K](args.Target, args.Delimiter, args.PairDelimiter)
+	return toKeyValueString[K](args.Target, args.Delimiter, args.PairDelimiter)
 }
 
-func marshalKeyValue[K any](target ottl.PMapGetter[K], d ottl.Optional[string], p ottl.Optional[string]) (ottl.ExprFunc[K], error) {
+func toKeyValueString[K any](target ottl.PMapGetter[K], d ottl.Optional[string], p ottl.Optional[string]) (ottl.ExprFunc[K], error) {
 	delimiter := "="
 	if !d.IsEmpty() {
 		if d.Get() == "" {

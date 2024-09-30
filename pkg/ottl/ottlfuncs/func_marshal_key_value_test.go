@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_marshalKeyValue(t *testing.T) {
+func Test_toKeyValueString(t *testing.T) {
 	tests := []struct {
 		name          string
 		target        ottl.PMapGetter[any]
@@ -172,7 +172,7 @@ func Test_marshalKeyValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := marshalKeyValue[any](tt.target, tt.delimiter, tt.pairDelimiter)
+			exprFunc, err := toKeyValueString[any](tt.target, tt.delimiter, tt.pairDelimiter)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), nil)
@@ -186,7 +186,7 @@ func Test_marshalKeyValue(t *testing.T) {
 	}
 }
 
-func Test_marshalKeyValue_equal_delimiters(t *testing.T) {
+func Test_toKeyValueString_equal_delimiters(t *testing.T) {
 	target := ottl.StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return map[string]any{
@@ -197,15 +197,15 @@ func Test_marshalKeyValue_equal_delimiters(t *testing.T) {
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("=")
-	_, err := marshalKeyValue[any](target, delimiter, pairDelimiter)
+	_, err := toKeyValueString[any](target, delimiter, pairDelimiter)
 	assert.Error(t, err)
 
 	delimiter = ottl.NewTestingOptional[string](" ")
-	_, err = marshalKeyValue[any](target, delimiter, ottl.Optional[string]{})
+	_, err = toKeyValueString[any](target, delimiter, ottl.Optional[string]{})
 	assert.Error(t, err)
 }
 
-func Test_marshalKeyValue_bad_target(t *testing.T) {
+func Test_toKeyValueString_bad_target(t *testing.T) {
 	target := ottl.StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return 1, nil
@@ -213,13 +213,13 @@ func Test_marshalKeyValue_bad_target(t *testing.T) {
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
-	exprFunc, err := marshalKeyValue[any](target, delimiter, pairDelimiter)
+	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter)
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }
 
-func Test_marshalKeyValue_empty_target(t *testing.T) {
+func Test_toKeyValueString_empty_target(t *testing.T) {
 	target := ottl.StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "", nil
@@ -227,13 +227,13 @@ func Test_marshalKeyValue_empty_target(t *testing.T) {
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
-	exprFunc, err := marshalKeyValue[any](target, delimiter, pairDelimiter)
+	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter)
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }
 
-func Test_marshalKeyValue_empty_delimiters(t *testing.T) {
+func Test_toKeyValueString_empty_delimiters(t *testing.T) {
 	target := ottl.StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "a=b c=d", nil
@@ -241,9 +241,9 @@ func Test_marshalKeyValue_empty_delimiters(t *testing.T) {
 	}
 	delimiter := ottl.NewTestingOptional[string]("")
 
-	_, err := marshalKeyValue[any](target, delimiter, ottl.Optional[string]{})
+	_, err := toKeyValueString[any](target, delimiter, ottl.Optional[string]{})
 	assert.ErrorContains(t, err, "delimiter cannot be set to an empty string")
 
-	_, err = marshalKeyValue[any](target, ottl.Optional[string]{}, delimiter)
+	_, err = toKeyValueString[any](target, ottl.Optional[string]{}, delimiter)
 	assert.ErrorContains(t, err, "pair delimiter cannot be set to an empty string")
 }
