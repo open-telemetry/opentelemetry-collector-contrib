@@ -1039,25 +1039,20 @@ func TestExporterMetrics(t *testing.T) {
 		summaryDP.SetSum(1)
 		summaryDP.SetCount(10)
 		fillAttributeMap(summaryDP.Attributes(), map[string]any{
-			"_doc_count": true,
+			"elasticsearch.mapping.hints": []string{"_doc_count"},
 		})
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(2)
+		rec.WaitItems(1)
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"attributes":{"_doc_count":true},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
 			},
 		}
 
 		assertItemsEqual(t, expected, rec.Items(), false)
-
 	})
 
 	t.Run("publish summary", func(t *testing.T) {
