@@ -319,7 +319,6 @@ func verifyPackageSignature(ctx context.Context, checkOpts *cosign.CheckOpts, pa
 		return fmt.Errorf("b64 decode cert: %w", err)
 	}
 
-	// TODO: Should cert chain here be settable? Where should it come from?
 	ociSig, err := static.NewSignature(packageBytes, string(b64Signature), static.WithCertChain(decodedCert, nil))
 	if err != nil {
 		return fmt.Errorf("create signature: %w", err)
