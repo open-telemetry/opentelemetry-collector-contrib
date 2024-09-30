@@ -90,7 +90,7 @@ type dataPoint interface {
 	Value() (pcommon.Value, error)
 	DynamicTemplate(pmetric.Metric) string
 	DocCount() uint64
-	hasMappingHint(mappingHint) bool
+	HasMappingHint(mappingHint) bool
 }
 
 const (
@@ -305,7 +305,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 	}
 
-	if dp.hasMappingHint(hintDocCount) {
+	if dp.HasMappingHint(hintDocCount) {
 		docCount := dp.DocCount()
 		document.AddInt("_doc_count", int64(docCount))
 	}

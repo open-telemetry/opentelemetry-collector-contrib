@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package elasticsearchexporter
 
 import (
@@ -15,12 +18,10 @@ func TestHasHint(t *testing.T) {
 		want      bool
 	}{
 		{
-			name: "empty map",
-			attrsFunc: func() pcommon.Map {
-				return pcommon.NewMap()
-			},
-			hint: hintAggregateMetricDouble,
-			want: false,
+			name:      "empty map",
+			attrsFunc: pcommon.NewMap,
+			hint:      hintAggregateMetricDouble,
+			want:      false,
 		},
 		{
 			name: "bad type",
