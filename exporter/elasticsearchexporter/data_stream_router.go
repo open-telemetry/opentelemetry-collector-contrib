@@ -40,6 +40,9 @@ func routeWithDefaults(defaultDSType string) func(
 			}
 		}
 
+		dataset = sanitizeDataStreamDataset(dataset)
+		namespace = sanitizeDataStreamNamespace(namespace)
+
 		// The naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
 		// This is in order to match the soon to be built-in logs-*.otel-* index template.
 		if otel {

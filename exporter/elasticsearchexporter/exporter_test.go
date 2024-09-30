@@ -216,7 +216,7 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			assert.Equal(t, "logs-record.dataset-resource.namespace", actionJSONToIndex(t, docs[0].Action))
+			assert.Equal(t, "logs-_record.dataset-resource.namespace", actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -226,7 +226,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				dataStreamDataset: "record.dataset",
+				dataStreamDataset: "*record.dataset",
 			},
 			nil,
 			map[string]any{

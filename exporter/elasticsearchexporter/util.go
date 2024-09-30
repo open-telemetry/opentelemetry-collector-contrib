@@ -6,10 +6,48 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/lestrrat-go/strftime"
 )
+
+const (
+	maxDataStreamBytes       = 100
+	disallowedNamespaceRunes = "\\/*?\"<>| ,#:"
+	disallowedDatasetRunes   = "-\\/*?\"<>| ,#:"
+)
+
+// Sanitize the datastream fields (dataset, namespace) to apply restrictions
+// as outlined in https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html
+func sanitizeDataStreamDataset(field string) string {
+	field = strings.Map(replaceReservedRune(disallowedDatasetRunes), field)
+	if len(field) > maxDataStreamBytes {
+		return field[:maxDataStreamBytes]
+	}
+
+	return field
+}
+
+// Sanitize the datastream fields (dataset, namespace) to apply restrictions
+// as outlined in https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html
+func sanitizeDataStreamNamespace(field string) string {
+	field = strings.Map(replaceReservedRune(disallowedNamespaceRunes), field)
+	if len(field) > maxDataStreamBytes {
+		return field[:maxDataStreamBytes]
+	}
+	return field
+}
+
+func replaceReservedRune(disallowedRunes string) func(r rune) rune {
+	return func(r rune) rune {
+		if strings.ContainsRune(disallowedRunes, r) {
+			return '_'
+		}
+		return unicode.ToLower(r)
+	}
+}
 
 func generateIndexWithLogstashFormat(index string, conf *LogstashFormatSettings, t time.Time) (string, error) {
 	if conf.Enabled {
