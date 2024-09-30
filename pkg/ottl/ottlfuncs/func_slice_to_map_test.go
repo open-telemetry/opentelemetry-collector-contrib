@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func Test_Associate(t *testing.T) {
+func Test_SliceToMap(t *testing.T) {
 	type testCase struct {
 		name      string
 		value     func() any
@@ -45,7 +45,6 @@ func Test_Associate(t *testing.T) {
 
 				return m
 			},
-			wantErr: "",
 		},
 		{
 			name:    "flat object with missing key value",
@@ -62,7 +61,9 @@ func Test_Associate(t *testing.T) {
 
 				return sl
 			},
-			wantErr: "could not extract key value: provided object does not contain the path [notfound]",
+			want: func() pcommon.Map {
+				return pcommon.NewMap()
+			},
 		},
 		{
 			name:      "flat object with key path and value path",
@@ -87,7 +88,6 @@ func Test_Associate(t *testing.T) {
 
 				return m
 			},
-			wantErr: "",
 		},
 		{
 			name:    "nested object with key path only",
@@ -117,7 +117,6 @@ func Test_Associate(t *testing.T) {
 
 				return m
 			},
-			wantErr: "",
 		},
 		{
 			name:      "nested object with key path and value path",
@@ -143,7 +142,6 @@ func Test_Associate(t *testing.T) {
 
 				return m
 			},
-			wantErr: "",
 		},
 		{
 			name:    "flat object with key path resolving to non-string",
@@ -160,7 +158,9 @@ func Test_Associate(t *testing.T) {
 
 				return sl
 			},
-			wantErr: "provided key path [value] does not resolve to a string",
+			want: func() pcommon.Map {
+				return pcommon.NewMap()
+			},
 		},
 		{
 			name:      "nested object with value path not resolving to a value",
@@ -179,7 +179,9 @@ func Test_Associate(t *testing.T) {
 
 				return sl
 			},
-			wantErr: "provided object does not contain the path [notfound]",
+			want: func() pcommon.Map {
+				return pcommon.NewMap()
+			},
 		},
 		{
 			name:      "nested object with value path segment resolving to non-map value",
@@ -198,7 +200,9 @@ func Test_Associate(t *testing.T) {
 
 				return sl
 			},
-			wantErr: "provided object does not contain the path [name nothing]",
+			want: func() pcommon.Map {
+				return pcommon.NewMap()
+			},
 		},
 		{
 			name:    "unsupported type",
@@ -217,7 +221,9 @@ func Test_Associate(t *testing.T) {
 
 				return sl
 			},
-			wantErr: "unsupported value type: string",
+			want: func() pcommon.Map {
+				return pcommon.NewMap()
+			},
 		},
 		{
 			name:    "empty key path",
@@ -226,6 +232,56 @@ func Test_Associate(t *testing.T) {
 				return pcommon.NewMap()
 			},
 			wantErr: "key path must contain at least one element",
+		},
+		{
+			name:      "mixed data types with invalid element",
+			keyPath:   []string{"name"},
+			valuePath: []string{"value"},
+			value: func() any {
+				sl := pcommon.NewSlice()
+				thing1 := sl.AppendEmpty().SetEmptyMap()
+				thing1.PutStr("name", "foo")
+				thing1.PutInt("value", 2)
+
+				sl.AppendEmpty().SetStr("nothingToSeeHere")
+
+				thing2 := sl.AppendEmpty().SetEmptyMap()
+				thing2.PutStr("name", "bar")
+				thing2.PutInt("value", 5)
+
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutInt("foo", 2)
+				m.PutInt("bar", 5)
+
+				return m
+			},
+		},
+		{
+			name:      "nested with different value data types",
+			keyPath:   []string{"name"},
+			valuePath: []string{"value"},
+			value: func() any {
+				sl := pcommon.NewSlice()
+				thing1 := sl.AppendEmpty().SetEmptyMap()
+				thing1.PutStr("name", "foo")
+				thing1.PutEmptyMap("value").PutStr("test", "value")
+
+				thing2 := sl.AppendEmpty().SetEmptyMap()
+				thing2.PutStr("name", "bar")
+				thing2.PutInt("value", 5)
+
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutEmptyMap("foo").PutStr("test", "value")
+				m.PutInt("bar", 5)
+
+				return m
+			},
 		},
 	}
 	for _, tt := range tests {

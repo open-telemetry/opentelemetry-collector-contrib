@@ -56,7 +56,7 @@ func sliceToMap(v []any, keyPath []string, valuePath ottl.Optional[[]string]) (a
 		case map[string]any:
 			obj, err := extractValue(e, keyPath)
 			if err != nil {
-				return nil, fmt.Errorf("could not extract key value: %w", err)
+				continue
 			}
 
 			var key string
@@ -64,7 +64,7 @@ func sliceToMap(v []any, keyPath []string, valuePath ottl.Optional[[]string]) (a
 			case string:
 				key = k
 			default:
-				return nil, fmt.Errorf("provided key path %v does not resolve to a string", keyPath)
+				continue
 			}
 
 			if valuePath.IsEmpty() {
@@ -73,11 +73,11 @@ func sliceToMap(v []any, keyPath []string, valuePath ottl.Optional[[]string]) (a
 			}
 			obj, err = extractValue(e, valuePath.Get())
 			if err != nil {
-				return nil, fmt.Errorf("could not extract value: %w", err)
+				continue
 			}
 			result[key] = obj
 		default:
-			return nil, fmt.Errorf("unsupported value type: %T", e)
+			continue
 		}
 	}
 	m := pcommon.NewMap()
