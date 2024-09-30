@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -216,7 +217,10 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			assert.Equal(t, "logs-_record.dataset-resource.namespace", actionJSONToIndex(t, docs[0].Action))
+			ds := "record.dataset" + strings.Repeat("_", len(disallowedDatasetRunes))
+			ns := "resource.namespace" + strings.Repeat("_", len(disallowedNamespaceRunes))
+
+			assert.Equal(t, fmt.Sprintf("logs-%s-%s", ds, ns), actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -226,12 +230,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				dataStreamDataset: "*record.dataset",
+				dataStreamDataset: "record.dataset" + disallowedDatasetRunes,
 			},
 			nil,
 			map[string]any{
 				dataStreamDataset:   "resource.dataset",
-				dataStreamNamespace: "resource.namespace",
+				dataStreamNamespace: "resource.namespace" + disallowedNamespaceRunes,
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
