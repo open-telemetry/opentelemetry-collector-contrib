@@ -235,8 +235,8 @@ The metric types supported are:
 
 - Gauge
 - Sum
-- Histogram
-- Exponential histogram
+- Histogram (Delta temporality only)
+- Exponential histogram (Delta temporality only)
 - Summary
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
