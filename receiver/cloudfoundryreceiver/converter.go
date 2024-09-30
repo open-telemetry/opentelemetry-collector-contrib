@@ -56,7 +56,7 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 		dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 		dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 		if allowResourceAttributes.IsEnabled() {
-			attrs := getEnvelopeDatapointAttributes(envelope)
+			attrs := getEnvelopeDataAttributes(envelope)
 			attrs.CopyTo(dataPoint.Attributes())
 		} else {
 			copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
@@ -70,7 +70,7 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 			dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 			if allowResourceAttributes.IsEnabled() {
-				attrs := getEnvelopeDatapointAttributes(envelope)
+				attrs := getEnvelopeDataAttributes(envelope)
 				attrs.CopyTo(dataPoint.Attributes())
 			} else {
 				copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
@@ -97,7 +97,7 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 		return fmt.Errorf("unsupported envelope log type: %s", envelope.GetLog().GetType())
 	}
 	if allowResourceAttributes.IsEnabled() {
-		attrs := getEnvelopeDatapointAttributes(envelope)
+		attrs := getEnvelopeDataAttributes(envelope)
 		attrs.CopyTo(log.Attributes())
 	} else {
 		copyEnvelopeAttributes(log.Attributes(), envelope)
@@ -117,7 +117,7 @@ func copyEnvelopeAttributes(attributes pcommon.Map, envelope *loggregator_v2.Env
 	}
 }
 
-func getEnvelopeDatapointAttributes(envelope *loggregator_v2.Envelope) pcommon.Map {
+func getEnvelopeDataAttributes(envelope *loggregator_v2.Envelope) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range envelope.Tags {
 		if !slices.Contains(ResourceAttributesKeys, key) {
