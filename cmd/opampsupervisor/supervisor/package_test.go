@@ -10,5 +10,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+
+	goleak.VerifyTestMain(
+		m,
+		// This leaky goroutine it seems to come from using the cosign library.
+		goleak.IgnoreAnyFunction("github.com/syndtr/goleveldb/leveldb.(*DB).mpoolDrain"),
+	)
 }
