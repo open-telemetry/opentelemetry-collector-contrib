@@ -18,6 +18,7 @@ import (
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/fulcio"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	"github.com/sigstore/cosign/v2/pkg/oci/static"
+	"github.com/sigstore/rekor/pkg/generated/client"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 )
@@ -312,7 +313,7 @@ func savePackageState(path string, ps *packageState) error {
 
 func verifyPackageIntegrity(packageBytes, expectedHash []byte) error {
 	actualHash := sha256.Sum256(packageBytes)
-	if bytes.Equal(actualHash[:], expectedHash) {
+	if !bytes.Equal(actualHash[:], expectedHash) {
 		return errors.New("invalid hash for package")
 	}
 
@@ -374,6 +375,9 @@ func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOp
 		IntermediateCerts:            intermediateCerts,
 		CertGithubWorkflowRepository: signatureOpts.CertGithubWorkflowRepository,
 		Identities:                   identities,
+		RekorClient:                  client.Default,
+		// Offline:                      true,
+		// IgnoreTlog:                   true,
 	}, nil
 }
 
