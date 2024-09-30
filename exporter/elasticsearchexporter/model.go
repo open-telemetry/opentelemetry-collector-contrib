@@ -371,7 +371,7 @@ func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
-		m.PutInt("count", int64(dp.Count()))
+		m.PutInt("value_count", int64(dp.Count()))
 		return vm, nil
 	}
 
@@ -418,7 +418,7 @@ func (dp histogramDataPoint) Value() (pcommon.Value, error) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
-		m.PutInt("count", int64(dp.Count()))
+		m.PutInt("value_count", int64(dp.Count()))
 		return vm, nil
 	}
 	return histogramToValue(dp.HistogramDataPoint)
