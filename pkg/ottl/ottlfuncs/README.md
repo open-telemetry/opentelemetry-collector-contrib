@@ -418,6 +418,7 @@ Available Converters:
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
 - [Format](#format)
+- [GetXML](#getxml)
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
@@ -446,6 +447,7 @@ Available Converters:
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
 - [ParseXML](#parsexml)
+- [RemoveXML](#removexml)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -740,6 +742,37 @@ Examples:
 - `Format("%02d", [attributes["priority"]])`
 - `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
 - `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
+
+
+### GetXML
+
+`GetXML(target, xpath)`
+
+The `GetXML` Converter returns an XML string with selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `GetXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Currently, this converter only supports selecting elements.
+
+Examples:
+
+Get all elements at the root of the document with tag "a"
+
+- `GetXML(body, "/a")`
+
+Gel all elements anywhere in the document with tag "a"
+
+- `GetXML(body, "//a")`
+
+Get the first element at the root of the document with tag "a"
+
+- `GetXML(body, "/a[1]")`
+
+Get all elements in the document with tag "a" that have an attribute "b" with value "c"
+
+- `GetXML(body, "//a[@b='c']")`
 
 ### Hex
 
@@ -1285,7 +1318,70 @@ Examples:
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
+### RemoveXML
 
+`RemoveXML(target, xpath)`
+
+The `RemoveXML` Converter returns an edited version of an XML string with selected elements removed.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `RemoveXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements to remove from the XML document.
+
+For example, the XPath `/Log/Record[./Name/@type="archive"]` applied to the following XML document:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00001</ID>
+    <Name type="archive"></Name>
+    <Data>Some data</Data>
+  </Record>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+will return:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+Examples:
+
+Delete the attribute "foo" from the elements with tag "a"
+
+- `RemoveXML(body, "/a/@foo")`
+
+Delete all elements with tag "b" that are children of elements with tag "a"
+
+- `RemoveXML(body, "/a/b")`
+
+Delete all elements with tag "b" that are children of elements with tag "a" and have the attribute "foo" with value "bar"
+
+- `RemoveXML(body, "/a/b[@foo='bar']")`
+
+Delete all comments
+
+- `RemoveXML(body, "//comment()")`
+
+Delete text from nodes that contain the word "sensitive"
+
+- `RemoveXML(body, "//*[contains(text(), 'sensitive')]")`
 
 ### Seconds
 

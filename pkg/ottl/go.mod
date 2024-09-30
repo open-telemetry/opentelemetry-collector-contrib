@@ -4,6 +4,8 @@ go 1.22.0
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.1
+	github.com/antchfx/xmlquery v1.4.1
+	github.com/antchfx/xpath v1.3.1
 	github.com/elastic/go-grok v0.3.1
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.3
@@ -31,6 +33,7 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
