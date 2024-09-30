@@ -458,7 +458,7 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
-- [ToKeyValueString](#toKeyValueString)
+- [ToKeyValueString](#tokeyvaluestring)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
