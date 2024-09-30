@@ -414,15 +414,17 @@ Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Day](#day)
+- [Double](#double)
+- [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
 - [Format](#format)
+- [GetXML](#getxml)
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
-- [Double](#double)
-- [Duration](#duration)
+- [InsertXML](#insertxml)
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
@@ -742,6 +744,37 @@ Examples:
 - `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
 - `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
 
+
+### GetXML
+
+`GetXML(target, xpath)`
+
+The `GetXML` Converter returns an XML string with selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `GetXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Currently, this converter only supports selecting elements.
+
+Examples:
+
+Get all elements at the root of the document with tag "a"
+
+- `GetXML(body, "/a")`
+
+Gel all elements anywhere in the document with tag "a"
+
+- `GetXML(body, "//a")`
+
+Get the first element at the root of the document with tag "a"
+
+- `GetXML(body, "/a[1]")`
+
+Get all elements in the document with tag "a" that have an attribute "b" with value "c"
+
+- `GetXML(body, "//a[@b='c']")`
+
 ### Hex
 
 `Hex(value)`
@@ -796,6 +829,35 @@ The returned type is `float64`.
 Examples:
 
 - `Hours(Duration("1h"))`
+
+### InsertXML
+
+`InsertXML(target, xpath, value)`
+
+The `InsertXML` Converter returns an edited version of an XML string with child elements added to selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be modified. If `target` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements.
+
+`value` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be inserted into `target`. If `value` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+Examples:
+
+Add an element "foo" to the root of the document
+
+- `InsertXML(body, "/", "<foo/>")`
+
+Add an element "bar" to any element called "foo"
+
+- `InsertXML(body, "//foo", "<bar/>")`
+
+Fetch and insert an xml document into another
+
+- `InsertXML(body, "/subdoc", attributes["subdoc"])`
 
 ### Int
 
