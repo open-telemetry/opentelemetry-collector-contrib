@@ -110,7 +110,7 @@ func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string, 
 func buildKVString(k string, v pcommon.Value, delimiter string, pairDelimiter string) string {
 	key := escapeAndQuoteKV(k, delimiter, pairDelimiter)
 	value := escapeAndQuoteKV(v.AsString(), delimiter, pairDelimiter)
-	return fmt.Sprintf("%s%s%v", key, delimiter, value)
+	return key + delimiter + value
 }
 
 func escapeAndQuoteKV(s string, delimiter string, pairDelimiter string) string {
