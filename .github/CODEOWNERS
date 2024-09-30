@@ -199,6 +199,7 @@ processor/resourcedetectionprocessor/internal/docker/               @open-teleme
 processor/resourcedetectionprocessor/internal/gcp/                  @open-telemetry/collector-contrib-approvers
 processor/resourcedetectionprocessor/internal/heroku/               @open-telemetry/collector-contrib-approvers @atoulme
 processor/resourcedetectionprocessor/internal/k8snode/              @open-telemetry/collector-contrib-approvers
+processor/resourcedetectionprocessor/internal/kubeadm/              @open-telemetry/collector-contrib-approvers
 processor/resourcedetectionprocessor/internal/openshift/            @open-telemetry/collector-contrib-approvers @frzifus
 processor/resourcedetectionprocessor/internal/system/               @open-telemetry/collector-contrib-approvers
 processor/resourceprocessor/                                        @open-telemetry/collector-contrib-approvers @dmitryax

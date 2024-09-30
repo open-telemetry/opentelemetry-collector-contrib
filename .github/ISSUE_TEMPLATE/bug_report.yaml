@@ -195,6 +195,7 @@ body:
       - processor/resourcedetection/internal/gcp
       - processor/resourcedetection/internal/heroku
       - processor/resourcedetection/internal/k8snode
+      - processor/resourcedetection/internal/kubeadm
       - processor/resourcedetection/internal/openshift
       - processor/resourcedetection/internal/system
       - processor/routing
