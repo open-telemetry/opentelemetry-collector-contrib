@@ -4,11 +4,11 @@
 package opampextension
 
 import (
-	"github.com/open-telemetry/opamp-go/protobufs"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configopaque"
