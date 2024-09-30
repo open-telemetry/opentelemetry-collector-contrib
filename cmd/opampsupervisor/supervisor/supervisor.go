@@ -365,8 +365,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}()
 
 	select {
-	// TODO make timeout configurable
-	case <-time.After(3 * time.Second):
+	case <-time.After(s.config.Agent.BootstrapTimeout):
 		if connected.Load() {
 			return errors.New("collector connected but never responded with an AgentDescription message")
 		} else {
