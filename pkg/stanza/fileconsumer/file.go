@@ -48,6 +48,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 		m.set.Logger.Warn("finding files", zap.Error(err))
 	}
 
+	// instantiate the tracker
+	m.instantiateTracker()
+
 	if persister != nil {
 		m.persister = persister
 		offsets, err := checkpoint.Load(ctx, m.persister)
@@ -60,9 +63,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 			m.tracker.LoadMetadata(offsets)
 		}
 	}
-
-	// instantiate the tracker
-	m.instantiateTracker()
 
 	// Start polling goroutine
 	m.startPoller(ctx)
