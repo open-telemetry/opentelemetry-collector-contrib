@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetCustomEnvVar(t *testing.T) {
+func TestUpdateDefaults(t *testing.T) {
 	cfg := CreateDefaultConfig()
 	err := cfg.UpdateDefaults()
 	assert.NoError(t, err)
