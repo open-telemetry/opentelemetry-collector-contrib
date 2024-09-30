@@ -12,6 +12,7 @@ import (
 	"hash"
 	"hash/fnv"
 	"math"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -555,8 +556,6 @@ func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resour
 		switch key {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
 			return true
-		case mappingHintsAttrKey:
-			return true
 		}
 		return false
 	})
@@ -582,8 +581,6 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 	scopeAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
 		switch key {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
-			return true
-		case mappingHintsAttrKey:
 			return true
 		}
 		return false
@@ -876,7 +873,7 @@ func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
 	hasher.Write(timestampBuf)
 
-	mapHashExcludeReservedAttrs(hasher, attributes, false)
+	mapHashExcludeReservedAttrs(hasher, attributes)
 
 	return hasher.Sum32()
 }
@@ -893,23 +890,22 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 
 	hasher.Write([]byte(unit))
 
-	mapHashExcludeReservedAttrs(hasher, scopeAttrs, true)
-	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), true)
+	mapHashExcludeReservedAttrs(hasher, scopeAttrs)
+	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), mappingHintsAttrKey)
 
 	return hasher.Sum32()
 }
 
 // mapHashExcludeReservedAttrs is mapHash but ignoring some reserved attributes.
 // e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
-func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, otel bool) {
+func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
 	m.Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
 			return true
-		case mappingHintsAttrKey:
-			if otel {
-				return true
-			}
+		}
+		if slices.Contains(extra, k) {
+			return true
 		}
 		hasher.Write([]byte(k))
 		valueHash(hasher, v)
