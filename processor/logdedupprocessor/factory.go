@@ -38,14 +38,18 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 	}
 
 	if processorCfg.Condition == defaultCondition {
-		processor.matchFunc = processor.dedupAll
+		processor.condition = nil
 	} else {
-		condition, err := filterottl.NewBoolExprForLog([]string{processorCfg.Condition}, filterottl.StandardLogFuncs(), ottl.PropagateError, settings.TelemetrySettings)
+		condition, err := filterottl.NewBoolExprForLog(
+			[]string{processorCfg.Condition},
+			filterottl.StandardLogFuncs(),
+			ottl.PropagateError,
+			settings.TelemetrySettings,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("invalid condition: %w", err)
 		}
 		processor.condition = condition
-		processor.matchFunc = processor.dedupMatches
 	}
 
 	return processor, nil

@@ -96,7 +96,7 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 
 	// Create a processor
 	p, err := newProcessor(cfg, logsSink, settings)
-	p.matchFunc = p.dedupAll
+	p.condition = nil
 	require.NoError(t, err)
 
 	// Start then stop the processor checking for errors
@@ -126,7 +126,7 @@ func TestShutdownBeforeStart(t *testing.T) {
 
 	// Create a processor
 	p, err := newProcessor(cfg, logsSink, settings)
-	p.matchFunc = p.dedupAll
+	p.condition = nil
 	require.NoError(t, err)
 	require.NotPanics(t, func() {
 		err := p.Shutdown(context.Background())
@@ -149,7 +149,7 @@ func TestProcessorConsume(t *testing.T) {
 
 	// Create a processor
 	p, err := newProcessor(cfg, logsSink, settings)
-	p.matchFunc = p.dedupAll
+	p.condition = nil
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -213,7 +213,7 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 
 	// Create & start a processor
 	p, err := newProcessor(cfg, logsSink, processortest.NewNopSettings())
-	p.matchFunc = p.dedupAll
+	p.condition = nil
 	require.NoError(t, err)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -252,7 +252,6 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	// Create a processor
 	p, err := newProcessor(cfg, logsSink, processortest.NewNopSettings())
 	p.condition = getCondition(t, cfg.Condition)
-	p.matchFunc = p.dedupMatches
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())

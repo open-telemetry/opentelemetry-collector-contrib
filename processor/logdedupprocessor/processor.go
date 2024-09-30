@@ -25,7 +25,6 @@ import (
 type logDedupProcessor struct {
 	emitInterval time.Duration
 	condition    expr.BoolExpr[ottllog.TransformContext]
-	matchFunc    func(context.Context, plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource, plog.ScopeLogs, plog.ResourceLogs) bool
 	aggregator   *logAggregator
 	remover      *fieldRemover
 	nextConsumer consumer.Logs
@@ -97,7 +96,21 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 			logs := sl.LogRecords()
 
 			logs.RemoveIf(func(logRecord plog.LogRecord) bool {
-				return p.matchFunc(ctx, logRecord, scope, resource, sl, rl)
+				if p.condition == nil {
+					p.aggregateLog(logRecord, scope, resource)
+					return true
+				}
+
+				logCtx := ottllog.NewTransformContext(logRecord, scope, resource, sl, rl)
+				logMatch, err := p.condition.Eval(ctx, logCtx)
+				if err != nil {
+					p.logger.Error("error matching condition", zap.Error(err))
+					return false
+				}
+				if logMatch {
+					p.aggregateLog(logRecord, scope, resource)
+				}
+				return logMatch
 			})
 		}
 	}
@@ -113,24 +126,9 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 	return nil
 }
 
-func (p *logDedupProcessor) dedupMatches(ctx context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource, sl plog.ScopeLogs, rl plog.ResourceLogs) bool {
-	logCtx := ottllog.NewTransformContext(logRecord, scope, resource, sl, rl)
-	logMatch, err := p.condition.Eval(ctx, logCtx)
-	if err != nil {
-		p.logger.Error("error matching condition", zap.Error(err))
-		return false
-	}
-	if logMatch {
-		p.remover.RemoveFields(logRecord)
-		p.aggregator.Add(resource, scope, logRecord)
-	}
-	return logMatch
-}
-
-func (p *logDedupProcessor) dedupAll(_ context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource, _ plog.ScopeLogs, _ plog.ResourceLogs) bool {
+func (p *logDedupProcessor) aggregateLog(logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) {
 	p.remover.RemoveFields(logRecord)
 	p.aggregator.Add(resource, scope, logRecord)
-	return true
 }
 
 // handleExportInterval sends metrics at the configured interval.
