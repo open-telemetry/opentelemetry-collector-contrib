@@ -91,15 +91,28 @@ func Test_RemoveXML(t *testing.T) {
 			xPath:    "//text()['*delete*']",
 			want:     `<?xml version="1.0" encoding="UTF-8"?><a></a>`,
 		},
+		{
+			name:     "ignore empty",
+			document: ``,
+			xPath:    "/",
+			want:     ``,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return tt.document, nil
-				},
-			}
-			exprFunc := removeXML(target, tt.xPath)
+			factory := NewRemoveXMLFactory[any]()
+			exprFunc, err := factory.CreateFunction(
+				ottl.FunctionContext{},
+				&RemoveXMLArguments[any]{
+					Target: ottl.StandardStringGetter[any]{
+						Getter: func(_ context.Context, _ any) (any, error) {
+							return tt.document, nil
+						},
+					},
+					XPath: tt.xPath,
+				})
+			assert.NoError(t, err)
+
 			result, err := exprFunc(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
