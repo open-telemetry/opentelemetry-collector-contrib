@@ -129,8 +129,7 @@ func TestValidateEndpoint(t *testing.T) {
 			case testCase.expectedErr != nil:
 				require.ErrorIs(t, err, testCase.expectedErr)
 			case testCase.expectedErrStr != "":
-				require.Error(t, err)
-				require.Contains(t, err.Error(), testCase.expectedErrStr)
+				require.ErrorContains(t, err, testCase.expectedErrStr)
 			default:
 				require.NoError(t, err)
 			}
