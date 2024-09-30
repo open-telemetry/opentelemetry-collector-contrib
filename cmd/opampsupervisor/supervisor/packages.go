@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -31,14 +32,23 @@ var (
 	lastPackageStatusFileName = "last-reported-package-statuses.proto"
 )
 
-type packageState struct {
-	allPackagesHash []byte `yaml:"all_packages_hash"`
+type hexEncodedBytes []byte
+
+var _ yaml.Marshaler = (*hexEncodedBytes)(nil)
+var _ yaml.Unmarshaler = (*hexEncodedBytes)(nil)
+
+func (h hexEncodedBytes) MarshalYAML() (any, error) {
+	return hex.EncodeToString(h), nil
 }
 
-type packageMetadata struct {
-	PackageType int32
-	Hash        []byte
-	Version     string
+func (h *hexEncodedBytes) UnmarshalYAML(value *yaml.Node) error {
+	var err error
+	*h, err = hex.DecodeString(value.Value)
+	return err
+}
+
+type packageState struct {
+	AllPackagesHash hexEncodedBytes `yaml:"all_packages_hash"`
 }
 
 // packageManager manages the persistent state of downloadable packages.
@@ -75,7 +85,8 @@ func newPackageManager(agentPath, storageDir, agentVersion string, signatureOpts
 	agentHash := h.Sum(nil)
 
 	// Load persisted package state, if it exists
-	packageStatePath := filepath.Join(storageDir, "packageStatuses.yaml")
+	// TODO: use packagesStatusPath method somehow
+	packageStatePath := filepath.Join(storageDir, packagesStateFileName)
 	state, err := loadPackageState(packageStatePath)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -102,11 +113,11 @@ func newPackageManager(agentPath, storageDir, agentVersion string, signatureOpts
 }
 
 func (p packageManager) AllPackagesHash() ([]byte, error) {
-	return p.packageState.allPackagesHash, nil
+	return p.packageState.AllPackagesHash, nil
 }
 
 func (p packageManager) SetAllPackagesHash(hash []byte) error {
-	p.packageState.allPackagesHash = hash
+	p.packageState.AllPackagesHash = hash
 	return savePackageState(p.packagesStatusPath(), p.packageState)
 }
 
@@ -115,7 +126,7 @@ func (packageManager) Packages() ([]string, error) {
 }
 
 func (p packageManager) PackageState(packageName string) (state types.PackageState, err error) {
-	if packageName != agentPackageKey {
+	if packageName == agentPackageKey {
 		return types.PackageState{
 			Exists:  true,
 			Type:    protobufs.PackageType_PackageType_TopLevel,
@@ -148,7 +159,7 @@ func (p *packageManager) SetPackageState(packageName string, state types.Package
 	return nil
 }
 
-func (packageManager) CreatePackage(packageName string, typ protobufs.PackageType) error {
+func (packageManager) CreatePackage(packageName string, _ protobufs.PackageType) error {
 	if packageName != agentPackageKey {
 		return fmt.Errorf("only agent package is supported")
 	}
@@ -226,9 +237,12 @@ func (p *packageManager) DeletePackage(packageName string) error {
 }
 
 func (p *packageManager) LastReportedStatuses() (*protobufs.PackageStatuses, error) {
-	// TODO: What to do if no package status exists
 	lastStatusBytes, err := os.ReadFile(p.lastPackageStatusPath())
-	if err != nil {
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		// No package statuses exists
+		return nil, nil
+	case err != nil:
 		return nil, fmt.Errorf("read last package statuses: %w", err)
 	}
 
