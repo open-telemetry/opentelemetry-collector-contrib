@@ -174,7 +174,8 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		return fmt.Errorf("read package bytes: %w", err)
 	}
 
-	if err := verifyPackageIntegrity(by, contentHash); err != nil {
+	err = verifyPackageIntegrity(by, contentHash)
+	if err != nil {
 		return fmt.Errorf("could not verify package integrity: %w", err)
 	}
 
@@ -183,7 +184,8 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		return fmt.Errorf("could not parse package signature: %w", err)
 	}
 
-	if err := verifyPackageSignature(ctx, p.checkOpts, by, b64Cert, b64Signature); err != nil {
+	err = verifyPackageSignature(ctx, p.checkOpts, by, b64Cert, b64Signature)
+	if err != nil {
 		return fmt.Errorf("could not verify package signature: %w", err)
 	}
 
