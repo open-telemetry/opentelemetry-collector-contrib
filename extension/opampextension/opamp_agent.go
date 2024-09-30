@@ -381,6 +381,8 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	}
 }
 
+// headerCaptureRoundTripper is a RoundTripper that captures the headers of the request
+// that passes through it.
 type headerCaptureRoundTripper struct {
 	lastHeader http.Header
 }
