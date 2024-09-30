@@ -4,9 +4,11 @@
 package opampextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"runtime"
@@ -23,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/auth"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -56,6 +59,8 @@ type opampAgent struct {
 	opampClient client.OpAMPClient
 
 	customCapabilityRegistry *customCapabilityRegistry
+
+	authExtension auth.Client
 }
 
 var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
@@ -81,8 +86,49 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		go monitorPPID(o.lifetimeCtx, o.cfg.PPIDPollInterval, o.cfg.PPID, o.reportFunc)
 	}
 
+	var headerFunc func(http.Header) http.Header
+	var emptyComponentID component.ID
+	if o.cfg.Server != nil && o.cfg.Server.GetAuthExtensionID() != emptyComponentID {
+		extID := o.cfg.Server.GetAuthExtensionID()
+		ext, ok := host.GetExtensions()[extID]
+		if !ok {
+			return fmt.Errorf("could not find auth extension %q", extID)
+		}
+
+		authExt, ok := ext.(auth.Client)
+		if !ok {
+			return fmt.Errorf("auth extension %q is not an auth.Client", extID)
+		}
+
+		o.authExtension = authExt
+
+		headerFunc = func(h http.Header) http.Header {
+			hcrt := &headerCaptureRoundTripper{}
+			rt, err := authExt.RoundTripper(hcrt)
+			if err != nil {
+				o.logger.Error("Failed to create roundtripper for authentication.", zap.Error(err))
+				return h
+			}
+
+			dummyReq, err := http.NewRequest("GET", "http://example.com", nil)
+			if err != nil {
+				o.logger.Error("Failed to create dummy request for authentication.", zap.Error(err))
+				return h
+			}
+
+			_, err = rt.RoundTrip(dummyReq)
+			if err != nil {
+				o.logger.Error("Error while performing round-trip for authentication.", zap.Error(err))
+				return h
+			}
+
+			return hcrt.lastHeader
+		}
+	}
+
 	settings := types.StartSettings{
 		Header:         header,
+		HeaderFunc:     headerFunc,
 		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Server.GetEndpoint(),
 		InstanceUid:    types.InstanceUid(o.instanceID),
@@ -333,4 +379,22 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	if msg.CustomMessage != nil {
 		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
 	}
+}
+
+type headerCaptureRoundTripper struct {
+	lastHeader http.Header
+}
+
+func (h *headerCaptureRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	h.lastHeader = req.Header.Clone()
+	// Dummy response is recorded here
+	return &http.Response{
+		Status:     "200 OK",
+		StatusCode: 200,
+		Proto:      "HTTP/1.0",
+		ProtoMajor: 1,
+		ProtoMinor: 0,
+		Body:       io.NopCloser(&bytes.Buffer{}),
+		Request:    req,
+	}, nil
 }
