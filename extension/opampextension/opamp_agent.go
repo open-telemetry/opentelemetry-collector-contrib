@@ -139,15 +139,16 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	if o.opampClient == nil {
 		return nil
 	}
+
 	err := o.opampClient.SetHealth(
 		&protobufs.ComponentHealth{
 			Healthy: false, LastError: "Agent is shut down",
 		},
 	)
-
 	if err != nil {
 		o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 	}
+
 	o.logger.Debug("Stopping OpAMP client...")
 	err = o.opampClient.Stop(ctx)
 	// Opamp-go considers this an error, but the collector does not.
