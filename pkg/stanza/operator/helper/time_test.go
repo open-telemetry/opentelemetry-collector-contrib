@@ -571,8 +571,7 @@ func TestSetInvalidLocation(t *testing.T) {
 	tp := NewTimeParser()
 	tp.Location = "not_a_location"
 	err := tp.setLocation()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to load location "+"not_a_location")
+	require.ErrorContains(t, err, "failed to load location "+"not_a_location")
 }
 
 func TestUnmarshal(t *testing.T) {

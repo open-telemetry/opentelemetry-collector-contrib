@@ -24,8 +24,7 @@ func TestParserConfigMissingBase(t *testing.T) {
 	config := ParserConfig{}
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required `type` field.")
+	require.ErrorContains(t, err, "missing required `type` field.")
 }
 
 func TestParserConfigInvalidTimeParser(t *testing.T) {
@@ -39,8 +38,7 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required configuration parameter `layout`")
+	require.ErrorContains(t, err, "missing required configuration parameter `layout`")
 }
 
 func TestParserConfigBodyCollision(t *testing.T) {
@@ -52,8 +50,7 @@ func TestParserConfigBodyCollision(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "`parse_to: body` not allowed when `body` is configured")
+	require.ErrorContains(t, err, "`parse_to: body` not allowed when `body` is configured")
 }
 
 func TestParserConfigBuildValid(t *testing.T) {
@@ -123,8 +120,7 @@ func TestParserMissingField(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "Entry is missing the expected parse_from field.")
+	require.ErrorContains(t, err, "Entry is missing the expected parse_from field.")
 }
 
 func TestParserInvalidParseDrop(t *testing.T) {
@@ -142,8 +138,7 @@ func TestParserInvalidParseDrop(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse failure")
+	require.ErrorContains(t, err, "parse failure")
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
@@ -162,8 +157,7 @@ func TestParserInvalidParseSend(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse failure")
+	require.ErrorContains(t, err, "parse failure")
 	fakeOut.ExpectEntry(t, testEntry)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
@@ -190,8 +184,7 @@ func TestParserInvalidTimeParseDrop(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "time parser: log entry does not have the expected parse_from field")
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
@@ -217,8 +210,7 @@ func TestParserInvalidTimeParseSend(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "time parser: log entry does not have the expected parse_from field")
 	fakeOut.ExpectEntry(t, testEntry)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
@@ -241,8 +233,7 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "severity parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "severity parser: log entry does not have the expected parse_from field")
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
@@ -284,8 +275,7 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 	require.NoError(t, err)
 
 	err = parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "time parser: log entry does not have the expected parse_from field")
 
 	// But, this should have been set anyways
 	require.Equal(t, entry.Info, testEntry.Severity)
@@ -339,8 +329,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 	require.NoError(t, err)
 
 	err = parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "severity parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "severity parser: log entry does not have the expected parse_from field")
 
 	require.Equal(t, expected, testEntry.Timestamp)
 }
