@@ -11,7 +11,10 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 )
+
+const defaultLogsRecordType = cwlog.TypeStr
 
 // The logsConsumer implements the firehoseConsumer
 // to use a metrics consumer and unmarshaler.
@@ -35,7 +38,11 @@ func newLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
 
-	configuredUnmarshaler := unmarshalers[config.RecordType]
+	recordType := config.RecordType
+	if recordType == "" {
+		recordType = defaultLogsRecordType
+	}
+	configuredUnmarshaler := unmarshalers[recordType]
 	if configuredUnmarshaler == nil {
 		return nil, errUnrecognizedRecordType
 	}

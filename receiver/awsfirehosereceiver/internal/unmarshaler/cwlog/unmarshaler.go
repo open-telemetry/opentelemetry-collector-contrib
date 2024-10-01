@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
+package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 
 import (
 	"bytes"
@@ -37,7 +37,7 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 }
 
 // Unmarshal deserializes the records into cWMetrics and uses the
-// resourceMetricsBuilder to group them into a single pmetric.Metrics.
+// resourceMetricsBuilder to group them into a single plog.Logs.
 // Skips invalid cWMetrics received in the record and
 func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 	md := plog.NewLogs()
@@ -54,7 +54,7 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 		// Multiple logs in each record separated by newline character
 		for datumIndex, datum := range bytes.Split(record, []byte(recordDelimiter)) {
 			if len(datum) > 0 {
-				var log cwLog
+				var log cWLog
 				err := json.Unmarshal(datum, &log)
 				if err != nil {
 					u.logger.Error(
@@ -97,7 +97,7 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 }
 
 // isValid validates that the cWMetric has been unmarshalled correctly.
-func (u Unmarshaler) isValid(log cwLog) bool {
+func (u Unmarshaler) isValid(log cWLog) bool {
 	return log.Owner != "" && log.LogGroup != "" && log.LogStream != ""
 }
 

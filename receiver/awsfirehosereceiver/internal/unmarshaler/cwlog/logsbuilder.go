@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cwlog
+package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -41,7 +41,7 @@ func newResourceLogsBuilder(logs plog.Logs, attrs resourceAttributes) *resourceL
 
 // AddLog events to the LogRecordSlice. Resource attributes are captured when creating
 // the resourceLogsBuilder, so we only need to consider the LogEvents themselves.
-func (rlb *resourceLogsBuilder) AddLog(log cwLog) {
+func (rlb *resourceLogsBuilder) AddLog(log cWLog) {
 	for _, event := range log.LogEvents {
 		logLine := rlb.rls.AppendEmpty()
 		logLine.SetTimestamp(pcommon.Timestamp(event.Timestamp))

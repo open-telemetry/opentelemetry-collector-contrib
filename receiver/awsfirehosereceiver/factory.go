@@ -21,9 +21,8 @@ import (
 )
 
 const (
-	defaultRecordType = cwmetricstream.TypeStr
-	defaultEndpoint   = "0.0.0.0:4433"
-	defaultPort       = 4433
+	defaultEndpoint = "0.0.0.0:4433"
+	defaultPort     = 4433
 )
 
 var (
@@ -74,7 +73,6 @@ func defaultLogsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.LogsUnma
 // to port 8443 and the record type set to the CloudWatch metric stream.
 func createDefaultConfig() component.Config {
 	return &Config{
-		RecordType: defaultRecordType,
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},

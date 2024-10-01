@@ -6,13 +6,13 @@ package awsfirehosereceiver
 import (
 	"context"
 	"errors"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
@@ -36,7 +36,7 @@ func (rc *logsRecordConsumer) Capabilities() consumer.Capabilities {
 
 func TestNewLogsReceiver(t *testing.T) {
 	testCases := map[string]struct {
-		consumer   consumer.Metrics
+		consumer   consumer.Logs
 		recordType string
 		wantErr    error
 	}{
@@ -50,10 +50,10 @@ func TestNewLogsReceiver(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.RecordType = testCase.recordType
-			got, err := newMetricsReceiver(
+			got, err := newLogsReceiver(
 				cfg,
 				receivertest.NewNopSettings(),
-				defaultMetricsUnmarshalers(zap.NewNop()),
+				defaultLogsUnmarshalers(zap.NewNop()),
 				testCase.consumer,
 			)
 			require.Equal(t, testCase.wantErr, err)

@@ -1,16 +1,16 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cwlog
+package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 
-type cwLog struct {
+type cWLog struct {
 	MessageType         string   `json:"messageType"`
 	Owner               string   `json:"owner"`
 	LogGroup            string   `json:"logGroup"`
 	LogStream           string   `json:"logStream"`
 	SubscriptionFilters []string `json:"subscriptionFilters"`
 	LogEvents           []struct {
-		Id        string `json:"id"`
+		ID        string `json:"id"`
 		Timestamp int64  `json:"timestamp"`
 		Message   string `json:"message"`
 	} `json:"logEvents"`

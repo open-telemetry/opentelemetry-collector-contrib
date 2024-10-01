@@ -41,6 +41,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 }
 
 func TestValidateRecordType(t *testing.T) {
-	require.NoError(t, validateRecordType(defaultRecordType))
+	require.NoError(t, validateRecordType(defaultMetricsRecordType))
+	require.NoError(t, validateRecordType(defaultLogsRecordType))
 	require.Error(t, validateRecordType("nop"))
 }
