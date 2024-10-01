@@ -1,6 +1,7 @@
 package supervisor
 
 import (
+	"archive/tar"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -239,6 +240,19 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		return fmt.Errorf("create gzip reader: %w", err)
 	}
 
+	tar := tar.NewReader(r)
+	h, err := tar.Next()
+	if err != nil {
+		return fmt.Errorf("read tarball for collector: %w", err)
+	}
+
+	for h.Name != "otelcol-contrib" {
+		h, err = tar.Next()
+		if err != nil {
+			return fmt.Errorf("read tarball for collector: %w", err)
+		}
+	}
+
 	// Truncate and seek to beginning of agent file
 	_, err = agentFile.Seek(0, io.SeekStart)
 	if err != nil {
@@ -252,7 +266,7 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 
 	// Write new agent to existing agent file.
 	// We only copy up to maxAgentBytes to avoid compression bombs.
-	_, err = io.CopyN(agentFile, r, maxAgentBytes)
+	_, err = io.CopyN(agentFile, tar, maxAgentBytes)
 	switch {
 	case errors.Is(err, io.EOF): // OK
 	case err != nil:
