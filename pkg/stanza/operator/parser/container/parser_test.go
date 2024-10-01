@@ -39,8 +39,7 @@ func TestConfigBuildFailure(t *testing.T) {
 	config.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `on_error` field")
+	require.ErrorContains(t, err, "invalid `on_error` field")
 }
 
 func TestConfigBuildFormatError(t *testing.T) {
@@ -48,29 +47,25 @@ func TestConfigBuildFormatError(t *testing.T) {
 	config.Format = "invalid_runtime"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `format` field")
+	require.ErrorContains(t, err, "invalid `format` field")
 }
 
 func TestDockerParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parseDocker([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as docker container logs")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as docker container logs")
 }
 
 func TestCrioParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parseCRIO([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as cri-o container logs")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as cri-o container logs")
 }
 
 func TestContainerdParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parseContainerd([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as containerd logs")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as containerd logs")
 }
 
 func TestFormatDetectionFailure(t *testing.T) {
@@ -79,8 +74,7 @@ func TestFormatDetectionFailure(t *testing.T) {
 		Body: `invalid container format`,
 	}
 	_, err := parser.detectFormat(e)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "entry cannot be parsed as container logs")
+	require.ErrorContains(t, err, "entry cannot be parsed as container logs")
 }
 
 func TestInternalRecombineCfg(t *testing.T) {
