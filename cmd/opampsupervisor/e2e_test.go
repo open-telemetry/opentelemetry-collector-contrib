@@ -1496,7 +1496,7 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 		"storage_dir": storageDir,
 	})
 
-	require.Nil(t, s.Start())
+	require.NoError(t, s.Start())
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
@@ -1896,8 +1896,21 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	tmpDir := t.TempDir()
 	storageDir := filepath.Join(tmpDir, "storage")
 
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+
+	agentFileName := fmt.Sprintf("otelcontribcol_%s_%s%s", runtime.GOOS, runtime.GOARCH, ext)
+
+	agentFilePath := filepath.Join("..", "..", "bin", agentFileName)
+	agentFileCopyPath := filepath.Join(tmpDir, agentFileName)
+
+	// Upgrading will overwrite the agent binary, so we'll copy to a new path to not affect other tests
+	copyFile(t, agentFilePath, agentFileCopyPath)
+
 	agentIDChan := make(chan []byte, 1)
-	packageStatusesChan := make(chan *protobufs.PackageStatuses, 1)
+	packageStatusesChan := make(chan *protobufs.PackageStatuses, 2)
 
 	server := newOpAMPServer(
 		t,
@@ -1924,6 +1937,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	s := newSupervisor(t, "upgrade", map[string]string{
 		"url":         server.addr,
 		"storage_dir": storageDir,
+		"agent_path":  agentFileCopyPath,
 	})
 
 	require.Nil(t, s.Start())
@@ -1996,14 +2010,16 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 			"": {
 				Name:                 "",
 				AgentHasVersion:      "v" + agentVersion,
-				AgentHasHash:         hash,
+				AgentHasHash:         []byte{0x01, 0x02},
 				ServerOfferedVersion: "v" + agentVersion,
-				ServerOfferedHash:    hash,
+				ServerOfferedHash:    []byte{0x01, 0x02},
 				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installed,
 			},
 		},
 		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
 	}, ps)
+
+	// TODO: Sample agent description to make sure new agent is running/bootstrapped
 }
 
 func findRandomPort() (int, error) {
@@ -2134,4 +2150,20 @@ func getFileContents(t *testing.T, url string) []byte {
 	require.NoError(t, err)
 
 	return by
+}
+
+func copyFile(t *testing.T, from, to string) {
+	fromFile, err := os.Open(from)
+	require.NoError(t, err)
+	defer fromFile.Close()
+
+	fi, err := fromFile.Stat()
+	require.NoError(t, err)
+
+	toFile, err := os.OpenFile(to, os.O_CREATE|os.O_TRUNC, fi.Mode())
+	require.NoError(t, err)
+	defer toFile.Close()
+
+	_, err = io.Copy(toFile, fromFile)
+	require.NoError(t, err)
 }
