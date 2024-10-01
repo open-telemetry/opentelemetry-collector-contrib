@@ -2082,7 +2082,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	for _, v := range agentDesc.IdentifyingAttributes {
 		if v.Key == semconv.AttributeServiceVersion {
 			versionFound = true
-			require.Equal(t, "v"+agentVersion, v.Value)
+			require.Equal(t, agentVersion, v.Value.GetStringValue())
 			break
 		}
 	}
