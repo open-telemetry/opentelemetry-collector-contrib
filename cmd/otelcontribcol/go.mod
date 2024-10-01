@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.22.0
 
-toolchain go1.22.7
+toolchain go1.22.5
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.110.0
@@ -850,7 +850,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.27.0 // indirect
-	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948 // indirect
+	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
