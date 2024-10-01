@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsuperv
 
 go 1.22.5
 
-toolchain go1.23.0
-
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
@@ -14,7 +12,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.1
 	github.com/open-telemetry/opamp-go v0.17.0
 	github.com/sigstore/cosign v1.13.6
-	github.com/sigstore/cosign/v2 v2.3.0
+	github.com/sigstore/cosign/v2 v2.4.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/configopaque v1.16.0
 	go.opentelemetry.io/collector/config/configtls v1.16.0
@@ -154,6 +152,7 @@ require (
 	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
 	github.com/sigstore/fulcio v1.5.1 // indirect
+	github.com/sigstore/protobuf-specs v0.3.2 // indirect
 	github.com/sigstore/rekor v1.3.6 // indirect
 	github.com/sigstore/sigstore v1.8.8 // indirect
 	github.com/sigstore/timestamp-authority v1.2.2 // indirect
