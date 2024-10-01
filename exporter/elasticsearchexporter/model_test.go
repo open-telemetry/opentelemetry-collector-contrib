@@ -962,7 +962,7 @@ func decodeOTelID(data []byte) ([]byte, error) {
 func TestEncodeLogOtelMode(t *testing.T) {
 	randomString := strings.Repeat("abcdefghijklmnopqrstuvwxyz0123456789", 10)
 	maxLenNamespace := maxDataStreamBytes - len(disallowedNamespaceRunes)
-	maxLenDataset := maxDataStreamBytes - len(disallowedDatasetRunes)
+	maxLenDataset := maxDataStreamBytes - len(disallowedDatasetRunes) - len(".otel")
 
 	tests := []struct {
 		name   string

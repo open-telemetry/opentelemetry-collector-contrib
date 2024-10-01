@@ -6,11 +6,44 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"fmt"
 	"regexp"
+	"strings"
+	"unicode"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var receiverRegex = regexp.MustCompile(`/receiver/(\w*receiver)`)
+
+const (
+	maxDataStreamBytes       = 100
+	disallowedNamespaceRunes = "\\/*?\"<>| ,#:"
+	disallowedDatasetRunes   = "-\\/*?\"<>| ,#:"
+)
+
+// Sanitize the datastream fields (dataset, namespace) to apply restrictions
+// as outlined in https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html
+func sanitizeDataStreamField(field, disallowed string, otel bool) string {
+	// For Dataset, the naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
+	// This is in order to match the built-in logs-*.otel-* index template.
+	var suffix string
+	if otel {
+		suffix += ".otel"
+	}
+
+	field = strings.Map(func(r rune) rune {
+		if strings.ContainsRune(disallowed, r) {
+			return '_'
+		}
+		return unicode.ToLower(r)
+	}, field)
+
+	if len(field) > maxDataStreamBytes-len(suffix) {
+		field = field[:maxDataStreamBytes-len(suffix)]
+	}
+	field += suffix
+
+	return field
+}
 
 func routeWithDefaults(defaultDSType string) func(
 	pcommon.Map,
@@ -44,10 +77,7 @@ func routeWithDefaults(defaultDSType string) func(
 			}
 		}
 
-		dataset = sanitizeDataStreamDataset(dataset)
-		namespace = sanitizeDataStreamNamespace(namespace)
-
-    // Receiver-based routing
+		// Receiver-based routing
 		// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
 		// for the scope name
 		// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
@@ -56,15 +86,13 @@ func routeWithDefaults(defaultDSType string) func(
 			dataset = receiverName
 		}
 
-		// The naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
-		// This is in order to match the built-in logs-*.otel-* index template.
-		if otel {
-			dataset += ".otel"
-		}
+		dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, otel)
+		namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, false)
 
 		recordAttr.PutStr(dataStreamDataset, dataset)
 		recordAttr.PutStr(dataStreamNamespace, namespace)
 		recordAttr.PutStr(dataStreamType, defaultDSType)
+
 		return fmt.Sprintf("%s-%s-%s", defaultDSType, dataset, namespace)
 	}
 }
