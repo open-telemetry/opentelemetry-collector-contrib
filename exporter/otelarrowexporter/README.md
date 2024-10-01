@@ -112,19 +112,15 @@ easier.
 The following setting determines memory and CPU resources that the
 exporter will use:
 
-- `num_streams` (default: 1): the number of concurrent Arrow streams
+- `num_streams` (default: `max(1, NumCPU()/2)`): the number of concurrent Arrow streams
 
-The `num_streams` default limits the exporter to one stream, to limit
-resources used by this component.  Larger instances may wish to export
-multiple streams in parallel, in which case `num_streams` can be
-raised up to the number of available CPUs.
-
-When `num_streams` is greater than one, a configurable policy
-determines how load is assigned across streams.  The supported
-policies are `leastloaded`, which picks the stream with the smallest
-number of outstanding requests, and `leastloadedN` for `N <=
-num_streams`, which limits the decision to a random subset of `N`
-streams.
+The `num_streams` default limits the exporter stream count to half the
+number of CPUs or 1, whichever is greater.  When `num_streams` is
+greater than one, a configurable policy determines how load is
+assigned across streams to balance load.  The supported policies are
+`leastloaded`, which picks the stream with the smallest number of
+outstanding requests, and `leastloadedN` for `N <= num_streams`, which
+limits the decision to a random subset of `N` streams.
 
 - `prioritizer` (default: "leastloaded"): policy for distributing load across multiple streams.
 
