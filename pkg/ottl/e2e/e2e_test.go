@@ -1094,3 +1094,37 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetSpanID(spanID)
 	span.SetTraceID(traceID)
 }
+
+func Benchmark_XML_Functions(b *testing.B) {
+	testXML := `<Data><From><Test>1</Test><Test>2</Test></From><To></To></Data>`
+	tCtxWithTestBody := func() ottllog.TransformContext {
+		resource := pcommon.NewResource()
+		scope := pcommon.NewInstrumentationScope()
+		logRecord := plog.NewLogRecord()
+		logRecord.Body().SetStr(testXML)
+		return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+	}
+
+	settings := componenttest.NewNopTelemetrySettings()
+	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
+	assert.NoError(b, err)
+
+	// Use a round trip composition to ensure each iteration of the benchmark is the same.
+	// GetXML(body, "/Data/From/Test") returns "<Test>1</Test><Test>2</Test>"
+	// InsertXML(body, "/Data/To", GetXML(...)) adds the two Test elements to the To element
+	// RemoveXML(InsertXML(...) "/Data/To/Test") removes the Test elements which were just added
+	// set overwrites the body, but the result should be the same as the original body
+	roundTrip := `set(body, RemoveXML(InsertXML(body, "/Data/To", GetXML(body, "/Data/From/Test")), "/Data/To/Test"))`
+	logStatements, err := logParser.ParseStatement(roundTrip)
+	assert.NoError(b, err)
+
+	actualCtx := tCtxWithTestBody()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = logStatements.Execute(context.Background(), actualCtx)
+	}
+
+	// Ensure correctness
+	assert.NoError(b, plogtest.CompareResourceLogs(newResourceLogs(tCtxWithTestBody()), newResourceLogs(actualCtx)))
+}
