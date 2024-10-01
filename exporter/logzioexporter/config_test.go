@@ -4,6 +4,7 @@
 package logzioexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -21,6 +22,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/metadata"
 )
+
+var defaultTransport = http.DefaultTransport.(*http.Transport)
 
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -47,7 +50,11 @@ func TestLoadConfig(t *testing.T) {
 		// Default to gzip compression
 		Compression: configcompression.TypeGzip,
 		// We almost read 0 bytes, so no need to tune ReadBufferSize.
-		WriteBufferSize: 512 * 1024,
+		WriteBufferSize:     512 * 1024,
+		MaxIdleConns:        &defaultTransport.MaxIdleConns,
+		MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
 	assert.Equal(t, expected, cfg)
 }
@@ -74,7 +81,11 @@ func TestDefaultLoadConfig(t *testing.T) {
 		// Default to gzip compression
 		Compression: configcompression.TypeGzip,
 		// We almost read 0 bytes, so no need to tune ReadBufferSize.
-		WriteBufferSize: 512 * 1024,
+		WriteBufferSize:     512 * 1024,
+		MaxIdleConns:        &defaultTransport.MaxIdleConns,
+		MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 	}
 	assert.Equal(t, expected, cfg)
 }
