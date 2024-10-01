@@ -5,30 +5,117 @@ package deltatocumulativeprocessor_test
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"io/fs"
 	"math"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	self "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest/compare"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testdata/random"
 )
+
+func TestProcessor(t *testing.T) {
+	fis, err := os.ReadDir("testdata")
+	require.NoError(t, err)
+
+	for _, fi := range fis {
+		if !fi.IsDir() {
+			continue
+		}
+
+		ar := reader()
+
+		type Stage struct {
+			In  pmetric.Metrics `testar:"in,pmetric"`
+			Out pmetric.Metrics `testar:"out,pmetric"`
+		}
+
+		dir := fi.Name()
+		t.Run(dir, func(t *testing.T) {
+			file := func(f string) string {
+				return filepath.Join("testdata", dir, f)
+			}
+
+			ctx := context.Background()
+			cfg := config(t, file("config.yaml"))
+			proc, sink := setup(t, cfg)
+
+			stages, _ := filepath.Glob(file("*.test"))
+			for _, file := range stages {
+				var stage Stage
+				err := ar.ReadFile(file, &stage)
+				require.NoError(t, err)
+
+				sink.Reset()
+				err = proc.ConsumeMetrics(ctx, stage.In)
+				require.NoError(t, err)
+
+				out := []pmetric.Metrics{stage.Out}
+				if diff := compare.Diff(out, sink.AllMetrics()); diff != "" {
+					t.Fatal(diff)
+				}
+			}
+		})
+
+	}
+}
+
+func config(t *testing.T, file string) *self.Config {
+	cfg := self.NewFactory().CreateDefaultConfig().(*self.Config)
+	cm, err := confmaptest.LoadConf(file)
+	if errors.Is(err, fs.ErrNotExist) {
+		return cfg
+	}
+	require.NoError(t, err)
+
+	err = cm.Unmarshal(cfg)
+	require.NoError(t, err)
+	return cfg
+}
+
+func reader() testar.Reader {
+	return testar.Reader{
+		Formats: testar.Formats{
+			"pmetric": func(data []byte, into any) error {
+				var tmp any
+				if err := yaml.Unmarshal(data, &tmp); err != nil {
+					return err
+				}
+				data, err := json.Marshal(tmp)
+				if err != nil {
+					return err
+				}
+				md, err := (&pmetric.JSONUnmarshaler{}).UnmarshalMetrics(data)
+				if err != nil {
+					return err
+				}
+				*(into.(*pmetric.Metrics)) = md
+				return nil
+			},
+		},
+	}
+}
 
 func setup(t *testing.T, cfg *self.Config) (processor.Metrics, *consumertest.MetricsSink) {
 	t.Helper()
@@ -114,107 +201,6 @@ func TestAccumulation(t *testing.T) {
 	}
 }
 
-// TestTimestamp verifies timestamp handling, most notably:
-// - Timestamp() keeps getting advanced
-// - StartTimestamp() stays the same
-func TestTimestamps(t *testing.T) {
-	proc, sink := setup(t, nil)
-
-	sb := stream()
-	point := func(start, last pcommon.Timestamp) data.Number {
-		return sb.point(start, last, 0)
-	}
-
-	cases := []struct {
-		in   data.Number
-		out  data.Number
-		drop bool
-	}{{
-		// first: take as-is
-		in:  point(1000, 1100),
-		out: point(1000, 1100),
-	}, {
-		// subsequent: take, but keep start-ts
-		in:  point(1100, 1200),
-		out: point(1000, 1200),
-	}, {
-		// gap: take
-		in:  point(1300, 1400),
-		out: point(1000, 1400),
-	}, {
-		// out of order
-		in:   point(1200, 1300),
-		drop: true,
-	}, {
-		// older start
-		in:   point(500, 550),
-		drop: true,
-	}}
-
-	for i, cs := range cases {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			sink.Reset()
-
-			in := sb.resourceMetrics(sb.delta(cs.in))
-			want := make([]pmetric.Metrics, 0)
-			if !cs.drop {
-				want = []pmetric.Metrics{sb.resourceMetrics(sb.cumul(cs.out))}
-			}
-
-			err := proc.ConsumeMetrics(context.Background(), in)
-			require.NoError(t, err)
-
-			out := sink.AllMetrics()
-			if diff := compare.Diff(want, out); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-	}
-}
-
-func TestStreamLimit(t *testing.T) {
-	proc, sink := setup(t, &self.Config{MaxStale: 5 * time.Minute, MaxStreams: 10})
-
-	good := make([]SumBuilder, 10)
-	for i := range good {
-		good[i] = stream()
-	}
-	bad := stream()
-	_ = bad
-
-	diff := func(want, got []pmetric.Metrics) {
-		t.Helper()
-		if diff := compare.Diff(want, got); diff != "" {
-			t.Fatal(diff)
-		}
-	}
-
-	writeGood := func(ts pcommon.Timestamp) {
-		for i, sb := range good {
-			in := sb.resourceMetrics(sb.delta(sb.point(0, ts+pcommon.Timestamp(i), 0)))
-			want := sb.resourceMetrics(sb.cumul(sb.point(0, ts+pcommon.Timestamp(i), 0)))
-
-			err := proc.ConsumeMetrics(context.Background(), in)
-			require.NoError(t, err)
-
-			diff([]pmetric.Metrics{want}, sink.AllMetrics())
-			sink.Reset()
-		}
-	}
-
-	// write up to limit must work
-	writeGood(0)
-
-	// extra stream must be dropped, nothing written
-	in := bad.resourceMetrics(bad.delta(bad.point(0, 0, 0)))
-	err := proc.ConsumeMetrics(context.Background(), in)
-	require.NoError(t, err)
-	diff([]pmetric.Metrics{}, sink.AllMetrics())
-	sink.Reset()
-
-	// writing existing streams must still work
-	writeGood(100)
-}
 
 type copyable interface {
 	CopyTo(pmetric.Metric)
@@ -283,28 +269,4 @@ func stream() SumBuilder {
 	sum := random.Sum()
 	_, base := sum.Stream()
 	return SumBuilder{Metric: sum, base: base}
-}
-
-func TestIgnore(t *testing.T) {
-	proc, sink := setup(t, nil)
-
-	dir := "./testdata/notemporality-ignored"
-	open := func(file string) pmetric.Metrics {
-		t.Helper()
-		md, err := golden.ReadMetrics(filepath.Join(dir, file))
-		require.NoError(t, err)
-		return md
-	}
-
-	in := open("in.yaml")
-	out := open("out.yaml")
-
-	ctx := context.Background()
-
-	err := proc.ConsumeMetrics(ctx, in)
-	require.NoError(t, err)
-
-	if diff := compare.Diff([]pmetric.Metrics{out}, sink.AllMetrics()); diff != "" {
-		t.Fatal(diff)
-	}
 }
