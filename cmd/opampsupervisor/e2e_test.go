@@ -2010,18 +2010,17 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	t.Logf("Supervisor connected")
 
 	agentVersion := "0.110.0"
-	agentHash := []byte{0xab, 0x90, 0x7a, 0xe9, 0xce, 0x1, 0xa5, 0x5d, 0xd9, 0x35, 0x6c, 0x79, 0x7e, 0x82, 0x7b, 0x53, 0x1c, 0x72, 0xea, 0x40, 0xd6, 0x44, 0xca, 0xc1, 0xb, 0x73, 0xee, 0x4e, 0x4e, 0x2b, 0x10, 0x4c}
 	agentName := fmt.Sprintf("otelcol-contrib_0.110.0_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
 	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s", agentName)
 	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.sig", agentName)
 	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.pem", agentName)
 
-	cert := getFileContents(t, agentCertURL)
-	sig := getFileContents(t, agentSigURL)
+	agentHash := getHTTPBodyHash(t, agentURL)
+	cert := getHTTPBodyContents(t, agentCertURL)
+	sig := getHTTPBodyContents(t, agentSigURL)
 
 	signatureField := bytes.Join([][]byte{cert, sig}, []byte(" "))
 
-	// TODO: Verify intital package statuses makes sense
 	<-packageStatusesChan
 	<-agentDescriptionChan
 	agentID := <-agentIDChan
@@ -2208,7 +2207,110 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
 }
 
-func getFileContents(t *testing.T, url string) []byte {
+func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
+	agentDescription := atomic.Value{}
+
+	// Load the Supervisor config so we can get the location of
+	// the Collector that will be run.
+	var cfg config.Supervisor
+	cfgFile := getSupervisorConfig(t, "nocap", map[string]string{})
+	k := koanf.New("::")
+	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
+	require.NoError(t, err)
+	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	})
+	require.NoError(t, err)
+
+	// Get the binary name and version from the Collector binary
+	// using the `components` command that prints a YAML-encoded
+	// map of information about the Collector build. Some of this
+	// information will be used as defaults for the telemetry
+	// attributes.
+	agentPath := cfg.Agent.Executable
+	componentsInfo, err := exec.Command(agentPath, "components").Output()
+	require.NoError(t, err)
+	k = koanf.New("::")
+	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+	require.NoError(t, err)
+	buildinfo := k.StringMap("buildinfo")
+	command := buildinfo["command"]
+	version := buildinfo["version"]
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					agentDescription.Store(message.AgentDescription)
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	outputPath := filepath.Join(t.TempDir(), "output.txt")
+	_, err = findRandomPort()
+	require.Nil(t, err)
+	backend := testbed.NewOTLPHTTPDataReceiver(4318)
+	mockBackend := testbed.NewMockBackend(outputPath, backend)
+	mockBackend.EnableRecording()
+	defer mockBackend.Stop()
+	require.NoError(t, mockBackend.Start())
+
+	s := newSupervisor(t,
+		"emit_telemetry",
+		map[string]string{
+			"url":          server.addr,
+			"telemetryUrl": fmt.Sprintf("localhost:%d", 4318),
+		},
+	)
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.Eventually(t, func() bool {
+		ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
+		if !ok {
+			return false
+		}
+
+		var agentName, agentVersion string
+		identAttr := ad.IdentifyingAttributes
+		for _, attr := range identAttr {
+			switch attr.Key {
+			case semconv.AttributeServiceName:
+				agentName = attr.Value.GetStringValue()
+			case semconv.AttributeServiceVersion:
+				agentVersion = attr.Value.GetStringValue()
+			}
+		}
+
+		// By default, the Collector should report its name and version
+		// from the component.BuildInfo struct built into the Collector
+		// binary.
+		return agentName == command && agentVersion == version
+	}, 5*time.Second, 250*time.Millisecond)
+
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		require.Len(collect, mockBackend.ReceivedTraces, 1)
+	}, 10*time.Second, 250*time.Millisecond)
+
+	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
+	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get(semconv.AttributeServiceName)
+	require.True(t, ok)
+	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
+
+	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().Len())
+	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+	require.Equal(t, "GetBootstrapInfo", mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+	require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+}
+
+func getHTTPBodyContents(t *testing.T, url string) []byte {
 	r, err := http.Get(url)
 	require.NoError(t, err)
 	defer r.Body.Close()
@@ -2217,6 +2319,17 @@ func getFileContents(t *testing.T, url string) []byte {
 	require.NoError(t, err)
 
 	return by
+}
+
+func getHTTPBodyHash(t *testing.T, url string) []byte {
+	resp, err := http.Get(url)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	hasher := sha256.New()
+	_, err = io.Copy(hasher, resp.Body)
+	require.NoError(t, err)
+	return hasher.Sum(nil)
 }
 
 func copyFile(t *testing.T, from, to string) {
