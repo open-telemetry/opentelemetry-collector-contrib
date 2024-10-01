@@ -77,7 +77,9 @@ func (n *opampNotifier) Start(_ context.Context, host component.Host) error {
 }
 
 func (n *opampNotifier) Shutdown(_ context.Context) error {
-	n.handler.Unregister()
+	if n.handler != nil {
+		n.handler.Unregister()
+	}
 	return nil
 }
 
