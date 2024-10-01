@@ -15,7 +15,7 @@ This processor is used to deduplicate logs by detecting identical logs over a ra
 
 ## How It Works
 1. The user configures the log deduplication processor in the desired logs pipeline.
-2. All logs are sent to the processor. Each log for which `condition` evaluates true is aggregated over the configured `interval`. Logs that do not match the `condition` are exported without processing. Logs are considered identical if they have the same body, resource attributes, severity, and log attributes.
+2. Each log entry for which the `condition` evaluates `true` is aggregated over the configured `interval`. Logs that do not match the `condition` are passed onward in the pipeline without aggregating. Logs are considered identical if they have the same body, resource attributes, severity, and log attributes.
 3. After the interval, the processor emits a single log with the count of logs that were deduplicated. The emitted log will have the same body, resource attributes, severity, and log attributes as the original log. The emitted log will also have the following new attributes:
 
     - `log_count`: The count of logs that were deduplicated over the interval. The name of the attribute is configurable via the `log_count_attribute` parameter.
