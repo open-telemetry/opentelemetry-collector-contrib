@@ -31,10 +31,6 @@ func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "http://localhost:80/status"
 	clientConfig.Timeout = 10 * time.Second
-	clientConfig.MaxIdleConns = nil
-	clientConfig.MaxIdleConnsPerHost = nil
-	clientConfig.MaxConnsPerHost = nil
-	clientConfig.IdleConnTimeout = nil
 
 	return &Config{
 		ControllerConfig:     cfg,
