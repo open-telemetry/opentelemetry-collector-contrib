@@ -190,10 +190,9 @@ func NewFactory() exporter.Factory {
 }
 
 func defaultClientConfig() confighttp.ClientConfig {
-	// do not use NewDefaultClientConfig for backwards-compatibility
-	return confighttp.ClientConfig{
-		Timeout: 15 * time.Second,
-	}
+	client := confighttp.NewDefaultClientConfig()
+	client.Timeout = 15 * time.Second
+	return client
 }
 
 // createDefaultConfig creates the default exporter configuration
