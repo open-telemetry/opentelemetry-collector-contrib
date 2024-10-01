@@ -1013,7 +1013,7 @@ func TestExporterMetrics(t *testing.T) {
 		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
-	t.Run("otel mode _doc_count", func(t *testing.T) {
+	t.Run("otel mode _doc_count hint", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -1039,25 +1039,75 @@ func TestExporterMetrics(t *testing.T) {
 		summaryDP.SetSum(1)
 		summaryDP.SetCount(10)
 		fillAttributeMap(summaryDP.Attributes(), map[string]any{
-			"_doc_count": true,
+			"elasticsearch.mapping.hints": []string{"_doc_count"},
 		})
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(2)
+		rec.WaitItems(1)
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"attributes":{"_doc_count":true},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
 			},
 		}
 
 		assertItemsEqual(t, expected, rec.Items(), false)
+	})
 
+	t.Run("otel mode aggregate_metric_double hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		histogramMetric := scopeMetric.Metrics().AppendEmpty()
+		histogramMetric.SetName("histogram.summary")
+		fooHistogram := histogramMetric.SetEmptyHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		fooDp := fooHistogram.DataPoints().AppendEmpty()
+		fooDp.SetSum(1)
+		fooDp.SetCount(10)
+		fillAttributeMap(fooDp.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count", "aggregate_metric_double"},
+		})
+
+		exphistogramMetric := scopeMetric.Metrics().AppendEmpty()
+		exphistogramMetric.SetName("exphistogram.summary")
+		fooExpHistogram := exphistogramMetric.SetEmptyExponentialHistogram()
+		fooExpHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		fooExpDp := fooExpHistogram.DataPoints().AppendEmpty()
+		fooExpDp.SetTimestamp(pcommon.Timestamp(time.Hour))
+		fooExpDp.SetSum(1)
+		fooExpDp.SetCount(10)
+		fillAttributeMap(fooExpDp.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count", "aggregate_metric_double"},
+		})
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.exphistogram.summary":"summary"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
 	t.Run("publish summary", func(t *testing.T) {
