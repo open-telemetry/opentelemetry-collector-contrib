@@ -100,6 +100,12 @@ var testCases = []struct {
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
+		name:             "default source.address attribute no geo metadata found by providers",
+		goldenDir:        "source_address_geo_not_found",
+		context:          resource,
+		lookupAttributes: defaultResourceAttributes,
+	},
+	{
 		name:             "default source.ip attribute with an unspecified IP address should be skipped",
 		goldenDir:        "unspecified_address",
 		context:          resource,
@@ -196,21 +202,24 @@ func TestProcessor(t *testing.T) {
 		return &baseProviderMock, nil
 	}
 
-	baseProviderMock.LocationF = func(context.Context, net.IP) (attribute.Set, error) {
-		return attribute.NewSet([]attribute.KeyValue{
-			semconv.SourceAddress("1.2.3.4"),
-			attribute.String(conventions.AttributeGeoCityName, "Boxford"),
-			attribute.String(conventions.AttributeGeoContinentCode, "EU"),
-			attribute.String(conventions.AttributeGeoContinentName, "Europe"),
-			attribute.String(conventions.AttributeGeoCountryIsoCode, "GB"),
-			attribute.String(conventions.AttributeGeoCountryName, "United Kingdom"),
-			attribute.String(conventions.AttributeGeoTimezone, "Europe/London"),
-			attribute.String(conventions.AttributeGeoRegionIsoCode, "WBK"),
-			attribute.String(conventions.AttributeGeoRegionName, "West Berkshire"),
-			attribute.String(conventions.AttributeGeoPostalCode, "OX1"),
-			attribute.Float64(conventions.AttributeGeoLocationLat, 1234),
-			attribute.Float64(conventions.AttributeGeoLocationLon, 5678),
-		}...), nil
+	baseProviderMock.LocationF = func(_ context.Context, sourceIP net.IP) (attribute.Set, error) {
+		if sourceIP.Equal(net.IPv4(1, 2, 3, 4)) {
+			return attribute.NewSet([]attribute.KeyValue{
+				semconv.SourceAddress("1.2.3.4"),
+				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
+				attribute.String(conventions.AttributeGeoContinentCode, "EU"),
+				attribute.String(conventions.AttributeGeoContinentName, "Europe"),
+				attribute.String(conventions.AttributeGeoCountryIsoCode, "GB"),
+				attribute.String(conventions.AttributeGeoCountryName, "United Kingdom"),
+				attribute.String(conventions.AttributeGeoTimezone, "Europe/London"),
+				attribute.String(conventions.AttributeGeoRegionIsoCode, "WBK"),
+				attribute.String(conventions.AttributeGeoRegionName, "West Berkshire"),
+				attribute.String(conventions.AttributeGeoPostalCode, "OX1"),
+				attribute.Float64(conventions.AttributeGeoLocationLat, 1234),
+				attribute.Float64(conventions.AttributeGeoLocationLon, 5678),
+			}...), nil
+		}
+		return attribute.Set{}, provider.ErrNoMetadataFound
 	}
 	const providerKey string = "mock"
 	providerFactories[providerKey] = &baseMockFactory
