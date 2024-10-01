@@ -13,6 +13,9 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -23,6 +26,33 @@ type Supervisor struct {
 	Agent        Agent
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
+}
+
+// Load loads the Supervisor config from a file.
+func Load(configFile string) (Supervisor, error) {
+	if configFile == "" {
+		return Supervisor{}, errors.New("path to config file cannot be empty")
+	}
+
+	k := koanf.New("::")
+	if err := k.Load(file.Provider(configFile), yaml.Parser()); err != nil {
+		return Supervisor{}, err
+	}
+
+	decodeConf := koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	}
+
+	cfg := DefaultSupervisor()
+	if err := k.UnmarshalWithConf("", &cfg, decodeConf); err != nil {
+		return Supervisor{}, fmt.Errorf("cannot parse %s: %w", configFile, err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return Supervisor{}, fmt.Errorf("cannot validate supervisor config %s: %w", configFile, err)
+	}
+
+	return cfg, nil
 }
 
 func (s Supervisor) Validate() error {
