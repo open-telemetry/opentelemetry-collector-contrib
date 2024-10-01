@@ -92,7 +92,7 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	// handle the request payload
 	err := sr.handleRequest(req)
 	if err != nil {
-		errorutil.HttpError(rw, err)
+		errorutil.HTTPError(rw, err)
 		return
 	}
 

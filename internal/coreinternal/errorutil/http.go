@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package errorutil
+package errorutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-func HttpError(w http.ResponseWriter, err error) {
+func HTTPError(w http.ResponseWriter, err error) {
 	if err == nil {
 		return
 	}
