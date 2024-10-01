@@ -264,7 +264,11 @@ func (s *Supervisor) Start() error {
 
 	s.startHealthCheckTicker()
 
-	s.startAgentProcess()
+	s.agentWG.Add(1)
+	go func() {
+		defer s.agentWG.Done()
+		s.runAgentProcess()
+	}()
 
 	s.customMessageWG.Add(1)
 	go func() {
@@ -299,7 +303,7 @@ func (s *Supervisor) createTemplates() error {
 // an OpAMP extension, obtains the agent description, then
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
-func (s *Supervisor) getBootstrapInfo() (_ string, err error) {
+func (s *Supervisor) getBootstrapInfo() (agentVersion string, err error) {
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
 		return "", err
@@ -319,7 +323,6 @@ func (s *Supervisor) getBootstrapInfo() (_ string, err error) {
 
 	done := make(chan error, 1)
 	var connected atomic.Bool
-	var agentVersion string
 
 	// Start a one-shot server to get the Collector's agent description
 	// using the Collector's OpAMP extension.
@@ -338,6 +341,8 @@ func (s *Supervisor) getBootstrapInfo() (_ string, err error) {
 				for _, attr := range identAttr {
 					switch attr.Key {
 					case semconv.AttributeServiceInstanceID:
+						// TODO: Consider whether to attempt restarting the Collector.
+						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
 						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
 								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
@@ -1136,14 +1141,6 @@ func (s *Supervisor) healthCheck() {
 	}
 
 	s.lastHealthCheckErr = err
-}
-
-func (s *Supervisor) startAgentProcess() {
-	s.agentWG.Add(1)
-	go func() {
-		defer s.agentWG.Done()
-		s.runAgentProcess()
-	}()
 }
 
 // stopAgentProcess stops the agent process. The process can be started again by closing the returned channel.
