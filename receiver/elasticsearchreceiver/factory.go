@@ -38,11 +38,6 @@ func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
 	clientConfig.Timeout = defaultHTTPClientTimeout
-	clientConfig.MaxIdleConns = nil
-	clientConfig.MaxIdleConnsPerHost = nil
-	clientConfig.MaxConnsPerHost = nil
-	clientConfig.IdleConnTimeout = nil
-	clientConfig.Headers = nil
 
 	return &Config{
 		ControllerConfig:     cfg,

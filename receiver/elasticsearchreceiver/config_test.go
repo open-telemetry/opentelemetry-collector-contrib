@@ -4,6 +4,7 @@
 package elasticsearchreceiver
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -138,6 +140,7 @@ func TestValidateEndpoint(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
+	defaultTransport := http.DefaultTransport.(*http.Transport)
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -167,8 +170,13 @@ func TestLoadConfig(t *testing.T) {
 				Username:             "otel",
 				Password:             "password",
 				ClientConfig: confighttp.ClientConfig{
-					Timeout:  10000000000,
-					Endpoint: "http://example.com:9200",
+					Timeout:             10000000000,
+					Endpoint:            "http://example.com:9200",
+					Headers:             map[string]configopaque.String{},
+					MaxIdleConns:        &defaultTransport.MaxIdleConns,
+					MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+					MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+					IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 				},
 			},
 		},
