@@ -70,11 +70,11 @@ type configState struct {
 	// Supervisor-assembled config to be given to the Collector.
 	mergedConfig string
 	// true if the server provided configmap was empty
-	emptyConfigMap bool
+	configMapIsEmpty bool
 }
 
 func (c *configState) equal(other *configState) bool {
-	return other.mergedConfig == c.mergedConfig && other.emptyConfigMap == c.emptyConfigMap
+	return other.mergedConfig == c.mergedConfig && other.configMapIsEmpty == c.configMapIsEmpty
 }
 
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
@@ -892,7 +892,11 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	var k = koanf.New("::")
 
-	if c := config.GetConfig(); c != nil {
+	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
+
+	if !configMapIsEmpty {
+		c := config.GetConfig()
+
 		// Sort to make sure the order of merging is stable.
 		var names []string
 		for name := range c.ConfigMap {
@@ -963,8 +967,8 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 	// Check if supervisor's merged config is changed.
 
 	newConfigState := &configState{
-		mergedConfig:   string(newMergedConfigBytes),
-		emptyConfigMap: len(config.GetConfig().GetConfigMap()) == 0,
+		mergedConfig:     string(newMergedConfigBytes),
+		configMapIsEmpty: configMapIsEmpty,
 	}
 
 	configChanged = false
@@ -990,7 +994,7 @@ func (s *Supervisor) handleRestartCommand() error {
 }
 
 func (s *Supervisor) startAgent() {
-	if s.cfgState.Load().(*configState).emptyConfigMap {
+	if s.cfgState.Load().(*configState).configMapIsEmpty {
 		// Don't start the agent if there is no config to run
 		s.logger.Info("No config present, not starting agent.")
 		return
