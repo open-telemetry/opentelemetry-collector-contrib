@@ -4,6 +4,7 @@
 package influxdbexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	defaultTransport := http.DefaultTransport.(*http.Transport)
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -39,9 +41,13 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost:8080",
-					Timeout:  500 * time.Millisecond,
-					Headers:  map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Influx"},
+					Endpoint:            "http://localhost:8080",
+					Timeout:             500 * time.Millisecond,
+					Headers:             map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Influx"},
+					MaxIdleConns:        &defaultTransport.MaxIdleConns,
+					MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+					MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+					IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 				},
 				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
