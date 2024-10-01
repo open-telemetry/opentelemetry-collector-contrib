@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package supervisor
 
 import (
@@ -7,10 +10,11 @@ import (
 
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
 const testAgentFileContents = "agent file"
@@ -254,10 +258,6 @@ func TestPackageManager_LastReportedStatuses(t *testing.T) {
 	lrs, err = pm2.LastReportedStatuses()
 	require.NoError(t, err)
 	require.Equal(t, statuses, lrs)
-}
-
-func TestPackageManager_UpdateContent(t *testing.T) {
-
 }
 
 func initPackageManager(t *testing.T, tmpDir string) *packageManager {
