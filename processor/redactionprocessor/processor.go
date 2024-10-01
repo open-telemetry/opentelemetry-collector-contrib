@@ -106,7 +106,7 @@ func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs
 
 	for j := 0; j < rl.ScopeLogs().Len(); j++ {
 		ils := rl.ScopeLogs().At(j)
-		for k := 0; k < rl.ScopeLogs().Len(); k++ {
+		for k := 0; k < ils.LogRecords().Len(); k++ {
 			log := ils.LogRecords().At(k)
 			s.processAttrs(ctx, log.Attributes())
 		}

@@ -58,7 +58,7 @@ Each policy will result in a decision, and the processor will evaluate them to m
 - When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled;
 - In all other cases, the trace is NOT sampled
 
-An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string tag policy.
+An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string, numeric or boolean tag policy.
 
 Examples:
 
@@ -222,6 +222,8 @@ Imagine that you wish to configure the processor to implement the following rule
 1. **Rule 5:** Sample all traces if there is an error in any span in the trace.
 
 1. **Rule 6:** Add an escape hatch. If there is an attribute called `app.force_sample` in the span, then sample the trace at 100 percent.
+
+1. **Rule 7:** Force spans with `app.do_not_sample` set to `true` to not be sampled, even if the result of the other rules yield a sampling decision.
 
 Here is what the configuration would look like:
 
@@ -407,6 +409,13 @@ tail_sampling:
         type: boolean_attribute,
         boolean_attribute: { key: app.force_sample, value: true },
       },
+    {
+      # Rule 7:
+      # never sample if the do_not_sample attribute is set to true
+      name: team_a-do-not-sample,
+      type: boolean_attribute,
+      boolean_attribute: { key: app.do_not_sample, value: true, invert_match: true },
+    },
       # END: policies for team_a
     ]
 ```

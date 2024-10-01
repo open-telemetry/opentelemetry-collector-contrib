@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
 	expected.BackOffConfig.MaxInterval = 5 * time.Second
-	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
+	expected.QueueSettings = exporterhelper.NewDefaultQueueConfig()
 	expected.QueueSettings.Enabled = false
 	expected.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "",
@@ -66,7 +66,7 @@ func TestDefaultLoadConfig(t *testing.T) {
 		Token: "logzioTESTtoken",
 	}
 	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
-	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
+	expected.QueueSettings = exporterhelper.NewDefaultQueueConfig()
 	expected.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "",
 		Timeout:  30 * time.Second,
@@ -82,7 +82,7 @@ func TestDefaultLoadConfig(t *testing.T) {
 func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 	// Config with legacy options
 	actualCfg := &Config{
-		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:  exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
 		Token:          "logzioTESTtoken",
 		CustomEndpoint: "https://api.example.com",
@@ -111,7 +111,7 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		QueueMaxLength: 10,
 		DrainInterval:  10,
 		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
-		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:  exporterhelper.NewDefaultQueueConfig(),
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://api.example.com",
 			Timeout:  10 * time.Second,

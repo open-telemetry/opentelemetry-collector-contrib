@@ -505,11 +505,11 @@ func TestArrowExporterStreamRace(t *testing.T) {
 			defer wg.Done()
 			// This blocks until the cancelation.
 			_, err := tc.exporter.SendAndWait(callctx, twoTraces)
-			require.Error(t, err)
+			assert.Error(t, err)
 
 			stat, is := status.FromError(err)
-			require.True(t, is, "is a gRPC status error: %v", err)
-			require.Equal(t, codes.Canceled, stat.Code())
+			assert.True(t, is, "is a gRPC status error: %v", err)
+			assert.Equal(t, codes.Canceled, stat.Code())
 		}()
 	}
 
@@ -547,8 +547,8 @@ func TestArrowExporterStreaming(t *testing.T) {
 				defer wg.Done()
 				for data := range channel.sendChannel() {
 					traces, err := testCon.TracesFrom(data)
-					require.NoError(t, err)
-					require.Len(t, traces, 1)
+					assert.NoError(t, err)
+					assert.Len(t, traces, 1)
 					actualOutput = append(actualOutput, traces[0])
 					channel.recv <- statusOKFor(data.BatchId)
 				}
@@ -606,7 +606,7 @@ func TestArrowExporterHeaders(t *testing.T) {
 						actualOutput = append(actualOutput, nil)
 					} else {
 						_, err := hpd.Write(data.Headers)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						actualOutput = append(actualOutput, md)
 						md = metadata.MD{}
 					}
@@ -698,7 +698,7 @@ func TestArrowExporterIsTraced(t *testing.T) {
 						actualOutput = append(actualOutput, nil)
 					} else {
 						_, err := hpd.Write(data.Headers)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						actualOutput = append(actualOutput, md)
 						md = metadata.MD{}
 					}
@@ -786,8 +786,8 @@ func TestArrowExporterStreamLifetimeAndShutdown(t *testing.T) {
 
 							for data := range channel.sendChannel() {
 								traces, err := testCon.TracesFrom(data)
-								require.NoError(t, err)
-								require.Len(t, traces, 1)
+								assert.NoError(t, err)
+								assert.Len(t, traces, 1)
 								atomic.AddUint64(&actualCount, 1)
 								channel.recv <- statusOKFor(data.BatchId)
 							}

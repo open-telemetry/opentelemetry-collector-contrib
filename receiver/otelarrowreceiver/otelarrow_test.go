@@ -354,12 +354,12 @@ func TestOTelArrowShutdown(t *testing.T) {
 				for time.Since(start) < 5*time.Second {
 					td := testdata.GenerateTraces(1)
 					batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
-					require.NoError(t, batchErr)
-					require.NoError(t, stream.Send(batch))
+					assert.NoError(t, batchErr)
+					assert.NoError(t, stream.Send(batch))
 				}
 
 				if cooperative {
-					require.NoError(t, stream.CloseSend())
+					assert.NoError(t, stream.CloseSend())
 				}
 			}()
 
@@ -746,7 +746,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 			client := arrowpb.NewArrowTracesServiceClient(cc)
 			stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			producer := arrowRecord.NewProducer()
 
 			var headerBuf bytes.Buffer
@@ -762,21 +762,21 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 					Name:  "seq",
 					Value: fmt.Sprint(i),
 				})
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				batch, err := producer.BatchArrowRecordsFromTraces(td)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				batch.Headers = headerBuf.Bytes()
 
 				err = stream.Send(batch)
 
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				resp, err := stream.Recv()
-				require.NoError(t, err)
-				require.Equal(t, batch.BatchId, resp.BatchId)
-				require.Equal(t, arrowpb.StatusCode_OK, resp.StatusCode)
+				assert.NoError(t, err)
+				assert.Equal(t, batch.BatchId, resp.BatchId)
+				assert.Equal(t, arrowpb.StatusCode_OK, resp.StatusCode)
 			}
 		}()
 	}
@@ -854,17 +854,17 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 			}
 			td := testdata.GenerateTraces(1)
 			batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, batchErr)
+			assert.NoError(t, batchErr)
 
 			sendErr := stream.Send(batch)
 			select {
 			case <-ctx.Done():
 				if sendErr != nil {
-					require.ErrorIs(t, sendErr, io.EOF)
+					assert.ErrorIs(t, sendErr, io.EOF)
 				}
 				return
 			default:
-				require.NoError(t, sendErr)
+				assert.NoError(t, sendErr)
 			}
 		}
 	}()

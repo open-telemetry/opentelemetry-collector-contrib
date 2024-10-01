@@ -190,13 +190,13 @@ func TestPushMetadata(t *testing.T) {
 		assert.Equal(t, "apikey", r.Header.Get("DD-Api-Key"))
 		assert.Equal(t, "otelcontribcol/1.0", r.Header.Get("User-Agent"))
 		reader, err := gzip.NewReader(r.Body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		body, err := io.ReadAll(reader)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		var recvMetadata payload.HostMetadata
 		err = json.Unmarshal(body, &recvMetadata)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, mockMetadata, recvMetadata)
 	})
 

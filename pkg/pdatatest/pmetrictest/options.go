@@ -6,6 +6,7 @@ package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"time"
@@ -107,6 +108,56 @@ func maskHistogramDataPointSliceValues(dataPoints pmetric.HistogramDataPointSlic
 			return true
 		})
 		dataPoint.ExplicitBounds().FromRaw([]float64{})
+	}
+}
+
+// IgnoreMetricFloatPrecision is a CompareMetricsOption that rounds away float precision discrepancies in metric values.
+func IgnoreMetricFloatPrecision(precision int, metricNames ...string) CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		floatMetricValues(precision, expected, metricNames...)
+		floatMetricValues(precision, actual, metricNames...)
+	})
+}
+
+func floatMetricValues(precision int, metrics pmetric.Metrics, metricNames ...string) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			floatMetricSliceValues(precision, ilms.At(j).Metrics(), metricNames...)
+		}
+	}
+}
+
+// floatMetricSliceValues sets all data point values to zero.
+func floatMetricSliceValues(precision int, metrics pmetric.MetricSlice, metricNames ...string) {
+	metricNameSet := make(map[string]bool, len(metricNames))
+	for _, metricName := range metricNames {
+		metricNameSet[metricName] = true
+	}
+	for i := 0; i < metrics.Len(); i++ {
+		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeEmpty, pmetric.MetricTypeSum, pmetric.MetricTypeGauge:
+				roundDataPointSliceValues(getDataPointSlice(metrics.At(i)), precision)
+			default:
+				panic(fmt.Sprintf("data type not supported: %s", metrics.At(i).Type()))
+			}
+		}
+	}
+}
+
+// maskDataPointSliceValues rounds all data point values at a given decimal.
+func roundDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice, precision int) {
+	for i := 0; i < dataPoints.Len(); i++ {
+		dataPoint := dataPoints.At(i)
+		factor := math.Pow(10, float64(precision))
+		switch {
+		case dataPoint.DoubleValue() != 0.0:
+			dataPoint.SetDoubleValue(math.Round(dataPoint.DoubleValue()*factor) / factor)
+		case dataPoint.IntValue() != 0:
+			panic(fmt.Sprintf("integers can not have float precision ignored: %v", dataPoints.At(i)))
+		}
 	}
 }
 

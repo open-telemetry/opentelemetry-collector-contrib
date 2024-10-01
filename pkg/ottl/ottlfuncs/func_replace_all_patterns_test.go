@@ -627,5 +627,5 @@ func Test_replaceAllPatterns_invalid_model(t *testing.T) {
 	invalidMode := "invalid"
 	exprFunc, err := replaceAllPatterns[any](target, invalidMode, "regex", replacement, function, replacementFormat)
 	assert.Nil(t, exprFunc)
-	assert.Contains(t, err.Error(), "invalid mode")
+	assert.ErrorContains(t, err, "invalid mode")
 }

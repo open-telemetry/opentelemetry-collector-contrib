@@ -221,7 +221,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
 	}

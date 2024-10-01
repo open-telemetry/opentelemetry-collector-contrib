@@ -25,6 +25,8 @@ SRC_PARENT_DIR :=  $(shell dirname $(SRC_ROOT))
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
+# These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
+GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
@@ -75,7 +77,7 @@ GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 TESTIFYLINT         := $(TOOLS_BIN_DIR)/testifylint
 
 GOTESTSUM_OPT?= --rerun-fails=1
-TESTIFYLINT_OPT?= --enable-all --disable=float-compare,formatter,go-require,negative-positive,require-error,suite-dont-use-pkg,suite-subtest-run,useless-assert
+TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -208,6 +210,10 @@ govulncheck: $(GOVULNCHECK)
 tidy:
 	rm -fr go.sum
 	$(GOCMD) mod tidy -compat=1.22.0
+
+.PHONY: toolchain
+toolchain:
+	$(GOCMD) get toolchain@none
 
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell

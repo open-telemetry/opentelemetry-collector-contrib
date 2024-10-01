@@ -22,7 +22,7 @@ import (
 
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
-		githubscraper.TypeStr: &githubscraper.Factory{},
+		metadata.Type.String(): &githubscraper.Factory{},
 	}
 
 	errConfigNotValid = errors.New("configuration is not valid for the github receiver")

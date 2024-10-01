@@ -67,7 +67,7 @@ func TestNewClient(t *testing.T) {
 			ac, err := newClient(tc.cfg, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 

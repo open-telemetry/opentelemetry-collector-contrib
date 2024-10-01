@@ -10,9 +10,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor/internal/metadata"
@@ -89,5 +89,5 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 
 	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, nil)
 	require.Nil(t, mp)
-	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, pipeline.ErrSignalNotSupported)
 }

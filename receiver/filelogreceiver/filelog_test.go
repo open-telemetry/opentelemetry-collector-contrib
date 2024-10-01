@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
@@ -350,7 +351,7 @@ func TestConsumeContract(t *testing.T) {
 	receivertest.CheckConsumeContract(receivertest.CheckConsumeContractParams{
 		T:             t,
 		Factory:       NewFactory(),
-		DataType:      component.DataTypeLogs,
+		Signal:        pipeline.SignalLogs,
 		Config:        cfg,
 		Generator:     flg,
 		GenerateCount: 10000,

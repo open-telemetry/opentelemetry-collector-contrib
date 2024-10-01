@@ -23,7 +23,7 @@ type Config struct {
 	// Only has effect if Endpoint is not ""
 	Insecure bool `mapstructure:"insecure"`
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// The fully qualified resource name of the Pubsub subscription
 	Subscription string `mapstructure:"subscription"`

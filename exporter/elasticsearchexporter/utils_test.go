@@ -288,6 +288,8 @@ func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
 	attrs.EnsureCapacity(len(m))
 	for k, v := range m {
 		switch vv := v.(type) {
+		case bool:
+			attrs.PutBool(k, vv)
 		case string:
 			attrs.PutStr(k, vv)
 		case []string:

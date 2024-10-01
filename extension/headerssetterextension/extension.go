@@ -35,8 +35,13 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, er
 				Value: *header.Value,
 			}
 		} else if header.FromContext != nil {
+			var defaultValue = ""
+			if header.DefaultValue != nil {
+				defaultValue = *header.DefaultValue
+			}
 			s = &source.ContextSource{
-				Key: *header.FromContext,
+				Key:          *header.FromContext,
+				DefaultValue: defaultValue,
 			}
 		}
 

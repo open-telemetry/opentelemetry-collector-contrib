@@ -13,7 +13,8 @@ import (
 var _ Source = (*ContextSource)(nil)
 
 type ContextSource struct {
-	Key string
+	Key          string
+	DefaultValue string
 }
 
 func (ts *ContextSource) Get(ctx context.Context) (string, error) {
@@ -21,7 +22,7 @@ func (ts *ContextSource) Get(ctx context.Context) (string, error) {
 	ss := cl.Metadata.Get(ts.Key)
 
 	if len(ss) == 0 {
-		return "", nil
+		return ts.DefaultValue, nil
 	}
 
 	if len(ss) > 1 {

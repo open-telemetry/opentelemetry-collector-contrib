@@ -65,13 +65,13 @@ func TestPushLogData(t *testing.T) {
 			// prepare
 			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				decPayload, err := snappy.Decode(nil, encPayload)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				err = proto.Unmarshal(decPayload, actualPushRequest)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer ts.Close()
 
@@ -241,14 +241,14 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			// prepare
 			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				decPayload, err := snappy.Decode(nil, encPayload)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				pr := &push.PushRequest{}
 				err = proto.Unmarshal(decPayload, pr)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				actualPushRequestPerTenant[r.Header.Get("X-Scope-OrgID")] = pr
 			}))

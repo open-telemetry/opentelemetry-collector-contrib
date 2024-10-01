@@ -16,6 +16,7 @@ import (
 	"unicode"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"go.opentelemetry.io/collector/component"
@@ -142,7 +143,7 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 	for _, cr := range it.containerRequests {
 		go func(req testcontainers.ContainerRequest) {
 			var errs error
-			require.Eventuallyf(t, func() bool {
+			assert.Eventuallyf(t, func() bool {
 				c, err := testcontainers.GenericContainer(
 					context.Background(),
 					testcontainers.GenericContainerRequest{

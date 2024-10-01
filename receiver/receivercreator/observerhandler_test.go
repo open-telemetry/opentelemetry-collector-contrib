@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -465,7 +466,7 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (m *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	m.t.Fatal("GetExporters")
 	return nil
 }
@@ -519,7 +520,7 @@ func (nh *reportingHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *reportingHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (nh *reportingHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

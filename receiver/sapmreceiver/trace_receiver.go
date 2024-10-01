@@ -208,6 +208,15 @@ func newReceiver(
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal default response body for %v receiver: %w", params.ID, err)
 	}
+
+	if config.AccessTokenPassthrough {
+		params.Logger.Warn(
+			"access_token_passthrough is deprecated. " +
+				"Please enable include_metadata in the receiver and add " +
+				"`metadata_keys: [X-Sf-Token]` to the batch processor",
+		)
+	}
+
 	transport := "http"
 	if config.TLSSetting != nil {
 		transport = "https"

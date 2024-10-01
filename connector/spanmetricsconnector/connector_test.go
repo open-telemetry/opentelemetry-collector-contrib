@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -114,7 +114,7 @@ func verifyExemplarsExist(t testing.TB, input pmetric.Metrics) bool {
 				dps := metric.Histogram().DataPoints()
 				for dp := 0; dp < dps.Len(); dp++ {
 					d := dps.At(dp)
-					assert.Greater(t, d.Exemplars().Len(), 0)
+					assert.Positive(t, d.Exemplars().Len())
 				}
 			}
 		}
@@ -659,7 +659,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	for i := 0; i < concurrency; i++ {
 		go func() {
 			err := p.Shutdown(ctx)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			wg.Done()
 		}()
 	}
@@ -1645,7 +1645,7 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
-					assert.Greater(t, dps.Len(), 0)
+					assert.Positive(t, dps.Len())
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
 						assert.Equal(t, 1, dp.Exemplars().Len())
@@ -1653,7 +1653,7 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 					}
 				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
-					assert.Greater(t, dps.Len(), 0)
+					assert.Positive(t, dps.Len())
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
 						assert.Equal(t, 1, dp.Exemplars().Len())
@@ -1661,7 +1661,7 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dps := metric.ExponentialHistogram().DataPoints()
-					assert.Greater(t, dps.Len(), 0)
+					assert.Positive(t, dps.Len())
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
 						assert.Equal(t, 1, dp.Exemplars().Len())

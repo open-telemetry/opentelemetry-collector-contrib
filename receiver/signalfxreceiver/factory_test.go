@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -32,7 +32,7 @@ func TestCreateReceiverMetricsFirst(t *testing.T) {
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
 	_, err = factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
-	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 
 	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")

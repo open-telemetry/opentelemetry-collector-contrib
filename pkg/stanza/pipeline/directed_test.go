@@ -101,8 +101,7 @@ func TestPipeline(t *testing.T) {
 		operator2.On("Outputs").Return(nil)
 
 		_, err := NewDirectedPipeline([]operator.Operator{operator1, operator2})
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "already exists")
+		require.ErrorContains(t, err, "already exists")
 	})
 
 	t.Run("OutputNotExist", func(t *testing.T) {
@@ -115,8 +114,7 @@ func TestPipeline(t *testing.T) {
 		operator2.On("Outputs").Return([]operator.Operator{operator1})
 
 		_, err := NewDirectedPipeline([]operator.Operator{operator2})
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "does not exist")
+		require.ErrorContains(t, err, "does not exist")
 	})
 
 	t.Run("OutputNotProcessor", func(t *testing.T) {
@@ -132,8 +130,7 @@ func TestPipeline(t *testing.T) {
 		operator2.On("Outputs").Return([]operator.Operator{operator1})
 
 		_, err := NewDirectedPipeline([]operator.Operator{operator1, operator2})
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "can not process")
+		require.ErrorContains(t, err, "can not process")
 	})
 
 	t.Run("DuplicateEdges", func(t *testing.T) {
@@ -155,8 +152,7 @@ func TestPipeline(t *testing.T) {
 		graph.SetEdge(edge)
 
 		err := connectNode(graph, node2)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "connection already exists")
+		require.ErrorContains(t, err, "connection already exists")
 	})
 
 	t.Run("Cyclical", func(t *testing.T) {
@@ -171,8 +167,7 @@ func TestPipeline(t *testing.T) {
 		mockOperator3.On("SetOutputs", mock.Anything).Return(nil)
 
 		_, err := NewDirectedPipeline([]operator.Operator{mockOperator1, mockOperator2, mockOperator3})
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "circular dependency")
+		require.ErrorContains(t, err, "circular dependency")
 	})
 }
 
@@ -205,8 +200,7 @@ func TestPipelineStartOrder(t *testing.T) {
 	require.NoError(t, err)
 
 	err = pipeline.Start(mockPersister)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "operator 1 failed to start")
+	require.ErrorContains(t, err, "operator 1 failed to start")
 	require.True(t, mock2Started)
 	require.True(t, mock3Started)
 }
