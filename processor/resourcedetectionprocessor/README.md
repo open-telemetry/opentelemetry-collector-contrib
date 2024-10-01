@@ -531,7 +531,7 @@ rules:
 
 ### K8S Node Metadata
 
-Queries the K8S api server to retrieve the following node resource attributes:
+Queries the K8S API server to retrieve the following resource attributes:
 
     * k8s.node.uid
     * k8s.node.name
