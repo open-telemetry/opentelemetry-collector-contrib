@@ -9,11 +9,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
-const (
-	attributeCloudwatchLogGroupName  = "cloudwatch.log.group.name"
-	attributeCloudwatchLogStreamName = "cloudwatch.log.stream.name"
-)
-
 // resourceAttributes are the CloudWatch log attributes that define a unique resource.
 type resourceAttributes struct {
 	owner, logGroup, logStream string
