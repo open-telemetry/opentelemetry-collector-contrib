@@ -612,6 +612,13 @@ func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
 	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
 	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
 	s.agentDescription.Store(ad)
+
+	if s.opampClient != nil {
+		err := s.opampClient.SetAgentDescription(ad)
+		if err != nil {
+			s.logger.Error("Failed to set agent description.", zap.Error(err))
+		}
+	}
 }
 
 // applyKeyValueOverrides merges the overrides map into the array of key value pairs.
@@ -766,6 +773,12 @@ func (s *Supervisor) composeExtraLocalConfig() []byte {
 	resourceAttrs := map[string]string{}
 	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
 	for _, attr := range ad.IdentifyingAttributes {
+		if attr.Key == semconv.AttributeServiceVersion {
+			// Allow the agent to report its own version.
+			// We do this since the version may change if an agent upgrade is pushed.
+			continue
+		}
+
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
 	for _, attr := range ad.NonIdentifyingAttributes {
@@ -1387,7 +1400,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			s.logger.Error("Failed to sync PackagesAvailable message", zap.Error(err))
 		}
 		// TODO: Should we wait for the sync to be done somehow? Should it be in a separate goroutine
-		<-msg.PackageSyncer.Done()
+		// <-msg.PackageSyncer.Done()
 	}
 
 	// Update the agent config if any messages have touched the config
