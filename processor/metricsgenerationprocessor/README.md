@@ -16,11 +16,13 @@
 
 ## Description
 
-The metrics generation processor (`experimental_metricsgenerationprocessor`) can be used to create new metrics using existing metrics following a given rule. Currently it supports following two approaches for creating a new metric.
+The metrics generation processor (`experimental_metricsgenerationprocessor`) can be used to create new metrics using existing metrics following a given rule. This processor currently supports the following two approaches for creating a new metric.
 
-1. It can create a new metric from two existing metrics by applying one of the following arithmetic operations: add, subtract, multiply, divide and percent. One use case is to calculate the `pod.memory.utilization` metric like the following equation-
+1. It can create a new metric from two existing metrics by applying one of the following arithmetic operations: add, subtract, multiply, divide, or percent. One use case is to calculate the `pod.memory.utilization` metric like the following equation-
 `pod.memory.utilization` = (`pod.memory.usage.bytes` / `node.memory.limit`)
 1. It can create a new metric by scaling the value of an existing metric with a given constant number. One use case is to convert `pod.memory.usage` metric values from Megabytes to Bytes (multiply the existing metric's value by 1,048,576)
+
+Note: The created metric's type is inherited from the metric configured as `metric1`.
 
 ## Configuration
 
@@ -43,10 +45,10 @@ processors:
               # type describes how the new metric will be generated. It can be one of `calculate` or `scale`.  calculate generates a metric applying the given operation on two operand metrics. scale operates only on operand1 metric to generate the new metric.
               type: {calculate, scale}
 
-              # This is a required field.
+              # This is a required field. This must be a gauge or sum metric.
               metric1: <first_operand_metric>
 
-              # This field is required only if the type is "calculate".
+              # This field is required only if the type is "calculate". When required, this must be a gauge or sum metric.
               metric2: <second_operand_metric>
 
               # Operation specifies which arithmetic operation to apply. It must be one of the five supported operations.

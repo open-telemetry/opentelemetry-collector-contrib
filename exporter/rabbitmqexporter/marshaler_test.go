@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestMarshalUsingEncodingExtension(t *testing.T) {
@@ -43,7 +44,7 @@ func (h *mockHostWithEncodings) GetFactory(component.Kind, component.Type) compo
 	return nil
 }
 
-func (h *mockHostWithEncodings) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (h *mockHostWithEncodings) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

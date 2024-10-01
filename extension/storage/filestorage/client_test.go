@@ -79,7 +79,6 @@ func TestClientBatchOperations(t *testing.T) {
 	// Make sure nothing is there
 	err = client.Batch(ctx, testGetEntries...)
 	require.NoError(t, err)
-	require.Equal(t, testGetEntries, testGetEntries)
 
 	// Set it
 	err = client.Batch(ctx, testSetEntries...)
