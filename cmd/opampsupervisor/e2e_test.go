@@ -1711,18 +1711,17 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	t.Logf("Supervisor connected")
 
 	agentVersion := "0.110.0"
-	agentHash := []byte{0xab, 0x90, 0x7a, 0xe9, 0xce, 0x1, 0xa5, 0x5d, 0xd9, 0x35, 0x6c, 0x79, 0x7e, 0x82, 0x7b, 0x53, 0x1c, 0x72, 0xea, 0x40, 0xd6, 0x44, 0xca, 0xc1, 0xb, 0x73, 0xee, 0x4e, 0x4e, 0x2b, 0x10, 0x4c}
 	agentName := fmt.Sprintf("otelcol-contrib_0.110.0_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
 	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s", agentName)
 	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.sig", agentName)
 	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.pem", agentName)
 
-	cert := getFileContents(t, agentCertURL)
-	sig := getFileContents(t, agentSigURL)
+	agentHash := getHTTPBodyHash(t, agentURL)
+	cert := getHTTPBodyContents(t, agentCertURL)
+	sig := getHTTPBodyContents(t, agentSigURL)
 
 	signatureField := bytes.Join([][]byte{cert, sig}, []byte(" "))
 
-	// TODO: Verify intital package statuses makes sense
 	<-packageStatusesChan
 	<-agentDescriptionChan
 	agentID := <-agentIDChan
@@ -1806,7 +1805,7 @@ func findRandomPort() (int, error) {
 	return port, nil
 }
 
-func getFileContents(t *testing.T, url string) []byte {
+func getHTTPBodyContents(t *testing.T, url string) []byte {
 	r, err := http.Get(url)
 	require.NoError(t, err)
 	defer r.Body.Close()
@@ -1815,6 +1814,17 @@ func getFileContents(t *testing.T, url string) []byte {
 	require.NoError(t, err)
 
 	return by
+}
+
+func getHTTPBodyHash(t *testing.T, url string) []byte {
+	resp, err := http.Get(url)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	hasher := sha256.New()
+	_, err = io.Copy(hasher, resp.Body)
+	require.NoError(t, err)
+	return hasher.Sum(nil)
 }
 
 func copyFile(t *testing.T, from, to string) {
