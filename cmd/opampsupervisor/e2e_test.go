@@ -1812,7 +1812,7 @@ func copyFile(t *testing.T, from, to string) {
 	fi, err := fromFile.Stat()
 	require.NoError(t, err)
 
-	toFile, err := os.OpenFile(to, os.O_CREATE|os.O_TRUNC, fi.Mode())
+	toFile, err := os.OpenFile(to, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fi.Mode())
 	require.NoError(t, err)
 	defer toFile.Close()
 
