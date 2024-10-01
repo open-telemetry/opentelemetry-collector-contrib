@@ -23,8 +23,6 @@ type resourceLogsBuilder struct {
 func (ra *resourceAttributes) setAttributes(resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudAccountID, ra.owner)
-	attrs.PutStr("cloudwatch.log.group.name", ra.logStream)
-	attrs.PutStr("cloudwatch.log.stream", ra.logGroup)
 }
 
 // newResourceLogsBuilder to capture logs for the Resource defined by the provided attributes.
