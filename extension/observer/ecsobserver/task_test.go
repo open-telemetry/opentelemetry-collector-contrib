@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsobserver
 
@@ -101,7 +90,7 @@ func TestTask_PrivateIP(t *testing.T) {
 			assert.Equal(t, mode, errPINF.NetworkMode)
 			// doing contains on error message is not good, but this line increase test coverage from 93% to 98%
 			// not sure how the average coverage is calculated ...
-			assert.Contains(t, err.Error(), mode)
+			assert.ErrorContains(t, err, mode)
 		}
 	})
 }
@@ -129,10 +118,10 @@ func TestTask_MappedPort(t *testing.T) {
 			EC2:        &ec2.Instance{PrivateIpAddress: aws.String("172.168.1.1")},
 		}
 		ip, err := task.PrivateIP()
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "172.168.1.1", ip)
 		p, err := task.MappedPort(&ecs.ContainerDefinition{Name: aws.String("c1")}, 2112)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(2345), p)
 	})
 
@@ -143,7 +132,7 @@ func TestTask_MappedPort(t *testing.T) {
 			EC2:        &ec2.Instance{PrivateIpAddress: aws.String("172.168.1.1")},
 		}
 		p, err := task.MappedPort(&ecs.ContainerDefinition{Name: aws.String("c1")}, 2112)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(2345), p)
 	})
 
@@ -167,7 +156,7 @@ func TestTask_MappedPort(t *testing.T) {
 			Definition: vpcTaskDef,
 		}
 		p, err := task.MappedPort(vpcTaskDef.ContainerDefinitions[0], 2112)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(2345), p)
 	})
 
@@ -179,7 +168,7 @@ func TestTask_MappedPort(t *testing.T) {
 			Definition: def,
 		}
 		p, err := task.MappedPort(def.ContainerDefinitions[0], 2112)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(2345), p)
 	})
 
@@ -196,7 +185,7 @@ func TestTask_MappedPort(t *testing.T) {
 			errMPNF := &errMappedPortNotFound{}
 			require.ErrorAs(t, err, &errMPNF)
 			assert.Equal(t, mode, errMPNF.NetworkMode)
-			assert.Contains(t, err.Error(), mode) // for coverage
+			assert.ErrorContains(t, err, mode) // for coverage
 		}
 	})
 }

@@ -1,0 +1,17 @@
+type: logicmonitor
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [bogdandrutu, khyatigandhi6, avadhut123pisal]
+
+tests:
+  config:
+    endpoint: https://company.logicmonitor.com/rest
+    api_token:
+      access_id: "accessid"
+      access_key: "accesskey"
+  expect_consumer_error: true

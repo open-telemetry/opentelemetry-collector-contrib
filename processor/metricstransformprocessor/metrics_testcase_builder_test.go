@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package metricstransformprocessor
 
@@ -44,6 +33,11 @@ func metricBuilder(metricType pmetric.MetricType, name string, attrs ...string) 
 		metric: m,
 		attrs:  attrs,
 	}
+}
+
+func (b builder) addDescription(description string) builder {
+	b.metric.SetDescription(description)
+	return b
 }
 
 func (b builder) addIntDatapoint(start, ts pcommon.Timestamp, val int64, attrValues ...string) builder {
@@ -120,6 +114,66 @@ func (b builder) addHistogramDatapointWithMinMaxAndExemplars(start, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	return b
+}
+
+type expHistogramConfig struct {
+	count          uint64
+	sum            float64
+	min            float64
+	max            float64
+	zeroThreshold  float64
+	zeroCount      uint64
+	scale          int32
+	positiveOffset int32
+	positiveCount  []uint64
+	negativeOffset int32
+	negativeCount  []uint64
+	exemplarValues []float64
+}
+
+func (b builder) addExpHistogramDatapoint(config expHistogramConfig) builder {
+	if b.metric.Type() != pmetric.MetricTypeExponentialHistogram {
+		panic(b.metric.Type().String())
+	}
+	dp := b.metric.ExponentialHistogram().DataPoints().AppendEmpty()
+	dp.SetCount(config.count)
+	dp.SetSum(config.sum)
+	dp.SetMin(config.min)
+	dp.SetMax(config.max)
+	dp.SetZeroThreshold(config.zeroThreshold)
+	dp.SetZeroCount(config.zeroCount)
+	dp.SetScale(config.scale)
+	dp.Positive().SetOffset(config.positiveOffset)
+	dp.Positive().BucketCounts().FromRaw(config.positiveCount)
+	dp.Negative().SetOffset(config.negativeOffset)
+	dp.Negative().BucketCounts().FromRaw(config.negativeCount)
+	for ei := 0; ei < len(config.exemplarValues); ei++ {
+		exemplar := dp.Exemplars().AppendEmpty()
+		exemplar.SetTimestamp(1)
+		exemplar.SetDoubleValue(config.exemplarValues[ei])
+	}
+	dp.SetStartTimestamp(1)
+	dp.SetTimestamp(1)
+	return b
+}
+
+func buildExpHistogramBucket(m map[int]uint64) []uint64 {
+	if len(m) == 0 {
+		return []uint64{}
+	}
+	maxIndex := 0
+	for index := range m {
+		if index > maxIndex {
+			maxIndex = index
+		}
+	}
+
+	result := make([]uint64, maxIndex+1)
+	for index, count := range m {
+		result[index] = count
+	}
+
+	return result
 }
 
 // setUnit sets the unit of this metric

@@ -2,7 +2,7 @@ extensions:
   health_check:
   http_forwarder:
     egress:
-      endpoint: "https://api.${SFX_REALM}.signalfx.com"
+      endpoint: "https://api.${env:SFX_REALM}.signalfx.com"
   zpages:
 receivers:
   sapm:
@@ -62,7 +62,7 @@ exporters:
     access_token: "${env:SFX_TOKEN}"
     # This expects SFX_REALM environment variable to contain the realm (e.g. us0).
     # Alternatively, specify the relm directly in the endpoint url here.
-    endpoint: "https://ingest.${SFX_REALM}.signalfx.com/v2/trace"
+    endpoint: "https://ingest.${env:SFX_REALM}.signalfx.com/v2/trace"
   # Metrics + Events
   signalfx:
     # See above for SFX_TOKEN and SFX_REALM.

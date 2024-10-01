@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter
 
@@ -21,15 +10,45 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type itemRequest struct {
 	Action   json.RawMessage
 	Document json.RawMessage
+}
+
+func itemRequestsSortFunc(a, b itemRequest) int {
+	comp := bytes.Compare(a.Action, b.Action)
+	if comp == 0 {
+		return bytes.Compare(a.Document, b.Document)
+	}
+	return comp
+}
+
+func assertItemsEqual(t *testing.T, expected, actual []itemRequest, assertOrder bool) { // nolint:unparam
+	expectedItems := expected
+	actualItems := actual
+	if !assertOrder {
+		// Make copies to avoid mutating the args
+		expectedItems = make([]itemRequest, len(expected))
+		copy(expectedItems, expected)
+		slices.SortFunc(expectedItems, itemRequestsSortFunc)
+		actualItems = make([]itemRequest, len(actual))
+		copy(actualItems, actual)
+		slices.SortFunc(actualItems, itemRequestsSortFunc)
+	}
+	assert.Equal(t, expectedItems, actualItems)
 }
 
 type itemResponse struct {
@@ -50,7 +69,7 @@ type httpTestError struct {
 	cause   error
 }
 
-const currentESVersion = "8.4.0"
+const currentESVersion = "7.17.7"
 
 func (e *httpTestError) Error() string {
 	return fmt.Sprintf("http request failed (status=%v): %v", e.Status(), e.Message())
@@ -131,23 +150,9 @@ func (r *bulkRecorder) countItems() (count int) {
 }
 
 func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", handleErr(func(w http.ResponseWriter, req *http.Request) error {
-		w.Header().Add("X-Elastic-Product", "Elasticsearch")
-
-		enc := json.NewEncoder(w)
-		return enc.Encode(map[string]interface{}{
-			"version": map[string]interface{}{
-				"number": currentESVersion,
-			},
-		})
-	}))
-
-	mux.HandleFunc("/_bulk", handleErr(func(w http.ResponseWriter, req *http.Request) error {
+	return newESTestServerBulkHandlerFunc(t, handleErr(func(w http.ResponseWriter, req *http.Request) error {
 		tsStart := time.Now()
 		var items []itemRequest
-		w.Header().Add("X-Elastic-Product", "Elasticsearch")
 
 		dec := json.NewDecoder(req.Body)
 		for dec.More() {
@@ -177,6 +182,24 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 		enc := json.NewEncoder(w)
 		return enc.Encode(bulkResult{Took: took, Items: resp, HasErrors: itemsHasError(resp)})
 	}))
+}
+
+func newESTestServerBulkHandlerFunc(t *testing.T, handler http.HandlerFunc) *httptest.Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handleErr(func(w http.ResponseWriter, _ *http.Request) error {
+		w.Header().Add("X-Elastic-Product", "Elasticsearch")
+
+		enc := json.NewEncoder(w)
+		return enc.Encode(map[string]any{
+			"version": map[string]any{
+				"number": currentESVersion,
+			},
+		})
+	}))
+	mux.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("X-Elastic-Product", "Elasticsearch")
+		handler.ServeHTTP(w, r)
+	})
 
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
@@ -222,4 +245,84 @@ func itemsHasError(resp []itemResponse) bool {
 		}
 	}
 	return false
+}
+
+func newLogsWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]any) plog.Logs {
+	logs := plog.NewLogs()
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+	fillAttributeMap(resourceLog.Resource().Attributes(), resourceAttrs)
+	fillAttributeMap(scopeLog.Scope().Attributes(), scopeAttrs)
+	fillAttributeMap(scopeLog.LogRecords().AppendEmpty().Attributes(), recordAttrs)
+
+	return logs
+}
+
+func newMetricsWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]any) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+	scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+	fillAttributeMap(resourceMetric.Resource().Attributes(), resourceAttrs)
+	fillAttributeMap(scopeMetric.Scope().Attributes(), scopeAttrs)
+	dp := scopeMetric.Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+	dp.SetIntValue(0)
+	fillAttributeMap(dp.Attributes(), recordAttrs)
+
+	return metrics
+}
+
+func newTracesWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]any) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	resourceSpan := traces.ResourceSpans().AppendEmpty()
+	scopeSpan := resourceSpan.ScopeSpans().AppendEmpty()
+
+	fillAttributeMap(resourceSpan.Resource().Attributes(), resourceAttrs)
+	fillAttributeMap(scopeSpan.Scope().Attributes(), scopeAttrs)
+	fillAttributeMap(scopeSpan.Spans().AppendEmpty().Attributes(), recordAttrs)
+
+	return traces
+}
+
+func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
+	attrs.EnsureCapacity(len(m))
+	for k, v := range m {
+		switch vv := v.(type) {
+		case bool:
+			attrs.PutBool(k, vv)
+		case string:
+			attrs.PutStr(k, vv)
+		case []string:
+			slice := attrs.PutEmptySlice(k)
+			slice.EnsureCapacity(len(vv))
+			for _, s := range vv {
+				slice.AppendEmpty().SetStr(s)
+			}
+		}
+	}
+}
+
+func TestGetSuffixTime(t *testing.T) {
+	defaultCfg := createDefaultConfig().(*Config)
+	defaultCfg.LogstashFormat.Enabled = true
+	testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
+	index, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.NoError(t, err)
+	assert.Equal(t, "logs-generic-default-2023.12.02", index)
+
+	defaultCfg.LogsIndex = "logstash"
+	defaultCfg.LogstashFormat.PrefixSeparator = "."
+	otelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.NoError(t, err)
+	assert.Equal(t, "logstash.2023.12.02", otelLogsIndex)
+
+	defaultCfg.LogstashFormat.DateFormat = "%Y-%m-%d"
+	newOtelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.NoError(t, err)
+	assert.Equal(t, "logstash.2023-12-02", newOtelLogsIndex)
+
+	defaultCfg.LogstashFormat.DateFormat = "%d/%m/%Y"
+	newOtelLogsIndexWithSpecDataFormat, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.NoError(t, err)
+	assert.Equal(t, "logstash.02/12/2023", newOtelLogsIndexWithSpecDataFormat)
 }

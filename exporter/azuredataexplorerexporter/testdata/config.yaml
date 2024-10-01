@@ -19,7 +19,7 @@ azuredataexplorer:
   ingestion_type: "managed"
 azuredataexplorer/2:
   # Kusto cluster uri
-  cluster_uri: ""
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
   # Client Id
   application_id: ""
   # The client secret for the client
@@ -56,3 +56,93 @@ azuredataexplorer/3:
   traces_table_name: "OTELTraces"
   # type of ingestion is invalid
   ingestion_type: "streaming"
+azuredataexplorer/4:
+  # Kusto cluster uri
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
+  # managed identity id
+  managed_identity_id: "bf61f0ec-1f01-11ee-be56-0242ac120002"
+  # database for the logs
+  db_name: "oteldb"
+  # raw metric table name
+  metrics_table_name: "OTELMetrics"
+  # raw log table name
+  logs_table_name: "OTELLogs"
+  # raw traces table
+  traces_table_name: "OTELTraces"
+  # type of ingestion managed or queued
+  ingestion_type: "managed"
+azuredataexplorer/5:
+  # Kusto cluster uri
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
+  # managed identity id
+  managed_identity_id: "managed_identity_id"
+  # database for the logs
+  db_name: "oteldb"
+  # raw metric table name
+  metrics_table_name: "OTELMetrics"
+  # raw log table name
+  logs_table_name: "OTELLogs"
+  # raw traces table
+  traces_table_name: "OTELTraces"
+  # type of ingestion managed or queued
+  ingestion_type: "managed"
+azuredataexplorer/6:
+  # Kusto cluster uri
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
+  # managed identity id
+  managed_identity_id: "system"
+  # database for the logs
+  db_name: "oteldb"
+  # raw metric table name
+  metrics_table_name: "OTELMetrics"
+  # raw log table name
+  logs_table_name: "OTELLogs"
+  # raw traces table
+  traces_table_name: "OTELTraces"
+  # type of ingestion managed or queued
+  ingestion_type: "managed"
+azuredataexplorer/7:
+  # Kusto cluster uri
+  cluster_uri: ""
+  # managed identity id
+  managed_identity_id: "system"
+  # database for the logs
+  db_name: "oteldb"
+  # raw metric table name
+  metrics_table_name: "OTELMetrics"
+  # raw log table name
+  logs_table_name: "OTELLogs"
+  # raw traces table
+  traces_table_name: "OTELTraces"
+  # type of ingestion managed or queued
+  ingestion_type: "managed"  
+azuredataexplorer/8:
+  # Kusto cluster uri
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
+  # Client Id
+  application_id: "f80da32c-108c-415c-a19e-643f461a677a"
+  # The client secret for the client
+  application_key: "xx-xx-xx-xx"
+  # The tenant
+  tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
+  # database for the logs
+  db_name: "oteldb"
+  # raw metric table name
+  metrics_table_name: "OTELMetrics"
+  # raw log table name
+  logs_table_name: "OTELLogs"
+  # raw traces table
+  traces_table_name: "OTELTraces"
+  # type of ingestion managed or queued
+  ingestion_type: "managed"
+  #export helper options
+  timeout: 10s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    max_interval: 60s
+    max_elapsed_time: 10m

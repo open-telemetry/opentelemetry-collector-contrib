@@ -1,0 +1,16 @@
+type: jaeger
+
+status:
+  class: receiver
+  stability:
+    beta: [traces]
+  distributions:
+  - core
+  - contrib
+  codeowners:
+    active: [yurishkuro]
+
+tests:
+  config:
+    protocols:
+      grpc:

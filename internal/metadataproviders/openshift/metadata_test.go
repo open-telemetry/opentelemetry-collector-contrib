@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package openshift
 
@@ -53,7 +42,7 @@ func TestQueryEndpointFailed(t *testing.T) {
 }
 
 func TestQueryEndpointMalformed(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintln(w, "{")
 		assert.NoError(t, err)
 	}))
@@ -70,7 +59,7 @@ func TestQueryEndpointMalformed(t *testing.T) {
 }
 
 func TestQueryEndpointCorrectK8SClusterVersion(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintf(w, `{
   "major": "1",
   "minor": "21",
@@ -99,7 +88,7 @@ func TestQueryEndpointCorrectK8SClusterVersion(t *testing.T) {
 }
 
 func TestQueryEndpointCorrectOpenShiftClusterVersion(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintf(w, `{
 "apiVersion": "config.openshift.io/v1",
 "kind": "ClusterVersion",
@@ -124,7 +113,7 @@ func TestQueryEndpointCorrectOpenShiftClusterVersion(t *testing.T) {
 }
 
 func TestQueryEndpointCorrectInfrastructureAWS(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintf(w, `{
 "apiVersion": "config.openshift.io/v1",
 "kind": "Infrastructure",
@@ -169,7 +158,7 @@ func TestQueryEndpointCorrectInfrastructureAWS(t *testing.T) {
 }
 
 func TestQueryEndpointCorrectInfrastructureAzure(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintf(w, `{
 "apiVersion": "config.openshift.io/v1",
 "kind": "Infrastructure",
@@ -214,7 +203,7 @@ func TestQueryEndpointCorrectInfrastructureAzure(t *testing.T) {
 }
 
 func TestQueryEndpointCorrectInfrastructureGCP(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintf(w, `{
 "apiVersion": "config.openshift.io/v1",
 "kind": "Infrastructure",
@@ -257,7 +246,7 @@ func TestQueryEndpointCorrectInfrastructureGCP(t *testing.T) {
 }
 
 func TestQueryEndpointCorrectInfrastructureIBMCloud(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintf(w, `{
 "apiVersion": "config.openshift.io/v1",
 "kind": "Infrastructure",
@@ -300,7 +289,7 @@ func TestQueryEndpointCorrectInfrastructureIBMCloud(t *testing.T) {
 }
 
 func TestQueryEndpointCorrectInfrastructureOpenstack(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintf(w, `{
 "apiVersion": "config.openshift.io/v1",
 "kind": "Infrastructure",

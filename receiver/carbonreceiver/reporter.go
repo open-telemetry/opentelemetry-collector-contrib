@@ -1,28 +1,17 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package carbonreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 
 import (
 	"context"
 
-	"go.opencensus.io/trace"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/transport"
 )
 
 // reporter struct implements the transport.Reporter interface to give consistent
@@ -30,13 +19,13 @@ import (
 type reporter struct {
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
-	obsrecv       *obsreport.Receiver
+	obsrecv       *receiverhelper.ObsReport
 }
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(set receiver.CreateSettings) (transport.Reporter, error) {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+func newReporter(set receiver.Settings) (transport.Reporter, error) {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "tcp",
 		ReceiverCreateSettings: set,
@@ -70,13 +59,7 @@ func (r *reporter) OnTranslationError(ctx context.Context, err error) {
 
 	r.logger.Debug("Carbon translation error", zap.Error(err))
 
-	// Using annotations since multiple translation errors can happen in the
-	// same client message/request. The time itself is not relevant.
-	span := trace.FromContext(ctx)
-	span.Annotate([]trace.Attribute{
-		trace.StringAttribute("error", err.Error())},
-		"translation",
-	)
+	trace.SpanFromContext(ctx).RecordError(err)
 }
 
 // OnMetricsProcessed is called when the received data is passed to next
@@ -93,18 +76,12 @@ func (r *reporter) OnMetricsProcessed(
 			"Carbon receiver failed to push metrics into pipeline",
 			zap.Int("numReceivedMetricPoints", numReceivedMetricPoints),
 			zap.Error(err))
-
-		span := trace.FromContext(ctx)
-		span.SetStatus(trace.Status{
-			Code:    trace.StatusCodeUnknown,
-			Message: err.Error(),
-		})
 	}
 
 	r.obsrecv.EndMetricsOp(ctx, "carbon", numReceivedMetricPoints, err)
 }
 
-func (r *reporter) OnDebugf(template string, args ...interface{}) {
+func (r *reporter) OnDebugf(template string, args ...any) {
 	if r.logger.Check(zap.DebugLevel, "debug") != nil {
 		r.sugaredLogger.Debugf(template, args...)
 	}

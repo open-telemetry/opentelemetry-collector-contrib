@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
@@ -44,7 +33,7 @@ type receiverConfig struct {
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
-type userConfigMap map[string]interface{}
+type userConfigMap map[string]any
 
 // receiverTemplate is the configuration of a single subreceiver.
 type receiverTemplate struct {
@@ -55,7 +44,7 @@ type receiverTemplate struct {
 	Rule string `mapstructure:"rule"`
 	// ResourceAttributes is a map of resource attributes to add to just this receiver's resource metrics.
 	// It can contain expr expressions for endpoint env value expansion
-	ResourceAttributes map[string]interface{} `mapstructure:"resource_attributes"`
+	ResourceAttributes map[string]any `mapstructure:"resource_attributes"`
 	rule               rule
 }
 
@@ -97,13 +86,13 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return nil
 	}
 
-	if err := componentParser.Unmarshal(cfg); err != nil {
+	if err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 
 	for endpointType := range cfg.ResourceAttributes {
 		switch endpointType {
-		case observer.ContainerType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType:
+		case observer.ContainerType, observer.K8sServiceType, observer.K8sIngressType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType:
 		default:
 			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
 		}
@@ -126,7 +115,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		}
 
 		// Unmarshals receiver_creator configuration like rule.
-		if err = subreceiverSection.Unmarshal(&subreceiver); err != nil {
+		if err = subreceiverSection.Unmarshal(&subreceiver, confmap.WithIgnoreUnused()); err != nil {
 			return fmt.Errorf("failed to deserialize sub-receiver %q: %w", subreceiverKey, err)
 		}
 

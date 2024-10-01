@@ -1,4 +1,6 @@
-name: hostmetricsreceiver/paging
+type: hostmetricsreceiver/paging
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
@@ -29,7 +31,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     attributes: [device, state]
 
@@ -39,7 +41,7 @@ metrics:
     unit: "{operations}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction, type]
 
@@ -49,14 +51,14 @@ metrics:
     unit: "{faults}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [type]
 
   system.paging.utilization:
     enabled: false
     description: Swap (unix) or pagefile (windows) utilization.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [device, state]

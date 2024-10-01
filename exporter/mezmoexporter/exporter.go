@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 
@@ -40,7 +29,7 @@ type mezmoExporter struct {
 	wg              sync.WaitGroup
 }
 
-type MezmoLogLine struct {
+type mezmoLogLine struct {
 	Timestamp int64             `json:"timestamp"`
 	Line      string            `json:"line"`
 	App       string            `json:"app"`
@@ -48,8 +37,8 @@ type MezmoLogLine struct {
 	Meta      map[string]string `json:"meta"`
 }
 
-type MezmoLogBody struct {
-	Lines []MezmoLogLine `json:"lines"`
+type mezmoLogBody struct {
+	Lines []mezmoLogLine `json:"lines"`
 }
 
 func newLogsExporter(config *Config, settings component.TelemetrySettings, buildInfo component.BuildInfo, logger *zap.Logger) *mezmoExporter {
@@ -62,27 +51,32 @@ func newLogsExporter(config *Config, settings component.TelemetrySettings, build
 	return e
 }
 
-func (m *mezmoExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
+func (m *mezmoExporter) pushLogData(_ context.Context, ld plog.Logs) error {
 	m.wg.Add(1)
 	defer m.wg.Done()
 
 	return m.logDataToMezmo(ld)
 }
 
-func (m *mezmoExporter) start(_ context.Context, host component.Host) (err error) {
-	m.client, err = m.config.HTTPClientSettings.ToClient(host, m.settings)
+func (m *mezmoExporter) start(ctx context.Context, host component.Host) (err error) {
+	m.client, err = m.config.ClientConfig.ToClient(ctx, host, m.settings)
 	return err
 }
 
 func (m *mezmoExporter) stop(context.Context) (err error) {
+	if m.client == nil {
+		return nil
+	}
 	m.wg.Wait()
+	m.client.CloseIdleConnections()
+	m.client = nil
 	return nil
 }
 
 func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 	var errs error
 
-	var lines []MezmoLogLine
+	var lines []mezmoLogLine
 
 	// Convert the log resources to mezmo lines...
 	resourceLogs := ld.ResourceLogs()
@@ -129,7 +123,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 					logLevel = "info"
 				}
 
-				line := MezmoLogLine{
+				line := mezmoLogLine{
 					Timestamp: tstamp,
 					Line:      truncateString(log.Body().Str(), maxMessageSize),
 					App:       truncateString(app, maxAppnameLen),
@@ -169,12 +163,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 		}
 	}
 
-	str := b.String() + "]}"
-	if errs = m.sendLinesToMezmo(str); errs != nil {
-		return errs
-	}
-
-	return nil
+	return m.sendLinesToMezmo(b.String() + "]}")
 }
 
 func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {

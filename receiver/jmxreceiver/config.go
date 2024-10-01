@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 
@@ -25,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -45,17 +35,17 @@ type Config struct {
 	// The JMX username
 	Username string `mapstructure:"username"`
 	// The JMX password
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 	// The keystore path for SSL
 	KeystorePath string `mapstructure:"keystore_path"`
 	// The keystore password for SSL
-	KeystorePassword string `mapstructure:"keystore_password"`
+	KeystorePassword configopaque.String `mapstructure:"keystore_password"`
 	// The keystore type for SSL
 	KeystoreType string `mapstructure:"keystore_type"`
 	// The truststore path for SSL
 	TruststorePath string `mapstructure:"truststore_path"`
 	// The truststore password for SSL
-	TruststorePassword string `mapstructure:"truststore_password"`
+	TruststorePassword configopaque.String `mapstructure:"truststore_password"`
 	// The truststore type for SSL
 	TruststoreType string `mapstructure:"truststore_type"`
 	// The JMX remote profile.  Should be one of:
@@ -78,7 +68,7 @@ type otlpExporterConfig struct {
 	// The OTLP Receiver endpoint to send metrics to ("0.0.0.0:<random open port>" by default).
 	Endpoint string `mapstructure:"endpoint"`
 	// The OTLP exporter timeout (5 seconds by default).  Will be converted to milliseconds.
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	// The headers to include in OTLP metric submission requests.
 	Headers map[string]string `mapstructure:"headers"`
 }
@@ -257,8 +247,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("`interval` must be positive: %vms", c.CollectionInterval.Milliseconds())
 	}
 
-	if c.OTLPExporterConfig.Timeout < 0 {
-		return fmt.Errorf("`otlp.timeout` must be positive: %vms", c.OTLPExporterConfig.Timeout.Milliseconds())
+	if c.OTLPExporterConfig.TimeoutSettings.Timeout < 0 {
+		return fmt.Errorf("`otlp.timeout` must be positive: %vms", c.OTLPExporterConfig.TimeoutSettings.Timeout.Milliseconds())
 	}
 
 	if len(c.LogLevel) > 0 {

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper
 
@@ -24,14 +13,15 @@ import (
 )
 
 func TestExprString(t *testing.T) {
-	t.Setenv("TEST_EXPR_STRING_ENV", "foo")
+	t.Setenv("TEST_EXPR_STRING_ENV_FOO", "foo")
+	t.Setenv("TEST_EXPR_STRING_ENV_BAR", "bar")
 
 	exampleEntry := func() *entry.Entry {
 		e := entry.New()
-		e.Body = map[string]interface{}{
+		e.Body = map[string]any{
 			"test": "value",
 		}
-		e.Resource = map[string]interface{}{
+		e.Resource = map[string]any{
 			"id": "value",
 		}
 		return e
@@ -86,12 +76,24 @@ func TestExprString(t *testing.T) {
 			"my value",
 		},
 		{
+			"my EXPR( body.test)",
+			"my value",
+		},
+		{
 			"my EXPR(body.test)",
 			"my value",
 		},
 		{
-			"my EXPR(env('TEST_EXPR_STRING_ENV'))",
+			"my EXPR(env('TEST_EXPR_STRING_ENV_FOO'))",
 			"my foo",
+		},
+		{
+			"my EXPR( env('TEST_EXPR_STRING_ENV_FOO') )",
+			"my foo",
+		},
+		{
+			"my EXPR(env('TEST_EXPR_STRING_ENV_FOO')) EXPR(env('TEST_EXPR_STRING_ENV_BAR'))",
+			"my foo bar",
 		},
 		{
 			"EXPR( resource.id )",

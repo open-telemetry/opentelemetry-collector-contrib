@@ -1,25 +1,14 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package protocol
 
 import (
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestRegexParserConfigBuildParser(t *testing.T) {
@@ -123,57 +112,50 @@ func Test_regexParser_parsePath(t *testing.T) {
 		name           string
 		path           string
 		wantName       string
-		wantKeys       []*metricspb.LabelKey
-		wantValues     []*metricspb.LabelValue
+		wantAttributes pcommon.Map
 		wantMetricType TargetMetricType
 		wantErr        bool
 	}{
 		{
-			name:     "no_rule_match",
-			path:     "service_name.host01.rpc.duration.seconds",
-			wantName: "service_name.host01.rpc.duration.seconds",
+			name:           "no_rule_match",
+			path:           "service_name.host01.rpc.duration.seconds",
+			wantName:       "service_name.host01.rpc.duration.seconds",
+			wantAttributes: pcommon.NewMap(),
 		},
 		{
 			name:     "match_rule0",
 			path:     "service_name.host00.cpu.seconds",
 			wantName: "cpu_seconds",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "svc"},
-				{Key: "host"},
-				{Key: "k"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "service_name", HasValue: true},
-				{Value: "host00", HasValue: true},
-				{Value: "v", HasValue: true},
-			},
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("svc", "service_name")
+				m.PutStr("host", "host00")
+				m.PutStr("k", "v")
+				return m
+			}(),
 		},
 		{
 			name:     "match_rule1",
 			path:     "service_name.host01.rpc.count",
 			wantName: "rpc",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "svc"},
-				{Key: "host"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "service_name", HasValue: true},
-				{Value: "host01", HasValue: true},
-			},
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("svc", "service_name")
+				m.PutStr("host", "host01")
+				return m
+			}(),
 			wantMetricType: CumulativeMetricType,
 		},
 		{
 			name:     "match_rule2",
 			path:     "svc_02.host02.avg.duration",
 			wantName: "avgduration",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "svc"},
-				{Key: "host"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "svc_02", HasValue: true},
-				{Value: "host02", HasValue: true},
-			},
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("svc", "svc_02")
+				m.PutStr("host", "host02")
+				return m
+			}(),
 			wantMetricType: GaugeMetricType,
 		},
 	}
@@ -188,8 +170,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.wantName, got.MetricName)
-			assert.Equal(t, tt.wantKeys, got.LabelKeys)
-			assert.Equal(t, tt.wantValues, got.LabelValues)
+			assert.Equal(t, tt.wantAttributes, got.Attributes)
 			assert.Equal(t, tt.wantMetricType, got.MetricType)
 		})
 	}
@@ -197,8 +178,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 
 var res struct {
 	name       string
-	keys       []*metricspb.LabelKey
-	values     []*metricspb.LabelValue
+	attributes pcommon.Map
 	metricType TargetMetricType
 	err        error
 }
@@ -237,8 +217,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 	got := ParsedPath{}
 	err := rp.ParsePath(tests[0], &got)
 	res.name = got.MetricName
-	res.keys = got.LabelKeys
-	res.values = got.LabelValues
+	res.attributes = got.Attributes
 	res.metricType = got.MetricType
 	res.err = err
 
@@ -249,8 +228,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 	}
 
 	res.name = got.MetricName
-	res.keys = got.LabelKeys
-	res.values = got.LabelValues
+	res.attributes = got.Attributes
 	res.metricType = got.MetricType
 	res.err = err
 }

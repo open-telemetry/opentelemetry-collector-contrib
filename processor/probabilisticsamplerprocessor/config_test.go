@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package probabilisticsamplerprocessor
 
@@ -23,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -32,21 +23,26 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				SamplingPercentage: 15.3,
-				HashSeed:           22,
+				SamplingPrecision:  4,
+				Mode:               "proportional",
 				AttributeSource:    "traceID",
+				FailClosed:         true,
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "logs"),
+			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
 				SamplingPercentage: 15.3,
+				SamplingPrecision:  defaultPrecision,
 				HashSeed:           22,
+				Mode:               "",
 				AttributeSource:    "record",
 				FromAttribute:      "foo",
 				SamplingPriority:   "bar",
+				FailClosed:         true,
 			},
 		},
 	}
@@ -63,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := processors.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -72,12 +68,26 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadInvalidConfig(t *testing.T) {
-	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
+	for _, test := range []struct {
+		file     string
+		contains string
+	}{
+		{"invalid_negative.yaml", "sampling rate is negative"},
+		{"invalid_small.yaml", "sampling rate is too small"},
+		{"invalid_inf.yaml", "sampling rate is invalid: +Inf%"},
+		{"invalid_prec.yaml", "sampling precision is too great"},
+		{"invalid_zero.yaml", "invalid sampling precision"},
+	} {
+		t.Run(test.file, func(t *testing.T) {
+			factories, err := otelcoltest.NopFactories()
+			require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-
-	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid.yaml"), factories)
-	require.ErrorContains(t, err, "negative sampling rate: -15.30")
+			factory := NewFactory()
+			factories.Processors[metadata.Type] = factory
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+			// nolint:staticcheck
+			_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", test.file), factories)
+			require.ErrorContains(t, err, test.contains)
+		})
+	}
 }

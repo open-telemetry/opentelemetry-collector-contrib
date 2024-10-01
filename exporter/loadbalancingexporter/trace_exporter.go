@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
@@ -21,46 +10,59 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 var _ exporter.Traces = (*traceExporterImp)(nil)
 
+type exporterTraces map[*wrappedExporter]ptrace.Traces
+
 type traceExporterImp struct {
-	loadBalancer loadBalancer
+	loadBalancer *loadBalancer
 	routingKey   routingKey
 
 	stopped    bool
 	shutdownWg sync.WaitGroup
+	telemetry  *metadata.TelemetryBuilder
 }
 
 // Create new traces exporter
-func newTracesExporter(params exporter.CreateSettings, cfg component.Config) (*traceExporterImp, error) {
-	exporterFactory := otlpexporter.NewFactory()
-
-	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateTracesExporter(ctx, params, &oCfg)
-	})
+func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceExporterImp, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
 
-	traceExporter := traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting}
+	exporterFactory := otlpexporter.NewFactory()
+	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
+		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
+		return exporterFactory.CreateTracesExporter(ctx, params, &oCfg)
+	}
+
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
+	if err != nil {
+		return nil, err
+	}
+
+	traceExporter := traceExporterImp{
+		loadBalancer: lb,
+		routingKey:   traceIDRouting,
+		telemetry:    telemetry,
+	}
 
 	switch cfg.(*Config).RoutingKey {
-	case "service":
+	case svcRoutingStr:
 		traceExporter.routingKey = svcRouting
-	case "traceID", "":
+	case traceIDRoutingStr, "":
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
 	}
@@ -81,57 +83,58 @@ func (e *traceExporterImp) Start(ctx context.Context, host component.Host) error
 	return e.loadBalancer.Start(ctx, host)
 }
 
-func (e *traceExporterImp) Shutdown(context.Context) error {
+func (e *traceExporterImp) Shutdown(ctx context.Context) error {
+	err := e.loadBalancer.Shutdown(ctx)
 	e.stopped = true
 	e.shutdownWg.Wait()
-	return nil
+	return err
 }
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	var errs error
 	batches := batchpersignal.SplitTraces(td)
+
+	exporterSegregatedTraces := make(exporterTraces)
+	endpoints := make(map[*wrappedExporter]string)
 	for _, batch := range batches {
-		errs = multierr.Append(errs, e.consumeTrace(ctx, batch))
-	}
-
-	return errs
-}
-
-func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
-	var exp component.Component
-	routingIds, err := routingIdentifiersFromTraces(td, e.routingKey)
-	if err != nil {
-		return err
-	}
-	for rid := range routingIds {
-		endpoint := e.loadBalancer.Endpoint([]byte(rid))
-		exp, err = e.loadBalancer.Exporter(endpoint)
+		routingID, err := routingIdentifiersFromTraces(batch, e.routingKey)
 		if err != nil {
 			return err
 		}
 
-		te, ok := exp.(exporter.Traces)
-		if !ok {
-			return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
-		}
+		for rid := range routingID {
+			exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(rid))
+			if err != nil {
+				return err
+			}
 
-		start := time.Now()
-		err = te.ConsumeTraces(ctx, td)
-		duration := time.Since(start)
+			_, ok := exporterSegregatedTraces[exp]
+			if !ok {
+				exp.consumeWG.Add(1)
+				exporterSegregatedTraces[exp] = ptrace.NewTraces()
+			}
+			exporterSegregatedTraces[exp] = mergeTraces(exporterSegregatedTraces[exp], batch)
 
-		if err == nil {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
-				mBackendLatency.M(duration.Milliseconds()))
-		} else {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
-				mBackendLatency.M(duration.Milliseconds()))
+			endpoints[exp] = endpoint
 		}
 	}
-	return err
+
+	var errs error
+
+	for exp, td := range exporterSegregatedTraces {
+		start := time.Now()
+		err := exp.ConsumeTraces(ctx, td)
+		exp.consumeWG.Done()
+		errs = multierr.Append(errs, err)
+		duration := time.Since(start)
+		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+		if err == nil {
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+		} else {
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+		}
+	}
+
+	return errs
 }
 
 func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]bool, error) {

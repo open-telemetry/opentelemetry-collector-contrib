@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
@@ -20,36 +9,36 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 type k8seventsReceiver struct {
 	config          *Config
-	settings        receiver.CreateSettings
-	client          k8s.Interface
+	settings        receiver.Settings
 	logsConsumer    consumer.Logs
 	stopperChanList []chan struct{}
 	startTime       time.Time
 	ctx             context.Context
 	cancel          context.CancelFunc
-	obsrecv         *obsreport.Receiver
+	obsrecv         *receiverhelper.ObsReport
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
 func newReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config *Config,
 	consumer consumer.Logs,
-	client k8s.Interface,
 ) (receiver.Logs, error) {
 	transport := "http"
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: set,
@@ -61,22 +50,26 @@ func newReceiver(
 	return &k8seventsReceiver{
 		settings:     set,
 		config:       config,
-		client:       client,
 		logsConsumer: consumer,
 		startTime:    time.Now(),
 		obsrecv:      obsrecv,
 	}, nil
 }
 
-func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) error {
+func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
+
+	k8sInterface, err := kr.config.getK8sClient()
+	if err != nil {
+		return err
+	}
 
 	kr.settings.Logger.Info("starting to watch namespaces for the events.")
 	if len(kr.config.Namespaces) == 0 {
-		kr.startWatch(corev1.NamespaceAll)
+		kr.startWatch(corev1.NamespaceAll, k8sInterface)
 	} else {
 		for _, ns := range kr.config.Namespaces {
-			kr.startWatch(ns)
+			kr.startWatch(ns, k8sInterface)
 		}
 	}
 
@@ -84,6 +77,9 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 }
 
 func (kr *k8seventsReceiver) Shutdown(context.Context) error {
+	if kr.cancel == nil {
+		return nil
+	}
 	// Stop watching all the namespaces by closing all the stopper channels.
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
@@ -95,15 +91,15 @@ func (kr *k8seventsReceiver) Shutdown(context.Context) error {
 // Add the 'Event' handler and trigger the watch for a specific namespace.
 // For new and updated events, the code is relying on the following k8s code implementation:
 // https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/tools/record/events_cache.go#L327
-func (kr *k8seventsReceiver) startWatch(ns string) {
+func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 	stopperChan := make(chan struct{})
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
-	kr.startWatchingNamespace(kr.client, cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+	kr.startWatchingNamespace(client, cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
 			ev := obj.(*corev1.Event)
 			kr.handleEvent(ev)
 		},
-		UpdateFunc: func(_, obj interface{}) {
+		UpdateFunc: func(_, obj any) {
 			ev := obj.(*corev1.Event)
 			kr.handleEvent(ev)
 		},
@@ -116,7 +112,7 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 
 		ctx := kr.obsrecv.StartLogsOp(kr.ctx)
 		consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)
-		kr.obsrecv.EndLogsOp(ctx, typeStr, 1, consumerErr)
+		kr.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 1, consumerErr)
 	}
 }
 
@@ -130,7 +126,12 @@ func (kr *k8seventsReceiver) startWatchingNamespace(
 ) {
 	client := clientset.CoreV1().RESTClient()
 	watchList := cache.NewListWatchFromClient(client, "events", ns, fields.Everything())
-	_, controller := cache.NewInformer(watchList, &corev1.Event{}, 0, handlers)
+	_, controller := cache.NewInformerWithOptions(cache.InformerOptions{
+		ListerWatcher: watchList,
+		ObjectType:    &corev1.Event{},
+		ResyncPeriod:  0,
+		Handler:       handlers,
+	})
 	go controller.Run(stopper)
 }
 

@@ -1,16 +1,5 @@
-// Copyright 2019 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package pulsarexporter
 
@@ -30,14 +19,14 @@ import (
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 
@@ -45,14 +34,14 @@ func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
@@ -70,7 +59,7 @@ func Test_tracerPublisher_marshaler_err(t *testing.T) {
 	producer := PulsarTracesProducer{client: nil, producer: mProducer, marshaler: &customTraceMarshaler{encoding: "unknown"}}
 	err := producer.tracesPusher(context.Background(), testdata.GenerateTracesManySpansSameResource(10))
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
 }
 
@@ -90,6 +79,8 @@ type mockProducer struct {
 	topic string
 	name  string
 }
+
+var _ pulsar.Producer = (*mockProducer)(nil)
 
 func (c *mockProducer) Topic() string {
 	return c.topic
@@ -112,6 +103,10 @@ func (c *mockProducer) LastSequenceID() int64 {
 }
 
 func (c *mockProducer) Flush() error {
+	return nil
+}
+
+func (c *mockProducer) FlushWithCtx(context.Context) error {
 	return nil
 }
 

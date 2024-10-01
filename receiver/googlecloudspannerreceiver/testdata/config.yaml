@@ -4,6 +4,7 @@ googlecloudspanner:
   backfill_enabled: true
   cardinality_total_limit: 200000
   hide_topn_lockstats_rowrangestartkey: true
+  truncate_text: true
   projects:
     - project_id: "spanner project 1"
       service_account_key: "path to spanner project 1 service account json key"

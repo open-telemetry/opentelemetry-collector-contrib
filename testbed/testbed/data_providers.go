@@ -1,35 +1,23 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"log"
-	"os"
-	"path/filepath"
 	"strconv"
+	"sync/atomic"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/atomic"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 // DataProvider defines the interface for generators of test data used to drive various end-to-end tests.
@@ -70,20 +58,20 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 	spans := traceData.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
 	spans.EnsureCapacity(dp.options.ItemsPerBatch)
 
-	traceID := dp.traceIDSequence.Inc()
+	traceID := dp.traceIDSequence.Add(1)
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 
-		startTime := time.Now()
+		startTime := time.Now().Add(time.Duration(i+int(traceID)*1000) * time.Second)
 		endTime := startTime.Add(time.Millisecond)
 
-		spanID := dp.dataItemsGenerated.Inc()
+		spanID := dp.dataItemsGenerated.Add(1)
 
 		span := spans.AppendEmpty()
 
 		// Create a span.
 		span.SetTraceID(idutils.UInt64ToTraceID(0, traceID))
 		span.SetSpanID(idutils.UInt64ToSpanID(spanID))
-		span.SetName("load-generator-span")
+		span.SetName("load-generator-span" + strconv.FormatUint(spanID+traceID*1000, 10))
 		span.SetKind(ptrace.SpanKindClient)
 		attrs := span.Attributes()
 		attrs.PutInt("load_generator.span_seq_num", int64(spanID))
@@ -116,16 +104,17 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		metric := metrics.AppendEmpty()
+		metric.SetName("load_generator_" + strconv.Itoa(i))
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
 		dps := metric.SetEmptyGauge().DataPoints()
-		batchIndex := dp.traceIDSequence.Inc()
+		batchIndex := dp.traceIDSequence.Add(1)
 		// Generate data points for the metric.
 		dps.EnsureCapacity(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-			value := dp.dataItemsGenerated.Inc()
+			value := dp.dataItemsGenerated.Add(1)
 			dataPoint.SetIntValue(int64(value))
 			dataPoint.Attributes().PutStr("item_index", "item_"+strconv.Itoa(j))
 			dataPoint.Attributes().PutStr("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
@@ -149,10 +138,10 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	batchIndex := dp.traceIDSequence.Inc()
+	batchIndex := dp.traceIDSequence.Add(1)
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
-		itemIndex := dp.dataItemsGenerated.Inc()
+		itemIndex := dp.dataItemsGenerated.Add(1)
 		record := logRecords.AppendEmpty()
 		record.SetSeverityNumber(plog.SeverityNumberInfo3)
 		record.SetSeverityText("INFO3")
@@ -254,30 +243,23 @@ type FileDataProvider struct {
 
 // NewFileDataProvider creates an instance of FileDataProvider which generates test data
 // loaded from a file.
-func NewFileDataProvider(filePath string, dataType component.DataType) (*FileDataProvider, error) {
-	buf, err := os.ReadFile(filepath.Clean(filePath))
-	if err != nil {
-		return nil, err
-	}
-
+func NewFileDataProvider(filePath string, dataType pipeline.Signal) (*FileDataProvider, error) {
 	dp := &FileDataProvider{}
+	var err error
 	// Load the message from the file and count the data points.
 	switch dataType {
-	case component.DataTypeTraces:
-		unmarshaler := &ptrace.JSONUnmarshaler{}
-		if dp.traces, err = unmarshaler.UnmarshalTraces(buf); err != nil {
+	case pipeline.SignalTraces:
+		if dp.traces, err = golden.ReadTraces(filePath); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.traces.SpanCount()
-	case component.DataTypeMetrics:
-		unmarshaler := &pmetric.JSONUnmarshaler{}
-		if dp.metrics, err = unmarshaler.UnmarshalMetrics(buf); err != nil {
+	case pipeline.SignalMetrics:
+		if dp.metrics, err = golden.ReadMetrics(filePath); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.metrics.DataPointCount()
-	case component.DataTypeLogs:
-		unmarshaler := &plog.JSONUnmarshaler{}
-		if dp.logs, err = unmarshaler.UnmarshalLogs(buf); err != nil {
+	case pipeline.SignalLogs:
+		if dp.logs, err = golden.ReadLogs(filePath); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.logs.LogRecordCount()

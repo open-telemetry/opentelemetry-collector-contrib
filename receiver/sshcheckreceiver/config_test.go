@@ -1,24 +1,17 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
@@ -41,12 +34,13 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "missing password and keyfile",
+			desc: "missing password and key_file",
 			cfg: &Config{
 				SSHClientSettings: configssh.SSHClientSettings{
 					Username: "otelu",
 					Endpoint: "goodhost:2222",
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(errMissingPasswordAndKeyFile),
 		},
@@ -57,6 +51,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "goodhost:2222",
 					KeyFile:  "/home/.ssh/id_rsa",
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -70,6 +65,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Password: "otelp",
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
 				errInvalidEndpoint,
@@ -83,17 +79,19 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Password: "otelp",
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: error(nil),
 		},
 		{
-			desc: "no error with keyfile",
+			desc: "no error with key_file",
 			cfg: &Config{
 				SSHClientSettings: configssh.SSHClientSettings{
 					Endpoint: "localhost:2222",
 					Username: "otelu",
 					KeyFile:  "/possibly/a_path",
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: error(nil),
 		},
@@ -108,4 +106,37 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	// load test config
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	rcvrs, err := cm.Sub("receivers")
+	require.NoError(t, err)
+	sshconf, err := rcvrs.Sub("sshcheck")
+	require.NoError(t, err)
+	// unmarshal to receiver config
+	actualConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
+	require.True(t, ok)
+	require.NoError(t, sshconf.Unmarshal(actualConfig))
+
+	// set expected config
+	expectedConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
+	require.True(t, ok)
+
+	expectedConfig.ControllerConfig = scraperhelper.ControllerConfig{
+		InitialDelay:       time.Second,
+		CollectionInterval: 10 * time.Second,
+	}
+	expectedConfig.SSHClientSettings = configssh.SSHClientSettings{
+		Endpoint:      "notdefault:1313",
+		Username:      "notdefault_username",
+		Password:      "notdefault_password",
+		KeyFile:       "notdefault/path/keyfile",
+		KnownHosts:    "path/to/collector_known_hosts",
+		IgnoreHostKey: false,
+		Timeout:       10 * time.Second,
+	}
+	require.Equal(t, expectedConfig, actualConfig)
 }

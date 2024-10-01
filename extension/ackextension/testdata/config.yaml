@@ -1,0 +1,10 @@
+ack:
+
+ack/withmemorystorage:
+  storage:
+
+
+ack/withpersistentstorage:
+  storage: file_storage/otc
+  max_number_of_partition: 200000
+  max_number_of_pending_acks_per_partition: 3000000

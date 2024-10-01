@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
@@ -20,13 +9,13 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
-	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -70,20 +59,20 @@ func (wc *WALConfig) truncateFrequency() time.Duration {
 	return defaultWALTruncateFrequency
 }
 
-func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
+func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) error) *prweWAL {
 	if walConfig == nil {
 		// There are cases for which the WAL can be disabled.
 		// TODO: Perhaps log that the WAL wasn't enabled.
-		return nil, errNilConfig
+		return nil
 	}
 
 	return &prweWAL{
 		exportSink: exportSink,
 		walConfig:  walConfig,
 		stopChan:   make(chan struct{}),
-		rWALIndex:  atomic.NewUint64(0),
-		wWALIndex:  atomic.NewUint64(0),
-	}, nil
+		rWALIndex:  &atomic.Uint64{},
+		wWALIndex:  &atomic.Uint64{},
+	}
 }
 
 func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
@@ -101,7 +90,6 @@ func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 var (
 	errAlreadyClosed = errors.New("already closed")
 	errNilWAL        = errors.New("wal is nil")
-	errNilConfig     = errors.New("expecting a non-nil configuration")
 )
 
 // retrieveWALIndices queries the WriteAheadLog for its current first and last indices.
@@ -238,7 +226,7 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 		}
 		reqL = append(reqL, req)
 
-		shouldExport := false
+		var shouldExport bool
 		select {
 		case <-timer.C:
 			shouldExport = true

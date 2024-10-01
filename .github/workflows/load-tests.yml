@@ -1,42 +1,39 @@
 name: load-tests
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
-  pull_request:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+    paths-ignore:
+      - "**/README.md"
 
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 env:
-  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-  # Cache downloads for this workflow consistently run in under 2 minutes
-  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: "1.22.7"
+          cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@v3
+        timeout-minutes: 5
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -50,36 +47,31 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - run: make oteltestbedcol
-      - name: Upload Collector Binaries
-        uses: actions/upload-artifact@v3
+      - name: Upload Testbed Binaries
+        uses: actions/upload-artifact@v4
         with:
-          name: collector-binaries
+          name: testbed-binaries
           path: ./bin/*
       - name: Split Loadtest Jobs
         id: splitloadtest
         run: ./.github/workflows/scripts/setup_e2e_tests.sh
 
   loadtest:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [setup-environment]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: "1.22.7"
+          cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@v3
+        timeout-minutes: 5
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -93,10 +85,10 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - run: mkdir -p results && touch results/TESTRESULTS.md
-      - name: Download Collector Binaries
-        uses: actions/download-artifact@v3
+      - name: Download Testbed Binaries
+        uses: actions/download-artifact@v4
         with:
-          name: collector-binaries
+          name: testbed-binaries
           path: bin/
       - run: chmod +x bin/*
       - name: Loadtest
@@ -104,6 +96,7 @@ jobs:
         env:
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename
+        if: ${{ failure() || success() }}
         id: filename
         run: echo "name=$(echo '${{ matrix.test }}' | sed -e 's/|/_/g')" >> $GITHUB_OUTPUT
       - name: Create Test Result Archive
@@ -113,18 +106,35 @@ jobs:
       - name: Upload Test Results
         if: ${{ failure() || success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: test-result-archive-${{steps.filename.outputs.name}}
           path: ./*.tar
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
+      - run: cp testbed/tests/results/benchmarks.json testbed/tests/results/${{steps.filename.outputs.name}}.json
+      - name: Upload benchmarks.json
+        uses: actions/upload-artifact@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          test_framework: JUNIT
-          test_format: JUNIT
-          test_path: |
-            ./testbed/tests/results/junit/*.xml
-      - name: GitHub Issue Generator
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
-        run: issuegenerator $TEST_RESULTS
+          name: benchmark-results-${{steps.filename.outputs.name}}
+          path: testbed/tests/results/${{steps.filename.outputs.name}}.json
+
+  update-benchmarks:
+    runs-on: ubuntu-latest
+    needs: [loadtest]
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: benchmark-results-*
+          merge-multiple: true
+          path: results
+      - run: jq -s 'map(.[])' results/*.json > output.json
+      - uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: "customSmallerIsBetter"
+          output-file-path: output.json
+          gh-pages-branch: benchmarks
+          max-items-in-chart: 100
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: "docs/benchmarks/loadtests"
+          auto-push: true

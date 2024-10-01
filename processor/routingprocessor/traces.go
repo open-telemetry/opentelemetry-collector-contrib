@@ -1,53 +1,58 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 var _ processor.Traces = (*tracesProcessor)(nil)
 
 type tracesProcessor struct {
-	logger *zap.Logger
-	config *Config
+	logger    *zap.Logger
+	telemetry *metadata.TelemetryBuilder
+	config    *Config
 
 	extractor extractor
 	router    router[exporter.Traces, ottlspan.TransformContext]
 }
 
-func newTracesProcessor(settings component.TelemetrySettings, config component.Config) *tracesProcessor {
+func newTracesProcessor(settings component.TelemetrySettings, config component.Config) (*tracesProcessor, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
-	spanParser, _ := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings)
+	spanParser, err := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings)
+	if err != nil {
+		return nil, err
+	}
 
 	return &tracesProcessor{
-		logger: settings.Logger,
-		config: cfg,
+		logger:    settings.Logger,
+		telemetry: telemetryBuilder,
+		config:    cfg,
 		router: newRouter[exporter.Traces, ottlspan.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
@@ -55,11 +60,15 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 			spanParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
-	}
+	}, nil
 }
 
 func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeTraces])
+	ge, ok := host.(getExporters)
+	if !ok {
+		return fmt.Errorf("unable to get exporters")
+	}
+	err := p.router.registerExporters(ge.GetExportersWithSignal()[pipeline.SignalTraces])
 	if err != nil {
 		return err
 	}
@@ -97,16 +106,23 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
 		stx := ottlspan.NewTransformContext(
-			ptrace.Span{},
-			pcommon.InstrumentationScope{},
+			ptrace.NewSpan(),
+			pcommon.NewInstrumentationScope(),
 			rspans.Resource(),
+			ptrace.NewScopeSpans(),
+			rspans,
 		)
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, stx)
 			if err != nil {
-				return err
+				if p.config.ErrorMode == ottl.PropagateError {
+					return err
+				}
+				p.group("", groups, p.router.defaultExporters, rspans)
+				p.recordNonRoutedResourceSpans(ctx, key, rspans)
+				continue
 			}
 			if !isMatch {
 				matchCount--
@@ -118,6 +134,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 		if matchCount == 0 {
 			// no route conditions are matched, add resource spans to default exporters group
 			p.group("", groups, p.router.defaultExporters, rspans)
+			p.recordNonRoutedResourceSpans(ctx, "", rspans)
 		}
 	}
 
@@ -139,9 +156,34 @@ func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporte
 	groups[key] = group
 }
 
+func (p *tracesProcessor) recordNonRoutedResourceSpans(ctx context.Context, routingKey string, rspans ptrace.ResourceSpans) {
+	spanCount := 0
+	ilss := rspans.ScopeSpans()
+	for j := 0; j < ilss.Len(); j++ {
+		spanCount += ilss.At(j).Spans().Len()
+	}
+
+	p.telemetry.RoutingProcessorNonRoutedSpans.Add(
+		ctx,
+		int64(spanCount),
+		metric.WithAttributes(
+			attribute.String("routing_key", routingKey),
+		),
+	)
+}
+
 func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
+	if value == "" { // "" is a  key for default exporters
+		p.telemetry.RoutingProcessorNonRoutedSpans.Add(
+			ctx,
+			int64(t.SpanCount()),
+			metric.WithAttributes(
+				attribute.String("routing_key", p.extractor.fromAttr),
+			),
+		)
+	}
 
 	var errs error
 	for _, e := range exporters {

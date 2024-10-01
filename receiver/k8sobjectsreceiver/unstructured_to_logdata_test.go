@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
@@ -52,10 +41,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		}
 		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
-		assert.Equal(t, logs.LogRecordCount(), 4)
+		assert.Equal(t, 4, logs.LogRecordCount())
 
 		resourceLogs := logs.ResourceLogs()
-		assert.Equal(t, resourceLogs.Len(), 2)
+		assert.Equal(t, 2, resourceLogs.Len())
 
 		namespaces = []string{"ns1", "ns2"}
 		for i, namespace := range namespaces {
@@ -63,8 +52,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			resourceAttributes := rl.Resource().Attributes()
 			ns, _ := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
 			assert.Equal(t, ns.AsString(), namespace)
-			assert.Equal(t, rl.ScopeLogs().Len(), 1)
-			assert.Equal(t, rl.ScopeLogs().At(0).LogRecords().Len(), 2)
+			assert.Equal(t, 1, rl.ScopeLogs().Len())
+			assert.Equal(t, 2, rl.ScopeLogs().At(0).LogRecords().Len())
 		}
 	})
 
@@ -89,17 +78,17 @@ func TestUnstructuredListToLogData(t *testing.T) {
 
 		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
-		assert.Equal(t, logs.LogRecordCount(), 3)
+		assert.Equal(t, 3, logs.LogRecordCount())
 
 		resourceLogs := logs.ResourceLogs()
-		assert.Equal(t, resourceLogs.Len(), 1)
+		assert.Equal(t, 1, resourceLogs.Len())
 		rl := resourceLogs.At(0)
 		resourceAttributes := rl.Resource().Attributes()
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
 		_, ok := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
-		assert.Equal(t, ok, false)
-		assert.Equal(t, rl.ScopeLogs().Len(), 1)
-		assert.Equal(t, logRecords.Len(), 3)
+		assert.False(t, ok)
+		assert.Equal(t, 1, rl.ScopeLogs().Len())
+		assert.Equal(t, 3, logRecords.Len())
 
 	})
 
@@ -114,26 +103,27 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		event := &watch.Event{
 			Type: watch.Added,
 			Object: &unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind":       "Event",
 					"apiVersion": "v1",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name": "generic-name",
 					},
 				},
 			},
 		}
 
-		logs := watchObjectsToLogData(event, time.Now(), config)
+		logs, err := watchObjectsToLogData(event, time.Now(), config)
+		assert.NoError(t, err)
 
-		assert.Equal(t, logs.LogRecordCount(), 1)
+		assert.Equal(t, 1, logs.LogRecordCount())
 
 		resourceLogs := logs.ResourceLogs()
-		assert.Equal(t, resourceLogs.Len(), 1)
+		assert.Equal(t, 1, resourceLogs.Len())
 		rl := resourceLogs.At(0)
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
-		assert.Equal(t, rl.ScopeLogs().Len(), 1)
-		assert.Equal(t, logRecords.Len(), 1)
+		assert.Equal(t, 1, rl.ScopeLogs().Len())
+		assert.Equal(t, 1, logRecords.Len())
 
 		attrs := logRecords.At(0).Attributes()
 		eventName, ok := attrs.Get("event.name")
@@ -153,10 +143,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		event := &watch.Event{
 			Type: watch.Added,
 			Object: &unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind":       "Event",
 					"apiVersion": "v1",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name": "generic-name",
 					},
 				},
@@ -164,17 +154,18 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		}
 
 		observedAt := time.Now()
-		logs := watchObjectsToLogData(event, observedAt, config)
+		logs, err := watchObjectsToLogData(event, observedAt, config)
+		assert.NoError(t, err)
 
-		assert.Equal(t, logs.LogRecordCount(), 1)
+		assert.Equal(t, 1, logs.LogRecordCount())
 
 		resourceLogs := logs.ResourceLogs()
-		assert.Equal(t, resourceLogs.Len(), 1)
+		assert.Equal(t, 1, resourceLogs.Len())
 		rl := resourceLogs.At(0)
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
-		assert.Equal(t, rl.ScopeLogs().Len(), 1)
-		assert.Equal(t, logRecords.Len(), 1)
-		assert.Greater(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), int64(0))
+		assert.Equal(t, 1, rl.ScopeLogs().Len())
+		assert.Equal(t, 1, logRecords.Len())
+		assert.Positive(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix())
 		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
 

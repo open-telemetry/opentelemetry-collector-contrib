@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package jaeger
 
@@ -25,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -179,7 +168,7 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	expected.PutInt("int-val", 123)
 	expected.PutStr("string-val", "abc")
 	expected.PutDouble("double-val", 1.23)
-	expected.PutStr("binary-val", "AAAAAABkfZg=")
+	expected.PutEmptyBytes("binary-val").FromRaw([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98})
 
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
@@ -277,6 +266,44 @@ func TestProtoToTraces(t *testing.T) {
 				}},
 			td: generateTracesSpanWithTwoParents(),
 		},
+		{
+			name: "no-error-from-server-span-with-4xx-http-code",
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						{
+							StartTime: testSpanStartTime,
+							Duration:  testSpanEndTime.Sub(testSpanStartTime),
+							Tags: []model.KeyValue{
+								{
+									Key:   tracetranslator.TagSpanKind,
+									VType: model.ValueType_STRING,
+									VStr:  string(tracetranslator.OpenTracingSpanKindServer),
+								},
+								{
+									Key:   conventions.AttributeHTTPStatusCode,
+									VType: model.ValueType_STRING,
+									VStr:  "404",
+								},
+							},
+						},
+					},
+				}},
+			td: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetStartTimestamp(testSpanStartTimestamp)
+				span.SetEndTimestamp(testSpanEndTimestamp)
+				span.SetKind(ptrace.SpanKindClient)
+				span.SetKind(ptrace.SpanKindServer)
+				span.Status().SetCode(ptrace.StatusCodeUnset)
+				span.Attributes().PutStr(conventions.AttributeHTTPStatusCode, "404")
+				return traces
+			}(),
+		},
 	}
 
 	for _, test := range tests {
@@ -300,11 +327,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation2",
 				Tags: []model.KeyValue{
 					{
-						Key:   conventions.OtelLibraryName,
+						Key:   conventions.AttributeOtelScopeName,
 						VType: model.ValueType_STRING,
 						VStr:  "library2",
 					}, {
-						Key:   conventions.OtelLibraryVersion,
+						Key:   conventions.AttributeOtelScopeVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -317,11 +344,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation1",
 				Tags: []model.KeyValue{
 					{
-						Key:   conventions.OtelLibraryName,
+						Key:   conventions.AttributeOtelScopeName,
 						VType: model.ValueType_STRING,
 						VStr:  "library1",
 					}, {
-						Key:   conventions.OtelLibraryVersion,
+						Key:   conventions.AttributeOtelScopeVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -336,8 +363,8 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 	actual, err := ProtoToTraces([]*model.Batch{jb})
 	assert.NoError(t, err)
 
-	assert.Equal(t, actual.ResourceSpans().Len(), 1)
-	assert.Equal(t, actual.ResourceSpans().At(0).ScopeSpans().Len(), 2)
+	assert.Equal(t, 1, actual.ResourceSpans().Len())
+	assert.Equal(t, 2, actual.ResourceSpans().At(0).ScopeSpans().Len())
 
 	ils0 := actual.ResourceSpans().At(0).ScopeSpans().At(0)
 	ils1 := actual.ResourceSpans().At(0).ScopeSpans().At(1)
@@ -370,7 +397,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		attrs            map[string]interface{}
+		attrs            map[string]any
 		status           ptrace.Status
 		kind             ptrace.SpanKind
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
@@ -382,7 +409,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "error tag set -> Error status",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError: true,
 			},
 			status:           errorStatus,
@@ -390,7 +417,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "status.code is set as string",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.OtelStatusCode: statusOk,
 			},
 			status:           okStatus,
@@ -398,7 +425,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "status.code, status.message and error tags are set",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError:          true,
 				conventions.OtelStatusCode:        statusError,
 				conventions.OtelStatusDescription: "Error: Invalid argument",
@@ -408,7 +435,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "http.status_code tag is set as string",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeHTTPStatusCode: "404",
 			},
 			status:           errorStatus,
@@ -416,7 +443,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "http.status_code, http.status_message and error tags are set",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError:            true,
 				conventions.AttributeHTTPStatusCode: 404,
 				tracetranslator.TagHTTPStatusMsg:    "HTTP 404: Not Found",
@@ -426,7 +453,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "status.code has precedence over http.status_code.",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.OtelStatusCode:          statusOk,
 				conventions.AttributeHTTPStatusCode: 500,
 				tracetranslator.TagHTTPStatusMsg:    "Server Error",
@@ -436,7 +463,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError:            true,
 				conventions.AttributeHTTPStatusCode: 200,
 			},
@@ -446,7 +473,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "the 4xx range span status MUST be left unset in case of SpanKind.SERVER",
 			kind: ptrace.SpanKindServer,
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError:            false,
 				conventions.AttributeHTTPStatusCode: 404,
 			},
@@ -509,7 +536,7 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	for i := 0; i < lenbatches; i++ {
 		rsExpected := expected.ResourceSpans().At(i)
 		for j := 0; j < lenbatches; j++ {
-			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+			got.ResourceSpans().RemoveIf(func(_ ptrace.ResourceSpans) bool {
 				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
 				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
 				if nameExpected == nameGot {
@@ -662,6 +689,7 @@ func generateTracesOneSpanNoResource() ptrace.Traces {
 	span.SetStartTimestamp(testSpanStartTimestamp)
 	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.SetKind(ptrace.SpanKindClient)
+	span.Status().SetCode(ptrace.StatusCodeError)
 	span.Events().At(0).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(0).SetDroppedAttributesCount(0)
 	span.Events().At(0).SetName("event-with-attr")
@@ -754,11 +782,11 @@ func generateProtoSpanWithLibraryInfo(libraryName string) *model.Span {
 	span := generateProtoSpan()
 	span.Tags = append([]model.KeyValue{
 		{
-			Key:   conventions.OtelLibraryName,
+			Key:   conventions.AttributeOtelScopeName,
 			VType: model.ValueType_STRING,
 			VStr:  libraryName,
 		}, {
-			Key:   conventions.OtelLibraryVersion,
+			Key:   conventions.AttributeOtelScopeVersion,
 			VType: model.ValueType_STRING,
 			VStr:  "0.42.0",
 		},
@@ -845,7 +873,7 @@ func generateTracesTwoSpansChildParent() ptrace.Traces {
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
-	span.Status().SetCode(ptrace.StatusCodeError)
+	span.Status().SetCode(ptrace.StatusCodeUnset)
 	span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
 	return td
 }
@@ -891,6 +919,7 @@ func generateTracesTwoSpansWithFollower() ptrace.Traces {
 	span.SetName("operationC")
 	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetTraceID(spans.At(0).TraceID())
+	span.SetParentSpanID(spans.At(0).SpanID())
 	span.SetStartTimestamp(spans.At(0).EndTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp() + 1000000)
 	span.SetKind(ptrace.SpanKindConsumer)

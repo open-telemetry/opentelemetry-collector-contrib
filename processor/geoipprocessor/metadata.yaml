@@ -1,0 +1,9 @@
+type: geoip
+
+status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [andrzej-stencel, michalpristas, rogercoll]

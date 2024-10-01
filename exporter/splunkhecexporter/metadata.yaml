@@ -1,0 +1,23 @@
+type: splunk_hec
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme, dmitryax]
+tests:
+  config:
+    token: "my_fake_token"
+    endpoint: "http://localhost:0"
+    sending_queue:
+      enabled: false
+    retry_on_failure:
+      enabled: false
+  expect_consumer_error: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

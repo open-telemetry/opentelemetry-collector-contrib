@@ -1,22 +1,13 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ptracetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 
 import (
 	"bytes"
+	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
@@ -134,6 +125,173 @@ func sortSpanSlices(ts ptrace.Traces) {
 				}
 				return a.EndTimestamp() < b.EndTimestamp()
 			})
+		}
+	}
+}
+
+// IgnoreSpanID is a CompareTracesOption that clears SpanID fields on all spans.
+func IgnoreSpanID() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		spanID := pcommon.NewSpanIDEmpty()
+		maskSpanID(expected, spanID)
+		maskSpanID(actual, spanID)
+	})
+}
+
+func maskSpanID(traces ptrace.Traces, spanID pcommon.SpanID) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				span.SetSpanID(spanID)
+			}
+		}
+	}
+}
+
+// IgnoreSpanAttributeValue is a CompareTracesOption that clears value of the span attribute.
+func IgnoreSpanAttributeValue(attributeName string) CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		maskSpanAttributeValue(expected, attributeName)
+		maskSpanAttributeValue(actual, attributeName)
+	})
+}
+
+func maskSpanAttributeValue(traces ptrace.Traces, attributeName string) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				if _, ok := span.Attributes().Get(attributeName); ok {
+					span.Attributes().PutStr(attributeName, "*")
+				}
+			}
+		}
+	}
+}
+
+// IgnoreScopeSpanInstrumentationScopeName is a CompareTracesOption that clears value of the scope span instrumentation scope name.
+func IgnoreScopeSpanInstrumentationScopeName() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		maskScopeSpanInstrumentationScopeName(expected)
+		maskScopeSpanInstrumentationScopeName(actual)
+	})
+}
+
+func maskScopeSpanInstrumentationScopeName(traces ptrace.Traces) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			ss.Scope().SetName("")
+		}
+	}
+}
+
+// IgnoreScopeSpanInstrumentationScopeVersion is a CompareTracesOption that clears value of the scope span instrumentation scope version.
+func IgnoreScopeSpanInstrumentationScopeVersion() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		maskScopeSpanInstrumentationScopeVersion(expected)
+		maskScopeSpanInstrumentationScopeVersion(actual)
+	})
+}
+
+func maskScopeSpanInstrumentationScopeVersion(traces ptrace.Traces) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			ss.Scope().SetVersion("")
+		}
+	}
+}
+
+// IgnoreScopeSpanInstrumentationScopeAttributeValue is a CompareTracesOption that clears value of the scope span instrumentation scope name.
+func IgnoreScopeSpanInstrumentationScopeAttributeValue(attributeName string) CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		maskScopeSpanInstrumentationScopeAttributeValue(expected, attributeName)
+		maskScopeSpanInstrumentationScopeAttributeValue(actual, attributeName)
+	})
+}
+
+func maskScopeSpanInstrumentationScopeAttributeValue(traces ptrace.Traces, attributeName string) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			if _, ok := ss.Scope().Attributes().Get(attributeName); ok {
+				ss.Scope().Attributes().PutStr(attributeName, "*")
+			}
+		}
+	}
+}
+
+// IgnoreStartTimestamp is a CompareTracesOption that clears StartTimestamp fields on all spans.
+func IgnoreStartTimestamp() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		now := pcommon.NewTimestampFromTime(time.Now())
+		maskStartTimestamp(expected, now)
+		maskStartTimestamp(actual, now)
+	})
+}
+
+func maskStartTimestamp(traces ptrace.Traces, ts pcommon.Timestamp) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				span.SetStartTimestamp(ts)
+			}
+		}
+	}
+}
+
+// IgnoreEndTimestamp is a CompareTracesOption that clears EndTimestamp fields on all spans.
+func IgnoreEndTimestamp() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		now := pcommon.NewTimestampFromTime(time.Now())
+		maskEndTimestamp(expected, now)
+		maskEndTimestamp(actual, now)
+	})
+}
+
+func maskEndTimestamp(traces ptrace.Traces, ts pcommon.Timestamp) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				span.SetEndTimestamp(ts)
+			}
+		}
+	}
+}
+
+// IgnoreTraceID is a CompareTracesOption that clears TraceID fields on all spans.
+func IgnoreTraceID() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		traceID := pcommon.NewTraceIDEmpty()
+		maskTraceID(expected, traceID)
+		maskTraceID(actual, traceID)
+	})
+}
+
+func maskTraceID(traces ptrace.Traces, traceID pcommon.TraceID) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				span.SetTraceID(traceID)
+			}
 		}
 	}
 }

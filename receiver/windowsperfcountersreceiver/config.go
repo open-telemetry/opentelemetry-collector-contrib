@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
@@ -23,7 +12,7 @@ import (
 
 // Config defines configuration for WindowsPerfCounters receiver.
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
 	PerfCounters   []ObjectConfig          `mapstructure:"perfcounters"`
@@ -54,8 +43,9 @@ type ObjectConfig struct {
 
 // CounterConfig defines the individual counter in an object.
 type CounterConfig struct {
-	Name      string `mapstructure:"name"`
-	MetricRep `mapstructure:",squash"`
+	Name          string `mapstructure:"name"`
+	MetricRep     `mapstructure:",squash"`
+	RecreateQuery bool `mapstructure:"recreate_query"`
 }
 
 type MetricRep struct {

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper
 
@@ -18,7 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -44,7 +34,8 @@ func TestBasicConfigBuildWithoutID(t *testing.T) {
 		OperatorType: "test-type",
 	}
 
-	_, err := config.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := config.Build(set)
 	require.NoError(t, err)
 }
 
@@ -53,9 +44,9 @@ func TestBasicConfigBuildWithoutType(t *testing.T) {
 		OperatorID: "test-id",
 	}
 
-	_, err := config.Build(testutil.Logger(t))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required `type` field.")
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := config.Build(set)
+	require.ErrorContains(t, err, "missing required `type` field.")
 }
 
 func TestBasicConfigBuildMissingLogger(t *testing.T) {
@@ -64,9 +55,10 @@ func TestBasicConfigBuildMissingLogger(t *testing.T) {
 		OperatorType: "test-type",
 	}
 
-	_, err := config.Build(nil)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "operator build context is missing a logger.")
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = nil
+	_, err := config.Build(set)
+	require.ErrorContains(t, err, "operator build context is missing a logger.")
 }
 
 func TestBasicConfigBuildValid(t *testing.T) {
@@ -75,7 +67,8 @@ func TestBasicConfigBuildValid(t *testing.T) {
 		OperatorType: "test-type",
 	}
 
-	operator, err := config.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	operator, err := config.Build(set)
 	require.NoError(t, err)
 	require.Equal(t, "test-id", operator.OperatorID)
 	require.Equal(t, "test-type", operator.OperatorType)
@@ -98,13 +91,14 @@ func TestBasicOperatorType(t *testing.T) {
 }
 
 func TestBasicOperatorLogger(t *testing.T) {
-	logger := &zap.SugaredLogger{}
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	operator := BasicOperator{
-		OperatorID:    "test-id",
-		OperatorType:  "test-type",
-		SugaredLogger: logger,
+		OperatorID:   "test-id",
+		OperatorType: "test-type",
+		set:          set,
 	}
-	require.Equal(t, logger, operator.Logger())
+	require.Equal(t, set.Logger, operator.Logger())
 }
 
 func TestBasicOperatorStart(t *testing.T) {
@@ -112,7 +106,7 @@ func TestBasicOperatorStart(t *testing.T) {
 		OperatorID:   "test-id",
 		OperatorType: "test-type",
 	}
-	err := operator.Start(testutil.NewMockPersister("test"))
+	err := operator.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(t, err)
 }
 

@@ -1,0 +1,11 @@
+type: journald
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [sumo-drosiek, djaglowski]
+  unsupported_platforms: [darwin, windows]
+

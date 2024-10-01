@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package batchpersignal
 
@@ -20,7 +9,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+)
+
+const (
+	schemaURL               = "https://opentelemetry.io/schemas/1.6.1"
+	libraryOne              = "first-library"
+	libraryTwo              = "second-library"
+	signalName1             = "name-1"
+	signalName2             = "name-2"
+	firstBatchFirstSignal   = "first-batch-first-sig"
+	firstBatchSecondSignal  = "first-batch-second-sig"
+	secondBatchFirstSignal  = "second-batch-first-sig"
+	secondBatchSecondSignal = "second-batch-second-sig"
 )
 
 func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
@@ -263,4 +265,125 @@ func TestSplitLogsSameTraceIntoDifferentBatches(t *testing.T) {
 	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
 	assert.Equal(t, secondLibrary.Name(), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
 	assert.Equal(t, thirdLog.Body().Str(), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
+
+func TestSplitDifferentMetricsIntoDifferentBatches(t *testing.T) {
+	// we have 1 ResourceMetrics with 1 ILS and two Metrics, resulting in two batches
+	inBatch := pmetric.NewMetrics()
+
+	rs := inBatch.ResourceMetrics().AppendEmpty()
+	rs.SetSchemaUrl(schemaURL)
+
+	// the first ILS has two metrics
+	ils := rs.ScopeMetrics().AppendEmpty()
+	ils.SetSchemaUrl(schemaURL)
+	library := ils.Scope()
+	library.SetName(libraryOne)
+
+	firstMetric := ils.Metrics().AppendEmpty()
+	firstMetric.SetName(firstBatchFirstSignal)
+
+	secondMetric := ils.Metrics().AppendEmpty()
+	secondMetric.SetName(firstBatchSecondSignal)
+
+	// test
+	out := SplitMetrics(inBatch)
+
+	// verify
+	assert.Len(t, out, 2)
+
+	// first batch
+	firstOutRS := out[0].ResourceMetrics().At(0)
+	assert.Equal(t, rs.SchemaUrl(), firstOutRS.SchemaUrl())
+
+	firstOutILS := out[0].ResourceMetrics().At(0).ScopeMetrics().At(0)
+	assert.Equal(t, library.Name(), firstOutILS.Scope().Name())
+	assert.Equal(t, firstMetric.Name(), firstOutILS.Metrics().At(0).Name())
+	assert.Equal(t, ils.SchemaUrl(), firstOutILS.SchemaUrl())
+
+	// second batch
+	secondOutRS := out[1].ResourceMetrics().At(0)
+	assert.Equal(t, rs.SchemaUrl(), secondOutRS.SchemaUrl())
+
+	secondOutILS := out[1].ResourceMetrics().At(0).ScopeMetrics().At(0)
+	assert.Equal(t, library.Name(), secondOutILS.Scope().Name())
+	assert.Equal(t, secondMetric.Name(), secondOutILS.Metrics().At(0).Name())
+	assert.Equal(t, ils.SchemaUrl(), secondOutILS.SchemaUrl())
+}
+
+func TestSplitMetricsWithNilName(t *testing.T) {
+	// prepare
+	inBatch := pmetric.NewMetrics()
+	rs := inBatch.ResourceMetrics().AppendEmpty()
+	rs.SetSchemaUrl(schemaURL)
+	ils := rs.ScopeMetrics().AppendEmpty()
+	ils.SetSchemaUrl(schemaURL)
+	firstMetric := ils.Metrics().AppendEmpty()
+	firstMetric.SetName("")
+
+	// test
+	batches := SplitMetrics(inBatch)
+
+	// verify
+	assert.Len(t, batches, 1)
+	assert.Equal(t, string(""), batches[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, rs.SchemaUrl(), batches[0].ResourceMetrics().At(0).SchemaUrl())
+	assert.Equal(t, ils.SchemaUrl(), batches[0].ResourceMetrics().At(0).ScopeMetrics().At(0).SchemaUrl())
+}
+
+func TestSplitSameMetricIntoDifferentBatches(t *testing.T) {
+	// prepare
+	inBatch := pmetric.NewMetrics()
+	rs := inBatch.ResourceMetrics().AppendEmpty()
+	rs.SetSchemaUrl(schemaURL)
+
+	// we have 1 ResourceMetrics with 2 ILS, resulting in two batches
+	rs.ScopeMetrics().EnsureCapacity(1)
+
+	// the first ILS has two metrics
+	firstILS := rs.ScopeMetrics().AppendEmpty()
+	firstILS.SetSchemaUrl(schemaURL)
+
+	firstLibrary := firstILS.Scope()
+	firstLibrary.SetName(libraryOne)
+	firstILS.Metrics().EnsureCapacity(2)
+
+	firstMetric := firstILS.Metrics().AppendEmpty()
+	firstMetric.SetName(signalName1)
+	secondMetric := firstILS.Metrics().AppendEmpty()
+	secondMetric.SetName(signalName2)
+
+	// the second ILS has one metric
+	secondILS := rs.ScopeMetrics().AppendEmpty()
+	secondILS.SetSchemaUrl(schemaURL)
+
+	secondLibrary := secondILS.Scope()
+	secondLibrary.SetName(libraryTwo)
+
+	thirdMetric := secondILS.Metrics().AppendEmpty()
+	thirdMetric.SetName(signalName2)
+
+	// test
+	batches := SplitMetrics(inBatch)
+
+	// verify
+	assert.Len(t, batches, 3)
+
+	// first batch
+	assert.Equal(t, rs.SchemaUrl(), batches[0].ResourceMetrics().At(0).SchemaUrl())
+	assert.Equal(t, firstILS.SchemaUrl(), batches[0].ResourceMetrics().At(0).ScopeMetrics().At(0).SchemaUrl())
+	assert.Equal(t, firstLibrary.Name(), batches[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
+	assert.Equal(t, firstMetric.Name(), batches[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+
+	// second batch
+	assert.Equal(t, rs.SchemaUrl(), batches[1].ResourceMetrics().At(0).SchemaUrl())
+	assert.Equal(t, firstILS.SchemaUrl(), batches[1].ResourceMetrics().At(0).ScopeMetrics().At(0).SchemaUrl())
+	assert.Equal(t, firstLibrary.Name(), batches[1].ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
+	assert.Equal(t, secondMetric.Name(), batches[1].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+
+	// third batch
+	assert.Equal(t, rs.SchemaUrl(), batches[2].ResourceMetrics().At(0).SchemaUrl())
+	assert.Equal(t, secondILS.SchemaUrl(), batches[2].ResourceMetrics().At(0).ScopeMetrics().At(0).SchemaUrl())
+	assert.Equal(t, secondLibrary.Name(), batches[2].ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
+	assert.Equal(t, thirdMetric.Name(), batches[2].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 }

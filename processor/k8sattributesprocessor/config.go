@@ -1,24 +1,24 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
 	"fmt"
+	"regexp"
+
+	"go.opentelemetry.io/collector/featuregate"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+)
+
+var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
+	"k8sattr.fieldExtractConfigRegex.disallow",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, usage of the FieldExtractConfig.Regex field is disallowed"),
+	featuregate.WithRegisterFromVersion("v0.106.0"),
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -59,13 +59,81 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	for _, f := range append(cfg.Extract.Labels, cfg.Extract.Annotations...) {
+		if f.Key != "" && f.KeyRegex != "" {
+			return fmt.Errorf("Out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:%s and KeyRegex:%s", f.Key, f.KeyRegex)
+		}
+
+		switch f.From {
+		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode:
+		default:
+			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, node", f.From)
+		}
+
+		if f.Regex != "" {
+			if disallowFieldExtractConfigRegex.IsEnabled() {
+				return fmt.Errorf("the extract.annotations.regex and extract.labels.regex fields have been deprecated, please use the `ExtractPatterns` function in the transform processor instead")
+			}
+			r, err := regexp.Compile(f.Regex)
+			if err != nil {
+				return err
+			}
+			names := r.SubexpNames()
+			if len(names) != 2 || names[1] != "value" {
+				return fmt.Errorf("regex must contain exactly one named submatch (value)")
+			}
+		}
+
+		if f.KeyRegex != "" {
+			_, err := regexp.Compile("^(?:" + f.KeyRegex + ")$")
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, field := range cfg.Extract.Metadata {
+		switch field {
+		case conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID,
+			specPodHostName, metadataPodStartTime, metadataPodIP,
+			conventions.AttributeK8SDeploymentName, conventions.AttributeK8SDeploymentUID,
+			conventions.AttributeK8SReplicaSetName, conventions.AttributeK8SReplicaSetUID,
+			conventions.AttributeK8SDaemonSetName, conventions.AttributeK8SDaemonSetUID,
+			conventions.AttributeK8SStatefulSetName, conventions.AttributeK8SStatefulSetUID,
+			conventions.AttributeK8SJobName, conventions.AttributeK8SJobUID,
+			conventions.AttributeK8SCronJobName,
+			conventions.AttributeK8SNodeName, conventions.AttributeK8SNodeUID,
+			conventions.AttributeK8SContainerName, conventions.AttributeContainerID,
+			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag,
+			containerImageRepoDigests, clusterUID:
+		default:
+			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
+		}
+	}
+
+	for _, f := range cfg.Filter.Labels {
+		switch f.Op {
+		case "", filterOPEquals, filterOPNotEquals, filterOPExists, filterOPDoesNotExist:
+		default:
+			return fmt.Errorf("'%s' is not a valid label filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
+		}
+	}
+
+	for _, f := range cfg.Filter.Fields {
+		switch f.Op {
+		case "", filterOPEquals, filterOPNotEquals:
+		default:
+			return fmt.Errorf("'%s' is not a valid label filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
+		}
+	}
+
 	return nil
 }
 
 // ExtractConfig section allows specifying extraction rules to extract
 // data from k8s pod specs.
 type ExtractConfig struct {
-	// Metadata allows to extract pod/namespace metadata from a list of metadata fields.
+	// Metadata allows to extract pod/namespace/node metadata from a list of metadata fields.
 	// The field accepts a list of strings.
 	//
 	// Metadata fields supported right now are,
@@ -74,10 +142,22 @@ type ExtractConfig struct {
 	//   k8s.replicaset.name, k8s.replicaset.uid,
 	//   k8s.daemonset.name, k8s.daemonset.uid,
 	//   k8s.job.name, k8s.job.uid, k8s.cronjob.name,
-	//   k8s.statefulset.name, k8s.statefulset.uid
+	//   k8s.statefulset.name, k8s.statefulset.uid,
+	//   k8s.container.name, container.id, container.image.name,
+	//   container.image.tag, container.image.repo_digests
+	//   k8s.cluster.uid
 	//
 	// Specifying anything other than these values will result in an error.
-	// By default all of the fields are extracted and added to spans and metrics.
+	// By default, the following fields are extracted and added to spans, metrics and logs as resource attributes:
+	//  - k8s.pod.name
+	//  - k8s.pod.uid
+	//  - k8s.pod.start_time
+	//  - k8s.namespace.name
+	//  - k8s.node.name
+	//  - k8s.deployment.name (if the pod is controlled by a deployment)
+	//  - k8s.container.name (requires an additional attribute to be set: container.id)
+	//  - container.image.name (requires one of the following additional attributes to be set: container.id or k8s.container.name)
+	//  - container.image.tag (requires one of the following additional attributes to be set: container.id or k8s.container.name)
 	Metadata []string `mapstructure:"metadata"`
 
 	// Annotations allows extracting data from pod annotations and record it
@@ -93,71 +173,63 @@ type ExtractConfig struct {
 	Labels []FieldExtractConfig `mapstructure:"labels"`
 }
 
-// FieldExtractConfig allows specifying an extraction rule to extract a value from exactly one field.
-//
-// The field accepts a list FilterExtractConfig map. The map accepts several keys
-//
-//		from, tag_name, key, key_regex and regex
-//
-//	  - tag_name represents the name of the tag that will be added to the span.
-//	    When not specified a default tag name will be used of the format:
-//	    k8s.pod.annotations.<annotation key>
-//	    k8s.pod.labels.<label key>
-//	    For example, if tag_name is not specified and the key is git_sha,
-//	    then the attribute name will be `k8s.pod.annotations.git_sha`.
-//	    When key_regex is present, tag_name supports back reference to both named capturing and positioned capturing.
-//	    For example, if your pod spec contains the following labels,
-//
-//	    app.kubernetes.io/component: mysql
-//	    app.kubernetes.io/version: 5.7.21
-//
-//	    and you'd like to add tags for all labels with prefix app.kubernetes.io/ and also trim the prefix,
-//	    then you can specify the following extraction rules:
-//
-//	    processors:
-//	    k8sattributes:
-//	    extract:
-//	    labels:
-//
-//	  - tag_name: $$1
-//	    key_regex: kubernetes.io/(.*)
-//
-//	    this will add the `component` and `version` tags to the spans or metrics.
-//
-// - key represents the annotation name. This must exactly match an annotation name.
-//
-//   - regex is an optional field used to extract a sub-string from a complex field value.
-//     The supplied regular expression must contain one named parameter with the string "value"
-//     as the name. For example, if your pod spec contains the following annotation,
-//
-//     kubernetes.io/change-cause: 2019-08-28T18:34:33Z APP_NAME=my-app GIT_SHA=58a1e39 CI_BUILD=4120
-//
-//     and you'd like to extract the GIT_SHA and the CI_BUILD values as tags, then you must
-//     specify the following two extraction rules:
-//
-//     processors:
-//     k8sattributes:
-//     extract:
-//     annotations:
-//
-//   - tag_name: git.sha
-//     key: kubernetes.io/change-cause
-//     regex: GIT_SHA=(?P<value>\w+)
-//
-//   - tag_name: ci.build
-//     key: kubernetes.io/change-cause
-//     regex: JENKINS=(?P<value>[\w]+)
-//
-//     this will add the `git.sha` and `ci.build` tags to the spans or metrics.
+// FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace)
+// annotations (or labels).
 type FieldExtractConfig struct {
+	// TagName represents the name of the resource attribute that will be added to logs, metrics or spans.
+	// When not specified, a default tag name will be used of the format:
+	//   - k8s.pod.annotations.<annotation key>
+	//   - k8s.pod.labels.<label key>
+	// For example, if tag_name is not specified and the key is git_sha,
+	// then the attribute name will be `k8s.pod.annotations.git_sha`.
+	// When key_regex is present, tag_name supports back reference to both named capturing and positioned capturing.
+	// For example, if your pod spec contains the following labels,
+	//
+	// app.kubernetes.io/component: mysql
+	// app.kubernetes.io/version: 5.7.21
+	//
+	// and you'd like to add tags for all labels with prefix app.kubernetes.io/ and also trim the prefix,
+	// then you can specify the following extraction rules:
+	//
+	// extract:
+	//   labels:
+	//     - tag_name: $$1
+	//       key_regex: kubernetes.io/(.*)
+	//
+	// this will add the `component` and `version` tags to the spans or metrics.
 	TagName string `mapstructure:"tag_name"`
-	Key     string `mapstructure:"key"`
+
+	// Key represents the annotation (or label) name. This must exactly match an annotation (or label) name.
+	Key string `mapstructure:"key"`
 	// KeyRegex is a regular expression used to extract a Key that matches the regex.
-	// Out of Key or KeyRegex only one option is expected to be configured at a time.
+	// Out of Key or KeyRegex, only one option is expected to be configured at a time.
 	KeyRegex string `mapstructure:"key_regex"`
-	Regex    string `mapstructure:"regex"`
+
+	// Regex is an optional field used to extract a sub-string from a complex field value.
+	// The supplied regular expression must contain one named parameter with the string "value"
+	// as the name. For example, if your pod spec contains the following annotation,
+	//
+	// kubernetes.io/change-cause: 2019-08-28T18:34:33Z APP_NAME=my-app GIT_SHA=58a1e39 CI_BUILD=4120
+	//
+	// and you'd like to extract the GIT_SHA and the CI_BUILD values as tags, then you must
+	// specify the following two extraction rules:
+	//
+	// extract:
+	//   annotations:
+	//     - tag_name: git.sha
+	//       key: kubernetes.io/change-cause
+	//       regex: GIT_SHA=(?P<value>\w+)
+	//     - tag_name: ci.build
+	//       key: kubernetes.io/change-cause
+	//       regex: JENKINS=(?P<value>[\w]+)
+	//
+	// this will add the `git.sha` and `ci.build` resource attributes.
+	// Deprecated: [v0.106.0] Use the `ExtractPatterns` function in the transform processor instead.
+	// More information about how to replace the regex field can be found in the k8sattributes processor readme.
+	Regex string `mapstructure:"regex"`
+
 	// From represents the source of the labels/annotations.
-	// Allowed values are "pod" and "namespace". The default is pod.
+	// Allowed values are "pod", "namespace", and "node". The default is pod.
 	From string `mapstructure:"from"`
 }
 
@@ -186,7 +258,7 @@ type FilterConfig struct {
 	// Then the NodeFromEnv field can be set to `K8S_NODE_NAME` to filter all pods by the node that
 	// the agent is running on.
 	//
-	// More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/
+	// More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
 	NodeFromEnvVar string `mapstructure:"node_from_env_var"`
 
 	// Namespace filters all pods by the provided namespace. All other pods are ignored.
@@ -231,18 +303,6 @@ type FieldFilterConfig struct {
 // PodAssociationConfig contain single rule how to associate Pod metadata
 // with logs, spans and metrics
 type PodAssociationConfig struct {
-	// Deprecated: Sources should be used to provide From and Name.
-	// If this is set, From and Name are going to be used as Sources' ones
-	// From represents the source of the association.
-	// Allowed values are "connection" and "resource_attribute".
-	From string `mapstructure:"from"`
-
-	// Deprecated: Sources should be used to provide From and Name.
-	// If this is set, From and Name are going to be used as Sources' ones
-	// Name represents extracted key name.
-	// e.g. ip, pod_uid, k8s.pod.ip
-	Name string `mapstructure:"name"`
-
 	// List of pod association sources which should be taken
 	// to identify pod
 	Sources []PodAssociationSourceConfig `mapstructure:"sources"`

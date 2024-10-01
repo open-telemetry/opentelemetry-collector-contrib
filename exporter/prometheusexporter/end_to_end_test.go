@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexporter
 
@@ -27,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -47,10 +36,10 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	var currentScrapeIndex = 0
 	wg.Add(1) // scrape one endpoint
 
-	dropWizardServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	dropWizardServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// Serve back the metrics as if they were from DropWizard.
 		_, err := rw.Write([]byte(dropWizardResponse))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		currentScrapeIndex++
 		if currentScrapeIndex == 8 { // We shall let the Prometheus receiver scrape the DropWizard mock server, at least 8 times.
 			wg.Done() // done scraping dropWizardResponse 8 times
@@ -69,14 +58,14 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
 	exporterCfg := &Config{
 		Namespace: "test",
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":8787",
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:8787",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
 	}
 	exporterFactory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exporter, err := exporterFactory.CreateMetricsExporter(ctx, set, exporterCfg)
 	if err != nil {
 		t.Fatal(err)
@@ -99,13 +88,13 @@ func TestEndToEndSummarySupport(t *testing.T) {
               static_configs:
                 - targets: ['%s']
         `, srvURL.Host))
-	receiverConfig := new(promconfig.Config)
+	receiverConfig := new(prometheusreceiver.PromConfig)
 	if err = yaml.Unmarshal(yamlConfig, receiverConfig); err != nil {
 		t.Fatal(err)
 	}
 
 	receiverFactory := prometheusreceiver.NewFactory()
-	receiverCreateSet := receivertest.NewNopCreateSettings()
+	receiverCreateSet := receivertest.NewNopSettings()
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
 	}
@@ -122,7 +111,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
 	wg.Wait()
 
-	res, err := http.Get("http://localhost" + exporterCfg.Endpoint + "/metrics")
+	res, err := http.Get("http://" + exporterCfg.Endpoint + "/metrics")
 	if err != nil {
 		t.Fatalf("Failed to scrape from the exporter: %v", err)
 	}
@@ -170,7 +159,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_up.instance="127.0.0.1:.*",job="otel-collector". 1 .*`,
 		`. HELP test_target_info Target metadata`,
 		`. TYPE test_target_info gauge`,
-		`test_target_info.http_scheme="http",instance="127.0.0.1:.*",job="otel-collector",net_host_port=".*". 1`,
+		`test_target_info.http_scheme=\"http\",instance="127.0.0.1:.*",job="otel-collector",net_host_port=".*,server_port=".*",url_scheme="http". 1`,
 	}
 
 	// 5.5: Perform a complete line by line prefix verification to ensure we extract back the inputs

@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package cloudfoundryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 
@@ -18,31 +7,33 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 type RLPGatewayConfig struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	ShardID                       string `mapstructure:"shard_id"`
+	confighttp.ClientConfig `mapstructure:",squash"`
+	ShardID                 string `mapstructure:"shard_id"`
 }
 
-// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedHTTPClientSettings for more details
+// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedClientConfig for more details
 type LimitedTLSClientSetting struct {
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }
 
-// LimitedHTTPClientSettings is a subset of HTTPClientSettings, implemented as a separate type due to the library this
+// LimitedClientConfig is a subset of ClientConfig, implemented as a separate type due to the library this
 // configuration is used with not taking a preconfigured http.Client as input, but only taking these specific options
-type LimitedHTTPClientSettings struct {
+type LimitedClientConfig struct {
 	Endpoint   string                  `mapstructure:"endpoint"`
 	TLSSetting LimitedTLSClientSetting `mapstructure:"tls"`
 }
 
 type UAAConfig struct {
-	LimitedHTTPClientSettings `mapstructure:",squash"`
-	Username                  string `mapstructure:"username"`
-	Password                  string `mapstructure:"password"`
+	LimitedClientConfig `mapstructure:",squash"`
+	Username            string              `mapstructure:"username"`
+	Password            configopaque.String `mapstructure:"password"`
 }
 
 // Config defines configuration for Collectd receiver.
@@ -55,6 +46,10 @@ func (c *Config) Validate() error {
 	err := validateURLOption("rlp_gateway.endpoint", c.RLPGateway.Endpoint)
 	if err != nil {
 		return err
+	}
+
+	if strings.TrimSpace(c.RLPGateway.ShardID) == "" {
+		return errors.New("shardID cannot be empty")
 	}
 
 	err = validateURLOption("uaa.endpoint", c.UAA.Endpoint)

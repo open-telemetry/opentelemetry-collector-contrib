@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 
@@ -19,8 +8,7 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
@@ -39,7 +27,7 @@ type Sender struct {
 const logsV2 = "v2.LogsApi.SubmitLog"
 
 // NewSender creates a new Sender
-func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSettings, insecureSkipVerify, verbose bool, apiKey string) *Sender {
+func NewSender(endpoint string, logger *zap.Logger, hcs confighttp.ClientConfig, verbose bool, apiKey string) *Sender {
 	cfg := datadog.NewConfiguration()
 	logger.Info("Logs sender initialized", zap.String("endpoint", endpoint))
 	cfg.OperationServers[logsV2] = datadog.ServerConfigurations{
@@ -47,7 +35,7 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 			URL: endpoint,
 		},
 	}
-	cfg.HTTPClient = clientutil.NewHTTPClient(s, insecureSkipVerify)
+	cfg.HTTPClient = clientutil.NewHTTPClient(hcs)
 	cfg.AddDefaultHeader("DD-API-KEY", apiKey)
 	apiClient := datadog.NewAPIClient(cfg)
 	return &Sender{
@@ -81,10 +69,7 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 		batch = []datadogV2.HTTPLogItem{p}
 		prevtags = tags
 	}
-	if err := s.handleSubmitLog(ctx, batch, tags); err != nil {
-		return err
-	}
-	return nil
+	return s.handleSubmitLog(ctx, batch, tags)
 }
 
 func (s *Sender) handleSubmitLog(ctx context.Context, batch []datadogV2.HTTPLogItem, tags string) error {
@@ -99,9 +84,9 @@ func (s *Sender) handleSubmitLog(ctx context.Context, batch []datadogV2.HTTPLogI
 			s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
 			return err
 		}
-		// If response is nil assume permanent error.
-		// The error will be logged by the exporter helper.
-		return consumererror.NewPermanent(err)
+		// If response is nil keep an error retryable
+		// Assuming this is a transient error (e.g. network/connectivity blip)
+		return err
 	}
 	return nil
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -24,7 +13,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -32,14 +21,14 @@ import (
 )
 
 func TestMissingClientConfigManagerHTTP(t *testing.T) {
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, nil)
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, nil)
 	assert.Equal(t, errMissingStrategyStore, err)
 	assert.Nil(t, s)
 }
 
 func TestStartAndStopHTTP(t *testing.T) {
 	// prepare
-	srvSettings := confighttp.HTTPServerSettings{
+	srvSettings := confighttp.ServerConfig{
 		Endpoint: "127.0.0.1:0",
 	}
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})
@@ -64,7 +53,15 @@ func TestEndpointsAreWired(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
-			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
+			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mockCfgMgr{
+				getSamplingStrategyFunc: func(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, error) {
+					return &api_v2.SamplingStrategyResponse{
+						ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
+							SamplingRate: 1,
+						},
+					}, nil
+				},
+			})
 			require.NoError(t, err)
 			require.NotNil(t, s)
 
@@ -83,14 +80,14 @@ func TestEndpointsAreWired(t *testing.T) {
 			resp.Body.Close()
 
 			body := string(samplingStrategiesBytes)
-			assert.Equal(t, `{"strategyType":"PROBABILISTIC"}`, body)
+			assert.Equal(t, `{"probabilisticSampling":{"samplingRate":1}}`, body)
 		})
 	}
 }
 
 func TestServiceNameIsRequired(t *testing.T) {
 	// prepare
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -108,12 +105,12 @@ func TestServiceNameIsRequired(t *testing.T) {
 }
 
 func TestErrorFromClientConfigManager(t *testing.T) {
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
 	s.strategyStore = &mockCfgMgr{
-		getSamplingStrategyFunc: func(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
+		getSamplingStrategyFunc: func(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, error) {
 			return nil, errors.New("some error")
 		},
 	}

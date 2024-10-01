@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
@@ -21,19 +10,26 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"gopkg.in/yaml.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 // TestExamples ensures that the configuration in the YAML files can be loaded by the collector. It checks:
@@ -46,6 +42,10 @@ func TestExamples(t *testing.T) {
 	files, err := os.ReadDir(folder)
 	require.NoError(t, err)
 	for _, f := range files {
+		if f.Name() == "kafka.yaml" {
+			// skip validation, as it requires jar file.
+			continue
+		}
 		if f.IsDir() {
 			continue
 		}
@@ -55,6 +55,8 @@ func TestExamples(t *testing.T) {
 		t.Run(filepath.Base(f.Name()), func(t *testing.T) {
 			t.Setenv("DD_API_KEY", "testvalue")
 			name := filepath.Join(folder, f.Name())
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+			// nolint:staticcheck
 			_, err := otelcoltest.LoadConfigAndValidate(name, factories)
 			require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
 		})
@@ -72,7 +74,7 @@ func TestExamples(t *testing.T) {
 		require.NoError(t, err)
 		err = yaml.Unmarshal(slurp, &out)
 		require.NoError(t, err)
-		require.Equal(t, out.Kind, "ConfigMap")
+		require.Equal(t, "ConfigMap", out.Kind)
 		require.NotEmpty(t, out.Data.YAML)
 
 		data := []byte(out.Data.YAML)
@@ -80,10 +82,11 @@ func TestExamples(t *testing.T) {
 		require.NoError(t, err)
 		n, err := f.Write(data)
 		require.NoError(t, err)
-		require.Equal(t, n, len(data))
+		require.Len(t, data, n)
 		require.NoError(t, f.Close())
 		defer os.RemoveAll(f.Name())
-
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+		// nolint:staticcheck
 		_, err = otelcoltest.LoadConfigAndValidate(f.Name(), factories)
 		require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
 	})
@@ -100,15 +103,26 @@ func newTestComponents(t *testing.T) otelcol.Factories {
 		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
 			hostmetricsreceiver.NewFactory(),
+			dockerstatsreceiver.NewFactory(),
 			filelogreceiver.NewFactory(),
+			prometheusreceiver.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)
 	factories.Processors, err = processor.MakeFactoryMap(
 		[]processor.Factory{
 			batchprocessor.NewFactory(),
+			memorylimiterprocessor.NewFactory(),
 			k8sattributesprocessor.NewFactory(),
 			resourcedetectionprocessor.NewFactory(),
+			probabilisticsamplerprocessor.NewFactory(),
+			transformprocessor.NewFactory(),
+		}...,
+	)
+	require.NoError(t, err)
+	factories.Connectors, err = connector.MakeFactoryMap(
+		[]connector.Factory{
+			datadogconnector.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)

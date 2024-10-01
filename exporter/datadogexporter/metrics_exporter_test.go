@@ -1,20 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -24,21 +15,22 @@ import (
 	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
+	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -54,20 +46,22 @@ func TestNewExporter(t *testing.T) {
 			Key: "ddog_32_characters_long_api_key1",
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
 			DeltaTTL: 3600,
 			HistConfig: HistogramConfig{
-				Mode:         HistogramModeDistributions,
-				SendCountSum: false,
+				Mode:             HistogramModeDistributions,
+				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
+		HostMetadata: HostMetadataConfig{},
 	}
-	params := exportertest.NewNopCreateSettings()
+	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -78,7 +72,7 @@ func TestNewExporter(t *testing.T) {
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	assert.Equal(t, len(server.MetadataChan), 0)
+	assert.Empty(t, server.MetadataChan)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
@@ -86,11 +80,8 @@ func TestNewExporter(t *testing.T) {
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
-	err = json.Unmarshal(body, &recvMetadata)
-	require.NoError(t, err)
-	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+	recvMetadata := <-server.MetadataChan
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
@@ -107,10 +98,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		source                source.Source
 		hostTags              []string
 		histogramMode         HistogramMode
-		expectedSeries        map[string]interface{}
+		expectedSeries        map[string]any
 		expectedSketchPayload *gogen.SketchPayload
 		expectedErr           error
-		expectedStats         []pb.ClientStatsPayload
 	}{
 		{
 			metrics: createTestMetrics(attrs),
@@ -130,49 +120,107 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			},
 			histogramMode: HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
-			expectedSeries: map[string]interface{}{
-				"series": []interface{}{
-					map[string]interface{}{
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
 						"metric":    "int.gauge",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(222)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(222)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"env:dev"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "otel.system.filesystem.utilization",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(333)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"env:dev"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "double.histogram.bucket",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(2)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(2)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"lower_bound:-inf", "upper_bound:0", "env:dev"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"lower_bound:-inf", "upper_bound:0", "env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "double.histogram.bucket",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(18)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(18)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"lower_bound:0", "upper_bound:inf", "env:dev"},
 					},
-					map[string]interface{}{
-						"metric":    "otel.datadog_exporter.metrics.running",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(1)}},
-						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"version:latest", "command:otelcol"},
-					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "system.disk.in_use",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(333)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"env:dev"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:dev"},
+					},
+					map[string]any{
+						"metric":    "otel.datadog_exporter.metrics.running",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
+					},
+				},
+			},
+		},
+		{
+			metrics: createTestMetrics(map[string]string{
+				conventions127.AttributeDeploymentEnvironmentName: "new_env",
+				"custom_attribute": "custom_value",
+			}),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			histogramMode: HistogramModeCounters,
+			hostTags:      []string{"key1:value1", "key2:value2"},
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
+						"metric":    "int.gauge",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(222)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric":    "otel.system.filesystem.utilization",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric":    "double.histogram.bucket",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(2)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"lower_bound:-inf", "upper_bound:0", "env:new_env"},
+					},
+					map[string]any{
+						"metric":    "double.histogram.bucket",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(18)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"lower_bound:0", "upper_bound:inf", "env:new_env"},
+					},
+					map[string]any{
+						"metric":    "system.disk.in_use",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric":    "otel.datadog_exporter.metrics.running",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
 					},
 				},
 			},
@@ -185,35 +233,35 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			},
 			histogramMode: HistogramModeDistributions,
 			hostTags:      []string{"key1:value1", "key2:value2"},
-			expectedSeries: map[string]interface{}{
-				"series": []interface{}{
-					map[string]interface{}{
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
 						"metric":    "int.gauge",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(222)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(222)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"env:dev"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "otel.system.filesystem.utilization",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(333)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"env:dev"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:dev"},
 					},
-					map[string]interface{}{
-						"metric":    "otel.datadog_exporter.metrics.running",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(1)}},
-						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"version:latest", "command:otelcol"},
-					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "system.disk.in_use",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(333)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"env:dev"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:dev"},
+					},
+					map[string]any{
+						"metric":    "otel.datadog_exporter.metrics.running",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
 					},
 				},
 			},
@@ -244,49 +292,49 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			},
 			histogramMode: HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
-			expectedSeries: map[string]interface{}{
-				"series": []interface{}{
-					map[string]interface{}{
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
 						"metric":    "int.gauge",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(222)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(222)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"env:dev", "key1:value1", "key2:value2"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:dev", "key1:value1", "key2:value2"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "otel.system.filesystem.utilization",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(333)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"env:dev", "key1:value1", "key2:value2"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:dev", "key1:value1", "key2:value2"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "double.histogram.bucket",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(2)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(2)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"lower_bound:-inf", "upper_bound:0", "env:dev", "key1:value1", "key2:value2"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"lower_bound:-inf", "upper_bound:0", "env:dev", "key1:value1", "key2:value2"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "double.histogram.bucket",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(18)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(18)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev", "key1:value1", "key2:value2"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"lower_bound:0", "upper_bound:inf", "env:dev", "key1:value1", "key2:value2"},
 					},
-					map[string]interface{}{
-						"metric":    "otel.datadog_exporter.metrics.running",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(1)}},
-						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
-					},
-					map[string]interface{}{
+					map[string]any{
 						"metric":    "system.disk.in_use",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(333)}},
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
-						"tags":      []interface{}{"env:dev", "key1:value1", "key2:value2"},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:dev", "key1:value1", "key2:value2"},
+					},
+					map[string]any{
+						"metric":    "otel.datadog_exporter.metrics.running",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
 					},
 				},
 			},
@@ -302,17 +350,23 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			)
 			defer server.Close()
 
-			var (
-				once          sync.Once
-				statsRecorder testutil.MockStatsProcessor
-			)
+			var once sync.Once
+			pusher := newTestPusher(t)
+			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
+			require.NoError(t, err)
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopCreateSettings(),
+				exportertest.NewNopSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
+				acfg,
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
-				&statsRecorder,
+				reporter,
+				nil,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -333,10 +387,15 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			} else {
 				assert.Equal(t, "gzip", seriesRecorder.Header.Get("Accept-Encoding"))
 				assert.Equal(t, "application/json", seriesRecorder.Header.Get("Content-Type"))
+				assert.Equal(t, "gzip", seriesRecorder.Header.Get("Content-Encoding"))
 				assert.Equal(t, "otelcol/latest", seriesRecorder.Header.Get("User-Agent"))
 				assert.NoError(t, err)
-				var actual map[string]interface{}
-				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
+				buf := bytes.NewBuffer(seriesRecorder.ByteBody)
+				reader, err := gzip.NewReader(buf)
+				assert.NoError(t, err)
+				dec := json.NewDecoder(reader)
+				var actual map[string]any
+				assert.NoError(t, dec.Decode(&actual))
 				assert.EqualValues(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
@@ -348,11 +407,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				expected, err := tt.expectedSketchPayload.Marshal()
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
-			}
-			if tt.expectedStats == nil {
-				assert.Len(t, statsRecorder.In, 0)
-			} else {
-				assert.ElementsMatch(t, statsRecorder.In, tt.expectedStats)
 			}
 		})
 	}
@@ -371,20 +425,20 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			Key: "ddog_32_characters_long_api_key1",
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
 			DeltaTTL: 3600,
 			HistConfig: HistogramConfig{
-				Mode:         HistogramModeDistributions,
-				SendCountSum: false,
+				Mode:             HistogramModeDistributions,
+				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -395,7 +449,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	assert.Equal(t, len(server.MetadataChan), 0)
+	assert.Empty(t, server.MetadataChan)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
@@ -403,11 +457,8 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
-	err = json.Unmarshal(body, &recvMetadata)
-	require.NoError(t, err)
-	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+	recvMetadata := <-server.MetadataChan
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
@@ -424,10 +475,9 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 		source                source.Source
 		hostTags              []string
 		histogramMode         HistogramMode
-		expectedSeries        map[string]interface{}
+		expectedSeries        map[string]any
 		expectedSketchPayload *gogen.SketchPayload
 		expectedErr           error
-		expectedStats         []pb.ClientStatsPayload
 	}{
 		{
 			metrics: createTestMetrics(attrs),
@@ -447,50 +497,107 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			},
 			histogramMode: HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
-			expectedSeries: map[string]interface{}{
-				"series": []interface{}{
-					map[string]interface{}{
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
 						"metric": "int.gauge",
-						"points": []interface{}{[]interface{}{float64(0), float64(222)}},
+						"points": []any{[]any{float64(0), float64(222)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"env:dev"},
+						"tags":   []any{"env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric": "otel.system.filesystem.utilization",
-						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"points": []any{[]any{float64(0), float64(333)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"env:dev"},
+						"tags":   []any{"env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric": "double.histogram.bucket",
-						"points": []interface{}{[]interface{}{float64(0), float64(2)}},
+						"points": []any{[]any{float64(0), float64(2)}},
 						"type":   "count",
 						"host":   "test-host",
-						"tags":   []interface{}{"lower_bound:-inf", "upper_bound:0", "env:dev"},
+						"tags":   []any{"lower_bound:-inf", "upper_bound:0", "env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric": "double.histogram.bucket",
-						"points": []interface{}{[]interface{}{float64(0), float64(18)}},
+						"points": []any{[]any{float64(0), float64(18)}},
 						"type":   "count",
 						"host":   "test-host",
-						"tags":   []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev"},
+						"tags":   []any{"lower_bound:0", "upper_bound:inf", "env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
+						"metric": "system.disk.in_use",
+						"points": []any{[]any{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:dev"},
+					},
+					map[string]any{
 						"metric": "otel.datadog_exporter.metrics.running",
-						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
+						"points": []any{[]any{float64(0), float64(1)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"version:latest", "command:otelcol"},
+						"tags":   []any{"version:latest", "command:otelcol"},
 					},
-					map[string]interface{}{
-						"metric":   "system.disk.in_use",
-						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
-						"type":     "gauge",
-						"host":     "test-host",
-						"interval": float64(1),
-						"tags":     []interface{}{"env:dev"},
+				},
+			},
+		},
+		{
+			metrics: createTestMetrics(map[string]string{
+				conventions127.AttributeDeploymentEnvironmentName: "new_env",
+				"custom_attribute": "custom_value",
+			}),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			histogramMode: HistogramModeCounters,
+			hostTags:      []string{"key1:value1", "key2:value2"},
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
+						"metric": "int.gauge",
+						"points": []any{[]any{float64(0), float64(222)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric": "otel.system.filesystem.utilization",
+						"points": []any{[]any{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric": "double.histogram.bucket",
+						"points": []any{[]any{float64(0), float64(2)}},
+						"type":   "count",
+						"host":   "test-host",
+						"tags":   []any{"lower_bound:-inf", "upper_bound:0", "env:new_env"},
+					},
+					map[string]any{
+						"metric": "double.histogram.bucket",
+						"points": []any{[]any{float64(0), float64(18)}},
+						"type":   "count",
+						"host":   "test-host",
+						"tags":   []any{"lower_bound:0", "upper_bound:inf", "env:new_env"},
+					},
+					map[string]any{
+						"metric": "system.disk.in_use",
+						"points": []any{[]any{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric": "otel.datadog_exporter.metrics.running",
+						"points": []any{[]any{float64(0), float64(1)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"version:latest", "command:otelcol"},
 					},
 				},
 			},
@@ -503,36 +610,35 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			},
 			histogramMode: HistogramModeDistributions,
 			hostTags:      []string{"key1:value1", "key2:value2"},
-			expectedSeries: map[string]interface{}{
-				"series": []interface{}{
-					map[string]interface{}{
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
 						"metric": "int.gauge",
-						"points": []interface{}{[]interface{}{float64(0), float64(222)}},
+						"points": []any{[]any{float64(0), float64(222)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"env:dev"},
+						"tags":   []any{"env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric": "otel.system.filesystem.utilization",
-						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"points": []any{[]any{float64(0), float64(333)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"env:dev"},
+						"tags":   []any{"env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
+						"metric": "system.disk.in_use",
+						"points": []any{[]any{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:dev"},
+					},
+					map[string]any{
 						"metric": "otel.datadog_exporter.metrics.running",
-						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
+						"points": []any{[]any{float64(0), float64(1)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"version:latest", "command:otelcol"},
-					},
-					map[string]interface{}{
-						"metric":   "system.disk.in_use",
-						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
-						"type":     "gauge",
-						"host":     "test-host",
-						"interval": float64(1),
-						"tags":     []interface{}{"env:dev"},
+						"tags":   []any{"version:latest", "command:otelcol"},
 					},
 				},
 			},
@@ -563,50 +669,49 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			},
 			histogramMode: HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
-			expectedSeries: map[string]interface{}{
-				"series": []interface{}{
-					map[string]interface{}{
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
 						"metric": "int.gauge",
-						"points": []interface{}{[]interface{}{float64(0), float64(222)}},
+						"points": []any{[]any{float64(0), float64(222)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
+						"tags":   []any{"env:dev", "key1:value1", "key2:value2"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric": "otel.system.filesystem.utilization",
-						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"points": []any{[]any{float64(0), float64(333)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
+						"tags":   []any{"env:dev", "key1:value1", "key2:value2"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric": "double.histogram.bucket",
-						"points": []interface{}{[]interface{}{float64(0), float64(2)}},
+						"points": []any{[]any{float64(0), float64(2)}},
 						"type":   "count",
 						"host":   "test-host",
-						"tags":   []interface{}{"lower_bound:-inf", "upper_bound:0", "env:dev", "key1:value1", "key2:value2"},
+						"tags":   []any{"lower_bound:-inf", "upper_bound:0", "env:dev", "key1:value1", "key2:value2"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric": "double.histogram.bucket",
-						"points": []interface{}{[]interface{}{float64(0), float64(18)}},
+						"points": []any{[]any{float64(0), float64(18)}},
 						"type":   "count",
 						"host":   "test-host",
-						"tags":   []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev", "key1:value1", "key2:value2"},
+						"tags":   []any{"lower_bound:0", "upper_bound:inf", "env:dev", "key1:value1", "key2:value2"},
 					},
-					map[string]interface{}{
+					map[string]any{
+						"metric": "system.disk.in_use",
+						"points": []any{[]any{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:dev", "key1:value1", "key2:value2"},
+					},
+					map[string]any{
 						"metric": "otel.datadog_exporter.metrics.running",
-						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
+						"points": []any{[]any{float64(0), float64(1)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
-					},
-					map[string]interface{}{
-						"metric":   "system.disk.in_use",
-						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
-						"type":     "gauge",
-						"host":     "test-host",
-						"interval": float64(1),
-						"tags":     []interface{}{"env:dev", "key1:value1", "key2:value2"},
+						"tags":   []any{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
 					},
 				},
 			},
@@ -614,43 +719,45 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			expectedErr:           nil,
 		},
 		{
-			metrics: createTestMetricsWithStats(),
+			metrics: createTestMetrics(map[string]string{
+				conventions.AttributeDeploymentEnvironment: "dev",
+				"custom_attribute":                         "custom_value",
+			}),
 			source: source.Source{
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
 			histogramMode: HistogramModeDistributions,
 			hostTags:      []string{"key1:value1", "key2:value2"},
-			expectedSeries: map[string]interface{}{
-				"series": []interface{}{
-					map[string]interface{}{
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
 						"metric": "int.gauge",
-						"points": []interface{}{[]interface{}{float64(0), float64(222)}},
+						"points": []any{[]any{float64(0), float64(222)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"env:dev"},
+						"tags":   []any{"env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"metric": "otel.system.filesystem.utilization",
-						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"points": []any{[]any{float64(0), float64(333)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"env:dev"},
+						"tags":   []any{"env:dev"},
 					},
-					map[string]interface{}{
+					map[string]any{
+						"metric": "system.disk.in_use",
+						"points": []any{[]any{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:dev"},
+					},
+					map[string]any{
 						"metric": "otel.datadog_exporter.metrics.running",
-						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
+						"points": []any{[]any{float64(0), float64(1)}},
 						"type":   "gauge",
 						"host":   "test-host",
-						"tags":   []interface{}{"version:latest", "command:otelcol"},
-					},
-					map[string]interface{}{
-						"metric":   "system.disk.in_use",
-						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
-						"type":     "gauge",
-						"host":     "test-host",
-						"interval": float64(1),
-						"tags":     []interface{}{"env:dev"},
+						"tags":   []any{"version:latest", "command:otelcol"},
 					},
 				},
 			},
@@ -672,7 +779,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 					},
 				},
 			},
-			expectedStats: testutil.StatsPayloads,
 		},
 	}
 	for _, tt := range tests {
@@ -685,17 +791,23 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			)
 			defer server.Close()
 
-			var (
-				once          sync.Once
-				statsRecorder testutil.MockStatsProcessor
-			)
+			var once sync.Once
+			pusher := newTestPusher(t)
+			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
+			require.NoError(t, err)
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopCreateSettings(),
+				exportertest.NewNopSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
+				acfg,
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
-				&statsRecorder,
+				reporter,
+				nil,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -718,7 +830,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				assert.Equal(t, "application/json", seriesRecorder.Header.Get("Content-Type"))
 				assert.Equal(t, "otelcol/latest", seriesRecorder.Header.Get("User-Agent"))
 				assert.NoError(t, err)
-				var actual map[string]interface{}
+				var actual map[string]any
 				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
 				assert.EqualValues(t, tt.expectedSeries, actual)
 			}
@@ -732,31 +844,8 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
 			}
-			if tt.expectedStats == nil {
-				assert.Len(t, statsRecorder.In, 0)
-			} else {
-				assert.ElementsMatch(t, statsRecorder.In, tt.expectedStats)
-			}
 		})
 	}
-}
-
-func createTestMetricsWithStats() pmetric.Metrics {
-	md := createTestMetrics(map[string]string{
-		conventions.AttributeDeploymentEnvironment: "dev",
-		"custom_attribute":                         "custom_value",
-	})
-	dest := md.ResourceMetrics()
-	logger, _ := zap.NewDevelopment()
-	trans, err := translator.New(logger)
-	if err != nil {
-		panic(err)
-	}
-	src := trans.
-		StatsPayloadToMetrics(pb.StatsPayload{Stats: testutil.StatsPayloads}).
-		ResourceMetrics()
-	src.MoveAndAppendTo(dest)
-	return md
 }
 
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
@@ -824,7 +913,7 @@ func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMo
 			Tags: hostTags,
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: endpoint,
 			},
 			HistConfig: HistogramConfig{

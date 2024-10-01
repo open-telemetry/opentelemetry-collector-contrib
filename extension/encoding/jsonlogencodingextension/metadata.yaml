@@ -1,0 +1,12 @@
+type: json_log_encoding
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: []
+  codeowners:
+    active: [VihasMakwana, atoulme]
+
+tests:
+  config:

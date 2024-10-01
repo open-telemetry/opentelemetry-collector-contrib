@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package errors
 
@@ -29,26 +18,26 @@ func TestWithDetails(t *testing.T) {
 		err := NewError("Test error", "")
 		err2 := WithDetails(err, "foo", "bar")
 
-		require.Equal(t, err2.Details, ErrorDetails{"foo": "bar"})
+		require.Equal(t, ErrorDetails{"foo": "bar"}, err2.Details)
 	})
 
 	t.Run("AgentErrorWithExistingDetails", func(t *testing.T) {
 		err := NewError("Test error", "", "foo1", "bar1")
 		err2 := WithDetails(err, "foo2", "bar2")
 
-		require.Equal(t, err2.Details, ErrorDetails{"foo1": "bar1", "foo2": "bar2"})
+		require.Equal(t, ErrorDetails{"foo1": "bar1", "foo2": "bar2"}, err2.Details)
 	})
 
 	t.Run("StandardError", func(t *testing.T) {
 		err := fmt.Errorf("Test error")
 		err2 := WithDetails(err, "foo", "bar")
 
-		require.Equal(t, err2.Details, ErrorDetails{"foo": "bar"})
+		require.Equal(t, ErrorDetails{"foo": "bar"}, err2.Details)
 	})
 
 	t.Run("AgentMethod", func(t *testing.T) {
 		err := NewError("Test error", "").WithDetails("foo", "bar")
-		require.Equal(t, err.Details, ErrorDetails{"foo": "bar"})
+		require.Equal(t, ErrorDetails{"foo": "bar"}, err.Details)
 	})
 }
 
@@ -100,7 +89,7 @@ func TestMarshalLogObject(t *testing.T) {
 		out, err := enc.EncodeEntry(entry, fields)
 		require.NoError(t, err)
 
-		expected := `{"level":"debug","ts":-6795364578.8713455,"logger":"testlogger","msg":"Got an error","error":{"description":"Test error"}}` + "\n"
+		expected := `{"level":"debug","logger":"testlogger","msg":"Got an error","error":{"description":"Test error"}}` + "\n"
 		require.Equal(t, expected, out.String())
 	})
 
@@ -109,7 +98,7 @@ func TestMarshalLogObject(t *testing.T) {
 		out, err := enc.EncodeEntry(entry, fields)
 		require.NoError(t, err)
 
-		expected := `{"level":"debug","ts":-6795364578.8713455,"logger":"testlogger","msg":"Got an error","error":{"description":"Test error","suggestion":"Fix it","details":{"foo":"bar"}}}` + "\n"
+		expected := `{"level":"debug","logger":"testlogger","msg":"Got an error","error":{"description":"Test error","suggestion":"Fix it","details":{"foo":"bar"}}}` + "\n"
 		require.Equal(t, expected, out.String())
 	})
 }

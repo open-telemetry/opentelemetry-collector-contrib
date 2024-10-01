@@ -1,0 +1,9 @@
+type: resourcedetection
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [Aneurysm9, dashpole]

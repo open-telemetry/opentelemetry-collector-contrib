@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 
@@ -36,7 +25,14 @@ func addAWSToResource(aws *awsxray.AWSData, attrs pcommon.Map) {
 	addString(aws.AccountID, conventions.AttributeCloudAccountID, attrs)
 
 	// based on https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-aws
-	// it's possible to have all ec2, ecs and beanstalk fields at the same time.
+	// it's possible to have all cloudwatch_logs, ec2, ecs and beanstalk fields at the same time.
+	if cwl := aws.CWLogs; cwl != nil {
+		for _, logGroupMetaData := range cwl {
+			addStringSlice(logGroupMetaData.Arn, conventions.AttributeAWSLogGroupARNs, attrs)
+			addStringSlice(logGroupMetaData.LogGroup, conventions.AttributeAWSLogGroupNames, attrs)
+		}
+	}
+
 	if ec2 := aws.EC2; ec2 != nil {
 		addString(ec2.AvailabilityZone, conventions.AttributeCloudAvailabilityZone, attrs)
 		addString(ec2.InstanceID, conventions.AttributeHostID, attrs)
@@ -62,7 +58,6 @@ func addAWSToResource(aws *awsxray.AWSData, attrs pcommon.Map) {
 		addString(eks.ContainerID, conventions.AttributeContainerID, attrs)
 		addString(eks.ClusterName, conventions.AttributeK8SClusterName, attrs)
 		addString(eks.Pod, conventions.AttributeK8SPodName, attrs)
-
 	}
 }
 

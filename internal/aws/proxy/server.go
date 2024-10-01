@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package proxy provides an http server to act as a signing proxy for SDKs calling AWS X-Ray APIs
 package proxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
@@ -36,7 +25,6 @@ import (
 )
 
 const (
-	service    = "xray"
 	connHeader = "Connection"
 )
 
@@ -56,13 +44,16 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	if cfg.ProxyAddress != "" {
 		logger.Debug("Using remote proxy", zap.String("address", cfg.ProxyAddress))
 	}
+	if cfg.ServiceName == "" {
+		cfg.ServiceName = "xray"
+	}
 
 	awsCfg, sess, err := getAWSConfigSession(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	awsEndPoint, err := getServiceEndpoint(awsCfg)
+	awsEndPoint, err := getServiceEndpoint(awsCfg, cfg.ServiceName)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +103,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			}
 
 			// Sign request. signer.Sign() also repopulates the request body.
-			_, err = signer.Sign(req, body, service, *awsCfg.Region, time.Now())
+			_, err = signer.Sign(req, body, cfg.ServiceName, *awsCfg.Region, time.Now())
 			if err != nil {
 				logger.Error("Unable to sign request", zap.Error(err))
 			}
@@ -120,20 +111,21 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	}
 
 	return &http.Server{
-		Addr:    cfg.Endpoint,
-		Handler: handler,
+		Addr:              cfg.Endpoint,
+		Handler:           handler,
+		ReadHeaderTimeout: 20 * time.Second,
 	}, nil
 }
 
 // getServiceEndpoint returns X-Ray service endpoint.
 // It is guaranteed that awsCfg config instance is non-nil and the region value is non nil or non empty in awsCfg object.
-// Currently the caller takes care of it.
-func getServiceEndpoint(awsCfg *aws.Config) (string, error) {
+// Currently, the caller takes care of it.
+func getServiceEndpoint(awsCfg *aws.Config, serviceName string) (string, error) {
 	if isEmpty(awsCfg.Endpoint) {
 		if isEmpty(awsCfg.Region) {
 			return "", errors.New("unable to generate endpoint from region with nil value")
 		}
-		resolved, err := endpoints.DefaultResolver().EndpointFor(service, *awsCfg.Region, setResolverConfig())
+		resolved, err := endpoints.DefaultResolver().EndpointFor(serviceName, *awsCfg.Region, setResolverConfig())
 		return resolved.URL, err
 	}
 	return *awsCfg.Endpoint, nil

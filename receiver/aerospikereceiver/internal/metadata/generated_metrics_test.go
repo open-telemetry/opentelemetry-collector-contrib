@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,42 +13,56 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testMetricsSet int
+type testDataSet int
 
 const (
-	testMetricsSetDefault testMetricsSet = iota
-	testMetricsSetAll
-	testMetricsSetNo
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
-		metricsSet testMetricsSet
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:       "default",
-			metricsSet: testMetricsSetDefault,
+			name: "default",
 		},
 		{
-			name:       "all_metrics",
-			metricsSet: testMetricsSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:       "no_metrics",
-			metricsSet: testMetricsSetNo,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -84,27 +94,27 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponent(1))
+			mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponentData)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryType(1), AttributeIndexType(1), AttributeQueryResult(1))
+			mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryTypeAggregation, AttributeIndexTypePrimary, AttributeQueryResultAbort)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanType(1), AttributeScanResult(1))
+			mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanTypeAggregation, AttributeScanResultAbort)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionType(1), AttributeTransactionResult(1))
+			mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionTypeDelete, AttributeTransactionResultError)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionType(1), AttributeConnectionOp(1))
+			mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionTypeClient, AttributeConnectionOpClose)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionType(1))
+			mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionTypeClient)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -114,40 +124,26 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "1")
 
-			metrics := mb.Emit(WithAerospikeNamespace("attr-val"), WithAerospikeNodeName("attr-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetAerospikeNamespace("aerospike.namespace-val")
+			rb.SetAerospikeNodeName("aerospike.node.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
-			if test.metricsSet == testMetricsSetNo {
+			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("aerospike.namespace")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.AerospikeNamespace.Enabled, ok)
-			if mb.resourceAttributesSettings.AerospikeNamespace.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("aerospike.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.AerospikeNodeName.Enabled, ok)
-			if mb.resourceAttributesSettings.AerospikeNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 2)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testMetricsSetDefault {
+			if tt.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testMetricsSetAll {
+			if tt.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -172,7 +168,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of cell coverings for query region queried", ms.At(i).Description())
 					assert.Equal(t, "{cells}", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -186,7 +182,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of points outside the region.", ms.At(i).Description())
 					assert.Equal(t, "{points}", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -200,7 +196,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of points within the region.", ms.At(i).Description())
 					assert.Equal(t, "{points}", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -214,7 +210,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of geojson queries on the system since the uptime of the node.", ms.At(i).Description())
 					assert.Equal(t, "{queries}", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -240,7 +236,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Memory currently used by each component of the namespace", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -249,7 +245,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("component")
 					assert.True(t, ok)
-					assert.Equal(t, "data", attrVal.Str())
+					assert.EqualValues(t, "data", attrVal.Str())
 				case "aerospike.namespace.query.count":
 					assert.False(t, validatedMetrics["aerospike.namespace.query.count"], "Found a duplicate in the metrics slice: aerospike.namespace.query.count")
 					validatedMetrics["aerospike.namespace.query.count"] = true
@@ -257,7 +253,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of query operations performed on the namespace", ms.At(i).Description())
 					assert.Equal(t, "{queries}", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -266,13 +262,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "aggregation", attrVal.Str())
+					assert.EqualValues(t, "aggregation", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("index")
 					assert.True(t, ok)
-					assert.Equal(t, "primary", attrVal.Str())
+					assert.EqualValues(t, "primary", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("result")
 					assert.True(t, ok)
-					assert.Equal(t, "abort", attrVal.Str())
+					assert.EqualValues(t, "abort", attrVal.Str())
 				case "aerospike.namespace.scan.count":
 					assert.False(t, validatedMetrics["aerospike.namespace.scan.count"], "Found a duplicate in the metrics slice: aerospike.namespace.scan.count")
 					validatedMetrics["aerospike.namespace.scan.count"] = true
@@ -280,7 +276,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of scan operations performed on the namespace", ms.At(i).Description())
 					assert.Equal(t, "{scans}", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -289,10 +285,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "aggregation", attrVal.Str())
+					assert.EqualValues(t, "aggregation", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("result")
 					assert.True(t, ok)
-					assert.Equal(t, "abort", attrVal.Str())
+					assert.EqualValues(t, "abort", attrVal.Str())
 				case "aerospike.namespace.transaction.count":
 					assert.False(t, validatedMetrics["aerospike.namespace.transaction.count"], "Found a duplicate in the metrics slice: aerospike.namespace.transaction.count")
 					validatedMetrics["aerospike.namespace.transaction.count"] = true
@@ -300,7 +296,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of transactions performed on the namespace", ms.At(i).Description())
 					assert.Equal(t, "{transactions}", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -309,10 +305,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					assert.EqualValues(t, "delete", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("result")
 					assert.True(t, ok)
-					assert.Equal(t, "error", attrVal.Str())
+					assert.EqualValues(t, "error", attrVal.Str())
 				case "aerospike.node.connection.count":
 					assert.False(t, validatedMetrics["aerospike.node.connection.count"], "Found a duplicate in the metrics slice: aerospike.node.connection.count")
 					validatedMetrics["aerospike.node.connection.count"] = true
@@ -320,7 +316,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of connections opened and closed to the node", ms.At(i).Description())
 					assert.Equal(t, "{connections}", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -329,10 +325,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "client", attrVal.Str())
+					assert.EqualValues(t, "client", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "close", attrVal.Str())
+					assert.EqualValues(t, "close", attrVal.Str())
 				case "aerospike.node.connection.open":
 					assert.False(t, validatedMetrics["aerospike.node.connection.open"], "Found a duplicate in the metrics slice: aerospike.node.connection.open")
 					validatedMetrics["aerospike.node.connection.open"] = true
@@ -340,7 +336,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Current number of open connections to the node", ms.At(i).Description())
 					assert.Equal(t, "{connections}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -349,7 +345,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "client", attrVal.Str())
+					assert.EqualValues(t, "client", attrVal.Str())
 				case "aerospike.node.memory.free":
 					assert.False(t, validatedMetrics["aerospike.node.memory.free"], "Found a duplicate in the metrics slice: aerospike.node.memory.free")
 					validatedMetrics["aerospike.node.memory.free"] = true
@@ -368,8 +364,8 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of queries tracked by the system.", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, "{queries}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -380,14 +376,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsSettings {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
@@ -24,36 +13,55 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
-)
-
-const (
-	typeStr = "datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
 // NewFactory creates a factory for DataDog receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, component.StabilityLevelAlpha))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8126",
 		},
 		ReadTimeout: 60 * time.Second,
 	}
 }
 
-func createTracesReceiver(ctx context.Context, params receiver.CreateSettings, cfg component.Config, consumer consumer.Traces) (r receiver.Traces, err error) {
+func createTracesReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Traces) (receiver.Traces, error) {
+	var err error
 	rcfg := cfg.(*Config)
-	r = receivers.GetOrAdd(cfg, func() component.Component {
-		dd, _ := newDataDogReceiver(rcfg, consumer, params)
+	r := receivers.GetOrAdd(rcfg, func() (dd component.Component) {
+		dd, err = newDataDogReceiver(rcfg, params)
 		return dd
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	r.Unwrap().(*datadogReceiver).nextTracesConsumer = consumer
+	return r, nil
+}
+
+func createMetricsReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+	var err error
+	rcfg := cfg.(*Config)
+	r := receivers.GetOrAdd(cfg, func() (dd component.Component) {
+		dd, err = newDataDogReceiver(rcfg, params)
+		return dd
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	r.Unwrap().(*datadogReceiver).nextMetricsConsumer = consumer
 	return r, nil
 }
 

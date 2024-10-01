@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package apachereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 
@@ -43,7 +32,7 @@ type apacheScraper struct {
 }
 
 func newApacheScraper(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg *Config,
 	serverName string,
 	port string,
@@ -51,7 +40,7 @@ func newApacheScraper(
 	a := &apacheScraper{
 		settings:   settings.TelemetrySettings,
 		cfg:        cfg,
-		mb:         metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		serverName: serverName,
 		port:       port,
 	}
@@ -59,8 +48,8 @@ func newApacheScraper(
 	return a
 }
 
-func (r *apacheScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(host, r.settings)
+func (r *apacheScraper) start(ctx context.Context, host component.Host) error {
+	httpClient, err := r.cfg.ToClient(ctx, host, r.settings)
 	if err != nil {
 		return err
 	}
@@ -138,7 +127,10 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	return r.mb.Emit(metadata.WithApacheServerName(r.serverName), metadata.WithApacheServerPort(r.port)), errs.Combine()
+	rb := r.mb.NewResourceBuilder()
+	rb.SetApacheServerName(r.serverName)
+	rb.SetApacheServerPort(r.port)
+	return r.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }
 
 func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {

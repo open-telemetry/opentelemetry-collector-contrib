@@ -4,6 +4,8 @@ zipkin/2:
   endpoint: "https://somedest:1234/api/v2/spans"
   format: proto
   default_service_name: test_name
+  idle_conn_timeout: 5s
+  max_idle_conns: 50
   sending_queue:
     enabled: true
     num_consumers: 2
@@ -13,3 +15,5 @@ zipkin/2:
     initial_interval: 10s
     max_interval: 60s
     max_elapsed_time: 10m
+  tls:
+    insecure_skip_verify: true

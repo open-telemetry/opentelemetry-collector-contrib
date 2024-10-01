@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor
 
@@ -20,19 +9,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/pipeline"
 	"google.golang.org/grpc/metadata"
 )
 
 func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	// prepare
-	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -42,19 +32,20 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	otlpExpFactory := otlpexporter.NewFactory()
-	otlpID := component.NewID("otlp")
+	otlpID := component.MustNewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			otlpID: otlpExp,
 		},
 	})
@@ -68,7 +59,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 
 func TestTraces_InvalidExporter(t *testing.T) {
 	//  prepare
-	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -78,15 +69,16 @@ func TestTraces_InvalidExporter(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
-			component.NewID("otlp"): &mockComponent{},
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
+			component.MustNewID("otlp"): &mockComponent{},
 		},
 	})
 
 	// test
-	err := exp.Start(context.Background(), host)
+	err = exp.Start(context.Background(), host)
 
 	// verify
 	assert.Error(t, err)
@@ -96,14 +88,14 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -114,6 +106,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	tr := ptrace.NewTraces()
 
@@ -151,14 +144,14 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -169,20 +162,22 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	tr := ptrace.NewTraces()
 	rs := tr.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("X-Tenant", "acme")
 
-	t.Run("non default route is properly used", func(t *testing.T) {
+	t.Run("grpc metadata: non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
 			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
 				"X-Tenant": "acme",
 			})),
 			tr,
 		))
-		assert.Len(t, defaultExp.AllTraces(), 0,
+		assert.Empty(t, defaultExp.AllTraces(),
 			"trace should not be routed to default exporter",
 		)
 		assert.Len(t, tExp.AllTraces(), 1,
@@ -190,7 +185,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		)
 	})
 
-	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
+	t.Run("grpc metadata: default route is taken when no matching route can be found", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
 			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
 				"X-Tenant": "some-custom-value1",
@@ -204,20 +199,52 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 			"trace should not be routed to non default exporter",
 		)
 	})
+
+	t.Run("client.Info metadata: non default route is properly used", func(t *testing.T) {
+		assert.NoError(t, exp.ConsumeTraces(
+			client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"X-Tenant": {"acme"},
+				})}),
+			tr,
+		))
+		assert.Len(t, defaultExp.AllTraces(), 1,
+			"trace should not be routed to default exporter",
+		)
+		assert.Len(t, tExp.AllTraces(), 2,
+			"trace should be routed to non default exporter",
+		)
+	})
+
+	t.Run("client.Info metadata: default route is taken when no matching route can be found", func(t *testing.T) {
+		assert.NoError(t, exp.ConsumeTraces(
+			client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"X-Tenant": {"some-custom-value1"},
+				})}),
+			tr,
+		))
+		assert.Len(t, defaultExp.AllTraces(), 2,
+			"trace should be routed to default exporter",
+		)
+		assert.Len(t, tExp.AllTraces(), 2,
+			"trace should not be routed to non default exporter",
+		)
+	})
 }
 
 func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -228,6 +255,8 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
@@ -236,7 +265,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		rs.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
-		assert.Len(t, defaultExp.AllTraces(), 0,
+		assert.Empty(t, defaultExp.AllTraces(),
 			"trace should not be routed to default exporter",
 		)
 		assert.Len(t, tExp.AllTraces(), 1,
@@ -263,14 +292,14 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -282,6 +311,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	tr := ptrace.NewTraces()
@@ -308,15 +339,15 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	firstExp := &mockTracesExporter{}
 	secondExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "1"): firstExp,
-			component.NewIDWithName("otlp", "2"): secondExp,
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
+			component.MustNewIDWithName("otlp", "2"): secondExp,
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
@@ -329,6 +360,8 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("span by matched no expressions", func(t *testing.T) {
@@ -345,8 +378,8 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 
 		assert.Len(t, defaultExp.AllTraces(), 1)
-		assert.Len(t, firstExp.AllTraces(), 0)
-		assert.Len(t, secondExp.AllTraces(), 0)
+		assert.Empty(t, firstExp.AllTraces())
+		assert.Empty(t, secondExp.AllTraces())
 	})
 
 	t.Run("span matched by one of two expressions", func(t *testing.T) {
@@ -362,9 +395,9 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 
-		assert.Len(t, defaultExp.AllTraces(), 0)
+		assert.Empty(t, defaultExp.AllTraces())
 		assert.Len(t, firstExp.AllTraces(), 1)
-		assert.Len(t, secondExp.AllTraces(), 0)
+		assert.Empty(t, secondExp.AllTraces())
 	})
 
 	t.Run("spans matched by all expressions", func(t *testing.T) {
@@ -385,12 +418,12 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 
-		assert.Len(t, defaultExp.AllTraces(), 0)
+		assert.Empty(t, defaultExp.AllTraces())
 		assert.Len(t, firstExp.AllTraces(), 1)
 		assert.Len(t, secondExp.AllTraces(), 1)
 
-		assert.Equal(t, firstExp.AllTraces()[0].SpanCount(), 2)
-		assert.Equal(t, secondExp.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, 2, firstExp.AllTraces()[0].SpanCount())
+		assert.Equal(t, 2, secondExp.AllTraces()[0].SpanCount())
 		assert.Equal(t, firstExp.AllTraces(), secondExp.AllTraces())
 	})
 
@@ -425,6 +458,48 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 }
 
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26462
+func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
+	// prepare
+	defaultExp := &mockTracesExporter{}
+	firstExp := &mockTracesExporter{}
+
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
+		},
+	})
+
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 0`,
+				Exporters: []string{"otlp/1"},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	tr := ptrace.NewTraces()
+	rl := tr.ResourceSpans().AppendEmpty()
+	rl.Resource().Attributes().PutInt("value", 1)
+	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("span")
+
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	// test
+	// before #26464, this would panic
+	require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+	// verify
+	assert.Len(t, defaultExp.AllTraces(), 1)
+	assert.Empty(t, firstExp.AllTraces())
+
+}
+
 func TestTraceProcessorCapabilities(t *testing.T) {
 	// prepare
 	config := &Config{
@@ -436,11 +511,12 @@ func TestTraceProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
+	p, err := newTracesProcessor(noopTelemetrySettings, config)
+	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	// verify
-	assert.Equal(t, false, p.Capabilities().MutatesData)
+	assert.False(t, p.Capabilities().MutatesData)
 }
 
 type mockTracesExporter struct {

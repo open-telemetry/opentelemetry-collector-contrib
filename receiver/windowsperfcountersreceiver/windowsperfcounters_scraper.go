@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
@@ -24,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -35,6 +24,7 @@ const instanceLabelName = "instance"
 type perfCounterMetricWatcher struct {
 	winperfcounters.PerfCounterWatcher
 	MetricRep
+	recreate bool
 }
 
 type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
@@ -78,6 +68,7 @@ func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 				watcher := perfCounterMetricWatcher{
 					PerfCounterWatcher: pcw,
 					MetricRep:          MetricRep{Name: pcw.Path()},
+					recreate:           counterCfg.RecreateQuery,
 				}
 				if counterCfg.MetricRep.Name != "" {
 					watcher.MetricRep.Name = counterCfg.MetricRep.Name
@@ -136,11 +127,20 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		metrics[name] = builtMetric
 	}
 
+	scrapeFailures := 0
 	for _, watcher := range s.watchers {
 		counterVals, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
+			scrapeFailures++
 			continue
+		}
+
+		if watcher.recreate {
+			err := watcher.Reset()
+			if err != nil {
+				errs = multierr.Append(errs, err)
+			}
 		}
 
 		for _, val := range counterVals {
@@ -157,6 +157,24 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
 		}
 	}
+
+	// Drop metrics with no datapoints. This happens when configured counters don't exist on the host.
+	// This may result in a Metrics message with no metrics if all counters are missing.
+	metricSlice.RemoveIf(func(m pmetric.Metric) bool {
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
+			return m.Gauge().DataPoints().Len() == 0
+		case pmetric.MetricTypeSum:
+			return m.Sum().DataPoints().Len() == 0
+		default:
+			return false
+		}
+	})
+
+	if scrapeFailures != 0 && scrapeFailures != len(s.watchers) {
+		errs = scrapererror.NewPartialScrapeError(errs, scrapeFailures)
+	}
+
 	return md, errs
 }
 
@@ -174,10 +192,9 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 	if counterValue.InstanceName != "" {
 		dp.Attributes().PutStr(instanceLabelName, counterValue.InstanceName)
 	}
-	if attributes != nil {
-		for attKey, attVal := range attributes {
-			dp.Attributes().PutStr(attKey, attVal)
-		}
+
+	for attKey, attVal := range attributes {
+		dp.Attributes().PutStr(attKey, attVal)
 	}
 
 	dp.SetTimestamp(now)

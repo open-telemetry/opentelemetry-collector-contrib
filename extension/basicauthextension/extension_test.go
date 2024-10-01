@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
@@ -183,7 +172,7 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	auth = base64.StdEncoding.EncodeToString([]byte("username:fromfile"))
 
 	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth}})
-	assert.Error(t, errInvalidCredentials, err)
+	assert.ErrorIs(t, errInvalidCredentials, err)
 }
 
 func TestBasicAuth_SupportedHeaders(t *testing.T) {
@@ -239,14 +228,13 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 func TestBasicAuth_ClientValid(t *testing.T) {
-	ext, err := newClientAuthExtension(&Config{
+	ext := newClientAuthExtension(&Config{
 		ClientAuth: &ClientAuthSettings{
 			Username: "username",
 			Password: "password",
 		},
 	})
 	require.NotNil(t, ext)
-	require.NoError(t, err)
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -277,7 +265,7 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	expectedMd := map[string]string{
 		"authorization": fmt.Sprintf("Basic %s", authCreds),
 	}
-	assert.Equal(t, md, expectedMd)
+	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
 	assert.True(t, credential.RequireTransportSecurity())
 
@@ -285,29 +273,20 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 }
 
 func TestBasicAuth_ClientInvalid(t *testing.T) {
-	t.Run("no username", func(t *testing.T) {
-		_, err := newClientAuthExtension(&Config{
-			ClientAuth: &ClientAuthSettings{
-				Username: "",
-			},
-		})
-		assert.Error(t, err)
-	})
 
 	t.Run("invalid username format", func(t *testing.T) {
-		ext, err := newClientAuthExtension(&Config{
+		ext := newClientAuthExtension(&Config{
 			ClientAuth: &ClientAuthSettings{
 				Username: "user:name",
 				Password: "password",
 			},
 		})
 		require.NotNil(t, ext)
-		require.NoError(t, err)
 
 		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
 		base := &mockRoundTripper{}
-		_, err = ext.RoundTripper(base)
+		_, err := ext.RoundTripper(base)
 		assert.Error(t, err)
 
 		_, err = ext.PerRPCCredentials()

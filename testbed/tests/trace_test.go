@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package tests contains test cases. To run the tests go to tests directory and run:
 // RUN_TESTBED=1 go test -v
@@ -30,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
@@ -49,18 +39,9 @@ func TestTrace10kSPS(t *testing.T) {
 		resourceSpec testbed.ResourceSpec
 	}{
 		{
-			"JaegerGRPC",
-			datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 100,
-			},
-		},
-		{
 			"OpenCensus",
-			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 39,
 				ExpectedMaxRAM: 100,
@@ -68,8 +49,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-gRPC",
-			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
 				ExpectedMaxRAM: 100,
@@ -77,8 +58,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-gRPC-gzip",
-			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)).WithCompression("gzip"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 30,
 				ExpectedMaxRAM: 100,
@@ -86,8 +67,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-HTTP",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t), ""),
+			testbed.NewOTLPHTTPDataReceiver(testutil.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
 				ExpectedMaxRAM: 100,
@@ -95,26 +76,53 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-HTTP-gzip",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t), "gzip"),
+			testbed.NewOTLPHTTPDataReceiver(testutil.GetAvailablePort(t)).WithCompression("gzip"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 25,
 				ExpectedMaxRAM: 100,
 			},
 		},
 		{
+			"OTLP-HTTP-zstd",
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t), "zstd"),
+			testbed.NewOTLPHTTPDataReceiver(testutil.GetAvailablePort(t)).WithCompression("zstd"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 22,
+				ExpectedMaxRAM: 220,
+			},
+		},
+		{
 			"SAPM",
-			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t)),
-			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), ""),
+			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), ""),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 32,
 				ExpectedMaxRAM: 100,
 			},
 		},
 		{
+			"SAPM-gzip",
+			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "gzip"),
+			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "gzip"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 35,
+				ExpectedMaxRAM: 110,
+			},
+		},
+		{
+			"SAPM-zstd",
+			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "zstd"),
+			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "zstd"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 32,
+				ExpectedMaxRAM: 300,
+			},
+		},
+		{
 			"Zipkin",
-			datasenders.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			datareceivers.NewZipkinDataReceiver(testutil.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
 				ExpectedMaxRAM: 120,
@@ -143,6 +151,28 @@ func TestTrace10kSPS(t *testing.T) {
 	}
 }
 
+func TestTrace10kSPSJaegerGRPC(t *testing.T) {
+	port := testutil.GetAvailablePort(t)
+	receiver := datareceivers.NewJaegerDataReceiver(port)
+	Scenario10kItemsPerSecondAlternateBackend(
+		t,
+		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		receiver,
+		testbed.NewOTLPDataReceiver(port),
+		testbed.ResourceSpec{
+			ExpectedMaxCPU: 40,
+			ExpectedMaxRAM: 100,
+		},
+		performanceResultsSummary,
+		map[string]string{
+			"batch": `
+  batch:
+`,
+		},
+		nil,
+	)
+}
+
 func TestTraceNoBackend10kSPS(t *testing.T) {
 
 	limitProcessors := map[string]string{
@@ -159,8 +189,8 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
-			ExpectedMaxRAM:      190,
-			ExpectedMinFinalRAM: 100,
+			ExpectedMaxRAM:      100,
+			ExpectedMinFinalRAM: 80,
 		},
 		{
 			Name:                "MemoryLimit",
@@ -174,9 +204,9 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		t.Run(testConf.Name, func(t *testing.T) {
 			ScenarioTestTraceNoBackend10kSPS(
 				t,
-				testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-				testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
-				testbed.ResourceSpec{ExpectedMaxCPU: 60, ExpectedMaxRAM: testConf.ExpectedMaxRAM},
+				testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+				testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
+				testbed.ResourceSpec{ExpectedMaxCPU: 90, ExpectedMaxRAM: testConf.ExpectedMaxRAM},
 				performanceResultsSummary,
 				testConf,
 			)
@@ -226,105 +256,6 @@ func TestTrace1kSPSWithAttrs(t *testing.T) {
 	}, nil, nil)
 }
 
-func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
-	ballastExtCfg := `
-  memory_ballast:
-    size_mib: 1000`
-	Scenario1kSPSWithAttrs(t, []string{}, []TestCase{
-		// No attributes.
-		{
-			attrCount:      0,
-			attrSizeByte:   0,
-			expectedMaxCPU: 53,
-			expectedMaxRAM: 2200,
-			resultsSummary: performanceResultsSummary,
-		},
-		{
-			attrCount:      100,
-			attrSizeByte:   50,
-			expectedMaxCPU: 100,
-			expectedMaxRAM: 2200,
-			resultsSummary: performanceResultsSummary,
-		},
-		{
-			attrCount:      10,
-			attrSizeByte:   1000,
-			expectedMaxCPU: 100,
-			expectedMaxRAM: 2200,
-			resultsSummary: performanceResultsSummary,
-		},
-		{
-			attrCount:      20,
-			attrSizeByte:   5000,
-			expectedMaxCPU: 120,
-			expectedMaxRAM: 2200,
-			resultsSummary: performanceResultsSummary,
-		},
-	}, nil, map[string]string{"memory_ballast": ballastExtCfg})
-}
-
-func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
-	ballastExtCfg := `
-  memory_ballast:
-    size_mib: 1000`
-
-	attrProcCfg := `
-  attributes:
-    actions:
-      - key: attrib.key00
-        value: 123
-        action: insert
-      - key: attrib.key01
-        value: "a small string for this attribute"
-        action: insert
-      - key: attrib.key02
-        value: true
-        action: insert
-      - key: region
-        value: test-region
-        action: insert
-      - key: data-center
-        value: test-datacenter
-        action: insert`
-
-	Scenario1kSPSWithAttrs(
-		t,
-		[]string{},
-		[]TestCase{
-			{
-				attrCount:      0,
-				attrSizeByte:   0,
-				expectedMaxCPU: 60,
-				expectedMaxRAM: 2200,
-				resultsSummary: performanceResultsSummary,
-			},
-			{
-				attrCount:      100,
-				attrSizeByte:   50,
-				expectedMaxCPU: 80,
-				expectedMaxRAM: 2200,
-				resultsSummary: performanceResultsSummary,
-			},
-			{
-				attrCount:      10,
-				attrSizeByte:   1000,
-				expectedMaxCPU: 80,
-				expectedMaxRAM: 2200,
-				resultsSummary: performanceResultsSummary,
-			},
-			{
-				attrCount:      20,
-				attrSizeByte:   5000,
-				expectedMaxCPU: 120,
-				expectedMaxRAM: 2200,
-				resultsSummary: performanceResultsSummary,
-			},
-		},
-		map[string]string{"attributes": attrProcCfg},
-		map[string]string{"memory_ballast": ballastExtCfg},
-	)
-}
-
 // verifySingleSpan sends a single span to Collector, waits until the span is forwarded
 // and received by MockBackend and calls user-supplied verification functions on
 // received span.
@@ -351,7 +282,7 @@ func verifySingleSpan(
 	span.SetSpanID(idutils.UInt64ToSpanID(1))
 	span.SetName(spanName)
 
-	sender := tc.Sender.(testbed.TraceDataSender)
+	sender := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.TraceDataSender)
 	require.NoError(t, sender.ConsumeTraces(context.Background(), td))
 
 	// We bypass the load generator in this test, but make sure to increment the
@@ -387,14 +318,9 @@ func TestTraceAttributesProcessor(t *testing.T) {
 		receiver testbed.DataReceiver
 	}{
 		{
-			"JaegerGRPC",
-			datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
-		},
-		{
 			"OTLP",
-			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 		},
 	}
 
@@ -421,7 +347,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 `,
 			}
 
-			agentProc := testbed.NewChildProcessCollector()
+			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 			configStr := createConfigYaml(t, test.sender, test.receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)
@@ -456,7 +382,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			// verifySpan verifies that attributes was added to the internal data span.
 			verifySpan := func(span ptrace.Span) {
 				require.NotNil(t, span)
-				require.Equal(t, span.Attributes().Len(), 1)
+				require.Equal(t, 1, span.Attributes().Len())
 				attrVal, ok := span.Attributes().Get("new_attr")
 				assert.True(t, ok)
 				assert.EqualValues(t, "string value", attrVal.Str())
@@ -469,15 +395,101 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span ptrace.Span) {
 				// Verify attributes was not added to the new internal data span.
-				assert.Equal(t, span.Attributes().Len(), 0)
+				assert.Equal(t, 0, span.Attributes().Len())
 			})
 
 			// Create another span that does not match "include" filter.
 			spanToExclude := "span-not-to-add-attr"
 			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span ptrace.Span) {
 				// Verify attributes was not added to the new internal data span.
-				assert.Equal(t, span.Attributes().Len(), 0)
+				assert.Equal(t, 0, span.Attributes().Len())
 			})
 		})
 	}
+}
+
+func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
+	port := testutil.GetAvailablePort(t)
+	sender := datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+	receiver := datareceivers.NewJaegerDataReceiver(port)
+	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	// Use processor to add attributes to certain spans.
+	processors := map[string]string{
+		"batch": `
+  batch:
+`,
+		"attributes": `
+  attributes:
+    include:
+      match_type: regexp
+      services: ["service-to-add.*"]
+      span_names: ["span-to-add-.*"]
+    actions:
+      - action: insert
+        key: "new_attr"
+        value: "string value"
+`,
+	}
+
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+
+	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	dataProvider := testbed.NewPerfTestDataProvider(options)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.PerfTestValidator{},
+		performanceResultsSummary,
+	)
+	defer tc.Stop()
+
+	tc.MockBackend = testbed.NewMockBackend(tc.ComposeTestResultFileName("backend.log"), testbed.NewOTLPDataReceiver(port))
+
+	tc.StartBackend()
+	tc.StartAgent()
+	defer tc.StopAgent()
+
+	tc.EnableRecording()
+
+	require.NoError(t, sender.Start())
+
+	// Create a span that matches "include" filter.
+	spanToInclude := "span-to-add-attr"
+	// Create a service name that matches "include" filter.
+	nodeToInclude := "service-to-add-attr"
+
+	// verifySpan verifies that attributes was added to the internal data span.
+	verifySpan := func(span ptrace.Span) {
+		require.NotNil(t, span)
+		require.Equal(t, 1, span.Attributes().Len())
+		attrVal, ok := span.Attributes().Get("new_attr")
+		assert.True(t, ok)
+		assert.EqualValues(t, "string value", attrVal.Str())
+	}
+
+	verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan)
+
+	// Create a service name that does not match "include" filter.
+	nodeToExclude := "service-not-to-add-attr"
+
+	verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span ptrace.Span) {
+		// Verify attributes was not added to the new internal data span.
+		assert.Equal(t, 0, span.Attributes().Len())
+	})
+
+	// Create another span that does not match "include" filter.
+	spanToExclude := "span-not-to-add-attr"
+	verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span ptrace.Span) {
+		// Verify attributes was not added to the new internal data span.
+		assert.Equal(t, 0, span.Attributes().Len())
+	})
 }

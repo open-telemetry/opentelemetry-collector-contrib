@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package correlation
 
@@ -18,12 +7,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/signalfx/signalfx-agent/pkg/apm/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
 )
 
 func newShimTest() (*observer.ObservedLogs, zapShim) {
@@ -58,7 +48,7 @@ func TestZapShim_Debug(t *testing.T) {
 	e := logs[0]
 	assert.Equal(t, "debug message", e.Message)
 	assert.Equal(t, zap.DebugLevel, e.Level)
-	assert.Len(t, e.Context, 0)
+	assert.Empty(t, e.Context)
 }
 
 func TestZapShim_Warn(t *testing.T) {
@@ -70,7 +60,7 @@ func TestZapShim_Warn(t *testing.T) {
 	e := logs[0]
 	assert.Equal(t, "warn message", e.Message)
 	assert.Equal(t, zap.WarnLevel, e.Level)
-	assert.Len(t, e.Context, 0)
+	assert.Empty(t, e.Context)
 }
 
 func TestZapShim_Info(t *testing.T) {
@@ -82,7 +72,7 @@ func TestZapShim_Info(t *testing.T) {
 	e := logs[0]
 	assert.Equal(t, "info message", e.Message)
 	assert.Equal(t, zap.InfoLevel, e.Level)
-	assert.Len(t, e.Context, 0)
+	assert.Empty(t, e.Context)
 }
 
 func TestZapShim_Panic(t *testing.T) {
@@ -96,7 +86,7 @@ func TestZapShim_Panic(t *testing.T) {
 	e := logs[0]
 	assert.Equal(t, "panic message", e.Message)
 	assert.Equal(t, zap.PanicLevel, e.Level)
-	assert.Len(t, e.Context, 0)
+	assert.Empty(t, e.Context)
 }
 
 func TestZapShim_Fields(t *testing.T) {
@@ -112,5 +102,5 @@ func TestZapShim_Fields(t *testing.T) {
 	c := e.Context[0]
 	assert.Equal(t, "field", c.Key)
 	require.Equal(t, zapcore.StringType, c.Type)
-	assert.Equal(t, c.String, "field value")
+	assert.Equal(t, "field value", c.String)
 }

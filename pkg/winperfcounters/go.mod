@@ -1,10 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
 
-go 1.19
+go 1.22.0
 
 require (
-	github.com/stretchr/testify v1.8.1
-	golang.org/x/sys v0.5.0
+	github.com/stretchr/testify v1.9.0
+	go.uber.org/goleak v1.3.0
+	golang.org/x/sys v0.25.0
 )
 
 require (
@@ -16,4 +17,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

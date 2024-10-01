@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 
@@ -24,6 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -50,10 +40,10 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: "/non/existent",
 						},
 					},
@@ -67,8 +57,8 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					TLSSetting: configtls.TLSClientSetting{},
+				ClientConfig: confighttp.ClientConfig{
+					TLSSetting: configtls.ClientConfig{},
 					Endpoint:   defaultEndpoint,
 				},
 			},
@@ -81,10 +71,10 @@ func TestNewClient(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newClient(tc.cfg, tc.host, tc.settings, tc.logger)
+			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 
@@ -92,7 +82,7 @@ func TestNewClient(t *testing.T) {
 				require.True(t, ok)
 
 				require.Equal(t, tc.cfg.Username, actualClient.creds.username)
-				require.Equal(t, tc.cfg.Password, actualClient.creds.password)
+				require.Equal(t, string(tc.cfg.Password), actualClient.creds.password)
 				require.Equal(t, tc.cfg.Endpoint, actualClient.hostEndpoint)
 				require.Equal(t, tc.logger, actualClient.logger)
 				require.NotNil(t, actualClient.client)
@@ -110,7 +100,7 @@ func TestGetQueuesDetails(t *testing.T) {
 			desc: "Non-200 Response",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -126,9 +116,9 @@ func TestGetQueuesDetails(t *testing.T) {
 			desc: "Bad payload returned",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -136,7 +126,7 @@ func TestGetQueuesDetails(t *testing.T) {
 
 				clusters, err := tc.GetQueues(context.Background())
 				require.Nil(t, clusters)
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 			},
 		},
 		{
@@ -145,9 +135,9 @@ func TestGetQueuesDetails(t *testing.T) {
 				data := loadAPIResponseData(t, queuesAPIResponseFile)
 
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(data)
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -175,7 +165,7 @@ func createTestClient(t *testing.T, baseEndpoint string) client {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = baseEndpoint
 
-	testClient, err := newClient(cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
+	testClient, err := newClient(context.Background(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
 	require.NoError(t, err)
 	return testClient
 }

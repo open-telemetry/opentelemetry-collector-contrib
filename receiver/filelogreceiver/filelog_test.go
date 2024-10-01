@@ -1,31 +1,20 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filelogreceiver
 
 import (
 	"context"
 	"fmt"
-	"log"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -33,14 +22,16 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
@@ -58,9 +49,9 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewID("filelog").String())
+	sub, err := cm.Sub(component.MustNewID("filelog").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
@@ -74,7 +65,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -90,7 +81,7 @@ func TestReadStaticFile(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	converter := adapter.NewConverter(zap.NewNop())
+	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
 	converter.Start()
 	defer converter.Stop()
 
@@ -98,7 +89,7 @@ func TestReadStaticFile(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -132,31 +123,18 @@ func TestReadStaticFile(t *testing.T) {
 }
 
 func TestReadRotatingFiles(t *testing.T) {
-
 	tests := []rotationTest{
 		{
-			name:         "CopyTruncateTimestamped",
+			name:         "CopyTruncate",
 			copyTruncate: true,
-			sequential:   false,
-		},
-		{
-			name:         "CopyTruncateSequential",
-			copyTruncate: true,
-			sequential:   true,
 		},
 	}
 	if runtime.GOOS != "windows" {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
 		tests = append(tests, []rotationTest{
 			{
-				name:         "MoveCreateTimestamped",
+				name:         "MoveCreate",
 				copyTruncate: false,
-				sequential:   false,
-			},
-			{
-				name:         "MoveCreateSequential",
-				copyTruncate: false,
-				sequential:   true,
 			},
 		}...)
 	}
@@ -169,39 +147,75 @@ func TestReadRotatingFiles(t *testing.T) {
 type rotationTest struct {
 	name         string
 	copyTruncate bool
-	sequential   bool
 }
 
 func (rt *rotationTest) Run(t *testing.T) {
 	t.Parallel()
 
-	tempDir := t.TempDir()
-
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 
+	tempDir := t.TempDir()
 	cfg := rotationTestConfig(tempDir)
 
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
 	// when more than 100 logs are written, and deletion when more than 200 are written.
 	// Write 300 and validate that we got the all despite rotation and deletion.
-	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
+	maxLinesPerFile := 100
 	numLogs := 300
+	fileName := filepath.Join(tempDir, "test.log")
+	backupFileName := filepath.Join(tempDir, "test-backup.log")
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := adapter.NewConverter(zap.NewNop())
+	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
 	converter.Start()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0600)
+	defer func() {
+		require.NoError(t, file.Close())
+	}()
+	require.NoError(t, err)
+
 	for i := 0; i < numLogs; i++ {
+		if (i+1)%maxLinesPerFile == 0 {
+			if rt.copyTruncate {
+				// Recreate the backup file
+				// if backupFileName exists
+				if _, err = os.Stat(backupFileName); err == nil {
+					require.NoError(t, os.Remove(backupFileName))
+				}
+				backupFile, openErr := os.OpenFile(backupFileName, os.O_CREATE|os.O_RDWR, 0600)
+				require.NoError(t, openErr)
+
+				// Copy the current file to the backup file
+				require.NoError(t, file.Sync())
+				_, err = file.Seek(0, 0)
+				require.NoError(t, err)
+				_, err = io.Copy(backupFile, file)
+				require.NoError(t, err)
+				require.NoError(t, backupFile.Close())
+
+				// Truncate the original file
+				require.NoError(t, file.Truncate(0))
+				_, err = file.Seek(0, 0)
+				require.NoError(t, err)
+			} else {
+				require.NoError(t, file.Close())
+				require.NoError(t, os.Rename(fileName, backupFileName))
+				file, err = os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0600)
+				require.NoError(t, err)
+			}
+		}
+
 		msg := fmt.Sprintf("This is a simple log line with the number %3d", i)
 
 		// Build the expected set by converting entries to pdata Logs...
@@ -211,7 +225,8 @@ func (rt *rotationTest) Run(t *testing.T) {
 		require.NoError(t, converter.Batch([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
-		logger.Printf("2020-08-25 %s", msg)
+		_, err := file.WriteString(fmt.Sprintf("2020-08-25 %s\n", msg))
+		require.NoError(t, err)
 		time.Sleep(time.Millisecond)
 	}
 
@@ -239,21 +254,6 @@ func consumeNLogsFromConverter(ch <-chan plog.Logs, count int, wg *sync.WaitGrou
 	}
 }
 
-func newRotatingLogger(t *testing.T, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
-	path := filepath.Join(tempDir, "test.log")
-	rotator := &nanojack.Logger{
-		Filename:     path,
-		MaxLines:     maxLines,
-		MaxBackups:   maxBackups,
-		CopyTruncate: copyTruncate,
-		Sequential:   sequential,
-	}
-
-	t.Cleanup(func() { _ = rotator.Close() })
-
-	return log.New(rotator, "", 0)
-}
-
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool { return sink.LogRecordCount() == expected }
 }
@@ -278,6 +278,12 @@ func testdataConfigYaml() *FileLogConfig {
 						return cfg
 					}(),
 				},
+			},
+			RetryOnFailure: consumerretry.Config{
+				Enabled:         false,
+				InitialInterval: 1 * time.Second,
+				MaxInterval:     30 * time.Second,
+				MaxElapsedTime:  5 * time.Minute,
 			},
 		},
 		InputConfig: func() file.Config {
@@ -316,4 +322,66 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 			return *c
 		}(),
 	}
+}
+
+// TestConsumeContract tests the contract between the filelog receiver and the next consumer with enabled retry.
+func TestConsumeContract(t *testing.T) {
+	tmpDir := t.TempDir()
+	filePattern := "test-*.log"
+	flg := &fileLogGenerator{t: t, tmpDir: tmpDir, filePattern: filePattern}
+
+	cfg := createDefaultConfig()
+	cfg.RetryOnFailure.Enabled = true
+	cfg.RetryOnFailure.InitialInterval = 1 * time.Millisecond
+	cfg.RetryOnFailure.MaxInterval = 10 * time.Millisecond
+	cfg.InputConfig.Include = []string{filepath.Join(tmpDir, filePattern)}
+	cfg.InputConfig.StartAt = "beginning"
+	jsonParser := json.NewConfig()
+	tsField := entry.NewAttributeField("ts")
+	jsonParser.TimeParser = &helper.TimeParser{
+		ParseFrom:  &tsField,
+		Layout:     time.RFC3339,
+		LayoutType: "gotime",
+	}
+	jsonParser.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
+	logField := entry.NewAttributeField("log")
+	jsonParser.BodyField = &logField
+	cfg.Operators = []operator.Config{{Builder: jsonParser}}
+
+	receivertest.CheckConsumeContract(receivertest.CheckConsumeContractParams{
+		T:             t,
+		Factory:       NewFactory(),
+		Signal:        pipeline.SignalLogs,
+		Config:        cfg,
+		Generator:     flg,
+		GenerateCount: 10000,
+	})
+}
+
+type fileLogGenerator struct {
+	t           *testing.T
+	tmpDir      string
+	filePattern string
+	tmpFile     *os.File
+	sequenceNum int64
+}
+
+func (g *fileLogGenerator) Start() {
+	tmpFile, err := os.CreateTemp(g.tmpDir, g.filePattern)
+	require.NoError(g.t, err)
+	g.tmpFile = tmpFile
+}
+
+func (g *fileLogGenerator) Stop() {
+	require.NoError(g.t, g.tmpFile.Close())
+	require.NoError(g.t, os.Remove(g.tmpFile.Name()))
+}
+
+func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
+	id := receivertest.UniqueIDAttrVal(fmt.Sprintf("%d", atomic.AddInt64(&g.sequenceNum, 1)))
+	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id,
+		receivertest.UniqueIDAttrName, id)
+	_, err := g.tmpFile.WriteString(logLine + "\n")
+	require.NoError(g.t, err)
+	return []receivertest.UniqueIDAttrVal{id}
 }

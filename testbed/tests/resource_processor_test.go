@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tests
 
@@ -22,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -108,8 +98,8 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
-	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 
 	tests := getResourceProcessorTestCases()
 
@@ -118,7 +108,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 			require.NoError(t, err)
 
-			agentProc := testbed.NewChildProcessCollector()
+			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 			processors := map[string]string{
 				"resource": test.resourceProcessorConfig,
 			}
@@ -152,7 +142,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			tc.MockBackend.ClearReceivedItems()
 			startCounter := tc.MockBackend.DataItemsReceived()
 
-			sender, ok := tc.Sender.(testbed.MetricDataSender)
+			sender, ok := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.MetricDataSender)
 			require.True(t, ok, "unsupported metric sender")
 
 			require.NoError(t, sender.ConsumeMetrics(context.Background(), test.mockedConsumedMetrics))

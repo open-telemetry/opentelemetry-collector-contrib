@@ -1,48 +1,54 @@
 #!/bin/bash
 
-FPM_DIR="$( cd "$( dirname ${BASH_SOURCE[0]} )" && pwd )"
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 
-PKG_NAME="otel-contrib-collector"
-PKG_VENDOR="OpenTelemetry Community"
-PKG_MAINTAINER="OpenTelemetry Community <cncf-opentelemetry-community@lists.cncf.io>"
-PKG_DESCRIPTION="OpenTelemetry Contrib Collector"
-PKG_LICENSE="Apache 2.0"
-PKG_URL="https://github.com/open-telemetry/opentelemetry-collector-contrib"
-PKG_USER="otel"
-PKG_GROUP="otel"
+FPM_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export FPM_DIR
 
-SERVICE_NAME="otel-contrib-collector"
-PROCESS_NAME="otelcontribcol"
+export PKG_NAME="otel-contrib-collector"
+export PKG_VENDOR="OpenTelemetry Community"
+export PKG_MAINTAINER="OpenTelemetry Community <cncf-opentelemetry-community@lists.cncf.io>"
+export PKG_DESCRIPTION="OpenTelemetry Contrib Collector"
+export PKG_LICENSE="Apache 2.0"
+export PKG_URL="https://github.com/open-telemetry/opentelemetry-collector-contrib"
+export PKG_USER="otel"
+export PKG_GROUP="otel"
 
-CONFIG_PATH="$REPO_DIR/examples/tracing/otel-collector-config.yml"
-SERVICE_PATH="$FPM_DIR/$SERVICE_NAME.service"
-ENVFILE_PATH="$FPM_DIR/$SERVICE_NAME.conf"
-PREINSTALL_PATH="$FPM_DIR/preinstall.sh"
-POSTINSTALL_PATH="$FPM_DIR/postinstall.sh"
-PREUNINSTALL_PATH="$FPM_DIR/preuninstall.sh"
+export SERVICE_NAME="otel-contrib-collector"
+export PROCESS_NAME="otelcontribcol"
+
+export CONFIG_PATH="$REPO_DIR/examples/demo/otel-collector-config.yaml"
+export SERVICE_PATH="$FPM_DIR/$SERVICE_NAME.service"
+export ENVFILE_PATH="$FPM_DIR/$SERVICE_NAME.conf"
+export PREINSTALL_PATH="$FPM_DIR/preinstall.sh"
+export POSTINSTALL_PATH="$FPM_DIR/postinstall.sh"
+export PREUNINSTALL_PATH="$FPM_DIR/preuninstall.sh"
 
 docker_cp() {
     local container="$1"
     local src="$2"
     local dest="$3"
-    local dest_dir="$( dirname "$dest" )"
+    local dest_dir
+    dest_dir="$( dirname "$dest" )"
 
     echo "Copying $src to $container:$dest ..."
-    docker exec $container mkdir -p "$dest_dir"
-    docker cp "$src" $container:"$dest"
+    podman exec "$container" mkdir -p "$dest_dir"
+    podman cp "$src" "$container":"$dest"
 }
 
 install_pkg() {
     local container="$1"
     local pkg_path="$2"
-    local pkg_base=$( basename "$pkg_path" )
+    local pkg_base
+    pkg_base=$( basename "$pkg_path" )
 
     echo "Installing $pkg_base ..."
-    docker_cp $container "$pkg_path" /tmp/$pkg_base
+    docker_cp "$container" "$pkg_path" /tmp/"$pkg_base"
     if [[ "${pkg_base##*.}" = "deb" ]]; then
-        docker exec $container dpkg -i /tmp/$pkg_base
+        podman exec "$container" dpkg -i /tmp/"$pkg_base"
     else
-        docker exec $container rpm -ivh /tmp/$pkg_base
+        podman exec "$container" rpm -ivh /tmp/"$pkg_base"
     fi
 }
 
@@ -53,8 +59,8 @@ uninstall_pkg() {
 
     echo "Uninstalling $pkg_name ..."
     if [[ "$pkg_type" = "deb" ]]; then
-        docker exec $container dpkg -r $pkg_name
+        podman exec "$container" dpkg -r "$pkg_name"
     else
-        docker exec $container rpm -e $pkg_name
+        podman exec "$container" rpm -e "$pkg_name"
     fi
 }

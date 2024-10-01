@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -137,7 +126,7 @@ func commonSplunkEvent(
 			TraceID:    "",
 			SpanID:     "",
 			ParentSpan: "",
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"foo": "bar",
 			},
 			EndTime: 0x0,
@@ -145,20 +134,20 @@ func commonSplunkEvent(
 			Status:  hecSpanStatus{Message: "", Code: "STATUS_CODE_UNSET"},
 			Events: []hecEvent{
 				{
-					Attributes: map[string]interface{}{"foo": "bar"},
+					Attributes: map[string]any{"foo": "bar"},
 					Name:       "myEvent",
 					Timestamp:  ts + 3,
 				},
 			},
 			Links: []hecLink{
 				{
-					Attributes: map[string]interface{}{"foo": int64(1), "bar": false, "foobar": []interface{}{"a", "b"}},
+					Attributes: map[string]any{"foo": int64(1), "bar": false, "foobar": []any{"a", "b"}},
 					TraceID:    "12345678000000000000000000000000",
 					SpanID:     "1234000000000000",
 					TraceState: "OK",
 				},
 			},
 		},
-		Fields: map[string]interface{}{},
+		Fields: map[string]any{},
 	}
 }

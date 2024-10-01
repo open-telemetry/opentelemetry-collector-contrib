@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 
@@ -26,7 +15,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mongodb-forks/digest"
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
@@ -35,7 +24,7 @@ import (
 type clientRoundTripper struct {
 	originalTransport http.RoundTripper
 	log               *zap.Logger
-	retrySettings     exporterhelper.RetrySettings
+	backoffConfig     configretry.BackOffConfig
 	stopped           bool
 	mutex             sync.Mutex
 	shutdownChan      chan struct{}
@@ -44,12 +33,12 @@ type clientRoundTripper struct {
 func newClientRoundTripper(
 	originalTransport http.RoundTripper,
 	log *zap.Logger,
-	retrySettings exporterhelper.RetrySettings,
+	backoffConfig configretry.BackOffConfig,
 ) *clientRoundTripper {
 	return &clientRoundTripper{
 		originalTransport: originalTransport,
 		log:               log,
-		retrySettings:     retrySettings,
+		backoffConfig:     backoffConfig,
 		shutdownChan:      make(chan struct{}, 1),
 	}
 }
@@ -90,11 +79,11 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 	}
 	if resp.StatusCode == 429 {
 		expBackoff := &backoff.ExponentialBackOff{
-			InitialInterval:     rt.retrySettings.InitialInterval,
+			InitialInterval:     rt.backoffConfig.InitialInterval,
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
 			Multiplier:          backoff.DefaultMultiplier,
-			MaxInterval:         rt.retrySettings.MaxInterval,
-			MaxElapsedTime:      rt.retrySettings.MaxElapsedTime,
+			MaxInterval:         rt.backoffConfig.MaxInterval,
+			MaxElapsedTime:      rt.backoffConfig.MaxElapsedTime,
 			Stop:                backoff.Stop,
 			Clock:               backoff.SystemClock,
 		}
@@ -134,6 +123,7 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 type MongoDBAtlasClient struct {
 	log          *zap.Logger
 	client       *mongodbatlas.Client
+	transport    *http.Transport
 	roundTripper *clientRoundTripper
 }
 
@@ -141,21 +131,24 @@ type MongoDBAtlasClient struct {
 func NewMongoDBAtlasClient(
 	publicKey string,
 	privateKey string,
-	retrySettings exporterhelper.RetrySettings,
+	backoffConfig configretry.BackOffConfig,
 	log *zap.Logger,
 ) *MongoDBAtlasClient {
-	t := digest.NewTransport(publicKey, privateKey)
-	roundTripper := newClientRoundTripper(t, log, retrySettings)
+	defaultTransporter := &http.Transport{}
+	t := digest.NewTransportWithHTTPTransport(publicKey, privateKey, defaultTransporter)
+	roundTripper := newClientRoundTripper(t, log, backoffConfig)
 	tc := &http.Client{Transport: roundTripper}
 	client := mongodbatlas.NewClient(tc)
 	return &MongoDBAtlasClient{
 		log,
 		client,
+		defaultTransporter,
 		roundTripper,
 	}
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {
+	s.transport.CloseIdleConnections()
 	return s.roundTripper.Shutdown()
 }
 
@@ -616,7 +609,7 @@ func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, log
 	return buf, nil
 }
 
-// retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
+// GetClusters retrieves the clusters from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
 func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error) {
 	options := mongodbatlas.ListOptions{}
 
@@ -663,8 +656,8 @@ type GetEventsOptions struct {
 	MaxDate time.Time
 }
 
-// GetEvents returns the events specified for the set projects
-func (s *MongoDBAtlasClient) GetEvents(ctx context.Context, groupID string, opts *GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error) {
+// GetProjectEvents returns the events specified for the set projects
+func (s *MongoDBAtlasClient) GetProjectEvents(ctx context.Context, groupID string, opts *GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error) {
 	lo := mongodbatlas.ListOptions{
 		PageNum:      opts.PageNum,
 		ItemsPerPage: opts.PageSize,
@@ -685,6 +678,66 @@ func (s *MongoDBAtlasClient) GetEvents(ctx context.Context, groupID string, opts
 		return nil, false, err
 	}
 	return events.Results, hasNext(response.Links), nil
+}
+
+// GetOrgEvents returns the events specified for the set organizations
+func (s *MongoDBAtlasClient) GetOrganizationEvents(ctx context.Context, orgID string, opts *GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error) {
+	lo := mongodbatlas.ListOptions{
+		PageNum:      opts.PageNum,
+		ItemsPerPage: opts.PageSize,
+	}
+	options := mongodbatlas.EventListOptions{
+		ListOptions: lo,
+		// Earliest Timestamp in ISO 8601 date and time format in UTC from when Atlas should return events.
+		MinDate: opts.MinDate.Format(time.RFC3339),
+	}
+
+	if len(opts.EventTypes) > 0 {
+		options.EventType = opts.EventTypes
+	}
+
+	events, response, err := s.client.Events.ListOrganizationEvents(ctx, orgID, &options)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, false, err
+	}
+	return events.Results, hasNext(response.Links), nil
+}
+
+// GetAccessLogsOptions are the options to use for making a request to get Access Logs
+type GetAccessLogsOptions struct {
+	// The oldest date to look back for the events
+	MinDate time.Time
+	// the newest time to accept events
+	MaxDate time.Time
+	// If true, only return successful access attempts; if false, only return failed access attempts
+	// If nil, return both successful and failed access attempts
+	AuthResult *bool
+	// Maximum number of entries to return
+	NLogs int
+}
+
+// GetAccessLogs returns the access logs specified for the cluster requested
+func (s *MongoDBAtlasClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
+
+	options := mongodbatlas.AccessLogOptions{
+		// Earliest Timestamp in epoch milliseconds from when Atlas should access log results
+		Start: fmt.Sprintf("%d", opts.MinDate.UTC().UnixMilli()),
+		// Latest Timestamp in epoch milliseconds from when Atlas should access log results
+		End: fmt.Sprintf("%d", opts.MaxDate.UTC().UnixMilli()),
+		// If true, only return successful access attempts; if false, only return failed access attempts
+		// If nil, return both successful and failed access attempts
+		AuthResult: opts.AuthResult,
+		// Maximum number of entries to return (0-20000)
+		NLogs: opts.NLogs,
+	}
+
+	accessLogs, response, err := s.client.AccessTracking.ListByCluster(ctx, groupID, clusterName, &options)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, err
+	}
+	return accessLogs.AccessLogs, nil
 }
 
 func toUnixString(t time.Time) string {

@@ -6,191 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for mongodbreceiver metrics.
-type MetricsSettings struct {
-	MongodbCacheOperations        MetricSettings `mapstructure:"mongodb.cache.operations"`
-	MongodbCollectionCount        MetricSettings `mapstructure:"mongodb.collection.count"`
-	MongodbConnectionCount        MetricSettings `mapstructure:"mongodb.connection.count"`
-	MongodbCursorCount            MetricSettings `mapstructure:"mongodb.cursor.count"`
-	MongodbCursorTimeoutCount     MetricSettings `mapstructure:"mongodb.cursor.timeout.count"`
-	MongodbDataSize               MetricSettings `mapstructure:"mongodb.data.size"`
-	MongodbDatabaseCount          MetricSettings `mapstructure:"mongodb.database.count"`
-	MongodbDocumentOperationCount MetricSettings `mapstructure:"mongodb.document.operation.count"`
-	MongodbExtentCount            MetricSettings `mapstructure:"mongodb.extent.count"`
-	MongodbGlobalLockTime         MetricSettings `mapstructure:"mongodb.global_lock.time"`
-	MongodbHealth                 MetricSettings `mapstructure:"mongodb.health"`
-	MongodbIndexAccessCount       MetricSettings `mapstructure:"mongodb.index.access.count"`
-	MongodbIndexCount             MetricSettings `mapstructure:"mongodb.index.count"`
-	MongodbIndexSize              MetricSettings `mapstructure:"mongodb.index.size"`
-	MongodbLockAcquireCount       MetricSettings `mapstructure:"mongodb.lock.acquire.count"`
-	MongodbLockAcquireTime        MetricSettings `mapstructure:"mongodb.lock.acquire.time"`
-	MongodbLockAcquireWaitCount   MetricSettings `mapstructure:"mongodb.lock.acquire.wait_count"`
-	MongodbLockDeadlockCount      MetricSettings `mapstructure:"mongodb.lock.deadlock.count"`
-	MongodbMemoryUsage            MetricSettings `mapstructure:"mongodb.memory.usage"`
-	MongodbNetworkIoReceive       MetricSettings `mapstructure:"mongodb.network.io.receive"`
-	MongodbNetworkIoTransmit      MetricSettings `mapstructure:"mongodb.network.io.transmit"`
-	MongodbNetworkRequestCount    MetricSettings `mapstructure:"mongodb.network.request.count"`
-	MongodbObjectCount            MetricSettings `mapstructure:"mongodb.object.count"`
-	MongodbOperationCount         MetricSettings `mapstructure:"mongodb.operation.count"`
-	MongodbOperationLatencyTime   MetricSettings `mapstructure:"mongodb.operation.latency.time"`
-	MongodbOperationReplCount     MetricSettings `mapstructure:"mongodb.operation.repl.count"`
-	MongodbOperationTime          MetricSettings `mapstructure:"mongodb.operation.time"`
-	MongodbSessionCount           MetricSettings `mapstructure:"mongodb.session.count"`
-	MongodbStorageSize            MetricSettings `mapstructure:"mongodb.storage.size"`
-	MongodbUptime                 MetricSettings `mapstructure:"mongodb.uptime"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		MongodbCacheOperations: MetricSettings{
-			Enabled: true,
-		},
-		MongodbCollectionCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbConnectionCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbCursorCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbCursorTimeoutCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbDataSize: MetricSettings{
-			Enabled: true,
-		},
-		MongodbDatabaseCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbDocumentOperationCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbExtentCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbGlobalLockTime: MetricSettings{
-			Enabled: true,
-		},
-		MongodbHealth: MetricSettings{
-			Enabled: false,
-		},
-		MongodbIndexAccessCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbIndexCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbIndexSize: MetricSettings{
-			Enabled: true,
-		},
-		MongodbLockAcquireCount: MetricSettings{
-			Enabled: false,
-		},
-		MongodbLockAcquireTime: MetricSettings{
-			Enabled: false,
-		},
-		MongodbLockAcquireWaitCount: MetricSettings{
-			Enabled: false,
-		},
-		MongodbLockDeadlockCount: MetricSettings{
-			Enabled: false,
-		},
-		MongodbMemoryUsage: MetricSettings{
-			Enabled: true,
-		},
-		MongodbNetworkIoReceive: MetricSettings{
-			Enabled: true,
-		},
-		MongodbNetworkIoTransmit: MetricSettings{
-			Enabled: true,
-		},
-		MongodbNetworkRequestCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbObjectCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbOperationCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbOperationLatencyTime: MetricSettings{
-			Enabled: false,
-		},
-		MongodbOperationReplCount: MetricSettings{
-			Enabled: false,
-		},
-		MongodbOperationTime: MetricSettings{
-			Enabled: true,
-		},
-		MongodbSessionCount: MetricSettings{
-			Enabled: true,
-		},
-		MongodbStorageSize: MetricSettings{
-			Enabled: true,
-		},
-		MongodbUptime: MetricSettings{
-			Enabled: false,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// ResourceAttributesSettings provides settings for mongodbreceiver metrics.
-type ResourceAttributesSettings struct {
-	Database ResourceAttributeSettings `mapstructure:"database"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		Database: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeConnectionType specifies the a value connection_type attribute.
 type AttributeConnectionType int
@@ -432,7 +252,7 @@ var MapAttributeType = map[string]AttributeType{
 
 type metricMongodbCacheOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -448,7 +268,7 @@ func (m *metricMongodbCacheOperations) init() {
 }
 
 func (m *metricMongodbCacheOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, typeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -467,16 +287,16 @@ func (m *metricMongodbCacheOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbCacheOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbCacheOperations(settings MetricSettings) metricMongodbCacheOperations {
-	m := metricMongodbCacheOperations{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbCacheOperations(cfg MetricConfig) metricMongodbCacheOperations {
+	m := metricMongodbCacheOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -485,7 +305,7 @@ func newMetricMongodbCacheOperations(settings MetricSettings) metricMongodbCache
 
 type metricMongodbCollectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -497,18 +317,16 @@ func (m *metricMongodbCollectionCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbCollectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbCollectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -520,16 +338,16 @@ func (m *metricMongodbCollectionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbCollectionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbCollectionCount(settings MetricSettings) metricMongodbCollectionCount {
-	m := metricMongodbCollectionCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbCollectionCount(cfg MetricConfig) metricMongodbCollectionCount {
+	m := metricMongodbCollectionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -538,7 +356,7 @@ func newMetricMongodbCollectionCount(settings MetricSettings) metricMongodbColle
 
 type metricMongodbConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -553,15 +371,14 @@ func (m *metricMongodbConnectionCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, connectionTypeAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionTypeAttributeValue string) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 	dp.Attributes().PutStr("type", connectionTypeAttributeValue)
 }
 
@@ -574,16 +391,16 @@ func (m *metricMongodbConnectionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbConnectionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbConnectionCount(settings MetricSettings) metricMongodbConnectionCount {
-	m := metricMongodbConnectionCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbConnectionCount(cfg MetricConfig) metricMongodbConnectionCount {
+	m := metricMongodbConnectionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -592,7 +409,7 @@ func newMetricMongodbConnectionCount(settings MetricSettings) metricMongodbConne
 
 type metricMongodbCursorCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -607,7 +424,7 @@ func (m *metricMongodbCursorCount) init() {
 }
 
 func (m *metricMongodbCursorCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -625,16 +442,16 @@ func (m *metricMongodbCursorCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbCursorCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbCursorCount(settings MetricSettings) metricMongodbCursorCount {
-	m := metricMongodbCursorCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbCursorCount(cfg MetricConfig) metricMongodbCursorCount {
+	m := metricMongodbCursorCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -643,7 +460,7 @@ func newMetricMongodbCursorCount(settings MetricSettings) metricMongodbCursorCou
 
 type metricMongodbCursorTimeoutCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -658,7 +475,7 @@ func (m *metricMongodbCursorTimeoutCount) init() {
 }
 
 func (m *metricMongodbCursorTimeoutCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -676,16 +493,16 @@ func (m *metricMongodbCursorTimeoutCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbCursorTimeoutCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbCursorTimeoutCount(settings MetricSettings) metricMongodbCursorTimeoutCount {
-	m := metricMongodbCursorTimeoutCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbCursorTimeoutCount(cfg MetricConfig) metricMongodbCursorTimeoutCount {
+	m := metricMongodbCursorTimeoutCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -694,7 +511,7 @@ func newMetricMongodbCursorTimeoutCount(settings MetricSettings) metricMongodbCu
 
 type metricMongodbDataSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -706,18 +523,16 @@ func (m *metricMongodbDataSize) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbDataSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbDataSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -729,16 +544,16 @@ func (m *metricMongodbDataSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbDataSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbDataSize(settings MetricSettings) metricMongodbDataSize {
-	m := metricMongodbDataSize{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbDataSize(cfg MetricConfig) metricMongodbDataSize {
+	m := metricMongodbDataSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -747,7 +562,7 @@ func newMetricMongodbDataSize(settings MetricSettings) metricMongodbDataSize {
 
 type metricMongodbDatabaseCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -762,7 +577,7 @@ func (m *metricMongodbDatabaseCount) init() {
 }
 
 func (m *metricMongodbDatabaseCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -780,16 +595,16 @@ func (m *metricMongodbDatabaseCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbDatabaseCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbDatabaseCount(settings MetricSettings) metricMongodbDatabaseCount {
-	m := metricMongodbDatabaseCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbDatabaseCount(cfg MetricConfig) metricMongodbDatabaseCount {
+	m := metricMongodbDatabaseCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -798,7 +613,7 @@ func newMetricMongodbDatabaseCount(settings MetricSettings) metricMongodbDatabas
 
 type metricMongodbDocumentOperationCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -813,15 +628,14 @@ func (m *metricMongodbDocumentOperationCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbDocumentOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, operationAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbDocumentOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
@@ -834,16 +648,16 @@ func (m *metricMongodbDocumentOperationCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbDocumentOperationCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbDocumentOperationCount(settings MetricSettings) metricMongodbDocumentOperationCount {
-	m := metricMongodbDocumentOperationCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbDocumentOperationCount(cfg MetricConfig) metricMongodbDocumentOperationCount {
+	m := metricMongodbDocumentOperationCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -852,7 +666,7 @@ func newMetricMongodbDocumentOperationCount(settings MetricSettings) metricMongo
 
 type metricMongodbExtentCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -864,18 +678,16 @@ func (m *metricMongodbExtentCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbExtentCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbExtentCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -887,16 +699,16 @@ func (m *metricMongodbExtentCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbExtentCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbExtentCount(settings MetricSettings) metricMongodbExtentCount {
-	m := metricMongodbExtentCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbExtentCount(cfg MetricConfig) metricMongodbExtentCount {
+	m := metricMongodbExtentCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -905,7 +717,7 @@ func newMetricMongodbExtentCount(settings MetricSettings) metricMongodbExtentCou
 
 type metricMongodbGlobalLockTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -920,7 +732,7 @@ func (m *metricMongodbGlobalLockTime) init() {
 }
 
 func (m *metricMongodbGlobalLockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -938,16 +750,16 @@ func (m *metricMongodbGlobalLockTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbGlobalLockTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbGlobalLockTime(settings MetricSettings) metricMongodbGlobalLockTime {
-	m := metricMongodbGlobalLockTime{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbGlobalLockTime(cfg MetricConfig) metricMongodbGlobalLockTime {
+	m := metricMongodbGlobalLockTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -956,7 +768,7 @@ func newMetricMongodbGlobalLockTime(settings MetricSettings) metricMongodbGlobal
 
 type metricMongodbHealth struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -969,7 +781,7 @@ func (m *metricMongodbHealth) init() {
 }
 
 func (m *metricMongodbHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -987,16 +799,16 @@ func (m *metricMongodbHealth) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbHealth) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbHealth(settings MetricSettings) metricMongodbHealth {
-	m := metricMongodbHealth{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbHealth(cfg MetricConfig) metricMongodbHealth {
+	m := metricMongodbHealth{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1005,7 +817,7 @@ func newMetricMongodbHealth(settings MetricSettings) metricMongodbHealth {
 
 type metricMongodbIndexAccessCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1020,15 +832,14 @@ func (m *metricMongodbIndexAccessCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbIndexAccessCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, collectionAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbIndexAccessCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, collectionAttributeValue string) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 	dp.Attributes().PutStr("collection", collectionAttributeValue)
 }
 
@@ -1041,16 +852,16 @@ func (m *metricMongodbIndexAccessCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbIndexAccessCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbIndexAccessCount(settings MetricSettings) metricMongodbIndexAccessCount {
-	m := metricMongodbIndexAccessCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbIndexAccessCount(cfg MetricConfig) metricMongodbIndexAccessCount {
+	m := metricMongodbIndexAccessCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1059,7 +870,7 @@ func newMetricMongodbIndexAccessCount(settings MetricSettings) metricMongodbInde
 
 type metricMongodbIndexCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1071,18 +882,16 @@ func (m *metricMongodbIndexCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbIndexCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbIndexCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1094,16 +903,16 @@ func (m *metricMongodbIndexCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbIndexCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbIndexCount(settings MetricSettings) metricMongodbIndexCount {
-	m := metricMongodbIndexCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbIndexCount(cfg MetricConfig) metricMongodbIndexCount {
+	m := metricMongodbIndexCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1112,7 +921,7 @@ func newMetricMongodbIndexCount(settings MetricSettings) metricMongodbIndexCount
 
 type metricMongodbIndexSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1124,18 +933,16 @@ func (m *metricMongodbIndexSize) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1147,16 +954,16 @@ func (m *metricMongodbIndexSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbIndexSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbIndexSize(settings MetricSettings) metricMongodbIndexSize {
-	m := metricMongodbIndexSize{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbIndexSize(cfg MetricConfig) metricMongodbIndexSize {
+	m := metricMongodbIndexSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1165,7 +972,7 @@ func newMetricMongodbIndexSize(settings MetricSettings) metricMongodbIndexSize {
 
 type metricMongodbLockAcquireCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1180,15 +987,14 @@ func (m *metricMongodbLockAcquireCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbLockAcquireCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue string, lockModeAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbLockAcquireCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
 	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
 }
@@ -1202,16 +1008,16 @@ func (m *metricMongodbLockAcquireCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbLockAcquireCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbLockAcquireCount(settings MetricSettings) metricMongodbLockAcquireCount {
-	m := metricMongodbLockAcquireCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbLockAcquireCount(cfg MetricConfig) metricMongodbLockAcquireCount {
+	m := metricMongodbLockAcquireCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1220,7 +1026,7 @@ func newMetricMongodbLockAcquireCount(settings MetricSettings) metricMongodbLock
 
 type metricMongodbLockAcquireTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1235,15 +1041,14 @@ func (m *metricMongodbLockAcquireTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbLockAcquireTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue string, lockModeAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbLockAcquireTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
 	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
 }
@@ -1257,16 +1062,16 @@ func (m *metricMongodbLockAcquireTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbLockAcquireTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbLockAcquireTime(settings MetricSettings) metricMongodbLockAcquireTime {
-	m := metricMongodbLockAcquireTime{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbLockAcquireTime(cfg MetricConfig) metricMongodbLockAcquireTime {
+	m := metricMongodbLockAcquireTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1275,7 +1080,7 @@ func newMetricMongodbLockAcquireTime(settings MetricSettings) metricMongodbLockA
 
 type metricMongodbLockAcquireWaitCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1290,15 +1095,14 @@ func (m *metricMongodbLockAcquireWaitCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbLockAcquireWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue string, lockModeAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbLockAcquireWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
 	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
 }
@@ -1312,16 +1116,16 @@ func (m *metricMongodbLockAcquireWaitCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbLockAcquireWaitCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbLockAcquireWaitCount(settings MetricSettings) metricMongodbLockAcquireWaitCount {
-	m := metricMongodbLockAcquireWaitCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbLockAcquireWaitCount(cfg MetricConfig) metricMongodbLockAcquireWaitCount {
+	m := metricMongodbLockAcquireWaitCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1330,7 +1134,7 @@ func newMetricMongodbLockAcquireWaitCount(settings MetricSettings) metricMongodb
 
 type metricMongodbLockDeadlockCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1345,15 +1149,14 @@ func (m *metricMongodbLockDeadlockCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbLockDeadlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue string, lockModeAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbLockDeadlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
 	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
 }
@@ -1367,16 +1170,16 @@ func (m *metricMongodbLockDeadlockCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbLockDeadlockCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbLockDeadlockCount(settings MetricSettings) metricMongodbLockDeadlockCount {
-	m := metricMongodbLockDeadlockCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbLockDeadlockCount(cfg MetricConfig) metricMongodbLockDeadlockCount {
+	m := metricMongodbLockDeadlockCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1385,7 +1188,7 @@ func newMetricMongodbLockDeadlockCount(settings MetricSettings) metricMongodbLoc
 
 type metricMongodbMemoryUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1400,15 +1203,14 @@ func (m *metricMongodbMemoryUsage) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, memoryTypeAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryTypeAttributeValue string) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 	dp.Attributes().PutStr("type", memoryTypeAttributeValue)
 }
 
@@ -1421,16 +1223,16 @@ func (m *metricMongodbMemoryUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbMemoryUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbMemoryUsage(settings MetricSettings) metricMongodbMemoryUsage {
-	m := metricMongodbMemoryUsage{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbMemoryUsage(cfg MetricConfig) metricMongodbMemoryUsage {
+	m := metricMongodbMemoryUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1439,7 +1241,7 @@ func newMetricMongodbMemoryUsage(settings MetricSettings) metricMongodbMemoryUsa
 
 type metricMongodbNetworkIoReceive struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1454,7 +1256,7 @@ func (m *metricMongodbNetworkIoReceive) init() {
 }
 
 func (m *metricMongodbNetworkIoReceive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1472,16 +1274,16 @@ func (m *metricMongodbNetworkIoReceive) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbNetworkIoReceive) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbNetworkIoReceive(settings MetricSettings) metricMongodbNetworkIoReceive {
-	m := metricMongodbNetworkIoReceive{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbNetworkIoReceive(cfg MetricConfig) metricMongodbNetworkIoReceive {
+	m := metricMongodbNetworkIoReceive{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1490,7 +1292,7 @@ func newMetricMongodbNetworkIoReceive(settings MetricSettings) metricMongodbNetw
 
 type metricMongodbNetworkIoTransmit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1505,7 +1307,7 @@ func (m *metricMongodbNetworkIoTransmit) init() {
 }
 
 func (m *metricMongodbNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1523,16 +1325,16 @@ func (m *metricMongodbNetworkIoTransmit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbNetworkIoTransmit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbNetworkIoTransmit(settings MetricSettings) metricMongodbNetworkIoTransmit {
-	m := metricMongodbNetworkIoTransmit{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbNetworkIoTransmit(cfg MetricConfig) metricMongodbNetworkIoTransmit {
+	m := metricMongodbNetworkIoTransmit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1541,7 +1343,7 @@ func newMetricMongodbNetworkIoTransmit(settings MetricSettings) metricMongodbNet
 
 type metricMongodbNetworkRequestCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1556,7 +1358,7 @@ func (m *metricMongodbNetworkRequestCount) init() {
 }
 
 func (m *metricMongodbNetworkRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1574,16 +1376,16 @@ func (m *metricMongodbNetworkRequestCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbNetworkRequestCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbNetworkRequestCount(settings MetricSettings) metricMongodbNetworkRequestCount {
-	m := metricMongodbNetworkRequestCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbNetworkRequestCount(cfg MetricConfig) metricMongodbNetworkRequestCount {
+	m := metricMongodbNetworkRequestCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1592,7 +1394,7 @@ func newMetricMongodbNetworkRequestCount(settings MetricSettings) metricMongodbN
 
 type metricMongodbObjectCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1604,18 +1406,16 @@ func (m *metricMongodbObjectCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbObjectCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbObjectCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1627,16 +1427,16 @@ func (m *metricMongodbObjectCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbObjectCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbObjectCount(settings MetricSettings) metricMongodbObjectCount {
-	m := metricMongodbObjectCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbObjectCount(cfg MetricConfig) metricMongodbObjectCount {
+	m := metricMongodbObjectCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1645,7 +1445,7 @@ func newMetricMongodbObjectCount(settings MetricSettings) metricMongodbObjectCou
 
 type metricMongodbOperationCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1661,7 +1461,7 @@ func (m *metricMongodbOperationCount) init() {
 }
 
 func (m *metricMongodbOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1680,16 +1480,16 @@ func (m *metricMongodbOperationCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbOperationCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbOperationCount(settings MetricSettings) metricMongodbOperationCount {
-	m := metricMongodbOperationCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbOperationCount(cfg MetricConfig) metricMongodbOperationCount {
+	m := metricMongodbOperationCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1698,7 +1498,7 @@ func newMetricMongodbOperationCount(settings MetricSettings) metricMongodbOperat
 
 type metricMongodbOperationLatencyTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1712,7 +1512,7 @@ func (m *metricMongodbOperationLatencyTime) init() {
 }
 
 func (m *metricMongodbOperationLatencyTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationLatencyAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1731,16 +1531,16 @@ func (m *metricMongodbOperationLatencyTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbOperationLatencyTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbOperationLatencyTime(settings MetricSettings) metricMongodbOperationLatencyTime {
-	m := metricMongodbOperationLatencyTime{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbOperationLatencyTime(cfg MetricConfig) metricMongodbOperationLatencyTime {
+	m := metricMongodbOperationLatencyTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1749,7 +1549,7 @@ func newMetricMongodbOperationLatencyTime(settings MetricSettings) metricMongodb
 
 type metricMongodbOperationReplCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1765,7 +1565,7 @@ func (m *metricMongodbOperationReplCount) init() {
 }
 
 func (m *metricMongodbOperationReplCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1784,16 +1584,16 @@ func (m *metricMongodbOperationReplCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbOperationReplCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbOperationReplCount(settings MetricSettings) metricMongodbOperationReplCount {
-	m := metricMongodbOperationReplCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbOperationReplCount(cfg MetricConfig) metricMongodbOperationReplCount {
+	m := metricMongodbOperationReplCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1802,7 +1602,7 @@ func newMetricMongodbOperationReplCount(settings MetricSettings) metricMongodbOp
 
 type metricMongodbOperationTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1818,7 +1618,7 @@ func (m *metricMongodbOperationTime) init() {
 }
 
 func (m *metricMongodbOperationTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1837,16 +1637,16 @@ func (m *metricMongodbOperationTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbOperationTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbOperationTime(settings MetricSettings) metricMongodbOperationTime {
-	m := metricMongodbOperationTime{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbOperationTime(cfg MetricConfig) metricMongodbOperationTime {
+	m := metricMongodbOperationTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1855,7 +1655,7 @@ func newMetricMongodbOperationTime(settings MetricSettings) metricMongodbOperati
 
 type metricMongodbSessionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1870,7 +1670,7 @@ func (m *metricMongodbSessionCount) init() {
 }
 
 func (m *metricMongodbSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1888,16 +1688,16 @@ func (m *metricMongodbSessionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbSessionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbSessionCount(settings MetricSettings) metricMongodbSessionCount {
-	m := metricMongodbSessionCount{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbSessionCount(cfg MetricConfig) metricMongodbSessionCount {
+	m := metricMongodbSessionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1906,7 +1706,7 @@ func newMetricMongodbSessionCount(settings MetricSettings) metricMongodbSessionC
 
 type metricMongodbStorageSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1918,18 +1718,16 @@ func (m *metricMongodbStorageSize) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbStorageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	if !m.settings.Enabled {
+func (m *metricMongodbStorageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1941,16 +1739,16 @@ func (m *metricMongodbStorageSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbStorageSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbStorageSize(settings MetricSettings) metricMongodbStorageSize {
-	m := metricMongodbStorageSize{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbStorageSize(cfg MetricConfig) metricMongodbStorageSize {
+	m := metricMongodbStorageSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1959,7 +1757,7 @@ func newMetricMongodbStorageSize(settings MetricSettings) metricMongodbStorageSi
 
 type metricMongodbUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1974,7 +1772,7 @@ func (m *metricMongodbUptime) init() {
 }
 
 func (m *metricMongodbUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1992,16 +1790,16 @@ func (m *metricMongodbUptime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbUptime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMongodbUptime(settings MetricSettings) metricMongodbUptime {
-	m := metricMongodbUptime{settings: settings}
-	if settings.Enabled {
+func newMetricMongodbUptime(cfg MetricConfig) metricMongodbUptime {
+	m := metricMongodbUptime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2009,14 +1807,15 @@ func newMetricMongodbUptime(settings MetricSettings) metricMongodbUptime {
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                           pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                     int                 // maximum observed number of metrics per resource.
-	resourceCapacity                    int                 // maximum observed number of resource attributes.
-	metricsBuffer                       pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                           component.BuildInfo // contains version information
-	resourceAttributesSettings          ResourceAttributesSettings
+	config                              MetricsBuilderConfig // config of the metrics builder.
+	startTime                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                     int                  // maximum observed number of metrics per resource.
+	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                           component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter      map[string]filter.Filter
+	resourceAttributeExcludeFilter      map[string]filter.Filter
 	metricMongodbCacheOperations        metricMongodbCacheOperations
 	metricMongodbCollectionCount        metricMongodbCollectionCount
 	metricMongodbConnectionCount        metricMongodbConnectionCount
@@ -2049,64 +1848,91 @@ type MetricsBuilder struct {
 	metricMongodbUptime                 metricMongodbUptime
 }
 
-// metricBuilderOption applies changes to default metrics builder.
-type metricBuilderOption func(*MetricsBuilder)
+// MetricBuilderOption applies changes to default metrics builder.
+type MetricBuilderOption interface {
+	apply(*MetricsBuilder)
+}
+
+type metricBuilderOptionFunc func(mb *MetricsBuilder)
+
+func (mbof metricBuilderOptionFunc) apply(mb *MetricsBuilder) {
+	mbof(mb)
+}
 
 // WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
+func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
+	return metricBuilderOptionFunc(func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
+	})
 }
 
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.resourceAttributesSettings = ras
-	}
-}
-
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                              mbc,
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
-		resourceAttributesSettings:          DefaultResourceAttributesSettings(),
-		metricMongodbCacheOperations:        newMetricMongodbCacheOperations(ms.MongodbCacheOperations),
-		metricMongodbCollectionCount:        newMetricMongodbCollectionCount(ms.MongodbCollectionCount),
-		metricMongodbConnectionCount:        newMetricMongodbConnectionCount(ms.MongodbConnectionCount),
-		metricMongodbCursorCount:            newMetricMongodbCursorCount(ms.MongodbCursorCount),
-		metricMongodbCursorTimeoutCount:     newMetricMongodbCursorTimeoutCount(ms.MongodbCursorTimeoutCount),
-		metricMongodbDataSize:               newMetricMongodbDataSize(ms.MongodbDataSize),
-		metricMongodbDatabaseCount:          newMetricMongodbDatabaseCount(ms.MongodbDatabaseCount),
-		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(ms.MongodbDocumentOperationCount),
-		metricMongodbExtentCount:            newMetricMongodbExtentCount(ms.MongodbExtentCount),
-		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(ms.MongodbGlobalLockTime),
-		metricMongodbHealth:                 newMetricMongodbHealth(ms.MongodbHealth),
-		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(ms.MongodbIndexAccessCount),
-		metricMongodbIndexCount:             newMetricMongodbIndexCount(ms.MongodbIndexCount),
-		metricMongodbIndexSize:              newMetricMongodbIndexSize(ms.MongodbIndexSize),
-		metricMongodbLockAcquireCount:       newMetricMongodbLockAcquireCount(ms.MongodbLockAcquireCount),
-		metricMongodbLockAcquireTime:        newMetricMongodbLockAcquireTime(ms.MongodbLockAcquireTime),
-		metricMongodbLockAcquireWaitCount:   newMetricMongodbLockAcquireWaitCount(ms.MongodbLockAcquireWaitCount),
-		metricMongodbLockDeadlockCount:      newMetricMongodbLockDeadlockCount(ms.MongodbLockDeadlockCount),
-		metricMongodbMemoryUsage:            newMetricMongodbMemoryUsage(ms.MongodbMemoryUsage),
-		metricMongodbNetworkIoReceive:       newMetricMongodbNetworkIoReceive(ms.MongodbNetworkIoReceive),
-		metricMongodbNetworkIoTransmit:      newMetricMongodbNetworkIoTransmit(ms.MongodbNetworkIoTransmit),
-		metricMongodbNetworkRequestCount:    newMetricMongodbNetworkRequestCount(ms.MongodbNetworkRequestCount),
-		metricMongodbObjectCount:            newMetricMongodbObjectCount(ms.MongodbObjectCount),
-		metricMongodbOperationCount:         newMetricMongodbOperationCount(ms.MongodbOperationCount),
-		metricMongodbOperationLatencyTime:   newMetricMongodbOperationLatencyTime(ms.MongodbOperationLatencyTime),
-		metricMongodbOperationReplCount:     newMetricMongodbOperationReplCount(ms.MongodbOperationReplCount),
-		metricMongodbOperationTime:          newMetricMongodbOperationTime(ms.MongodbOperationTime),
-		metricMongodbSessionCount:           newMetricMongodbSessionCount(ms.MongodbSessionCount),
-		metricMongodbStorageSize:            newMetricMongodbStorageSize(ms.MongodbStorageSize),
-		metricMongodbUptime:                 newMetricMongodbUptime(ms.MongodbUptime),
+		metricMongodbCacheOperations:        newMetricMongodbCacheOperations(mbc.Metrics.MongodbCacheOperations),
+		metricMongodbCollectionCount:        newMetricMongodbCollectionCount(mbc.Metrics.MongodbCollectionCount),
+		metricMongodbConnectionCount:        newMetricMongodbConnectionCount(mbc.Metrics.MongodbConnectionCount),
+		metricMongodbCursorCount:            newMetricMongodbCursorCount(mbc.Metrics.MongodbCursorCount),
+		metricMongodbCursorTimeoutCount:     newMetricMongodbCursorTimeoutCount(mbc.Metrics.MongodbCursorTimeoutCount),
+		metricMongodbDataSize:               newMetricMongodbDataSize(mbc.Metrics.MongodbDataSize),
+		metricMongodbDatabaseCount:          newMetricMongodbDatabaseCount(mbc.Metrics.MongodbDatabaseCount),
+		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(mbc.Metrics.MongodbDocumentOperationCount),
+		metricMongodbExtentCount:            newMetricMongodbExtentCount(mbc.Metrics.MongodbExtentCount),
+		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(mbc.Metrics.MongodbGlobalLockTime),
+		metricMongodbHealth:                 newMetricMongodbHealth(mbc.Metrics.MongodbHealth),
+		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(mbc.Metrics.MongodbIndexAccessCount),
+		metricMongodbIndexCount:             newMetricMongodbIndexCount(mbc.Metrics.MongodbIndexCount),
+		metricMongodbIndexSize:              newMetricMongodbIndexSize(mbc.Metrics.MongodbIndexSize),
+		metricMongodbLockAcquireCount:       newMetricMongodbLockAcquireCount(mbc.Metrics.MongodbLockAcquireCount),
+		metricMongodbLockAcquireTime:        newMetricMongodbLockAcquireTime(mbc.Metrics.MongodbLockAcquireTime),
+		metricMongodbLockAcquireWaitCount:   newMetricMongodbLockAcquireWaitCount(mbc.Metrics.MongodbLockAcquireWaitCount),
+		metricMongodbLockDeadlockCount:      newMetricMongodbLockDeadlockCount(mbc.Metrics.MongodbLockDeadlockCount),
+		metricMongodbMemoryUsage:            newMetricMongodbMemoryUsage(mbc.Metrics.MongodbMemoryUsage),
+		metricMongodbNetworkIoReceive:       newMetricMongodbNetworkIoReceive(mbc.Metrics.MongodbNetworkIoReceive),
+		metricMongodbNetworkIoTransmit:      newMetricMongodbNetworkIoTransmit(mbc.Metrics.MongodbNetworkIoTransmit),
+		metricMongodbNetworkRequestCount:    newMetricMongodbNetworkRequestCount(mbc.Metrics.MongodbNetworkRequestCount),
+		metricMongodbObjectCount:            newMetricMongodbObjectCount(mbc.Metrics.MongodbObjectCount),
+		metricMongodbOperationCount:         newMetricMongodbOperationCount(mbc.Metrics.MongodbOperationCount),
+		metricMongodbOperationLatencyTime:   newMetricMongodbOperationLatencyTime(mbc.Metrics.MongodbOperationLatencyTime),
+		metricMongodbOperationReplCount:     newMetricMongodbOperationReplCount(mbc.Metrics.MongodbOperationReplCount),
+		metricMongodbOperationTime:          newMetricMongodbOperationTime(mbc.Metrics.MongodbOperationTime),
+		metricMongodbSessionCount:           newMetricMongodbSessionCount(mbc.Metrics.MongodbSessionCount),
+		metricMongodbStorageSize:            newMetricMongodbStorageSize(mbc.Metrics.MongodbStorageSize),
+		metricMongodbUptime:                 newMetricMongodbUptime(mbc.Metrics.MongodbUptime),
+		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.Database.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.Database.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
+	}
+
 	for _, op := range options {
-		op(mb)
+		op.apply(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -2114,27 +1940,31 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption interface {
+	apply(pmetric.ResourceMetrics)
+}
 
-// WithDatabase sets provided value as "database" attribute for current resource.
-func WithDatabase(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.Database.Enabled {
-			rm.Resource().Attributes().PutStr("database", val)
-		}
-	}
+type resourceMetricsOptionFunc func(pmetric.ResourceMetrics)
+
+func (rmof resourceMetricsOptionFunc) apply(rm pmetric.ResourceMetrics) {
+	rmof(rm)
+}
+
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
+	})
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2148,7 +1978,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 				dps.At(j).SetStartTimestamp(start)
 			}
 		}
-	}
+	})
 }
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
@@ -2156,11 +1986,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
+func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/mongodbreceiver")
+	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricMongodbCacheOperations.emit(ils.Metrics())
@@ -2194,9 +2023,20 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMongodbStorageSize.emit(ils.Metrics())
 	mb.metricMongodbUptime.emit(ils.Metrics())
 
-	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+	for _, op := range options {
+		op.apply(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -2205,9 +2045,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(options...)
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
@@ -2219,13 +2059,13 @@ func (mb *MetricsBuilder) RecordMongodbCacheOperationsDataPoint(ts pcommon.Times
 }
 
 // RecordMongodbCollectionCountDataPoint adds a data point to mongodb.collection.count metric.
-func (mb *MetricsBuilder) RecordMongodbCollectionCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbCollectionCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbCollectionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbCollectionCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbConnectionCountDataPoint adds a data point to mongodb.connection.count metric.
-func (mb *MetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, connectionTypeAttributeValue AttributeConnectionType) {
-	mb.metricMongodbConnectionCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, connectionTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue AttributeConnectionType) {
+	mb.metricMongodbConnectionCount.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String())
 }
 
 // RecordMongodbCursorCountDataPoint adds a data point to mongodb.cursor.count metric.
@@ -2239,8 +2079,8 @@ func (mb *MetricsBuilder) RecordMongodbCursorTimeoutCountDataPoint(ts pcommon.Ti
 }
 
 // RecordMongodbDataSizeDataPoint adds a data point to mongodb.data.size metric.
-func (mb *MetricsBuilder) RecordMongodbDataSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbDataSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbDataSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbDataSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbDatabaseCountDataPoint adds a data point to mongodb.database.count metric.
@@ -2249,13 +2089,13 @@ func (mb *MetricsBuilder) RecordMongodbDatabaseCountDataPoint(ts pcommon.Timesta
 }
 
 // RecordMongodbDocumentOperationCountDataPoint adds a data point to mongodb.document.operation.count metric.
-func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, operationAttributeValue AttributeOperation) {
-	mb.metricMongodbDocumentOperationCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, operationAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricMongodbDocumentOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordMongodbExtentCountDataPoint adds a data point to mongodb.extent.count metric.
-func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbGlobalLockTimeDataPoint adds a data point to mongodb.global_lock.time metric.
@@ -2269,43 +2109,43 @@ func (mb *MetricsBuilder) RecordMongodbHealthDataPoint(ts pcommon.Timestamp, val
 }
 
 // RecordMongodbIndexAccessCountDataPoint adds a data point to mongodb.index.access.count metric.
-func (mb *MetricsBuilder) RecordMongodbIndexAccessCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, collectionAttributeValue string) {
-	mb.metricMongodbIndexAccessCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, collectionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbIndexAccessCountDataPoint(ts pcommon.Timestamp, val int64, collectionAttributeValue string) {
+	mb.metricMongodbIndexAccessCount.recordDataPoint(mb.startTime, ts, val, collectionAttributeValue)
 }
 
 // RecordMongodbIndexCountDataPoint adds a data point to mongodb.index.count metric.
-func (mb *MetricsBuilder) RecordMongodbIndexCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbIndexCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbIndexCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbIndexCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbIndexSizeDataPoint adds a data point to mongodb.index.size metric.
-func (mb *MetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbIndexSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbIndexSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbLockAcquireCountDataPoint adds a data point to mongodb.lock.acquire.count metric.
-func (mb *MetricsBuilder) RecordMongodbLockAcquireCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockAcquireCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbLockAcquireCountDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	mb.metricMongodbLockAcquireCount.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
 }
 
 // RecordMongodbLockAcquireTimeDataPoint adds a data point to mongodb.lock.acquire.time metric.
-func (mb *MetricsBuilder) RecordMongodbLockAcquireTimeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockAcquireTime.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbLockAcquireTimeDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	mb.metricMongodbLockAcquireTime.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
 }
 
 // RecordMongodbLockAcquireWaitCountDataPoint adds a data point to mongodb.lock.acquire.wait_count metric.
-func (mb *MetricsBuilder) RecordMongodbLockAcquireWaitCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockAcquireWaitCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbLockAcquireWaitCountDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	mb.metricMongodbLockAcquireWaitCount.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
 }
 
 // RecordMongodbLockDeadlockCountDataPoint adds a data point to mongodb.lock.deadlock.count metric.
-func (mb *MetricsBuilder) RecordMongodbLockDeadlockCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockDeadlockCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbLockDeadlockCountDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	mb.metricMongodbLockDeadlockCount.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
 }
 
 // RecordMongodbMemoryUsageDataPoint adds a data point to mongodb.memory.usage metric.
-func (mb *MetricsBuilder) RecordMongodbMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, memoryTypeAttributeValue AttributeMemoryType) {
-	mb.metricMongodbMemoryUsage.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, memoryTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, memoryTypeAttributeValue AttributeMemoryType) {
+	mb.metricMongodbMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryTypeAttributeValue.String())
 }
 
 // RecordMongodbNetworkIoReceiveDataPoint adds a data point to mongodb.network.io.receive metric.
@@ -2324,8 +2164,8 @@ func (mb *MetricsBuilder) RecordMongodbNetworkRequestCountDataPoint(ts pcommon.T
 }
 
 // RecordMongodbObjectCountDataPoint adds a data point to mongodb.object.count metric.
-func (mb *MetricsBuilder) RecordMongodbObjectCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbObjectCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbObjectCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbObjectCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbOperationCountDataPoint adds a data point to mongodb.operation.count metric.
@@ -2354,8 +2194,8 @@ func (mb *MetricsBuilder) RecordMongodbSessionCountDataPoint(ts pcommon.Timestam
 }
 
 // RecordMongodbStorageSizeDataPoint adds a data point to mongodb.storage.size metric.
-func (mb *MetricsBuilder) RecordMongodbStorageSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbStorageSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbStorageSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbStorageSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbUptimeDataPoint adds a data point to mongodb.uptime metric.
@@ -2365,9 +2205,9 @@ func (mb *MetricsBuilder) RecordMongodbUptimeDataPoint(ts pcommon.Timestamp, val
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
+func (mb *MetricsBuilder) Reset(options ...MetricBuilderOption) {
 	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op.apply(mb)
 	}
 }

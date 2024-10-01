@@ -1,4 +1,13 @@
-name: mongoatlasreceiver
+type: mongodbatlas
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [djaglowski, schmikei]
+    seeking_new: true
 
 resource_attributes:
   mongodb_atlas.org_name:
@@ -16,6 +25,22 @@ resource_attributes:
   mongodb_atlas.host.name:
     description: Hostname of the process
     enabled: true
+    type: string
+  mongodb_atlas.user.alias:
+    description: User-friendly hostname of the cluster node
+    enabled: false
+    type: string
+  mongodb_atlas.cluster.name:
+    description: Cluster Name
+    enabled: false
+    type: string
+  mongodb_atlas.region.name:
+    description: Region Name
+    enabled: false
+    type: string
+  mongodb_atlas.provider.name:
+    description: Provider Name
+    enabled: false
     type: string
   mongodb_atlas.process.port:
     description: Port process is bound to
@@ -222,7 +247,7 @@ metrics:
     enabled: true
     description: Amount of data flushed in the background
     extended_documentation: MongoDB Metric BACKGROUND_FLUSH_AVG
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   mongodbatlas.process.cache.io:
@@ -242,7 +267,7 @@ metrics:
     sum:
       value_type: double
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.connections:
     enabled: true
     description: Number of current connections
@@ -251,12 +276,12 @@ metrics:
     sum:
       value_type: double
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.cpu.usage.max:
     enabled: true
     description: CPU Usage (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_CPU_KERNEL, MAX_PROCESS_CPU_USER
-    unit: 1
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
@@ -264,7 +289,7 @@ metrics:
     enabled: true
     description: CPU Usage (%)
     extended_documentation: Aggregate of MongoDB Metrics PROCESS_CPU_KERNEL, PROCESS_CPU_USER
-    unit: 1
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
@@ -272,7 +297,7 @@ metrics:
     enabled: true
     description: CPU Usage for child processes (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_CPU_CHILDREN_USER, MAX_PROCESS_CPU_CHILDREN_KERNEL
-    unit: 1
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
@@ -280,7 +305,7 @@ metrics:
     enabled: true
     description: CPU Usage for child processes (%)
     extended_documentation: Aggregate of MongoDB Metrics PROCESS_CPU_CHILDREN_KERNEL, PROCESS_CPU_CHILDREN_USER
-    unit: 1
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
@@ -288,7 +313,7 @@ metrics:
     enabled: true
     description: CPU Usage for child processes, normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER
-    unit: 1
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
@@ -296,7 +321,7 @@ metrics:
     enabled: true
     description: CPU Usage for child processes, normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, PROCESS_NORMALIZED_CPU_CHILDREN_USER
-    unit: 1
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
@@ -304,7 +329,7 @@ metrics:
     enabled: true
     description: CPU Usage, normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_USER, MAX_PROCESS_NORMALIZED_CPU_KERNEL
-    unit: 1
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
@@ -312,7 +337,7 @@ metrics:
     enabled: true
     description: CPU Usage, normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_KERNEL, PROCESS_NORMALIZED_CPU_USER
-    unit: 1
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
@@ -340,14 +365,6 @@ metrics:
     attributes: [document_status]
     gauge:
       value_type: double
-  mongodbatlas.process.fts.cpu.usage:
-    enabled: true
-    description: Full text search CPU (%)
-    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
-    unit: 1
-    attributes: [cpu_state]
-    gauge:
-      value_type: double
   mongodbatlas.process.global_lock:
     enabled: true
     description: Number and status of locks
@@ -360,7 +377,7 @@ metrics:
     enabled: true
     description: Index miss ratio (%)
     extended_documentation: MongoDB Metric INDEX_COUNTERS_BTREE_MISS_RATIO
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   mongodbatlas.process.index.counters:
@@ -416,7 +433,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.oplog.time:
     enabled: true
     description: Execution time by operation
@@ -449,7 +466,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.page_faults:
     enabled: true
     description: Page faults
@@ -518,7 +535,7 @@ metrics:
     description: System CPU Usage (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_CPU_SOFTIRQ, MAX_SYSTEM_CPU_IRQ, MAX_SYSTEM_CPU_GUEST, MAX_SYSTEM_CPU_IOWAIT, MAX_SYSTEM_CPU_NICE, MAX_SYSTEM_CPU_KERNEL, MAX_SYSTEM_CPU_USER, MAX_SYSTEM_CPU_STEAL
     attributes: [cpu_state]
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   mongodbatlas.system.cpu.usage.average:
@@ -526,7 +543,7 @@ metrics:
     description: System CPU Usage (%)
     extended_documentation: Aggregate of MongoDB Metrics SYSTEM_CPU_USER, SYSTEM_CPU_GUEST, SYSTEM_CPU_SOFTIRQ, SYSTEM_CPU_IRQ, SYSTEM_CPU_KERNEL, SYSTEM_CPU_IOWAIT, SYSTEM_CPU_NICE, SYSTEM_CPU_STEAL
     attributes: [cpu_state]
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   mongodbatlas.system.memory.usage.max:
@@ -566,7 +583,7 @@ metrics:
     description: System CPU Normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_NORMALIZED_CPU_USER, MAX_SYSTEM_NORMALIZED_CPU_NICE, MAX_SYSTEM_NORMALIZED_CPU_IOWAIT, MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ, MAX_SYSTEM_NORMALIZED_CPU_STEAL, MAX_SYSTEM_NORMALIZED_CPU_KERNEL, MAX_SYSTEM_NORMALIZED_CPU_GUEST, MAX_SYSTEM_NORMALIZED_CPU_IRQ
     attributes: [cpu_state]
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   mongodbatlas.system.cpu.normalized.usage.average:
@@ -574,7 +591,7 @@ metrics:
     description: System CPU Normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics SYSTEM_NORMALIZED_CPU_IOWAIT, SYSTEM_NORMALIZED_CPU_GUEST, SYSTEM_NORMALIZED_CPU_IRQ, SYSTEM_NORMALIZED_CPU_KERNEL, SYSTEM_NORMALIZED_CPU_STEAL, SYSTEM_NORMALIZED_CPU_SOFTIRQ, SYSTEM_NORMALIZED_CPU_NICE, SYSTEM_NORMALIZED_CPU_USER
     attributes: [cpu_state]
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   mongodbatlas.process.tickets:
@@ -605,7 +622,7 @@ metrics:
     enabled: true
     description: Disk partition usage (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PARTITION_SPACE_PERCENT_FREE
-    unit: 1
+    unit: "1"
     attributes: [disk_status]
     gauge:
       value_type: double
@@ -613,24 +630,22 @@ metrics:
     enabled: true
     description: Disk partition usage (%)
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED
-    unit: 1
+    unit: "1"
     attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.disk.partition.utilization.max:
     enabled: true
-    description: Disk partition utilization (%)
+    description: The maximum percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
-    unit: 1
-    attributes: [disk_status]
+    unit: "1"
     gauge:
       value_type: double
   mongodbatlas.disk.partition.utilization.average:
     enabled: true
-    description: Disk partition utilization (%)
+    description: The percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics DISK_PARTITION_UTILIZATION
-    unit: 1
-    attributes: [disk_status]
+    unit: "1"
     gauge:
       value_type: double
   mongodbatlas.disk.partition.latency.max:
@@ -690,7 +705,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.system.fts.disk.used:
     enabled: true
     description: Full text search disk usage
@@ -701,7 +716,8 @@ metrics:
   mongodbatlas.system.fts.cpu.usage:
     enabled: true
     description: Full-text search (%)
-    unit: 1
+    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
@@ -709,7 +725,12 @@ metrics:
     enabled: true
     description: Full text search disk usage (%)
     extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_NORMALIZED_CPU_USER, FTS_PROCESS_NORMALIZED_CPU_KERNEL
-    unit: 1
+    unit: "1"
     attributes: [cpu_state]
     gauge:
       value_type: double
+
+tests:
+  config:
+    alerts:
+      enabled: true

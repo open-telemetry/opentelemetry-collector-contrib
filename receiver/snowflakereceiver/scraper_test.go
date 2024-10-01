@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the License);
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an AS IS BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package snowflakereceiver
 
@@ -26,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -47,23 +36,23 @@ func TestScraper(t *testing.T) {
 	}
 	defer db.Close()
 
-	mockDB := MockDB{mock}
+	mockDB := mockDB{mock}
 	mockDB.initMockDB()
 
-	scraper := newSnowflakeMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(), cfg)
 
 	// by default our scraper does not start with a client. the client we use must contain
 	// the mock database
 	scraperClient := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopCreateSettings().Logger,
+		logger: receivertest.NewNopSettings().Logger,
 	}
 	scraper.client = &scraperClient
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err, "error scraping metrics from mocdb")
 
-	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "error reading expected metrics")
@@ -80,17 +69,18 @@ func TestStart(t *testing.T) {
 	cfg.Warehouse = "warehouse"
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	scraper := newSnowflakeMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(), cfg)
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Problem starting scraper")
+	require.NoError(t, scraper.shutdown(context.Background()))
 }
 
 // wrapper type for convenience
-type MockDB struct {
+type mockDB struct {
 	mock sqlmock.Sqlmock
 }
 
-func (m *MockDB) initMockDB() {
+func (m *mockDB) initMockDB() {
 	testDB := []struct {
 		query   string
 		columns []string

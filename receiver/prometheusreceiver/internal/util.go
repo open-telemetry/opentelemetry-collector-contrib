@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
@@ -22,7 +11,6 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
-	"github.com/prometheus/prometheus/model/textparse"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -45,8 +33,8 @@ var (
 	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal, metricSuffixInfo, metricSuffixCreated}
 	errNoDataToBuild      = errors.New("there's no data to build")
 	errNoBoundaryLabel    = errors.New("given metricType has no 'le' or 'quantile' label")
-	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric missing is empty")
-	errEmptyLeLabel       = errors.New("'le' label on histogram metric id missing or empty")
+	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric is missing or empty")
+	errEmptyLeLabel       = errors.New("'le' label on histogram metric is missing or empty")
 	errMetricNameNotFound = errors.New("metricName not found from labels")
 	errTransactionAborted = errors.New("transaction aborted")
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
@@ -67,6 +55,8 @@ func getSortedNotUsefulLabels(mType pmetric.MetricType) []string {
 		return notUsefulLabelsHistogram
 	case pmetric.MetricTypeSummary:
 		return notUsefulLabelsSummary
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default:
 		return notUsefulLabelsOther
 	}
@@ -83,7 +73,7 @@ func timestampFromMs(timeAtMs int64) pcommon.Timestamp {
 }
 
 func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, error) {
-	val := ""
+	var val string
 	switch metricType {
 	case pmetric.MetricTypeHistogram:
 		val = labels.Get(model.BucketLabel)
@@ -95,6 +85,8 @@ func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, 
 		if val == "" {
 			return 0, errEmptyQuantileLabel
 		}
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default:
 		return 0, errNoBoundaryLabel
 	}
@@ -103,26 +95,28 @@ func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, 
 }
 
 // convToMetricType returns the data type and if it is monotonic
-func convToMetricType(metricType textparse.MetricType) (pmetric.MetricType, bool) {
+func convToMetricType(metricType model.MetricType) (pmetric.MetricType, bool) {
 	switch metricType {
-	case textparse.MetricTypeCounter:
+	case model.MetricTypeCounter:
 		// always use float64, as it's the internal data type used in prometheus
 		return pmetric.MetricTypeSum, true
-	// textparse.MetricTypeUnknown is converted to gauge by default to prevent Prometheus untyped metrics from being dropped
-	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
+	// model.MetricTypeUnknown is converted to gauge by default to prevent Prometheus untyped metrics from being dropped
+	case model.MetricTypeGauge, model.MetricTypeUnknown:
 		return pmetric.MetricTypeGauge, false
-	case textparse.MetricTypeHistogram:
+	case model.MetricTypeHistogram:
 		return pmetric.MetricTypeHistogram, true
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation
 	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
-	// case textparse.MetricTypeGaugeHistogram:
+	// case model.MetricTypeGaugeHistogram:
 	//	return <pdata gauge histogram type>
-	case textparse.MetricTypeSummary:
+	case model.MetricTypeSummary:
 		return pmetric.MetricTypeSummary, true
-	case textparse.MetricTypeInfo, textparse.MetricTypeStateset:
+	case model.MetricTypeInfo, model.MetricTypeStateset:
 		return pmetric.MetricTypeSum, false
+	case model.MetricTypeGaugeHistogram:
+		fallthrough
 	default:
-		// including: textparse.MetricTypeGaugeHistogram
+		// including: model.MetricTypeGaugeHistogram
 		return pmetric.MetricTypeEmpty, false
 	}
 }

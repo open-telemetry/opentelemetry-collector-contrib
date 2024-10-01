@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsutil
 
@@ -52,7 +41,7 @@ func Test_ecsMetadata_fetchTask(t *testing.T) {
 	assert.Equal(t, "ec2", fetchResp.LaunchType)
 	assert.Equal(t, "us-west-2a", fetchResp.AvailabilityZone)
 	assert.Equal(t, "1", fetchResp.Revision)
-	assert.Equal(t, 3, len(fetchResp.Containers))
+	assert.Len(t, fetchResp.Containers, 3)
 }
 
 func Test_ecsMetadata_fetchContainer(t *testing.T) {
@@ -60,7 +49,7 @@ func Test_ecsMetadata_fetchContainer(t *testing.T) {
 	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: mockRestClient}
 	fetchResp, err := md.FetchContainerMetadata()
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, fetchResp)
 	assert.Equal(t, "325c979aea914acd93be2fdd2429e1d9-3811061257", fetchResp.DockerID)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:123456789123:an-image/123", fetchResp.ContainerARN)

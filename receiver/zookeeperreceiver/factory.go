@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
@@ -24,42 +13,42 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "zookeeper"
-	stability = component.StabilityLevelDevelopment
-
+	defaultPort               = 2181
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
 )
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultControllerConfig()
+	cfg.CollectionInterval = defaultCollectionInterval
+	cfg.Timeout = defaultTimeout
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: defaultCollectionInterval,
+		ControllerConfig: cfg,
+		TCPAddrConfig: confignet.TCPAddrConfig{
+			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: ":2181",
-		},
-		Timeout: defaultTimeout,
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
 // CreateMetricsReceiver creates zookeeper (metrics) receiver.
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -70,7 +59,7 @@ func createMetricsReceiver(
 	}
 
 	scrp, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		zms.scrape,
 		scraperhelper.WithShutdown(zms.shutdown),
 	)
@@ -79,7 +68,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&rConfig.ScraperControllerSettings,
+		&rConfig.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scrp),

@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package cloudfoundryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 
@@ -22,13 +11,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
 
 // This file implements factory for Cloud Foundry receiver.
 
 const (
-	typeStr                  = "cloudfoundry"
-	stability                = component.StabilityLevelBeta
 	defaultUAAUsername       = "admin"
 	defaultRLPGatewayShardID = "opentelemetry"
 	defaultURL               = "https://localhost"
@@ -37,24 +26,25 @@ const (
 // NewFactory creates a factory for collectd receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
 		RLPGateway: RLPGatewayConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: defaultURL,
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					InsecureSkipVerify: false,
 				},
 			},
 			ShardID: defaultRLPGatewayShardID,
 		},
 		UAA: UAAConfig{
-			LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+			LimitedClientConfig: LimitedClientConfig{
 				Endpoint: defaultURL,
 				TLSSetting: LimitedTLSClientSetting{
 					InsecureSkipVerify: false,
@@ -67,10 +57,20 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
-	return newCloudFoundryReceiver(params, *c, nextConsumer)
+	return newCloudFoundryMetricsReceiver(params, *c, nextConsumer)
+}
+
+func createLogsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (receiver.Logs, error) {
+	c := cfg.(*Config)
+	return newCloudFoundryLogsReceiver(params, *c, nextConsumer)
 }

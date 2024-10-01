@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package traces
 
@@ -22,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -66,7 +56,7 @@ func testWithTracingGoldenDataset(
 	require.NoError(t, err, "default components resulted in: %v", err)
 	runner := testbed.NewInProcessCollector(factories)
 	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
-	config := correctnesstests.CreateConfigYaml(sender, receiver, processors, "traces")
+	config := correctnesstests.CreateConfigYaml(t, sender, receiver, nil, processors)
 	log.Println(config)
 	configCleanup, cfgErr := runner.PrepareConfig(config)
 	require.NoError(t, cfgErr, "collector configuration resulted in: %v", cfgErr)
@@ -102,4 +92,64 @@ func testWithTracingGoldenDataset(
 	tc.StopAgent()
 
 	tc.ValidateData()
+}
+
+func TestSporadicGoldenDataset(t *testing.T) {
+	testCases := []struct {
+		decisionFunc func() error
+	}{
+		{
+			decisionFunc: testbed.RandomNonPermanentError,
+		},
+		{
+			decisionFunc: testbed.RandomPermanentError,
+		},
+	}
+	for _, tt := range testCases {
+		factories, err := testbed.Components()
+		require.NoError(t, err, "default components resulted in: %v", err)
+		runner := testbed.NewInProcessCollector(factories)
+		options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+		dataProvider := testbed.NewGoldenDataProvider(
+			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+			"")
+		sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+		receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
+		receiver.WithRetry(`
+    retry_on_failure:
+      enabled: false
+`)
+		receiver.WithQueue(`
+    sending_queue:
+      enabled: false
+`)
+		_, err = runner.PrepareConfig(correctnesstests.CreateConfigYaml(t, sender, receiver, nil, nil))
+		require.NoError(t, err, "collector configuration resulted in: %v", err)
+		validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
+		tc := testbed.NewTestCase(
+			t,
+			dataProvider,
+			sender,
+			receiver,
+			runner,
+			validator,
+			correctnessResults,
+			testbed.WithSkipResults(),
+			testbed.WithDecisionFunc(tt.decisionFunc),
+		)
+		defer tc.Stop()
+		tc.StartBackend()
+		tc.StartAgent()
+		tc.StartLoad(options)
+		tc.Sleep(3 * time.Second)
+
+		tc.StopLoad()
+
+		tc.WaitForN(func() bool {
+			return tc.LoadGenerator.DataItemsSent()-tc.LoadGenerator.PermanentErrors() == tc.MockBackend.DataItemsReceived()
+		}, 5*time.Second, "all data items received")
+		tc.StopAgent()
+		tc.ValidateData()
+	}
 }

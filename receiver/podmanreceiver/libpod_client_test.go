@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver
 
@@ -73,13 +61,11 @@ func TestStats(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedStats := containerStats{
 		AvgCPU:        42.04781177856639,
@@ -131,13 +117,11 @@ func TestStatsError(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	stats, err := cli.stats(context.Background(), nil)
 	assert.Nil(t, stats)
@@ -167,13 +151,11 @@ func TestList(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedContainer := container{
 
@@ -240,13 +222,11 @@ func TestEvents(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedEvents := []event{
 		{ID: "49a4c52afb06e6b36b2941422a0adf47421dbfbf40503dbe17bd56b4570b6681", Status: "start"},

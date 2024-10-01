@@ -1,47 +1,42 @@
-// Copyright 2022, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
 	"net/url"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 type hecWorker interface {
-	send(context.Context, *bufferState, map[string]string) error
+	send(context.Context, buffer, map[string]string) error
 }
 
 type defaultHecWorker struct {
 	url     *url.URL
 	client  *http.Client
 	headers map[string]string
+	logger  *zap.Logger
 }
 
-func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState, headers map[string]string) error {
-	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), bufferState)
+func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
+	// We copy the bytes to a new buffer to avoid corruption. This is a workaround to avoid hitting https://github.com/golang/go/issues/51907.
+	nb := make([]byte, buf.Len())
+	copy(nb, buf.Bytes())
+	bodyBuf := bytes.NewReader(nb)
+	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), bodyBuf)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	req.ContentLength = int64(bufferState.buf.Len())
+	req.ContentLength = int64(buf.Len())
 
 	// Set the headers configured for the client
 	for k, v := range hec.headers {
@@ -53,7 +48,7 @@ func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState,
 		req.Header.Set(k, v)
 	}
 
-	if bufferState.compressionEnabled {
+	if _, ok := buf.(*cancellableGzipWriter); ok {
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 
@@ -62,6 +57,10 @@ func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState,
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable {
+		hec.logger.Error("Splunk is unable to receive data. Please investigate the health of the cluster", zap.Int("status", resp.StatusCode), zap.String("host", hec.url.String()))
+	}
 
 	err = splunk.HandleHTTPCode(resp)
 	if err != nil {
@@ -72,10 +71,11 @@ func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState,
 	// HTTP client will not reuse the same connection unless it is drained.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18281 for more details.
 	if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode != http.StatusBadGateway {
-		_, errCopy := io.Copy(io.Discard, resp.Body)
-		err = multierr.Combine(err, errCopy)
+		if _, errCopy := io.Copy(io.Discard, resp.Body); errCopy != nil {
+			return errCopy
+		}
 	}
-	return err
+	return nil
 }
 
 var _ hecWorker = &defaultHecWorker{}

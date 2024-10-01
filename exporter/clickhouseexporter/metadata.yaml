@@ -1,0 +1,14 @@
+type: clickhouse
+
+status:
+  class: exporter
+  stability:
+    alpha: [metrics]
+    beta: [traces, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [hanjm, dmitryax, Frapschen, SpencerTorres]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

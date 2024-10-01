@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 
@@ -24,6 +13,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -38,15 +28,25 @@ func NewMockOperator(id string) *Operator {
 
 // FakeOutput is an empty output used primarily for testing
 type FakeOutput struct {
-	Received chan *entry.Entry
-	*zap.SugaredLogger
+	Received         chan *entry.Entry
+	logger           *zap.Logger
+	processWithError bool
 }
 
 // NewFakeOutput creates a new fake output with default settings
 func NewFakeOutput(t testing.TB) *FakeOutput {
 	return &FakeOutput{
-		Received:      make(chan *entry.Entry, 100),
-		SugaredLogger: zaptest.NewLogger(t).Sugar(),
+		Received: make(chan *entry.Entry, 100),
+		logger:   zaptest.NewLogger(t),
+	}
+}
+
+// NewFakeOutputWithProcessError creates a new fake output with default settings, which returns error on Process
+func NewFakeOutputWithProcessError(t testing.TB) *FakeOutput {
+	return &FakeOutput{
+		Received:         make(chan *entry.Entry, 100),
+		logger:           zaptest.NewLogger(t),
+		processWithError: true,
 	}
 }
 
@@ -60,7 +60,7 @@ func (f *FakeOutput) CanProcess() bool { return true }
 func (f *FakeOutput) ID() string { return "fake" }
 
 // Logger returns the logger of a fake output
-func (f *FakeOutput) Logger() *zap.SugaredLogger { return f.SugaredLogger }
+func (f *FakeOutput) Logger() *zap.Logger { return f.logger }
 
 // Outputs always returns nil for a fake output
 func (f *FakeOutput) Outputs() []operator.Operator { return nil }
@@ -69,10 +69,10 @@ func (f *FakeOutput) Outputs() []operator.Operator { return nil }
 func (f *FakeOutput) GetOutputIDs() []string { return nil }
 
 // SetOutputs immediately returns nil for a fake output
-func (f *FakeOutput) SetOutputs(outputs []operator.Operator) error { return nil }
+func (f *FakeOutput) SetOutputs(_ []operator.Operator) error { return nil }
 
 // SetOutputIDs immediately returns nil for a fake output
-func (f *FakeOutput) SetOutputIDs(s []string) {}
+func (f *FakeOutput) SetOutputIDs(_ []string) {}
 
 // Start immediately returns nil for a fake output
 func (f *FakeOutput) Start(_ operator.Persister) error { return nil }
@@ -84,19 +84,22 @@ func (f *FakeOutput) Stop() error { return nil }
 func (f *FakeOutput) Type() string { return "fake_output" }
 
 // Process will place all incoming entries on the Received channel of a fake output
-func (f *FakeOutput) Process(ctx context.Context, entry *entry.Entry) error {
+func (f *FakeOutput) Process(_ context.Context, entry *entry.Entry) error {
 	f.Received <- entry
+	if f.processWithError {
+		return errors.NewError("Operator can not process logs.", "")
+	}
 	return nil
 }
 
 // ExpectBody expects that a body will be received by the fake operator within a second
 // and that it is equal to the given body
-func (f *FakeOutput) ExpectBody(t testing.TB, body interface{}) {
+func (f *FakeOutput) ExpectBody(t testing.TB, body any) {
 	select {
 	case e := <-f.Received:
 		require.Equal(t, body, e.Body)
 	case <-time.After(time.Second):
-		require.FailNow(t, "Timed out waiting for entry")
+		require.FailNowf(t, "Timed out waiting for entry", "%s", body)
 	}
 }
 
@@ -107,8 +110,25 @@ func (f *FakeOutput) ExpectEntry(t testing.TB, expected *entry.Entry) {
 	case e := <-f.Received:
 		require.Equal(t, expected, e)
 	case <-time.After(time.Second):
-		require.FailNow(t, "Timed out waiting for entry")
+		require.FailNowf(t, "Timed out waiting for entry", "%v", expected)
 	}
+}
+
+// ExpectEntries expects that the given entries will be received in any order
+func (f *FakeOutput) ExpectEntries(t testing.TB, expected []*entry.Entry) {
+	entries := make([]*entry.Entry, 0, len(expected))
+	for i := 0; i < len(expected); i++ {
+		select {
+		case e := <-f.Received:
+			entries = append(entries, e)
+		case <-time.After(time.Second):
+			require.Fail(t, "Timed out waiting for entry")
+		}
+		if t.Failed() {
+			break
+		}
+	}
+	require.ElementsMatch(t, expected, entries)
 }
 
 // ExpectNoEntry expects that no entry will be received within the specified time

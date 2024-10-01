@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build integration && !windows
-// +build integration,!windows
 
 package subprocess
 
@@ -26,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -65,7 +53,7 @@ func (suite *SubprocessIntegrationSuite) SetupSuite() {
 }
 
 func (suite *SubprocessIntegrationSuite) TearDownSuite() {
-	require.NoError(suite.T(), os.Remove(suite.scriptPath))
+	suite.Require().NoError(os.Remove(suite.scriptPath))
 }
 
 // prepareSubprocess will create a Subprocess based on a temporary script.
@@ -99,7 +87,7 @@ func (suite *SubprocessIntegrationSuite) prepareSubprocess(conf *Config) (*Subpr
 			return false
 		}
 		require.NoError(t, err)
-		require.True(t, strings.HasPrefix(cmdline, expectedExecutable), fmt.Sprintf("%v doesn't have prefix %v", cmdline, expectedExecutable))
+		require.Truef(t, strings.HasPrefix(cmdline, expectedExecutable), "%v doesn't have prefix %v", cmdline, expectedExecutable)
 		procInfo = proc
 		return true
 	}
@@ -244,7 +232,7 @@ func (suite *SubprocessIntegrationSuite) TestSendingStdinFails() {
 	subprocess := NewSubprocess(&Config{ExecutablePath: "echo", Args: []string{"finished"}}, logger)
 
 	intentionalError := fmt.Errorf("intentional failure")
-	subprocess.sendToStdIn = func(contents string, writer io.Writer) error {
+	subprocess.sendToStdIn = func(string, io.Writer) error {
 		return intentionalError
 	}
 

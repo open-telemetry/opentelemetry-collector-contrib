@@ -1,20 +1,10 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -26,8 +16,10 @@ import (
 
 type client interface {
 	Connect() error
+	getVersion() (string, error)
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
+	getTableStats() ([]TableStats, error)
 	getTableIoWaitsStats() ([]TableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]IndexIoWaitsStats, error)
 	getStatementEventsStats() ([]StatementEventStats, error)
@@ -64,6 +56,15 @@ type TableIoWaitsStats struct {
 type IndexIoWaitsStats struct {
 	IoWaitsStats
 	index string
+}
+
+type TableStats struct {
+	schema           string
+	name             string
+	rows             int64
+	averageRowLength int64
+	dataLength       int64
+	indexLength      int64
 }
 
 type StatementEventStats struct {
@@ -147,7 +148,7 @@ type ReplicaStatusStats struct {
 	lastIOError               string
 	lastSQLErrno              int64
 	lastSQLError              string
-	replicateIgnoreServerIds  string
+	replicateIgnoreServerIDs  string
 	sourceServerID            int64
 	sourceUUID                string
 	sourceInfoFile            string
@@ -173,14 +174,29 @@ type ReplicaStatusStats struct {
 
 var _ client = (*mySQLClient)(nil)
 
-func newMySQLClient(conf *Config) client {
+func newMySQLClient(conf *Config) (client, error) {
+	tls, err := conf.TLS.LoadTLSConfig(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	tlsConfig := ""
+	if tls != nil {
+		err := mysql.RegisterTLSConfig("custom", tls)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig = "custom"
+	}
+
 	driverConf := mysql.Config{
 		User:                 conf.Username,
-		Passwd:               conf.Password,
-		Net:                  conf.Transport,
+		Passwd:               string(conf.Password),
+		Net:                  string(conf.Transport),
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
 		AllowNativePasswords: conf.AllowNativePasswords,
+		TLS:                  tls,
+		TLSConfig:            tlsConfig,
 	}
 	connStr := driverConf.FormatDSN()
 
@@ -189,7 +205,7 @@ func newMySQLClient(conf *Config) client {
 		statementEventsDigestTextLimit: conf.StatementEvents.DigestTextLimit,
 		statementEventsLimit:           conf.StatementEvents.Limit,
 		statementEventsTimeLimit:       conf.StatementEvents.TimeLimit,
-	}
+	}, nil
 }
 
 func (c *mySQLClient) Connect() error {
@@ -201,16 +217,57 @@ func (c *mySQLClient) Connect() error {
 	return nil
 }
 
+// getVersion queries the db for the version.
+func (c *mySQLClient) getVersion() (string, error) {
+	query := "SELECT VERSION();"
+	var version string
+	err := c.client.QueryRow(query).Scan(&version)
+	if err != nil {
+		return "", err
+	}
+
+	return version, nil
+}
+
 // getGlobalStats queries the db for global status metrics.
 func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
-	query := "SHOW GLOBAL STATUS;"
-	return Query(*c, query)
+	q := "SHOW GLOBAL STATUS;"
+	return query(*c, q)
 }
 
 // getInnodbStats queries the db for innodb metrics.
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
-	query := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
-	return Query(*c, query)
+	q := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
+	return query(*c, q)
+}
+
+// getTableStats queries the db for information_schema table size metrics.
+func (c *mySQLClient) getTableStats() ([]TableStats, error) {
+	query := "SELECT TABLE_SCHEMA, TABLE_NAME, " +
+		"COALESCE(TABLE_ROWS, 0) as TABLE_ROWS, " +
+		"COALESCE(AVG_ROW_LENGTH, 0) as AVG_ROW_LENGTH, " +
+		"COALESCE(DATA_LENGTH, 0) as DATA_LENGTH, " +
+		"COALESCE(INDEX_LENGTH, 0) as  INDEX_LENGTH " +
+		"FROM information_schema.TABLES " +
+		"WHERE TABLE_SCHEMA NOT in ('information_schema', 'sys');"
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var stats []TableStats
+	for rows.Next() {
+		var s TableStats
+		err := rows.Scan(&s.schema, &s.name,
+			&s.rows, &s.averageRowLength,
+			&s.dataLength, &s.indexLength)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	return stats, nil
 }
 
 // getTableIoWaitsStats queries the db for table_io_waits metrics.
@@ -340,6 +397,15 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 }
 
 func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
+	version, err := c.getVersion()
+	if err != nil {
+		return nil, err
+	}
+
+	if version < "8.0.22" {
+		return nil, nil
+	}
+
 	query := "SHOW REPLICA STATUS"
 	rows, err := c.client.Query(query)
 
@@ -356,7 +422,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	var stats []ReplicaStatusStats
 	for rows.Next() {
 		var s ReplicaStatusStats
-		dest := []interface{}{}
+		dest := []any{}
 		for _, col := range cols {
 			switch strings.ToLower(col) {
 			case "replica_io_state":
@@ -436,7 +502,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "last_sql_error":
 				dest = append(dest, &s.lastSQLError)
 			case "replicate_ignore_server_ids":
-				dest = append(dest, &s.replicateIgnoreServerIds)
+				dest = append(dest, &s.replicateIgnoreServerIDs)
 			case "source_server_id":
 				dest = append(dest, &s.sourceServerID)
 			case "source_uuid":
@@ -494,7 +560,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	return stats, nil
 }
 
-func Query(c mySQLClient, query string) (map[string]string, error) {
+func query(c mySQLClient, query string) (map[string]string, error) {
 	rows, err := c.client.Query(query)
 	if err != nil {
 		return nil, err

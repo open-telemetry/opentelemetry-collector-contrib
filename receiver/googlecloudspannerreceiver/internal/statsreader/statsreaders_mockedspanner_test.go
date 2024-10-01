@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package statsreader
 
@@ -138,7 +127,7 @@ func TestStatsReaders_Read(t *testing.T) {
 	require.NoError(t, err)
 	defer server.Close()
 
-	conn, err := grpc.Dial(server.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(server.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	databaseAdminClient, err := database.NewDatabaseAdminClient(ctx, option.WithGRPCConn(conn))
@@ -168,13 +157,13 @@ func TestStatsReaders_Read(t *testing.T) {
 	_, err = databaseClient.Apply(ctx, []*spanner.Mutation{
 		spanner.Insert("STATS",
 			[]string{"INTERVAL_END", "METRIC_LABEL", "METRIC_VALUE"},
-			[]interface{}{timestamp, "Qwerty", 10}),
+			[]any{timestamp, "Qwerty", 10}),
 		spanner.Insert("STATS",
 			[]string{"INTERVAL_END", "METRIC_LABEL", "METRIC_VALUE"},
-			[]interface{}{timestamp.Add(-1 * time.Minute), "Test", 20}),
+			[]any{timestamp.Add(-1 * time.Minute), "Test", 20}),
 		spanner.Insert("STATS",
 			[]string{"INTERVAL_END", "METRIC_LABEL", "METRIC_VALUE"},
-			[]interface{}{timestamp.Add(-1 * time.Minute), "Spanner", 30}),
+			[]any{timestamp.Add(-1 * time.Minute), "Spanner", 30}),
 	})
 
 	require.NoError(t, err)
@@ -203,7 +192,7 @@ func TestStatsReaders_Read(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, testCase.expectedMetricsAmount, len(metrics))
+				assert.Len(t, metrics, testCase.expectedMetricsAmount)
 			}
 		})
 	}

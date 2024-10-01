@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package octrace // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/octrace"
 
@@ -22,11 +11,10 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
@@ -40,16 +28,13 @@ const (
 type Receiver struct {
 	agenttracepb.UnimplementedTraceServiceServer
 	nextConsumer consumer.Traces
-	obsrecv      *obsreport.Receiver
+	obsrecv      *receiverhelper.ObsReport
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(nextConsumer consumer.Traces, set receiver.CreateSettings) (*Receiver, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
+func New(nextConsumer consumer.Traces, set receiver.Settings) (*Receiver, error) {
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              receiverTransport,
 		LongLivedCtx:           true,
@@ -142,8 +127,9 @@ func (ocr *Receiver) processReceivedMsg(
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td ptrace.Traces) error {
 	ctx := ocr.obsrecv.StartTracesOp(longLivedRPCCtx)
 
+	numReceivedSpans := td.SpanCount()
 	err := ocr.nextConsumer.ConsumeTraces(ctx, td)
-	ocr.obsrecv.EndTracesOp(ctx, receiverDataFormat, td.SpanCount(), err)
+	ocr.obsrecv.EndTracesOp(ctx, receiverDataFormat, numReceivedSpans, err)
 
 	return err
 }

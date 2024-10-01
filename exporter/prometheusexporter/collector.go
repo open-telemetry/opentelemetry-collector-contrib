@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
@@ -23,14 +12,10 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
-)
-
-const (
-	targetMetricName = "target_info"
 )
 
 var (
@@ -41,19 +26,55 @@ type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
 
-	sendTimestamps bool
-	namespace      string
-	constLabels    prometheus.Labels
+	sendTimestamps    bool
+	addMetricSuffixes bool
+	namespace         string
+	constLabels       prometheus.Labels
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
-		accumulator:    newAccumulator(logger, config.MetricExpiration),
-		logger:         logger,
-		namespace:      prometheustranslator.CleanUpString(config.Namespace),
-		sendTimestamps: config.SendTimestamps,
-		constLabels:    config.ConstLabels,
+		accumulator:       newAccumulator(logger, config.MetricExpiration),
+		logger:            logger,
+		namespace:         prometheustranslator.CleanUpString(config.Namespace),
+		sendTimestamps:    config.SendTimestamps,
+		constLabels:       config.ConstLabels,
+		addMetricSuffixes: config.AddMetricSuffixes,
 	}
+}
+
+func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
+	length := exemplars.Len()
+	result := make([]prometheus.Exemplar, length)
+
+	for i := 0; i < length; i++ {
+		e := exemplars.At(i)
+		exemplarLabels := make(prometheus.Labels, 0)
+
+		if traceID := e.TraceID(); !traceID.IsEmpty() {
+			exemplarLabels[prometheustranslator.ExemplarTraceIDKey] = hex.EncodeToString(traceID[:])
+		}
+
+		if spanID := e.SpanID(); !spanID.IsEmpty() {
+			exemplarLabels[prometheustranslator.ExemplarSpanIDKey] = hex.EncodeToString(spanID[:])
+		}
+
+		var value float64
+		switch e.ValueType() {
+		case pmetric.ExemplarValueTypeDouble:
+			value = e.DoubleValue()
+		case pmetric.ExemplarValueTypeInt:
+			value = float64(e.IntValue())
+		}
+
+		result[i] = prometheus.Exemplar{
+			Value:     value,
+			Labels:    exemplarLabels,
+			Timestamp: e.Timestamp().AsTime(),
+		}
+
+	}
+	return result
 }
 
 // Describe is a no-op, because the collector dynamically allocates metrics.
@@ -104,7 +125,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.
 	}
 
 	return prometheus.NewDesc(
-		prometheustranslator.BuildPromCompliantName(metric, c.namespace),
+		prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes),
 		metric.Description(),
 		keys,
 		c.constLabels,
@@ -122,7 +143,12 @@ func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Ma
 	case pmetric.NumberDataPointValueTypeDouble:
 		value = ip.DoubleValue()
 	}
-	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, value, attributes...)
+	metricType := prometheus.GaugeValue
+	originalType, ok := metric.Metadata().Get(prometheustranslator.MetricMetadataTypeKey)
+	if ok && originalType.Str() == string(model.MetricTypeUnknown) {
+		metricType = prometheus.UntypedValue
+	}
+	m, err := prometheus.NewConstMetric(desc, metricType, value, attributes...)
 	if err != nil {
 		return nil, err
 	}
@@ -149,9 +175,29 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map)
 	case pmetric.NumberDataPointValueTypeDouble:
 		value = ip.DoubleValue()
 	}
-	m, err := prometheus.NewConstMetric(desc, metricType, value, attributes...)
+
+	var exemplars []prometheus.Exemplar
+	// Prometheus currently only supports exporting counters
+	if metricType == prometheus.CounterValue {
+		exemplars = convertExemplars(ip.Exemplars())
+	}
+
+	var m prometheus.Metric
+	var err error
+	if metricType == prometheus.CounterValue && ip.StartTimestamp().AsTime().Unix() > 0 {
+		m, err = prometheus.NewConstMetricWithCreatedTimestamp(desc, metricType, value, ip.StartTimestamp().AsTime(), attributes...)
+	} else {
+		m, err = prometheus.NewConstMetric(desc, metricType, value, attributes...)
+	}
 	if err != nil {
 		return nil, err
+	}
+
+	if len(exemplars) > 0 {
+		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if c.sendTimestamps {
@@ -174,7 +220,13 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 	}
 
 	desc, attributes := c.getMetricMetadata(metric, point.Attributes(), resourceAttrs)
-	m, err := prometheus.NewConstSummary(desc, point.Count(), point.Sum(), quantiles, attributes...)
+	var m prometheus.Metric
+	var err error
+	if point.StartTimestamp().AsTime().Unix() > 0 {
+		m, err = prometheus.NewConstSummaryWithCreatedTimestamp(desc, point.Count(), point.Sum(), quantiles, point.StartTimestamp().AsTime(), attributes...)
+	} else {
+		m, err = prometheus.NewConstSummary(desc, point.Count(), point.Sum(), quantiles, attributes...)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -212,34 +264,20 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 		points[bucket] = cumCount
 	}
 
-	arrLen := ip.Exemplars().Len()
-	exemplars := make([]prometheus.Exemplar, arrLen)
+	exemplars := convertExemplars(ip.Exemplars())
 
-	for i := 0; i < arrLen; i++ {
-		e := ip.Exemplars().At(i)
-		exemplarLabels := make(prometheus.Labels, 0)
-
-		if traceID := e.TraceID(); !traceID.IsEmpty() {
-			exemplarLabels["trace_id"] = hex.EncodeToString(traceID[:])
-		}
-
-		if spanID := e.SpanID(); !spanID.IsEmpty() {
-			exemplarLabels["span_id"] = hex.EncodeToString(spanID[:])
-		}
-
-		exemplars[i] = prometheus.Exemplar{
-			Value:     e.DoubleValue(),
-			Labels:    exemplarLabels,
-			Timestamp: e.Timestamp().AsTime(),
-		}
+	var m prometheus.Metric
+	var err error
+	if ip.StartTimestamp().AsTime().Unix() > 0 {
+		m, err = prometheus.NewConstHistogramWithCreatedTimestamp(desc, ip.Count(), ip.Sum(), points, ip.StartTimestamp().AsTime(), attributes...)
+	} else {
+		m, err = prometheus.NewConstHistogram(desc, ip.Count(), ip.Sum(), points, attributes...)
 	}
-
-	m, err := prometheus.NewConstHistogram(desc, ip.Count(), ip.Sum(), points, attributes...)
 	if err != nil {
 		return nil, err
 	}
 
-	if arrLen > 0 {
+	if len(exemplars) > 0 {
 		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
 		if err != nil {
 			return nil, err
@@ -253,7 +291,6 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 }
 
 func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
-	var metrics []prometheus.Metric
 	var lastErr error
 
 	// deduplicate resourceAttrs by job and instance
@@ -270,6 +307,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		}
 	}
 
+	metrics := make([]prometheus.Metric, 0, len(deduplicatedResourceAttrs))
 	for _, rAttributes := range deduplicatedResourceAttrs {
 		// map ensures no duplicate label name
 		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
@@ -308,7 +346,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 			labels[model.InstanceLabel] = instance
 		}
 
-		name := targetMetricName
+		name := prometheustranslator.TargetInfoMetricName
 		if len(c.namespace) > 0 {
 			name = c.namespace + "_" + name
 		}
@@ -346,7 +384,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", targetMetricName, err.Error()))
+		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", prometheustranslator.TargetInfoMetricName, err.Error()))
 	}
 	for _, m := range targetMetrics {
 		ch <- m

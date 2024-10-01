@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -31,13 +20,13 @@ import (
 func TestLog(t *testing.T) {
 	tcs := []struct {
 		name        string
-		input       []interface{}
+		input       []any
 		wantLevel   zapcore.Level
 		wantMessage string
 	}{
 		{
 			name: "Starting provider",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.DebugValue(),
 				"msg",
@@ -52,7 +41,7 @@ func TestLog(t *testing.T) {
 		},
 		{
 			name: "Scrape failed",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.ErrorValue(),
 				"scrape_pool",
@@ -95,10 +84,10 @@ func TestLog(t *testing.T) {
 func TestExtractLogData(t *testing.T) {
 	tcs := []struct {
 		name        string
-		input       []interface{}
+		input       []any
 		wantLevel   level.Value
 		wantMessage string
-		wantOutput  []interface{}
+		wantOutput  []any
 	}{
 		{
 			name:        "nil fields",
@@ -109,14 +98,14 @@ func TestExtractLogData(t *testing.T) {
 		},
 		{
 			name:        "empty fields",
-			input:       []interface{}{},
+			input:       []any{},
 			wantLevel:   level.InfoValue(), // Default
 			wantMessage: "",
 			wantOutput:  nil,
 		},
 		{
 			name: "info level",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.InfoValue(),
 			},
@@ -126,7 +115,7 @@ func TestExtractLogData(t *testing.T) {
 		},
 		{
 			name: "warn level",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.WarnValue(),
 			},
@@ -136,7 +125,7 @@ func TestExtractLogData(t *testing.T) {
 		},
 		{
 			name: "error level",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.ErrorValue(),
 			},
@@ -146,7 +135,7 @@ func TestExtractLogData(t *testing.T) {
 		},
 		{
 			name: "debug level + extra fields",
-			input: []interface{}{
+			input: []any{
 				"timestamp",
 				1596604719,
 				"level",
@@ -156,13 +145,13 @@ func TestExtractLogData(t *testing.T) {
 			},
 			wantLevel:   level.DebugValue(),
 			wantMessage: "http client error",
-			wantOutput: []interface{}{
+			wantOutput: []any{
 				"timestamp", 1596604719,
 			},
 		},
 		{
 			name: "missing level field",
-			input: []interface{}{
+			input: []any{
 				"timestamp",
 				1596604719,
 				"msg",
@@ -170,18 +159,18 @@ func TestExtractLogData(t *testing.T) {
 			},
 			wantLevel:   level.InfoValue(), // Default
 			wantMessage: "http client error",
-			wantOutput: []interface{}{
+			wantOutput: []any{
 				"timestamp", 1596604719,
 			},
 		},
 		{
 			name: "invalid level type",
-			input: []interface{}{
+			input: []any{
 				"level",
 				"warn", // String is not recognized
 			},
 			wantLevel: level.InfoValue(), // Default
-			wantOutput: []interface{}{
+			wantOutput: []any{
 				"level", "warn", // Field is preserved
 			},
 		},

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package riakreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
 
@@ -42,18 +31,18 @@ type riakScraper struct {
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *riakScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *riakScraper {
 	return &riakScraper{
 		logger:   logger,
 		cfg:      cfg,
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
 
 // start starts the scraper by creating a new HTTP Client on the scraper
 func (r *riakScraper) start(ctx context.Context, host component.Host) (err error) {
-	r.client, err = newClient(r.cfg, host, r.settings, r.logger)
+	r.client, err = newClient(ctx, r.cfg, host, r.settings, r.logger)
 	return
 }
 
@@ -100,5 +89,7 @@ func (r *riakScraper) collectStats(stat *model.Stats) (pmetric.Metrics, error) {
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexWrites, metadata.AttributeOperationWrite)
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexDeletes, metadata.AttributeOperationDelete)
 
-	return r.mb.Emit(metadata.WithRiakNodeName(stat.Node)), errors.Combine()
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRiakNodeName(stat.Node)
+	return r.mb.Emit(metadata.WithResource(rb.Emit())), errors.Combine()
 }

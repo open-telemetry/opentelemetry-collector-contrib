@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awskinesisexporter
 
@@ -23,13 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 )
-
-func MustTestGeneric[T any](t T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
 
 func applyConfigChanges(fn func(conf *Config)) *Config {
 	conf := createDefaultConfig().(*Config)
@@ -53,7 +35,7 @@ func TestCreatingExporter(t *testing.T) {
 			}),
 			validateNew: func(tb testing.TB) func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
 				return func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
-					assert.Equal(tb, conf.Region, "us-west-2", "Must match the expected region")
+					assert.Equal(tb, "us-west-2", conf.Region, "Must match the expected region")
 					k := kinesis.NewFromConfig(conf, opts...)
 					return k
 				}
@@ -64,10 +46,11 @@ func TestCreatingExporter(t *testing.T) {
 			conf: applyConfigChanges(func(conf *Config) {
 				conf.AWS.StreamName = "example-test"
 				conf.AWS.Region = "us-east-1"
+				conf.AWS.Role = "example-role"
 			}),
 			validateNew: func(tb testing.TB) func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
 				return func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
-					assert.Equal(tb, conf.Region, "us-east-1", "Must match the expected region")
+					assert.Equal(tb, "us-east-1", conf.Region, "Must match the expected region")
 					k := kinesis.NewFromConfig(conf, opts...)
 					return k
 				}

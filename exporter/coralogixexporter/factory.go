@@ -1,16 +1,7 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
 
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
@@ -20,46 +11,57 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
-	exp "go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
 
 // NewFactory by Coralogix
-func NewFactory() exp.Factory {
-	return exp.NewFactory(
-		typeStr,
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		exp.WithTraces(createTraceExporter, stability),
-		exp.WithMetrics(createMetricsExporter, stability),
-		exp.WithLogs(createLogsExporter, component.StabilityLevelAlpha),
+		exporter.WithTraces(createTraceExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		// Traces GRPC client
-		Traces: configgrpc.GRPCClientSettings{
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+		DomainSettings: configgrpc.ClientConfig{
+			Compression: configcompression.TypeGzip,
+		},
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "https://",
 		},
-		Metrics: configgrpc.GRPCClientSettings{
+		// Traces GRPC client
+		Traces: configgrpc.ClientConfig{
+			Endpoint:    "https://",
+			Compression: configcompression.TypeGzip,
+		},
+		Metrics: configgrpc.ClientConfig{
 			Endpoint: "https://",
 			// Default to gzip compression
-			Compression:     configcompression.Gzip,
+			Compression:     configcompression.TypeGzip,
 			WriteBufferSize: 512 * 1024,
 		},
-		Logs: configgrpc.GRPCClientSettings{
-			Endpoint: "https://",
+		Logs: configgrpc.ClientConfig{
+			Endpoint:    "https://",
+			Compression: configcompression.TypeGzip,
 		},
 		PrivateKey: "",
 		AppName:    "",
 	}
 }
 
-func createTraceExporter(ctx context.Context, set exp.CreateSettings, config component.Config) (exp.Traces, error) {
+func createTraceExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
 	exporter, err := newTracesExporter(cfg, set)
@@ -72,9 +74,9 @@ func createTraceExporter(ctx context.Context, set exp.CreateSettings, config com
 		set,
 		config,
 		exporter.pushTraces,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
@@ -83,9 +85,9 @@ func createTraceExporter(ctx context.Context, set exp.CreateSettings, config com
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exp.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
-) (exp.Metrics, error) {
+) (exporter.Metrics, error) {
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
 		return nil, err
@@ -96,9 +98,9 @@ func createMetricsExporter(
 		set,
 		cfg,
 		oce.pushMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
@@ -107,9 +109,9 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exp.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
-) (exp.Logs, error) {
+) (exporter.Logs, error) {
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {
 		return nil, err
@@ -120,9 +122,9 @@ func createLogsExporter(
 		set,
 		cfg,
 		oce.pushLogs,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),

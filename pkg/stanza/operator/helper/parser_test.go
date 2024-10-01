@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper
 
@@ -23,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -32,9 +22,9 @@ import (
 
 func TestParserConfigMissingBase(t *testing.T) {
 	config := ParserConfig{}
-	_, err := config.Build(testutil.Logger(t))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required `type` field.")
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := config.Build(set)
+	require.ErrorContains(t, err, "missing required `type` field.")
 }
 
 func TestParserConfigInvalidTimeParser(t *testing.T) {
@@ -46,9 +36,9 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 		LayoutType: "strptime",
 	}
 
-	_, err := cfg.Build(testutil.Logger(t))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required configuration parameter `layout`")
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
+	require.ErrorContains(t, err, "missing required configuration parameter `layout`")
 }
 
 func TestParserConfigBodyCollision(t *testing.T) {
@@ -58,9 +48,9 @@ func TestParserConfigBodyCollision(t *testing.T) {
 	b := entry.NewAttributeField("message")
 	cfg.BodyField = &b
 
-	_, err := cfg.Build(testutil.Logger(t))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "`parse_to: body` not allowed when `body` is configured")
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
+	require.ErrorContains(t, err, "`parse_to: body` not allowed when `body` is configured")
 }
 
 func TestParserConfigBuildValid(t *testing.T) {
@@ -98,7 +88,8 @@ func TestParserConfigBuildValid(t *testing.T) {
 		ParseFrom: scopeNameField,
 	}
 
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	require.NotNil(t, op.TimeParser)
@@ -108,27 +99,28 @@ func TestParserConfigBuildValid(t *testing.T) {
 }
 
 func TestParserMissingField(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: zaptest.NewLogger(t).Sugar(),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 			},
 			OnError: DropOnError,
 		},
 		ParseFrom: entry.NewBodyField("test"),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "Entry is missing the expected parse_from field.")
+	require.ErrorContains(t, err, "Entry is missing the expected parse_from field.")
 }
 
 func TestParserInvalidParseDrop(t *testing.T) {
@@ -140,14 +132,13 @@ func TestParserInvalidParseDrop(t *testing.T) {
 		},
 		ParseFrom: entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, fmt.Errorf("parse failure")
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse failure")
+	require.ErrorContains(t, err, "parse failure")
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
@@ -160,14 +151,13 @@ func TestParserInvalidParseSend(t *testing.T) {
 		},
 		ParseFrom: entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, fmt.Errorf("parse failure")
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse failure")
+	require.ErrorContains(t, err, "parse failure")
 	fakeOut.ExpectEntry(t, testEntry)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
@@ -188,14 +178,13 @@ func TestParserInvalidTimeParseDrop(t *testing.T) {
 			}(),
 		},
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "time parser: log entry does not have the expected parse_from field")
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
@@ -215,14 +204,13 @@ func TestParserInvalidTimeParseSend(t *testing.T) {
 			}(),
 		},
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "time parser: log entry does not have the expected parse_from field")
 	fakeOut.ExpectEntry(t, testEntry)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
@@ -239,25 +227,26 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "severity parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "severity parser: log entry does not have the expected parse_from field")
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
 func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: testutil.Logger(t),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 			},
 			OnError: DropOnError,
@@ -277,7 +266,7 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -286,8 +275,7 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 	require.NoError(t, err)
 
 	err = parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "time parser: log entry does not have the expected parse_from field")
 
 	// But, this should have been set anyways
 	require.Equal(t, entry.Info, testEntry.Severity)
@@ -304,13 +292,16 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 	expected, err := time.ParseInLocation(layout, sample, hst)
 	require.NoError(t, err)
 
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: testutil.Logger(t),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 			},
 			OnError: DropOnError,
@@ -329,7 +320,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -338,8 +329,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 	require.NoError(t, err)
 
 	err = parser.ProcessWith(ctx, testEntry, parse)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "severity parser: log entry does not have the expected parse_from field")
+	require.ErrorContains(t, err, "severity parser: log entry does not have the expected parse_from field")
 
 	require.Equal(t, expected, testEntry.Timestamp)
 }
@@ -349,14 +339,17 @@ func TestParserOutput(t *testing.T) {
 	output.On("ID").Return("test-output")
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
 
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			OnError: DropOnError,
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
-					OperatorID:    "test-id",
-					OperatorType:  "test-type",
-					SugaredLogger: testutil.Logger(t),
+					OperatorID:   "test-id",
+					OperatorType: "test-type",
+					set:          set,
 				},
 				OutputOperators: []operator.Operator{output},
 			},
@@ -364,7 +357,7 @@ func TestParserOutput(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -397,7 +390,7 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -418,7 +411,7 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -439,7 +432,7 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -459,9 +452,9 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Body = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -484,9 +477,9 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Attributes = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Attributes = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -509,9 +502,9 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -534,7 +527,7 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
 				e.Body = "value"
@@ -549,8 +542,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Body = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -559,12 +552,12 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Body = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -578,8 +571,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Attributes = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -588,9 +581,9 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
-					"one": map[string]interface{}{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -605,8 +598,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -615,11 +608,11 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -628,9 +621,9 @@ func TestParserFields(t *testing.T) {
 		},
 	}
 
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		split := strings.Split(i.(string), ":")
-		return map[string]interface{}{split[0]: split[1]}, nil
+		return map[string]any{split[0]: split[1]}, nil
 	}
 
 	for _, tc := range cases {
@@ -638,7 +631,8 @@ func TestParserFields(t *testing.T) {
 			cfg := NewParserConfig("test-id", "test-type")
 			tc.cfgMod(&cfg)
 
-			parser, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			parser, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			e := tc.input()
@@ -658,7 +652,7 @@ func NewTestParserConfig() ParserConfig {
 	expect.TimeParser = &tp
 
 	sp := NewSeverityConfig()
-	sp.Mapping = map[string]interface{}{
+	sp.Mapping = map[string]any{
 		"info": "3xx",
 		"warn": "4xx",
 	}
@@ -672,11 +666,13 @@ func NewTestParserConfig() ParserConfig {
 
 func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
 	fakeOut := testutil.NewFakeOutput(t)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	writer := &WriterOperator{
 		BasicOperator: BasicOperator{
-			OperatorID:    "test-id",
-			OperatorType:  "test-type",
-			SugaredLogger: testutil.Logger(t),
+			OperatorID:   "test-id",
+			OperatorType: "test-type",
+			set:          set,
 		},
 		OutputIDs: []string{fakeOut.ID()},
 	}

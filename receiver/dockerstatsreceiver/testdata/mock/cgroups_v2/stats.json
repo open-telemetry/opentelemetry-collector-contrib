@@ -1,0 +1,111 @@
+{
+  "read": "2023-04-25T11:03:28.719828114Z",
+  "preread": "0001-01-01T00:00:00Z",
+  "pids_stats": {
+    "current": 1,
+    "limit": 4694
+  },
+  "blkio_stats": {
+    "io_service_bytes_recursive": [
+      {
+        "major": 8,
+        "minor": 0,
+        "op": "read",
+        "value": 167936
+      },
+      {
+        "major": 8,
+        "minor": 0,
+        "op": "write",
+        "value": 0
+      }
+    ],
+    "io_serviced_recursive": null,
+    "io_queue_recursive": null,
+    "io_service_time_recursive": null,
+    "io_wait_time_recursive": null,
+    "io_merged_recursive": null,
+    "io_time_recursive": null,
+    "sectors_recursive": null
+  },
+  "num_procs": 0,
+  "storage_stats": {},
+  "cpu_stats": {
+    "cpu_usage": {
+      "total_usage": 999478000,
+      "usage_in_kernelmode": 970974000,
+      "usage_in_usermode": 28503000
+    },
+    "system_cpu_usage": 4836970000000,
+    "online_cpus": 2,
+    "throttling_data": {
+      "periods": 0,
+      "throttled_periods": 0,
+      "throttled_time": 0
+    }
+  },
+  "precpu_stats": {
+    "cpu_usage": {
+      "total_usage": 0,
+      "usage_in_kernelmode": 0,
+      "usage_in_usermode": 0
+    },
+    "throttling_data": {
+      "periods": 0,
+      "throttled_periods": 0,
+      "throttled_time": 0
+    }
+  },
+  "memory_stats": {
+    "usage": 234647552,
+    "stats": {
+      "active_anon": 4096,
+      "active_file": 0,
+      "anon": 61440,
+      "anon_thp": 0,
+      "file": 233848832,
+      "file_dirty": 0,
+      "file_mapped": 0,
+      "file_writeback": 0,
+      "inactive_anon": 233906176,
+      "inactive_file": 0,
+      "kernel_stack": 16384,
+      "pgactivate": 7,
+      "pgdeactivate": 6,
+      "pgfault": 9458,
+      "pglazyfree": 0,
+      "pglazyfreed": 0,
+      "pgmajfault": 4,
+      "pgrefill": 6,
+      "pgscan": 41,
+      "pgsteal": 41,
+      "shmem": 233848832,
+      "slab": 662184,
+      "slab_reclaimable": 592024,
+      "slab_unreclaimable": 70160,
+      "sock": 0,
+      "thp_collapse_alloc": 0,
+      "thp_fault_alloc": 0,
+      "unevictable": 0,
+      "workingset_activate": 0,
+      "workingset_nodereclaim": 0,
+      "workingset_refault": 0
+    },
+    "failcnt": 1,
+    "limit": 268435456
+  },
+  "name": "/compassionate_mcnulty",
+  "id": "f97ed5bca0a5a0b85bfd52c4144b96174e825c92a138bc0458f0e196f2c7c1b4",
+  "networks": {
+    "eth0": {
+      "rx_bytes": 1296,
+      "rx_packets": 16,
+      "rx_errors": 0,
+      "rx_dropped": 0,
+      "tx_bytes": 0,
+      "tx_packets": 0,
+      "tx_errors": 0,
+      "tx_dropped": 0
+    }
+  }
+}

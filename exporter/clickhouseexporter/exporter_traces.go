@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
@@ -24,7 +13,7 @@ import (
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -53,14 +42,15 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 }
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
+	if !e.cfg.shouldCreateSchema() {
+		return nil
+	}
+
 	if err := createDatabase(ctx, e.cfg); err != nil {
 		return err
 	}
 
-	if err := createTracesTable(ctx, e.cfg, e.client); err != nil {
-		return err
-	}
-	return nil
+	return createTracesTable(ctx, e.cfg, e.client)
 }
 
 // shutdown will shut down the exporter.
@@ -91,6 +81,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 			}
 			for j := 0; j < spans.ScopeSpans().Len(); j++ {
 				rs := spans.ScopeSpans().At(j).Spans()
+				scopeName := spans.ScopeSpans().At(j).Scope().Name()
+				scopeVersion := spans.ScopeSpans().At(j).Scope().Version()
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 					spanAttr := attributesToMap(r.Attributes())
@@ -104,12 +96,14 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 						traceutil.SpanIDToHexOrEmptyString(r.ParentSpanID()),
 						r.TraceState().AsRaw(),
 						r.Name(),
-						traceutil.SpanKindStr(r.Kind()),
+						r.Kind().String(),
 						serviceName,
 						resAttr,
+						scopeName,
+						scopeVersion,
 						spanAttr,
 						r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
-						traceutil.StatusCodeStr(status.Code()),
+						status.Code().String(),
 						status.Message(),
 						eventTimes,
 						eventNames,
@@ -128,7 +122,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		return nil
 	})
 	duration := time.Since(start)
-	e.logger.Info("insert traces", zap.Int("records", td.SpanCount()),
+	e.logger.Debug("insert traces", zap.Int("records", td.SpanCount()),
 		zap.String("cost", duration.String()))
 	return err
 }
@@ -168,41 +162,43 @@ func convertLinks(links ptrace.SpanLinkSlice) ([]string, []string, []string, []m
 const (
 	// language=ClickHouse SQL
 	createTracesTableSQL = `
-CREATE TABLE IF NOT EXISTS %s (
-     Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
-     TraceId String CODEC(ZSTD(1)),
-     SpanId String CODEC(ZSTD(1)),
-     ParentSpanId String CODEC(ZSTD(1)),
-     TraceState String CODEC(ZSTD(1)),
-     SpanName LowCardinality(String) CODEC(ZSTD(1)),
-     SpanKind LowCardinality(String) CODEC(ZSTD(1)),
-     ServiceName LowCardinality(String) CODEC(ZSTD(1)),
-     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-     SpanAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-     Duration Int64 CODEC(ZSTD(1)),
-     StatusCode LowCardinality(String) CODEC(ZSTD(1)),
-     StatusMessage String CODEC(ZSTD(1)),
-     Events Nested (
-         Timestamp DateTime64(9),
-         Name LowCardinality(String),
-         Attributes Map(LowCardinality(String), String)
-     ) CODEC(ZSTD(1)),
-     Links Nested (
-         TraceId String,
-         SpanId String,
-         TraceState String,
-         Attributes Map(LowCardinality(String), String)
-     ) CODEC(ZSTD(1)),
-     INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
-     INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_span_attr_key mapKeys(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_duration Duration TYPE minmax GRANULARITY 1
-) ENGINE MergeTree()
-%s
+CREATE TABLE IF NOT EXISTS %s %s (
+	Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
+	TraceId String CODEC(ZSTD(1)),
+	SpanId String CODEC(ZSTD(1)),
+	ParentSpanId String CODEC(ZSTD(1)),
+	TraceState String CODEC(ZSTD(1)),
+	SpanName LowCardinality(String) CODEC(ZSTD(1)),
+	SpanKind LowCardinality(String) CODEC(ZSTD(1)),
+	ServiceName LowCardinality(String) CODEC(ZSTD(1)),
+	ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	ScopeName String CODEC(ZSTD(1)),
+	ScopeVersion String CODEC(ZSTD(1)),
+	SpanAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	Duration UInt64 CODEC(ZSTD(1)),
+	StatusCode LowCardinality(String) CODEC(ZSTD(1)),
+	StatusMessage String CODEC(ZSTD(1)),
+	Events Nested (
+		Timestamp DateTime64(9),
+		Name LowCardinality(String),
+		Attributes Map(LowCardinality(String), String)
+	) CODEC(ZSTD(1)),
+	Links Nested (
+		TraceId String,
+		SpanId String,
+		TraceState String,
+		Attributes Map(LowCardinality(String), String)
+	) CODEC(ZSTD(1)),
+	INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
+	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_span_attr_key mapKeys(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_duration Duration TYPE minmax GRANULARITY 1
+) ENGINE = %s
 PARTITION BY toDate(Timestamp)
-ORDER BY (ServiceName, SpanName, toUnixTimestamp(Timestamp), TraceId)
+ORDER BY (ServiceName, SpanName, toDateTime(Timestamp))
+%s
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -215,7 +211,9 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SpanName,
                         SpanKind,
                         ServiceName,
-                        ResourceAttributes,
+					    ResourceAttributes,
+						ScopeName,
+						ScopeVersion,
                         SpanAttributes,
                         Duration,
                         StatusCode,
@@ -247,32 +245,35 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                                   ?,
                                   ?,
                                   ?,
+                                  ?,
+                                  ?,
                                   ?
                                   )`
 )
 
 const (
 	createTraceIDTsTableSQL = `
-create table IF NOT EXISTS %s_trace_id_ts (
+CREATE TABLE IF NOT EXISTS %s_trace_id_ts %s (
      TraceId String CODEC(ZSTD(1)),
-     Start DateTime64(9) CODEC(Delta, ZSTD(1)),
-     End DateTime64(9) CODEC(Delta, ZSTD(1)),
+     Start DateTime CODEC(Delta, ZSTD(1)),
+     End DateTime CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
-) ENGINE MergeTree()
+) ENGINE = %s
+PARTITION BY toDate(Start)
+ORDER BY (TraceId, Start)
 %s
-ORDER BY (TraceId, toUnixTimestamp(Start))
-SETTINGS index_granularity=8192;
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	createTraceIDTsMaterializedViewSQL = `
-CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv
+CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv %s
 TO %s.%s_trace_id_ts
 AS SELECT
-TraceId,
-min(Timestamp) as Start,
-max(Timestamp) as End
+	TraceId,
+	min(Timestamp) as Start,
+	max(Timestamp) as End
 FROM
 %s.%s
-WHERE TraceId!=''
+WHERE TraceId != ''
 GROUP BY TraceId;
 `
 )
@@ -282,10 +283,10 @@ func createTracesTable(ctx context.Context, cfg *Config, db *sql.DB) error {
 		return fmt.Errorf("exec create traces table sql: %w", err)
 	}
 	if _, err := db.ExecContext(ctx, renderCreateTraceIDTsTableSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create traceIDTs table sql: %w", err)
+		return fmt.Errorf("exec create traceID timestamp table sql: %w", err)
 	}
 	if _, err := db.ExecContext(ctx, renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create traceIDTs view sql: %w", err)
+		return fmt.Errorf("exec create traceID timestamp view sql: %w", err)
 	}
 	return nil
 }
@@ -295,22 +296,16 @@ func renderInsertTracesSQL(cfg *Config) string {
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {
-	var ttlExpr string
-	if cfg.TTLDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
-	}
-	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, ttlExpr)
+	ttlExpr := generateTTLExpr(cfg.TTL, "toDate(Timestamp)")
+	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
-	var ttlExpr string
-	if cfg.TTLDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(Start) + toIntervalDay(%d)`, cfg.TTLDays)
-	}
-	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, ttlExpr)
+	ttlExpr := generateTTLExpr(cfg.TTL, "toDate(Start)")
+	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
 	return fmt.Sprintf(createTraceIDTsMaterializedViewSQL, cfg.TracesTableName,
-		cfg.Database, cfg.TracesTableName, cfg.Database, cfg.TracesTableName)
+		cfg.clusterString(), cfg.Database, cfg.TracesTableName, cfg.Database, cfg.TracesTableName)
 }

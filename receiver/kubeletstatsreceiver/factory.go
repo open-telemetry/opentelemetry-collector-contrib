@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 
@@ -20,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -31,9 +21,16 @@ import (
 )
 
 const (
-	typeStr            = "kubeletstats"
-	stability          = component.StabilityLevelBeta
-	metricGroupsConfig = "metric_groups"
+	metricGroupsConfig               = "metric_groups"
+	enableCPUUsageMetricsFeatureFlag = "receiver.kubeletstats.enableCPUUsageMetrics"
+)
+
+var enableCPUUsageMetrics = featuregate.GlobalRegistry().MustRegister(
+	enableCPUUsageMetricsFeatureFlag,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled the container.cpu.utilization, k8s.pod.cpu.utilization and k8s.node.cpu.utilization metrics will be replaced by the container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage"),
+	featuregate.WithRegisterFromVersion("v0.110.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885"),
 )
 
 var defaultMetricGroups = []kubelet.MetricGroup{
@@ -45,29 +42,29 @@ var defaultMetricGroups = []kubelet.MetricGroup{
 // NewFactory creates a factory for kubeletstats receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
+	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 10 * time.Second
 
 	return &Config{
-		ScraperControllerSettings: scs,
+		ControllerConfig: scs,
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeTLS,
 			},
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
-	set receiver.CreateSettings,
+	_ context.Context,
+	set receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -81,12 +78,37 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := newKubletScraper(rest, set, rOptions, cfg.Metrics)
+	if enableCPUUsageMetrics.IsEnabled() {
+		if cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
+			cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled = false
+			cfg.MetricsBuilderConfig.Metrics.ContainerCPUUsage.Enabled = true
+		}
+		if cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUtilization.Enabled {
+			cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUtilization.Enabled = false
+			cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUsage.Enabled = true
+		}
+		if cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUtilization.Enabled {
+			cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUtilization.Enabled = false
+			cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUsage.Enabled = true
+		}
+	} else {
+		if cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
+			set.Logger.Warn("The default metric container.cpu.utilization is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		}
+		if cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUtilization.Enabled {
+			set.Logger.Warn("The default metric k8s.pod.cpu.utilization is being replaced by the k8s.pod.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		}
+		if cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUtilization.Enabled {
+			set.Logger.Warn("The default metric k8s.node.cpu.utilization is being replaced by the k8s.node.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		}
+	}
+
+	scrp, err := newKubletScraper(rest, set, rOptions, cfg.MetricsBuilderConfig, cfg.NodeName)
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, set, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, set, consumer, scraperhelper.AddScraper(scrp))
 }
 
 func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {

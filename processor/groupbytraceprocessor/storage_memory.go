@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
@@ -19,14 +8,16 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 )
 
 type memoryStorage struct {
 	sync.RWMutex
 	content                   map[pcommon.TraceID][]ptrace.ResourceSpans
+	telemetry                 *metadata.TelemetryBuilder
 	stopped                   bool
 	stoppedLock               sync.RWMutex
 	metricsCollectionInterval time.Duration
@@ -34,10 +25,11 @@ type memoryStorage struct {
 
 var _ storage = (*memoryStorage)(nil)
 
-func newMemoryStorage() *memoryStorage {
+func newMemoryStorage(telemetry *metadata.TelemetryBuilder) *memoryStorage {
 	return &memoryStorage{
 		content:                   make(map[pcommon.TraceID][]ptrace.ResourceSpans),
 		metricsCollectionInterval: time.Second,
+		telemetry:                 telemetry,
 	}
 }
 
@@ -65,11 +57,11 @@ func (st *memoryStorage) get(traceID pcommon.TraceID) ([]ptrace.ResourceSpans, e
 		return nil, nil
 	}
 
-	var result []ptrace.ResourceSpans
-	for _, rs := range rss {
+	result := make([]ptrace.ResourceSpans, len(rss))
+	for i, rs := range rss {
 		newRS := ptrace.NewResourceSpans()
 		rs.CopyTo(newRS)
-		result = append(result, newRS)
+		result[i] = newRS
 	}
 
 	return result, nil
@@ -99,7 +91,7 @@ func (st *memoryStorage) shutdown() error {
 
 func (st *memoryStorage) periodicMetrics() {
 	numTraces := st.count()
-	stats.Record(context.Background(), mNumTracesInMemory.M(int64(numTraces)))
+	st.telemetry.ProcessorGroupbytraceNumTracesInMemory.Record(context.Background(), int64(numTraces))
 
 	st.stoppedLock.RLock()
 	stopped := st.stopped

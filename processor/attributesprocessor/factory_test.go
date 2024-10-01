@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package attributesprocessor
 
@@ -26,17 +15,18 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor/internal/metadata"
 )
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, factory.Type(), component.Type(typeStr))
+	assert.Equal(t, factory.Type(), metadata.Type)
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{})
+	assert.Equal(t, &Config{}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -54,14 +44,14 @@ func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
 	oCfg.Actions = []attraction.ActionKeyValue{
 		{Key: "", Value: 123, Action: attraction.UPSERT},
 	}
-	ap, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	ap, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 	// Invalid target type
 	oCfg.Actions = []attraction.ActionKeyValue{
 		{Key: "http.status_code", ConvertedType: "array", Action: attraction.CONVERT},
 	}
-	ap2, err2 := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	ap2, err2 := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err2)
 	assert.Equal(t, "error creating AttrProc due to invalid value \"array\" in field \"converted_type\" for action \"convert\" at the 0-th action", err2.Error())
 	assert.Nil(t, ap2)
@@ -75,18 +65,14 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 		{Key: "a key", Action: attraction.DELETE},
 	}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
-
-	tp, err = factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
-	assert.Nil(t, tp)
-	assert.Error(t, err)
 
 	oCfg.Actions = []attraction.ActionKeyValue{
 		{Action: attraction.DELETE},
 	}
-	tp, err = factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	tp, err = factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }
@@ -98,20 +84,16 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 		{Key: "fake_key", Action: attraction.INSERT, Value: "100"},
 	}
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	require.NotNil(t, mp)
 	require.NoError(t, err)
-
-	mp, err = factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
-	require.Nil(t, mp)
-	require.Error(t, err)
 
 	cfg.(*Config).Actions = []attraction.ActionKeyValue{
 		{Key: "fake_key", Action: attraction.UPSERT},
 	}
 
 	// Upsert should fail on non-existent key
-	mp, err = factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	mp, err = factory.CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, mp)
 	require.Error(t, err)
 }
@@ -124,7 +106,7 @@ func TestFactoryCreateLogsProcessor_InvalidActions(t *testing.T) {
 	oCfg.Actions = []attraction.ActionKeyValue{
 		{Key: "", Value: 123, Action: attraction.UPSERT},
 	}
-	ap, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	ap, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -138,20 +120,15 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogsProcessor(
-		context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+		context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
-
-	tp, err = factory.CreateLogsProcessor(
-		context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
-	assert.Nil(t, tp)
-	assert.Error(t, err)
 
 	oCfg.Actions = []attraction.ActionKeyValue{
 		{Action: attraction.DELETE},
 	}
 	tp, err = factory.CreateLogsProcessor(
-		context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+		context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }

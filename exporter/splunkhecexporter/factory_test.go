@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -22,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
@@ -33,30 +23,30 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := createMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
@@ -65,9 +55,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(
 		context.Background(), params,
 		cfg)
@@ -76,7 +66,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Set values that don't have a valid default.
 	cfg.Token = "testToken"
-	cfg.HTTPClientSettings.Endpoint = "https://example.com"
+	cfg.ClientConfig.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetricsExporter(
 		context.Background(), params,
 		cfg)
@@ -89,13 +79,44 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	config := &Config{
 		Token: "testToken",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://example.com:8000",
 		},
 	}
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	te, err := createMetricsExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
+}
+
+func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
+	config := &Config{
+		Token: "testToken",
+		ClientConfig: confighttp.ClientConfig{
+			Endpoint: "https://example.com:8000",
+		},
+	}
+
+	me, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.False(t, me.Capabilities().MutatesData)
+	te, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.False(t, te.Capabilities().MutatesData)
+	le, err := createLogsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.False(t, le.Capabilities().MutatesData)
+
+	config.BatcherConfig = exporterbatcher.NewDefaultConfig()
+
+	me, err = createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.True(t, me.Capabilities().MutatesData)
+	te, err = createTracesExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.True(t, te.Capabilities().MutatesData)
+	le, err = createLogsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.True(t, le.Capabilities().MutatesData)
 }

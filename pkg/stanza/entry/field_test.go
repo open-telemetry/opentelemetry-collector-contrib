@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry
 
@@ -154,13 +143,11 @@ func TestFieldUnmarshalJSON(t *testing.T) {
 
 			switch {
 			case tc.expectedErrRootable != "":
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 				require.Error(t, errRootable)
 				require.Contains(t, errRootable.Error(), tc.expectedErrRootable)
 			case tc.expectedErr != "":
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 				require.NoError(t, errRootable)
 				require.Equal(t, tc.expected, rootableField.Field)
 			default:
@@ -244,8 +231,7 @@ func TestFieldUnmarshalYAMLFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var f Field
 			err := yaml.UnmarshalStrict(tc.input, &f)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.expected)
+			require.ErrorContains(t, err, tc.expected)
 		})
 	}
 }
@@ -295,8 +281,7 @@ func TestFromJSONDot(t *testing.T) {
 
 func TestFieldFromStringInvalidSplit(t *testing.T) {
 	_, err := NewField("resource[test]")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "splitting field")
+	require.ErrorContains(t, err, "splitting field")
 }
 
 func TestFieldFromStringWithResource(t *testing.T) {

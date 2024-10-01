@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterset
 
@@ -20,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
@@ -32,7 +20,7 @@ func readTestdataConfigYamls(t *testing.T, filename string) map[string]*Config {
 	require.NoError(t, err)
 
 	cfgs := map[string]*Config{}
-	require.NoErrorf(t, v.Unmarshal(&cfgs, confmap.WithErrorUnused()), "unable to unmarshal yaml from file %v", testFile)
+	require.NoErrorf(t, v.Unmarshal(&cfgs), "unable to unmarshal yaml from file %v", testFile)
 	return cfgs
 }
 
@@ -85,7 +73,7 @@ func TestConfigInvalid(t *testing.T) {
 			assert.Equal(t, expCfg, actualCfg)
 
 			fs, err := CreateFilterSet([]string{}, actualCfg)
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 			assert.Nil(t, fs)
 		})
 	}

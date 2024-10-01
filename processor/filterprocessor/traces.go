@@ -1,52 +1,53 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 
 import (
 	"context"
+	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterSpanProcessor struct {
 	skipSpanExpr      expr.BoolExpr[ottlspan.TransformContext]
 	skipSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
+	telemetry         *filterProcessorTelemetry
+	logger            *zap.Logger
 }
 
-func newFilterSpansProcessor(set component.TelemetrySettings, cfg *Config) (*filterSpanProcessor, error) {
+func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanProcessor, error) {
 	var err error
-	fsp := &filterSpanProcessor{}
+	fsp := &filterSpanProcessor{
+		logger: set.Logger,
+	}
+
+	fpt, err := newfilterProcessorTelemetry(set)
+	if err != nil {
+		return nil, fmt.Errorf("error creating filter processor telemetry: %w", err)
+	}
+	fsp.telemetry = fpt
+
 	if cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil {
 		if cfg.Traces.SpanConditions != nil {
-			fsp.skipSpanExpr, err = common.ParseSpan(cfg.Traces.SpanConditions, set)
+			fsp.skipSpanExpr, err = filterottl.NewBoolExprForSpan(cfg.Traces.SpanConditions, filterottl.StandardSpanFuncs(), cfg.ErrorMode, set.TelemetrySettings)
 			if err != nil {
 				return nil, err
 			}
 		}
 		if cfg.Traces.SpanEventConditions != nil {
-			fsp.skipSpanEventExpr, err = common.ParseSpanEvent(cfg.Traces.SpanEventConditions, set)
+			fsp.skipSpanEventExpr, err = filterottl.NewBoolExprForSpanEvent(cfg.Traces.SpanEventConditions, filterottl.StandardSpanEventFuncs(), cfg.ErrorMode, set.TelemetrySettings)
 			if err != nil {
 				return nil, err
 			}
@@ -83,6 +84,8 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 		return td, nil
 	}
 
+	spanCountBeforeFilters := td.SpanCount()
+
 	var errors error
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		resource := rs.Resource()
@@ -90,7 +93,7 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 			scope := ss.Scope()
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
 				if fsp.skipSpanExpr != nil {
-					skip, err := fsp.skipSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+					skip, err := fsp.skipSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ss, rs))
 					if err != nil {
 						errors = multierr.Append(errors, err)
 						return false
@@ -101,7 +104,7 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 				}
 				if fsp.skipSpanEventExpr != nil {
 					span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
-						skip, err := fsp.skipSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvent, span, scope, resource))
+						skip, err := fsp.skipSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvent, span, scope, resource, ss, rs))
 						if err != nil {
 							errors = multierr.Append(errors, err)
 							return false
@@ -116,7 +119,11 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 		return rs.ScopeSpans().Len() == 0
 	})
 
+	spanCountAfterFilters := td.SpanCount()
+	fsp.telemetry.record(triggerSpansDropped, int64(spanCountBeforeFilters-spanCountAfterFilters))
+
 	if errors != nil {
+		fsp.logger.Error("failed processing traces", zap.Error(errors))
 		return td, errors
 	}
 	if td.ResourceSpans().Len() == 0 {

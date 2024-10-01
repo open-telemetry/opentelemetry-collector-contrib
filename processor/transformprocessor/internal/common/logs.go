@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
@@ -21,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
@@ -30,7 +21,8 @@ import (
 var _ consumer.Logs = &logStatements{}
 
 type logStatements struct {
-	ottl.Statements[ottllog.TransformContext]
+	ottl.StatementSequence[ottllog.TransformContext]
+	expr.BoolExpr[ottllog.TransformContext]
 }
 
 func (l logStatements) Capabilities() consumer.Capabilities {
@@ -46,10 +38,16 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				err := l.Execute(ctx, tCtx)
+				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource(), slogs, rlogs)
+				condition, err := l.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {
 					return err
+				}
+				if condition {
+					err := l.Execute(ctx, tCtx)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -64,13 +62,20 @@ type LogParserCollection struct {
 
 type LogParserCollectionOption func(*LogParserCollection) error
 
-func WithLogParser(functions map[string]interface{}) LogParserCollectionOption {
+func WithLogParser(functions map[string]ottl.Factory[ottllog.TransformContext]) LogParserCollectionOption {
 	return func(lp *LogParserCollection) error {
 		logParser, err := ottllog.NewParser(functions, lp.settings)
 		if err != nil {
 			return err
 		}
 		lp.logParser = logParser
+		return nil
+	}
+}
+
+func WithLogErrorMode(errorMode ottl.ErrorMode) LogParserCollectionOption {
+	return func(lp *LogParserCollection) error {
+		lp.errorMode = errorMode
 		return nil
 	}
 }
@@ -109,10 +114,14 @@ func (pc LogParserCollection) ParseContextStatements(contextStatements ContextSt
 		if err != nil {
 			return nil, err
 		}
-		lStatements := ottllog.NewStatements(parsedStatements, pc.settings, ottllog.WithErrorMode(ottl.PropagateError))
-		return logStatements{lStatements}, nil
+		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForLog, contextStatements.Conditions, pc.parserCollection, filterottl.StandardLogFuncs())
+		if errGlobalBoolExpr != nil {
+			return nil, errGlobalBoolExpr
+		}
+		lStatements := ottllog.NewStatementSequence(parsedStatements, pc.settings, ottllog.WithStatementSequenceErrorMode(pc.errorMode))
+		return logStatements{lStatements, globalExpr}, nil
 	default:
-		statements, err := pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
+		statements, err := pc.parseCommonContextStatements(contextStatements)
 		if err != nil {
 			return nil, err
 		}

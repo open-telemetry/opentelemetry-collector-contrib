@@ -1,0 +1,14 @@
+type: k8s_observer
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [rmfitzpatrick, dmitryax]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

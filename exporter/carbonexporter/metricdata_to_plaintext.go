@@ -1,22 +1,13 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package carbonexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 
 import (
+	"bytes"
 	"strconv"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -27,10 +18,11 @@ const (
 	sanitizedRune = '_'
 
 	// Tag related constants per Carbon plaintext protocol.
-	tagPrefix                 = ";"
-	tagKeyValueSeparator      = "="
-	tagValueEmptyPlaceholder  = "<empty>"
-	tagValueNotSetPlaceholder = "<null>"
+	tagPrefix                = ";"
+	tagKeyValueSeparator     = "="
+	tagValueEmptyPlaceholder = "<empty>"
+	tagLineEmptySpace        = " "
+	tagLineNewLine           = "\n"
 
 	// Constants used when converting from distribution metrics to Carbon format.
 	distributionBucketSuffix             = ".bucket"
@@ -50,6 +42,13 @@ const (
 	// positive infinity as represented in Python.
 	infinityCarbonValue = "inf"
 )
+
+var writerPool = sync.Pool{
+	New: func() any {
+		// Start with a buffer of 1KB.
+		return bytes.NewBuffer(make([]byte, 0, 1024))
+	},
+}
 
 // metricDataToPlaintext converts internal metrics data to the Carbon plaintext
 // format as defined in https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol)
@@ -85,7 +84,9 @@ func metricDataToPlaintext(md pmetric.Metrics) string {
 		return ""
 	}
 
-	var sb strings.Builder
+	buf := writerPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer writerPool.Put(buf)
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
@@ -99,32 +100,38 @@ func metricDataToPlaintext(md pmetric.Metrics) string {
 				}
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
-					formatNumberDataPoints(&sb, metric.Name(), metric.Gauge().DataPoints())
+					writeNumberDataPoints(buf, metric.Name(), metric.Gauge().DataPoints())
 				case pmetric.MetricTypeSum:
-					formatNumberDataPoints(&sb, metric.Name(), metric.Sum().DataPoints())
+					writeNumberDataPoints(buf, metric.Name(), metric.Sum().DataPoints())
 				case pmetric.MetricTypeHistogram:
-					formatHistogramDataPoints(&sb, metric.Name(), metric.Histogram().DataPoints())
+					formatHistogramDataPoints(buf, metric.Name(), metric.Histogram().DataPoints())
 				case pmetric.MetricTypeSummary:
-					formatSummaryDataPoints(&sb, metric.Name(), metric.Summary().DataPoints())
+					formatSummaryDataPoints(buf, metric.Name(), metric.Summary().DataPoints())
 				}
 			}
 		}
 	}
 
-	return sb.String()
+	return buf.String()
 }
 
-func formatNumberDataPoints(sb *strings.Builder, metricName string, dps pmetric.NumberDataPointSlice) {
+func writeNumberDataPoints(buf *bytes.Buffer, metricName string, dps pmetric.NumberDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		var valueStr string
 		switch dp.ValueType() {
+		case pmetric.NumberDataPointValueTypeEmpty:
+			continue // skip this data point - otherwise an empty string will be used as the value and the backend will use the timestamp as the metric value
 		case pmetric.NumberDataPointValueTypeInt:
 			valueStr = formatInt64(dp.IntValue())
 		case pmetric.NumberDataPointValueTypeDouble:
 			valueStr = formatFloatForValue(dp.DoubleValue())
 		}
-		sb.WriteString(buildLine(buildPath(metricName, dp.Attributes()), valueStr, formatTimestamp(dp.Timestamp())))
+		writeLine(
+			buf,
+			buildPath(metricName, dp.Attributes()),
+			valueStr,
+			formatTimestamp(dp.Timestamp()))
 	}
 }
 
@@ -143,7 +150,7 @@ func formatNumberDataPoints(sb *strings.Builder, metricName string, dps pmetric.
 // that bucket. This metric specifies the number of events with a value that is
 // less than or equal to the upper bound.
 func formatHistogramDataPoints(
-	sb *strings.Builder,
+	buf *bytes.Buffer,
 	metricName string,
 	dps pmetric.HistogramDataPointSlice,
 ) {
@@ -151,7 +158,7 @@ func formatHistogramDataPoints(
 		dp := dps.At(i)
 
 		timestampStr := formatTimestamp(dp.Timestamp())
-		formatCountAndSum(sb, metricName, dp.Attributes(), dp.Count(), dp.Sum(), timestampStr)
+		formatCountAndSum(buf, metricName, dp.Attributes(), dp.Count(), dp.Sum(), timestampStr)
 		if dp.ExplicitBounds().Len() == 0 {
 			continue
 		}
@@ -165,7 +172,11 @@ func formatHistogramDataPoints(
 
 		bucketPath := buildPath(metricName+distributionBucketSuffix, dp.Attributes())
 		for j := 0; j < dp.BucketCounts().Len(); j++ {
-			sb.WriteString(buildLine(bucketPath+distributionUpperBoundTagBeforeValue+carbonBounds[j], formatUint64(dp.BucketCounts().At(j)), timestampStr))
+			writeLine(
+				buf,
+				bucketPath+distributionUpperBoundTagBeforeValue+carbonBounds[j],
+				formatUint64(dp.BucketCounts().At(j)),
+				timestampStr)
 		}
 	}
 }
@@ -183,7 +194,7 @@ func formatHistogramDataPoints(
 // 3. Each quantile is represented by a metric named "<metricName>.quantile"
 // and will include a tag key "quantile" that specifies the quantile value.
 func formatSummaryDataPoints(
-	sb *strings.Builder,
+	buf *bytes.Buffer,
 	metricName string,
 	dps pmetric.SummaryDataPointSlice,
 ) {
@@ -191,7 +202,7 @@ func formatSummaryDataPoints(
 		dp := dps.At(i)
 
 		timestampStr := formatTimestamp(dp.Timestamp())
-		formatCountAndSum(sb, metricName, dp.Attributes(), dp.Count(), dp.Sum(), timestampStr)
+		formatCountAndSum(buf, metricName, dp.Attributes(), dp.Count(), dp.Sum(), timestampStr)
 
 		if dp.QuantileValues().Len() == 0 {
 			continue
@@ -199,10 +210,11 @@ func formatSummaryDataPoints(
 
 		quantilePath := buildPath(metricName+summaryQuantileSuffix, dp.Attributes())
 		for j := 0; j < dp.QuantileValues().Len(); j++ {
-			sb.WriteString(buildLine(
+			writeLine(
+				buf,
 				quantilePath+summaryQuantileTagBeforeValue+formatFloatForLabel(dp.QuantileValues().At(j).Quantile()*100),
 				formatFloatForValue(dp.QuantileValues().At(j).Value()),
-				timestampStr))
+				timestampStr)
 		}
 	}
 }
@@ -215,21 +227,25 @@ func formatSummaryDataPoints(
 //
 // 2. The total sum will be represented by a metruc with the original "<metricName>".
 func formatCountAndSum(
-	sb *strings.Builder,
+	buf *bytes.Buffer,
 	metricName string,
 	attributes pcommon.Map,
 	count uint64,
 	sum float64,
 	timestampStr string,
 ) {
-	// Build count and sum metrics.
-	countPath := buildPath(metricName+countSuffix, attributes)
-	valueStr := formatUint64(count)
-	sb.WriteString(buildLine(countPath, valueStr, timestampStr))
+	// Write count and sum metrics.
+	writeLine(
+		buf,
+		buildPath(metricName+countSuffix, attributes),
+		formatUint64(count),
+		timestampStr)
 
-	sumPath := buildPath(metricName, attributes)
-	valueStr = formatFloatForValue(sum)
-	sb.WriteString(buildLine(sumPath, valueStr, timestampStr))
+	writeLine(
+		buf,
+		buildPath(metricName, attributes),
+		formatFloatForValue(sum),
+		timestampStr)
 }
 
 // buildPath is used to build the <metric_path> per description above.
@@ -238,25 +254,35 @@ func buildPath(name string, attributes pcommon.Map) string {
 		return name
 	}
 
-	var sb strings.Builder
-	sb.WriteString(name)
+	buf := writerPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer writerPool.Put(buf)
 
+	buf.WriteString(name)
 	attributes.Range(func(k string, v pcommon.Value) bool {
 		value := v.AsString()
 		if value == "" {
 			value = tagValueEmptyPlaceholder
 		}
-		sb.WriteString(tagPrefix + sanitizeTagKey(k) + tagKeyValueSeparator + value)
+		buf.WriteString(tagPrefix)
+		buf.WriteString(sanitizeTagKey(k))
+		buf.WriteString(tagKeyValueSeparator)
+		buf.WriteString(value)
 		return true
 	})
 
-	return sb.String()
+	return buf.String()
 }
 
-// buildLine builds a single Carbon metric textual line, ie.: it already adds
+// writeLine builds a single Carbon metric textual line, ie.: it already adds
 // a new-line character at the end of the string.
-func buildLine(path, value, timestamp string) string {
-	return path + " " + value + " " + timestamp + "\n"
+func writeLine(buf *bytes.Buffer, path, value, timestamp string) {
+	buf.WriteString(path)
+	buf.WriteString(tagLineEmptySpace)
+	buf.WriteString(value)
+	buf.WriteString(tagLineEmptySpace)
+	buf.WriteString(timestamp)
+	buf.WriteString(tagLineNewLine)
 }
 
 // sanitizeTagKey removes any invalid character from the tag key, the invalid

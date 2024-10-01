@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logstransformprocessor
 
@@ -21,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -153,7 +143,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tln := new(consumertest.LogsSink)
 			factory := NewFactory()
-			ltp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, tln)
+			ltp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, ltp.Capabilities().MutatesData)
 
@@ -205,4 +195,88 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 	}
 
 	return ld
+}
+
+// laggy operator is a test operator that simulates heavy processing that takes a large amount of time.
+// The heavy processing only occurs for every 100th log
+type laggyOperator struct {
+	helper.WriterOperator
+	logsCount int
+}
+
+func (t *laggyOperator) Process(ctx context.Context, e *entry.Entry) error {
+
+	// Wait for a large amount of time every 100 logs
+	if t.logsCount%100 == 0 {
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	t.logsCount++
+
+	return t.Write(ctx, e)
+}
+
+func (t *laggyOperator) CanProcess() bool {
+	return true
+}
+
+type laggyOperatorConfig struct {
+	helper.WriterConfig
+}
+
+func (l *laggyOperatorConfig) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	wo, err := l.WriterConfig.Build(set)
+	if err != nil {
+		return nil, err
+	}
+
+	return &laggyOperator{
+		WriterOperator: wo,
+	}, nil
+}
+
+func TestProcessorShutdownWithSlowOperator(t *testing.T) {
+	operator.Register("laggy", func() operator.Builder { return &laggyOperatorConfig{} })
+
+	config := &Config{
+		BaseConfig: adapter.BaseConfig{
+			Operators: []operator.Config{
+				{
+					Builder: func() *laggyOperatorConfig {
+						l := &laggyOperatorConfig{}
+						l.OperatorType = "laggy"
+						return l
+					}(),
+				},
+			},
+		},
+	}
+
+	tln := new(consumertest.LogsSink)
+	factory := NewFactory()
+	ltp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), config, tln)
+	require.NoError(t, err)
+	assert.True(t, ltp.Capabilities().MutatesData)
+
+	err = ltp.Start(context.Background(), nil)
+	require.NoError(t, err)
+
+	testLog := plog.NewLogs()
+	scopeLogs := testLog.ResourceLogs().AppendEmpty().
+		ScopeLogs().AppendEmpty()
+
+	for i := 0; i < 500; i++ {
+		lr := scopeLogs.LogRecords().AppendEmpty()
+		lr.Body().SetStr("Test message")
+	}
+
+	// The idea is to check that shutdown, when there are a lot of entries, doesn't try to write logs to
+	// a closed channel, since that'll cause a panic.
+	// In order to test, we send a lot of logs to be consumed, then shutdown immediately.
+
+	err = ltp.ConsumeLogs(context.Background(), testLog)
+	require.NoError(t, err)
+
+	err = ltp.Shutdown(context.Background())
+	require.NoError(t, err)
 }

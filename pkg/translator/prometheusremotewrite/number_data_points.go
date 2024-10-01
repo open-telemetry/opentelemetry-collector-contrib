@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
@@ -22,92 +11,86 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-// addSingleSumNumberDataPoint converts the Gauge metric data point to a
-// Prometheus time series with samples and labels. The result is stored in the
-// series map.
-func addSingleGaugeNumberDataPoint(
-	pt pmetric.NumberDataPoint,
-	resource pcommon.Resource,
-	metric pmetric.Metric,
-	settings Settings,
-	series map[string]*prompb.TimeSeries,
-) {
-	name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
-	labels := createAttributes(
-		resource,
-		pt.Attributes(),
-		settings.ExternalLabels,
-		model.MetricNameLabel, name,
-	)
-	sample := &prompb.Sample{
-		// convert ns to ms
-		Timestamp: convertTimeStamp(pt.Timestamp()),
+func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
+	resource pcommon.Resource, settings Settings, name string) {
+	for x := 0; x < dataPoints.Len(); x++ {
+		pt := dataPoints.At(x)
+		labels := createAttributes(
+			resource,
+			pt.Attributes(),
+			settings.ExternalLabels,
+			nil,
+			true,
+			model.MetricNameLabel,
+			name,
+		)
+		sample := &prompb.Sample{
+			// convert ns to ms
+			Timestamp: convertTimeStamp(pt.Timestamp()),
+		}
+		switch pt.ValueType() {
+		case pmetric.NumberDataPointValueTypeInt:
+			sample.Value = float64(pt.IntValue())
+		case pmetric.NumberDataPointValueTypeDouble:
+			sample.Value = pt.DoubleValue()
+		}
+		if pt.Flags().NoRecordedValue() {
+			sample.Value = math.Float64frombits(value.StaleNaN)
+		}
+		c.addSample(sample, labels)
 	}
-	switch pt.ValueType() {
-	case pmetric.NumberDataPointValueTypeInt:
-		sample.Value = float64(pt.IntValue())
-	case pmetric.NumberDataPointValueTypeDouble:
-		sample.Value = pt.DoubleValue()
-	}
-	if pt.Flags().NoRecordedValue() {
-		sample.Value = math.Float64frombits(value.StaleNaN)
-	}
-	addSample(series, sample, labels, metric.Type().String())
 }
 
-// addSingleSumNumberDataPoint converts the Sum metric data point to a Prometheus
-// time series with samples, labels and exemplars. The result is stored in the
-// series map.
-func addSingleSumNumberDataPoint(
-	pt pmetric.NumberDataPoint,
-	resource pcommon.Resource,
-	metric pmetric.Metric,
-	settings Settings,
-	series map[string]*prompb.TimeSeries,
-) {
-	name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
-	labels := createAttributes(
-		resource,
-		pt.Attributes(),
-		settings.ExternalLabels,
-		model.MetricNameLabel, name,
-	)
-	sample := &prompb.Sample{
-		// convert ns to ms
-		Timestamp: convertTimeStamp(pt.Timestamp()),
-	}
-	switch pt.ValueType() {
-	case pmetric.NumberDataPointValueTypeInt:
-		sample.Value = float64(pt.IntValue())
-	case pmetric.NumberDataPointValueTypeDouble:
-		sample.Value = pt.DoubleValue()
-	}
-	if pt.Flags().NoRecordedValue() {
-		sample.Value = math.Float64frombits(value.StaleNaN)
-	}
-	sig := addSample(series, sample, labels, metric.Type().String())
+func (c *prometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
+	resource pcommon.Resource, metric pmetric.Metric, settings Settings, name string) {
+	for x := 0; x < dataPoints.Len(); x++ {
+		pt := dataPoints.At(x)
+		lbls := createAttributes(
+			resource,
+			pt.Attributes(),
+			settings.ExternalLabels,
+			nil,
+			true,
+			model.MetricNameLabel,
+			name,
+		)
+		sample := &prompb.Sample{
+			// convert ns to ms
+			Timestamp: convertTimeStamp(pt.Timestamp()),
+		}
+		switch pt.ValueType() {
+		case pmetric.NumberDataPointValueTypeInt:
+			sample.Value = float64(pt.IntValue())
+		case pmetric.NumberDataPointValueTypeDouble:
+			sample.Value = pt.DoubleValue()
+		}
+		if pt.Flags().NoRecordedValue() {
+			sample.Value = math.Float64frombits(value.StaleNaN)
+		}
+		ts := c.addSample(sample, lbls)
+		if ts != nil {
+			exemplars := getPromExemplars[pmetric.NumberDataPoint](pt)
+			ts.Exemplars = append(ts.Exemplars, exemplars...)
+		}
 
-	if ts, ok := series[sig]; sig != "" && ok {
-		exemplars := getPromExemplars[pmetric.NumberDataPoint](pt)
-		ts.Exemplars = append(ts.Exemplars, exemplars...)
-	}
+		// add created time series if needed
+		if settings.ExportCreatedMetric && metric.Sum().IsMonotonic() {
+			startTimestamp := pt.StartTimestamp()
+			if startTimestamp == 0 {
+				return
+			}
 
-	// add _created time series if needed
-	if settings.ExportCreatedMetric && metric.Sum().IsMonotonic() {
-		startTimestamp := pt.StartTimestamp()
-		if startTimestamp != 0 {
-			createdLabels := createAttributes(
-				resource,
-				pt.Attributes(),
-				settings.ExternalLabels,
-				nameStr,
-				name+createdSuffix,
-			)
-			addCreatedTimeSeriesIfNeeded(series, createdLabels, startTimestamp, metric.Type().String())
+			createdLabels := make([]prompb.Label, len(lbls))
+			copy(createdLabels, lbls)
+			for i, l := range createdLabels {
+				if l.Name == model.MetricNameLabel {
+					createdLabels[i].Value = name + createdSuffix
+					break
+				}
+			}
+			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
 		}
 	}
 }

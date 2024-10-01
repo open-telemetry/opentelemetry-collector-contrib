@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
@@ -89,7 +78,7 @@ func Test_lexer(t *testing.T) {
 			{"OpNot", "not"},
 			{"Boolean", "false"},
 		}},
-		{"nothing_recognizable", "{}", true, []result{
+		{"nothing_recognizable", "|", true, []result{
 			{"", ""},
 		}},
 		{"basic_ident_expr", `set(attributes["bytes"], 0x0102030405060708)`, false, []result{
@@ -103,6 +92,15 @@ func Test_lexer(t *testing.T) {
 			{"Bytes", "0x0102030405060708"},
 			{"RParen", ")"},
 		}},
+		{"string escape with trailing backslash", `a("\\", "b")`, false, []result{
+			{"Lowercase", "a"},
+			{"LParen", "("},
+			{"String", `"\\"`},
+			{"Punct", ","},
+			{"String", `"b"`},
+			{"RParen", ")"},
+		}},
+		{"string escape with mismatched backslash", `"\"`, true, nil},
 		{"Mixing case numbers and underscores", `aBCd_123E_4`, false, []result{
 			{"Lowercase", "a"},
 			{"Uppercase", "BC"},
@@ -124,6 +122,13 @@ func Test_lexer(t *testing.T) {
 			{"Float", "1.1"},
 			{"OpMultDiv", "*"},
 			{"Float", "2.9"},
+		}},
+		{"Map", `{"foo":"bar"}`, false, []result{
+			{"LBrace", "{"},
+			{"String", `"foo"`},
+			{"Colon", ":"},
+			{"String", `"bar"`},
+			{"RBrace", "}"},
 		}},
 	}
 

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubeletstatsreceiver
 
@@ -42,15 +31,16 @@ func TestLoadConfig(t *testing.T) {
 	duration := 10 * time.Second
 
 	tests := []struct {
-		id          component.ID
-		expected    component.Config
-		expectedErr error
+		id                    component.ID
+		expected              component.Config
+		expectedValidationErr string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "default"),
+			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -62,23 +52,24 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "tls"),
+			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: "1.2.3.4:5555",
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
 						AuthType: "tls",
 					},
-					TLSSetting: configtls.TLSSetting{
+					Config: configtls.Config{
 						CAFile:   "/path/to/ca.crt",
 						CertFile: "/path/to/apiserver.crt",
 						KeyFile:  "/path/to/apiserver.key",
@@ -90,14 +81,15 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "sa"),
+			id: component.NewIDWithName(metadata.Type, "sa"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -110,14 +102,15 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metadata"),
+			id: component.NewIDWithName(metadata.Type, "metadata"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -133,14 +126,15 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metric_groups"),
+			id: component.NewIDWithName(metadata.Type, "metric_groups"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 20 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -152,14 +146,15 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.NodeMetricGroup,
 					kubelet.VolumeMetricGroup,
 				},
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metadata_with_k8s_api"),
+			id: component.NewIDWithName(metadata.Type, "metadata_with_k8s_api"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -174,9 +169,121 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				K8sAPIConfig: &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-				Metrics:      metadata.DefaultMetricsSettings(),
+				K8sAPIConfig:         &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "container_cpu_node_utilization"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: duration,
+					InitialDelay:       time.Second,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						K8sContainerCPUNodeUtilization: metadata.MetricConfig{
+							Enabled: true,
+						},
+					},
+					ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+				},
+			},
+			expectedValidationErr: "for k8s.container.cpu.node.utilization node setting is required. Check the readme on how to set the required setting",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "pod_cpu_node_utilization"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: duration,
+					InitialDelay:       time.Second,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						K8sPodCPUNodeUtilization: metadata.MetricConfig{
+							Enabled: true,
+						},
+					},
+					ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+				},
+			},
+			expectedValidationErr: "for k8s.pod.cpu.node.utilization node setting is required. Check the readme on how to set the required setting",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "container_memory_node_utilization"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: duration,
+					InitialDelay:       time.Second,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						K8sContainerMemoryNodeUtilization: metadata.MetricConfig{
+							Enabled: true,
+						},
+					},
+					ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+				},
+			},
+			expectedValidationErr: "for k8s.container.memory.node.utilization node setting is required. Check the readme on how to set the required setting",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "pod_memory_node_utilization"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: duration,
+					InitialDelay:       time.Second,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						K8sPodMemoryNodeUtilization: metadata.MetricConfig{
+							Enabled: true,
+						},
+					},
+					ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+				},
+			},
+			expectedValidationErr: "for k8s.pod.memory.node.utilization node setting is required. Check the readme on how to set the required setting",
 		},
 	}
 
@@ -187,10 +294,16 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			err = component.ValidateConfig(cfg)
+			if tt.expectedValidationErr != "" {
+				assert.EqualError(t, err, tt.expectedValidationErr)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, cfg)
+			}
+
 		})
 	}
 }
@@ -261,8 +374,9 @@ func TestGetReceiverOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				ExtraMetadataLabels:   tt.fields.extraMetadataLabels,
 				MetricGroupsToCollect: tt.fields.metricGroupsToCollect,

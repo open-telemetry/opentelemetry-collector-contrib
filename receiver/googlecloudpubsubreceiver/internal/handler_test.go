@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -30,14 +19,16 @@ import (
 )
 
 func TestCancelStream(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	srv := pstest.NewServer()
 	defer srv.Close()
 
 	var copts []option.ClientOption
 	var dialOpts []grpc.DialOption
-	conn, err := grpc.Dial(srv.Addr, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+	conn, err := grpc.NewClient(srv.Addr, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 	assert.NoError(t, err)
+	defer func() { assert.NoError(t, conn.Close()) }()
 	copts = append(copts, option.WithGRPCConn(conn))
 	_, err = srv.GServer.CreateTopic(ctx, &pubsubpb.Topic{
 		Name: "projects/my-project/topics/otlp",
@@ -53,8 +44,8 @@ func TestCancelStream(t *testing.T) {
 	client, err := pubsub.NewSubscriberClient(ctx, copts...)
 	assert.NoError(t, err)
 
-	handler, err := NewHandler(context.Background(), zaptest.NewLogger(t), client, "client-id", "projects/my-project/subscriptions/otlp",
-		func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
+	handler, err := NewHandler(ctx, zaptest.NewLogger(t), client, "client-id", "projects/my-project/subscriptions/otlp",
+		func(context.Context, *pubsubpb.ReceivedMessage) error {
 			return nil
 		})
 	handler.ackBatchWait = 10 * time.Millisecond

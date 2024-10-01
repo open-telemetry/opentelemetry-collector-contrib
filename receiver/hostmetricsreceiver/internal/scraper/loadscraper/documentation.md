@@ -2,6 +2,8 @@
 
 # hostmetricsreceiver/load
 
+**Parent Component:** hostmetrics
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -18,7 +20,7 @@ Average CPU Load over 15 minutes.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| {thread} | Gauge | Double |
 
 ### system.cpu.load_average.1m
 
@@ -26,7 +28,7 @@ Average CPU Load over 1 minute.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| {thread} | Gauge | Double |
 
 ### system.cpu.load_average.5m
 
@@ -34,4 +36,4 @@ Average CPU Load over 5 minutes.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| {thread} | Gauge | Double |

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator
 
@@ -24,14 +13,14 @@ import (
 
 func Test_expandConfigValue(t *testing.T) {
 	type args struct {
-		env         map[string]interface{}
+		env         map[string]any
 		configValue string
 	}
-	localhostEnv := map[string]interface{}{
+	localhostEnv := map[string]any{
 		"endpoint": "localhost",
-		"nested": map[string]interface{}{
-			"outer": map[string]interface{}{
-				"inner": map[string]interface{}{
+		"nested": map[string]any{
+			"outer": map[string]any{
+				"inner": map[string]any{
 					"value": 123,
 				},
 			},
@@ -40,19 +29,19 @@ func Test_expandConfigValue(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    interface{}
+		want    any
 		wantErr bool
 	}{
 		// Non-error cases.
 		{"normal string", args{nil, "str"}, "str", false},
 		{"expanded string", args{localhostEnv, "`endpoint + ':1234'`"}, "localhost:1234", false},
-		{"expanded boolean", args{map[string]interface{}{
+		{"expanded boolean", args{map[string]any{
 			"secure": "true",
 		}, "`secure == 'true'`"}, true, false},
-		{"expanded number", args{map[string]interface{}{
+		{"expanded number", args{map[string]any{
 			"secure": "true",
 		}, "`secure == 'true' ? 443 : 80`"}, 443, false},
-		{"multiple expressions", args{map[string]interface{}{
+		{"multiple expressions", args{map[string]any{
 			"endpoint": "localhost",
 			"port":     1234,
 		}, "`endpoint`:`port`"}, "localhost:1234", false},
@@ -92,30 +81,81 @@ func Test_userConfigMap_resolve(t *testing.T) {
 		name    string
 		cm      userConfigMap
 		args    args
-		want    map[string]interface{}
+		want    userConfigMap
 		wantErr bool
 	}{
 		// Note:
 		{"multi-level maps", userConfigMap{
-			"one": map[string]interface{}{
+			"one": map[string]any{
 				"two": "`endpoint`",
 			},
-		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
-			"one": map[string]interface{}{
+		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
+			"one": map[string]any{
 				"two": "localhost",
 			},
 		}, false},
 		{
 			"single level map", userConfigMap{
 				"endpoint": "`endpoint`:6379",
-			}, args{observer.EndpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
+			}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
 				"endpoint": "localhost:6379",
+			}, false,
+		},
+		{
+			"nested slices and maps", userConfigMap{
+				"one": []any{
+					"`one`:6379",
+					map[string]any{
+						"two": []any{
+							"`two`:6379",
+						},
+						"three": []any{
+							map[string]any{
+								"three": "abc`three`xyz",
+							},
+							map[string]any{
+								"four": []string{
+									"`first`",
+									"second",
+									"abc `third` xyz",
+								},
+							},
+						},
+					},
+				},
+			}, args{observer.EndpointEnv{
+				"one":   "one.value",
+				"two":   "two.value",
+				"three": "three.value",
+				"first": "first.value",
+				"third": "third.value",
+			}}, userConfigMap{
+				"one": []any{
+					"one.value:6379",
+					map[string]any{
+						"two": []any{
+							"two.value:6379",
+						},
+						"three": []any{
+							map[string]any{
+								"three": "abcthree.valuexyz",
+							},
+							map[string]any{
+								"four": []any{
+									"first.value",
+									"second",
+									"abc third.value xyz",
+								},
+							},
+						},
+					},
+				},
 			}, false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := expandMap(tt.cm, tt.args.env)
+			got, err := expandConfig(tt.cm, tt.args.env)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("resolve() error = %v, wantErr %v", err, tt.wantErr)
 				return

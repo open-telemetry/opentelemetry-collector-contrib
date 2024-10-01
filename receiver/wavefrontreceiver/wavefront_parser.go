@@ -1,30 +1,20 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package wavefrontreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 )
 
 // WavefrontParser converts metrics in the Wavefront format, see
@@ -34,8 +24,8 @@ type WavefrontParser struct {
 	ExtractCollectdTags bool `mapstructure:"extract_collectd_tags"`
 }
 
-var _ (protocol.Parser) = (*WavefrontParser)(nil)
-var _ (protocol.ParserConfig) = (*WavefrontParser)(nil)
+var _ protocol.Parser = (*WavefrontParser)(nil)
+var _ protocol.ParserConfig = (*WavefrontParser)(nil)
 
 // Only two chars can be espcaped per Wavafront SDK, see
 // https://github.com/wavefrontHQ/wavefront-sdk-go/blob/2c5891318fcd83c35c93bba2b411640495473333/senders/formatter.go#L20
@@ -58,32 +48,18 @@ func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {
 //	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
 //
 // Detailed description of each element is available on the link above.
-func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
+func (wp *WavefrontParser) Parse(line string) (pmetric.Metric, error) {
 	parts := strings.SplitN(line, " ", 3)
 	if len(parts) < 3 {
-		return nil, fmt.Errorf("invalid wavefront metric [%s]", line)
+		return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric [%s]", line)
 	}
 
 	metricName := unDoubleQuote(parts[0])
 	if metricName == "" {
-		return nil, fmt.Errorf("empty name for wavefront metric [%s]", line)
+		return pmetric.Metric{}, fmt.Errorf("empty name for wavefront metric [%s]", line)
 	}
 	valueStr := parts[1]
 	rest := parts[2]
-
-	var metricType metricspb.MetricDescriptor_Type
-	var point metricspb.Point
-	if intVal, err := strconv.ParseInt(valueStr, 10, 64); err == nil {
-		metricType = metricspb.MetricDescriptor_GAUGE_INT64
-		point.Value = &metricspb.Point_Int64Value{Int64Value: intVal}
-	} else {
-		dblVal, err := strconv.ParseFloat(valueStr, 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid wavefront metric value [%s]: %w", line, err)
-		}
-		metricType = metricspb.MetricDescriptor_GAUGE_DOUBLE
-		point.Value = &metricspb.Point_DoubleValue{DoubleValue: dblVal}
-	}
 
 	parts = strings.SplitN(rest, " ", 2)
 	timestampStr := parts[0]
@@ -91,64 +67,60 @@ func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
 	if len(parts) == 2 {
 		tags = parts[1]
 	}
-	var ts timestamppb.Timestamp
+	var ts time.Time
 	if unixTime, err := strconv.ParseInt(timestampStr, 10, 64); err == nil {
-		ts.Seconds = unixTime
+		ts = time.Unix(unixTime, 0)
 	} else {
 		// Timestamp can be omitted so it is only correct if the string was a tag.
 		if strings.IndexByte(timestampStr, '=') == -1 {
-			return nil, fmt.Errorf(
+			return pmetric.Metric{}, fmt.Errorf(
 				"invalid timestamp for wavefront metric [%s]", line)
 		}
 		// Assume timestamp was omitted, get current time and adjust index.
-		ts.Seconds = time.Now().Unix()
+		ts = time.Now()
 		tags = rest
 	}
-	point.Timestamp = &ts
 
-	var labelKeys []*metricspb.LabelKey
-	var labelValues []*metricspb.LabelValue
+	attributes := pcommon.NewMap()
 	if tags != "" {
-		// to need for special treatment for source, treat it as a normal tag since
+		// no need for special treatment for source, treat it as a normal tag since
 		// tags are separated by space and are optionally double-quoted.
-		var err error
-		labelKeys, labelValues, err = buildLabels(tags)
-		if err != nil {
-			return nil, fmt.Errorf("invalid wavefront metric [%s]: %w", line, err)
+		if err := buildLabels(attributes, tags); err != nil {
+			return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric [%s]: %w", line, err)
 		}
 	}
 
 	if wp.ExtractCollectdTags {
-		metricName, labelKeys, labelValues = wp.injectCollectDLabels(metricName, labelKeys, labelValues)
+		metricName = wp.injectCollectDLabels(metricName, attributes)
+	}
+	metric := pmetric.NewMetric()
+	metric.SetName(metricName)
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+	attributes.CopyTo(dp.Attributes())
+	if intVal, err := strconv.ParseInt(valueStr, 10, 64); err == nil {
+		dp.SetIntValue(intVal)
+	} else {
+		dblVal, err := strconv.ParseFloat(valueStr, 64)
+		if err != nil {
+			return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric value [%s]: %w", line, err)
+		}
+		dp.SetDoubleValue(dblVal)
 	}
 
-	metric := &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:      metricName,
-			Type:      metricType,
-			LabelKeys: labelKeys,
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: labelValues,
-				Points:      []*metricspb.Point{&point},
-			},
-		},
-	}
 	return metric, nil
 }
 
 func (wp *WavefrontParser) injectCollectDLabels(
 	metricName string,
-	labelKeys []*metricspb.LabelKey,
-	labelValues []*metricspb.LabelValue,
-) (string, []*metricspb.LabelKey, []*metricspb.LabelValue) {
+	attributes pcommon.Map,
+) string {
 	// This comes from SignalFx Gateway code that has the capability to
 	// remove CollectD tags from the name of the metric.
 	var toAddDims map[string]string
 	index := strings.Index(metricName, "..")
 	for {
-		metricName, toAddDims = collectdreceiver.LabelsFromName(&metricName)
+		metricName, toAddDims = collectd.LabelsFromName(&metricName)
 		if len(toAddDims) == 0 {
 			if index == -1 {
 				metricName = strings.ReplaceAll(metricName, "..", ".")
@@ -158,75 +130,70 @@ func (wp *WavefrontParser) injectCollectDLabels(
 		}
 
 		for k, v := range toAddDims {
-			labelKeys = append(labelKeys, &metricspb.LabelKey{Key: k})
-			labelValues = append(labelValues, &metricspb.LabelValue{
-				Value:    v,
-				HasValue: true,
-			})
+			attributes.PutStr(k, v)
 		}
 	}
-	return metricName, labelKeys, labelValues
+	return metricName
 }
 
-func buildLabels(tags string) (keys []*metricspb.LabelKey, values []*metricspb.LabelValue, err error) {
-	if tags == "" {
-		return
-	}
+func buildLabels(attributes pcommon.Map, tags string) error {
 	for {
-		parts := strings.SplitN(tags, "=", 2)
-		if len(parts) != 2 {
-			return nil, nil, fmt.Errorf("failed to break key for [%s]", tags)
+		tags = strings.TrimLeft(tags, " ")
+		if len(tags) == 0 {
+			return nil
 		}
 
-		key := parts[0]
-		rest := parts[1]
-		tagLen := len(key) + 1 // Length of key plus separator and yet to be determined length of the value.
-		var value string
-		if len(rest) > 1 && rest[0] == '"' {
-			// Skip until non-escaped double quote.
+		// First we need to find the key, find first '='
+		keyEnd := strings.IndexByte(tags, '=')
+		if keyEnd == -1 {
+			return fmt.Errorf("failed to break key for [%s]", tags)
+		}
+		key := tags[:keyEnd]
+
+		tags = tags[keyEnd+1:]
+		if len(tags) > 1 && tags[0] == '"' {
+			// Quoted value, skip until non-escaped double quote.
+			foundEnd := false
 			foundEscape := false
-			i := 1
-			for ; i < len(rest); i++ {
-				if rest[i] != '"' && rest[i] != 'n' {
+			valueEnd := 1
+			for ; valueEnd < len(tags); valueEnd++ {
+				if tags[valueEnd] != '"' && tags[valueEnd] != 'n' {
 					continue
 				}
-				isPrevCharEscape := rest[i-1] == '\\'
-				if rest[i] == '"' && !isPrevCharEscape {
+				isPrevCharEscape := tags[valueEnd-1] == '\\'
+				if tags[valueEnd] == '"' && !isPrevCharEscape {
 					// Non-escaped double-quote, it is the end of the value.
+					foundEnd = true
 					break
 				}
 				foundEscape = foundEscape || isPrevCharEscape
 			}
 
-			value = rest[1:i]
-			tagLen += len(value) + 2 // plus 2 to account for the double-quotes.
+			// If we didn't find non-escaped double-quote then this is an error.
+			if !foundEnd {
+				return errors.New("partially quoted tag value")
+			}
+
+			value := tags[1:valueEnd]
+			tags = tags[valueEnd+1:]
 			if foundEscape {
 				// Per implementation of Wavefront SDK only double-quotes and
 				// newline characters are escaped. See the link below:
 				// https://github.com/wavefrontHQ/wavefront-sdk-go/blob/2c5891318fcd83c35c93bba2b411640495473333/senders/formatter.go#L20
 				value = escapedCharReplacer.Replace(value)
 			}
+			attributes.PutStr(key, value)
 		} else {
-			// Skip until space.
-			i := 0
-			for ; i < len(rest) && rest[i] != ' '; i++ {
+			valueEnd := strings.IndexByte(tags, ' ')
+			if valueEnd == -1 {
+				// The value is up to the end.
+				attributes.PutStr(key, tags)
+				return nil
 			}
-			value = rest[:i]
-			tagLen += i
-		}
-
-		keys = append(keys, &metricspb.LabelKey{Key: key})
-		values = append(values, &metricspb.LabelValue{
-			Value:    value,
-			HasValue: true})
-
-		tags = strings.TrimLeft(tags[tagLen:], " ")
-		if tags == "" {
-			break
+			attributes.PutStr(key, tags[:valueEnd])
+			tags = tags[valueEnd+1:]
 		}
 	}
-
-	return
 }
 
 func unDoubleQuote(s string) string {

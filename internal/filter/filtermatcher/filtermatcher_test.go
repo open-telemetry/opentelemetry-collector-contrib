@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filtermatcher
 
@@ -36,12 +25,12 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	version := "["
 	testcases := []struct {
 		name        string
-		property    filterconfig.MatchProperties
+		property    *filterconfig.MatchProperties
 		errorString string
 	}{
 		{
 			name: "regexp_match_type_for_int_attribute",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Regexp),
 				Attributes: []filterconfig.Attribute{
 					{Key: "key", Value: 1},
@@ -51,7 +40,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "unknown_attribute_value",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Strict),
 				Attributes: []filterconfig.Attribute{
 					{Key: "key", Value: []string{}},
@@ -61,7 +50,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_attribute",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Regexp),
 				Attributes: []filterconfig.Attribute{{Key: "key", Value: "["}},
 			},
@@ -69,7 +58,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_resource",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				Resources: []filterconfig.Attribute{{Key: "key", Value: "["}},
 			},
@@ -77,7 +66,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_library_name",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				Libraries: []filterconfig.InstrumentationLibrary{{Name: "["}},
 			},
@@ -85,7 +74,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_library_version",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				Libraries: []filterconfig.InstrumentationLibrary{{Name: "lib", Version: &version}},
 			},
@@ -93,7 +82,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "empty_key_name_in_attributes_list",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Strict),
 				Services: []string{"a"},
 				Attributes: []filterconfig.Attribute{
@@ -107,7 +96,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := NewMatcher(&tc.property)
+			output, err := NewMatcher(tc.property)
 			assert.Zero(t, output)
 			assert.EqualError(t, err, tc.errorString)
 		})
@@ -205,9 +194,9 @@ func Test_Matching_False(t *testing.T) {
 	}
 
 	attrs := pcommon.NewMap()
-	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]any{
 		"keyInt": 123,
-		"keyMap": map[string]interface{}{},
+		"keyMap": map[string]any{},
 	}))
 
 	library := pcommon.NewInstrumentationScope()
@@ -237,7 +226,7 @@ func Test_MatchingCornerCases(t *testing.T) {
 	}
 
 	mp, err := NewMatcher(cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 
 	assert.False(t, mp.Match(pcommon.NewMap(), resource("svcA"), pcommon.NewInstrumentationScope()))
@@ -360,7 +349,7 @@ func Test_Matching_True(t *testing.T) {
 	}
 
 	attrs := pcommon.NewMap()
-	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]any{
 		"keyString": "arithmetic",
 		"keyInt":    123,
 		"keyDouble": 3245.6,

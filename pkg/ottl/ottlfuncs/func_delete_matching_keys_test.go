@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -31,15 +20,15 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
 
 	tests := []struct {
 		name    string
-		target  ottl.Getter[pcommon.Map]
+		target  ottl.PMapGetter[pcommon.Map]
 		pattern string
 		want    func(pcommon.Map)
 	}{
@@ -75,11 +64,11 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := DeleteMatchingKeys(tt.target, tt.pattern)
+			exprFunc, err := deleteMatchingKeys(tt.target, tt.pattern)
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -91,45 +80,42 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
 
-	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
+	exprFunc, err := deleteMatchingKeys[any](target, "anything")
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
-	assert.Nil(t, err)
-
-	assert.Equal(t, pcommon.NewValueInt(1), input)
+	assert.Error(t, err)
 }
 
 func Test_deleteMatchingKeys_get_nil(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
 
-	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
+	exprFunc, err := deleteMatchingKeys[any](target, "anything")
 	assert.NoError(t, err)
-	result, err := exprFunc(nil, nil)
-	assert.NoError(t, err)
-	assert.Nil(t, result)
+	_, err = exprFunc(nil, nil)
+	assert.Error(t, err)
 }
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
 			t.Errorf("nothing should be received in this scenario")
 			return nil, nil
 		},
 	}
 
 	invalidRegexPattern := "*"
-	_, err := DeleteMatchingKeys[interface{}](target, invalidRegexPattern)
+	_, err := deleteMatchingKeys[any](target, invalidRegexPattern)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }

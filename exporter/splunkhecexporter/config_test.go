@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -24,10 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -40,20 +32,21 @@ func TestLoadConfig(t *testing.T) {
 	// Endpoint and Token do not have a default value so set them directly.
 	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.Token = "00000000-0000-0000-0000-0000000000000"
-	defaultCfg.HTTPClientSettings.Endpoint = "https://splunk:8088/services/collector"
+	defaultCfg.ClientConfig.Endpoint = "https://splunk:8088/services/collector"
 
 	hundred := 100
+	idleConnTimeout := 10 * time.Second
 
 	tests := []struct {
 		id       component.ID
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				Token:                   "00000000-0000-0000-0000-0000000000000",
 				Source:                  "otel",
@@ -64,24 +57,28 @@ func TestLoadConfig(t *testing.T) {
 				LogDataEnabled:          true,
 				ProfilingDataEnabled:    true,
 				ExportRaw:               true,
+				MaxEventSize:            5 * 1024 * 1024,
 				MaxContentLengthLogs:    2 * 1024 * 1024,
 				MaxContentLengthMetrics: 2 * 1024 * 1024,
 				MaxContentLengthTraces:  2 * 1024 * 1024,
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout:  10 * time.Second,
 					Endpoint: "https://splunk:8088/services/collector",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile:   "",
 							CertFile: "",
 							KeyFile:  "",
 						},
 						InsecureSkipVerify: false,
 					},
-					MaxIdleConns:        &hundred,
-					MaxIdleConnsPerHost: &hundred,
+					MaxIdleConns:         &hundred,
+					MaxIdleConnsPerHost:  &hundred,
+					IdleConnTimeout:      &idleConnTimeout,
+					HTTP2ReadIdleTimeout: 10 * time.Second,
+					HTTP2PingTimeout:     10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -89,10 +86,20 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+				},
+				BatcherConfig: exporterbatcher.Config{
+					Enabled:      true,
+					FlushTimeout: time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 1,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10,
+					},
 				},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "mysource",
@@ -106,6 +113,19 @@ func TestLoadConfig(t *testing.T) {
 				},
 				HealthPath:            "/services/collector/health",
 				HecHealthCheckEnabled: false,
+				Heartbeat: HecHeartbeat{
+					Interval: 30 * time.Second,
+				},
+				Telemetry: HecTelemetry{
+					Enabled: true,
+					OverrideMetricsNames: map[string]string{
+						"otelcol_exporter_splunkhec_heartbeats_sent":   "app_heartbeats_success_total",
+						"otelcol_exporter_splunkhec_heartbeats_failed": "app_heartbeats_failed_total",
+					},
+					ExtraAttributes: map[string]string{
+						"customKey": "customVal",
+					},
+				},
 			},
 		},
 	}
@@ -117,7 +137,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -140,7 +160,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "bad url",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "cache_object:foo/bar"
+				cfg.ClientConfig.Endpoint = "cache_object:foo/bar"
 				cfg.Token = "foo"
 				return cfg
 			}(),
@@ -150,7 +170,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "missing token",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://example.com"
+				cfg.ClientConfig.Endpoint = "http://example.com"
 				return cfg
 			}(),
 			wantErr: "requires a non-empty \"token\"",
@@ -159,7 +179,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default content-length for logs",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxContentLengthLogs = maxContentLengthLogsLimit + 1
 				cfg.Token = "foo"
 				return cfg
@@ -170,7 +190,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default content-length for metrics",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxContentLengthMetrics = maxContentLengthMetricsLimit + 1
 				cfg.Token = "foo"
 				return cfg
@@ -181,18 +201,41 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default content-length for traces",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxContentLengthTraces = maxContentLengthTracesLimit + 1
 				cfg.Token = "foo"
 				return cfg
 			}(),
 			wantErr: "requires \"max_content_length_traces\" <= 838860800",
 		},
+		{
+			name: "max default event-size",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
+				cfg.MaxEventSize = maxMaxEventSize + 1
+				cfg.Token = "foo"
+				return cfg
+			}(),
+			wantErr: "requires \"max_event_size\" <= 838860800",
+		},
+		{
+			name: "negative queue size",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
+				cfg.QueueSettings.Enabled = true
+				cfg.QueueSettings.QueueSize = -5
+				cfg.Token = "foo"
+				return cfg
+			}(),
+			wantErr: "queue size must be positive",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.cfg.Validate()
+			err := component.ValidateConfig(tt.cfg)
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {

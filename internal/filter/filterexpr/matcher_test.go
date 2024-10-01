@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterexpr
 
@@ -18,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr/vm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -159,20 +148,20 @@ func TestNonMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 
 func TestMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 	expression := `MetricName == 'my.metric' && HasLabel("foo")`
-	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
+	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]any{"foo": ""}))
 }
 
 func TestMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]any{"foo": ""}))
 }
 
 func TestNonMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]any{"foo": ""}))
 }
 
-func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]interface{}) bool {
+func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]any) bool {
 	matcher, err := NewMatcher(expression)
 	require.NoError(t, err)
 	m := pmetric.NewMetric()

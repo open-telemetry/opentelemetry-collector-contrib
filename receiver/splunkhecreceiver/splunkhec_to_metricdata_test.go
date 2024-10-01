@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver
 
@@ -28,6 +17,7 @@ import (
 )
 
 func Test_splunkV2ToMetricsData(t *testing.T) {
+	t.Parallel()
 	// Timestamps for Splunk have a resolution to the millisecond, where the time is reported in seconds with a floating value to the millisecond.
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
@@ -36,13 +26,13 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 	buildDefaultSplunkDataPt := func() *splunk.Event {
 		return &splunk.Event{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "localhost",
 			Source:     "source",
 			SourceType: "sourcetype",
 			Index:      "index",
 			Event:      "metrics",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"metric_name:single": int64Ptr(13),
 				"k0":                 "v0",
 				"k1":                 "v1",
@@ -61,6 +51,19 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		{
 			name:            "int_gauge",
 			splunkDataPoint: buildDefaultSplunkDataPt(),
+			wantMetricsData: buildDefaultMetricsData(nanos),
+			hecConfig:       defaultTestingHecConfig,
+		},
+		{
+			name: "int_gauge_v7",
+			splunkDataPoint: func() *splunk.Event {
+				pt := buildDefaultSplunkDataPt()
+				delete(pt.Fields, "metric_name:single")
+				pt.Fields["metric_name"] = "single"
+				pt.Fields["_value"] = int64Ptr(13)
+				return pt
+
+			}(),
 			wantMetricsData: buildDefaultMetricsData(nanos),
 			hecConfig:       defaultTestingHecConfig,
 		},
@@ -243,7 +246,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			name: "zero_timestamp",
 			splunkDataPoint: func() *splunk.Event {
 				pt := buildDefaultSplunkDataPt()
-				pt.Time = new(float64)
+				pt.Time = 0
 				return pt
 			}(),
 			wantMetricsData: func() pmetric.Metrics {
@@ -304,7 +307,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(resource pcommon.Resource) {}, tt.hecConfig)
+			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(_ pcommon.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
 			assert.NoError(t, pmetrictest.CompareMetrics(tt.wantMetricsData, md, pmetrictest.IgnoreMetricsOrder()))
 		})
@@ -312,6 +315,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 }
 
 func TestGroupMetricsByResource(t *testing.T) {
+	t.Parallel()
 	// Timestamps for Splunk have a resolution to the millisecond, where the time is reported in seconds with a floating value to the millisecond.
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
@@ -319,69 +323,69 @@ func TestGroupMetricsByResource(t *testing.T) {
 	nanoseconds := int64(sec * 1e9)
 	events := []*splunk.Event{
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "1",
 			Source:     "1",
 			SourceType: "1",
 			Index:      "1",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":          "value1",
 				"metric_name:m1": int64(1),
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "2",
 			Source:     "2",
 			SourceType: "2",
 			Index:      "2",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":          "value2",
 				"metric_name:m2": int64(2),
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "1",
 			Source:     "1",
 			SourceType: "1",
 			Index:      "1",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":          "value1",
 				"metric_name:m1": int64(3),
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "2",
 			Source:     "2",
 			SourceType: "2",
 			Index:      "2",
 			Event:      "Event-4",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":          "value2",
 				"metric_name:m2": int64(4),
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "1",
 			Source:     "2",
 			SourceType: "1",
 			Index:      "2",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":           "value1-2",
 				"metric_name:m12": int64(5),
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "2",
 			Source:     "1",
 			SourceType: "2",
 			Index:      "1",
 			Event:      "Event-6",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":           "value2-1",
 				"metric_name:m21": int64(6),
 			},
@@ -450,7 +454,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 		dataPt.SetTimestamp(pcommon.Timestamp(nanoseconds))
 		dataPt.Attributes().PutStr("field", "value2-1")
 	}
-	md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), events, func(resource pcommon.Resource) {}, defaultTestingHecConfig)
+	md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), events, func(_ pcommon.Resource) {}, defaultTestingHecConfig)
 	assert.Equal(t, 0, numDroppedTimeseries)
 	assert.EqualValues(t, metrics, md)
 }

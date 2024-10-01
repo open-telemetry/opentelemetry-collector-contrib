@@ -1,4 +1,14 @@
-name: iisreceiver
+type: iis
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [Mrod1598, pjanotti]
+    seeking_new: true
+  unsupported_platforms: [linux, darwin]
 
 resource_attributes:
   iis.site:
@@ -35,7 +45,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
     attributes: [ request ]
@@ -44,7 +54,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   iis.request.queue.count:
@@ -52,7 +62,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   iis.request.queue.age.max:
@@ -66,7 +76,7 @@ metrics:
     unit: "{files}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
     attributes: [ direction ]
@@ -75,7 +85,7 @@ metrics:
     unit: By
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   iis.network.io:
@@ -83,7 +93,7 @@ metrics:
     unit: By
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
     attributes: [ direction ]
@@ -92,7 +102,7 @@ metrics:
     unit: "{attempts}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   iis.connection.active:
@@ -100,7 +110,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   iis.connection.anonymous:
@@ -108,7 +118,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   iis.thread.active:
@@ -116,7 +126,7 @@ metrics:
     unit: "{threads}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   iis.uptime:

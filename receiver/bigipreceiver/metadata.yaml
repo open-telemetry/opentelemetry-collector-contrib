@@ -1,4 +1,13 @@
-name: bigipreceiver
+type: bigip
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [djaglowski, StefanKurek]
+    seeking_new: true
 
 resource_attributes:
   bigip.virtual_server.name:
@@ -66,7 +75,7 @@ metrics:
     unit: "By"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -75,7 +84,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.virtual_server.request.count:
@@ -83,7 +92,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.virtual_server.packet.count:
@@ -91,20 +100,20 @@ metrics:
     unit: "{packets}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
   bigip.virtual_server.availability:
     description: Availability of the virtual server.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [availability.status]
     enabled: true
   bigip.virtual_server.enabled:
     description: Enabled state of of the virtual server.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [enabled.status]
@@ -114,7 +123,7 @@ metrics:
     unit: "By"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -123,7 +132,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool.request.count:
@@ -131,7 +140,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool.packet.count:
@@ -139,7 +148,7 @@ metrics:
     unit: "{packets}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -148,20 +157,20 @@ metrics:
     unit: "{members}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [active.status]
     enabled: true
   bigip.pool.availability:
     description: Availability of the pool.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [availability.status]
     enabled: true
   bigip.pool.enabled:
     description: Enabled state of of the pool.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [enabled.status]
@@ -171,7 +180,7 @@ metrics:
     unit: "By"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -180,7 +189,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool_member.request.count:
@@ -188,7 +197,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool_member.packet.count:
@@ -196,7 +205,7 @@ metrics:
     unit: "{packets}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -205,19 +214,19 @@ metrics:
     unit: "{sessions}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool_member.availability:
     description: Availability of the pool member.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [availability.status]
     enabled: true
   bigip.pool_member.enabled:
     description: Enabled state of of the pool member.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [enabled.status]
@@ -227,7 +236,7 @@ metrics:
     unit: "By"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -236,7 +245,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.node.request.count:
@@ -244,7 +253,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.node.packet.count:
@@ -252,7 +261,7 @@ metrics:
     unit: "{packets}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -261,19 +270,19 @@ metrics:
     unit: "{sessions}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.node.availability:
     description: Availability of the node.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [availability.status]
     enabled: true
   bigip.node.enabled:
     description: Enabled state of of the node.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [enabled.status]

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 
@@ -23,20 +12,23 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
 )
@@ -44,7 +36,7 @@ import (
 // https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#streamingpullrequest
 type pubsubReceiver struct {
 	logger             *zap.Logger
-	obsrecv            *obsreport.Receiver
+	obsrecv            *receiverhelper.ObsReport
 	tracesConsumer     consumer.Traces
 	metricsConsumer    consumer.Metrics
 	logsConsumer       consumer.Logs
@@ -66,6 +58,7 @@ const (
 	otlpProtoMetric          = iota
 	otlpProtoLog             = iota
 	rawTextLog               = iota
+	cloudLogging             = iota
 )
 
 type compression int
@@ -85,7 +78,7 @@ func (receiver *pubsubReceiver) generateClientOptions() (copts []option.ClientOp
 			if receiver.userAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(receiver.userAgent))
 			}
-			conn, _ := grpc.Dial(receiver.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+			conn, _ := grpc.NewClient(receiver.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			copts = append(copts, option.WithGRPCConn(conn))
 		} else {
 			copts = append(copts, option.WithEndpoint(receiver.config.Endpoint))
@@ -122,10 +115,21 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) err
 }
 
 func (receiver *pubsubReceiver) Shutdown(_ context.Context) error {
+	var err error
+	if receiver.client != nil {
+		// A canceled code means the client connection is already closed,
+		// Shutdown shouldn't return an error in that case.
+		if closeErr := receiver.client.Close(); status.Code(closeErr) != codes.Canceled {
+			err = closeErr
+		}
+	}
+	if receiver.handler == nil {
+		return err
+	}
 	receiver.logger.Info("Stopping Google Pubsub receiver")
 	receiver.handler.CancelNow()
 	receiver.logger.Info("Stopped Google Pubsub receiver")
-	return nil
+	return err
 }
 
 func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
@@ -145,6 +149,28 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	lr.Body().SetStr(data)
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(timestamp.AsTime()))
 	return receiver.logsConsumer.ConsumeLogs(ctx, out)
+}
+
+func (receiver *pubsubReceiver) handleCloudLoggingLogEntry(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
+	resource, lr, err := internal.TranslateLogEntry(ctx, receiver.logger, message.Message.Data)
+
+	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	if err != nil {
+		receiver.logger.Error("got an error", zap.Error(err))
+		return err
+	}
+
+	out := plog.NewLogs()
+	logs := out.ResourceLogs()
+	rls := logs.AppendEmpty()
+	resource.CopyTo(rls.Resource())
+
+	ills := rls.ScopeLogs().AppendEmpty()
+	lr.CopyTo(ills.LogRecords().AppendEmpty())
+
+	return receiver.logsConsumer.ConsumeLogs(ctx, out)
+
 }
 
 func decompress(payload []byte, compression compression) ([]byte, error) {
@@ -233,6 +259,8 @@ func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (en
 			otlpEncoding = otlpProtoMetric
 		case "otlp_proto_log":
 			otlpEncoding = otlpProtoLog
+		case "cloud_logging":
+			otlpEncoding = cloudLogging
 		case "raw_text":
 			otlpEncoding = rawTextLog
 		}
@@ -276,8 +304,14 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 				if receiver.logsConsumer != nil {
 					return receiver.handleLog(ctx, payload, compression)
 				}
+			case cloudLogging:
+				if receiver.logsConsumer != nil {
+					return receiver.handleCloudLoggingLogEntry(ctx, message)
+				}
 			case rawTextLog:
 				return receiver.handleLogStrings(ctx, message)
+			case unknown:
+				return errors.New("unknown encoding")
 			}
 			return errors.New("unknown encoding")
 		})

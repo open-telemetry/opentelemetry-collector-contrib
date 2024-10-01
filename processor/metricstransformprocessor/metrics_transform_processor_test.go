@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package metricstransformprocessor
 
@@ -40,7 +29,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 
 			mtp, err := processorhelper.NewMetricsProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				&Config{},
 				next,
 				p.processMetrics,
@@ -48,7 +37,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			require.NoError(t, err)
 
 			caps := mtp.Capabilities()
-			assert.Equal(t, true, caps.MutatesData)
+			assert.True(t, caps.MutatesData)
 
 			// process
 			inMetrics := pmetric.NewMetrics()
@@ -61,7 +50,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 
 			// get and check results
 			got := next.AllMetrics()
-			require.Equal(t, 1, len(got))
+			require.Len(t, got, 1)
 			gotMetricsSlice := pmetric.NewMetricSlice()
 			if got[0].ResourceMetrics().Len() > 0 {
 				gotMetricsSlice = got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()

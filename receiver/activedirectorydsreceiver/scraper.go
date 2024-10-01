@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 
@@ -37,13 +25,13 @@ type activeDirectoryDSScraper struct {
 	w  *watchers
 }
 
-func newActiveDirectoryDSScraper(ms metadata.MetricsSettings, params receiver.CreateSettings) *activeDirectoryDSScraper {
+func newActiveDirectoryDSScraper(mbc metadata.MetricsBuilderConfig, params receiver.Settings) *activeDirectoryDSScraper {
 	return &activeDirectoryDSScraper{
-		mb: metadata.NewMetricsBuilder(ms, params),
+		mb: metadata.NewMetricsBuilder(mbc, params),
 	}
 }
 
-func (a *activeDirectoryDSScraper) start(ctx context.Context, host component.Host) error {
+func (a *activeDirectoryDSScraper) start(_ context.Context, _ component.Host) error {
 	watchers, err := getWatchers(defaultWatcherCreater{})
 	if err != nil {
 		return fmt.Errorf("failed to create performance counter watchers: %w", err)
@@ -56,7 +44,7 @@ func (a *activeDirectoryDSScraper) start(ctx context.Context, host component.Hos
 	return nil
 }
 
-func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (a *activeDirectoryDSScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var multiErr error
 	now := pcommon.NewTimestampFromTime(time.Now())
 
@@ -114,6 +102,7 @@ func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics,
 		a.mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(now, draOutboundProperties, metadata.AttributeDirectionSent)
 	}
 
+	//revive:disable-next-line:var-naming
 	draInboundValuesDNs, dnsErr := a.w.Scrape(draInboundValuesDNs)
 	multiErr = multierr.Append(multiErr, dnsErr)
 	if dnsErr == nil {
@@ -127,6 +116,7 @@ func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics,
 		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, otherValuesInbound, metadata.AttributeDirectionReceived, metadata.AttributeValueTypeOther)
 	}
 
+	//revive:disable-next-line:var-naming
 	draOutboundValuesDNs, dnsErr := a.w.Scrape(draOutboundValuesDNs)
 	multiErr = multierr.Append(multiErr, dnsErr)
 	if dnsErr == nil {
@@ -256,12 +246,12 @@ func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics,
 	}
 
 	if multiErr != nil {
-		return pmetric.Metrics(a.mb.Emit()), scrapererror.NewPartialScrapeError(multiErr, len(multierr.Errors(multiErr)))
+		return a.mb.Emit(), scrapererror.NewPartialScrapeError(multiErr, len(multierr.Errors(multiErr)))
 	}
 
-	return pmetric.Metrics(a.mb.Emit()), nil
+	return a.mb.Emit(), nil
 }
 
-func (a *activeDirectoryDSScraper) shutdown(ctx context.Context) error {
+func (a *activeDirectoryDSScraper) shutdown(_ context.Context) error {
 	return a.w.Close()
 }

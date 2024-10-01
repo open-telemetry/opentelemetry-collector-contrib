@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logzioexporter
 
@@ -26,7 +15,7 @@ import (
 func TestTransformToLogzioSpanBytes(tester *testing.T) {
 	inStr, err := os.ReadFile("./testdata/span.json")
 	if err != nil {
-		tester.Fatalf(fmt.Sprintf("error opening sample span file %s", err.Error()))
+		tester.Fatalf("error opening sample span file %s", err.Error())
 	}
 
 	var span model.Span
@@ -36,12 +25,12 @@ func TestTransformToLogzioSpanBytes(tester *testing.T) {
 	}
 	newSpan, err := transformToLogzioSpanBytes(&span)
 	if err != nil {
-		tester.Fatalf(err.Error())
+		tester.Fatal(err.Error())
 	}
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	err = json.Unmarshal(newSpan, &m)
 	if err != nil {
-		tester.Fatalf(err.Error())
+		tester.Fatal(err.Error())
 	}
 	if _, ok := m["JaegerTag"]; !ok {
 		tester.Error("error converting span to logzioSpan, JaegerTag is not found")
@@ -51,7 +40,7 @@ func TestTransformToLogzioSpanBytes(tester *testing.T) {
 func TestTransformToDbModelSpan(tester *testing.T) {
 	inStr, err := os.ReadFile("./testdata/span.json")
 	if err != nil {
-		tester.Fatalf(fmt.Sprintf("error opening sample span file %s", err.Error()))
+		tester.Fatalf("error opening sample span file %s", err.Error())
 	}
 	var span model.Span
 	err = json.Unmarshal(inStr, &span)
@@ -60,12 +49,12 @@ func TestTransformToDbModelSpan(tester *testing.T) {
 	}
 	newSpan, err := transformToLogzioSpanBytes(&span)
 	if err != nil {
-		tester.Fatalf(err.Error())
+		tester.Fatal(err.Error())
 	}
 	var testLogzioSpan logzioSpan
 	err = json.Unmarshal(newSpan, &testLogzioSpan)
 	if err != nil {
-		tester.Fatalf(err.Error())
+		tester.Fatal(err.Error())
 	}
 	dbModelSpan := testLogzioSpan.transformToDbModelSpan()
 	if len(dbModelSpan.References) != 3 {

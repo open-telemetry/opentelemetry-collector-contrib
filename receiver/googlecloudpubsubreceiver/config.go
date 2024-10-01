@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 
@@ -34,7 +23,7 @@ type Config struct {
 	// Only has effect if Endpoint is not ""
 	Insecure bool `mapstructure:"insecure"`
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// The fully qualified resource name of the Pubsub subscription
 	Subscription string `mapstructure:"subscription"`
@@ -57,8 +46,9 @@ func (config *Config) validateForLog() error {
 	case "otlp_proto_log":
 	case "raw_text":
 	case "raw_json":
+	case "cloud_logging":
 	default:
-		return fmt.Errorf("log encoding %v is not supported.  supported encoding formats include [otlp_proto_log,raw_text,raw_json]", config.Encoding)
+		return fmt.Errorf("log encoding %v is not supported.  supported encoding formats include [otlp_proto_log,raw_text,raw_json,cloud_logging]", config.Encoding)
 	}
 	return nil
 }

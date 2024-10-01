@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
@@ -18,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -38,8 +28,8 @@ type WriterConfig struct {
 }
 
 // Build will build a writer operator from the config.
-func (c WriterConfig) Build(logger *zap.SugaredLogger) (WriterOperator, error) {
-	basicOperator, err := c.BasicConfig.Build(logger)
+func (c WriterConfig) Build(set component.TelemetrySettings) (WriterOperator, error) {
+	basicOperator, err := c.BasicConfig.Build(set)
 	if err != nil {
 		return WriterOperator{}, err
 	}
@@ -58,14 +48,17 @@ type WriterOperator struct {
 }
 
 // Write will write an entry to the outputs of the operator.
-func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) {
-	for i, operator := range w.OutputOperators {
+func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
+	for i, op := range w.OutputOperators {
 		if i == len(w.OutputOperators)-1 {
-			_ = operator.Process(ctx, e)
-			return
+			return op.Process(ctx, e)
 		}
-		_ = operator.Process(ctx, e.Copy())
+		err := op.Process(ctx, e.Copy())
+		if err != nil {
+			w.Logger().Error("Failed to process entry", zap.Error(err))
+		}
 	}
+	return nil
 }
 
 // CanOutput always returns true for a writer operator.
@@ -85,9 +78,9 @@ func (w *WriterOperator) GetOutputIDs() []string {
 
 // SetOutputs will set the outputs of the operator.
 func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
-	var outputOperators []operator.Operator
+	outputOperators := make([]operator.Operator, len(w.OutputIDs))
 
-	for _, operatorID := range w.OutputIDs {
+	for i, operatorID := range w.OutputIDs {
 		operator, ok := w.findOperator(operators, operatorID)
 		if !ok {
 			return fmt.Errorf("operator '%s' does not exist", operatorID)
@@ -97,7 +90,7 @@ func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 			return fmt.Errorf("operator '%s' can not process entries", operatorID)
 		}
 
-		outputOperators = append(outputOperators, operator)
+		outputOperators[i] = operator
 	}
 
 	w.OutputOperators = outputOperators
@@ -105,8 +98,8 @@ func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 }
 
 // SetOutputIDs will set the outputs of the operator.
-func (w *WriterOperator) SetOutputIDs(opIds []string) {
-	w.OutputIDs = opIds
+func (w *WriterOperator) SetOutputIDs(opIDs []string) {
+	w.OutputIDs = opIDs
 }
 
 // FindOperator will find an operator matching the supplied id.

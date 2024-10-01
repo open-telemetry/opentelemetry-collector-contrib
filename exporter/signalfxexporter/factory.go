@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
@@ -22,46 +11,56 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "signalfx"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	defaultHTTPTimeout          = time.Second * 10
+	defaultHTTP2ReadIdleTimeout = time.Second * 10
+	defaultHTTP2PingTimeout     = time.Second * 10
+	defaultMaxConns             = 100
 
-	defaultHTTPTimeout = time.Second * 5
-
-	defaultMaxConns = 100
+	defaultDimMaxBuffered         = 10000
+	defaultDimSendDelay           = 10 * time.Second
+	defaultDimMaxConnsPerHost     = 20
+	defaultDimMaxIdleConns        = 20
+	defaultDimMaxIdleConnsPerHost = 20
 )
 
 // NewFactory creates a factory for SignalFx exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	maxConnCount := defaultMaxConns
+	idleConnTimeout := 30 * time.Second
+	timeout := 10 * time.Second
+
 	return &Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:             defaultHTTPTimeout,
-			MaxIdleConns:        &maxConnCount,
-			MaxIdleConnsPerHost: &maxConnCount,
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		ClientConfig: confighttp.ClientConfig{
+			Timeout:              defaultHTTPTimeout,
+			MaxIdleConns:         &maxConnCount,
+			MaxIdleConnsPerHost:  &maxConnCount,
+			IdleConnTimeout:      &idleConnTimeout,
+			HTTP2ReadIdleTimeout: defaultHTTP2ReadIdleTimeout,
+			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
@@ -69,42 +68,51 @@ func createDefaultConfig() component.Config {
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
+		DimensionClient: DimensionClientConfig{
+			SendDelay:           defaultDimSendDelay,
+			MaxBuffered:         defaultDimMaxBuffered,
+			MaxConnsPerHost:     defaultDimMaxConnsPerHost,
+			MaxIdleConns:        defaultDimMaxIdleConns,
+			MaxIdleConnsPerHost: defaultDimMaxIdleConnsPerHost,
+			IdleConnTimeout:     idleConnTimeout,
+			Timeout:             timeout,
+		},
 	}
 }
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	eCfg component.Config,
 ) (exporter.Traces, error) {
 	cfg := eCfg.(*Config)
 	corrCfg := cfg.Correlation
 
-	if corrCfg.HTTPClientSettings.Endpoint == "" {
+	if corrCfg.ClientConfig.Endpoint == "" {
 		apiURL, err := cfg.getAPIURL()
 		if err != nil {
 			return nil, fmt.Errorf("unable to create API URL: %w", err)
 		}
-		corrCfg.HTTPClientSettings.Endpoint = apiURL.String()
+		corrCfg.ClientConfig.Endpoint = apiURL.String()
 	}
 	if cfg.AccessToken == "" {
 		return nil, errors.New("access_token is required")
 	}
-	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.HTTPClientSettings.Endpoint))
+	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.ClientConfig.Endpoint))
 	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
-		tracker.AddSpans,
+		tracker.ProcessTraces,
 		exporterhelper.WithStart(tracker.Start),
 		exporterhelper.WithShutdown(tracker.Shutdown))
 }
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
@@ -120,8 +128,8 @@ func createMetricsExporter(
 		cfg,
 		exp.pushMetrics,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.shutdown))
@@ -147,7 +155,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	expCfg := cfg.(*Config)
@@ -163,8 +171,8 @@ func createLogsExporter(
 		cfg,
 		exp.pushLogs,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.startLogs))
 

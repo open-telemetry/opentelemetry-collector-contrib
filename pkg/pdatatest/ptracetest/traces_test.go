@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ptracetest
 
@@ -24,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestCompareTraces(t *testing.T) {
@@ -60,6 +49,56 @@ func TestCompareTraces(t *testing.T) {
 			withOptions: nil,
 		},
 		{
+			name: "ignore-spanid",
+			compareOptions: []CompareTracesOption{
+				IgnoreSpanID(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": span ID doesn't match expected: fd0da883bb27cd6b, actual: "),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-attribute-value",
+			compareOptions: []CompareTracesOption{
+				IgnoreSpanAttributeValue("testKey2"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": attributes don't match expected: map[testKey2:teststringvalue2], actual: map[testKey2:unpredictable]"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-start-timestamp",
+			compareOptions: []CompareTracesOption{
+				IgnoreStartTimestamp(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": start timestamp doesn't match expected: 11651379494838206464, actual: 0"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-end-timestamp",
+			compareOptions: []CompareTracesOption{
+				IgnoreEndTimestamp(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": end timestamp doesn't match expected: 11651379494838206464, actual: 0"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-traceid",
+			compareOptions: []CompareTracesOption{
+				IgnoreTraceID(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": trace ID doesn't match expected: 8c8b1765a7b0acf0b66aa4623fcb7bd5, actual: "),
+			),
+			withOptions: nil,
+		},
+		{
 			name: "resourcespans-amount-unequal",
 			withoutOptions: multierr.Combine(
 				errors.New("number of resources doesn't match expected: 1, actual: 2"),
@@ -83,12 +122,30 @@ func TestCompareTraces(t *testing.T) {
 			withoutOptions: multierr.Combine(
 				errors.New("resource \"map[host.name:host1]\": missing expected scope: scope3; resource \"map[host.name:host1]\": unexpected scope: scope2"),
 			),
+			compareOptions: []CompareTracesOption{
+				IgnoreScopeSpanInstrumentationScopeName(),
+			},
+			withOptions: nil,
 		},
 		{
 			name: "scopespans-scope-version-mismatch",
 			withoutOptions: multierr.Combine(
 				errors.New("resource \"map[host.name:host1]\": scope \"scope2\": version doesn't match expected: v0.2.0, actual: v0.1.0"),
 			),
+			compareOptions: []CompareTracesOption{
+				IgnoreScopeSpanInstrumentationScopeVersion(),
+			},
+			withOptions: nil,
+		},
+		{
+			name: "scopespans-scope-attributes-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:host1]\": scope \"scope1\": attributes don't match expected: map[key1:value2], actual: map[key1:value1]"),
+			),
+			compareOptions: []CompareTracesOption{
+				IgnoreScopeSpanInstrumentationScopeAttributeValue("key1"),
+			},
+			withOptions: nil,
 		},
 		{
 			name: "scopespans-spans-amount-unequal",
@@ -247,10 +304,10 @@ func TestCompareTraces(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := filepath.Join("testdata", tc.name)
 
-			expected, err := golden.ReadTraces(filepath.Join(dir, "expected.json"))
+			expected, err := golden.ReadTraces(filepath.Join(dir, "expected.yaml"))
 			require.NoError(t, err)
 
-			actual, err := golden.ReadTraces(filepath.Join(dir, "actual.json"))
+			actual, err := golden.ReadTraces(filepath.Join(dir, "actual.yaml"))
 			require.NoError(t, err)
 
 			err = CompareTraces(expected, actual)
@@ -422,6 +479,34 @@ func TestCompareScopeSpans(t *testing.T) {
 				return ss
 			}(),
 			err: errors.New("name doesn't match expected: scope1, actual: scope2"),
+		},
+		{
+			name: "scope-version-mismatch",
+			expected: func() ptrace.ScopeSpans {
+				ss := ptrace.NewScopeSpans()
+				ss.Scope().SetVersion("1")
+				return ss
+			}(),
+			actual: func() ptrace.ScopeSpans {
+				ss := ptrace.NewScopeSpans()
+				ss.Scope().SetVersion("2")
+				return ss
+			}(),
+			err: errors.New("version doesn't match expected: 1, actual: 2"),
+		},
+		{
+			name: "scope-attributes-mismatch",
+			expected: func() ptrace.ScopeSpans {
+				ss := ptrace.NewScopeSpans()
+				ss.Scope().Attributes().PutStr("foo", "bar")
+				return ss
+			}(),
+			actual: func() ptrace.ScopeSpans {
+				ss := ptrace.NewScopeSpans()
+				ss.Scope().Attributes().PutStr("foo", "foobar")
+				return ss
+			}(),
+			err: errors.New("attributes don't match expected: map[foo:bar], actual: map[foo:foobar]"),
 		},
 		{
 			name: "spans-number-mismatch",

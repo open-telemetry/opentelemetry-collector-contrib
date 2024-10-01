@@ -1,0 +1,16 @@
+type: awsxray
+
+status:
+  class: exporter
+  stability:
+    beta: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [wangzlei, srprash]
+
+tests:
+  config:
+    region: 'us-west-2'
+  expect_consumer_error: true
+  goleak:
+    skip: true

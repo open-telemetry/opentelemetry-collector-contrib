@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the License);
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an AS IS BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package snowflakereceiver
 
@@ -22,11 +11,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
 
 func TestFacoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, "snowflake", factory.Type())
+	require.EqualValues(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
@@ -63,29 +54,12 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
 
 				require.NoError(t, err, "failed to create metrics receiver with valid inputs")
-			},
-		},
-		{
-			desc: "Missing consumer",
-			run: func(t *testing.T) {
-				t.Parallel()
-
-				cfg := createDefaultConfig().(*Config)
-
-				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopCreateSettings(),
-					cfg,
-					nil,
-				)
-
-				require.Error(t, err, "created metrics receiver without consumer")
 			},
 		},
 	}

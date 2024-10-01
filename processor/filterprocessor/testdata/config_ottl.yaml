@@ -1,4 +1,5 @@
 filter/ottl:
+  error_mode: ignore
   traces:
     span:
       - 'attributes["test"] == "pass"'

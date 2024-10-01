@@ -1,0 +1,24 @@
+receivers:
+  nop:
+
+exporters:
+  awss3:
+    s3uploader:
+      s3_bucket: "foo"
+    marshaler: sumo_ic
+
+  awss3/proto:
+    s3uploader:
+      s3_bucket: "bar"
+    marshaler: otlp_proto
+
+
+processors:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awss3, awss3/proto]

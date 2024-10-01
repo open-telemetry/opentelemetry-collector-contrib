@@ -1,0 +1,73 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: resource1_attribute1
+          value:
+            stringValue: value1
+        - key: resource2_attribute2
+          value:
+            stringValue: value2
+    scopeLogs:
+      - scope:
+          name: otel_collector
+          version: 0.1.0
+        logRecords:
+          - attributes:
+              - key: resource1_scope1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_scope1_body
+            timeUnixNano: "11651379494838207123"
+      - scope:
+          name: external_service
+          version: 0.2.0
+        logRecords:
+          - attributes:
+              - key: resource1_scope2_log1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_scope2_log1_body
+            timeUnixNano: "11651379494838207153"
+          - attributes:
+              - key: resource1_scope2_log2_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_scope2_log2_body
+            timeUnixNano: "11651379494838208553"
+  - resource:
+      attributes:
+        - key: resource2_attribute1
+          value:
+            stringValue: value1
+    scopeLogs:
+      - scope:
+          name: otel_collector
+          version: 0.1.0
+        logRecords:
+          - attributes:
+              - key: resource2_log1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource2_log2_body
+            timeUnixNano: "11651379494838209123"
+  - resource:
+      attributes:
+        - key: resource3_attribute1
+          value:
+            stringValue: value1
+    scopeLogs:
+      - scope:
+          name: otel_collector
+          version: 0.1.0
+        logRecords:
+          - attributes:
+              - key: resource3_log1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource3_log2_body
+            timeUnixNano: "11651379494838221123"

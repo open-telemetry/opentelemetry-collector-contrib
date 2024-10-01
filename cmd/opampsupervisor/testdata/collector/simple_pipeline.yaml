@@ -1,0 +1,14 @@
+receivers:
+  filelog:
+    include: [{{.inputLogFile}}]
+    start_at: "beginning"
+
+exporters:
+  file:
+    path: {{.outputLogFile}}
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [file]

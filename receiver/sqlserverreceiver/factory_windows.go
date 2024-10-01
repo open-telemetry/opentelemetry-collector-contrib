@@ -1,55 +1,52 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-)
 
-var errConfigNotSqlServer = errors.New("config was not a sqlserver receiver config")
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
+)
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	receiverCfg component.Config,
 	metricsConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg, ok := receiverCfg.(*Config)
 	if !ok {
-		return nil, errConfigNotSqlServer
+		return nil, errConfigNotSQLServer
 	}
-	sqlServerScraper := newSqlServerScraper(params, cfg)
+	sqlServerScraper := newSQLServerPCScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, sqlServerScraper.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type, sqlServerScraper.scrape,
 		scraperhelper.WithStart(sqlServerScraper.start),
 		scraperhelper.WithShutdown(sqlServerScraper.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
+	var opts []scraperhelper.ScraperControllerOption
+	opts, err = setupScrapers(params, cfg)
+	if err != nil {
+		return nil, err
+	}
+	opts = append(opts, scraperhelper.AddScraper(scraper))
+
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, metricsConsumer, scraperhelper.AddScraper(scraper),
+		&cfg.ControllerConfig,
+		params,
+		metricsConsumer,
+		opts...,
 	)
 }

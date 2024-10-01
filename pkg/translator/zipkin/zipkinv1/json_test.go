@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package zipkinv1
 
@@ -169,7 +158,7 @@ func TestMultipleJSONV1BatchesToTraces(t *testing.T) {
 	blob, err := os.ReadFile("./testdata/zipkin_v1_multiple_batches.json")
 	require.NoError(t, err, "Failed to load test data")
 
-	var batches []interface{}
+	var batches []any
 	err = json.Unmarshal(blob, &batches)
 	require.NoError(t, err, "Failed to load the batches")
 
@@ -483,7 +472,7 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 	assert.NotZero(t, gs.StartTimestamp())
 	assert.NotZero(t, gs.EndTimestamp())
 
-	assert.True(t, gs.StartTimestamp().AsTime().Sub(testStart) >= 0)
+	assert.GreaterOrEqual(t, gs.StartTimestamp().AsTime().Sub(testStart), time.Duration(0))
 
 	wantAttributes := pcommon.NewMap()
 	wantAttributes.PutBool(zipkin.StartTimeAbsent, true)
@@ -587,7 +576,7 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 454487000)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 457320000)))
 	//nolint:errcheck
-	span.Attributes().FromRaw(map[string]interface{}{
+	span.Attributes().FromRaw(map[string]any{
 		"http.status_code": 200,
 		"http.url":         "http://localhost:9000/trace/2",
 		"success":          true,

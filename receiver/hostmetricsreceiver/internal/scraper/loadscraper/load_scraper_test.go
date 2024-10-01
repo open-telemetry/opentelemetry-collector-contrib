@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadscraper
 
@@ -18,9 +7,11 @@ import (
 	"context"
 	"errors"
 	"runtime"
+	"sync"
 	"testing"
+	"time"
 
-	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v4/load"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -38,17 +29,11 @@ const (
 	bootTime     = 100
 )
 
-// Skips test without applying unused rule
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
-
 func TestScrape(t *testing.T) {
-	skip(t, "Flaky test. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10030")
 	type testCase struct {
 		name         string
-		bootTimeFunc func() (uint64, error)
-		loadFunc     func() (*load.AvgStat, error)
+		bootTimeFunc func(context.Context) (uint64, error)
+		loadFunc     func(context.Context) (*load.AvgStat, error)
 		expectedErr  string
 		saveMetrics  bool
 		config       *Config
@@ -59,81 +44,117 @@ func TestScrape(t *testing.T) {
 			name:        testStandard,
 			saveMetrics: true,
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
 			name:        testAverage,
 			saveMetrics: true,
 			config: &Config{
-				Metrics:    metadata.DefaultMetricsSettings(),
-				CPUAverage: true,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				CPUAverage:           true,
 			},
-			bootTimeFunc: func() (uint64, error) { return bootTime, nil },
+			bootTimeFunc: func(context.Context) (uint64, error) { return bootTime, nil },
 		},
 		{
 			name:     "Load Error",
-			loadFunc: func() (*load.AvgStat, error) { return nil, errors.New("err1") },
+			loadFunc: func(context.Context) (*load.AvgStat, error) { return nil, errors.New("err1") },
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedErr: "err1",
 		},
 	}
 	results := make(map[string]pmetric.MetricSlice)
+	// triggers scraping to start
+	startChan := make(chan bool)
+	// used to lock results map in order to avoid concurrent map writes
+	resultsMapLock := sync.Mutex{}
+
+	testFn := func(t *testing.T, test testCase) {
+		// wait for messurement to start
+		<-startChan
+
+		scraper := newLoadScraper(context.Background(), receivertest.NewNopSettings(), test.config)
+		if test.loadFunc != nil {
+			scraper.load = test.loadFunc
+		}
+		if test.bootTimeFunc != nil {
+			scraper.bootTime = test.bootTimeFunc
+		}
+
+		err := scraper.start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err, "Failed to initialize load scraper: %v", err)
+		defer func() { assert.NoError(t, scraper.shutdown(context.Background())) }()
+		if runtime.GOOS == "windows" {
+			// let it sample
+			<-time.After(3 * time.Second)
+		}
+
+		md, err := scraper.scrape(context.Background())
+		if test.expectedErr != "" {
+			assert.EqualError(t, err, test.expectedErr)
+
+			isPartial := scrapererror.IsPartialScrapeError(err)
+			assert.True(t, isPartial)
+			if isPartial {
+				var scraperErr scrapererror.PartialScrapeError
+				require.ErrorAs(t, err, &scraperErr)
+				assert.Equal(t, metricsLen, scraperErr.Failed)
+			}
+
+			return
+		}
+		require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+		if test.bootTimeFunc != nil {
+			actualBootTime, err := scraper.bootTime(context.Background())
+			assert.NoError(t, err)
+			assert.Equal(t, uint64(bootTime), actualBootTime)
+		}
+		// expect 3 metrics
+		assert.Equal(t, 3, md.MetricCount())
+
+		metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+		// expect a single datapoint for 1m, 5m & 15m load metrics
+		assertMetricHasSingleDatapoint(t, metrics.At(0), "system.cpu.load_average.15m")
+		assertMetricHasSingleDatapoint(t, metrics.At(1), "system.cpu.load_average.1m")
+		assertMetricHasSingleDatapoint(t, metrics.At(2), "system.cpu.load_average.5m")
+
+		internal.AssertSameTimeStampForAllMetrics(t, metrics)
+
+		// save metrics for additional tests if flag is enabled
+		if test.saveMetrics {
+			resultsMapLock.Lock()
+			results[test.name] = metrics
+			resultsMapLock.Unlock()
+		}
+	}
+
+	// used to wait for each test to start to make sure they are all sampling at the same time
+	var startWg sync.WaitGroup
+	startWg.Add(len(testCases))
+
+	// used to wait for each test to finish
+	var waitWg sync.WaitGroup
+	waitWg.Add(len(testCases))
+
+	setSamplingFrequency(500 * time.Millisecond)
 
 	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			scraper := newLoadScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config)
-			if test.loadFunc != nil {
-				scraper.load = test.loadFunc
-			}
-			if test.bootTimeFunc != nil {
-				scraper.bootTime = test.bootTimeFunc
-			}
-
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			require.NoError(t, err, "Failed to initialize load scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.shutdown(context.Background())) }()
-
-			md, err := scraper.scrape(context.Background())
-			if test.expectedErr != "" {
-				assert.EqualError(t, err, test.expectedErr)
-
-				isPartial := scrapererror.IsPartialScrapeError(err)
-				assert.True(t, isPartial)
-				if isPartial {
-					var scraperErr scrapererror.PartialScrapeError
-					require.ErrorAs(t, err, &scraperErr)
-					assert.Equal(t, metricsLen, scraperErr.Failed)
-				}
-
-				return
-			}
-			require.NoError(t, err, "Failed to scrape metrics: %v", err)
-
-			if test.bootTimeFunc != nil {
-				actualBootTime, err := scraper.bootTime()
-				assert.Nil(t, err)
-				assert.Equal(t, uint64(bootTime), actualBootTime)
-			}
-			// expect 3 metrics
-			assert.Equal(t, 3, md.MetricCount())
-
-			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-			// expect a single datapoint for 1m, 5m & 15m load metrics
-			assertMetricHasSingleDatapoint(t, metrics.At(0), "system.cpu.load_average.15m")
-			assertMetricHasSingleDatapoint(t, metrics.At(1), "system.cpu.load_average.1m")
-			assertMetricHasSingleDatapoint(t, metrics.At(2), "system.cpu.load_average.5m")
-
-			internal.AssertSameTimeStampForAllMetrics(t, metrics)
-
-			// save metrics for additional tests if flag is enabled
-			if test.saveMetrics {
-				results[test.name] = metrics
-			}
-		})
+		go func(t *testing.T, test testCase) {
+			startWg.Done()
+			testFn(t, test)
+			waitWg.Done()
+		}(t, test)
 	}
+
+	// wait for test goroutines to start
+	startWg.Wait()
+	// trigger tests
+	close(startChan)
+	// wait for tests to finish
+	waitWg.Wait()
 
 	// Additional test for average per CPU
 	numCPU := runtime.NumCPU()
@@ -150,6 +171,10 @@ func assertMetricHasSingleDatapoint(t *testing.T, metric pmetric.Metric, expecte
 func assertCompareAveragePerCPU(t *testing.T, average pmetric.Metric, standard pmetric.Metric, numCPU int) {
 	valAverage := average.Gauge().DataPoints().At(0).DoubleValue()
 	valStandard := standard.Gauge().DataPoints().At(0).DoubleValue()
+	if valAverage == 0 && valStandard == 0 {
+		// nothing to compare, queue is empty
+		return
+	}
 	if numCPU == 1 {
 		// For hardware with only 1 cpu, results must be very close
 		assert.InDelta(t, valAverage, valStandard, 0.1)

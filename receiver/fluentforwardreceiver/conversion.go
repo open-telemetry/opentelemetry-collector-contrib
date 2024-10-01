@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 
@@ -40,7 +29,7 @@ type Event interface {
 	Compressed() string
 }
 
-type OptionsMap map[string]interface{}
+type OptionsMap map[string]any
 
 // Chunk returns the `chunk` option or blank string if it was not set.
 func (om OptionsMap) Chunk() string {
@@ -84,7 +73,7 @@ func (em EventMode) String() string {
 
 // parseInterfaceToMap takes map of interface objects and returns
 // AttributeValueMap
-func parseInterfaceToMap(msi map[string]interface{}, dest pcommon.Value) {
+func parseInterfaceToMap(msi map[string]any, dest pcommon.Value) {
 	am := dest.SetEmptyMap()
 	am.EnsureCapacity(len(msi))
 	for k, value := range msi {
@@ -94,7 +83,7 @@ func parseInterfaceToMap(msi map[string]interface{}, dest pcommon.Value) {
 
 // parseInterfaceToArray takes array of interface objects and returns
 // AttributeValueArray
-func parseInterfaceToArray(ai []interface{}, dest pcommon.Value) {
+func parseInterfaceToArray(ai []any, dest pcommon.Value) {
 	av := dest.SetEmptySlice()
 	av.EnsureCapacity(len(ai))
 	for _, value := range ai {
@@ -103,7 +92,7 @@ func parseInterfaceToArray(ai []interface{}, dest pcommon.Value) {
 }
 
 // parseToAttributeValue converts interface object to AttributeValue
-func parseToAttributeValue(val interface{}, dest pcommon.Value) {
+func parseToAttributeValue(val any, dest pcommon.Value) {
 	// See https://github.com/tinylib/msgp/wiki/Type-Mapping-Rules
 	switch r := val.(type) {
 	case bool:
@@ -117,9 +106,9 @@ func parseToAttributeValue(val interface{}, dest pcommon.Value) {
 	// Sometimes strings come in as bytes array
 	case []byte:
 		dest.SetStr(string(r))
-	case map[string]interface{}:
+	case map[string]any:
 		parseInterfaceToMap(r, dest)
-	case []interface{}:
+	case []any:
 		parseInterfaceToArray(r, dest)
 	case float32:
 		dest.SetDouble(float64(r))
@@ -131,7 +120,7 @@ func parseToAttributeValue(val interface{}, dest pcommon.Value) {
 	}
 }
 
-func timeFromTimestamp(ts interface{}) (time.Time, error) {
+func timeFromTimestamp(ts any) (time.Time, error) {
 	switch v := ts.(type) {
 	case uint64:
 		return time.Unix(int64(v), 0), nil

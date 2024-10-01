@@ -1,0 +1,26 @@
+receivers:
+  nop:
+
+exporters:
+  awss3:
+    s3uploader:
+      s3_bucket: "foo"
+      compression: "gzip"
+    marshaler: otlp_json
+
+  awss3/proto:
+    s3uploader:
+      s3_bucket: "bar"
+      compression: "none"
+    marshaler: otlp_proto
+
+
+processors:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awss3, awss3/proto]

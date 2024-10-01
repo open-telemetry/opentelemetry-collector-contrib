@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -28,17 +17,17 @@ import (
 )
 
 func TestMissingClientConfigManagerGRPC(t *testing.T) {
-	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), configgrpc.GRPCServerSettings{}, nil)
+	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), configgrpc.ServerConfig{}, nil)
 	assert.Equal(t, errMissingStrategyStore, err)
 	assert.Nil(t, s)
 }
 
 func TestStartAndStopGRPC(t *testing.T) {
 	// prepare
-	srvSettings := configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
+	srvSettings := configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "127.0.0.1:0",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})
@@ -65,7 +54,7 @@ func TestSamplingGRPCServer_Shutdown(t *testing.T) {
 		{
 			name: "graceful stop is successful with delay",
 			grpcServer: &grpcServerMock{
-				timeToGracefulStop: 5 * time.Second,
+				timeToGracefulStop: time.Millisecond,
 			},
 			timeout: time.Minute,
 		},
@@ -74,12 +63,7 @@ func TestSamplingGRPCServer_Shutdown(t *testing.T) {
 			grpcServer: &grpcServerMock{
 				timeToGracefulStop: time.Minute,
 			},
-			timeout: 5 * time.Second,
-		},
-		{
-			name:    "grpc server not started",
-			timeout: time.Minute,
-			expect:  errGRPCServerNotRunning,
+			timeout: time.Millisecond,
 		},
 	}
 
@@ -87,16 +71,37 @@ func TestSamplingGRPCServer_Shutdown(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			srv := &SamplingGRPCServer{grpcServer: tc.grpcServer}
 			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
+			assert.NoError(t, tc.grpcServer.Serve(nil))
 			defer cancel()
 			assert.Equal(t, tc.expect, srv.Shutdown(ctx))
 		})
 	}
 }
 
-type grpcServerMock struct {
-	timeToGracefulStop time.Duration
+func TestSamplingGRPCServerNotStarted_Shutdown(t *testing.T) {
+	srv := &SamplingGRPCServer{}
+	assert.Equal(t, errGRPCServerNotRunning, srv.Shutdown(context.Background()))
 }
 
-func (g *grpcServerMock) Serve(lis net.Listener) error { return nil }
-func (g *grpcServerMock) Stop()                        {}
-func (g *grpcServerMock) GracefulStop()                { time.Sleep(g.timeToGracefulStop) }
+type grpcServerMock struct {
+	timeToGracefulStop time.Duration
+	timer              *time.Timer
+	quit               chan bool
+}
+
+func (g *grpcServerMock) Serve(_ net.Listener) error {
+	g.timer = time.NewTimer(g.timeToGracefulStop)
+	g.quit = make(chan bool)
+	return nil
+}
+func (g *grpcServerMock) Stop() {
+	g.quit <- true
+}
+func (g *grpcServerMock) GracefulStop() {
+	select {
+	case <-g.quit:
+		return
+	case <-g.timer.C:
+		return
+	}
+}

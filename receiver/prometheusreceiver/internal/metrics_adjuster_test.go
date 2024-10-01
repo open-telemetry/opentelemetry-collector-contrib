@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -21,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.8.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -36,10 +25,11 @@ var (
 	bounds0  = []float64{1, 2, 4}
 	percent0 = []float64{10, 50, 90}
 
-	sum1       = "sum1"
-	gauge1     = "gauge1"
-	histogram1 = "histogram1"
-	summary1   = "summary1"
+	sum1                  = "sum1"
+	gauge1                = "gauge1"
+	histogram1            = "histogram1"
+	summary1              = "summary1"
+	exponentialHistogram1 = "exponentialHistogram1"
 
 	k1v1k2v2 = []*kv{
 		{"k1", "v1"},
@@ -251,6 +241,67 @@ func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 			description: "Histogram: round 2 - instance unchanged",
 			metrics:     metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
 			adjusted:    metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+		},
+	}
+
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+// In TestExponentHistogram we exclude negative buckets on purpose as they are
+// not considered the main use case - response times that are most commonly
+// observed are never negative. Negative buckets would make the Sum() non
+// monotonic and cause unexpected resets.
+func TestExponentialHistogram(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Exponential Histogram: round 1 - initial instance, start time is established",
+			metrics:     metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
+			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
+		}, {
+			description: "Exponential Histogram: round 2 - instance adjusted based on round 1",
+			metrics:     metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t2, t2, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7}))),
+			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7}))),
+		}, {
+			description: "Exponential Histogram: round 3 - instance reset (value less than previous value), start time is reset",
+			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t3, 3, 1, 0, []uint64{}, -2, []uint64{5, 3, 2, 7}))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t3, 3, 1, 0, []uint64{}, -2, []uint64{5, 3, 2, 7}))),
+		}, {
+			description: "Exponential Histogram: round 4 - instance adjusted based on round 3",
+			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t4, t4, 3, 1, 0, []uint64{}, -2, []uint64{7, 4, 2, 12}))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t4, 3, 1, 0, []uint64{}, -2, []uint64{7, 4, 2, 12}))),
+		},
+	}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestExponentialHistogramFlagNoRecordedValue(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Histogram: round 1 - initial instance, start time is established",
+			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 0, 2, 2, []uint64{7, 4, 2, 12}, 3, []uint64{}))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 0, 2, 2, []uint64{7, 4, 2, 12}, 3, []uint64{}))),
+		},
+		{
+			description: "Histogram: round 2 - instance adjusted based on round 1",
+			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPointNoValue(k1v1k2v2, t1, t2))),
+		},
+	}
+
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestExponentialHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Histogram: round 1 - initial instance, start time is unknown",
+			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+		},
+		{
+			description: "Histogram: round 2 - instance unchanged",
+			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t2))),
 		},
 	}
 

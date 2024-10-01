@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
@@ -65,11 +54,11 @@ func (d *DockerLabelConfig) newMatcher(options matcherOptions) (targetMatcher, e
 }
 
 func dockerLabelConfigToMatchers(cfgs []DockerLabelConfig) []matcherConfig {
-	var matchers []matcherConfig
-	for _, cfg := range cfgs {
+	matchers := make([]matcherConfig, len(cfgs))
+	for i, cfg := range cfgs {
 		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
 		copied := cfg
-		matchers = append(matchers, &copied)
+		matchers[i] = &copied
 	}
 	return matchers
 }
@@ -89,7 +78,7 @@ func (d *dockerLabelMatcher) matcherType() matcherType {
 // MatchTargets first checks the port label to find the expected port value.
 // Then it checks if that port is specified in container definition.
 // It only returns match target when both conditions are met.
-func (d *dockerLabelMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
+func (d *dockerLabelMatcher) matchTargets(_ *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
 	portLabel := d.cfg.PortLabel
 
 	// Only check port label

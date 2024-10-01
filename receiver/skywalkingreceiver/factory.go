@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 
@@ -28,41 +17,43 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "skywalking"
-	stability = component.StabilityLevelBeta
-
 	// Protocol values.
 	protoGRPC = "grpc"
 	protoHTTP = "http"
 
-	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint = "0.0.0.0:11800"
-	defaultHTTPBindEndpoint = "0.0.0.0:12800"
+	// Default ports to bind to.
+	defaultGRPCPort = 11800
+	defaultHTTPPort = 12800
 )
 
 // NewFactory creates a new Skywalking receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, stability))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for Skywalking receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
-				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCBindEndpoint,
-					Transport: "tcp",
+			GRPC: &configgrpc.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
+					Transport: confignet.TransportTypeTCP,
 				},
 			},
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPBindEndpoint,
+			HTTP: &confighttp.ServerConfig{
+				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 			},
 		},
 	}
@@ -71,7 +62,7 @@ func createDefaultConfig() component.Config {
 // createTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
@@ -80,6 +71,52 @@ func createTracesReceiver(
 	// that Skywalking receiver understands.
 	rCfg := cfg.(*Config)
 
+	c, err := createConfiguration(rCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newSkywalkingReceiver(c, set)
+	})
+
+	if err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// createMetricsReceiver creates a metrics receiver based on provided config.
+func createMetricsReceiver(
+	_ context.Context,
+	set receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
+
+	// Convert settings in the source c to configuration struct
+	// that Skywalking receiver understands.
+	rCfg := cfg.(*Config)
+
+	c, err := createConfiguration(rCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newSkywalkingReceiver(c, set)
+	})
+
+	if err = r.Unwrap().(*swReceiver).registerMetricsConsumer(nextConsumer); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// create the config that Skywalking receiver will use.
+func createConfiguration(rCfg *Config) (*configuration, error) {
 	var err error
 	var c configuration
 	// Set ports
@@ -96,9 +133,7 @@ func createTracesReceiver(
 			return nil, fmt.Errorf("unable to extract port for the HTTP endpoint: %w", err)
 		}
 	}
-
-	// Create the receiver.
-	return newSkywalkingReceiver(&c, nextConsumer, set)
+	return &c, nil
 }
 
 // extract the port number from string in "address:port" format. If the
@@ -117,3 +152,5 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 	}
 	return int(port), nil
 }
+
+var receivers = sharedcomponent.NewSharedComponents()

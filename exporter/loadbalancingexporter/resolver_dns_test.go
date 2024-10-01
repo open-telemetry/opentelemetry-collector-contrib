@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadbalancingexporter
 
@@ -19,18 +8,19 @@ import (
 	"errors"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
 func TestInitialDNSResolution(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -62,7 +52,8 @@ func TestInitialDNSResolution(t *testing.T) {
 
 func TestInitialDNSResolutionWithPort(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690", 5*time.Second, 1*time.Second)
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690", 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -94,7 +85,8 @@ func TestInitialDNSResolutionWithPort(t *testing.T) {
 
 func TestErrNoHostname(t *testing.T) {
 	// test
-	res, err := newDNSResolver(zap.NewNop(), "", "", 5*time.Second, 1*time.Second)
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "", "", 5*time.Second, 1*time.Second, tb)
 
 	// verify
 	assert.Nil(t, res)
@@ -103,7 +95,8 @@ func TestErrNoHostname(t *testing.T) {
 
 func TestCantResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -118,11 +111,13 @@ func TestCantResolve(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
+	assert.NoError(t, res.shutdown(context.Background()))
 }
 
 func TestOnChange(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	resolve := []net.IPAddr{
@@ -135,9 +130,9 @@ func TestOnChange(t *testing.T) {
 	}
 
 	// test
-	counter := atomic.NewInt64(0)
-	res.onChange(func(endpoints []string) {
-		counter.Inc()
+	counter := &atomic.Int64{}
+	res.onChange(func(_ []string) {
+		counter.Add(1)
 	})
 	require.NoError(t, res.start(context.Background()))
 	defer func() {
@@ -189,10 +184,11 @@ func TestEqualStringSlice(t *testing.T) {
 
 func TestPeriodicallyResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second)
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second, tb)
 	require.NoError(t, err)
 
-	counter := atomic.NewInt64(0)
+	counter := &atomic.Int64{}
 	resolve := [][]net.IPAddr{
 		{
 			{IP: net.IPv4(127, 0, 0, 1)},
@@ -208,7 +204,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			defer func() {
-				counter.Inc()
+				counter.Add(1)
 			}()
 			// for second call, return the second result
 			if counter.Load() == 2 {
@@ -226,7 +222,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 	}
 
 	wg := sync.WaitGroup{}
-	res.onChange(func(backends []string) {
+	res.onChange(func(_ []string) {
 		wg.Done()
 	})
 
@@ -247,16 +243,17 @@ func TestPeriodicallyResolve(t *testing.T) {
 
 func TestPeriodicallyResolveFailure(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second)
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
 	wg := sync.WaitGroup{}
-	counter := atomic.NewInt64(0)
+	counter := &atomic.Int64{}
 	resolve := []net.IPAddr{{IP: net.IPv4(127, 0, 0, 1)}}
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			counter.Inc()
+			counter.Add(1)
 
 			// count down at most two times
 			if counter.Load() <= 2 {
@@ -290,11 +287,12 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 
 func TestShutdownClearsCallbacks(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{}
-	res.onChange(func(s []string) {})
+	res.onChange(func(_ []string) {})
 	require.NoError(t, res.start(context.Background()))
 
 	// sanity check
@@ -305,10 +303,10 @@ func TestShutdownClearsCallbacks(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, res.onChangeCallbacks, 0)
+	assert.Empty(t, res.onChangeCallbacks)
 
 	// check that we can add a new onChange before a new start
-	res.onChange(func(s []string) {})
+	res.onChange(func(_ []string) {})
 	assert.Len(t, res.onChangeCallbacks, 1)
 }
 

@@ -1,4 +1,0 @@
-dotnet_diagnostics:
-  pid: 1234
-  collection_interval: 2s
-  counters: [ "Foo", "Bar" ]

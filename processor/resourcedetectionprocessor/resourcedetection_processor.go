@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
@@ -32,13 +21,13 @@ type resourceDetectionProcessor struct {
 	resource           pcommon.Resource
 	schemaURL          string
 	override           bool
-	httpClientSettings confighttp.HTTPClientSettings
+	httpClientSettings confighttp.ClientConfig
 	telemetrySettings  component.TelemetrySettings
 }
 
 // Start is invoked during service startup.
 func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component.Host) error {
-	client, _ := rdp.httpClientSettings.ToClient(host, rdp.telemetrySettings)
+	client, _ := rdp.httpClientSettings.ToClient(ctx, host, rdp.telemetrySettings)
 	ctx = internal.ContextWithClient(ctx, client)
 	var err error
 	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx, client)

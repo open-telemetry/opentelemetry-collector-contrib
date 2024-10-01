@@ -1,32 +1,31 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"context"
+	"errors"
 	"log"
+	"math/rand"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/atomic"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+var errNonPermanent = errors.New("non permanent error")
+var errPermanent = errors.New("permanent error")
+
+type decisionFunc func() error
 
 // MockBackend is a backend that allows receiving the data locally.
 type MockBackend struct {
@@ -42,9 +41,10 @@ type MockBackend struct {
 	logFile     *os.File
 
 	// Start/stop flags
-	isStarted bool
-	stopOnce  sync.Once
-	startedAt time.Time
+	isStarted  bool
+	stopOnce   sync.Once
+	startedAt  time.Time
+	startMutex sync.Mutex
 
 	// Recording fields.
 	isRecording     bool
@@ -52,6 +52,15 @@ type MockBackend struct {
 	ReceivedTraces  []ptrace.Traces
 	ReceivedMetrics []pmetric.Metrics
 	ReceivedLogs    []plog.Logs
+
+	DroppedTraces  []ptrace.Traces
+	DroppedMetrics []pmetric.Metrics
+	DroppedLogs    []plog.Logs
+
+	LogsToRetry []plog.Logs
+
+	// decision to return permanent/non-permanent errors
+	decision decisionFunc
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
@@ -62,11 +71,16 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 		tc:          &MockTraceConsumer{},
 		mc:          &MockMetricConsumer{},
 		lc:          &MockLogConsumer{},
+		decision:    func() error { return nil },
 	}
 	mb.tc.backend = mb
 	mb.mc.backend = mb
 	mb.lc.backend = mb
 	return mb
+}
+
+func (mb *MockBackend) WithDecisionFunc(decision decisionFunc) {
+	mb.decision = decision
 }
 
 // Start a backend.
@@ -87,6 +101,8 @@ func (mb *MockBackend) Start() error {
 	}
 
 	mb.isStarted = true
+	mb.startMutex.Lock()
+	defer mb.startMutex.Unlock()
 	mb.startedAt = time.Now()
 	return nil
 }
@@ -117,6 +133,8 @@ func (mb *MockBackend) EnableRecording() {
 }
 
 func (mb *MockBackend) GetStats() string {
+	mb.startMutex.Lock()
+	defer mb.startMutex.Unlock()
 	received := mb.DataItemsReceived()
 	return printer.Sprintf("Received:%10d items (%d/sec)", received, int(float64(received)/time.Since(mb.startedAt).Seconds()))
 }
@@ -155,8 +173,6 @@ func (mb *MockBackend) ConsumeMetric(md pmetric.Metrics) {
 var _ consumer.Traces = (*MockTraceConsumer)(nil)
 
 func (mb *MockBackend) ConsumeLogs(ld plog.Logs) {
-	mb.recordMutex.Lock()
-	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
 		mb.ReceivedLogs = append(mb.ReceivedLogs, ld)
 	}
@@ -172,7 +188,12 @@ func (tc *MockTraceConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	tc.numSpansReceived.Add(uint64(td.SpanCount()))
+	if err := tc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && tc.backend.isRecording {
+			tc.backend.DroppedTraces = append(tc.backend.DroppedTraces, td)
+		}
+		return err
+	}
 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
@@ -203,6 +224,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 	}
 
 	tc.backend.ConsumeTrace(td)
+	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	return nil
 }
@@ -219,6 +241,13 @@ func (mc *MockMetricConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	if err := mc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && mc.backend.isRecording {
+			mc.backend.DroppedMetrics = append(mc.backend.DroppedMetrics, md)
+		}
+		return err
+	}
+
 	mc.numMetricsReceived.Add(uint64(md.DataPointCount()))
 	mc.backend.ConsumeMetric(md)
 	return nil
@@ -244,8 +273,51 @@ func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+	lc.backend.recordMutex.Lock()
+	defer lc.backend.recordMutex.Unlock()
+	if err := lc.backend.decision(); err != nil {
+		if lc.backend.isRecording {
+			if consumererror.IsPermanent(err) {
+				lc.backend.DroppedLogs = append(lc.backend.DroppedLogs, ld)
+			} else {
+				lc.backend.LogsToRetry = append(lc.backend.LogsToRetry, ld)
+			}
+		}
+		return err
+	}
+
 	recordCount := ld.LogRecordCount()
 	lc.numLogRecordsReceived.Add(uint64(recordCount))
 	lc.backend.ConsumeLogs(ld)
+	return nil
+}
+
+// randomNonPermanentError is a decision function that succeeds approximately
+// half of the time and fails with a non-permanent error the rest of the time.
+func RandomNonPermanentError() error {
+	code := codes.Unavailable
+	s := status.New(code, errNonPermanent.Error())
+	if rand.Float32() < 0.5 {
+		return s.Err()
+	}
+	return nil
+}
+
+func GenerateNonPernamentErrorUntil(ch chan bool) error {
+	code := codes.Unavailable
+	s := status.New(code, errNonPermanent.Error())
+	defaultReturn := s.Err()
+	if <-ch {
+		return defaultReturn
+	}
+	return nil
+}
+
+// randomPermanentError is a decision function that succeeds approximately
+// half of the time and fails with a permanent error the rest of the time.
+func RandomPermanentError() error {
+	if rand.Float32() < 0.5 {
+		return consumererror.NewPermanent(errPermanent)
+	}
 	return nil
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
@@ -63,31 +52,31 @@ const (
 )
 
 var sevText = map[Severity]string{
-	Default: "default",
-	Trace:   "trace",
-	Trace2:  "trace2",
-	Trace3:  "trace3",
-	Trace4:  "trace4",
-	Debug:   "debug",
-	Debug2:  "debug2",
-	Debug3:  "debug3",
-	Debug4:  "debug4",
-	Info:    "info",
-	Info2:   "info2",
-	Info3:   "info3",
-	Info4:   "info4",
-	Warn:    "warn",
-	Warn2:   "warn2",
-	Warn3:   "warn3",
-	Warn4:   "warn4",
-	Error:   "error",
-	Error2:  "error2",
-	Error3:  "error3",
-	Error4:  "error4",
-	Fatal:   "fatal",
-	Fatal2:  "fatal2",
-	Fatal3:  "fatal3",
-	Fatal4:  "fatal4",
+	Default: "DEFAULT",
+	Trace:   "TRACE",
+	Trace2:  "TRACE2",
+	Trace3:  "TRACE3",
+	Trace4:  "TRACE4",
+	Debug:   "DEBUG",
+	Debug2:  "DEBUG2",
+	Debug3:  "DEBUG3",
+	Debug4:  "DEBUG4",
+	Info:    "INFO",
+	Info2:   "INFO2",
+	Info3:   "INFO3",
+	Info4:   "INFO4",
+	Warn:    "WARN",
+	Warn2:   "WARN2",
+	Warn3:   "WARN3",
+	Warn4:   "WARN4",
+	Error:   "ERROR",
+	Error2:  "ERROR2",
+	Error3:  "ERROR3",
+	Error4:  "ERROR4",
+	Fatal:   "FATAL",
+	Fatal2:  "FATAL2",
+	Fatal3:  "FATAL3",
+	Fatal4:  "FATAL4",
 }
 
 // ToString converts a severity to a string

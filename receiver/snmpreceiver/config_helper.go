@@ -1,20 +1,10 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -24,6 +14,7 @@ type configHelper struct {
 	metricScalarOIDs            []string
 	metricColumnOIDs            []string
 	attributeColumnOIDs         []string
+	resourceAttributeScalarOIDs []string
 	resourceAttributeColumnOIDs []string
 	metricNamesByOID            map[string]string
 	metricAttributesByOID       map[string][]Attribute
@@ -37,6 +28,7 @@ func newConfigHelper(cfg *Config) *configHelper {
 		metricScalarOIDs:            []string{},
 		metricColumnOIDs:            []string{},
 		attributeColumnOIDs:         []string{},
+		resourceAttributeScalarOIDs: []string{},
 		resourceAttributeColumnOIDs: []string{},
 		metricNamesByOID:            map[string]string{},
 		metricAttributesByOID:       map[string][]Attribute{},
@@ -57,6 +49,7 @@ func newConfigHelper(cfg *Config) *configHelper {
 			ch.metricScalarOIDs = append(ch.metricScalarOIDs, oid.OID)
 			ch.metricNamesByOID[oid.OID] = name
 			ch.metricAttributesByOID[oid.OID] = oid.Attributes
+			ch.resourceAttributesByOID[oid.OID] = oid.ResourceAttributes
 		}
 
 		for i, oid := range metricCfg.ColumnOIDs {
@@ -88,20 +81,35 @@ func newConfigHelper(cfg *Config) *configHelper {
 		ch.attributeColumnOIDs = append(ch.attributeColumnOIDs, attributeCfg.OID)
 	}
 
-	// Find all resource attribute column OIDs
+	// Find all resource attribute scalar and column OIDs
 	for name, resourceAttributeCfg := range cfg.ResourceAttributes {
-		if resourceAttributeCfg.OID == "" {
+		if resourceAttributeCfg.ScalarOID != "" {
+			// Data is returned by the client with '.' prefix on the OIDs.
+			// Making sure the prefix exists here in the configs so we can match it up with returned data later
+			if !strings.HasPrefix(resourceAttributeCfg.ScalarOID, ".") {
+				resourceAttributeCfg.ScalarOID = "." + resourceAttributeCfg.ScalarOID
+				cfg.ResourceAttributes[name] = resourceAttributeCfg
+			}
+			ch.resourceAttributeScalarOIDs = append(ch.resourceAttributeScalarOIDs, resourceAttributeCfg.ScalarOID)
 			continue
 		}
-
-		// Data is returned by the client with '.' prefix on the OIDs.
-		// Making sure the prefix exists here in the configs so we can match it up with returned data later
-		if !strings.HasPrefix(resourceAttributeCfg.OID, ".") {
-			resourceAttributeCfg.OID = "." + resourceAttributeCfg.OID
-			cfg.ResourceAttributes[name] = resourceAttributeCfg
+		if resourceAttributeCfg.OID != "" {
+			// Data is returned by the client with '.' prefix on the OIDs.
+			// Making sure the prefix exists here in the configs so we can match it up with returned data later
+			if !strings.HasPrefix(resourceAttributeCfg.OID, ".") {
+				resourceAttributeCfg.OID = "." + resourceAttributeCfg.OID
+				cfg.ResourceAttributes[name] = resourceAttributeCfg
+			}
+			ch.resourceAttributeColumnOIDs = append(ch.resourceAttributeColumnOIDs, resourceAttributeCfg.OID)
 		}
-		ch.resourceAttributeColumnOIDs = append(ch.resourceAttributeColumnOIDs, resourceAttributeCfg.OID)
 	}
+
+	// We expect these []string to be sorted later (i.e. mocks and resourceKey)
+	sort.Strings(ch.metricScalarOIDs)
+	sort.Strings(ch.metricColumnOIDs)
+	sort.Strings(ch.attributeColumnOIDs)
+	sort.Strings(ch.resourceAttributeScalarOIDs)
+	sort.Strings(ch.resourceAttributeColumnOIDs)
 
 	return &ch
 }
@@ -119,6 +127,11 @@ func (h configHelper) getMetricColumnOIDs() []string {
 // getAttributeColumnOIDs returns all of the attribute column OIDs in the attribute configs
 func (h configHelper) getAttributeColumnOIDs() []string {
 	return h.attributeColumnOIDs
+}
+
+// getResourceAttributeScalarOIDs returns all of the resource attribute scalar OIDs in the resource attribute configs
+func (h configHelper) getResourceAttributeScalarOIDs() []string {
+	return h.resourceAttributeScalarOIDs
 }
 
 // getResourceAttributeColumnOIDs returns all of the resource attribute column OIDs in the resource attribute configs
@@ -184,6 +197,16 @@ func (h configHelper) getResourceAttributeConfigOID(name string) string {
 	}
 
 	return attrConfig.OID
+}
+
+// getResourceAttributeConfigScalarOID returns the scalar OID of a resource attribute config
+func (h configHelper) getResourceAttributeConfigScalarOID(name string) string {
+	attrConfig := h.cfg.ResourceAttributes[name]
+	if attrConfig == nil {
+		return ""
+	}
+
+	return attrConfig.ScalarOID
 }
 
 // getMetricConfigAttributes returns the metric config attributes for a given OID

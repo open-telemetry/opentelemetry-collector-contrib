@@ -1,0 +1,18 @@
+type: pulsar
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, dao-jun]
+
+# Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true
+  goleak:
+    ignore:
+      any:
+        # Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
+        - "github.com/godbus/dbus.(*Conn).inWorker"

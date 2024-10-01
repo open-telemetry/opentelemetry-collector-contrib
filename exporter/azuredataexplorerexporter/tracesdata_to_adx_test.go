@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
@@ -27,7 +16,7 @@ import (
 func Test_mapToAdxTrace(t *testing.T) {
 	epoch, _ := time.Parse("2006-01-02T15:04:05.999999999Z07:00", "1970-01-01T00:00:00.000000000Z")
 	defaultTime := pcommon.NewTimestampFromTime(epoch).AsTime().Format(time.RFC3339Nano)
-	tmap := make(map[string]interface{})
+	tmap := make(map[string]any)
 	tmap["key"] = "value"
 	tmap[hostkey] = testhost
 
@@ -44,7 +33,6 @@ func Test_mapToAdxTrace(t *testing.T) {
 		{
 			name: "valid",
 			spanDatafn: func() ptrace.Span {
-
 				span := ptrace.NewSpan()
 				span.SetName("spanname")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
@@ -95,7 +83,6 @@ func Test_mapToAdxTrace(t *testing.T) {
 		}, {
 			name: "with_events_links",
 			spanDatafn: func() ptrace.Span {
-
 				span := ptrace.NewSpan()
 				span.SetName("spanname")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
@@ -125,6 +112,59 @@ func Test_mapToAdxTrace(t *testing.T) {
 				ParentID:           "",
 				SpanName:           "spanname",
 				SpanStatus:         "STATUS_CODE_UNSET",
+				SpanKind:           "SPAN_KIND_SERVER",
+				StartTime:          tstr,
+				EndTime:            tstr,
+				ResourceAttributes: tmap,
+				TraceAttributes:    newMapFromAttr(`{"traceAttribKey":"traceAttribVal", "scope.name":"testscope", "scope.version":"1.0"}`),
+				Events: []*Event{
+					{
+						EventName:       "eventName",
+						EventAttributes: newMapFromAttr(`{"eventkey": "eventvalue"}`),
+						Timestamp:       tstr,
+					},
+				},
+				Links: []*Link{{
+					TraceID:            "00000000000000000000000000000064",
+					SpanID:             "0000000000000032",
+					TraceState:         "",
+					SpanLinkAttributes: newMapFromAttr(`{}`),
+				}},
+			},
+		},
+		{
+			name: "with_status_message_for_error",
+			spanDatafn: func() ptrace.Span {
+				span := ptrace.NewSpan()
+				span.SetName("spanname-status-message")
+				span.Status().SetCode(ptrace.StatusCodeError)
+				span.Status().SetMessage("An error occurred")
+				span.SetTraceID(pcommon.TraceID(traceID))
+				span.SetSpanID(pcommon.SpanID(spanID))
+				span.SetKind(ptrace.SpanKindServer)
+				span.SetStartTimestamp(ts)
+				span.SetEndTimestamp(ts)
+				span.Attributes().PutStr("traceAttribKey", "traceAttribVal")
+				event := span.Events().AppendEmpty()
+				event.SetName("eventName")
+				event.SetTimestamp(ts)
+				event.Attributes().PutStr("eventkey", "eventvalue")
+
+				link := span.Links().AppendEmpty()
+				link.SetSpanID(pcommon.SpanID(spanID))
+				link.SetTraceID(pcommon.TraceID(traceID))
+				link.TraceState().FromRaw("")
+				return span
+			},
+			resourceFn: newDummyResource,
+			insScopeFn: newScopeWithData,
+			expectedAdxTrace: &AdxTrace{
+				TraceID:            "00000000000000000000000000000064",
+				SpanID:             "0000000000000032",
+				ParentID:           "",
+				SpanName:           "spanname-status-message",
+				SpanStatus:         "STATUS_CODE_ERROR",
+				SpanStatusMessage:  "An error occurred",
 				SpanKind:           "SPAN_KIND_SERVER",
 				StartTime:          tstr,
 				EndTime:            tstr,

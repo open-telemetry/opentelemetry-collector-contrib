@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opencensusreceiver
 
@@ -26,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,24 +30,24 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "customname"),
+			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:9090",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 				},
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "keepalive"),
+			id: component.NewIDWithName(metadata.Type, "keepalive"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:55678",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 					Keepalive: &configgrpc.KeepaliveServerConfig{
@@ -76,12 +67,12 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "msg-size-conc-connect-max-idle"),
+			id: component.NewIDWithName(metadata.Type, "msg-size-conc-connect-max-idle"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:55678",
+						Transport: confignet.TransportTypeTCP,
 					},
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
@@ -96,16 +87,16 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "tlscredentials"),
+			id: component.NewIDWithName(metadata.Type, "tlscredentials"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:55678",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: &configtls.ServerConfig{
+						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
@@ -114,12 +105,12 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "cors"),
+			id: component.NewIDWithName(metadata.Type, "cors"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:55678",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 				},
@@ -127,12 +118,12 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "uds"),
+			id: component.NewIDWithName(metadata.Type, "uds"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/opencensus.sock",
-						Transport: "unix",
+						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
 				},
@@ -147,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

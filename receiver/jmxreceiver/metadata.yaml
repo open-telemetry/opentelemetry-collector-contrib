@@ -1,0 +1,13 @@
+type: jmx
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [rmfitzpatrick]
+
+tests:
+  config:
+    endpoint: myendpoint:12345

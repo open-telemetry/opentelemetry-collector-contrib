@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 package containerinsight // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 
 import (
@@ -25,10 +14,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// SumFields takes an array of type map[string]interface{} and do
+// SumFields takes an array of type map[string]any and do
 // the summation on the values corresponding to the same keys.
-// It is assumed that the underlying type of interface{} to be float64.
-func SumFields(fields []map[string]interface{}) map[string]float64 {
+// It is assumed that the underlying type of any to be float64.
+func SumFields(fields []map[string]any) map[string]float64 {
 	if len(fields) == 0 {
 		return nil
 	}
@@ -166,7 +155,7 @@ func GetUnitForMetric(metric string) string {
 }
 
 // ConvertToOTLPMetrics converts a field containing metric values and a tag containing the relevant labels to OTLP metrics
-func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string, logger *zap.Logger) pmetric.Metrics {
+func ConvertToOTLPMetrics(fields map[string]any, tags map[string]string, logger *zap.Logger) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()

@@ -1,18 +1,7 @@
 #!/usr/bin/env bash
 #
-#   Copyright The OpenTelemetry Authors.
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 #
 #
 
@@ -41,7 +30,7 @@ fi
 if [[ -n "${TITLE_COMPONENT}" && ! ("${TITLE_COMPONENT}" =~ " ") ]]; then
   CODEOWNERS=$(COMPONENT="${TITLE_COMPONENT}" "${CUR_DIRECTORY}/get-codeowners.sh" || true)
   
-  if [[ -n "${CODEOWNERS}" && ! ("${CODEOWNERS}" =~ ${OPENER}) ]]; then
+  if [[ -n "${CODEOWNERS}" ]]; then
     PING_LINES+="- ${TITLE_COMPONENT}: ${CODEOWNERS}\n"
     PINGED_COMPONENTS["${TITLE_COMPONENT}"]=1
 
@@ -104,11 +93,11 @@ if [[ -n "${PING_LINES}" ]]; then
   #    workflow, so we have to ping code owners here.
   # 2. The GitHub CLI only offers multiline strings through file input,
   #    so we provide the comment through stdin.
-  # 3. The PING_LINES variable must be directly put into the printf string
+  # 3. The PING_LINES variable must be directly put into the echo string
   #    to get the newlines to render correctly, using string formatting
   #    causes the newlines to be interpreted literally.
-  printf "Pinging code owners:\n${PING_LINES}"
-  printf "Pinging code owners:\n${PING_LINES}\n%s" "${LABELS_COMMENT}"  \
+  echo -e "Pinging code owners:\n${PING_LINES}"
+  echo -e "Pinging code owners:\n${PING_LINES}\n" "${LABELS_COMMENT}"  \
   | gh issue comment "${ISSUE}" -F -
 else
   echo "No code owners were found to ping"

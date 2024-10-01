@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package idbatcher
 
@@ -18,12 +7,12 @@ import (
 	"encoding/binary"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/atomic"
 )
 
 func TestBatcherNew(t *testing.T) {
@@ -58,7 +47,7 @@ func TestMinBufferedChannels(t *testing.T) {
 }
 
 func BenchmarkConcurrentEnqueue(b *testing.B) {
-	ids := generateSequentialIds(1)
+	ids := generateSequentialIDs(1)
 	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
 	defer batcher.Stop()
 	if err != nil {
@@ -67,12 +56,12 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
-	ticked := atomic.NewInt64(0)
-	received := atomic.NewInt64(0)
+	ticked := &atomic.Int64{}
+	received := &atomic.Int64{}
 	go func() {
 		for range ticker.C {
 			batch, _ := batcher.CloseCurrentAndTakeFirstBatch()
-			ticked.Inc()
+			ticked.Add(1)
 			received.Add(int64(len(batch)))
 		}
 	}()
@@ -112,13 +101,19 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 		}
 	}()
 
-	ids := generateSequentialIds(10000)
+	ids := generateSequentialIDs(10000)
 	wg := &sync.WaitGroup{}
+	// Limit the concurrency here to avoid creating too many goroutines and hit
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126
+	concurrencyLimiter := make(chan struct{}, 128)
+	defer close(concurrencyLimiter)
 	for i := 0; i < len(ids); i++ {
 		wg.Add(1)
+		concurrencyLimiter <- struct{}{}
 		go func(id pcommon.TraceID) {
 			batcher.AddToCurrentBatch(id)
 			wg.Done()
+			<-concurrencyLimiter
 		}(ids[i])
 	}
 
@@ -148,9 +143,9 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	}
 }
 
-func generateSequentialIds(numIds uint64) []pcommon.TraceID {
-	ids := make([]pcommon.TraceID, numIds)
-	for i := uint64(0); i < numIds; i++ {
+func generateSequentialIDs(numIDs uint64) []pcommon.TraceID {
+	ids := make([]pcommon.TraceID, numIDs)
+	for i := uint64(0); i < numIDs; i++ {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], 0)
 		binary.BigEndian.PutUint64(traceID[8:], i)

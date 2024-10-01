@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorexporter
 
@@ -30,10 +19,12 @@ func TestCreateTracesExporterUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation
 	f := factory{tChannel: &mockTransportChannel{}}
 	ctx := context.Background()
-	params := exportertest.NewNopCreateSettings()
-	exporter, err := f.createTracesExporter(ctx, params, createDefaultConfig())
+	params := exportertest.NewNopSettings()
+	config := createDefaultConfig().(*Config)
+	config.ConnectionString = "InstrumentationKey=test-key;IngestionEndpoint=https://test-endpoint/"
+	exporter, err := f.createTracesExporter(ctx, params, config)
 	assert.NotNil(t, exporter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
@@ -41,9 +32,11 @@ func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
 	f := factory{}
 	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
-	exporter, err := f.createTracesExporter(ctx, exportertest.NewNopCreateSettings(), createDefaultConfig())
+	config := createDefaultConfig().(*Config)
+	config.ConnectionString = "InstrumentationKey=test-key;IngestionEndpoint=https://test-endpoint/"
+	exporter, err := f.createTracesExporter(ctx, exportertest.NewNopSettings(), config)
 	assert.NotNil(t, exporter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, f.tChannel)
 }
 
@@ -52,11 +45,11 @@ func TestCreateTracesExporterUsingBadConfig(t *testing.T) {
 	f := factory{}
 	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
 	badConfig := &badConfig{}
 
 	exporter, err := f.createTracesExporter(ctx, params, badConfig)
 	assert.Nil(t, exporter)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

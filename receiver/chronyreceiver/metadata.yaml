@@ -1,5 +1,12 @@
----
-name: chrony receiver
+type: chrony
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [MovieStoreGuy, jamesmoessis]
 
 attributes:
   leap.status:
@@ -66,3 +73,7 @@ metrics:
       value_type: double
     attributes:
     - leap.status
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

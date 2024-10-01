@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package zookeeperreceiver
 
@@ -26,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -34,7 +24,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
@@ -50,23 +40,26 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                         string
-		expectedMetricsFilename      string
-		expectedResourceAttributes   map[string]string
-		metricsSettings              func() metadata.MetricsSettings
-		mockedZKOutputSourceFilename string
-		mockZKConnectionErr          bool
-		expectedLogs                 []logMsg
-		expectedNumResourceMetrics   int
-		setConnectionDeadline        func(net.Conn, time.Time) error
-		closeConnection              func(net.Conn) error
-		sendCmd                      func(net.Conn, string) (*bufio.Scanner, error)
-		wantErr                      bool
+		name                        string
+		expectedMetricsFilename     string
+		expectedResourceAttributes  map[string]string
+		metricsConfig               func() metadata.MetricsConfig
+		mockedZKCmdToOutputFilename map[string]string
+		mockZKConnectionErr         bool
+		expectedLogs                []logMsg
+		expectedNumResourceMetrics  int
+		setConnectionDeadline       func(net.Conn, time.Time) error
+		closeConnection             func(net.Conn) error
+		sendCmd                     func(net.Conn, string) (*bufio.Scanner, error)
+		wantErr                     bool
 	}{
 		{
-			name:                         "Test correctness with v3.4.14",
-			mockedZKOutputSourceFilename: "mntr-3.4.14",
-			expectedMetricsFilename:      "correctness-v3.4.14",
+			name: "Test correctness with v3.4.14",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-3.4.14",
+				"ruok": "ruok-valid",
+			},
+			expectedMetricsFilename: "correctness-v3.4.14",
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -80,9 +73,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedNumResourceMetrics: 1,
 		},
 		{
-			name:                         "Test correctness with v3.5.5",
-			mockedZKOutputSourceFilename: "mntr-3.5.5",
-			expectedMetricsFilename:      "correctness-v3.5.5",
+			name: "Test correctness with v3.5.5",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-3.5.5",
+				"ruok": "ruok-valid",
+			},
+			expectedMetricsFilename: "correctness-v3.5.5",
 			expectedResourceAttributes: map[string]string{
 				"server.state": "leader",
 				"zk.version":   "3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653",
@@ -101,8 +97,11 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:                         "Unexpected line format in mntr",
-			mockedZKOutputSourceFilename: "mntr-unexpected_line_format",
+			name: "Unexpected line format in mntr",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-unexpected_line_format",
+				"ruok": "ruok-valid",
+			},
 			expectedLogs: []logMsg{
 				{
 					msg:   "unexpected line in response",
@@ -116,8 +115,11 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedNumResourceMetrics: 0,
 		},
 		{
-			name:                         "Unexpected value type in mntr",
-			mockedZKOutputSourceFilename: "mntr-unexpected_value_type",
+			name: "Unexpected value type in mntr",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-unexpected_value_type",
+				"ruok": "ruok-valid",
+			},
 			expectedLogs: []logMsg{
 				{
 					msg:   "non-integer value from mntr",
@@ -131,9 +133,50 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedNumResourceMetrics: 0,
 		},
 		{
-			name:                         "Error setting connection deadline",
-			mockedZKOutputSourceFilename: "mntr-3.4.14",
+			name: "Empty response from ruok",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-3.4.14",
+				"ruok": "ruok-null",
+			},
+			expectedMetricsFilename: "null-ruok",
 			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
+			},
+			expectedNumResourceMetrics: 2,
+		},
+		{
+			name: "Invalid response from ruok",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-3.4.14",
+				"ruok": "ruok-invalid",
+			},
+			expectedMetricsFilename: "invalid-ruok",
+			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
+				{
+					msg:   "invalid response from ruok",
+					level: zapcore.ErrorLevel,
+				},
+			},
+			expectedNumResourceMetrics: 2,
+		},
+		{
+			name: "Error setting connection deadline",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-3.4.14",
+				"ruok": "ruok-valid",
+			},
+			expectedLogs: []logMsg{
+				{
+					msg:   "failed to set deadline on connection",
+					level: zapcore.WarnLevel,
+				},
 				{
 					msg:   "failed to set deadline on connection",
 					level: zapcore.WarnLevel,
@@ -149,21 +192,28 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
-			setConnectionDeadline: func(conn net.Conn, t time.Time) error {
+			setConnectionDeadline: func(_ net.Conn, _ time.Time) error {
 				return errors.New("")
 			},
 		},
 		{
-			name:                         "Error closing connection",
-			mockedZKOutputSourceFilename: "mntr-3.4.14",
+			name: "Error closing connection",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-3.4.14",
+				"ruok": "ruok-valid",
+			},
 			expectedLogs: []logMsg{
 				{
-					msg:   "metric computation failed",
-					level: zapcore.DebugLevel,
+					msg:   "failed to shutdown connection",
+					level: zapcore.WarnLevel,
 				},
 				{
 					msg:   "failed to shutdown connection",
 					level: zapcore.WarnLevel,
+				},
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
 				},
 			},
 			expectedMetricsFilename: "error-closing-connection",
@@ -172,32 +222,38 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
-			closeConnection: func(conn net.Conn) error {
+			closeConnection: func(_ net.Conn) error {
 				return errors.New("")
 			},
 		},
 		{
-			name:                         "Failed to send command",
-			mockedZKOutputSourceFilename: "mntr-3.4.14",
+			name: "Failed to send command",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-3.4.14",
+				"ruok": "ruok-valid",
+			},
 			expectedLogs: []logMsg{
 				{
 					msg:   "failed to send command",
 					level: zapcore.ErrorLevel,
 				},
 			},
-			sendCmd: func(conn net.Conn, s string) (*bufio.Scanner, error) {
+			sendCmd: func(_ net.Conn, _ string) (*bufio.Scanner, error) {
 				return nil, errors.New("")
 			},
 		},
 		{
 			name: "Disable zookeeper.watches metric",
-			metricsSettings: func() metadata.MetricsSettings {
-				ms := metadata.DefaultMetricsSettings()
+			metricsConfig: func() metadata.MetricsConfig {
+				ms := metadata.DefaultMetricsConfig()
 				ms.ZookeeperWatchCount.Enabled = false
 				return ms
 			},
-			mockedZKOutputSourceFilename: "mntr-3.4.14",
-			expectedMetricsFilename:      "disable-watches",
+			mockedZKCmdToOutputFilename: map[string]string{
+				"mntr": "mntr-3.4.14",
+				"ruok": "ruok-valid",
+			},
+			expectedMetricsFilename: "disable-watches",
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -215,25 +271,31 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			localAddr := testutil.GetAvailableLocalAddress(t)
 			if !tt.mockZKConnectionErr {
-				ms := mockedServer{ready: make(chan bool, 1)}
-				go ms.mockZKServer(t, localAddr, tt.mockedZKOutputSourceFilename)
+				listener, err := net.Listen("tcp", localAddr)
+				require.NoError(t, err)
+				ms := mockedServer{
+					listener: listener,
+					ready:    make(chan bool, 1),
+					quit:     make(chan struct{}),
+				}
+
+				defer ms.shutdown()
+				go ms.mockZKServer(t, tt.mockedZKCmdToOutputFilename)
 				<-ms.ready
 			}
 
 			cfg := createDefaultConfig().(*Config)
-			cfg.TCPAddr.Endpoint = localAddr
-			if tt.metricsSettings != nil {
-				cfg.Metrics = tt.metricsSettings()
+			cfg.TCPAddrConfig.Endpoint = localAddr
+			if tt.metricsConfig != nil {
+				cfg.MetricsBuilderConfig.Metrics = tt.metricsConfig()
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(core)
 			z, err := newZookeeperMetricsScraper(settings, cfg)
 			require.NoError(t, err)
 			require.Equal(t, "zookeeper", z.Name())
-
-			ctx := context.Background()
 
 			if tt.setConnectionDeadline != nil {
 				z.setConnectionDeadline = tt.setConnectionDeadline
@@ -246,7 +308,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.sendCmd != nil {
 				z.sendCmd = tt.sendCmd
 			}
-
+			ctx, cancel := context.WithTimeout(context.Background(), z.config.Timeout)
+			defer cancel()
 			actualMetrics, err := z.scrape(ctx)
 			require.NoError(t, z.shutdown(ctx))
 
@@ -261,12 +324,11 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					require.Error(t, err)
 					require.Equal(t, pmetric.NewMetrics(), actualMetrics)
 				}
-
 				require.NoError(t, z.shutdown(ctx))
 				return
 			}
 
-			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.json", tt.expectedMetricsFilename))
+			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.yaml", tt.expectedMetricsFilename))
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
@@ -278,33 +340,52 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	z, err := newZookeeperMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	z, err := newZookeeperMetricsScraper(receivertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	require.NoError(t, z.shutdown(context.Background()))
 }
 
 type mockedServer struct {
+	listener net.Listener
+
 	ready chan bool
+	quit  chan struct{}
 }
 
-func (ms *mockedServer) mockZKServer(t *testing.T, endpoint string, filename string) {
-	listener, err := net.Listen("tcp", endpoint)
-	require.NoError(t, err)
-	defer listener.Close()
-
+func (ms *mockedServer) mockZKServer(t *testing.T, cmdToFileMap map[string]string) {
+	var cmd string
 	ms.ready <- true
 
-	conn, err := listener.Accept()
-	require.NoError(t, err)
-
 	for {
+		conn, err := ms.listener.Accept()
+		if err != nil {
+			select {
+			case <-ms.quit:
+				return
+			default:
+				assert.NoError(t, err)
+			}
+		}
+		reader := bufio.NewReader(conn)
+		scanner := bufio.NewScanner(reader)
+		scanner.Scan()
+		if cmd = scanner.Text(); cmd == "" {
+			continue
+		}
+
+		assert.NoError(t, err)
+		filename := cmdToFileMap[cmd]
 		out, err := os.ReadFile(filepath.Join("testdata", filename))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		_, err = conn.Write(out)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		conn.Close()
-		return
 	}
+}
+
+func (ms *mockedServer) shutdown() {
+	close(ms.quit)
+	ms.listener.Close()
 }

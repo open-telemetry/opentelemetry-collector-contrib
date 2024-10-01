@@ -1,0 +1,12 @@
+type: count
+
+status:
+  class: connector
+  stability:
+    alpha: [traces_to_metrics, metrics_to_metrics, logs_to_metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [djaglowski, jpkrohling]
+
+tests:
+  config:

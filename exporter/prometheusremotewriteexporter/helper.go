@@ -1,49 +1,61 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
 import (
 	"errors"
+	"math"
 	"sort"
 
 	"github.com/prometheus/prometheus/prompb"
 )
 
+type batchTimeSeriesState struct {
+	// Track batch sizes sent to avoid over allocating huge buffers.
+	// This helps in the case where large batches are sent to avoid allocating too much unused memory
+	nextTimeSeriesBufferSize     int
+	nextMetricMetadataBufferSize int
+	nextRequestBufferSize        int
+}
+
+func newBatchTimeSericesState() batchTimeSeriesState {
+	return batchTimeSeriesState{
+		nextTimeSeriesBufferSize:     math.MaxInt,
+		nextMetricMetadataBufferSize: math.MaxInt,
+		nextRequestBufferSize:        0,
+	}
+}
+
 // batchTimeSeries splits series into multiple batch write requests.
-func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) ([]*prompb.WriteRequest, error) {
+func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, m []*prompb.MetricMetadata, state *batchTimeSeriesState) ([]*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
 
-	var requests []*prompb.WriteRequest
-	var tsArray []prompb.TimeSeries
+	// Allocate a buffer size of at least 10, or twice the last # of requests we sent
+	requests := make([]*prompb.WriteRequest, 0, max(10, state.nextRequestBufferSize))
+
+	// Allocate a time series buffer 2x the last time series batch size or the length of the input if smaller
+	tsArray := make([]prompb.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)))
 	sizeOfCurrentBatch := 0
 
+	i := 0
 	for _, v := range tsMap {
 		sizeOfSeries := v.Size()
 
 		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
+			state.nextTimeSeriesBufferSize = max(10, 2*len(tsArray))
 			wrapped := convertTimeseriesToRequest(tsArray)
 			requests = append(requests, wrapped)
 
-			tsArray = nil
+			tsArray = make([]prompb.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)-i))
 			sizeOfCurrentBatch = 0
 		}
 
 		tsArray = append(tsArray, *v)
 		sizeOfCurrentBatch += sizeOfSeries
+		i++
 	}
 
 	if len(tsArray) != 0 {
@@ -51,6 +63,33 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 		requests = append(requests, wrapped)
 	}
 
+	// Allocate a metric metadata buffer 2x the last metric metadata batch size or the length of the input if smaller
+	mArray := make([]prompb.MetricMetadata, 0, min(state.nextMetricMetadataBufferSize, len(m)))
+	sizeOfCurrentBatch = 0
+	i = 0
+	for _, v := range m {
+		sizeOfM := v.Size()
+
+		if sizeOfCurrentBatch+sizeOfM >= maxBatchByteSize {
+			state.nextMetricMetadataBufferSize = max(10, 2*len(mArray))
+			wrapped := convertMetadataToRequest(mArray)
+			requests = append(requests, wrapped)
+
+			mArray = make([]prompb.MetricMetadata, 0, min(state.nextMetricMetadataBufferSize, len(m)-i))
+			sizeOfCurrentBatch = 0
+		}
+
+		mArray = append(mArray, *v)
+		sizeOfCurrentBatch += sizeOfM
+		i++
+	}
+
+	if len(mArray) != 0 {
+		wrapped := convertMetadataToRequest(mArray)
+		requests = append(requests, wrapped)
+	}
+
+	state.nextRequestBufferSize = 2 * len(requests)
 	return requests, nil
 }
 
@@ -63,6 +102,12 @@ func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteReques
 		// * https://github.com/open-telemetry/wg-prometheus/issues/10
 		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
 		Timeseries: orderBySampleTimestamp(tsArray),
+	}
+}
+
+func convertMetadataToRequest(m []prompb.MetricMetadata) *prompb.WriteRequest {
+	return &prompb.WriteRequest{
+		Metadata: m,
 	}
 }
 

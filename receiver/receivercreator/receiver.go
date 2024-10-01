@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
@@ -21,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -30,59 +18,50 @@ var _ receiver.Metrics = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
-	params          receiver.CreateSettings
-	cfg             *Config
-	nextConsumer    consumer.Metrics
-	observerHandler *observerHandler
-	observables     []observer.Observable
+	params              receiver.Settings
+	cfg                 *Config
+	nextLogsConsumer    consumer.Logs
+	nextMetricsConsumer consumer.Metrics
+	nextTracesConsumer  consumer.Traces
+	observerHandler     *observerHandler
+	observables         []observer.Observable
 }
 
-// newReceiverCreator creates the receiver_creator with the given parameters.
-func newReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
+func newReceiverCreator(params receiver.Settings, cfg *Config) receiver.Metrics {
+	return &receiverCreator{
+		params: params,
+		cfg:    cfg,
 	}
-
-	r := &receiverCreator{
-		params:       params,
-		cfg:          cfg,
-		nextConsumer: nextConsumer,
-	}
-	return r, nil
 }
 
-// loggingHost provides a safer version of host that logs errors instead of exiting the process.
-type loggingHost struct {
+// host is an interface that the component.Host passed to receivercreator's Start function must implement
+type host interface {
 	component.Host
-	logger *zap.Logger
+	GetFactory(component.Kind, component.Type) component.Factory
 }
-
-// ReportFatalError causes a log to be made instead of terminating the process as Host does by default.
-func (h *loggingHost) ReportFatalError(err error) {
-	h.logger.Error("receiver reported a fatal error", zap.Error(err))
-}
-
-var _ component.Host = (*loggingHost)(nil)
 
 // Start receiver_creator.
-func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
+func (rc *receiverCreator) Start(_ context.Context, h component.Host) error {
+	rcHost, ok := h.(host)
+	if !ok {
+		return fmt.Errorf("the receivercreator is not compatible with the provided component.host")
+	}
+
 	rc.observerHandler = &observerHandler{
 		config:                rc.cfg,
 		params:                rc.params,
 		receiversByEndpointID: receiverMap{},
-		nextConsumer:          rc.nextConsumer,
-		runner: &receiverRunner{
-			params:      rc.params,
-			idNamespace: rc.params.ID,
-			host:        &loggingHost{host, rc.params.Logger},
-		},
+		nextLogsConsumer:      rc.nextLogsConsumer,
+		nextMetricsConsumer:   rc.nextMetricsConsumer,
+		nextTracesConsumer:    rc.nextTracesConsumer,
+		runner:                newReceiverRunner(rc.params, rcHost),
 	}
 
 	observers := map[component.ID]observer.Observable{}
 
 	// Match all configured observables to the extensions that are running.
 	for _, watchObserver := range rc.cfg.WatchObservers {
-		for cid, ext := range host.GetExtensions() {
+		for cid, ext := range rcHost.GetExtensions() {
 			if cid != watchObserver {
 				continue
 			}

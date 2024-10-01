@@ -1,36 +1,20 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 
 import (
-	"errors"
 	"fmt"
 	"time"
+
+	"go.opentelemetry.io/collector/confmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 // Config defines configuration for docker observer
 type Config struct {
-
-	// The URL of the docker server.  Default is "unix:///var/run/docker.sock"
-	Endpoint string `mapstructure:"endpoint"`
-
-	// The maximum amount of time to wait for docker API responses.  Default is 5s
-	Timeout time.Duration `mapstructure:"timeout"`
-
-	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
-	ExcludedImages []string `mapstructure:"excluded_images"`
+	docker.Config `mapstructure:",squash"`
 
 	// If true, the "Config.Hostname" field (if present) of the docker
 	// container will be used as the discovered host that is used to configure
@@ -53,17 +37,11 @@ type Config struct {
 	// through the docker event listener example: cache_sync_interval: "20m"
 	// Default: "60m"
 	CacheSyncInterval time.Duration `mapstructure:"cache_sync_interval"`
-
-	// Docker client API version. Default is 1.22
-	DockerAPIVersion float64 `mapstructure:"api_version"`
 }
 
 func (config Config) Validate() error {
-	if config.Endpoint == "" {
-		return errors.New("endpoint must be specified")
-	}
-	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
-		return fmt.Errorf("api_version must be at least %v", minimalRequiredDockerAPIVersion)
+	if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
+		return err
 	}
 	if config.Timeout == 0 {
 		return fmt.Errorf("timeout must be specified")
@@ -72,4 +50,17 @@ func (config Config) Validate() error {
 		return fmt.Errorf("cache_sync_interval must be specified")
 	}
 	return nil
+}
+
+func (config *Config) Unmarshal(conf *confmap.Conf) error {
+	err := conf.Unmarshal(config)
+	if err != nil {
+		return err
+	}
+
+	if len(config.ExcludedImages) == 0 {
+		config.ExcludedImages = nil
+	}
+
+	return err
 }

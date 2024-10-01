@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package groupbyattrsprocessor
 
@@ -23,11 +12,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
 var (
@@ -280,7 +272,9 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputMetrics := someComplexMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2)
 			inputHistogramMetrics := someComplexHistogramMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2, 2)
 
-			gap := createGroupByAttrsProcessor(zap.NewNop(), tt.groupByKeys)
+			tel := setupTestTelemetry()
+			gap, err := createGroupByAttrsProcessor(tel.NewSettings(), tt.groupByKeys)
+			require.NoError(t, err)
 
 			processedLogs, err := gap.processLogs(context.Background(), inputLogs)
 			assert.NoError(t, err)
@@ -372,14 +366,220 @@ func TestComplexAttributeGrouping(t *testing.T) {
 					metrics := rm.ScopeMetrics().At(j).Metrics()
 					for k := 0; k < metrics.Len(); k++ {
 						metric := metrics.At(k)
-						assert.Equal(t, metric.Histogram().AggregationTemporality(), pmetric.AggregationTemporalityCumulative)
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Histogram().AggregationTemporality())
 						for l := 0; l < metric.Histogram().DataPoints().Len(); l++ {
 							assert.EqualValues(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
 						}
 					}
 				}
 			}
-
+			var want []metricdata.Metrics
+			if tt.shouldMoveCommonGroupedAttr {
+				want = []metricdata.Metrics{
+					{
+						Name:        "otelcol_processor_groupbyattrs_num_grouped_logs",
+						Description: "Number of logs that had attributes grouped",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: int64(tt.outputTotalRecordsCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_num_grouped_metrics",
+						Description: "Number of metrics that had attributes grouped",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 4 * int64(tt.outputTotalRecordsCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_num_grouped_spans",
+						Description: "Number of spans that had attributes grouped",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: int64(tt.outputTotalRecordsCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_log_groups",
+						Description: "Distribution of groups extracted for logs",
+						Unit:        "1",
+						Data: metricdata.Histogram[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							DataPoints: []metricdata.HistogramDataPoint[int64]{
+								{
+									Attributes:   *attribute.EmptySet(),
+									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+									BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+									Count:        1,
+									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Sum:          int64(tt.outputResourceCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_metric_groups",
+						Description: "Distribution of groups extracted for metrics",
+						Unit:        "1",
+						Data: metricdata.Histogram[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							DataPoints: []metricdata.HistogramDataPoint[int64]{
+								{
+									Attributes:   *attribute.EmptySet(),
+									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+									BucketCounts: []uint64{0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+									Count:        2,
+									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Sum:          2 * int64(tt.outputResourceCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_span_groups",
+						Description: "Distribution of groups extracted for spans",
+						Unit:        "1",
+						Data: metricdata.Histogram[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							DataPoints: []metricdata.HistogramDataPoint[int64]{
+								{
+									Attributes:   *attribute.EmptySet(),
+									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+									BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+									Count:        1,
+									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Sum:          int64(tt.outputResourceCount),
+								},
+							},
+						},
+					},
+				}
+			} else {
+				want = []metricdata.Metrics{
+					{
+						Name:        "otelcol_processor_groupbyattrs_num_non_grouped_logs",
+						Description: "Number of logs that did not have attributes grouped",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: int64(tt.outputTotalRecordsCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_num_non_grouped_metrics",
+						Description: "Number of metrics that did not have attributes grouped",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 4 * int64(tt.outputTotalRecordsCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_num_non_grouped_spans",
+						Description: "Number of spans that did not have attributes grouped",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: int64(tt.outputTotalRecordsCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_log_groups",
+						Description: "Distribution of groups extracted for logs",
+						Unit:        "1",
+						Data: metricdata.Histogram[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							DataPoints: []metricdata.HistogramDataPoint[int64]{
+								{
+									Attributes:   *attribute.EmptySet(),
+									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+									BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+									Count:        1,
+									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Sum:          int64(tt.outputResourceCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_metric_groups",
+						Description: "Distribution of groups extracted for metrics",
+						Unit:        "1",
+						Data: metricdata.Histogram[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							DataPoints: []metricdata.HistogramDataPoint[int64]{
+								{
+									Attributes:   *attribute.EmptySet(),
+									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+									BucketCounts: []uint64{0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+									Count:        2,
+									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Sum:          2 * int64(tt.outputResourceCount),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_processor_groupbyattrs_span_groups",
+						Description: "Distribution of groups extracted for spans",
+						Unit:        "1",
+						Data: metricdata.Histogram[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							DataPoints: []metricdata.HistogramDataPoint[int64]{
+								{
+									Attributes:   *attribute.EmptySet(),
+									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+									BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+									Count:        1,
+									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+									Sum:          int64(tt.outputResourceCount),
+								},
+							},
+						},
+					},
+				}
+			}
+			tel.assertMetrics(t, want)
 		})
 	}
 }
@@ -427,7 +627,8 @@ func TestAttributeGrouping(t *testing.T) {
 			histogramMetrics := someHistogramMetrics(attrMap, 1, tt.count)
 			exponentialHistogramMetrics := someExponentialHistogramMetrics(attrMap, 1, tt.count)
 
-			gap := createGroupByAttrsProcessor(zap.NewNop(), tt.groupByKeys)
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), tt.groupByKeys)
+			require.NoError(t, err)
 
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)
 			expectedAttributes := filterAttributeMap(attrMap, tt.nonGroupedKeys)
@@ -738,7 +939,8 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	datapoint.Attributes().PutStr("id", "eth0")
 
 	// Perform the test
-	gap := createGroupByAttrsProcessor(zap.NewNop(), []string{"host.name"})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{"host.name"})
+	require.NoError(t, err)
 
 	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
 	assert.NoError(t, err)
@@ -822,7 +1024,8 @@ func TestCompacting(t *testing.T) {
 	assert.Equal(t, 100, logs.ResourceLogs().Len())
 	assert.Equal(t, 100, metrics.ResourceMetrics().Len())
 
-	gap := createGroupByAttrsProcessor(zap.NewNop(), []string{})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
+	require.NoError(t, err)
 
 	processedSpans, err := gap.processTraces(context.Background(), spans)
 	assert.NoError(t, err)
@@ -858,6 +1061,59 @@ func TestCompacting(t *testing.T) {
 	}
 }
 
+func Test_GetMetricInInstrumentationLibrary(t *testing.T) {
+	// input metric with datapoint
+	m := pmetric.NewMetric()
+	m.SetName("metric")
+	m.SetDescription("description")
+	m.SetUnit("unit")
+	d := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	d.SetDoubleValue(1.0)
+
+	// expected metric without datapoint
+	// the datapoints are not copied to the resulting metric, since
+	// datapoints are moved in between metrics in the processor
+	m2 := pmetric.NewMetric()
+	m2.SetName("metric")
+	m2.SetDescription("description")
+	m2.SetUnit("unit")
+	m2.SetEmptyGauge()
+
+	metadata := pcommon.NewMap()
+	metadata.PutStr("key", "val")
+	metadata.CopyTo(m.Metadata())
+	metadata.CopyTo(m2.Metadata())
+
+	sm := pmetric.NewScopeMetrics()
+	m.CopyTo(sm.Metrics().AppendEmpty())
+
+	tests := []struct {
+		name     string
+		ilm      pmetric.ScopeMetrics
+		searched pmetric.Metric
+		want     pmetric.Metric
+	}{
+		{
+			name:     "existing metric",
+			ilm:      sm,
+			searched: m,
+			want:     m,
+		},
+		{
+			name:     "non-existing metric - datapoints will be removed",
+			ilm:      pmetric.NewScopeMetrics(),
+			searched: m,
+			want:     m2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, getMetricInInstrumentationLibrary(tt.ilm, tt.searched))
+		})
+	}
+}
+
 func BenchmarkCompacting(bb *testing.B) {
 	runs := []struct {
 		ilCount   int
@@ -880,7 +1136,8 @@ func BenchmarkCompacting(bb *testing.B) {
 	for _, run := range runs {
 		bb.Run(fmt.Sprintf("instrumentation_library_count=%d, spans_per_library_count=%d", run.ilCount, run.spanCount), func(b *testing.B) {
 			spans := someSpans(attrMap, run.ilCount, run.spanCount)
-			gap := createGroupByAttrsProcessor(zap.NewNop(), []string{})
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
+			require.NoError(b, err)
 
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {

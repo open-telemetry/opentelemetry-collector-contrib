@@ -1,23 +1,11 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -35,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -49,7 +38,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 }
 
@@ -59,7 +48,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 }
 
@@ -68,7 +57,7 @@ func TestCreateTracesExporterNoAccessToken(t *testing.T) {
 	c := cfg.(*Config)
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.EqualError(t, err, "access_token is required")
 }
 
@@ -82,7 +71,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	exp, err := factory.CreateMetricsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -93,14 +82,14 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg.Realm = "us1"
 	exp, err = factory.CreateMetricsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
@@ -112,7 +101,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
 		AccessToken: "testToken",
 		Realm:       "us1",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout: 2 * time.Second,
 			Headers: map[string]configopaque.String{
 				"added-entry": "added value",
@@ -121,7 +110,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 		},
 	}
 
-	te, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
+	te, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -129,11 +118,11 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 func TestDefaultTranslationRules(t *testing.T) {
 	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules, 1)
+	tr, err := translation.NewMetricTranslator(rules, 1, make(chan struct{}))
 	require.NoError(t, err)
-	data := testMetricsData()
+	data := testMetricsData(false)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false, true)
 	require.NoError(t, err)
 	translated := c.MetricsToSignalFxV2(data)
 	require.NotNil(t, translated)
@@ -153,13 +142,13 @@ func TestDefaultTranslationRules(t *testing.T) {
 	dps, ok = metrics["system.disk.operations.total"]
 	require.True(t, ok, "system.disk.operations.total metrics not found")
 	require.Len(t, dps, 4)
-	require.Equal(t, 2, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 2)
 
 	// system.disk.io.total new metric calculation
 	dps, ok = metrics["system.disk.io.total"]
 	require.True(t, ok, "system.disk.io.total metrics not found")
 	require.Len(t, dps, 2)
-	require.Equal(t, 2, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 2)
 	for _, dp := range dps {
 		var directionFound bool
 		for _, dim := range dp.Dimensions {
@@ -183,20 +172,20 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "disk_ops.total metrics not found")
 	require.Len(t, dps, 1)
 	require.Equal(t, int64(8e3), *dps[0].Value.IntValue)
-	require.Equal(t, 1, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 1)
 	requireDimension(t, dps[0].Dimensions, "host", "host0")
 
 	// system.network.io.total new metric calculation
 	dps, ok = metrics["system.network.io.total"]
 	require.True(t, ok, "system.network.io.total metrics not found")
 	require.Len(t, dps, 2)
-	require.Equal(t, 4, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 4)
 
 	// system.network.packets.total new metric calculation
 	dps, ok = metrics["system.network.packets.total"]
 	require.True(t, ok, "system.network.packets.total metrics not found")
 	require.Len(t, dps, 1)
-	require.Equal(t, 4, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 4)
 	require.Equal(t, int64(350), *dps[0].Value.IntValue)
 	requireDimension(t, dps[0].Dimensions, "direction", "receive")
 
@@ -204,7 +193,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	dps, ok = metrics["network.total"]
 	require.True(t, ok, "network.total metrics not found")
 	require.Len(t, dps, 1)
-	require.Equal(t, 3, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 3)
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
 }
 
@@ -220,7 +209,7 @@ func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
 	require.True(t, found, `missing dimension: %s`, key)
 }
 
-func testMetricsData() pmetric.Metrics {
+func testMetricsData(addHistogram bool) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
 	m1 := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -241,6 +230,10 @@ func testMetricsData() pmetric.Metrics {
 	dp12.Attributes().PutStr("kubernetes_cluster", "cluster0")
 	dp12.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp12.SetIntValue(6e9)
+
+	if addHistogram {
+		buildHistogram(m1, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
 
 	sm2 := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics()
 	m2 := sm2.AppendEmpty()
@@ -273,6 +266,10 @@ func testMetricsData() pmetric.Metrics {
 	dp24.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp24.SetIntValue(8e9)
 
+	if addHistogram {
+		buildHistogram(m2, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	m3 := sm2.AppendEmpty()
 	m3.SetName("system.disk.operations")
 	m3.SetDescription("Disk operations count.")
@@ -303,6 +300,10 @@ func testMetricsData() pmetric.Metrics {
 	dp34.Attributes().PutStr("device", "sda2")
 	dp34.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp34.SetIntValue(5e3)
+
+	if addHistogram {
+		buildHistogram(m3, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
 
 	m4 := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m4.SetName("system.disk.operations")
@@ -335,6 +336,10 @@ func testMetricsData() pmetric.Metrics {
 	dp44.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp44.SetIntValue(7e3)
 
+	if addHistogram {
+		buildHistogram(m4, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	sm5 := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics()
 	m5 := sm5.AppendEmpty()
 	m5.SetName("system.network.io")
@@ -357,6 +362,10 @@ func testMetricsData() pmetric.Metrics {
 	dp52.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp52.SetIntValue(6e9)
 
+	if addHistogram {
+		buildHistogram(m5, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	m6 := sm5.AppendEmpty()
 	m6.SetName("system.network.packets")
 	m6.SetDescription("The number of packets transferred")
@@ -377,6 +386,10 @@ func testMetricsData() pmetric.Metrics {
 	dp62.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp62.SetIntValue(150)
 
+	if addHistogram {
+		buildHistogram(m6, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	sm7 := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics()
 	m7 := sm7.AppendEmpty()
 	m7.SetName("container.memory.working_set")
@@ -388,6 +401,10 @@ func testMetricsData() pmetric.Metrics {
 	dp71.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp71.SetIntValue(1000)
 
+	if addHistogram {
+		buildHistogram(m7, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	m8 := sm7.AppendEmpty()
 	m8.SetName("container.memory.page_faults")
 	dp81 := m8.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -397,6 +414,10 @@ func testMetricsData() pmetric.Metrics {
 	dp81.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp81.SetIntValue(1000)
 
+	if addHistogram {
+		buildHistogram(m8, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	m9 := sm7.AppendEmpty()
 	m9.SetName("container.memory.major_page_faults")
 	dp91 := m9.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -405,6 +426,10 @@ func testMetricsData() pmetric.Metrics {
 	dp91.Attributes().PutStr("kubernetes_cluster", "cluster0")
 	dp91.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp91.SetIntValue(1000)
+
+	if addHistogram {
+		buildHistogram(m9, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
 
 	return md
 }
@@ -436,20 +461,20 @@ func TestDefaultDiskTranslations(t *testing.T) {
 
 	du, ok := m["disk.utilization"]
 	require.True(t, ok)
-	require.Equal(t, 4, len(du[0].Dimensions))
+	require.Len(t, du[0].Dimensions, 4)
 	// cheap test for pct conversion
-	require.True(t, *du[0].Value.DoubleValue > 1)
+	require.Greater(t, *du[0].Value.DoubleValue, 1.0)
 
 	dsu, ok := m["disk.summary_utilization"]
 	require.True(t, ok)
-	require.Equal(t, 3, len(dsu[0].Dimensions))
-	require.True(t, *dsu[0].Value.DoubleValue > 1)
+	require.Len(t, dsu[0].Dimensions, 3)
+	require.Greater(t, *dsu[0].Value.DoubleValue, 1.0)
 }
 
 func testGetTranslator(t *testing.T) *translation.MetricTranslator {
 	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules, 3600)
+	tr, err := translation.NewMetricTranslator(rules, 3600, make(chan struct{}))
 	require.NoError(t, err)
 	return tr
 }
@@ -480,21 +505,21 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	}
 
 	cpuUtil := m["cpu.utilization"]
-	require.Equal(t, 1, len(cpuUtil))
+	require.Len(t, cpuUtil, 1)
 	for _, pt := range cpuUtil {
 		require.Equal(t, 66, int(*pt.Value.DoubleValue))
 	}
 
 	cpuUtilPerCore := m["cpu.utilization_per_core"]
-	require.Equal(t, 8, len(cpuUtilPerCore))
+	require.Len(t, cpuUtilPerCore, 8)
 
 	cpuNumProcessors := m["cpu.num_processors"]
-	require.Equal(t, 1, len(cpuNumProcessors))
+	require.Len(t, cpuNumProcessors, 1)
 
 	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.system", "cpu.user"}
 	for _, metric := range cpuStateMetrics {
 		dps, ok := m[metric]
-		require.True(t, ok, fmt.Sprintf("%s metrics not found", metric))
+		require.Truef(t, ok, "%s metrics not found", metric)
 		require.Len(t, dps, 9)
 	}
 }
@@ -503,20 +528,15 @@ func TestHostmetricsCPUTranslations(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
 	require.NoError(t, err)
 
-	jsonpb := &pmetric.JSONUnmarshaler{}
-	bytes1, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_1.json"))
-	require.NoError(t, err)
-	md1, err := jsonpb.UnmarshalMetrics(bytes1)
+	md1, err := golden.ReadMetrics(filepath.Join("testdata", "hostmetrics_system_cpu_time_1.yaml"))
 	require.NoError(t, err)
 
 	_ = converter.MetricsToSignalFxV2(md1)
 
-	bytes2, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_2.json"))
-	require.NoError(t, err)
-	md2, err := jsonpb.UnmarshalMetrics(bytes2)
+	md2, err := golden.ReadMetrics(filepath.Join("testdata", "hostmetrics_system_cpu_time_2.yaml"))
 	require.NoError(t, err)
 
 	translated2 := converter.MetricsToSignalFxV2(md2)
@@ -549,7 +569,7 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
 	require.NoError(t, err)
 
 	var metrics []map[string]string
@@ -562,7 +582,7 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 
 	// the default cpu.utilization metric is added after applying the default translations
 	// (because cpu.utilization_per_core is supplied) and should not be excluded
-	require.Equal(t, 1, len(dps))
+	require.Len(t, dps, 1)
 	require.Equal(t, "cpu.utilization", dps[0].Metric)
 
 }
@@ -572,7 +592,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
 	require.NoError(t, err)
 
 	var metrics []map[string]string
@@ -580,19 +600,19 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 69, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 68, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
-	require.Equal(t, 0, len(dps))
+	require.Empty(t, dps)
 }
 
 // Benchmark test for default translation rules on an example hostmetrics dataset.
 func BenchmarkMetricConversion(b *testing.B) {
 	rules := defaultTranslationRules
 	require.NotNil(b, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules, 1)
+	tr, err := translation.NewMetricTranslator(rules, 1, make(chan struct{}))
 	require.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false, true)
 	require.NoError(b, err)
 
 	bytes, err := os.ReadFile("testdata/json/hostmetrics.json")
@@ -630,10 +650,36 @@ func getMetrics(metrics []map[string]string) pmetric.Metrics {
 	return md
 }
 
-func testReadJSON(f string, v interface{}) error {
+func testReadJSON(f string, v any) error {
 	bytes, err := os.ReadFile(f)
 	if err != nil {
 		return err
 	}
 	return json.Unmarshal(bytes, &v)
+}
+
+func buildHistogramDP(dp pmetric.HistogramDataPoint, timestamp pcommon.Timestamp) {
+	dp.SetStartTimestamp(timestamp)
+	dp.SetTimestamp(timestamp)
+	dp.SetMin(1.0)
+	dp.SetMax(2)
+	dp.SetCount(5)
+	dp.SetSum(7.0)
+	dp.BucketCounts().FromRaw([]uint64{3, 2})
+	dp.ExplicitBounds().FromRaw([]float64{1, 2})
+	dp.Attributes().PutStr("k1", "v1")
+}
+
+func buildHistogram(im pmetric.Metric, name string, timestamp pcommon.Timestamp, dpCount int) {
+	im.SetName(name)
+	im.SetDescription("Histogram")
+	im.SetUnit("1")
+	im.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	idps := im.Histogram().DataPoints()
+	idps.EnsureCapacity(dpCount)
+
+	for i := 0; i < dpCount; i++ {
+		dp := idps.AppendEmpty()
+		buildHistogramDP(dp, timestamp)
+	}
 }

@@ -1,21 +1,9 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsobserver
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -38,7 +26,7 @@ func TestTaskExporter(t *testing.T) {
 		})
 		assert.Error(t, err)
 		v := &errPrivateIPNotFound{}
-		assert.True(t, errors.As(err, &v))
+		assert.ErrorAs(t, err, &v)
 	})
 
 	awsVpcTask := &ecs.Task{
@@ -129,7 +117,7 @@ func TestTaskExporter(t *testing.T) {
 		merr := multierr.Errors(err)
 		require.Len(t, merr, 1)
 		v := &errMappedPortNotFound{}
-		assert.True(t, errors.As(merr[0], &v))
+		assert.ErrorAs(t, merr[0], &v)
 		assert.Len(t, targets, 2)
 	})
 

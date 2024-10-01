@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
@@ -18,32 +7,27 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"go.uber.org/atomic"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"golang.org/x/text/message"
 )
 
 var printer = message.NewPrinter(message.MatchLanguage("en"))
 
-// LoadGenerator is a simple load generator.
-type LoadGenerator struct {
-	sender DataSender
-
-	dataProvider DataProvider
-
-	// Number of data items (spans or metric data points) sent.
-	dataItemsSent atomic.Uint64
-
-	stopOnce   sync.Once
-	stopWait   sync.WaitGroup
-	stopSignal chan struct{}
-
-	options LoadOptions
-
-	// Record information about previous errors to avoid flood of error messages.
-	prevErr error
+// LoadGenerator is intended to be exercised by a TestCase to generate and send telemetry to an OtelcolRunner instance.
+// The simplest ready implementation is the ProviderSender that unites a DataProvider with a DataSender.
+type LoadGenerator interface {
+	Start(options LoadOptions)
+	Stop()
+	IsReady() bool
+	DataItemsSent() uint64
+	IncDataItemsSent()
+	PermanentErrors() uint64
+	GetStats() string
 }
 
 // LoadOptions defines the options to use for generating the load.
@@ -62,85 +46,160 @@ type LoadOptions struct {
 
 	// Parallel specifies how many goroutines to send from.
 	Parallel int
+
+	// MaxDelay defines the longest amount of time we can continue retrying for non-permanent errors.
+	MaxDelay time.Duration
 }
 
-// NewLoadGenerator creates a load generator that sends data using specified sender.
-func NewLoadGenerator(dataProvider DataProvider, sender DataSender) (*LoadGenerator, error) {
+var _ LoadGenerator = (*ProviderSender)(nil)
+
+// ProviderSender is a simple load generator.
+type ProviderSender struct {
+	Provider DataProvider
+	Sender   DataSender
+
+	// Number of data items (spans or metric data points) sent.
+	dataItemsSent atomic.Uint64
+	startedAt     time.Time
+	startMutex    sync.Mutex
+
+	// Number of permanent errors received
+	permanentErrors    atomic.Uint64
+	nonPermanentErrors atomic.Uint64
+
+	stopOnce   sync.Once
+	stopWait   sync.WaitGroup
+	stopSignal chan struct{}
+
+	options LoadOptions
+
+	sendType     string
+	generateFunc func() error
+}
+
+// NewLoadGenerator creates a ProviderSender to send DataProvider-generated telemetry via a DataSender.
+func NewLoadGenerator(dataProvider DataProvider, sender DataSender) (LoadGenerator, error) {
 	if sender == nil {
 		return nil, fmt.Errorf("cannot create load generator without DataSender")
 	}
 
-	lg := &LoadGenerator{
-		stopSignal:   make(chan struct{}),
-		sender:       sender,
-		dataProvider: dataProvider,
+	ps := &ProviderSender{
+		stopSignal: make(chan struct{}),
+		Sender:     sender,
+		Provider:   dataProvider,
 	}
 
-	return lg, nil
+	switch t := ps.Sender.(type) {
+	case TraceDataSender:
+		ps.sendType = "traces"
+		ps.generateFunc = ps.generateTrace
+	case MetricDataSender:
+		ps.sendType = "metrics"
+		ps.generateFunc = ps.generateMetrics
+	case LogDataSender:
+		ps.sendType = "logs"
+		ps.generateFunc = ps.generateLog
+	default:
+		return nil, fmt.Errorf("failed creating load generator, unhandled data type %T", t)
+	}
+
+	return ps, nil
 }
 
 // Start the load.
-func (lg *LoadGenerator) Start(options LoadOptions) {
-	lg.options = options
+func (ps *ProviderSender) Start(options LoadOptions) {
+	ps.options = options
 
-	if lg.options.ItemsPerBatch == 0 {
+	if ps.options.ItemsPerBatch == 0 {
 		// 10 items per batch by default.
-		lg.options.ItemsPerBatch = 10
+		ps.options.ItemsPerBatch = 10
 	}
 
-	log.Printf("Starting load generator at %d items/sec.", lg.options.DataItemsPerSecond)
+	if ps.options.MaxDelay == 0 {
+		// retry for an additional 10 seconds by default
+		ps.options.MaxDelay = time.Second * 10
+	}
+
+	log.Printf("Starting load generator at %d items/sec.", ps.options.DataItemsPerSecond)
 
 	// Indicate that generation is in progress.
-	lg.stopWait.Add(1)
+	ps.stopWait.Add(1)
 
 	// Begin generation
-	go lg.generate()
+	go ps.generate()
+	ps.startMutex.Lock()
+	defer ps.startMutex.Unlock()
+	ps.startedAt = time.Now()
 }
 
 // Stop the load.
-func (lg *LoadGenerator) Stop() {
-	lg.stopOnce.Do(func() {
+func (ps *ProviderSender) Stop() {
+	ps.stopOnce.Do(func() {
 		// Signal generate() to stop.
-		close(lg.stopSignal)
+		close(ps.stopSignal)
 
 		// Wait for it to stop.
-		lg.stopWait.Wait()
+		ps.stopWait.Wait()
 
 		// Print stats.
-		log.Printf("Stopped generator. %s", lg.GetStats())
+		log.Printf("Stopped generator. %s", ps.GetStats())
 	})
 }
 
+func (ps *ProviderSender) IsReady() bool {
+	endpoint := ps.Sender.GetEndpoint()
+	if endpoint == nil {
+		return true
+	}
+	conn, err := net.Dial(ps.Sender.GetEndpoint().Network(), ps.Sender.GetEndpoint().String())
+	if err == nil && conn != nil {
+		conn.Close()
+		return true
+	}
+	return false
+}
+
 // GetStats returns the stats as a printable string.
-func (lg *LoadGenerator) GetStats() string {
-	return fmt.Sprintf("Sent:%10d items", lg.DataItemsSent())
+func (ps *ProviderSender) GetStats() string {
+	ps.startMutex.Lock()
+	defer ps.startMutex.Unlock()
+	sent := ps.DataItemsSent()
+	return printer.Sprintf("Sent:%10d %s (%d/sec)", sent, ps.sendType, int(float64(sent)/time.Since(ps.startedAt).Seconds()))
 }
 
-func (lg *LoadGenerator) DataItemsSent() uint64 {
-	return lg.dataItemsSent.Load()
+func (ps *ProviderSender) DataItemsSent() uint64 {
+	return ps.dataItemsSent.Load()
 }
 
-// IncDataItemsSent is used when a test bypasses the LoadGenerator and sends data
-// directly via TestCases's Sender. This is necessary so that the total number of sent
-// items in the end is correct, because the reports are printed from LoadGenerator's
+func (ps *ProviderSender) PermanentErrors() uint64 {
+	return ps.permanentErrors.Load()
+}
+
+func (ps *ProviderSender) NonPermanentErrors() uint64 {
+	return ps.nonPermanentErrors.Load()
+}
+
+// IncDataItemsSent is used when a test bypasses the ProviderSender and sends data
+// directly via its Sender. This is necessary so that the total number of sent
+// items in the end is correct, because the reports are printed from ProviderSender's
 // fields. This is not the best way, a better approach would be to refactor the
 // reports to use their own counter and load generator and other sending sources
 // to contribute to this counter. This could be done as a future improvement.
-func (lg *LoadGenerator) IncDataItemsSent() {
-	lg.dataItemsSent.Inc()
+func (ps *ProviderSender) IncDataItemsSent() {
+	ps.dataItemsSent.Add(1)
 }
 
-func (lg *LoadGenerator) generate() {
+func (ps *ProviderSender) generate() {
 	// Indicate that generation is done at the end
-	defer lg.stopWait.Done()
+	defer ps.stopWait.Done()
 
-	if lg.options.DataItemsPerSecond == 0 {
+	if ps.options.DataItemsPerSecond == 0 {
 		return
 	}
 
-	lg.dataProvider.SetLoadGeneratorCounters(&lg.dataItemsSent)
+	ps.Provider.SetLoadGeneratorCounters(&ps.dataItemsSent)
 
-	err := lg.sender.Start()
+	err := ps.Sender.Start()
 	if err != nil {
 		log.Printf("Cannot start sender: %v", err)
 		return
@@ -148,8 +207,8 @@ func (lg *LoadGenerator) generate() {
 
 	numWorkers := 1
 
-	if lg.options.Parallel > 0 {
-		numWorkers = lg.options.Parallel
+	if ps.options.Parallel > 0 {
+		numWorkers = ps.options.Parallel
 	}
 
 	var workers sync.WaitGroup
@@ -159,22 +218,20 @@ func (lg *LoadGenerator) generate() {
 
 		go func() {
 			defer workers.Done()
-			t := time.NewTicker(time.Second / time.Duration(lg.options.DataItemsPerSecond/lg.options.ItemsPerBatch/numWorkers))
+			t := time.NewTicker(time.Second / time.Duration(ps.options.DataItemsPerSecond/ps.options.ItemsPerBatch/numWorkers))
 			defer t.Stop()
+
+			var prevErr error
 			for {
 				select {
 				case <-t.C:
-					switch lg.sender.(type) {
-					case TraceDataSender:
-						lg.generateTrace()
-					case MetricDataSender:
-						lg.generateMetrics()
-					case LogDataSender:
-						lg.generateLog()
-					default:
-						log.Printf("Invalid type of LoadGenerator sender")
+					err := ps.generateFunc()
+					// log the error if it is different from the previous result
+					if err != nil && (prevErr == nil || err.Error() != prevErr.Error()) {
+						log.Printf("%v", err)
 					}
-				case <-lg.stopSignal:
+					prevErr = err
+				case <-ps.stopSignal:
 					return
 				}
 			}
@@ -184,56 +241,100 @@ func (lg *LoadGenerator) generate() {
 	workers.Wait()
 
 	// Send all pending generated data.
-	lg.sender.Flush()
+	ps.Sender.Flush()
 }
 
-func (lg *LoadGenerator) generateTrace() {
-	traceSender := lg.sender.(TraceDataSender)
+func (ps *ProviderSender) generateTrace() error {
+	traceSender := ps.Sender.(TraceDataSender)
 
-	traceData, done := lg.dataProvider.GenerateTraces()
+	traceData, done := ps.Provider.GenerateTraces()
+	timer := time.NewTimer(ps.options.MaxDelay)
 	if done {
-		return
+		return nil
 	}
 
-	err := traceSender.ConsumeTraces(context.Background(), traceData)
-	if err == nil {
-		lg.prevErr = nil
-	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-		lg.prevErr = err
-		log.Printf("Cannot send traces: %v", err)
-	}
-}
+	for {
+		// Generated data MUST be consumed once since the data counters
+		// are updated by the provider and not consuming the generated
+		// data will lead to accounting errors.
+		err := traceSender.ConsumeTraces(context.Background(), traceData)
+		if err == nil {
+			return nil
+		}
 
-func (lg *LoadGenerator) generateMetrics() {
-	metricSender := lg.sender.(MetricDataSender)
-
-	metricData, done := lg.dataProvider.GenerateMetrics()
-	if done {
-		return
-	}
-
-	err := metricSender.ConsumeMetrics(context.Background(), metricData)
-	if err == nil {
-		lg.prevErr = nil
-	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-		lg.prevErr = err
-		log.Printf("Cannot send metrics: %v", err)
+		if consumererror.IsPermanent(err) {
+			ps.permanentErrors.Add(uint64(traceData.SpanCount()))
+			return fmt.Errorf("cannot send traces: %w", err)
+		}
+		ps.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
+		select {
+		case <-timer.C:
+			return nil
+		default:
+		}
 	}
 }
 
-func (lg *LoadGenerator) generateLog() {
-	logSender := lg.sender.(LogDataSender)
+func (ps *ProviderSender) generateMetrics() error {
+	metricSender := ps.Sender.(MetricDataSender)
 
-	logData, done := lg.dataProvider.GenerateLogs()
+	metricData, done := ps.Provider.GenerateMetrics()
+	timer := time.NewTimer(ps.options.MaxDelay)
 	if done {
-		return
+		return nil
 	}
 
-	err := logSender.ConsumeLogs(context.Background(), logData)
-	if err == nil {
-		lg.prevErr = nil
-	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-		lg.prevErr = err
-		log.Printf("Cannot send logs: %v", err)
+	for {
+		// Generated data MUST be consumed once since the data counters
+		// are updated by the provider and not consuming the generated
+		// data will lead to accounting errors.
+		err := metricSender.ConsumeMetrics(context.Background(), metricData)
+		if err == nil {
+			return nil
+		}
+
+		if consumererror.IsPermanent(err) {
+			ps.permanentErrors.Add(uint64(metricData.DataPointCount()))
+			return fmt.Errorf("cannot send metrics: %w", err)
+		}
+		ps.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
+
+		select {
+		case <-timer.C:
+			return nil
+		default:
+		}
+	}
+}
+
+func (ps *ProviderSender) generateLog() error {
+	logSender := ps.Sender.(LogDataSender)
+
+	logData, done := ps.Provider.GenerateLogs()
+	timer := time.NewTimer(ps.options.MaxDelay)
+	if done {
+		return nil
+	}
+
+	for {
+		// Generated data MUST be consumed once since the data counters
+		// are updated by the provider and not consuming the generated
+		// data will lead to accounting errors.
+		err := logSender.ConsumeLogs(context.Background(), logData)
+		if err == nil {
+			return nil
+		}
+
+		if consumererror.IsPermanent(err) {
+			ps.permanentErrors.Add(uint64(logData.LogRecordCount()))
+			return fmt.Errorf("cannot send logs: %w", err)
+		}
+		ps.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
+
+		select {
+		case <-timer.C:
+			return nil
+		default:
+		}
 	}
 }

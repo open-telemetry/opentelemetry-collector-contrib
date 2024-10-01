@@ -1,0 +1,8 @@
+type: cfgarden_observer
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  codeowners:
+    active: [crobert-1, cemdk, tomasmota, m1rp, jriguera]

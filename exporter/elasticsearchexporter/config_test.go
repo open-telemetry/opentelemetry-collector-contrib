@@ -1,20 +1,10 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,93 +12,79 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
-func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-use-deprecated-index_option.yaml"))
-	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "log").String())
-	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-
-	assert.Equal(t, cfg, &Config{
-		Endpoints:   []string{"http://localhost:9200"},
-		CloudID:     "TRNMxjXlNJEt",
-		Index:       "my_log_index",
-		LogsIndex:   "logs-generic-default",
-		TracesIndex: "traces-generic-default",
-		Pipeline:    "mypipeline",
-		HTTPClientSettings: HTTPClientSettings{
-			Authentication: AuthenticationSettings{
-				User:     "elastic",
-				Password: "search",
-				APIKey:   "AvFsEiPs==",
-			},
-			Timeout: 2 * time.Minute,
-			Headers: map[string]string{
-				"myheader": "test",
-			},
-		},
-		Discovery: DiscoverySettings{
-			OnStart: true,
-		},
-		Flush: FlushSettings{
-			Bytes: 10485760,
-		},
-		Retry: RetrySettings{
-			Enabled:         true,
-			MaxRequests:     5,
-			InitialInterval: 100 * time.Millisecond,
-			MaxInterval:     1 * time.Minute,
-		},
-		Mapping: MappingsSettings{
-			Mode:  "ecs",
-			Dedup: true,
-			Dedot: true,
-		},
-	})
-}
-
-func TestLoadConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	t.Parallel()
-
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
 
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
 
+	defaultLogstashFormatCfg := createDefaultConfig()
+	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
+	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
+
+	defaultRawCfg := createDefaultConfig()
+	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
+	defaultRawCfg.(*Config).Mapping.Mode = "raw"
+
+	defaultMaxIdleConns := 100
+	defaultIdleConnTimeout := 90 * time.Second
+
 	tests := []struct {
-		id       component.ID
-		expected component.Config
+		configFile string
+		id         component.ID
+		expected   component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
-			expected: defaultCfg,
+			id:         component.NewIDWithName(metadata.Type, ""),
+			configFile: "config.yaml",
+			expected:   defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "trace"),
+			id:         component.NewIDWithName(metadata.Type, "trace"),
+			configFile: "config.yaml",
 			expected: &Config{
-				Endpoints:   []string{"https://elastic.example.com:9200"},
-				CloudID:     "TRNMxjXlNJEt",
-				Index:       "",
-				LogsIndex:   "logs-generic-default",
+				QueueSettings: exporterhelper.QueueConfig{
+					Enabled:      false,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+				},
+				Endpoints: []string{"https://elastic.example.com:9200"},
+				Index:     "",
+				LogsIndex: "logs-generic-default",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				MetricsIndex: "metrics-generic-default",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+				},
 				TracesIndex: "trace_index",
-				Pipeline:    "mypipeline",
-				HTTPClientSettings: HTTPClientSettings{
-					Authentication: AuthenticationSettings{
-						User:     "elastic",
-						Password: "search",
-						APIKey:   "AvFsEiPs==",
-					},
-					Timeout: 2 * time.Minute,
-					Headers: map[string]string{
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				Pipeline: "mypipeline",
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
+					}
+				}),
+				Authentication: AuthenticationSettings{
+					User:     "elastic",
+					Password: "search",
+					APIKey:   "AvFsEiPs==",
 				},
 				Discovery: DiscoverySettings{
 					OnStart: true,
@@ -121,33 +97,64 @@ func TestLoadConfig(t *testing.T) {
 					MaxRequests:     5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
-					Dedup: true,
+					Mode:  "none",
 					Dedot: true,
+				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
+				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
 				},
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "log"),
+			id:         component.NewIDWithName(metadata.Type, "log"),
+			configFile: "config.yaml",
 			expected: &Config{
-				Endpoints:   []string{"http://localhost:9200"},
-				CloudID:     "TRNMxjXlNJEt",
-				Index:       "",
-				LogsIndex:   "my_log_index",
+				QueueSettings: exporterhelper.QueueConfig{
+					Enabled:      true,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+				},
+				Endpoints: []string{"http://localhost:9200"},
+				Index:     "",
+				LogsIndex: "my_log_index",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				MetricsIndex: "metrics-generic-default",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+				},
 				TracesIndex: "traces-generic-default",
-				Pipeline:    "mypipeline",
-				HTTPClientSettings: HTTPClientSettings{
-					Authentication: AuthenticationSettings{
-						User:     "elastic",
-						Password: "search",
-						APIKey:   "AvFsEiPs==",
-					},
-					Timeout: 2 * time.Minute,
-					Headers: map[string]string{
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				Pipeline: "mypipeline",
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
+					}
+				}),
+				Authentication: AuthenticationSettings{
+					User:     "elastic",
+					Password: "search",
+					APIKey:   "AvFsEiPs==",
 				},
 				Discovery: DiscoverySettings{
 					OnStart: true,
@@ -160,13 +167,139 @@ func TestLoadConfig(t *testing.T) {
 					MaxRequests:     5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
-					Dedup: true,
+					Mode:  "none",
 					Dedot: true,
 				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
+				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
+				},
 			},
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "metric"),
+			configFile: "config.yaml",
+			expected: &Config{
+				QueueSettings: exporterhelper.QueueConfig{
+					Enabled:      true,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+				},
+				Endpoints: []string{"http://localhost:9200"},
+				Index:     "",
+				LogsIndex: "logs-generic-default",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				MetricsIndex: "my_metric_index",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+				},
+				TracesIndex: "traces-generic-default",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				Pipeline: "mypipeline",
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
+						"myheader": "test",
+					}
+				}),
+				Authentication: AuthenticationSettings{
+					User:     "elastic",
+					Password: "search",
+					APIKey:   "AvFsEiPs==",
+				},
+				Discovery: DiscoverySettings{
+					OnStart: true,
+				},
+				Flush: FlushSettings{
+					Bytes: 10485760,
+				},
+				Retry: RetrySettings{
+					Enabled:         true,
+					MaxRequests:     5,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+				},
+				Mapping: MappingsSettings{
+					Mode:  "none",
+					Dedot: true,
+				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
+				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
+				},
+			},
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "logstash_format"),
+			configFile: "config.yaml",
+			expected:   defaultLogstashFormatCfg,
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "raw"),
+			configFile: "config.yaml",
+			expected:   defaultRawCfg,
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "cloudid"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "deprecated_index"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"https://elastic.example.com:9200"}
+				cfg.Index = "my_log_index"
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "confighttp_endpoint"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "batcher_disabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				enabled := false
+				cfg.Batcher.Enabled = &enabled
+			}),
 		},
 	}
 
@@ -175,9 +308,12 @@ func TestLoadConfig(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configFile))
+			require.NoError(t, err)
+
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -185,10 +321,112 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+// TestConfig_Validate tests the error cases of Config.Validate.
+//
+// Successful validation should be covered by TestConfig above.
+func TestConfig_Validate(t *testing.T) {
+	tests := map[string]struct {
+		config *Config
+		err    string
+	}{
+		"no endpoints": {
+			config: withDefaultConfig(),
+			err:    "exactly one of [endpoint, endpoints, cloudid] must be specified",
+		},
+		"empty endpoint": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{""}
+			}),
+			err: `invalid endpoint "": endpoint must not be empty`,
+		},
+		"invalid endpoint": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"*:!"}
+			}),
+			err: `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`,
+		},
+		"invalid cloudid": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.CloudID = "invalid"
+			}),
+			err: `invalid CloudID "invalid"`,
+		},
+		"invalid decoded cloudid": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.CloudID = "foo:YWJj"
+			}),
+			err: `invalid decoded CloudID "abc"`,
+		},
+		"endpoints and cloudid both set": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
+			}),
+			err: "exactly one of [endpoint, endpoints, cloudid] must be specified",
+		},
+		"endpoint and endpoints both set": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "http://test:9200"
+				cfg.Endpoints = []string{"http://test:9200"}
+			}),
+			err: "exactly one of [endpoint, endpoints, cloudid] must be specified",
+		},
+		"invalid mapping mode": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.Mapping.Mode = "invalid"
+			}),
+			err: `unknown mapping mode "invalid"`,
+		},
+		"invalid scheme": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"without_scheme"}
+			}),
+			err: `invalid endpoint "without_scheme": invalid scheme "", expected "http" or "https"`,
+		},
+		"compression unsupported": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.Compression = configcompression.TypeGzip
+			}),
+			err: `compression is not currently configurable`,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.EqualError(t, component.ValidateConfig(tt.config), tt.err)
+		})
+	}
+}
+
+func TestConfig_Validate_Environment(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		t.Setenv("ELASTICSEARCH_URL", "http://test:9200")
+		config := withDefaultConfig()
+		err := component.ValidateConfig(config)
+		require.NoError(t, err)
+	})
+	t.Run("invalid", func(t *testing.T) {
+		t.Setenv("ELASTICSEARCH_URL", "http://valid:9200, *:!")
+		config := withDefaultConfig()
+		err := component.ValidateConfig(config)
+		assert.EqualError(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
+	})
+}
+
 func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
 	for _, fn := range fns {
 		fn(cfg)
+	}
+	return cfg
+}
+
+func withDefaultHTTPClientConfig(fns ...func(config *confighttp.ClientConfig)) confighttp.ClientConfig {
+	cfg := confighttp.NewDefaultClientConfig()
+	for _, fn := range fns {
+		fn(&cfg)
 	}
 	return cfg
 }

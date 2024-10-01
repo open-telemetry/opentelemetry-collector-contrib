@@ -1,0 +1,11 @@
+receivers:
+  doesntexist:
+
+exporters:
+  doesntexist:
+
+service:
+  pipelines:
+    traces:
+      receivers: [doesntexist]
+      exporters: [doesntexist]

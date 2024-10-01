@@ -1,0 +1,25 @@
+type: fileconsumer
+
+status:
+  class: pkg
+  stability:
+    beta: [logs]
+  codeowners:
+    active: [djaglowski]
+
+telemetry:
+  metrics:
+    fileconsumer_open_files:
+      description: Number of open files
+      unit: "1"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: false
+    fileconsumer_reading_files:
+      description: Number of open files that are being read
+      unit: "1"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: false

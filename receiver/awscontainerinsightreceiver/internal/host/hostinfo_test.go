@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package host
 
@@ -62,7 +51,7 @@ func (m *mockEC2Metadata) getRegion() string {
 type mockEBSVolume struct {
 }
 
-func (m *mockEBSVolume) getEBSVolumeID(devName string) string {
+func (m *mockEBSVolume) getEBSVolumeID(_ string) string {
 	return "ebs-volume-id"
 }
 
@@ -90,7 +79,7 @@ func TestInfo(t *testing.T) {
 	}
 	m, err := NewInfo(ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt)
 	assert.Nil(t, m)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	// test the case when aws session fails to initialize
 	nodeCapacityCreatorOpt = func(m *Info) {
@@ -105,7 +94,7 @@ func TestInfo(t *testing.T) {
 	}
 	m, err = NewInfo(ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
 	assert.Nil(t, m)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
@@ -133,7 +122,7 @@ func TestInfo(t *testing.T) {
 	}
 	m, err = NewInfo(ci.EKS, time.Minute, zap.NewNop(), awsSessionCreatorOpt,
 		nodeCapacityCreatorOpt, ec2MetadataCreatorOpt, ebsVolumeCreatorOpt, ec2TagsCreatorOpt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, m)
 
 	// befoe ebsVolume and ec2Tags are initialized
@@ -164,7 +153,7 @@ func TestInfoForECS(t *testing.T) {
 	}
 	m, err := NewInfo(ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt)
 	assert.Nil(t, m)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	// test the case when aws session fails to initialize
 	nodeCapacityCreatorOpt = func(m *Info) {
@@ -179,7 +168,7 @@ func TestInfoForECS(t *testing.T) {
 	}
 	m, err = NewInfo(ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
 	assert.Nil(t, m)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
@@ -207,7 +196,7 @@ func TestInfoForECS(t *testing.T) {
 	}
 	m, err = NewInfo(ci.ECS, time.Minute, zap.NewNop(), awsSessionCreatorOpt,
 		nodeCapacityCreatorOpt, ec2MetadataCreatorOpt, ebsVolumeCreatorOpt, ec2TagsCreatorOpt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, m)
 
 	// befoe ebsVolume and ec2Tags are initialized

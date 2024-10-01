@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
@@ -41,13 +30,14 @@ type CPUMemInfoProvider interface {
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
 	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric
+	Shutdown() error
 }
 
 type CAdvisorMetric struct {
 	// source of the metric for debugging merge conflict
 	cgroupPath string
 	// key/value pairs that are typed and contain the metric (numerical) data
-	fields map[string]interface{}
+	fields map[string]any
 	// key/value string pairs that are used to identify the metrics
 	tags map[string]string
 
@@ -56,7 +46,7 @@ type CAdvisorMetric struct {
 
 func newCadvisorMetric(mType string, logger *zap.Logger) *CAdvisorMetric {
 	metric := &CAdvisorMetric{
-		fields: make(map[string]interface{}),
+		fields: make(map[string]any),
 		tags:   make(map[string]string),
 		logger: logger,
 	}
@@ -68,7 +58,7 @@ func (c *CAdvisorMetric) GetTags() map[string]string {
 	return c.tags
 }
 
-func (c *CAdvisorMetric) GetFields() map[string]interface{} {
+func (c *CAdvisorMetric) GetFields() map[string]any {
 	return c.fields
 }
 
@@ -86,11 +76,11 @@ func (c *CAdvisorMetric) HasField(key string) bool {
 	return c.fields[key] != nil
 }
 
-func (c *CAdvisorMetric) AddField(key string, val interface{}) {
+func (c *CAdvisorMetric) AddField(key string, val any) {
 	c.fields[key] = val
 }
 
-func (c *CAdvisorMetric) GetField(key string) interface{} {
+func (c *CAdvisorMetric) GetField(key string) any {
 	return c.fields[key]
 }
 
@@ -125,7 +115,7 @@ func (c *CAdvisorMetric) Merge(src *CAdvisorMetric) {
 }
 
 func newFloat64RateCalculator() awsmetrics.MetricCalculator {
-	return awsmetrics.NewMetricCalculator(func(prev *awsmetrics.MetricValue, val interface{}, timestamp time.Time) (interface{}, bool) {
+	return awsmetrics.NewMetricCalculator(func(prev *awsmetrics.MetricValue, val any, timestamp time.Time) (any, bool) {
 		if prev != nil {
 			deltaNs := timestamp.Sub(prev.Timestamp)
 			deltaValue := val.(float64) - prev.RawValue.(float64)
@@ -137,8 +127,8 @@ func newFloat64RateCalculator() awsmetrics.MetricCalculator {
 	})
 }
 
-func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]interface{}, metricName string,
-	cinfoName string, curVal interface{}, curTime time.Time, multiplier float64) {
+func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]any, metricName string,
+	cinfoName string, curVal any, curTime time.Time, multiplier float64) {
 	mKey := awsmetrics.NewKey(cinfoName+metricName, nil)
 	if val, ok := rateCalculator.Calculate(mKey, curVal, curTime); ok {
 		fields[metricName] = val.(float64) * multiplier
@@ -147,7 +137,7 @@ func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields 
 
 // MergeMetrics merges an array of cadvisor metrics based on common metric keys
 func MergeMetrics(metrics []*CAdvisorMetric) []*CAdvisorMetric {
-	var result []*CAdvisorMetric
+	result := make([]*CAdvisorMetric, 0, len(metrics))
 	metricMap := make(map[string]*CAdvisorMetric)
 	for _, metric := range metrics {
 		if metricKey := getMetricKey(metric); metricKey != "" {
@@ -170,7 +160,7 @@ func MergeMetrics(metrics []*CAdvisorMetric) []*CAdvisorMetric {
 // return MetricKey for merge-able metrics
 func getMetricKey(metric *CAdvisorMetric) string {
 	metricType := metric.GetMetricType()
-	metricKey := ""
+	var metricKey string
 	switch metricType {
 	case ci.TypeInstance:
 		// merge cpu, memory, net metric for type Instance

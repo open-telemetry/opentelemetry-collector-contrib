@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
@@ -23,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
-func (c *couchdbScraper) recordCouchdbAverageRequestTimeDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errs *scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbAverageRequestTimeDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	averageRequestTimeMetricKey := []string{"request_time", "value", "arithmetic_mean"}
 	averageRequestTimeValue, err := getValueFromBody(averageRequestTimeMetricKey, stats)
 	if err != nil {
@@ -39,7 +28,7 @@ func (c *couchdbScraper) recordCouchdbAverageRequestTimeDataPoint(now pcommon.Ti
 	c.mb.RecordCouchdbAverageRequestTimeDataPoint(now, parsedValue)
 }
 
-func (c *couchdbScraper) recordCouchdbHttpdBulkRequestsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errs *scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbHttpdBulkRequestsDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	httpdBulkRequestsMetricKey := []string{"httpd", "bulk_requests", "value"}
 	httpdBulkRequestsMetricValue, err := getValueFromBody(httpdBulkRequestsMetricKey, stats)
 	if err != nil {
@@ -55,7 +44,7 @@ func (c *couchdbScraper) recordCouchdbHttpdBulkRequestsDataPoint(now pcommon.Tim
 	c.mb.RecordCouchdbHttpdBulkRequestsDataPoint(now, parsedValue)
 }
 
-func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errs *scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	for methodVal, method := range metadata.MapAttributeHTTPMethod {
 		httpdRequestMethodKey := []string{"httpd_request_methods", methodVal, "value"}
 		httpdRequestMethodValue, err := getValueFromBody(httpdRequestMethodKey, stats)
@@ -73,7 +62,7 @@ func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pcommon.Timesta
 	}
 }
 
-func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errs *scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	codes := []string{"200", "201", "202", "204", "206", "301", "302", "304", "400", "401", "403", "404", "405", "406", "409", "412", "413", "414", "415", "416", "417", "500", "501", "503"}
 	for _, code := range codes {
 		httpdResponsetCodeKey := []string{"httpd_status_codes", code, "value"}
@@ -92,7 +81,7 @@ func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pcommon.Timest
 	}
 }
 
-func (c *couchdbScraper) recordCouchdbHttpdViewsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errs *scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbHttpdViewsDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	for viewVal, view := range metadata.MapAttributeView {
 		viewKey := []string{"httpd", viewVal, "value"}
 		viewValue, err := getValueFromBody(viewKey, stats)
@@ -110,7 +99,7 @@ func (c *couchdbScraper) recordCouchdbHttpdViewsDataPoint(now pcommon.Timestamp,
 	}
 }
 
-func (c *couchdbScraper) recordCouchdbDatabaseOpenDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errs *scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbDatabaseOpenDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	openDatabaseKey := []string{"open_databases", "value"}
 	openDatabaseMetricValue, err := getValueFromBody(openDatabaseKey, stats)
 	if err != nil {
@@ -126,7 +115,7 @@ func (c *couchdbScraper) recordCouchdbDatabaseOpenDataPoint(now pcommon.Timestam
 	c.mb.RecordCouchdbDatabaseOpenDataPoint(now, parsedValue)
 }
 
-func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errs *scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	fileDescriptorKey := []string{"open_os_files", "value"}
 	fileDescriptorMetricValue, err := getValueFromBody(fileDescriptorKey, stats)
 	if err != nil {
@@ -142,7 +131,7 @@ func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pcommon.Ti
 	c.mb.RecordCouchdbFileDescriptorOpenDataPoint(now, parsedValue)
 }
 
-func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pcommon.Timestamp, stats map[string]interface{}, errs *scrapererror.ScrapeErrors) {
+func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	operations := []metadata.AttributeOperation{metadata.AttributeOperationReads, metadata.AttributeOperationWrites}
 	keyPaths := [][]string{{"database_reads", "value"}, {"database_writes", "value"}}
 	for i := 0; i < len(operations); i++ {
@@ -162,10 +151,10 @@ func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pcommon.Ti
 	}
 }
 
-func getValueFromBody(keys []string, body map[string]interface{}) (interface{}, error) {
-	var currentValue interface{} = body
+func getValueFromBody(keys []string, body map[string]any) (any, error) {
+	var currentValue any = body
 	for _, key := range keys {
-		currentBody, ok := currentValue.(map[string]interface{})
+		currentBody, ok := currentValue.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("could not find key in body")
 		}
@@ -178,7 +167,7 @@ func getValueFromBody(keys []string, body map[string]interface{}) (interface{}, 
 	return currentValue, nil
 }
 
-func (c *couchdbScraper) parseInt(value interface{}) (int64, error) {
+func (c *couchdbScraper) parseInt(value any) (int64, error) {
 	switch i := value.(type) {
 	case int64:
 		return i, nil
@@ -188,7 +177,7 @@ func (c *couchdbScraper) parseInt(value interface{}) (int64, error) {
 	return 0, fmt.Errorf("could not parse value as int")
 }
 
-func (c *couchdbScraper) parseFloat(value interface{}) (float64, error) {
+func (c *couchdbScraper) parseFloat(value any) (float64, error) {
 	if f, ok := value.(float64); ok {
 		return f, nil
 	}

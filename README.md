@@ -30,15 +30,10 @@
   <strong>
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/vision.md">Vision</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/design.md">Design</a>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/monitoring.md">Monitoring</a>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md">Performance</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/roadmap.md">Roadmap</a>
   </strong>
 </p>
 
@@ -75,49 +70,61 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
-- [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
+- [Christos Markou](https://github.com/ChrsMark), Elastic
+- [Jared Tan](https://github.com/JaredTan95), DaoCloud
+- [Murphy Chen](https://github.com/Frapschen), DaoCloud
+- [Paulo Janotti](https://github.com/pjanotti), Splunk
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
 
-- [Alolita Sharma](https://github.com/alolita), AWS
+- [Alolita Sharma](https://github.com/alolita), Apple
+- [Gabriel Aszalos](https://github.com/gbbr), DataDog
+- [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Punya Biswal](https://github.com/punya), Google
 - [Steve Flanders](https://github.com/flands), Splunk
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
-- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Antoine Toulme](https://github.com/atoulme), Splunk
+- [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
-- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
-- [Ruslan Kovalov](https://github.com/kovrus), Grafana Labs
-- [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
+- [Matt Wear](https://github.com/mwear), Lightstep
+- [Yang Song](https://github.com/songy23), DataDog
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 Emeritus Approvers:
+
+- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
+- [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
 - [Przemek Maciolek](https://github.com/pmm-sumo)
+- [Ruslan Kovalov](https://github.com/kovrus)
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
-- [Alex Boten](https://github.com/codeboten), Lightstep
-- [Bogdan Drutu](https://github.com/bogdandrutu), Splunk
+- [Alex Boten](https://github.com/codeboten), Honeycomb
+- [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
+- [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
+- [Sean Marciniak](https://github.com/MovieStoreGuy), Splunk
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Maintainers
+
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
-Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
+Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md).
 
 ## PRs and Reviews
 
-When creating a PR please following the process [described
+When creating a PR please follow the process [described
 here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#how-to-structure-prs-to-get-expedient-reviews).
 
-News PRs will be automatically associated with the reviewers based on
+New PRs will be automatically associated with the reviewers based on
 [CODEOWNERS](.github/CODEOWNERS). PRs will be also automatically assigned to one of the
 maintainers or approvers for facilitation.
 
@@ -132,8 +139,3 @@ The facilitator is not required to perform a thorough review, but they are encou
 enforce Collector best practices and consistency across the codebase and component
 behavior. The facilitators will typically rely on codeowner's detailed review of the code
 when making the final approval decision. 
-
-We recommend maintainers and approvers to keep an eye on the
-[project board](https://github.com/orgs/open-telemetry/projects/3). All newly created
-PRs are automatically added to this board. (If you don't see the PR on the board you
-may need to add it manually by setting the Project field in the PR view).

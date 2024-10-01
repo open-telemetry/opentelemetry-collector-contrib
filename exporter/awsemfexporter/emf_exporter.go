@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
@@ -21,35 +10,33 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
 	// OutputDestination Options
 	outputDestinationCloudWatch = "cloudwatch"
 	outputDestinationStdout     = "stdout"
+
+	// AppSignals EMF config
+	appSignalsMetricNamespace    = "ApplicationSignals"
+	appSignalsLogGroupNamePrefix = "/aws/application-signals/"
 )
 
 type emfExporter struct {
-	// Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
-	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
-	svcStructuredLog       *cwlogs.Client
-	config                 component.Config
-	logger                 *zap.Logger
+	pusherMap        map[cwlogs.StreamKey]cwlogs.Pusher
+	svcStructuredLog *cwlogs.Client
+	config           *Config
 
 	metricTranslator metricTranslator
 
@@ -58,64 +45,56 @@ type emfExporter struct {
 	collectorID   string
 }
 
-// newEmfPusher func creates an EMF Exporter instance with data push callback func
-func newEmfPusher(
-	config component.Config,
-	params exporter.CreateSettings,
-) (*emfExporter, error) {
+// newEmfExporter creates a new exporter using exporterhelper
+func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
 
-	logger := params.Logger
-	expConfig := config.(*Config)
-	expConfig.logger = logger
+	config.logger = set.Logger
 
 	// create AWS session
-	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, &awsutil.Conn{}, &expConfig.AWSSessionSettings)
+	awsConfig, session, err := awsutil.GetAWSConfigSession(set.Logger, &awsutil.Conn{}, &config.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
 
+	var userAgentExtras []string
+	if config.isAppSignalsEnabled() {
+		userAgentExtras = append(userAgentExtras, "AppSignals")
+	}
+
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, session)
-	collectorIdentifier, _ := uuid.NewRandom()
+	svcStructuredLog := cwlogs.NewClient(set.Logger,
+		awsConfig,
+		set.BuildInfo,
+		config.LogGroupName,
+		config.LogRetention,
+		config.Tags,
+		session,
+		metadata.Type.String(),
+		cwlogs.WithUserAgentExtras(userAgentExtras...),
+	)
+	collectorIdentifier, err := uuid.NewRandom()
+
+	if err != nil {
+		return nil, err
+	}
 
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,
 		config:           config,
-		metricTranslator: newMetricTranslator(*expConfig),
+		metricTranslator: newMetricTranslator(*config),
 		retryCnt:         *awsConfig.MaxRetries,
-		logger:           logger,
 		collectorID:      collectorIdentifier.String(),
+		pusherMap:        map[cwlogs.StreamKey]cwlogs.Pusher{},
 	}
-	emfExporter.groupStreamToPusherMap = map[string]map[string]cwlogs.Pusher{}
+
+	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
+		"in a future release. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997 for more" +
+		"information")
 
 	return emfExporter, nil
-}
-
-// newEmfExporter creates a new exporter using exporterhelper
-func newEmfExporter(
-	config component.Config,
-	set exporter.CreateSettings,
-) (exporter.Metrics, error) {
-	emfPusher, err := newEmfPusher(config, set)
-	if err != nil {
-		return nil, err
-	}
-
-	exporter, err := exporterhelper.NewMetricsExporter(
-		context.TODO(),
-		set,
-		config,
-		emfPusher.pushMetricsData,
-		exporterhelper.WithShutdown(emfPusher.shutdown),
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return resourcetotelemetry.WrapMetricsExporter(config.(*Config).ResourceToTelemetrySettings, exporter), nil
 }
 
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
@@ -131,34 +110,34 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 			})
 		}
 	}
-	emf.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
+	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
 
-	groupedMetrics := make(map[interface{}]*groupedMetric)
-	expConfig := emf.config.(*Config)
+	groupedMetrics := make(map[any]*groupedMetric)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
-	outputDestination := expConfig.OutputDestination
+	outputDestination := emf.config.OutputDestination
 
 	for i := 0; i < rms.Len(); i++ {
-		err := emf.metricTranslator.translateOTelToGroupedMetric(rms.At(i), groupedMetrics, expConfig)
+		err := emf.metricTranslator.translateOTelToGroupedMetric(rms.At(i), groupedMetrics, emf.config)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, groupedMetric := range groupedMetrics {
-		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, expConfig)
-		putLogEvent := translateCWMetricToEMF(cWMetric, expConfig)
+		putLogEvent, err := translateGroupedMetricToEmf(groupedMetric, emf.config, defaultLogStream)
+		if err != nil {
+			return err
+		}
 		// Currently we only support two options for "OutputDestination".
 		if strings.EqualFold(outputDestination, outputDestinationStdout) {
-			fmt.Println(*putLogEvent.InputLogEvent.Message)
-		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-			logGroup := groupedMetric.metadata.logGroup
-			logStream := groupedMetric.metadata.logStream
-			if logStream == "" {
-				logStream = defaultLogStream
+			if putLogEvent != nil &&
+				putLogEvent.InputLogEvent != nil &&
+				putLogEvent.InputLogEvent.Message != nil {
+				fmt.Println(*putLogEvent.InputLogEvent.Message)
 			}
+		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
 
-			emfPusher := emf.getPusher(logGroup, logStream)
+			emfPusher := emf.getPusher(putLogEvent.StreamKey)
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
 				if returnError != nil {
@@ -175,35 +154,25 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 				// TODO now we only have one logPusher, so it's ok to return after first error occurred
 				err := wrapErrorIfBadRequest(returnError)
 				if err != nil {
-					emf.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))
+					emf.config.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))
 				}
 				return err
 			}
 		}
 	}
 
-	emf.logger.Info("Finish processing resource metrics", zap.Any("labels", labels))
+	emf.config.logger.Debug("Finish processing resource metrics", zap.Any("labels", labels))
 
 	return nil
 }
 
-func (emf *emfExporter) getPusher(logGroup, logStream string) cwlogs.Pusher {
-	emf.pusherMapLock.Lock()
-	defer emf.pusherMapLock.Unlock()
+func (emf *emfExporter) getPusher(key cwlogs.StreamKey) cwlogs.Pusher {
 
 	var ok bool
-	var streamToPusherMap map[string]cwlogs.Pusher
-	if streamToPusherMap, ok = emf.groupStreamToPusherMap[logGroup]; !ok {
-		streamToPusherMap = map[string]cwlogs.Pusher{}
-		emf.groupStreamToPusherMap[logGroup] = streamToPusherMap
+	if _, ok = emf.pusherMap[key]; !ok {
+		emf.pusherMap[key] = cwlogs.NewPusher(key, emf.retryCnt, *emf.svcStructuredLog, emf.config.logger)
 	}
-
-	var emfPusher cwlogs.Pusher
-	if emfPusher, ok = streamToPusherMap[logStream]; !ok {
-		emfPusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, *emf.svcStructuredLog, emf.logger)
-		streamToPusherMap[logStream] = emfPusher
-	}
-	return emfPusher
+	return emf.pusherMap[key]
 }
 
 func (emf *emfExporter) listPushers() []cwlogs.Pusher {
@@ -211,27 +180,25 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	defer emf.pusherMapLock.Unlock()
 
 	var pushers []cwlogs.Pusher
-	for _, pusherMap := range emf.groupStreamToPusherMap {
-		for _, pusher := range pusherMap {
-			pushers = append(pushers, pusher)
-		}
+	for _, pusher := range emf.pusherMap {
+		pushers = append(pushers, pusher)
 	}
 	return pushers
 }
 
 // shutdown stops the exporter and is invoked during shutdown.
-func (emf *emfExporter) shutdown(ctx context.Context) error {
+func (emf *emfExporter) shutdown(_ context.Context) error {
 	for _, emfPusher := range emf.listPushers() {
 		returnError := emfPusher.ForceFlush()
 		if returnError != nil {
 			err := wrapErrorIfBadRequest(returnError)
 			if err != nil {
-				emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next logPusher.", zap.Error(err))
+				emf.config.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next logPusher.", zap.Error(err))
 			}
 		}
 	}
 
-	return nil
+	return emf.metricTranslator.Shutdown()
 }
 
 func wrapErrorIfBadRequest(err error) error {

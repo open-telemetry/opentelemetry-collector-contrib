@@ -11,18 +11,24 @@ useAssigneeGroups: true
 assigneeGroups:
   approvers_maintainers:
     # Approvers
-    - Aneurysm9
+    - atoulme
+    - crobert-1
     - dashpole
-    - evan-bradley
-    - MovieStoreGuy
-    - TylerHelmuth
+    - mwear
+    - songy23
+    - fatsheep9146
     # Maintainers
+    - andrzej-stencel
     - bogdandrutu
     - codeboten
     - djaglowski
     - dmitryax
+    # Unavailable 2024-08-12 -- 2024-08-23, 2024-09-06 -- 2024-09-30
+    # - evan-bradley
     - jpkrohling
+    - MovieStoreGuy
     - mx-psi
+    - TylerHelmuth
 
 # A number of assignees added to the pull request
 # Set 0 to add all the assignees (default: 0)

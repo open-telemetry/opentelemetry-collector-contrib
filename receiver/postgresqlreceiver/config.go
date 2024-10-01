@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
@@ -18,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -37,13 +28,22 @@ const (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Username                                string                         `mapstructure:"username"`
-	Password                                string                         `mapstructure:"password"`
-	Databases                               []string                       `mapstructure:"databases"`
-	confignet.NetAddr                       `mapstructure:",squash"`       // provides Endpoint and Transport
-	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"` // provides SSL details
-	Metrics                                 metadata.MetricsSettings       `mapstructure:"metrics"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Username                       string                         `mapstructure:"username"`
+	Password                       configopaque.String            `mapstructure:"password"`
+	Databases                      []string                       `mapstructure:"databases"`
+	ExcludeDatabases               []string                       `mapstructure:"exclude_databases"`
+	confignet.AddrConfig           `mapstructure:",squash"`       // provides Endpoint and Transport
+	configtls.ClientConfig         `mapstructure:"tls,omitempty"` // provides SSL details
+	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+}
+
+type ConnectionPool struct {
+	MaxIdleTime *time.Duration `mapstructure:"max_idle_time,omitempty"`
+	MaxLifetime *time.Duration `mapstructure:"max_lifetime,omitempty"`
+	MaxIdle     *int           `mapstructure:"max_idle,omitempty"`
+	MaxOpen     *int           `mapstructure:"max_open,omitempty"`
 }
 
 func (cfg *Config) Validate() error {
@@ -67,7 +67,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	switch cfg.Transport {
-	case "tcp", "unix":
+	case confignet.TransportTypeTCP, confignet.TransportTypeUnix:
 		_, _, endpointErr := net.SplitHostPort(cfg.Endpoint)
 		if endpointErr != nil {
 			err = multierr.Append(err, errors.New(ErrHostPort))

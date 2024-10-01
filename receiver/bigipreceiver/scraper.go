@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package bigipreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
 
@@ -48,18 +37,18 @@ type bigipScraper struct {
 }
 
 // newScraper creates an initialized bigipScraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *bigipScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *bigipScraper {
 	return &bigipScraper{
 		logger:   logger,
 		cfg:      cfg,
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
 
 // start initializes a new big-ip client for the scraper
-func (s *bigipScraper) start(_ context.Context, host component.Host) (err error) {
-	s.client, err = newClient(s.cfg, host, s.settings, s.logger)
+func (s *bigipScraper) start(ctx context.Context, host component.Host) (err error) {
+	s.client, err = newClient(ctx, s.cfg, host, s.settings, s.logger)
 	return
 }
 
@@ -107,21 +96,23 @@ func (s *bigipScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	// scrape metrics for pool members
-	poolMembers, err := s.client.GetPoolMembers(ctx, pools)
-	if errors.Is(err, errCollectedNoPoolMembers) {
-		scrapeErrors.AddPartial(1, err)
-		s.logger.Warn("Failed to scrape pool member metrics", zap.Error(err))
-	} else {
-		if err != nil {
-			scrapeErrors.AddPartial(1, err)
-			s.logger.Warn("Failed to scrape some pool member metrics", zap.Error(err))
-		}
+	if pools != nil {
+		// scrape metrics for pool members
+		poolMembers, err2 := s.client.GetPoolMembers(ctx, pools)
+		if errors.Is(err2, errCollectedNoPoolMembers) {
+			scrapeErrors.AddPartial(1, err2)
+			s.logger.Warn("Failed to scrape pool member metrics", zap.Error(err2))
+		} else {
+			if err2 != nil {
+				scrapeErrors.AddPartial(1, err2)
+				s.logger.Warn("Failed to scrape some pool member metrics", zap.Error(err2))
+			}
 
-		collectedMetrics = true
-		for key := range poolMembers.Entries {
-			poolMemberStats := poolMembers.Entries[key]
-			s.collectPoolMembers(&poolMemberStats, now)
+			collectedMetrics = true
+			for key := range poolMembers.Entries {
+				poolMemberStats := poolMembers.Entries[key]
+				s.collectPoolMembers(&poolMemberStats, now)
+			}
 		}
 	}
 
@@ -179,11 +170,11 @@ func (s *bigipScraper) collectVirtualServers(virtualServerStats *models.VirtualS
 		s.mb.RecordBigipVirtualServerEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithBigipVirtualServerName(virtualServerStats.NestedStats.Entries.Name.Description),
-		metadata.WithBigipVirtualServerDestination(virtualServerStats.NestedStats.Entries.Destination.Description),
-		metadata.WithBigipPoolName(virtualServerStats.NestedStats.Entries.PoolName.Description),
-	)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipVirtualServerName(virtualServerStats.NestedStats.Entries.Name.Description)
+	rb.SetBigipVirtualServerDestination(virtualServerStats.NestedStats.Entries.Destination.Description)
+	rb.SetBigipPoolName(virtualServerStats.NestedStats.Entries.PoolName.Description)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // collectPools collects pool metrics
@@ -223,9 +214,9 @@ func (s *bigipScraper) collectPools(poolStats *models.PoolStats, now pcommon.Tim
 		s.mb.RecordBigipPoolEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithBigipPoolName(poolStats.NestedStats.Entries.Name.Description),
-	)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipPoolName(poolStats.NestedStats.Entries.Name.Description)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // collectPoolMembers collects pool member metrics
@@ -263,11 +254,11 @@ func (s *bigipScraper) collectPoolMembers(poolMemberStats *models.PoolMemberStat
 		s.mb.RecordBigipPoolMemberEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithBigipPoolMemberName(fmt.Sprintf("%s:%d", poolMemberStats.NestedStats.Entries.Name.Description, poolMemberStats.NestedStats.Entries.Port.Value)),
-		metadata.WithBigipPoolMemberIPAddress(poolMemberStats.NestedStats.Entries.IPAddress.Description),
-		metadata.WithBigipPoolName(poolMemberStats.NestedStats.Entries.PoolName.Description),
-	)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipPoolMemberName(fmt.Sprintf("%s:%d", poolMemberStats.NestedStats.Entries.Name.Description, poolMemberStats.NestedStats.Entries.Port.Value))
+	rb.SetBigipPoolMemberIPAddress(poolMemberStats.NestedStats.Entries.IPAddress.Description)
+	rb.SetBigipPoolName(poolMemberStats.NestedStats.Entries.PoolName.Description)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // collectNodes collects node metrics
@@ -305,8 +296,8 @@ func (s *bigipScraper) collectNodes(nodeStats *models.NodeStats, now pcommon.Tim
 		s.mb.RecordBigipNodeEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithBigipNodeName(nodeStats.NestedStats.Entries.Name.Description),
-		metadata.WithBigipNodeIPAddress(nodeStats.NestedStats.Entries.IPAddress.Description),
-	)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipNodeName(nodeStats.NestedStats.Entries.Name.Description)
+	rb.SetBigipNodeIPAddress(nodeStats.NestedStats.Entries.IPAddress.Description)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }

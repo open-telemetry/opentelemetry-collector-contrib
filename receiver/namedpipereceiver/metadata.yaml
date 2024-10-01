@@ -1,0 +1,15 @@
+type: namedpipe
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [sinkingpoint, djaglowski]
+  unsupported_platforms: [windows, darwin]
+
+tests:
+  config:
+    path: /tmp/pipe
+    mode: 0600

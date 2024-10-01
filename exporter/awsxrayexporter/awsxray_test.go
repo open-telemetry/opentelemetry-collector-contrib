@@ -1,47 +1,39 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsxrayexporter
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 )
 
 func TestTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t)
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestXraySpanTraceResourceExtraction(t *testing.T) {
@@ -51,30 +43,57 @@ func TestXraySpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t)
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
 	ctx := context.Background()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
 	td := constructXrayAndW3CSpanData()
 	logger, _ := zap.NewProduction()
-	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have xay trace id")
+	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 4, "4 spans have xray/w3c trace id")
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
-	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9255")
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
-	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 0, "0 spans have xray trace id")
+	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have w3c trace id")
+}
+
+func TestTelemetryEnabled(t *testing.T) {
+	// replace global registry for test
+	registry := telemetry.NewRegistry()
+	sink := telemetrytest.NewSenderSink()
+	// preload the sender that the exporter will use
+	set := exportertest.NewNopSettings()
+	sender, loaded := registry.LoadOrStore(set.ID, sink)
+	require.False(t, loaded)
+	require.NotNil(t, sender)
+	require.Equal(t, sink, sender)
+	cfg := generateConfig(t)
+	cfg.TelemetryConfig.Enabled = true
+	traceExporter, err := newTracesExporter(cfg, set, new(awsutil.Conn), registry)
+	assert.NoError(t, err)
+	ctx := context.Background()
+	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
+	td := constructSpanData()
+	err = traceExporter.ConsumeTraces(ctx, td)
+	assert.Error(t, err)
+	err = traceExporter.Shutdown(ctx)
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1, sink.StartCount.Load())
+	assert.EqualValues(t, 1, sink.StopCount.Load())
+	assert.True(t, sink.HasRecording())
+	got := sink.Rotate()
+	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
-	traceExporter := initializeTracesExporter(b)
+	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		ctx := context.Background()
@@ -85,25 +104,25 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter(t testing.TB) exporter.Traces {
-	exporterConfig := generateConfig(t)
+func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
+	t.Helper()
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(), mconn, registry)
 	if err != nil {
 		panic(err)
 	}
 	return traceExporter
 }
 
-func generateConfig(t testing.TB) component.Config {
+func generateConfig(t testing.TB) *Config {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
 	t.Setenv("AWS_REGION", "us-east-1")
 	factory := NewFactory()
-	exporterConfig := factory.CreateDefaultConfig()
-	exporterConfig.(*Config).Region = "us-east-1"
-	exporterConfig.(*Config).LocalMode = true
+	exporterConfig := factory.CreateDefaultConfig().(*Config)
+	exporterConfig.Region = "us-east-1"
+	exporterConfig.LocalMode = true
 	return exporterConfig
 }
 
@@ -118,7 +137,6 @@ func constructSpanData() ptrace.Traces {
 	return traces
 }
 
-// nolint:unused
 func constructW3CSpanData() ptrace.Traces {
 	resource := constructResource()
 	traces := ptrace.NewTraces()
@@ -165,7 +183,7 @@ func constructResource() pcommon.Resource {
 }
 
 func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
@@ -192,7 +210,7 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 }
 
 func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -219,7 +237,7 @@ func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	return span
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
+func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
@@ -246,8 +264,9 @@ func newTraceID() pcommon.TraceID {
 
 func constructW3CTraceID() pcommon.TraceID {
 	var r [16]byte
-	for i := range r {
-		r[i] = byte(rand.Intn(128))
+	_, err := rand.Read(r[:])
+	if err != nil {
+		panic(err)
 	}
 	return r
 }

@@ -1,23 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
 	"context"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -40,8 +29,8 @@ type InputConfig struct {
 }
 
 // Build will build a base producer.
-func (c InputConfig) Build(logger *zap.SugaredLogger) (InputOperator, error) {
-	writerOperator, err := c.WriterConfig.Build(logger)
+func (c InputConfig) Build(set component.TelemetrySettings) (InputOperator, error) {
+	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
 		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}
@@ -73,7 +62,7 @@ type InputOperator struct {
 }
 
 // NewEntry will create a new entry using the `attributes`, and `resource` configuration.
-func (i *InputOperator) NewEntry(value interface{}) (*entry.Entry, error) {
+func (i *InputOperator) NewEntry(value any) (*entry.Entry, error) {
 	entry := entry.New()
 	entry.Body = value
 
@@ -94,8 +83,8 @@ func (i *InputOperator) CanProcess() bool {
 }
 
 // Process will always return an error if called.
-func (i *InputOperator) Process(ctx context.Context, entry *entry.Entry) error {
-	i.Errorw("Operator received an entry, but can not process", zap.Any("entry", entry))
+func (i *InputOperator) Process(_ context.Context, _ *entry.Entry) error {
+	i.Logger().Error("Operator received an entry, but can not process")
 	return errors.NewError(
 		"Operator can not process logs.",
 		"Ensure that operator is not configured to receive logs from other operators",

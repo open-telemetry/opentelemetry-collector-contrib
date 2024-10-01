@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
@@ -35,19 +24,18 @@ const (
 const (
 	formatJSON   string = "json"
 	formatLogfmt string = "logfmt"
+	formatRaw    string = "raw"
 )
 
-func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
-	out := model.LabelSet{"exporter": "OTLP"}
+const (
+	exporterLabel string = "exporter"
+	levelLabel    string = "level"
+)
 
-	// Map service.namespace + service.name to job
-	if job, ok := extractJob(resAttrs); ok {
-		out[model.JobLabel] = model.LabelValue(job)
-	}
-	// Map service.instance.id to instance
-	if instance, ok := extractInstance(resAttrs); ok {
-		out[model.InstanceLabel] = model.LabelValue(instance)
-	}
+const attrSeparator = "."
+
+func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
+	out := getDefaultLabels(resAttrs, defaultLabelsEnabled)
 
 	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
@@ -67,18 +55,28 @@ func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model
 		out = out.Merge(labels)
 	}
 
-	// get tenant hint from resource attributes, fallback to record attributes
-	// if it is not found
-	if resourcesToLabel, found := resAttrs.Get(hintTenant); !found {
-		if attributesToLabel, found := logAttrs.Get(hintTenant); found {
-			labels := convertAttributesToLabels(logAttrs, attributesToLabel)
-			out = out.Merge(labels)
-		}
-	} else {
-		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
-		out = out.Merge(labels)
+	return out
+}
+
+func getDefaultLabels(resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
+	out := model.LabelSet{}
+	if enabled, ok := defaultLabelsEnabled[exporterLabel]; enabled || !ok {
+		out[model.LabelName(exporterLabel)] = "OTLP"
 	}
 
+	if enabled, ok := defaultLabelsEnabled[model.JobLabel]; enabled || !ok {
+		// Map service.namespace + service.name to job
+		if job, ok := extractJob(resAttrs); ok {
+			out[model.JobLabel] = model.LabelValue(job)
+		}
+	}
+
+	if enabled, ok := defaultLabelsEnabled[model.InstanceLabel]; enabled || !ok {
+		// Map service.instance.id to instance
+		if instance, ok := extractInstance(resAttrs); ok {
+			out[model.InstanceLabel] = model.LabelValue(instance)
+		}
+	}
 	return out
 }
 
@@ -89,14 +87,7 @@ func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Val
 	for _, attr := range attrs {
 		attr = strings.TrimSpace(attr)
 
-		av, ok := attributes.Get(attr)
-		if !ok {
-			// couldn't find the attribute under the given name directly
-			// perhaps it's a nested attribute?
-			av, ok = getNestedAttribute(attr, attributes) // shadows the OK from above on purpose
-		}
-
-		if ok {
+		if av, ok := getAttribute(attr, attributes); ok {
 			out[model.LabelName(attr)] = model.LabelValue(av.AsString())
 		}
 	}
@@ -104,18 +95,26 @@ func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Val
 	return out
 }
 
-func getNestedAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
-	left, right, _ := strings.Cut(attr, ".")
-	av, ok := attributes.Get(left)
-	if !ok {
-		return pcommon.Value{}, false
-	}
-
-	if len(right) == 0 {
+func getAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
+	if av, ok := attributes.Get(attr); ok {
 		return av, ok
 	}
 
-	return getNestedAttribute(right, av.Map())
+	// couldn't find the attribute under the given name directly
+	// perhaps it's a nested attribute?
+	segments := strings.Split(attr, attrSeparator)
+	segmentsNumber := len(segments)
+	for i := 0; i < segmentsNumber-1; i++ {
+		left := strings.Join(segments[:segmentsNumber-i-1], attrSeparator)
+		right := strings.Join(segments[segmentsNumber-i-1:], attrSeparator)
+
+		if av, ok := getAttribute(left, attributes); ok {
+			if av.Type() == pcommon.ValueTypeMap {
+				return getAttribute(right, av.Map())
+			}
+		}
+	}
+	return pcommon.Value{}, false
 }
 
 func parseAttributeNames(attrsToSelect pcommon.Value) []string {
@@ -138,7 +137,7 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 }
 
 func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
-	attrs.RemoveIf(func(s string, v pcommon.Value) bool {
+	attrs.RemoveIf(func(s string, _ pcommon.Value) bool {
 		if s == hintAttributes || s == hintResources || s == hintTenant || s == hintFormat {
 			return true
 		}
@@ -170,14 +169,23 @@ func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource, scope pcom
 	}, nil
 }
 
+func convertLogToLogRawEntry(lr plog.LogRecord) (*push.Entry, error) {
+	return &push.Entry{
+		Timestamp: timestampFromLogRecord(lr),
+		Line:      lr.Body().AsString(),
+	}, nil
+}
+
 func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	switch format {
 	case formatJSON:
 		return convertLogToJSONEntry(lr, res, scope)
 	case formatLogfmt:
 		return convertLogToLogfmtEntry(lr, res, scope)
+	case formatRaw:
+		return convertLogToLogRawEntry(lr)
 	default:
-		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s", format, formatJSON, formatLogfmt)
+		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
 	}
 
 }

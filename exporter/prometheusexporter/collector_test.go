@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexporter
 
@@ -25,9 +14,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type mockAccumulator struct {
@@ -96,6 +88,56 @@ func TestConvertInvalidMetric(t *testing.T) {
 	}
 }
 
+func setUpTestExemplar(exemplar pmetric.Exemplar) {
+	var tBytes [16]byte
+	testTraceID, _ := hex.DecodeString("641d68e314a58152cc2581e7663435d1")
+	copy(tBytes[:], testTraceID)
+	traceID := pcommon.TraceID(tBytes)
+	exemplar.SetTraceID(traceID)
+
+	var sBytes [8]byte
+	testSpanID, _ := hex.DecodeString("7436d6ac76178623")
+	copy(sBytes[:], testSpanID)
+	spanID := pcommon.SpanID(sBytes)
+	exemplar.SetSpanID(spanID)
+
+	exemplarTs, _ := time.Parse("unix", "Mon Jan _2 15:04:05 MST 2006")
+	exemplar.SetTimestamp(pcommon.NewTimestampFromTime(exemplarTs))
+}
+
+func setTestExemplarWithDoubleValue(exemplar pmetric.Exemplar, value float64) {
+	setUpTestExemplar(exemplar)
+	exemplar.SetDoubleValue(value)
+}
+
+func setTextExemplarWithIntValue(exemplar pmetric.Exemplar, value int64) {
+	setUpTestExemplar(exemplar)
+	exemplar.SetIntValue(value)
+}
+
+func exemplarsEqual(t *testing.T, otelExemplar pmetric.Exemplar, promExemplar *io_prometheus_client.Exemplar) {
+	var givenValue float64
+	switch otelExemplar.ValueType() {
+	case pmetric.ExemplarValueTypeDouble:
+		givenValue = otelExemplar.DoubleValue()
+	case pmetric.ExemplarValueTypeInt:
+		givenValue = float64(otelExemplar.IntValue())
+	default:
+		t.Error("Unexpected value type for OTel exemplar", otelExemplar.ValueType())
+	}
+
+	require.Equal(t, givenValue, promExemplar.GetValue())
+	require.Len(t, promExemplar.GetLabel(), 2)
+	ml := make(map[string]string)
+	for _, l := range promExemplar.GetLabel() {
+		ml[l.GetName()] = l.GetValue()
+	}
+	traceID := otelExemplar.TraceID()
+	spanID := otelExemplar.SpanID()
+	require.Equal(t, hex.EncodeToString(traceID[:]), ml["trace_id"])
+	require.Equal(t, hex.EncodeToString(spanID[:]), ml["span_id"])
+}
+
 func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	// initialize empty histogram
 	metric := pmetric.NewMetric()
@@ -111,21 +153,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	// add test exemplar values to the metric
 	promExporterExemplars := histogramDataPoint.Exemplars().AppendEmpty()
-	var tBytes [16]byte
-	testTraceID, _ := hex.DecodeString("641d68e314a58152cc2581e7663435d1")
-	copy(tBytes[:], testTraceID)
-	traceID := pcommon.TraceID(tBytes)
-	promExporterExemplars.SetTraceID(traceID)
-
-	var sBytes [8]byte
-	testSpanID, _ := hex.DecodeString("7436d6ac76178623")
-	copy(sBytes[:], testSpanID)
-	spanID := pcommon.SpanID(sBytes)
-	promExporterExemplars.SetSpanID(spanID)
-
-	exemplarTs, _ := time.Parse("unix", "Mon Jan _2 15:04:05 MST 2006")
-	promExporterExemplars.SetTimestamp(pcommon.NewTimestampFromTime(exemplarTs))
-	promExporterExemplars.SetDoubleValue(3.0)
+	setTestExemplarWithDoubleValue(promExporterExemplars, 3.0)
 
 	pMap := pcommon.NewMap()
 
@@ -147,17 +175,49 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	buckets := m.GetHistogram().GetBucket()
 
-	require.Equal(t, 3, len(buckets))
+	require.Len(t, buckets, 3)
 
 	require.Equal(t, 3.0, buckets[0].GetExemplar().GetValue())
-	require.Equal(t, int32(128654848), buckets[0].GetExemplar().GetTimestamp().GetNanos())
-	require.Equal(t, 2, len(buckets[0].GetExemplar().GetLabel()))
-	ml := make(map[string]string)
-	for _, l := range buckets[0].GetExemplar().GetLabel() {
-		ml[l.GetName()] = l.GetValue()
+	exemplarsEqual(t, promExporterExemplars, buckets[0].GetExemplar())
+}
+
+func TestConvertMonotonicSumExemplar(t *testing.T) {
+	// initialize empty metric
+	metric := pmetric.NewMetric()
+	metric.SetName("test_monotonic_sum")
+	metric.SetDescription("this is test monotonic sum metric")
+	metric.SetUnit("T")
+
+	sum := metric.SetEmptySum()
+	sum.SetIsMonotonic(true)
+
+	dataPoint := sum.DataPoints().AppendEmpty()
+	dataPoint.SetIntValue(1)
+
+	exemplar := dataPoint.Exemplars().AppendEmpty()
+	setTextExemplarWithIntValue(exemplar, 1)
+
+	pMap := pcommon.NewMap()
+
+	c := collector{
+
+		accumulator: &mockAccumulator{
+			metrics:            []pmetric.Metric{metric},
+			resourceAttributes: pMap,
+		},
+		logger: zap.NewNop(),
 	}
-	require.Equal(t, "641d68e314a58152cc2581e7663435d1", ml["trace_id"])
-	require.Equal(t, "7436d6ac76178623", ml["span_id"])
+
+	promMetric, _ := c.convertSum(metric, pMap)
+	outMetric := io_prometheus_client.Metric{}
+	err := promMetric.Write(&outMetric)
+	if err != nil {
+		t.Error("Unable to write metric to prometheus output form:", err)
+	}
+
+	promCounter := outMetric.GetCounter()
+	require.Equal(t, 1.0, promCounter.GetValue())
+	exemplarsEqual(t, exemplar, promCounter.GetExemplar())
 }
 
 // errorCheckCore keeps track of logged errors
@@ -210,7 +270,8 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 
 	for m := range ch {
 		require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-		require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+		require.Contains(t, m.Desc().String(), "label_1")
+		require.Contains(t, m.Desc().String(), "label_2")
 
 		pbMetric := io_prometheus_client.Metric{}
 		require.NoError(t, m.Write(&pbMetric))
@@ -227,7 +288,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 func TestCollectMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
-		metric     func(time.Time) pmetric.Metric
+		metric     func(time.Time, bool) pmetric.Metric
 		metricType prometheus.ValueType
 		value      float64
 	}{
@@ -235,7 +296,7 @@ func TestCollectMetrics(t *testing.T) {
 			name:       "IntGauge",
 			metricType: prometheus.GaugeValue,
 			value:      42.0,
-			metric: func(ts time.Time) (metric pmetric.Metric) {
+			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetDescription("test description")
@@ -244,6 +305,9 @@ func TestCollectMetrics(t *testing.T) {
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if withStartTime {
+					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
+				}
 
 				return
 			},
@@ -252,7 +316,7 @@ func TestCollectMetrics(t *testing.T) {
 			name:       "Gauge",
 			metricType: prometheus.GaugeValue,
 			value:      42.42,
-			metric: func(ts time.Time) (metric pmetric.Metric) {
+			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetDescription("test description")
@@ -261,6 +325,9 @@ func TestCollectMetrics(t *testing.T) {
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if withStartTime {
+					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
+				}
 
 				return
 			},
@@ -269,7 +336,7 @@ func TestCollectMetrics(t *testing.T) {
 			name:       "IntSum",
 			metricType: prometheus.GaugeValue,
 			value:      42.0,
-			metric: func(ts time.Time) (metric pmetric.Metric) {
+			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetEmptySum().SetIsMonotonic(false)
@@ -280,6 +347,9 @@ func TestCollectMetrics(t *testing.T) {
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if withStartTime {
+					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
+				}
 
 				return
 			},
@@ -288,7 +358,7 @@ func TestCollectMetrics(t *testing.T) {
 			name:       "Sum",
 			metricType: prometheus.GaugeValue,
 			value:      42.42,
-			metric: func(ts time.Time) (metric pmetric.Metric) {
+			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetEmptySum().SetIsMonotonic(false)
@@ -299,6 +369,9 @@ func TestCollectMetrics(t *testing.T) {
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if withStartTime {
+					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
+				}
 
 				return
 			},
@@ -307,7 +380,7 @@ func TestCollectMetrics(t *testing.T) {
 			name:       "MonotonicIntSum",
 			metricType: prometheus.CounterValue,
 			value:      42.0,
-			metric: func(ts time.Time) (metric pmetric.Metric) {
+			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetEmptySum().SetIsMonotonic(true)
@@ -318,6 +391,9 @@ func TestCollectMetrics(t *testing.T) {
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if withStartTime {
+					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
+				}
 
 				return
 			},
@@ -326,7 +402,7 @@ func TestCollectMetrics(t *testing.T) {
 			name:       "MonotonicSum",
 			metricType: prometheus.CounterValue,
 			value:      42.42,
-			metric: func(ts time.Time) (metric pmetric.Metric) {
+			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetEmptySum().SetIsMonotonic(true)
@@ -337,6 +413,30 @@ func TestCollectMetrics(t *testing.T) {
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if withStartTime {
+					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
+				}
+
+				return
+			},
+		},
+		{
+			name:       "Unknown",
+			metricType: prometheus.UntypedValue,
+			value:      42.42,
+			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
+				metric = pmetric.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDescription("test description")
+				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "unknown")
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(42.42)
+				dp.Attributes().PutStr("label_1", "1")
+				dp.Attributes().PutStr("label_2", "2")
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if withStartTime {
+					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
+				}
 
 				return
 			},
@@ -346,6 +446,8 @@ func TestCollectMetrics(t *testing.T) {
 	for _, tt := range tests {
 		for _, sendTimestamp := range []bool{true, false} {
 			name := tt.name
+			// In this test, sendTimestamp is used to test
+			// both prometheus regular timestamp and "created timestamp".
 			if sendTimestamp {
 				name += "/WithTimestamp"
 			}
@@ -357,7 +459,7 @@ func TestCollectMetrics(t *testing.T) {
 
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
-				metric := tt.metric(ts)
+				metric := tt.metric(ts, sendTimestamp)
 				c := collector{
 					namespace: "test_space",
 					accumulator: &mockAccumulator{
@@ -391,7 +493,7 @@ func TestCollectMetrics(t *testing.T) {
 					}
 
 					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2 job instance]")
+					require.Contains(t, m.Desc().String(), `variableLabels: {label_1,label_2,job,instance}`)
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
@@ -403,8 +505,15 @@ func TestCollectMetrics(t *testing.T) {
 
 					if sendTimestamp {
 						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						// Prometheus gauges don't have created timestamp.
+						if tt.metricType == prometheus.CounterValue {
+							require.Equal(t, timestamppb.New(ts), pbMetric.Counter.CreatedTimestamp)
+						}
 					} else {
 						require.Nil(t, pbMetric.TimestampMs)
+						if tt.metricType == prometheus.CounterValue {
+							require.Nil(t, pbMetric.Counter.CreatedTimestamp)
+						}
 					}
 
 					switch tt.metricType {
@@ -429,7 +538,7 @@ func TestCollectMetrics(t *testing.T) {
 func TestAccumulateHistograms(t *testing.T) {
 	tests := []struct {
 		name   string
-		metric func(time.Time) pmetric.Metric
+		metric func(time.Time, bool) pmetric.Metric
 
 		histogramPoints map[float64]uint64
 		histogramSum    float64
@@ -443,7 +552,7 @@ func TestAccumulateHistograms(t *testing.T) {
 			},
 			histogramSum:   42.42,
 			histogramCount: 7,
-			metric: func(ts time.Time) (metric pmetric.Metric) {
+			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -456,6 +565,9 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if withStartTime {
+					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
+				}
 				return
 			},
 		},
@@ -464,12 +576,14 @@ func TestAccumulateHistograms(t *testing.T) {
 	for _, tt := range tests {
 		for _, sendTimestamp := range []bool{true, false} {
 			name := tt.name
+			// In this test, sendTimestamp is used to test
+			// both prometheus regular timestamp and "created timestamp".
 			if sendTimestamp {
 				name += "/WithTimestamp"
 			}
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
-				metric := tt.metric(ts)
+				metric := tt.metric(ts, sendTimestamp)
 				c := collector{
 					accumulator: &mockAccumulator{
 						[]pmetric.Metric{metric},
@@ -489,7 +603,8 @@ func TestAccumulateHistograms(t *testing.T) {
 				for m := range ch {
 					n++
 					require.Contains(t, m.Desc().String(), "fqName: \"test_metric\"")
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+					require.Contains(t, m.Desc().String(), "label_1")
+					require.Contains(t, m.Desc().String(), "label_2")
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
@@ -501,14 +616,16 @@ func TestAccumulateHistograms(t *testing.T) {
 
 					if sendTimestamp {
 						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, timestamppb.New(ts), pbMetric.Histogram.CreatedTimestamp)
 					} else {
 						require.Nil(t, pbMetric.TimestampMs)
+						require.Nil(t, pbMetric.Histogram.CreatedTimestamp)
 					}
 
 					require.Nil(t, pbMetric.Gauge)
 					require.Nil(t, pbMetric.Counter)
 
-					h := *pbMetric.Histogram
+					h := pbMetric.Histogram
 					require.Equal(t, tt.histogramCount, h.GetSampleCount())
 					require.Equal(t, tt.histogramSum, h.GetSampleSum())
 					require.Equal(t, len(tt.histogramPoints), len(h.Bucket))
@@ -530,7 +647,7 @@ func TestAccumulateSummary(t *testing.T) {
 	}
 	tests := []struct {
 		name          string
-		metric        func(time.Time) pmetric.Metric
+		metric        func(time.Time, bool) pmetric.Metric
 		wantSum       float64
 		wantCount     uint64
 		wantQuantiles map[float64]float64
@@ -543,7 +660,7 @@ func TestAccumulateSummary(t *testing.T) {
 				0.50: 190,
 				0.99: 817,
 			},
-			metric: func(ts time.Time) (metric pmetric.Metric) {
+			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetDescription("test description")
@@ -554,6 +671,9 @@ func TestAccumulateSummary(t *testing.T) {
 				sp.Attributes().PutStr("label_1", "1")
 				sp.Attributes().PutStr("label_2", "2")
 				sp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if withStartTime {
+					sp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
+				}
 
 				fillQuantileValue(0.50, 190, sp.QuantileValues().AppendEmpty())
 				fillQuantileValue(0.99, 817, sp.QuantileValues().AppendEmpty())
@@ -566,12 +686,14 @@ func TestAccumulateSummary(t *testing.T) {
 	for _, tt := range tests {
 		for _, sendTimestamp := range []bool{true, false} {
 			name := tt.name
+			// In this test, sendTimestamp is used to test
+			// both prometheus regular timestamp and "created timestamp".
 			if sendTimestamp {
 				name += "/WithTimestamp"
 			}
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
-				metric := tt.metric(ts)
+				metric := tt.metric(ts, sendTimestamp)
 				c := collector{
 					accumulator: &mockAccumulator{
 						[]pmetric.Metric{metric},
@@ -591,7 +713,8 @@ func TestAccumulateSummary(t *testing.T) {
 				for m := range ch {
 					n++
 					require.Contains(t, m.Desc().String(), "fqName: \"test_metric\"")
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+					require.Contains(t, m.Desc().String(), "label_1")
+					require.Contains(t, m.Desc().String(), "label_2")
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
@@ -603,15 +726,17 @@ func TestAccumulateSummary(t *testing.T) {
 
 					if sendTimestamp {
 						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, timestamppb.New(ts), pbMetric.Summary.CreatedTimestamp)
 					} else {
 						require.Nil(t, pbMetric.TimestampMs)
+						require.Nil(t, pbMetric.Summary.CreatedTimestamp)
 					}
 
 					require.Nil(t, pbMetric.Gauge)
 					require.Nil(t, pbMetric.Counter)
 					require.Nil(t, pbMetric.Histogram)
 
-					s := *pbMetric.Summary
+					s := pbMetric.Summary
 					require.Equal(t, tt.wantCount, *s.SampleCount)
 					require.Equal(t, tt.wantSum, *s.SampleSum)
 					// To ensure that we can compare quantiles, we need to just extract their values.

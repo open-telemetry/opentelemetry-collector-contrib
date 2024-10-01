@@ -1,0 +1,17 @@
+type: azuremonitor
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [pcwiese]
+
+tests:
+  config:
+    connection_string: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/"
+    instrumentation_key: b1cd0778-85fc-4677-a3fa-79d3c23e0efd
+  expect_consumer_error: true
+  goleak:
+    skip: true

@@ -1,29 +1,20 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 // TODO review if tests should succeed on Windows
 
 package kubelet
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -32,12 +23,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const certPath = "./testdata/testcert.crt"
 const keyFile = "./testdata/testkey.key"
+const errSignedByUnknownCA = "tls: failed to verify certificate: x509: certificate signed by unknown authority"
 
 func TestClient(t *testing.T) {
 	tr := &fakeRoundTripper{}
@@ -52,7 +45,7 @@ func TestClient(t *testing.T) {
 	require.Equal(t, "hello", string(resp))
 	require.True(t, tr.closed)
 	require.Equal(t, baseURL+"/foo", tr.url)
-	require.Equal(t, 1, len(tr.header))
+	require.Len(t, tr.header, 1)
 	require.Equal(t, "application/json", tr.header["Content-Type"][0])
 	require.Equal(t, "GET", tr.method)
 }
@@ -62,7 +55,7 @@ func TestNewTLSClientProvider(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeTLS,
 		},
-		TLSSetting: configtls.TLSSetting{
+		Config: configtls.Config{
 			CAFile:   certPath,
 			CertFile: certPath,
 			KeyFile:  keyFile,
@@ -73,7 +66,7 @@ func TestNewTLSClientProvider(t *testing.T) {
 	require.NoError(t, err)
 	c := client.(*clientImpl)
 	tcc := c.httpClient.Transport.(*http.Transport).TLSClientConfig
-	require.Equal(t, 1, len(tcc.Certificates))
+	require.Len(t, tcc.Certificates, 1)
 	require.NotNil(t, tcc.RootCAs)
 }
 
@@ -89,6 +82,18 @@ func TestNewSAClientProvider(t *testing.T) {
 	require.True(t, ok)
 }
 
+func TestNewKubeConfigClientProvider(t *testing.T) {
+	p, err := NewClientProvider("localhost:9876", &ClientConfig{
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeKubeConfig,
+		},
+	}, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	_, ok := p.(*kubeConfigClientProvider)
+	require.True(t, ok)
+}
+
 func TestDefaultTLSClient(t *testing.T) {
 	endpoint := "localhost:9876"
 	client, err := defaultTLSClient(endpoint, true, &x509.CertPool{}, nil, nil, zap.NewNop())
@@ -98,15 +103,109 @@ func TestDefaultTLSClient(t *testing.T) {
 }
 
 func TestSvcAcctClient(t *testing.T) {
-	p := &saClientProvider{
-		endpoint:   "localhost:9876",
-		caCertPath: certPath,
-		tokenPath:  "./testdata/token",
-		logger:     zap.NewNop(),
-	}
-	cl, err := p.BuildClient()
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Check if call is authenticated using token from test file
+		assert.Equal(t, "Bearer s3cr3t", req.Header.Get("Authorization"))
+		_, err := rw.Write([]byte(`OK`))
+		assert.NoError(t, err)
+	}))
+	cert, err := tls.LoadX509KeyPair(certPath, keyFile)
 	require.NoError(t, err)
-	require.Equal(t, "s3cr3t", string(cl.(*clientImpl).tok))
+	server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	server.StartTLS()
+	defer server.Close()
+
+	p := &saClientProvider{
+		endpoint:           server.Listener.Addr().String(),
+		caCertPath:         certPath,
+		tokenPath:          "./testdata/token",
+		insecureSkipVerify: false,
+		logger:             zap.NewNop(),
+	}
+	client, err := p.BuildClient()
+	require.NoError(t, err)
+	resp, err := client.Get("/")
+	require.NoError(t, err)
+	require.Equal(t, []byte(`OK`), resp)
+}
+
+func TestSAClientBadTLS(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		_, _ = rw.Write([]byte(`OK`))
+	}))
+	cert, err := tls.LoadX509KeyPair(certPath, keyFile)
+	require.NoError(t, err)
+	server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	server.StartTLS()
+	defer server.Close()
+
+	p := &saClientProvider{
+		endpoint:           server.Listener.Addr().String(),
+		caCertPath:         "./testdata/mismatch.crt",
+		tokenPath:          "./testdata/token",
+		insecureSkipVerify: false,
+		logger:             zap.NewNop(),
+	}
+	client, err := p.BuildClient()
+	require.NoError(t, err)
+	_, err = client.Get("/")
+	require.ErrorContains(t, err, errSignedByUnknownCA)
+}
+
+func TestNewKubeConfigClient(t *testing.T) {
+	tests := []struct {
+		name    string
+		cluster string
+		context string
+	}{
+		{
+			name:    "current context",
+			cluster: "my-cluster-1",
+			context: "",
+		},
+		{
+			name:    "override context",
+			cluster: "my-cluster-2",
+			context: "my-context-2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				// Check if call is authenticated using provided kubeconfig
+				assert.Equal(t, "Bearer my-token", req.Header.Get("Authorization"))
+				assert.Equal(t, "/api/v1/nodes/nodename/proxy/", req.URL.EscapedPath())
+				// Send response to be tested
+				_, err := rw.Write([]byte(`OK`))
+				assert.NoError(t, err)
+			}))
+			server.StartTLS()
+			defer server.Close()
+
+			kubeConfig, err := clientcmd.LoadFromFile("testdata/kubeconfig")
+			require.NoError(t, err)
+			kubeConfig.Clusters[tt.cluster].Server = "https://" + server.Listener.Addr().String()
+			tempKubeConfig := filepath.Join(t.TempDir(), "kubeconfig")
+			require.NoError(t, clientcmd.WriteToFile(*kubeConfig, tempKubeConfig))
+			t.Setenv("KUBECONFIG", tempKubeConfig)
+
+			p, err := NewClientProvider("nodename", &ClientConfig{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType: k8sconfig.AuthTypeKubeConfig,
+					Context:  tt.context,
+				},
+				InsecureSkipVerify: true,
+			}, zap.NewNop())
+			require.NoError(t, err)
+			require.NotNil(t, p)
+			client, err := p.BuildClient()
+			require.NoError(t, err)
+			resp, err := client.Get("/")
+			require.NoError(t, err)
+			require.Equal(t, []byte(`OK`), resp)
+		})
+	}
 }
 
 func TestBuildEndpoint(t *testing.T) {
@@ -179,7 +278,7 @@ func TestTLSMissingCertFile(t *testing.T) {
 	p := tlsClientProvider{
 		endpoint: "",
 		cfg: &ClientConfig{
-			TLSSetting: configtls.TLSSetting{
+			Config: configtls.Config{
 				CAFile: certPath,
 			},
 		},
@@ -230,12 +329,11 @@ func TestBuildReq(t *testing.T) {
 	req, err := cl.(*clientImpl).buildReq("/foo")
 	require.NoError(t, err)
 	require.NotNil(t, req)
-	require.Equal(t, req.Header["Authorization"][0], "bearer s3cr3t")
 }
 
 func TestBuildBadReq(t *testing.T) {
 	p := &saClientProvider{
-		endpoint:   "localhost:9876",
+		endpoint:   "[]localhost:9876",
 		caCertPath: certPath,
 		tokenPath:  "./testdata/token",
 		logger:     zap.NewNop(),
@@ -243,7 +341,7 @@ func TestBuildBadReq(t *testing.T) {
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
 	require.NoError(t, err)
-	_, err = cl.(*clientImpl).buildReq(" ")
+	_, err = cl.(*clientImpl).buildReq("")
 	require.Error(t, err)
 }
 
@@ -260,12 +358,12 @@ func TestFailedRT(t *testing.T) {
 
 func TestBadReq(t *testing.T) {
 	tr := &fakeRoundTripper{}
-	baseURL := "http://localhost:9876"
+	baseURL := "http://[]localhost:9876"
 	client := &clientImpl{
 		baseURL:    baseURL,
 		httpClient: http.Client{Transport: tr},
 	}
-	_, err := client.Get(" ")
+	_, err := client.Get("")
 	require.Error(t, err)
 }
 

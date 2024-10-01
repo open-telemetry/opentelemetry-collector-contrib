@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package internal contains an interface for detecting resource information,
 // and a provider to merge the resources returned by a slice of custom detectors.
@@ -34,13 +23,13 @@ type Detector interface {
 	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
 }
 
-type DetectorConfig interface{}
+type DetectorConfig any
 
 type ResourceDetectorConfig interface {
 	GetConfigFromType(DetectorType) DetectorConfig
 }
 
-type DetectorFactory func(processor.CreateSettings, DetectorConfig) (Detector, error)
+type DetectorFactory func(processor.Settings, DetectorConfig) (Detector, error)
 
 type ResourceProviderFactory struct {
 	// detectors holds all possible detector types.
@@ -52,7 +41,7 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 }
 
 func (f *ResourceProviderFactory) CreateResourceProvider(
-	params processor.CreateSettings,
+	params processor.Settings,
 	timeout time.Duration,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
@@ -73,7 +62,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(params processor.CreateSettings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
+func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
 	detectors := make([]Detector, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
@@ -174,7 +163,7 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 func filterAttributes(am pcommon.Map, attributesToKeep map[string]struct{}) []string {
 	if len(attributesToKeep) > 0 {
 		var droppedAttributes []string
-		am.RemoveIf(func(k string, v pcommon.Value) bool {
+		am.RemoveIf(func(k string, _ pcommon.Value) bool {
 			_, keep := attributesToKeep[k]
 			if !keep {
 				droppedAttributes = append(droppedAttributes, k)

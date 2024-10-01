@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' && github.repository_owner == 'open-telemetry' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Run add-codeowners-to-pr.sh
         run: ./.github/workflows/scripts/add-codeowners-to-pr.sh

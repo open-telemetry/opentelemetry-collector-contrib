@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logs
 
@@ -24,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -51,7 +41,13 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
+			want: func(_ plog.Logs) {
+			},
+		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
 			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).SetSchemaUrl("test_schema_url")
 			},
 		},
 	}
@@ -59,7 +55,7 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -86,7 +82,13 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
+			want: func(_ plog.Logs) {
+			},
+		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
 			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl("test_schema_url")
 			},
 		},
 	}
@@ -94,7 +96,7 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -209,7 +211,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]") == true`,
+			statement: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]")`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
 			},
@@ -269,7 +271,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
-			want:      func(td plog.Logs) {},
+			want:      func(_ plog.Logs) {},
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["total.string"], 3, 3))`,
@@ -286,7 +288,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["not_exist"], 3, 3))`,
-			want:      func(td plog.Logs) {},
+			want:      func(_ plog.Logs) {},
 		},
 		{
 			statement: `set(attributes["test"], ["A", "B", "C"]) where body == "operationA"`,
@@ -327,12 +329,28 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("json_test", "pass")
 			},
 		},
+		{
+			statement: `limit(attributes, 0, []) where body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+			},
+		},
+		{
+			statement: `set(attributes["test"], Log(1)) where body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutDouble("test", 0.0)
+			},
+		},
+		{
+			statement: `replace_match(body["metadata"]["uid"], "*", "12345")`,
+			want:      func(_ plog.Logs) {},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -449,7 +467,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor(tt.contextStatments, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatments, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -463,11 +481,41 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessTraces_Error(t *testing.T) {
+	tests := []struct {
+		statement string
+		context   common.ContextID
+	}{
+		{
+			context: "resource",
+		},
+		{
+			context: "scope",
+		},
+		{
+			context: "log",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.context), func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON(1))`}}}, ottl.PropagateError, false, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), td)
+			assert.Error(t, err)
+		})
+	}
+}
+
 func constructLogs() plog.Logs {
 	td := plog.NewLogs()
 	rs0 := td.ResourceLogs().AppendEmpty()
+	rs0.SetSchemaUrl("test_schema_url")
 	rs0.Resource().Attributes().PutStr("host.name", "localhost")
 	rs0ils0 := rs0.ScopeLogs().AppendEmpty()
+	rs0ils0.SetSchemaUrl("test_schema_url")
 	rs0ils0.Scope().SetName("scope")
 	fillLogOne(rs0ils0.LogRecords().AppendEmpty())
 	fillLogTwo(rs0ils0.LogRecords().AppendEmpty())

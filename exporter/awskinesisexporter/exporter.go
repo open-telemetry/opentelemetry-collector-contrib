@@ -1,16 +1,5 @@
-// Copyright 2019 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awskinesisexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 
@@ -30,7 +19,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
@@ -76,18 +64,19 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 	var kinesisOpts []func(*kinesis.Options)
 	if conf.AWS.Role != "" {
 		kinesisOpts = append(kinesisOpts, func(o *kinesis.Options) {
-			o.Credentials = stscreds.NewAssumeRoleProvider(
+			roleProvider := stscreds.NewAssumeRoleProvider(
 				sts.NewFromConfig(awsconf),
 				conf.AWS.Role,
 			)
+			o.Credentials = aws.NewCredentialsCache(roleProvider)
 		})
 	}
 
 	if conf.AWS.KinesisEndpoint != "" {
 		kinesisOpts = append(kinesisOpts,
-			kinesis.WithEndpointResolver(
-				kinesis.EndpointResolverFromURL(conf.AWS.KinesisEndpoint),
-			),
+			func(o *kinesis.Options) {
+				o.BaseEndpoint = aws.String(conf.AWS.KinesisEndpoint)
+			},
 		)
 	}
 
@@ -100,16 +89,11 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 		return nil, err
 	}
 
-	compressor, err := compress.NewCompressor(conf.Encoding.Compression)
-	if err != nil {
-		return nil, err
-	}
-
 	encoder, err := batch.NewEncoder(
 		conf.Encoding.Name,
 		batch.WithMaxRecordSize(conf.MaxRecordSize),
 		batch.WithMaxRecordsPerBatch(conf.MaxRecordsPerBatch),
-		batch.WithCompression(compressor),
+		batch.WithCompressionType(conf.Compression),
 	)
 
 	if err != nil {

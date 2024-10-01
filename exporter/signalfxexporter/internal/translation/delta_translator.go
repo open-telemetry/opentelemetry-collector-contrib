@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
@@ -25,14 +14,19 @@ type deltaTranslator struct {
 	prevPts *ttlmap.TTLMap
 }
 
-func newDeltaTranslator(ttl int64) *deltaTranslator {
+func newDeltaTranslator(ttl int64, done chan struct{}) *deltaTranslator {
 	sweepIntervalSeconds := ttl / 2
 	if sweepIntervalSeconds == 0 {
 		sweepIntervalSeconds = 1
 	}
-	m := ttlmap.New(sweepIntervalSeconds, ttl)
-	m.Start()
+	m := ttlmap.New(sweepIntervalSeconds, ttl, done)
 	return &deltaTranslator{prevPts: m}
+}
+
+func (t *deltaTranslator) start() {
+	if t.prevPts != nil {
+		t.prevPts.Start()
+	}
 }
 
 func (t *deltaTranslator) translate(pts []*sfxpb.DataPoint, tr Rule) []*sfxpb.DataPoint {
@@ -73,6 +67,12 @@ func (t *deltaTranslator) deltaPt(deltaMetricName string, currPt *sfxpb.DataPoin
 		return nil
 	}
 	return deltaPt
+}
+
+func (t *deltaTranslator) shutdown() {
+	if t.prevPts != nil {
+		t.prevPts.Shutdown()
+	}
 }
 
 func doubleDeltaPt(currPt *sfxpb.DataPoint, prevPt *sfxpb.DataPoint, deltaMetricName string) *sfxpb.DataPoint {

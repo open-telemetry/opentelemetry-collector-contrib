@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
@@ -19,57 +8,87 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-func mathParsePath(val *Path) (GetSetter[interface{}], error) {
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "one" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(context.Context, interface{}) (interface{}, error) {
+func mathParsePath[K any](p Path[K]) (GetSetter[any], error) {
+	if p != nil && p.Name() == "one" {
+		return &StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
 				return int64(1), nil
 			},
 		}, nil
 	}
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "two" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(context.Context, interface{}) (interface{}, error) {
+	if p != nil && p.Name() == "two" {
+		return &StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
 				return int64(2), nil
 			},
 		}, nil
 	}
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "three" && val.Fields[1].Name == "one" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(context.Context, interface{}) (interface{}, error) {
+	if p != nil && p.Name() == "three" && p.Next() != nil && p.Next().Name() == "one" {
+		return &StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
 				return 3.1, nil
 			},
 		}, nil
 	}
-	return nil, fmt.Errorf("bad path %v", val)
+	return nil, fmt.Errorf("bad path %v", p)
 }
 
 func one[K any]() (ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
+	return func(context.Context, K) (any, error) {
 		return int64(1), nil
 	}, nil
 }
 
 func two[K any]() (ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
+	return func(context.Context, K) (any, error) {
 		return int64(2), nil
 	}, nil
 }
 
 func threePointOne[K any]() (ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
+	return func(context.Context, K) (any, error) {
 		return 3.1, nil
 	}, nil
 }
 
+func testTime[K any](time string, format string) (ExprFunc[K], error) {
+	loc, err := timeutils.GetLocation(nil, &format)
+	if err != nil {
+		return nil, err
+	}
+	return func(_ context.Context, _ K) (any, error) {
+		timestamp, err := timeutils.ParseStrptime(format, time, loc)
+		return timestamp, err
+	}, nil
+}
+
+func testDuration[K any](duration string) (ExprFunc[K], error) {
+	if duration != "" {
+		return func(_ context.Context, _ K) (any, error) {
+			dur, err := time.ParseDuration(duration)
+			return dur, err
+		}, nil
+	}
+	return nil, fmt.Errorf("duration cannot be empty")
+}
+
+type sumArguments struct {
+	Ints []int64
+}
+
 //nolint:unparam
 func sum[K any](ints []int64) (ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
+	return func(context.Context, K) (any, error) {
 		result := int64(0)
 		for _, x := range ints {
 			result += x
@@ -82,7 +101,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected interface{}
+		expected any
 	}{
 		{
 			name:     "simple subtraction",
@@ -206,16 +225,16 @@ func Test_evaluateMathExpression(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{
-		"One":           one[any],
-		"Two":           two[any],
-		"ThreePointOne": threePointOne[any],
-		"Sum":           sum[any],
-	}
+	functions := CreateFactoryMap(
+		createFactory("One", &struct{}{}, one[any]),
+		createFactory("Two", &struct{}{}, two[any]),
+		createFactory("ThreePointOne", &struct{}{}, threePointOne[any]),
+		createFactory("Sum", &sumArguments{}, sum[any]),
+	)
 
 	p, _ := NewParser[any](
 		functions,
-		mathParsePath,
+		mathParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -240,25 +259,304 @@ func Test_evaluateMathExpression(t *testing.T) {
 
 func Test_evaluateMathExpression_error(t *testing.T) {
 	tests := []struct {
-		name  string
-		input string
+		name     string
+		input    string
+		mathExpr *mathExpression
+		errorMsg string
 	}{
 		{
 			name:  "divide by 0 is gracefully handled",
 			input: "1 / 0",
 		},
+		{
+			name: "time div time",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("2023-04-12"),
+										},
+									},
+									{
+										Value: value{
+											String: ottltest.Strp("%Y-%m-%d"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: div,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("2023-04-12"),
+												},
+											},
+											{
+												Value: value{
+													String: ottltest.Strp("%Y-%m-%d"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "only addition and subtraction supported",
+		},
+		{
+			name: "dur mult dur",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("100h100m100s100ns"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: mult,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("1h1m1s1ns"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "only addition and subtraction supported",
+		},
+		{
+			name: "time add int",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("2023-04-12"),
+										},
+									},
+									{
+										Value: value{
+											String: ottltest.Strp("%Y-%m-%d"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: add,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(1),
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "time.Time must be added to time.Duration",
+		},
+		{
+			name: "dur sub int",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("1h1m1s1ns"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: sub,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(5),
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "time.Duration must be subtracted from time.Duration",
+		},
+		{
+			name: "time add time",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("2023-04-12"),
+										},
+									},
+									{
+										Value: value{
+											String: ottltest.Strp("%Y-%m-%d"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: add,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("2022-05-11"),
+												},
+											},
+											{
+												Value: value{
+													String: ottltest.Strp("%Y-%m-%d"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "time.Time must be added to time.Duration",
+		},
+		{
+			name: "dur sub time",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("2h"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: sub,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("2000-10-30"),
+												},
+											},
+											{
+												Value: value{
+													String: ottltest.Strp("%Y-%m-%d"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "time.Duration must be subtracted from time.Duration",
+		},
 	}
 
-	functions := map[string]interface{}{
-		"one":           one[any],
-		"two":           two[any],
-		"threePointOne": threePointOne[any],
-		"sum":           sum[any],
-	}
+	functions := CreateFactoryMap(
+		createFactory("one", &struct{}{}, one[any]),
+		createFactory("two", &struct{}{}, two[any]),
+		createFactory("threePointOne", &struct{}{}, threePointOne[any]),
+		createFactory("sum", &sumArguments{}, sum[any]),
+		createFactory("Time", &struct {
+			Time   string
+			Format string
+		}{}, testTime[any]),
+		createFactory("Duration", &struct {
+			Duration string
+		}{}, testDuration[any]),
+	)
 
 	p, _ := NewParser[any](
 		functions,
-		mathParsePath,
+		mathParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -267,15 +565,594 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parsed, err := mathParser.ParseString("", tt.input)
-			assert.NoError(t, err)
+			if tt.mathExpr != nil {
+				getter, err := p.evaluateMathExpression(tt.mathExpr)
+				if err != nil {
+					assert.Error(t, err)
+					assert.ErrorContains(t, err, tt.errorMsg)
+				} else {
+					result, err := getter.Get(context.Background(), nil)
+					assert.Nil(t, result)
+					assert.Error(t, err)
+					assert.ErrorContains(t, err, tt.errorMsg)
+				}
 
-			getter, err := p.evaluateMathExpression(parsed.MathExpression)
-			assert.NoError(t, err)
+			} else {
+				parsed, err := mathParser.ParseString("", tt.input)
+				assert.NoError(t, err)
 
-			result, err := getter.Get(context.Background(), nil)
-			assert.Nil(t, result)
-			assert.Error(t, err)
+				getter, err := p.evaluateMathExpression(parsed.MathExpression)
+				assert.NoError(t, err)
+
+				result, err := getter.Get(context.Background(), nil)
+				assert.Nil(t, result)
+				assert.Error(t, err)
+			}
+
 		})
+	}
+}
+
+func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
+	functions := CreateFactoryMap(
+		createFactory("Time", &struct {
+			Time   string
+			Format string
+		}{}, testTime[any]),
+		createFactory("Duration", &struct {
+			Duration string
+		}{}, testDuration[any]),
+	)
+
+	p, _ := NewParser(
+		functions,
+		mathParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	zeroSecs, err := time.ParseDuration("0s")
+	require.NoError(t, err)
+	fourtySevenHourseFourtyTwoMinutesTwentySevenSecs, err := time.ParseDuration("47h42m27s")
+	require.NoError(t, err)
+	oneHundredOne, err := time.ParseDuration("101h101m101s101ns")
+	require.NoError(t, err)
+	oneThousandHours, err := time.ParseDuration("1000h")
+	require.NoError(t, err)
+	threeTwentyEightMins, err := time.ParseDuration("328m")
+	require.NoError(t, err)
+	tenHoursetc, err := time.ParseDuration("10h47m48s11ns")
+	require.NoError(t, err)
+
+	var tests = []struct {
+		name     string
+		mathExpr *mathExpression
+		expected any
+	}{
+		{
+			name: "time sub time, no difference",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("2023-04-12"),
+										},
+									},
+									{
+										Value: value{
+											String: ottltest.Strp("%Y-%m-%d"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: sub,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("2023-04-12"),
+												},
+											},
+											{
+												Value: value{
+													String: ottltest.Strp("%Y-%m-%d"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: zeroSecs,
+		},
+		{
+			name: "time sub time",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("1986-10-30T00:17:33"),
+										},
+									},
+									{
+										Value: value{
+											String: ottltest.Strp("%Y-%m-%dT%H:%M:%S"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: sub,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("1986-11-01"),
+												},
+											},
+											{
+												Value: value{
+													String: ottltest.Strp("%Y-%m-%d"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: -fourtySevenHourseFourtyTwoMinutesTwentySevenSecs,
+		},
+		{
+			name: "dur add time",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("10h"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: add,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("01-01-2000"),
+												},
+											},
+											{
+												Value: value{
+													String: ottltest.Strp("%m-%d-%Y"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local),
+		},
+		{
+			name: "time add dur",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("Feb 15, 2023"),
+										},
+									},
+									{
+										Value: value{
+											String: ottltest.Strp("%b %d, %Y"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: add,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("10h"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: time.Date(2023, 2, 15, 10, 0, 0, 0, time.Local),
+		},
+		{
+			name: "time add dur, complex dur",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("02/04/2023"),
+										},
+									},
+									{
+										Value: value{
+											String: ottltest.Strp("%m/%d/%Y"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: add,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("1h2m3s"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: time.Date(2023, 2, 4, 1, 2, 3, 0, time.Local),
+		},
+		{
+			name: "time sub dur, complex dur",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("Mar 14 2023 17:02:59"),
+										},
+									},
+									{
+										Value: value{
+											String: ottltest.Strp("%b %d %Y %H:%M:%S"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: sub,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("11h2m58s"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: time.Date(2023, 3, 14, 6, 0, 1, 0, time.Local),
+		},
+		{
+			name: "time sub dur, nanosecs",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("Monday, May 01, 2023"),
+										},
+									},
+									{
+										Value: value{
+											String: ottltest.Strp("%A, %B %d, %Y"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: sub,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("100ns"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: time.Date(2023, 4, 30, 23, 59, 59, 999999900, time.Local),
+		},
+		{
+			name: "dur add dur, complex durs",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("100h100m100s100ns"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: add,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("1h1m1s1ns"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: oneHundredOne,
+		},
+		{
+			name: "dur add dur, zero dur",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("0h"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: add,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("1000h"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: oneThousandHours,
+		},
+		{
+			name: "dur sub dur, zero dur",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("0h"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: sub,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("328m"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: -threeTwentyEightMins,
+		},
+		{
+			name: "dur sub dur, complex durs",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []argument{
+									{
+										Value: value{
+											String: ottltest.Strp("11h11ns"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: sub,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []argument{
+											{
+												Value: value{
+													String: ottltest.Strp("12m12s"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: tenHoursetc,
+		},
+	}
+	for _, tt := range tests {
+		getter, err := p.evaluateMathExpression(tt.mathExpr)
+		assert.NoError(t, err)
+
+		result, err := getter.Get(context.Background(), nil)
+		assert.NoError(t, err)
+		assert.Equal(t, tt.expected, result)
 	}
 }

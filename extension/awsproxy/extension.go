@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsproxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 
@@ -20,6 +9,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
@@ -27,38 +17,42 @@ import (
 )
 
 type xrayProxy struct {
-	logger *zap.Logger
-	config *Config
-	server proxy.Server
+	logger   *zap.Logger
+	config   *Config
+	server   proxy.Server
+	settings component.TelemetrySettings
 }
 
 var _ extension.Extension = (*xrayProxy)(nil)
 
-func (x xrayProxy) Start(ctx context.Context, host component.Host) error {
+func (x *xrayProxy) Start(_ context.Context, host component.Host) error {
+	srv, err := proxy.NewServer(&x.config.ProxyConfig, x.settings.Logger)
+
+	if err != nil {
+		return err
+	}
+	x.server = srv
 	go func() {
 		if err := x.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			host.ReportFatalError(err)
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	x.logger.Info("X-Ray proxy server started on " + x.config.ProxyConfig.Endpoint)
 	return nil
 }
 
-func (x xrayProxy) Shutdown(ctx context.Context) error {
-	return x.server.Shutdown(ctx)
+func (x *xrayProxy) Shutdown(ctx context.Context) error {
+	if x.server != nil {
+		return x.server.Shutdown(ctx)
+	}
+	return nil
 }
 
-func newXrayProxy(config *Config, logger *zap.Logger) (extension.Extension, error) {
-	srv, err := proxy.NewServer(&config.ProxyConfig, logger)
-
-	if err != nil {
-		return nil, err
-	}
-
+func newXrayProxy(config *Config, telemetrySettings component.TelemetrySettings) (extension.Extension, error) {
 	p := &xrayProxy{
-		config: config,
-		logger: logger,
-		server: srv,
+		config:   config,
+		logger:   telemetrySettings.Logger,
+		settings: telemetrySettings,
 	}
 
 	return p, nil

@@ -1,26 +1,15 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package regex
 
 import (
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 )
 
 func TestNewMemoryCache(t *testing.T) {
@@ -34,7 +23,7 @@ func TestNewMemoryCache(t *testing.T) {
 			"size-50",
 			50,
 			&memoryCache{
-				cache: make(map[string]interface{}),
+				cache: make(map[string]any),
 				keys:  make(chan string, 50),
 			},
 			50,
@@ -43,9 +32,10 @@ func TestNewMemoryCache(t *testing.T) {
 
 	for _, tc := range cases {
 		output := newMemoryCache(tc.maxSize, 0)
+		defer output.stop()
 		require.Equal(t, tc.expect.cache, output.cache)
-		require.Len(t, output.cache, 0, "new memory should always be empty")
-		require.Len(t, output.keys, 0, "new memory should always be empty")
+		require.Empty(t, output.cache, "new memory should always be empty")
+		require.Empty(t, output.keys, "new memory should always be empty")
 		require.Equal(t, tc.expectSize, cap(output.keys), "keys channel should have cap of expected size")
 	}
 }
@@ -54,7 +44,7 @@ func TestMemory(t *testing.T) {
 	cases := []struct {
 		name   string
 		cache  *memoryCache
-		input  map[string]interface{}
+		input  map[string]any
 		expect *memoryCache
 	}{
 		{
@@ -62,7 +52,7 @@ func TestMemory(t *testing.T) {
 			func() *memoryCache {
 				return newMemoryCache(3, 0)
 			}(),
-			map[string]interface{}{
+			map[string]any{
 				"key": "value",
 				"map-value": map[string]string{
 					"x":   "y",
@@ -70,7 +60,7 @@ func TestMemory(t *testing.T) {
 				},
 			},
 			&memoryCache{
-				cache: map[string]interface{}{
+				cache: map[string]any{
 					"key": "value",
 					"map-value": map[string]string{
 						"x":   "y",
@@ -83,6 +73,7 @@ func TestMemory(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			defer tc.cache.stop()
 			for key, value := range tc.input {
 				tc.cache.add(key, value)
 				out := tc.cache.get(key)
@@ -106,6 +97,7 @@ func TestCleanupLast(t *testing.T) {
 	maxSize := 10
 
 	m := newMemoryCache(uint16(maxSize), 0)
+	defer m.stop()
 
 	// Add to cache until it is full
 	for i := 0; i <= cap(m.keys); i++ {
@@ -114,7 +106,7 @@ func TestCleanupLast(t *testing.T) {
 	}
 
 	// make sure the cache looks the way we expect
-	expectCache := map[string]interface{}{
+	expectCache := map[string]any{
 		"1":  1, // oldest key, will be removed when 11 is added
 		"2":  2,
 		"3":  3,
@@ -143,7 +135,7 @@ func TestCleanupLast(t *testing.T) {
 	}
 
 	// All entries should have been replaced by now
-	expectCache = map[string]interface{}{
+	expectCache = map[string]any{
 		"11": 11,
 		"12": 12,
 		"13": 13,
@@ -186,6 +178,7 @@ func TestNewStartedAtomicLimiter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			l := newStartedAtomicLimiter(tc.max, tc.interval)
 			require.Equal(t, tc.max, l.max)
+			defer l.stop()
 			if tc.interval == 0 {
 				// default
 				tc.interval = 5
@@ -203,6 +196,7 @@ func TestLimiter(t *testing.T) {
 	l := newStartedAtomicLimiter(max, 120)
 	require.NotNil(t, l)
 	require.Equal(t, max, l.max)
+	defer l.stop()
 
 	require.False(t, l.throttled(), "new limiter should not be throttling")
 	require.Equal(t, uint64(0), l.currentCount())
@@ -224,10 +218,13 @@ func TestThrottledLimiter(t *testing.T) {
 	// Limiter with a count higher than the max, which will force
 	// it to be throttled by default. Also note that the init method
 	// has not been called yet, so the reset go routine is not running
+	count := &atomic.Uint64{}
+	count.Add(max + 1)
 	l := atomicLimiter{
 		max:      max,
-		count:    atomic.NewUint64(max + 1),
+		count:    count,
 		interval: 1,
+		done:     make(chan struct{}),
 	}
 
 	require.True(t, l.throttled())
@@ -236,6 +233,7 @@ func TestThrottledLimiter(t *testing.T) {
 	// for it to reset the counter. The limiter will no longer
 	// be in a throttled state and the count will be reset.
 	l.init()
+	defer l.stop()
 	wait := 2 * l.interval
 	time.Sleep(time.Second * wait)
 	require.False(t, l.throttled())
@@ -244,6 +242,7 @@ func TestThrottledLimiter(t *testing.T) {
 
 func TestThrottledCache(t *testing.T) {
 	c := newMemoryCache(3, 120)
+	defer c.stop()
 	require.False(t, c.limiter.throttled())
 	require.Equal(t, 4, int(c.limiter.limit()), "expected limit be cache size + 1")
 	require.Equal(t, float64(120), c.limiter.resetInterval().Seconds(), "expected reset interval to be 120 seconds")

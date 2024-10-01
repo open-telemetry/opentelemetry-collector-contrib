@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package deltatorateprocessor
 
@@ -132,12 +121,12 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			factory := NewFactory()
 			mgp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				cfg,
 				next,
 			)
 			assert.NotNil(t, mgp)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
@@ -145,10 +134,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			require.NoError(t, mgp.Start(ctx, nil))
 
 			cErr := mgp.ConsumeMetrics(context.Background(), test.inMetrics)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
-			require.Equal(t, 1, len(got))
+			require.Len(t, got, 1)
 			require.Equal(t, test.outMetrics.ResourceMetrics().Len(), got[0].ResourceMetrics().Len())
 
 			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()

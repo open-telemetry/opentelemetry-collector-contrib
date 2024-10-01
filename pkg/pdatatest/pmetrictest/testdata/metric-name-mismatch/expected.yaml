@@ -1,0 +1,7 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge: {}
+            name: expected.name
+        scope: {}

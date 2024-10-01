@@ -1,4 +1,13 @@
-name: zookeeperreceiver
+type: zookeeper
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [djaglowski]
+    seeking_new: true
 
 resource_attributes:
   server.state:
@@ -32,7 +41,7 @@ metrics:
     attributes: [state]
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   zookeeper.sync.pending:
     enabled: true
@@ -40,7 +49,7 @@ metrics:
     unit: "{syncs}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   zookeeper.latency.avg:
     enabled: true
@@ -66,7 +75,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   zookeeper.request.active:
     enabled: true
@@ -74,7 +83,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   zookeeper.znode.count:
     enabled: true
@@ -82,7 +91,7 @@ metrics:
     unit: "{znodes}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   zookeeper.watch.count:
     enabled: true
@@ -90,7 +99,7 @@ metrics:
     unit: "{watches}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   zookeeper.data_tree.ephemeral_node.count:
     enabled: true
@@ -98,7 +107,7 @@ metrics:
     unit: "{nodes}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   zookeeper.data_tree.size:
     enabled: true
@@ -106,7 +115,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   zookeeper.file_descriptor.open:
     enabled: true
@@ -114,7 +123,7 @@ metrics:
     unit: "{file_descriptors}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   zookeeper.file_descriptor.limit:
     enabled: true
@@ -130,7 +139,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   zookeeper.fsync.exceeded_threshold.count:
     enabled: true
     description: Number of times fsync duration has exceeded warning threshold.
@@ -138,4 +147,13 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
+  zookeeper.ruok:
+    enabled: true
+    description: Response from zookeeper ruok command
+    unit: "1"
+    gauge:
+      value_type: int
+
+tests:
+  config:

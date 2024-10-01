@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -36,14 +25,14 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+func (p *MockDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), "", args.Error(1)
 }
 
 type mockDetectorConfig struct{}
 
-func (d *mockDetectorConfig) GetConfigFromType(detectorType DetectorType) DetectorConfig {
+func (d *mockDetectorConfig) GetConfigFromType(_ DetectorType) DetectorConfig {
 	return nil
 }
 
@@ -105,14 +94,14 @@ func TestDetect(t *testing.T) {
 				md.On("Detect").Return(res, nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockdetector%v", i))
-				mockDetectors[mockDetectorType] = func(processor.CreateSettings, DetectorConfig) (Detector, error) {
+				mockDetectors[mockDetectorType] = func(processor.Settings, DetectorConfig) (Detector, error) {
 					return md, nil
 				}
 				mockDetectorTypes = append(mockDetectorTypes, mockDetectorType)
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -126,18 +115,18 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
 func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{
-		mockDetectorKey: func(processor.CreateSettings, DetectorConfig) (Detector, error) {
+		mockDetectorKey: func(processor.Settings, DetectorConfig) (Detector, error) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -197,7 +186,7 @@ func NewMockParallelDetector() *MockParallelDetector {
 	return &MockParallelDetector{ch: make(chan struct{})}
 }
 
-func (p *MockParallelDetector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+func (p *MockParallelDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	<-p.ch
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), "", args.Error(1)
@@ -221,7 +210,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md3 := NewMockParallelDetector()
 	md3.On("Detect").Return(pcommon.NewResource(), errors.New("an error"))
 
-	expectedResourceAttrs := map[string]interface{}{"a": "1", "b": "2", "c": "3"}
+	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
 
@@ -232,7 +221,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
 	}
@@ -292,7 +281,7 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.False(t, ok)
 
-	assert.EqualValues(t, droppedAttributes, []string{"host.name", "host.id"})
+	assert.EqualValues(t, []string{"host.name", "host.id"}, droppedAttributes)
 }
 
 func TestFilterAttributes_NilAttributes(t *testing.T) {
@@ -309,7 +298,7 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Equal(t, len(droppedAttributes), 0)
+	assert.Empty(t, droppedAttributes)
 }
 
 func TestFilterAttributes_NoAttributes(t *testing.T) {
@@ -326,5 +315,5 @@ func TestFilterAttributes_NoAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Equal(t, len(droppedAttributes), 0)
+	assert.Empty(t, droppedAttributes)
 }

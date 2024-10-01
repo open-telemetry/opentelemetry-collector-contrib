@@ -1,0 +1,8 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - name: nonmonotonic
+            sum:
+              aggregationTemporality: 2
+        scope: {}

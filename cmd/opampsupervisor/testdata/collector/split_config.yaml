@@ -1,0 +1,14 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+  telemetry:
+    resource:
+      test_key: '${file:{{.TestKeyFile}}}'

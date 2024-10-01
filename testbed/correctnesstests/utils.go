@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package correctnesstests // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
 
@@ -22,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/dataconnectors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -31,10 +22,11 @@ import (
 // processors, and a pipeline type. A collector created from the resulting yaml string should be able to talk
 // the specified sender and receiver.
 func CreateConfigYaml(
+	t testing.TB,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
+	connector testbed.DataConnector,
 	processors map[string]string,
-	pipelineType string,
 ) string {
 
 	// Prepare extra processor config section and comma-separated list of extra processor
@@ -53,6 +45,64 @@ func CreateConfigYaml(
 		}
 	}
 
+	var pipeline1 string
+	switch sender.(type) {
+	case testbed.TraceDataSender:
+		pipeline1 = "traces"
+	case testbed.MetricDataSender:
+		pipeline1 = "metrics"
+	case testbed.LogDataSender:
+		pipeline1 = "logs"
+	default:
+		t.Error("Invalid DataSender type")
+	}
+
+	if connector != nil {
+		pipeline2 := connector.GetReceiverType()
+
+		format := `
+receivers:%v
+exporters:%v
+processors:
+  %s
+
+extensions:
+
+connectors:%v
+
+service:
+  telemetry:
+    metrics:
+      address: 127.0.0.1:%d
+    logs:
+      level: "debug"
+  extensions:
+  pipelines:
+    %s/in:
+      receivers: [%v]
+      processors: [%s]
+      exporters: [%v]
+    %s/out:
+      receivers: [%v]
+      exporters: [%v]
+`
+		return fmt.Sprintf(
+			format,
+			sender.GenConfigYAMLStr(),
+			receiver.GenConfigYAMLStr(),
+			processorsSections,
+			connector.GenConfigYAMLStr(),
+			testutil.GetAvailablePort(t),
+			pipeline1,
+			sender.ProtocolName(),
+			processorsList,
+			connector.ProtocolName(),
+			pipeline2,
+			connector.ProtocolName(),
+			receiver.ProtocolName(),
+		)
+	}
+
 	format := `
 receivers:%v
 exporters:%v
@@ -62,6 +112,9 @@ processors:
 extensions:
 
 service:
+  telemetry:
+    metrics:
+      address: 127.0.0.1:%d
   extensions:
   pipelines:
     %s:
@@ -75,7 +128,8 @@ service:
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
-		pipelineType,
+		testutil.GetAvailablePort(t),
+		pipeline1,
 		sender.ProtocolName(),
 		processorsList,
 		receiver.ProtocolName(),
@@ -84,12 +138,14 @@ service:
 
 // PipelineDef holds the information necessary to run a single testbed configuration.
 type PipelineDef struct {
-	Receiver     string
-	Exporter     string
-	TestName     string
-	DataSender   testbed.DataSender
-	DataReceiver testbed.DataReceiver
-	ResourceSpec testbed.ResourceSpec
+	Receiver      string
+	Exporter      string
+	Connector     string
+	TestName      string
+	DataSender    testbed.DataSender
+	DataReceiver  testbed.DataReceiver
+	DataConnector testbed.DataConnector
+	ResourceSpec  testbed.ResourceSpec
 }
 
 // LoadPictOutputPipelineDefs generates a slice of PipelineDefs from the passed-in generated PICT file. The
@@ -125,13 +181,13 @@ func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 	var sender testbed.DataSender
 	switch receiver {
 	case "otlp":
-		sender = testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "opencensus":
-		sender = datasenders.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewOCTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "jaeger":
-		sender = datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "zipkin":
-		sender = datasenders.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown receiver type: %s", receiver)
 	}
@@ -143,11 +199,11 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 	var sender testbed.MetricDataSender
 	switch receiver {
 	case "otlp":
-		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "opencensus":
-		sender = datasenders.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewOCMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "prometheus":
-		sender = datasenders.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewPrometheusDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown receiver type: %s", receiver)
 	}
@@ -159,17 +215,30 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	var receiver testbed.DataReceiver
 	switch exporter {
 	case "otlp":
-		receiver = testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+		receiver = testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 	case "opencensus":
-		receiver = datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t))
+		receiver = datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t))
 	case "jaeger":
-		receiver = datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t))
+		receiver = datareceivers.NewJaegerDataReceiver(testutil.GetAvailablePort(t))
 	case "zipkin":
-		receiver = datareceivers.NewZipkinDataReceiver(testbed.GetAvailablePort(t))
+		receiver = datareceivers.NewZipkinDataReceiver(testutil.GetAvailablePort(t))
 	case "prometheus":
-		receiver = datareceivers.NewPrometheusDataReceiver(testbed.GetAvailablePort(t))
+		receiver = datareceivers.NewPrometheusDataReceiver(testutil.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown exporter type: %s", exporter)
 	}
 	return receiver
+}
+
+func ConstructConnector(t *testing.T, connector string, receiverType string) testbed.DataConnector {
+	var dataconnector testbed.DataConnector
+	switch connector {
+	case "spanmetrics":
+		dataconnector = dataconnectors.NewSpanMetricDataConnector(receiverType)
+	case "routing":
+		dataconnector = dataconnectors.NewRoutingDataConnector(receiverType)
+	default:
+		t.Errorf("unknown connector type: %s", connector)
+	}
+	return dataconnector
 }

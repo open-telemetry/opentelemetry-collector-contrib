@@ -1,0 +1,939 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+    scopeMetrics:
+      - metrics:
+          - description: The number of clusters in the datacenter.
+            name: vcenter.datacenter.cluster.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: gray
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: green
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: red
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: yellow
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{clusters}'
+          - description: The total amount of CPU available to the datacenter.
+            name: vcenter.datacenter.cpu.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "18352"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The number of datastores in the datacenter.
+            name: vcenter.datacenter.datastore.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{datastores}'
+          - description: The amount of available and used disk space in the datacenter.
+            name: vcenter.datacenter.disk.space
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10952166604800"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "42949672960"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of hosts in the datacenter.
+            name: vcenter.datacenter.host.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                    - key: status
+                      value:
+                        stringValue: gray
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{hosts}'
+          - description: The total amount of memory available to the datacenter.
+            name: vcenter.datacenter.memory.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "17177722880"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of VM's in the datacenter.
+            name: vcenter.datacenter.vm.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                    - key: status
+                      value:
+                        stringValue: green
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{virtual_machines}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+    scopeMetrics:
+      - metrics:
+          - description: The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.
+            name: vcenter.cluster.cpu.effective
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "6882"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The amount of CPU available to the cluster.
+            name: vcenter.cluster.cpu.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "6882"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The number of hosts in the cluster.
+            name: vcenter.cluster.host.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: effective
+                      value:
+                        boolValue: false
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3"
+                  attributes:
+                    - key: effective
+                      value:
+                        boolValue: true
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{hosts}'
+          - description: The effective available memory of the cluster.
+            name: vcenter.cluster.memory.effective
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "13509110959964160"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The available memory of the cluster.
+            name: vcenter.cluster.memory.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "12883292160"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of virtual machines in the cluster.
+            name: vcenter.cluster.vm.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "off"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: suspended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{virtual_machines}'
+          - description: The number of virtual machine templates in the cluster.
+            name: vcenter.cluster.vm_template.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{virtual_machine_templates}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.datastore.name
+          value:
+            stringValue: LocalDS_0
+    scopeMetrics:
+      - metrics:
+          - description: The amount of space in the datastore.
+            name: vcenter.datastore.disk.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10952166604800"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "42949672960"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The utilization of the datastore.
+            gauge:
+              dataPoints:
+                - asDouble: 0.390625
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.datastore.disk.utilization
+            unit: '%'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.host.name
+          value:
+            stringValue: H0
+    scopeMetrics:
+      - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4588"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The amount of CPU used by the host.
+            name: vcenter.host.cpu.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU utilization of the host system.
+            gauge:
+              dataPoints:
+                - asDouble: 1.4603312990409765
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.cpu.utilization
+            unit: '%'
+          - description: The amount of memory the host system is using.
+            name: vcenter.host.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1404"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The percentage of the host system's memory capacity that is being utilized.
+            gauge:
+              dataPoints:
+                - asDouble: 34.285714285714285
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.memory.utilization
+            unit: '%'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.host.name
+          value:
+            stringValue: H1
+    scopeMetrics:
+      - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4588"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The amount of CPU used by the host.
+            name: vcenter.host.cpu.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU utilization of the host system.
+            gauge:
+              dataPoints:
+                - asDouble: 1.4603312990409765
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.cpu.utilization
+            unit: '%'
+          - description: The amount of memory the host system is using.
+            name: vcenter.host.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1404"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The percentage of the host system's memory capacity that is being utilized.
+            gauge:
+              dataPoints:
+                - asDouble: 34.285714285714285
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.memory.utilization
+            unit: '%'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.host.name
+          value:
+            stringValue: H2
+    scopeMetrics:
+      - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4588"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The amount of CPU used by the host.
+            name: vcenter.host.cpu.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU utilization of the host system.
+            gauge:
+              dataPoints:
+                - asDouble: 1.4603312990409765
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.cpu.utilization
+            unit: '%'
+          - description: The amount of memory the host system is using.
+            name: vcenter.host.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1404"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The percentage of the host system's memory capacity that is being utilized.
+            gauge:
+              dataPoints:
+                - asDouble: 34.285714285714285
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.memory.utilization
+            unit: '%'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.host.name
+          value:
+            stringValue: H3
+    scopeMetrics:
+      - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4588"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The amount of CPU used by the host.
+            name: vcenter.host.cpu.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU utilization of the host system.
+            gauge:
+              dataPoints:
+                - asDouble: 1.4603312990409765
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.cpu.utilization
+            unit: '%'
+          - description: The amount of memory the host system is using.
+            name: vcenter.host.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1404"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The percentage of the host system's memory capacity that is being utilized.
+            gauge:
+              dataPoints:
+                - asDouble: 34.285714285714285
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.memory.utilization
+            unit: '%'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_C0/Resources
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+    scopeMetrics:
+      - metrics:
+          - description: The amount of shares of CPU in the resource pool.
+            name: vcenter.resource_pool.cpu.shares
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{shares}'
+          - description: The amount of shares of memory in the resource pool.
+            name: vcenter.resource_pool.memory.shares
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{shares}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.host.name
+          value:
+            stringValue: H0
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_H0/Resources
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+    scopeMetrics:
+      - metrics:
+          - description: The amount of shares of CPU in the resource pool.
+            name: vcenter.resource_pool.cpu.shares
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{shares}'
+          - description: The amount of shares of memory in the resource pool.
+            name: vcenter.resource_pool.memory.shares
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{shares}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.host.name
+          value:
+            stringValue: H0
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_H0/Resources
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+        - key: vcenter.vm.id
+          value:
+            stringValue: b4689bed-97f0-5bcd-8a4c-07477cc8f06f
+        - key: vcenter.vm.name
+          value:
+            stringValue: VM0
+    scopeMetrics:
+      - metrics:
+          - description: The amount of storage space used by the virtual machine.
+            name: vcenter.vm.disk.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10737418240"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The utilization of storage on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.disk.utilization
+            unit: '%'
+          - description: The amount of memory that is ballooned due to virtualization.
+            name: vcenter.vm.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The portion of memory that is granted to this VM from the host's swap space.
+            name: vcenter.vm.memory.swapped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory swapped to fast disk device such as SSD.
+            name: vcenter.vm.memory.swapped_ssd
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KiBy
+          - description: The amount of memory that is used by the virtual machine.
+            name: vcenter.vm.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.host.name
+          value:
+            stringValue: H1
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_H0/Resources
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+        - key: vcenter.vm.id
+          value:
+            stringValue: 12f8928d-f144-5c57-89db-dd2d0902c9fa
+        - key: vcenter.vm.name
+          value:
+            stringValue: VM1
+    scopeMetrics:
+      - metrics:
+          - description: The amount of storage space used by the virtual machine.
+            name: vcenter.vm.disk.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10737418240"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The utilization of storage on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.disk.utilization
+            unit: '%'
+          - description: The amount of memory that is ballooned due to virtualization.
+            name: vcenter.vm.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The portion of memory that is granted to this VM from the host's swap space.
+            name: vcenter.vm.memory.swapped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory swapped to fast disk device such as SSD.
+            name: vcenter.vm.memory.swapped_ssd
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KiBy
+          - description: The amount of memory that is used by the virtual machine.
+            name: vcenter.vm.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.host.name
+          value:
+            stringValue: H2
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_C0/Resources
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+        - key: vcenter.vm.id
+          value:
+            stringValue: bfff331f-7f07-572d-951e-edd3701dc061
+        - key: vcenter.vm.name
+          value:
+            stringValue: VM2
+    scopeMetrics:
+      - metrics:
+          - description: The amount of storage space used by the virtual machine.
+            name: vcenter.vm.disk.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10737418240"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The utilization of storage on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.disk.utilization
+            unit: '%'
+          - description: The amount of memory that is ballooned due to virtualization.
+            name: vcenter.vm.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The portion of memory that is granted to this VM from the host's swap space.
+            name: vcenter.vm.memory.swapped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory swapped to fast disk device such as SSD.
+            name: vcenter.vm.memory.swapped_ssd
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KiBy
+          - description: The amount of memory that is used by the virtual machine.
+            name: vcenter.vm.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
+        - key: vcenter.host.name
+          value:
+            stringValue: H3
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_C0/Resources
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+        - key: vcenter.vm.id
+          value:
+            stringValue: 6132d223-1566-5921-bc3b-df91ece09a4d
+        - key: vcenter.vm.name
+          value:
+            stringValue: VM3
+    scopeMetrics:
+      - metrics:
+          - description: The amount of storage space used by the virtual machine.
+            name: vcenter.vm.disk.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10737418240"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The utilization of storage on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.disk.utilization
+            unit: '%'
+          - description: The amount of memory that is ballooned due to virtualization.
+            name: vcenter.vm.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The portion of memory that is granted to this VM from the host's swap space.
+            name: vcenter.vm.memory.swapped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory swapped to fast disk device such as SSD.
+            name: vcenter.vm.memory.swapped_ssd
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KiBy
+          - description: The amount of memory that is used by the virtual machine.
+            name: vcenter.vm.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest

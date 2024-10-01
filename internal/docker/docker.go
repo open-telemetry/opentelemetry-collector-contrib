@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 
@@ -25,16 +14,16 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	devents "github.com/docker/docker/api/types/events"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	"go.uber.org/zap"
 )
 
-const (
-	minimalRequiredDockerAPIVersion = 1.22
-	userAgent                       = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
-)
+const userAgent = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
+
+var minimumRequiredDockerAPIVersion = MustNewAPIVersion("1.22")
 
 // Container is client.ContainerInspect() response container
 // stats and translated environment string map for potential labels.
@@ -57,10 +46,17 @@ type Client struct {
 }
 
 func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
+	version := minimumRequiredDockerAPIVersion
+	if config.DockerAPIVersion != "" {
+		var err error
+		if version, err = NewAPIVersion(config.DockerAPIVersion); err != nil {
+			return nil, err
+		}
+	}
 	client, err := docker.NewClientWithOpts(
 		append([]docker.Opt{
 			docker.WithHost(config.Endpoint),
-			docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
+			docker.WithVersion(version),
 			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
 		}, opts...)...,
 	)
@@ -103,7 +99,7 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 	// Build initial container maps before starting loop
 	filters := dfilters.NewArgs()
 	filters.Add("status", "running")
-	options := dtypes.ContainerListOptions{
+	options := container.ListOptions{
 		Filters: filters,
 	}
 
@@ -241,16 +237,16 @@ EVENT_LOOP:
 			case event := <-eventCh:
 				switch event.Action {
 				case "destroy":
-					dc.logger.Debug("Docker container was destroyed:", zap.String("id", event.ID))
-					dc.RemoveContainer(event.ID)
+					dc.logger.Debug("Docker container was destroyed:", zap.String("id", event.Actor.ID))
+					dc.RemoveContainer(event.Actor.ID)
 				default:
 					dc.logger.Debug(
 						"Docker container update:",
-						zap.String("id", event.ID),
-						zap.String("action", event.Action),
+						zap.String("id", event.Actor.ID),
+						zap.Any("action", event.Action),
 					)
 
-					dc.InspectAndPersistContainer(ctx, event.ID)
+					dc.InspectAndPersistContainer(ctx, event.Actor.ID)
 				}
 
 				if event.TimeNano > lastTime.UnixNano() {

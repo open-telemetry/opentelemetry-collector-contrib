@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
@@ -18,11 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -30,6 +22,18 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
+)
+
+var (
+	unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
+
+	_ = featuregate.GlobalRegistry().MustRegister(
+		"receiver.mongodb.removeDatabaseAttr",
+		featuregate.StageStable,
+		featuregate.WithRegisterDescription("Remove duplicate database name attribute"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24972"),
+		featuregate.WithRegisterFromVersion("v0.90.0"),
+		featuregate.WithRegisterToVersion("v0.104.0"))
 )
 
 type mongodbScraper struct {
@@ -40,16 +44,17 @@ type mongodbScraper struct {
 	mb           *metadata.MetricsBuilder
 }
 
-func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongodbScraper {
+func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
 	return &mongodbScraper{
-		logger: settings.Logger,
-		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings),
+		logger:       settings.Logger,
+		config:       config,
+		mb:           metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		mongoVersion: unknownVersion(),
 	}
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
-	c, err := NewClient(ctx, s.config, s.logger)
+	c, err := newClient(ctx, s.config, s.logger)
 	if err != nil {
 		return fmt.Errorf("create mongo client: %w", err)
 	}
@@ -69,7 +74,7 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), errors.New("no client was initialized before calling scrape")
 	}
 
-	if s.mongoVersion == nil {
+	if s.mongoVersion.Equal(unknownVersion()) {
 		version, err := s.client.GetVersion(ctx)
 		if err == nil {
 			s.mongoVersion = version
@@ -90,12 +95,29 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		return
 	}
 
+	serverStatus, sErr := s.client.ServerStatus(ctx, "admin")
+	if sErr != nil {
+		errs.Add(fmt.Errorf("failed to fetch server status: %w", sErr))
+		return
+	}
+	serverAddress, serverPort, aErr := serverAddressAndPort(serverStatus)
+	if aErr != nil {
+		errs.Add(fmt.Errorf("failed to fetch server address and port: %w", aErr))
+		return
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
-	s.collectAdminDatabase(ctx, now, errs)
+	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
 
+	rb := s.mb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+
+	// Collect metrics for each database
 	for _, dbName := range dbNames {
 		s.collectDatabase(ctx, now, dbName, errs)
 		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
@@ -107,6 +129,11 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		for _, collectionName := range collectionNames {
 			s.collectIndexStats(ctx, now, dbName, collectionName, errs)
 		}
+
+		rb.SetServerAddress(serverAddress)
+		rb.SetServerPort(serverPort)
+		rb.SetDatabase(dbName)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -124,18 +151,6 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 		return
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
-
-	s.mb.EmitForResource(metadata.WithDatabase(databaseName))
-}
-
-func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	serverStatus, err := s.client.ServerStatus(ctx, "admin")
-	if err != nil {
-		errs.AddPartial(1, fmt.Errorf("failed to fetch admin server status metrics: %w", err))
-		return
-	}
-	s.recordAdminStats(now, serverStatus, errs)
-	s.mb.EmitForResource()
 }
 
 func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -145,17 +160,18 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 		return
 	}
 	s.recordOperationTime(now, topStats, errs)
-	s.mb.EmitForResource()
 }
 
 func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+	if databaseName == "local" {
+		return
+	}
 	indexStats, err := s.client.IndexStats(ctx, databaseName, collectionName)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch index stats metrics: %w", err))
 		return
 	}
 	s.recordIndexStats(now, indexStats, databaseName, collectionName, errs)
-	s.mb.EmitForResource()
 }
 
 func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
@@ -194,4 +210,24 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
+}
+
+func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
+	host, ok := serverStatus["host"].(string)
+	if !ok {
+		return "", 0, errors.New("host field not found in server status")
+	}
+	hostParts := strings.Split(host, ":")
+	switch len(hostParts) {
+	case 1:
+		return hostParts[0], defaultMongoDBPort, nil
+	case 2:
+		port, err := strconv.ParseInt(hostParts[1], 10, 64)
+		if err != nil {
+			return "", 0, fmt.Errorf("failed to parse port: %w", err)
+		}
+		return hostParts[0], port, nil
+	default:
+		return "", 0, fmt.Errorf("unexpected host format: %s", host)
+	}
 }

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
@@ -24,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -53,14 +42,15 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
+	if !e.cfg.shouldCreateSchema() {
+		return nil
+	}
+
 	if err := createDatabase(ctx, e.cfg); err != nil {
 		return err
 	}
 
-	if err := createLogsTable(ctx, e.cfg, e.client); err != nil {
-		return err
-	}
-	return nil
+	return createLogsTable(ctx, e.cfg, e.client)
 }
 
 // shutdown will shut down the exporter.
@@ -82,20 +72,34 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			_ = statement.Close()
 		}()
 		var serviceName string
+
 		for i := 0; i < ld.ResourceLogs().Len(); i++ {
 			logs := ld.ResourceLogs().At(i)
 			res := logs.Resource()
+			resURL := logs.SchemaUrl()
 			resAttr := attributesToMap(res.Attributes())
 			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 				serviceName = v.Str()
 			}
+
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
+				scopeURL := logs.ScopeLogs().At(j).SchemaUrl()
+				scopeName := logs.ScopeLogs().At(j).Scope().Name()
+				scopeVersion := logs.ScopeLogs().At(j).Scope().Version()
+				scopeAttr := attributesToMap(logs.ScopeLogs().At(j).Scope().Attributes())
+
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
+
+					timestamp := r.Timestamp()
+					if timestamp == 0 {
+						timestamp = r.ObservedTimestamp()
+					}
+
 					logAttr := attributesToMap(r.Attributes())
 					_, err = statement.ExecContext(ctx,
-						r.Timestamp().AsTime(),
+						timestamp.AsTime(),
 						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
 						uint32(r.Flags()),
@@ -103,7 +107,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 						int32(r.SeverityNumber()),
 						serviceName,
 						r.Body().AsString(),
+						resURL,
 						resAttr,
+						scopeURL,
+						scopeName,
+						scopeVersion,
+						scopeAttr,
 						logAttr,
 					)
 					if err != nil {
@@ -115,7 +124,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		return nil
 	})
 	duration := time.Since(start)
-	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
+	e.logger.Debug("insert logs", zap.Int("records", ld.LogRecordCount()),
 		zap.String("cost", duration.String()))
 	return err
 }
@@ -132,28 +141,38 @@ func attributesToMap(attributes pcommon.Map) map[string]string {
 const (
 	// language=ClickHouse SQL
 	createLogsTableSQL = `
-CREATE TABLE IF NOT EXISTS %s (
-     Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
-     TraceId String CODEC(ZSTD(1)),
-     SpanId String CODEC(ZSTD(1)),
-     TraceFlags UInt32 CODEC(ZSTD(1)),
-     SeverityText LowCardinality(String) CODEC(ZSTD(1)),
-     SeverityNumber Int32 CODEC(ZSTD(1)),
-     ServiceName LowCardinality(String) CODEC(ZSTD(1)),
-     Body String CODEC(ZSTD(1)),
-     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-     LogAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-     INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
-     INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_log_attr_key mapKeys(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_log_attr_value mapValues(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
-) ENGINE MergeTree()
+CREATE TABLE IF NOT EXISTS %s %s (
+	Timestamp DateTime64(9) CODEC(Delta(8), ZSTD(1)),
+	TimestampTime DateTime DEFAULT toDateTime(Timestamp),
+	TraceId String CODEC(ZSTD(1)),
+	SpanId String CODEC(ZSTD(1)),
+	TraceFlags UInt8,
+	SeverityText LowCardinality(String) CODEC(ZSTD(1)),
+	SeverityNumber UInt8,
+	ServiceName LowCardinality(String) CODEC(ZSTD(1)),
+	Body String CODEC(ZSTD(1)),
+	ResourceSchemaUrl LowCardinality(String) CODEC(ZSTD(1)),
+	ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	ScopeSchemaUrl LowCardinality(String) CODEC(ZSTD(1)),
+	ScopeName String CODEC(ZSTD(1)),
+	ScopeVersion LowCardinality(String) CODEC(ZSTD(1)),
+	ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	LogAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+
+	INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
+	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_log_attr_key mapKeys(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_log_attr_value mapValues(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8
+) ENGINE = %s
+PARTITION BY toDate(TimestampTime)
+PRIMARY KEY (ServiceName, TimestampTime)
+ORDER BY (ServiceName, TimestampTime, Timestamp)
 %s
-PARTITION BY toDate(Timestamp)
-ORDER BY (ServiceName, SeverityText, toUnixTimestamp(Timestamp), TraceId)
-SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
+SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
 	insertLogsSQLTemplate = `INSERT INTO %s (
@@ -165,9 +184,19 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SeverityNumber,
                         ServiceName,
                         Body,
+                        ResourceSchemaUrl,
                         ResourceAttributes,
+                        ScopeSchemaUrl,
+                        ScopeName,
+                        ScopeVersion,
+                        ScopeAttributes,
                         LogAttributes
                         ) VALUES (
+                                  ?,
+                                  ?,
+                                  ?,
+                                  ?,
+                                  ?,
                                   ?,
                                   ?,
                                   ?,
@@ -185,11 +214,7 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	dsn, err := cfg.buildDSN(cfg.Database)
-	if err != nil {
-		return nil, err
-	}
-	db, err := sql.Open(driverName, dsn)
+	db, err := cfg.buildDB()
 	if err != nil {
 		return nil, err
 	}
@@ -197,25 +222,22 @@ func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 }
 
 func createDatabase(ctx context.Context, cfg *Config) error {
+	// use default database to create new database
 	if cfg.Database == defaultDatabase {
 		return nil
 	}
-	// use default database to create new database
-	dsnUseDefaultDatabase, err := cfg.buildDSN(defaultDatabase)
+
+	db, err := cfg.buildDB()
 	if err != nil {
 		return err
-	}
-	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
-	if err != nil {
-		return fmt.Errorf("sql.Open:%w", err)
 	}
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.clusterString())
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
-		return fmt.Errorf("create database:%w", err)
+		return fmt.Errorf("create database: %w", err)
 	}
 	return nil
 }
@@ -228,11 +250,8 @@ func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
 }
 
 func renderCreateLogsTableSQL(cfg *Config) string {
-	var ttlExpr string
-	if cfg.TTLDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
-	}
-	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, ttlExpr)
+	ttlExpr := generateTTLExpr(cfg.TTL, "TimestampTime")
+	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
 func renderInsertLogsSQL(cfg *Config) string {

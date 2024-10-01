@@ -1,0 +1,12 @@
+type: carbon
+
+status:
+  class: exporter
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [aboguszewski-sumo]
+
+tests:
+  expect_consumer_error: true

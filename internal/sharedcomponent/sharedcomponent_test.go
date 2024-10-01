@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sharedcomponent
 
@@ -24,11 +13,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-var id = component.NewID("test")
+var id = component.MustNewID("test")
 
 func TestNewSharedComponents(t *testing.T) {
 	comps := NewSharedComponents()
-	assert.Len(t, comps.comps, 0)
+	assert.Empty(t, comps.comps)
 }
 
 type mockComponent struct {
@@ -48,7 +37,7 @@ func TestSharedComponents_GetOrAdd(t *testing.T) {
 
 	// Shutdown nop will remove
 	assert.NoError(t, got.Shutdown(context.Background()))
-	assert.Len(t, comps.comps, 0)
+	assert.Empty(t, comps.comps)
 	assert.NotSame(t, got, comps.GetOrAdd(id, createNop))
 }
 
@@ -57,11 +46,11 @@ func TestSharedComponent(t *testing.T) {
 	calledStart := 0
 	calledStop := 0
 	comp := &mockComponent{
-		StartFunc: func(ctx context.Context, host component.Host) error {
+		StartFunc: func(_ context.Context, _ component.Host) error {
 			calledStart++
 			return wantErr
 		},
-		ShutdownFunc: func(ctx context.Context) error {
+		ShutdownFunc: func(_ context.Context) error {
 			calledStop++
 			return wantErr
 		},

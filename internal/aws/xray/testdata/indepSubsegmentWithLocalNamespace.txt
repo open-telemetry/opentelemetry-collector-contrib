@@ -1,0 +1,11 @@
+{
+    "name": "localNamespaceTest",
+    "id": "53995c3f42cd8ad8",
+    "start_time": 1478293361.271,
+    "end_time": 1478293361.449,
+    "type": "subsegment",
+    "trace_id": "1-581cf771-a006649127e371903a2de979",
+    "parent_id": "defdfd9912dc5a56",
+    "namespace": "local",
+    "traced": true
+}

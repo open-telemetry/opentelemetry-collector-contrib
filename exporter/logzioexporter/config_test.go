@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logzioexporter
 
@@ -25,9 +14,12 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,24 +28,24 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := &Config{
 		Token:  "token",
 		Region: "eu",
 	}
-	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
-	expected.RetrySettings.MaxInterval = 5 * time.Second
-	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
+	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
+	expected.BackOffConfig.MaxInterval = 5 * time.Second
+	expected.QueueSettings = exporterhelper.NewDefaultQueueConfig()
 	expected.QueueSettings.Enabled = false
-	expected.HTTPClientSettings = confighttp.HTTPClientSettings{
+	expected.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "",
 		Timeout:  30 * time.Second,
 		Headers:  map[string]configopaque.String{},
 		// Default to gzip compression
-		Compression: configcompression.Gzip,
+		Compression: configcompression.TypeGzip,
 		// We almost read 0 bytes, so no need to tune ReadBufferSize.
 		WriteBufferSize: 512 * 1024,
 	}
@@ -66,21 +58,21 @@ func TestDefaultLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := &Config{
 		Token: "logzioTESTtoken",
 	}
-	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
-	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
-	expected.HTTPClientSettings = confighttp.HTTPClientSettings{
+	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
+	expected.QueueSettings = exporterhelper.NewDefaultQueueConfig()
+	expected.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "",
 		Timeout:  30 * time.Second,
 		Headers:  map[string]configopaque.String{},
 		// Default to gzip compression
-		Compression: configcompression.Gzip,
+		Compression: configcompression.TypeGzip,
 		// We almost read 0 bytes, so no need to tune ReadBufferSize.
 		WriteBufferSize: 512 * 1024,
 	}
@@ -90,23 +82,23 @@ func TestDefaultLoadConfig(t *testing.T) {
 func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 	// Config with legacy options
 	actualCfg := &Config{
-		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:  exporterhelper.NewDefaultQueueConfig(),
+		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
 		Token:          "logzioTESTtoken",
 		CustomEndpoint: "https://api.example.com",
 		QueueMaxLength: 10,
 		DrainInterval:  10,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			Timeout:  10 * time.Second,
 			Headers:  map[string]configopaque.String{},
 			// Default to gzip compression
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	logger := hclog2ZapLogger{
 		Zap:  params.Logger,
 		name: loggerName,
@@ -118,14 +110,14 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		CustomEndpoint: "https://api.example.com",
 		QueueMaxLength: 10,
 		DrainInterval:  10,
-		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
+		QueueSettings:  exporterhelper.NewDefaultQueueConfig(),
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://api.example.com",
 			Timeout:  10 * time.Second,
 			Headers:  map[string]configopaque.String{},
 			// Default to gzip compression
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},

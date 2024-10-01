@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package loadscraper
 
@@ -29,13 +17,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 )
 
+func TestStopSamplingWithoutStart(t *testing.T) {
+	// When the collector fails to start it is possible that stopSampling is called
+	// before startSampling. This test ensures that stopSampling does not panic in
+	// this scenario.
+	require.NoError(t, stopSampling(context.Background()))
+}
+
 func TestStartSampling(t *testing.T) {
 	t.Skip(t, "Test is causing race conditions, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10143.")
 	// override sampling frequency to 2ms
 	samplingFrequency = 2 * time.Millisecond
 
 	// startSampling should set up perf counter and start sampling
-	startSampling(context.Background(), zap.NewNop())
+	require.NoError(t, startSampling(context.Background(), zap.NewNop()))
 	assertSamplingUnderway(t)
 
 	// override the processor queue length perf counter with a mock
@@ -46,7 +41,7 @@ func TestStartSampling(t *testing.T) {
 	})
 
 	// second call to startSampling should succeed, but not do anything
-	startSampling(context.Background(), zap.NewNop())
+	require.NoError(t, startSampling(context.Background(), zap.NewNop()))
 	assertSamplingUnderway(t)
 	assert.IsType(t, &perfcounters.MockPerfCounterScraper{}, samplerInstance.perfCounterScraper)
 
@@ -54,19 +49,19 @@ func TestStartSampling(t *testing.T) {
 	// "getSampledLoadAverages" which validates the value from the
 	// mock perf counter was used
 	require.Eventually(t, func() bool {
-		avgLoadValues, err := getSampledLoadAverages()
+		avgLoadValues, err := getSampledLoadAverages(context.Background())
 		assert.NoError(t, err)
 		return avgLoadValues.Load1 > 0 && avgLoadValues.Load5 > 0 && avgLoadValues.Load15 > 0
 	}, time.Second, time.Millisecond, "Load Avg was not set after 1s")
 
 	// sampling should continue after first call to stopSampling since
 	// startSampling was called twice
-	stopSampling(context.Background())
+	require.NoError(t, stopSampling(context.Background()))
 	assertSamplingUnderway(t)
 
 	// second call to stopSampling should close perf counter, stop
 	// sampling, and clean up the sampler
-	stopSampling(context.Background())
+	require.NoError(t, stopSampling(context.Background()))
 	assertSamplingStopped(t)
 }
 

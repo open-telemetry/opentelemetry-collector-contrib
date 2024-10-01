@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package extractors
 
@@ -26,17 +15,17 @@ import (
 
 func TestCAdvisorMetric_Merge(t *testing.T) {
 	src := &CAdvisorMetric{
-		fields: map[string]interface{}{"value1": 1, "value2": 2},
+		fields: map[string]any{"value1": 1, "value2": 2},
 		tags:   map[string]string{ci.Timestamp: "1586331559882"},
 		logger: zap.NewNop(),
 	}
 	dest := &CAdvisorMetric{
-		fields: map[string]interface{}{"value1": 3, "value3": 3},
+		fields: map[string]any{"value1": 3, "value3": 3},
 		tags:   map[string]string{ci.Timestamp: "1586331559973"},
 		logger: zap.NewNop(),
 	}
 	src.Merge(dest)
-	assert.Equal(t, 3, len(src.fields))
+	assert.Len(t, src.fields, 3)
 	assert.Equal(t, 1, src.fields["value1"].(int))
 }
 
@@ -94,7 +83,7 @@ func TestGetMetricKey(t *testing.T) {
 
 func TestMergeMetrics(t *testing.T) {
 	cpuMetrics := &CAdvisorMetric{
-		fields: map[string]interface{}{
+		fields: map[string]any{
 			"node_cpu_usage_total": float64(10),
 			"node_cpu_usage_user":  float64(10),
 		},
@@ -104,7 +93,7 @@ func TestMergeMetrics(t *testing.T) {
 	}
 
 	memMetrics := &CAdvisorMetric{
-		fields: map[string]interface{}{
+		fields: map[string]any{
 			"node_memory_cache": uint(25645056),
 		},
 		tags: map[string]string{
@@ -118,7 +107,7 @@ func TestMergeMetrics(t *testing.T) {
 	}
 
 	expected := &CAdvisorMetric{
-		fields: map[string]interface{}{
+		fields: map[string]any{
 			"node_cpu_usage_total": float64(10),
 			"node_cpu_usage_user":  float64(10),
 			"node_memory_cache":    uint(25645056),

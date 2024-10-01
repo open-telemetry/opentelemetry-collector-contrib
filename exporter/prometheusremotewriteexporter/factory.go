@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
@@ -19,37 +8,43 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "prometheusremotewrite"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.RetryOn429",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.101.0"),
+	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
 )
 
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, stability))
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
 }
 
-func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
+func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	cfg component.Config) (exporter.Metrics, error) {
 
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration")
+	}
+
+	if prwCfg.RemoteWriteQueue.NumConsumers != 0 {
+		set.Logger.Warn("Currently, remote_write_queue.num_consumers doesn't have any effect due to incompatibility with Prometheus remote write API. The value will be ignored. Please see https://github.com/open-telemetry/opentelemetry-collector/issues/2949 for more information.")
 	}
 
 	prwe, err := newPRWExporter(prwCfg, set)
@@ -69,12 +64,11 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{
+		exporterhelper.WithQueue(exporterhelper.QueueConfig{
 			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
 		}),
-		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithStart(prwe.Start),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
@@ -85,24 +79,23 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 }
 
 func createDefaultConfig() component.Config {
+	retrySettings := configretry.NewDefaultBackOffConfig()
+	retrySettings.InitialInterval = 50 * time.Millisecond
+
 	return &Config{
-		Namespace:       "",
-		ExternalLabels:  map[string]string{},
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:             true,
-			InitialInterval:     50 * time.Millisecond,
-			MaxInterval:         200 * time.Millisecond,
-			MaxElapsedTime:      1 * time.Minute,
-			RandomizationFactor: backoff.DefaultRandomizationFactor,
-			Multiplier:          backoff.DefaultMultiplier,
-		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		Namespace:         "",
+		ExternalLabels:    map[string]string{},
+		MaxBatchSizeBytes: 3000000,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
+		BackOffConfig:     retrySettings,
+		AddMetricSuffixes: true,
+		SendMetadata:      false,
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
+			Timeout:         exporterhelper.NewDefaultTimeoutConfig().Timeout,
 			Headers:         map[string]configopaque.String{},
 		},
 		// TODO(jbd): Adjust the default queue size.

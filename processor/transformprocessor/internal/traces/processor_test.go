@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package traces
 
@@ -24,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -52,7 +42,13 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
+			want: func(_ ptrace.Traces) {
+			},
+		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
 			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).SetSchemaUrl("test_schema_url")
 			},
 		},
 	}
@@ -60,7 +56,7 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -87,7 +83,13 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
+			want: func(_ ptrace.Traces) {
+			},
+		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
 			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl("test_schema_url")
 			},
 		},
 	}
@@ -95,7 +97,7 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -216,7 +218,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], "pass") where IsMatch(name, "operation[AC]") == true`,
+			statement: `set(attributes["test"], "pass") where IsMatch(name, "operation[AC]")`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
 			},
@@ -308,7 +310,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
-			want:      func(td ptrace.Traces) {},
+			want:      func(_ ptrace.Traces) {},
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["total.string"], 3, 3))`,
@@ -325,7 +327,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["not_exist"], 3, 3))`,
-			want:      func(td ptrace.Traces) {},
+			want:      func(_ ptrace.Traces) {},
 		},
 		{
 			statement: `set(attributes["test"], ["A", "B", "C"]) where name == "operationA"`,
@@ -340,6 +342,12 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			statement: `set(attributes["entrypoint"], name) where parent_span_id == SpanID(0x0000000000000000)`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("entrypoint", "operationB")
+			},
+		},
+		{
+			statement: `set(attributes["entrypoint-root"], name) where IsRootSpan()`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("entrypoint-root", "operationB")
 			},
 		},
 		{
@@ -372,12 +380,24 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("json_test", "pass")
 			},
 		},
+		{
+			statement: `limit(attributes, 0, []) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+			},
+		},
+		{
+			statement: `set(attributes["test"], Log(1)) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutDouble("test", 0.0)
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -407,7 +427,7 @@ func Test_ProcessTraces_SpanEventContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "spanevent", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "spanevent", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -524,7 +544,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor(tt.contextStatments, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatments, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -534,6 +554,37 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessTraces_Error(t *testing.T) {
+	tests := []struct {
+		statement string
+		context   common.ContextID
+	}{
+		{
+			context: "resource",
+		},
+		{
+			context: "scope",
+		},
+		{
+			context: "span",
+		},
+		{
+			context: "spanevent",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.context), func(t *testing.T) {
+			td := constructTraces()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON(1))`}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessTraces(context.Background(), td)
+			assert.Error(t, err)
 		})
 	}
 }
@@ -574,7 +625,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -616,7 +667,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -631,8 +682,10 @@ func BenchmarkHundredSpans(b *testing.B) {
 func constructTraces() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
+	rs0.SetSchemaUrl("test_schema_url")
 	rs0.Resource().Attributes().PutStr("host.name", "localhost")
 	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils0.SetSchemaUrl("test_schema_url")
 	rs0ils0.Scope().SetName("scope")
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())

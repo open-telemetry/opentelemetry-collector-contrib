@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
@@ -18,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 var (
@@ -54,6 +45,14 @@ type Config struct {
 	// This is only relevant if AttributeSource is set to resource.
 	// Optional.
 	DropRoutingResourceAttribute bool `mapstructure:"drop_resource_routing_attribute"`
+
+	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition.
+	// Valid values are `ignore` and `propagate`.
+	// `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode.
+	// If `ignored` is used and a statement's condition has an error then the payload will be routed to the default exporter.
+	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
 	// Table contains the routing table for this processor.
 	// Required.

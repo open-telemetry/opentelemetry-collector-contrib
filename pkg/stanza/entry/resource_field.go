@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
@@ -64,7 +53,7 @@ func (f ResourceField) String() string {
 }
 
 // Get will return the resource value and a boolean indicating if it exists
-func (f ResourceField) Get(entry *Entry) (interface{}, bool) {
+func (f ResourceField) Get(entry *Entry) (any, bool) {
 	if entry.Resource == nil {
 		return "", false
 	}
@@ -79,7 +68,7 @@ func (f ResourceField) Get(entry *Entry) (interface{}, bool) {
 	}
 
 	for _, key := range f.Keys[1:] {
-		currentMap, ok := currentValue.(map[string]interface{})
+		currentMap, ok := currentValue.(map[string]any)
 		if !ok {
 			return nil, false
 		}
@@ -95,12 +84,12 @@ func (f ResourceField) Get(entry *Entry) (interface{}, bool) {
 
 // Set will set a value on an entry's resource using the field.
 // If a key already exists, it will be overwritten.
-func (f ResourceField) Set(entry *Entry, value interface{}) error {
+func (f ResourceField) Set(entry *Entry, value any) error {
 	if entry.Resource == nil {
-		entry.Resource = map[string]interface{}{}
+		entry.Resource = map[string]any{}
 	}
 
-	mapValue, isMapValue := value.(map[string]interface{})
+	mapValue, isMapValue := value.(map[string]any)
 	if isMapValue {
 		f.Merge(entry, mapValue)
 		return nil
@@ -123,7 +112,7 @@ func (f ResourceField) Set(entry *Entry, value interface{}) error {
 
 // Merge will attempt to merge the contents of a map into an entry's resource.
 // It will overwrite any intermediate values as necessary.
-func (f ResourceField) Merge(entry *Entry, mapValues map[string]interface{}) {
+func (f ResourceField) Merge(entry *Entry, mapValues map[string]any) {
 	currentMap := entry.Resource
 
 	for _, key := range f.Keys {
@@ -137,7 +126,7 @@ func (f ResourceField) Merge(entry *Entry, mapValues map[string]interface{}) {
 
 // Delete removes a value from an entry's resource using the field.
 // It will return the deleted value and whether the field existed.
-func (f ResourceField) Delete(entry *Entry) (interface{}, bool) {
+func (f ResourceField) Delete(entry *Entry) (any, bool) {
 	if entry.Resource == nil {
 		return "", false
 	}
@@ -160,7 +149,7 @@ func (f ResourceField) Delete(entry *Entry) (interface{}, bool) {
 			return currentValue, true
 		}
 
-		currentMap, ok = currentValue.(map[string]interface{})
+		currentMap, ok = currentValue.(map[string]any)
 		if !ok {
 			break
 		}
@@ -194,7 +183,7 @@ func (f *ResourceField) UnmarshalJSON(raw []byte) error {
 }
 
 // UnmarshalYAML will attempt to unmarshal a field from YAML.
-func (f *ResourceField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *ResourceField) UnmarshalYAML(unmarshal func(any) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
 		return fmt.Errorf("the field is not a string: %w", err)

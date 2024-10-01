@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logzioexporter
 
@@ -33,12 +22,12 @@ import (
 )
 
 // Logs
-func GenerateLogRecordWithNestedBody() plog.LogRecord {
+func generateLogRecordWithNestedBody() plog.LogRecord {
 	lr := plog.NewLogRecord()
 	fillLogOne(lr)
 	return lr
 }
-func GenerateLogRecordWithMultiTypeValues() plog.LogRecord {
+func generateLogRecordWithMultiTypeValues() plog.LogRecord {
 	lr := plog.NewLogRecord()
 	fillLogTwo(lr)
 	return lr
@@ -48,13 +37,13 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 	type convertLogRecordToJSONTest struct {
 		log      plog.LogRecord
 		resource pcommon.Resource
-		expected map[string]interface{}
+		expected map[string]any
 	}
 
 	var convertLogRecordToJSONTests = []convertLogRecordToJSONTest{
-		{GenerateLogRecordWithNestedBody(),
+		{generateLogRecordWithNestedBody(),
 			pcommon.NewResource(),
-			map[string]interface{}{
+			map[string]any{
 				"23":           float64(45),
 				"app":          "server",
 				"foo":          "bar",
@@ -62,14 +51,14 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"level":        "Info",
 				"message":      "hello there",
 				"@timestamp":   TestLogTimeUnixMilli,
-				"nested":       map[string]interface{}{"number": float64(499), "string": "v1"},
+				"nested":       map[string]any{"number": float64(499), "string": "v1"},
 				"spanID":       "0102040800000000",
 				"traceID":      "08040201000000000000000000000000",
 			},
 		},
-		{GenerateLogRecordWithMultiTypeValues(),
+		{generateLogRecordWithMultiTypeValues(),
 			pcommon.NewResource(),
-			map[string]interface{}{
+			map[string]any{
 				"bool":       true,
 				"customer":   "acme",
 				"env":        "dev",
@@ -81,28 +70,29 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 		},
 	}
 	for _, test := range convertLogRecordToJSONTests {
-		output := convertLogRecordToJSON(test.log, test.resource)
-		require.Equal(t, output, test.expected)
+		output := convertLogRecordToJSON(test.log, test.log.Attributes())
+		require.Equal(t, test.expected, output)
 	}
-
 }
+
 func TestSetTimeStamp(t *testing.T) {
 	var recordedRequests []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
+	defer func() { server.Close() }()
 	ld := generateLogsOneEmptyTimestamp()
 	cfg := &Config{
 		Region: "us",
 		Token:  "token",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 	}
 	var err error
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())
@@ -112,8 +102,8 @@ func TestSetTimeStamp(t *testing.T) {
 	require.NoError(t, err)
 	err = exporter.Shutdown(ctx)
 	require.NoError(t, err)
-	var jsonLog map[string]interface{}
-	var jsonLogNoTimestamp map[string]interface{}
+	var jsonLog map[string]any
+	var jsonLogNoTimestamp map[string]any
 	decoded, _ := gUnzipData(recordedRequests)
 	requests := strings.Split(string(decoded), "\n")
 	require.NoError(t, json.Unmarshal([]byte(requests[0]), &jsonLog))

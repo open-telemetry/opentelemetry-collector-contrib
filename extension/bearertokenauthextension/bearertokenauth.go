@@ -1,25 +1,16 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package bearertokenauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 
 import (
 	"context"
+	"crypto/subtle"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
-	"sync"
+	"sync/atomic"
 
 	"github.com/fsnotify/fsnotify"
 	"go.opentelemetry.io/collector/component"
@@ -45,11 +36,15 @@ func (c *PerRPCAuth) RequireTransportSecurity() bool {
 	return true
 }
 
+var (
+	_ auth.Server = (*BearerTokenAuth)(nil)
+	_ auth.Client = (*BearerTokenAuth)(nil)
+)
+
 // BearerTokenAuth is an implementation of auth.Client. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
-	muTokenString sync.RWMutex
-	scheme        string
-	tokenString   string
+	scheme                   string
+	authorizationValueAtomic atomic.Value
 
 	shutdownCH chan struct{}
 
@@ -63,18 +58,19 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	if cfg.Filename != "" && cfg.BearerToken != "" {
 		logger.Warn("a filename is specified. Configured token is ignored!")
 	}
-	return &BearerTokenAuth{
-		scheme:      cfg.Scheme,
-		tokenString: string(cfg.BearerToken),
-		filename:    cfg.Filename,
-		logger:      logger,
+	a := &BearerTokenAuth{
+		scheme:   cfg.Scheme,
+		filename: cfg.Filename,
+		logger:   logger,
 	}
+	a.setAuthorizationValue(string(cfg.BearerToken))
+	return a
 }
 
 // Start of BearerTokenAuth does nothing and returns nil if no filename
 // is specified. Otherwise a routine is started to monitor the file containing
 // the token to be transferred.
-func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error {
+func (b *BearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
 	if b.filename == "" {
 		return nil
 	}
@@ -140,13 +136,25 @@ func (b *BearerTokenAuth) refreshToken() {
 		b.logger.Error(err.Error())
 		return
 	}
-	b.muTokenString.Lock()
-	b.tokenString = string(token)
-	b.muTokenString.Unlock()
+	b.setAuthorizationValue(string(token))
+}
+
+func (b *BearerTokenAuth) setAuthorizationValue(token string) {
+	value := token
+	if b.scheme != "" {
+		value = b.scheme + " " + value
+	}
+	b.authorizationValueAtomic.Store(value)
+}
+
+// authorizationValue returns the Authorization header/metadata value
+// to set for client auth, and expected value for server auth.
+func (b *BearerTokenAuth) authorizationValue() string {
+	return b.authorizationValueAtomic.Load().(string)
 }
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
-func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
+func (b *BearerTokenAuth) Shutdown(_ context.Context) error {
 	if b.filename == "" {
 		return nil
 	}
@@ -163,29 +171,39 @@ func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
 // PerRPCCredentials returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
 func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return &PerRPCAuth{
-		metadata: map[string]string{"authorization": b.bearerToken()},
+		metadata: map[string]string{"authorization": b.authorizationValue()},
 	}, nil
-}
-
-func (b *BearerTokenAuth) bearerToken() string {
-	b.muTokenString.RLock()
-	token := fmt.Sprintf("%s %s", b.scheme, b.tokenString)
-	b.muTokenString.RUnlock()
-	return token
 }
 
 // RoundTripper is not implemented by BearerTokenAuth
 func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &BearerAuthRoundTripper{
 		baseTransport: base,
-		bearerToken:   b.bearerToken(),
+		auth:          b,
 	}, nil
+}
+
+// Authenticate checks whether the given context contains valid auth data.
+func (b *BearerTokenAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+	auth, ok := headers["authorization"]
+	if !ok {
+		auth, ok = headers["Authorization"]
+	}
+	if !ok || len(auth) == 0 {
+		return ctx, errors.New("missing or empty authorization header")
+	}
+	token := auth[0]
+	expect := b.authorizationValue()
+	if subtle.ConstantTimeCompare([]byte(expect), []byte(token)) == 0 {
+		return ctx, fmt.Errorf("scheme or token does not match: %s", token)
+	}
+	return ctx, nil
 }
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.
 type BearerAuthRoundTripper struct {
 	baseTransport http.RoundTripper
-	bearerToken   string
+	auth          *BearerTokenAuth
 }
 
 // RoundTrip modifies the original request and adds Bearer token Authorization headers.
@@ -194,6 +212,6 @@ func (interceptor *BearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.R
 	if req2.Header == nil {
 		req2.Header = make(http.Header)
 	}
-	req2.Header.Set("Authorization", interceptor.bearerToken)
+	req2.Header.Set("Authorization", interceptor.auth.authorizationValue())
 	return interceptor.baseTransport.RoundTrip(req2)
 }

@@ -1,0 +1,11 @@
+type: opencensus
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, traces]
+  distributions:
+  - core
+  - contrib
+  codeowners:
+    active: [open-telemetry/collector-approvers]

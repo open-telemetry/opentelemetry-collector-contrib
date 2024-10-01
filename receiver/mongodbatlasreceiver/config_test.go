@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver
 
@@ -23,9 +12,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
+
+var referencableTrue = true
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
@@ -34,8 +26,10 @@ func TestValidate(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name:  "Empty config",
-			input: Config{},
+			name: "Empty config",
+			input: Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
 		},
 		{
 			name: "Valid alerts config",
@@ -46,6 +40,7 @@ func TestValidate(t *testing.T) {
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
@@ -56,6 +51,7 @@ func TestValidate(t *testing.T) {
 					Secret:  "some_secret",
 					Mode:    alertModeListen,
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoEndpoint.Error(),
 		},
@@ -67,6 +63,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:7706",
 					Mode:     alertModeListen,
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoSecret.Error(),
 		},
@@ -79,6 +76,7 @@ func TestValidate(t *testing.T) {
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: "failed to split endpoint into 'host:port' pair",
 		},
@@ -90,12 +88,13 @@ func TestValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
-					TLS: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ServerConfig{
+						Config: configtls.Config{
 							CertFile: "some_cert_file",
 						},
 					},
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoKey.Error(),
 		},
@@ -107,27 +106,72 @@ func TestValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
-					TLS: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ServerConfig{
+						Config: configtls.Config{
 							KeyFile: "some_key_file",
 						},
 					},
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoCert.Error(),
+		},
+		{
+			name: "Valid Metrics Config",
+			input: Config{
+				Projects: []*ProjectConfig{
+					{
+						Name: "Project1",
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+		},
+		{
+			name: "Valid Metrics Config with multiple projects with an inclusion or exclusion",
+			input: Config{
+				Projects: []*ProjectConfig{
+					{
+						Name:            "Project1",
+						IncludeClusters: []string{"Cluster1"},
+					},
+					{
+						Name:            "Project2",
+						ExcludeClusters: []string{"Cluster1"},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+		},
+		{
+			name: "invalid Metrics Config",
+			input: Config{
+				Projects: []*ProjectConfig{
+					{
+						Name:            "Project1",
+						IncludeClusters: []string{"Cluster1"},
+						ExcludeClusters: []string{"Cluster2"},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errClusterConfig.Error(),
 		},
 		{
 			name: "Valid Logs Config",
 			input: Config{
 				Logs: LogConfig{
 					Enabled: true,
-					Projects: []*ProjectConfig{
+					Projects: []*LogsProjectConfig{
 						{
-							Name:            "Project1",
+							ProjectConfig: ProjectConfig{
+								Name: "Project1",
+							},
 							EnableAuditLogs: false,
 						},
 					},
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
@@ -136,6 +180,7 @@ func TestValidate(t *testing.T) {
 				Logs: LogConfig{
 					Enabled: true,
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoProjects.Error(),
 		},
@@ -144,15 +189,18 @@ func TestValidate(t *testing.T) {
 			input: Config{
 				Logs: LogConfig{
 					Enabled: true,
-					Projects: []*ProjectConfig{
+					Projects: []*LogsProjectConfig{
 						{
-							Name:            "Project1",
+							ProjectConfig: ProjectConfig{
+								Name:            "Project1",
+								ExcludeClusters: []string{"cluster1"},
+								IncludeClusters: []string{"cluster2"},
+							},
 							EnableAuditLogs: false,
-							ExcludeClusters: []string{"cluster1"},
-							IncludeClusters: []string{"cluster2"},
 						},
 					},
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errClusterConfig.Error(),
 		},
@@ -165,13 +213,13 @@ func TestValidate(t *testing.T) {
 					Projects: []*ProjectConfig{
 						{
 							Name:            "Project1",
-							EnableAuditLogs: false,
 							ExcludeClusters: []string{"cluster1"},
 							IncludeClusters: []string{"cluster2"},
 						},
 					},
 					PageSize: defaultAlertsPageSize,
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errClusterConfig.Error(),
 		},
@@ -184,6 +232,7 @@ func TestValidate(t *testing.T) {
 					Projects: []*ProjectConfig{},
 					PageSize: defaultAlertsPageSize,
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoProjects.Error(),
 		},
@@ -200,6 +249,7 @@ func TestValidate(t *testing.T) {
 					},
 					PageSize: defaultAlertsPageSize,
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
@@ -210,6 +260,7 @@ func TestValidate(t *testing.T) {
 					Mode:     "invalid type",
 					Projects: []*ProjectConfig{},
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoModeRecognized.Error(),
 		},
@@ -226,6 +277,7 @@ func TestValidate(t *testing.T) {
 					},
 					PageSize: -1,
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errPageSizeIncorrect.Error(),
 		},
@@ -235,8 +287,52 @@ func TestValidate(t *testing.T) {
 				Events: &EventsConfig{
 					Projects: []*ProjectConfig{},
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: errNoProjects.Error(),
+			expectedErr: errNoEvents.Error(),
+		},
+		{
+			name: "Valid Access Logs Config",
+			input: Config{
+				Logs: LogConfig{
+					Projects: []*LogsProjectConfig{
+						{
+							ProjectConfig: ProjectConfig{
+								Name:            "Project1",
+								IncludeClusters: []string{"Cluster1"},
+							},
+							AccessLogs: &AccessLogsConfig{
+								Enabled:    &referencableTrue,
+								AuthResult: &referencableTrue,
+							},
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+		},
+		{
+			name: "Invalid Access Logs Config - bad project config",
+			input: Config{
+				Logs: LogConfig{
+					Enabled: true,
+					Projects: []*LogsProjectConfig{
+						{
+							ProjectConfig: ProjectConfig{
+								Name:            "Project1",
+								IncludeClusters: []string{"Cluster1"},
+								ExcludeClusters: []string{"Cluster3"},
+							},
+							AccessLogs: &AccessLogsConfig{
+								Enabled:    &referencableTrue,
+								AuthResult: &referencableTrue,
+							},
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errClusterConfig.Error(),
 		},
 	}
 
@@ -244,8 +340,7 @@ func TestValidate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.input.Validate()
 			if tc.expectedErr != "" {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 			}
@@ -260,19 +355,27 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Metrics = metadata.DefaultMetricsSettings()
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
 	expected.PrivateKey = "my-private-key"
 	expected.PublicKey = "my-public-key"
 	expected.Logs = LogConfig{
 		Enabled: true,
-		Projects: []*ProjectConfig{
+		Projects: []*LogsProjectConfig{
 			{
-				Name: "Project 0",
+				ProjectConfig: ProjectConfig{
+					Name: "Project 0",
+				},
+				AccessLogs: &AccessLogsConfig{
+					Enabled:      &referencableTrue,
+					AuthResult:   &referencableTrue,
+					PollInterval: time.Minute,
+				},
+				EnableAuditLogs: true,
 			},
 		},
 	}
@@ -294,6 +397,11 @@ func TestLoadConfig(t *testing.T) {
 		Projects: []*ProjectConfig{
 			{
 				Name: "Project 0",
+			},
+		},
+		Organizations: []*OrgConfig{
+			{
+				ID: "5b478b3afc4625789ce616a3",
 			},
 		},
 		PollInterval: time.Minute,

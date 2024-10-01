@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sentryexporter
 
@@ -27,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -42,8 +31,8 @@ import (
 
 var (
 	rootSpan1 = &sentry.Span{
-		TraceID:     TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
-		SpanID:      SpanIDFromHex("1cc4b26ab9094ef0"),
+		TraceID:     traceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:      spanIDFromHex("1cc4b26ab9094ef0"),
 		Description: "/api/users/{user_id}",
 		Op:          "http.server",
 		Tags: map[string]string{
@@ -57,9 +46,9 @@ var (
 	}
 
 	childSpan1 = &sentry.Span{
-		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
-		SpanID:       SpanIDFromHex("93ba92db3fa24752"),
-		ParentSpanID: SpanIDFromHex("1cc4b26ab9094ef0"),
+		TraceID:      traceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       spanIDFromHex("93ba92db3fa24752"),
+		ParentSpanID: spanIDFromHex("1cc4b26ab9094ef0"),
 		Description:  `SELECT * FROM user WHERE "user"."id" = {id}`,
 		Op:           "db",
 		Tags: map[string]string{
@@ -73,9 +62,9 @@ var (
 	}
 
 	childChildSpan1 = &sentry.Span{
-		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
-		SpanID:       SpanIDFromHex("1fa8913ec3814d34"),
-		ParentSpanID: SpanIDFromHex("93ba92db3fa24752"),
+		TraceID:      traceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       spanIDFromHex("1fa8913ec3814d34"),
+		ParentSpanID: spanIDFromHex("93ba92db3fa24752"),
 		Description:  `DB locked`,
 		Op:           "db",
 		Tags: map[string]string{
@@ -89,9 +78,9 @@ var (
 	}
 
 	childSpan2 = &sentry.Span{
-		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
-		SpanID:       SpanIDFromHex("34efcde268684bb0"),
-		ParentSpanID: SpanIDFromHex("1cc4b26ab9094ef0"),
+		TraceID:      traceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       spanIDFromHex("34efcde268684bb0"),
+		ParentSpanID: spanIDFromHex("1cc4b26ab9094ef0"),
 		Description:  "Serialize stuff",
 		Op:           "",
 		Tags: map[string]string{
@@ -103,9 +92,9 @@ var (
 	}
 
 	orphanSpan1 = &sentry.Span{
-		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
-		SpanID:       SpanIDFromHex("6241111811384fae"),
-		ParentSpanID: SpanIDFromHex("1930bb5cc45c4003"),
+		TraceID:      traceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       spanIDFromHex("6241111811384fae"),
+		ParentSpanID: spanIDFromHex("1930bb5cc45c4003"),
 		Description:  "A random span",
 		Op:           "",
 		StartTime:    unixNanoToTime(3),
@@ -114,8 +103,8 @@ var (
 	}
 
 	rootSpan2 = &sentry.Span{
-		TraceID:     TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
-		SpanID:      SpanIDFromHex("4c7f56556ffe4e4a"),
+		TraceID:     traceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:      spanIDFromHex("4c7f56556ffe4e4a"),
 		Description: "Navigating to fancy website",
 		Op:          "pageload",
 		Tags: map[string]string{
@@ -128,9 +117,9 @@ var (
 	}
 
 	root2childSpan = &sentry.Span{
-		TraceID:      TraceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
-		SpanID:       SpanIDFromHex("7ff3c8daf8184fee"),
-		ParentSpanID: SpanIDFromHex("4c7f56556ffe4e4a"),
+		TraceID:      traceIDFromHex("d6c4f03650bd47699ec65c84352b6208"),
+		SpanID:       spanIDFromHex("7ff3c8daf8184fee"),
+		ParentSpanID: spanIDFromHex("4c7f56556ffe4e4a"),
 		Description:  "<FancyReactComponent />",
 		Op:           "react",
 		Tags: map[string]string{
@@ -142,7 +131,7 @@ var (
 	}
 )
 
-func TraceIDFromHex(s string) sentry.TraceID {
+func traceIDFromHex(s string) sentry.TraceID {
 	var id sentry.TraceID
 	_, err := hex.Decode(id[:], []byte(s))
 	if err != nil {
@@ -151,7 +140,7 @@ func TraceIDFromHex(s string) sentry.TraceID {
 	return id
 }
 
-func SpanIDFromHex(s string) sentry.SpanID {
+func spanIDFromHex(s string) sentry.SpanID {
 	var id sentry.SpanID
 	_, err := hex.Decode(id[:], []byte(s))
 	if err != nil {
@@ -162,8 +151,9 @@ func SpanIDFromHex(s string) sentry.SpanID {
 
 func generateEmptyTransactionMap(spans ...*sentry.Span) map[sentry.SpanID]*sentry.Event {
 	transactionMap := make(map[sentry.SpanID]*sentry.Event)
+	environment := "development"
 	for _, span := range spans {
-		transactionMap[span.SpanID] = transactionFromSpan(span)
+		transactionMap[span.SpanID] = transactionFromSpan(span, environment)
 	}
 	return transactionMap
 }
@@ -187,9 +177,9 @@ type SpanEventToSentryEventCases struct {
 func TestSpanEventToSentryEvent(t *testing.T) {
 	// Creating expected Sentry Events and Sample Sentry Spans before hand to avoid redundancy
 	sampleSentrySpanForEvent := &sentry.Span{
-		TraceID:      TraceIDFromHex("01020304050607080807060504030201"),
-		SpanID:       SpanIDFromHex("0102030405060708"),
-		ParentSpanID: SpanIDFromHex("0807060504030201"),
+		TraceID:      traceIDFromHex("01020304050607080807060504030201"),
+		SpanID:       spanIDFromHex("0102030405060708"),
+		ParentSpanID: spanIDFromHex("0807060504030201"),
 		Description:  "span_name",
 		Op:           "",
 		Tags: map[string]string{
@@ -215,7 +205,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 		Timestamp:   sampleSentrySpanForEvent.EndTime,
 		Transaction: sampleSentrySpanForEvent.Description,
 		Contexts:    map[string]sentry.Context{},
-		Extra:       map[string]interface{}{},
+		Extra:       map[string]any{},
 		Modules:     map[string]string{},
 		StartTime:   unixNanoToTime(123),
 	}
@@ -337,9 +327,9 @@ func TestSpanToSentrySpan(t *testing.T) {
 		assert.False(t, spanIsTransaction(testSpan))
 
 		expected := &sentry.Span{
-			TraceID:      TraceIDFromHex("01020304050607080807060504030201"),
-			SpanID:       SpanIDFromHex("0102030405060708"),
-			ParentSpanID: SpanIDFromHex("0807060504030201"),
+			TraceID:      traceIDFromHex("01020304050607080807060504030201"),
+			SpanID:       spanIDFromHex("0102030405060708"),
+			ParentSpanID: spanIDFromHex("0807060504030201"),
 			Description:  name,
 			Op:           "",
 			Tags: map[string]string{
@@ -367,7 +357,7 @@ type SpanDescriptorsCase struct {
 	testName string
 	// input
 	name     string
-	attrs    map[string]interface{}
+	attrs    map[string]any
 	spanKind ptrace.SpanKind
 	// output
 	op          string
@@ -379,7 +369,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeHTTPMethod: "GET",
 			},
 			spanKind:    ptrace.SpanKindClient,
@@ -389,7 +379,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeHTTPMethod: "POST",
 			},
 			spanKind:    ptrace.SpanKindServer,
@@ -399,7 +389,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeDBSystem: "redis",
 			},
 			spanKind:    ptrace.SpanKindClient,
@@ -409,7 +399,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-with-statement",
 			name:     "mysql call",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeDBSystem:    "sqlite",
 				conventions.AttributeDBStatement: "SELECT * FROM table",
 			},
@@ -420,7 +410,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "rpc",
 			name:     "grpc.test.EchoService/Echo",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeRPCService: "EchoService",
 			},
 			spanKind:    ptrace.SpanKindClient,
@@ -430,7 +420,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "message-system",
 			name:     "message-destination",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"messaging.system": "kafka",
 			},
 			spanKind:    ptrace.SpanKindProducer,
@@ -440,7 +430,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "faas",
 			name:     "message-destination",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"faas.trigger": "pubsub",
 			},
 			spanKind:    ptrace.SpanKindServer,
@@ -471,13 +461,13 @@ func TestGenerateTagsFromAttributes(t *testing.T) {
 	tags := generateTagsFromAttributes(attrs)
 
 	stringVal := tags["string-key"]
-	assert.Equal(t, stringVal, "string-value")
+	assert.Equal(t, "string-value", stringVal)
 	boolVal := tags["bool-key"]
-	assert.Equal(t, boolVal, "true")
+	assert.Equal(t, "true", boolVal)
 	doubleVal := tags["double-key"]
-	assert.Equal(t, doubleVal, "123.123")
+	assert.Equal(t, "123.123", doubleVal)
 	intVal := tags["int-key"]
-	assert.Equal(t, intVal, "321")
+	assert.Equal(t, "321", intVal)
 }
 
 type SpanStatusCase struct {
@@ -610,7 +600,7 @@ func TestClassifyOrphanSpans(t *testing.T) {
 			transactionMap: generateEmptyTransactionMap(rootSpan1),
 			spans:          generateOrphanSpansFromSpans(childChildSpan1, childSpan1, childSpan2),
 			assertion: func(t *testing.T, orphanSpans []*sentry.Span) {
-				assert.Len(t, orphanSpans, 0)
+				assert.Empty(t, orphanSpans)
 			},
 		},
 		{
@@ -638,7 +628,7 @@ func TestClassifyOrphanSpans(t *testing.T) {
 			transactionMap: generateEmptyTransactionMap(rootSpan1, rootSpan2),
 			spans:          generateOrphanSpansFromSpans(childChildSpan1, childSpan1, root2childSpan, childSpan2),
 			assertion: func(t *testing.T, orphanSpans []*sentry.Span) {
-				assert.Len(t, orphanSpans, 0)
+				assert.Empty(t, orphanSpans)
 			},
 		},
 	}
@@ -654,8 +644,9 @@ func TestClassifyOrphanSpans(t *testing.T) {
 func TestGenerateTransactions(t *testing.T) {
 	transactionMap := generateEmptyTransactionMap(rootSpan1, rootSpan2)
 	orphanSpans := generateOrphanSpansFromSpans(orphanSpan1, childSpan1)
+	environment := "staging"
 
-	transactions := generateTransactions(transactionMap, orphanSpans)
+	transactions := generateTransactions(transactionMap, orphanSpans, environment)
 
 	assert.Len(t, transactions, 4)
 }
@@ -670,8 +661,8 @@ func (t *mockTransport) SendEvents(transactions []*sentry.Event) {
 	t.called = true
 }
 
-func (t *mockTransport) Configure(options sentry.ClientOptions) {}
-func (t *mockTransport) Flush(ctx context.Context) bool {
+func (t *mockTransport) Configure(_ sentry.ClientOptions) {}
+func (t *mockTransport) Flush(_ context.Context) bool {
 	return true
 }
 
@@ -733,7 +724,7 @@ func TestPushTraceData(t *testing.T) {
 			}
 
 			err := s.pushTraceData(context.Background(), test.td)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, test.called, transport.called)
 		})
 	}
@@ -754,25 +745,26 @@ func TestTransactionContextFromSpanMarshalEvent(t *testing.T) {
 		{
 			testName: "with parent span id",
 			span: &sentry.Span{
-				TraceID:      TraceIDFromHex("1915f8aa35ff8fbebbfeedb9d7e07216"),
-				SpanID:       SpanIDFromHex("ea4864700408805c"),
-				ParentSpanID: SpanIDFromHex("4c577fe4aec9523b"),
+				TraceID:      traceIDFromHex("1915f8aa35ff8fbebbfeedb9d7e07216"),
+				SpanID:       spanIDFromHex("ea4864700408805c"),
+				ParentSpanID: spanIDFromHex("4c577fe4aec9523b"),
 			},
 			wantContains: `{"trace":{"parent_span_id":"4c577fe4aec9523b","span_id":"ea4864700408805c","trace_id":"1915f8aa35ff8fbebbfeedb9d7e07216"}}`,
 		},
 		{
 			testName: "without parent span id",
 			span: &sentry.Span{
-				TraceID: TraceIDFromHex("11ab4adc8ac6ed96f245cd96b5b6d141"),
-				SpanID:  SpanIDFromHex("cc55ac735f0170ac"),
+				TraceID: traceIDFromHex("11ab4adc8ac6ed96f245cd96b5b6d141"),
+				SpanID:  spanIDFromHex("cc55ac735f0170ac"),
 			},
 			wantContains: `{"trace":{"span_id":"cc55ac735f0170ac","trace_id":"11ab4adc8ac6ed96f245cd96b5b6d141"}}`,
 		},
 	}
 
+	environment := "production"
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
-			event := transactionFromSpan(test.span)
+			event := transactionFromSpan(test.span, environment)
 			// mimic what sentry is doing internally
 			// see: https://github.com/getsentry/sentry-go/blob/v0.13.0/transport.go#L66-L70
 			d, err := json.Marshal(event.Contexts)

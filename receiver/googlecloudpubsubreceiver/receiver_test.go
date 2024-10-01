@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package googlecloudpubsubreceiver
 
@@ -26,11 +15,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/testdata"
 )
 
@@ -48,7 +38,7 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 			Endpoint:  srv.Addr,
 			Insecure:  true,
 			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 12 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",
@@ -82,13 +72,13 @@ func TestReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	core, _ := observer.New(zap.WarnLevel)
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             component.NewID(typeStr),
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              reportTransport,
 		LongLivedCtx:           false,
 		ReceiverCreateSettings: params,
@@ -104,7 +94,7 @@ func TestReceiver(t *testing.T) {
 			Endpoint:  srv.Addr,
 			Insecure:  true,
 			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 1 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",
@@ -163,6 +153,6 @@ func TestReceiver(t *testing.T) {
 		return len(logSink.AllLogs()) == 1
 	}, time.Second, 10*time.Millisecond)
 
-	assert.Nil(t, receiver.Shutdown(ctx))
-	assert.Nil(t, receiver.Shutdown(ctx))
+	assert.NoError(t, receiver.Shutdown(ctx))
+	assert.NoError(t, receiver.Shutdown(ctx))
 }

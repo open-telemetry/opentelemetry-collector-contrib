@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
@@ -20,11 +9,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 type logsDataConsumer interface {
@@ -44,10 +35,10 @@ type blobReceiver struct {
 	tracesUnmarshaler  ptrace.Unmarshaler
 	nextLogsConsumer   consumer.Logs
 	nextTracesConsumer consumer.Traces
-	obsrecv            *obsreport.Receiver
+	obsrecv            *receiverhelper.ObsReport
 }
 
-func (b *blobReceiver) Start(ctx context.Context, host component.Host) error {
+func (b *blobReceiver) Start(ctx context.Context, _ component.Host) error {
 	err := b.blobEventHandler.run(ctx)
 
 	return err
@@ -80,7 +71,7 @@ func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
 
 	err = b.nextLogsConsumer.ConsumeLogs(logsContext, logs)
 
-	b.obsrecv.EndLogsOp(logsContext, typeStr, 1, err)
+	b.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), 1, err)
 
 	return err
 }
@@ -99,14 +90,14 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 
 	err = b.nextTracesConsumer.ConsumeTraces(tracesContext, traces)
 
-	b.obsrecv.EndTracesOp(tracesContext, typeStr, 1, err)
+	b.obsrecv.EndTracesOp(tracesContext, metadata.Type.String(), 1, err)
 
 	return err
 }
 
 // Returns a new instance of the log receiver
-func newReceiver(set receiver.CreateSettings, blobEventHandler blobEventHandler) (component.Component, error) {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+func newReceiver(set receiver.Settings, blobEventHandler blobEventHandler) (component.Component, error) {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "event",
 		ReceiverCreateSettings: set,

@@ -1,20 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
+// SPDX-License-Identifier: Apache-2.0
 
 package dbstorage
 
@@ -118,7 +103,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg.DriverName = "sqlite3"
 	cfg.DataSource = fmt.Sprintf("file:%s/foo.db?_busy_timeout=10000&_journal=WAL&_sync=NORMAL", t.TempDir())
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -128,5 +113,5 @@ func newTestExtension(t *testing.T) storage.Extension {
 }
 
 func newTestEntity(name string) component.ID {
-	return component.NewIDWithName("nop", name)
+	return component.MustNewIDWithName("nop", name)
 }

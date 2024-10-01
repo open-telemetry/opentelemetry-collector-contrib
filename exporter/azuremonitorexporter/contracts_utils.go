@@ -1,23 +1,12 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon" // Applies resource attributes values to data properties
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 const (
@@ -51,6 +40,13 @@ func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes p
 	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
 		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
 	}
+
+	envelope.Tags[contracts.InternalSdkVersion] = getCollectorVersion()
+}
+
+// Applies internal sdk version tag on the envelope
+func applyInternalSdkVersionTagToEnvelope(envelope *contracts.Envelope) {
+	envelope.Tags[contracts.InternalSdkVersion] = getCollectorVersion()
 }
 
 // Applies instrumentation values to data properties
@@ -63,4 +59,12 @@ func applyInstrumentationScopeValueToDataProperties(dataProperties map[string]st
 	if instrumentationScope.Version() != "" {
 		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
 	}
+}
+
+// Applies attributes as Application Insights properties
+func setAttributesAsProperties(attributeMap pcommon.Map, properties map[string]string) {
+	attributeMap.Range(func(k string, v pcommon.Value) bool {
+		properties[k] = v.AsString()
+		return true
+	})
 }

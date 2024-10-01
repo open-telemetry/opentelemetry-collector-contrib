@@ -1,21 +1,9 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 
 import (
-	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"hash/fnv"
@@ -26,7 +14,7 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -84,7 +72,7 @@ func regroup(batches []*model.Batch) []*model.Batch {
 		}
 	}
 
-	var result []*model.Batch
+	result := make([]*model.Batch, 0, len(registry))
 	for _, v := range registry {
 		result = append(result, v)
 	}
@@ -222,11 +210,11 @@ func jSpanToInternal(span *model.Span, dest ptrace.Span) {
 	attrs := dest.Attributes()
 	attrs.EnsureCapacity(len(span.Tags))
 	jTagsToInternalAttributes(span.Tags, attrs)
-	setInternalSpanStatus(attrs, dest)
 	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
 		dest.SetKind(jSpanKindToInternal(spanKindAttr.Str()))
 		attrs.Remove(tracetranslator.TagSpanKind)
 	}
+	setInternalSpanStatus(attrs, dest)
 
 	dest.TraceState().FromRaw(getTraceStateFromAttrs(attrs))
 
@@ -251,7 +239,7 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 		case model.ValueType_FLOAT64:
 			dest.PutDouble(tag.Key, tag.GetVFloat64())
 		case model.ValueType_BINARY:
-			dest.PutStr(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
+			dest.PutEmptyBytes(tag.Key).FromRaw(tag.GetVBinary())
 		default:
 			dest.PutStr(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
 		}
@@ -453,9 +441,9 @@ func getTraceStateFromAttrs(attrs pcommon.Map) string {
 
 func getScope(span *model.Span) scope {
 	il := scope{}
-	if libraryName, ok := getAndDeleteTag(span, conventions.OtelLibraryName); ok {
+	if libraryName, ok := getAndDeleteTag(span, conventions.AttributeOtelScopeName); ok {
 		il.name = libraryName
-		if libraryVersion, ok := getAndDeleteTag(span, conventions.OtelLibraryVersion); ok {
+		if libraryVersion, ok := getAndDeleteTag(span, conventions.AttributeOtelScopeVersion); ok {
 			il.version = libraryVersion
 		}
 	}

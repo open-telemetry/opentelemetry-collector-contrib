@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package googlecloudpubsubexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 
@@ -105,16 +94,16 @@ func (ex *pubsubExporter) generateClientOptions() (copts []option.ClientOption) 
 	if ex.userAgent != "" {
 		copts = append(copts, option.WithUserAgent(ex.userAgent))
 	}
-	if ex.config.endpoint != "" {
-		if ex.config.insecure {
+	if ex.config.Endpoint != "" {
+		if ex.config.Insecure {
 			var dialOpts []grpc.DialOption
 			if ex.userAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(ex.userAgent))
 			}
-			conn, _ := grpc.Dial(ex.config.endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+			conn, _ := grpc.NewClient(ex.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			copts = append(copts, option.WithGRPCConn(conn))
 		} else {
-			copts = append(copts, option.WithEndpoint(ex.config.endpoint))
+			copts = append(copts, option.WithEndpoint(ex.config.Endpoint))
 		}
 	}
 	return copts

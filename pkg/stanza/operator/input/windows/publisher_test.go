@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windows
 
@@ -25,55 +13,68 @@ import (
 
 func TestPublisherOpenPreexisting(t *testing.T) {
 	publisher := Publisher{handle: 5}
-	err := publisher.Open("")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "publisher handle is already open")
+	err := publisher.Open("provider_name_does_not_matter_for_this_test")
+	require.ErrorContains(t, err, "publisher handle is already open")
+	require.True(t, publisher.Valid())
 }
 
 func TestPublisherOpenInvalidUTF8(t *testing.T) {
 	publisher := NewPublisher()
 	invalidUTF8 := "\u0000"
 	err := publisher.Open(invalidUTF8)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to convert provider to utf16")
+	require.ErrorContains(t, err, "failed to convert the provider name \"\\x00\" to utf16: invalid argument")
+	require.False(t, publisher.Valid())
 }
 
 func TestPublisherOpenSyscallFailure(t *testing.T) {
 	publisher := NewPublisher()
 	provider := "provider"
-	openPublisherMetadataProc = SimpleMockProc(0, 0, ErrorNotSupported)
+	defer mockWithDeferredRestore(&openPublisherMetadataProc, SimpleMockProc(0, 0, ErrorNotSupported))()
 	err := publisher.Open(provider)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to open publisher handle")
+	require.ErrorContains(t, err, "failed to open the metadata for the \"provider\" provider: The request is not supported.")
+	require.False(t, publisher.Valid())
 }
 
 func TestPublisherOpenSuccess(t *testing.T) {
 	publisher := NewPublisher()
 	provider := "provider"
-	openPublisherMetadataProc = SimpleMockProc(5, 0, ErrorSuccess)
+	defer mockWithDeferredRestore(&openPublisherMetadataProc, SimpleMockProc(5, 0, ErrorSuccess))()
 	err := publisher.Open(provider)
 	require.NoError(t, err)
 	require.Equal(t, uintptr(5), publisher.handle)
+	require.True(t, publisher.Valid())
 }
 
 func TestPublisherCloseWhenAlreadyClosed(t *testing.T) {
 	publisher := NewPublisher()
 	err := publisher.Close()
 	require.NoError(t, err)
+	require.False(t, publisher.Valid())
 }
 
 func TestPublisherCloseSyscallFailure(t *testing.T) {
 	publisher := Publisher{handle: 5}
-	closeProc = SimpleMockProc(0, 0, ErrorNotSupported)
+	defer mockWithDeferredRestore(&closeProc, SimpleMockProc(0, 0, ErrorNotSupported))()
 	err := publisher.Close()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to close publisher")
+	require.ErrorContains(t, err, "failed to close publisher")
+	require.True(t, publisher.Valid())
 }
 
 func TestPublisherCloseSuccess(t *testing.T) {
 	publisher := Publisher{handle: 5}
+	originalCloseProc := closeProc
 	closeProc = SimpleMockProc(1, 0, ErrorSuccess)
+	defer func() { closeProc = originalCloseProc }()
 	err := publisher.Close()
 	require.NoError(t, err)
 	require.Equal(t, uintptr(0), publisher.handle)
+	require.False(t, publisher.Valid())
+}
+
+func mockWithDeferredRestore(call *SyscallProc, mockCall SyscallProc) func() {
+	original := *call
+	*call = mockCall
+	return func() {
+		*call = original
+	}
 }

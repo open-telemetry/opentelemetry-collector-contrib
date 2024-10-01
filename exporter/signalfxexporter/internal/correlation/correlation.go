@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package correlation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 
@@ -20,14 +9,14 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
-	"github.com/signalfx/signalfx-agent/pkg/apm/tracetracker"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/tracetracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -37,7 +26,7 @@ type Tracker struct {
 	once         sync.Once
 	log          *zap.Logger
 	cfg          *Config
-	params       exporter.CreateSettings
+	params       exporter.Settings
 	traceTracker *tracetracker.ActiveServiceTracker
 	pTicker      timeutils.TTicker
 	correlation  *correlationContext
@@ -50,7 +39,7 @@ type correlationContext struct {
 }
 
 // NewTracker creates a new tracker instance for correlation.
-func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.CreateSettings) *Tracker {
+func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.Settings) *Tracker {
 	return &Tracker{
 		log:         params.Logger,
 		cfg:         cfg,
@@ -59,22 +48,22 @@ func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.Cr
 	}
 }
 
-func newCorrelationClient(cfg *Config, accessToken configopaque.String, params exporter.CreateSettings, host component.Host) (
+func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configopaque.String, params exporter.Settings, host component.Host) (
 	*correlationContext, error,
 ) {
-	corrURL, err := url.Parse(cfg.HTTPClientSettings.Endpoint)
+	corrURL, err := url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.HTTPClientSettings.Endpoint, err)
+		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.ClientConfig.Endpoint, err)
 	}
 
-	httpClient, err := cfg.ToClient(host, params.TelemetrySettings)
+	httpClient, err := cfg.ToClient(ctx, host, params.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create correlation API client: %w", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 
-	client, err := correlations.NewCorrelationClient(newZapShim(params.Logger), ctx, httpClient, correlations.ClientConfig{
+	client, err := correlations.NewCorrelationClient(ctx, newZapShim(params.Logger), httpClient, correlations.ClientConfig{
 		Config:      cfg.Config,
 		AccessToken: string(accessToken),
 		URL:         corrURL,
@@ -91,9 +80,9 @@ func newCorrelationClient(cfg *Config, accessToken configopaque.String, params e
 	}, nil
 }
 
-// AddSpans processes the provided spans to correlate the services and environment observed
+// ProcessTraces processes the provided spans to correlate the services and environment observed
 // to the resources (host, pods, etc.) emitting the spans.
-func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
+func (cor *Tracker) ProcessTraces(ctx context.Context, traces ptrace.Traces) error {
 	if cor == nil || traces.ResourceSpans().Len() == 0 {
 		return nil
 	}
@@ -118,8 +107,6 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
 			map[string]string{
 				hostDimension: hostID.ID,
 			},
-			false,
-			nil,
 			cor.cfg.SyncAttributes)
 
 		cor.pTicker = &timeutils.PolicyTicker{OnTickFunc: cor.traceTracker.Purge}
@@ -129,15 +116,15 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
 	})
 
 	if cor.traceTracker != nil {
-		cor.traceTracker.AddSpansGeneric(ctx, spanListWrap{traces.ResourceSpans()})
+		cor.traceTracker.ProcessTraces(ctx, traces)
 	}
 
 	return nil
 }
 
 // Start correlation tracking.
-func (cor *Tracker) Start(_ context.Context, host component.Host) (err error) {
-	cor.correlation, err = newCorrelationClient(cor.cfg, cor.accessToken, cor.params, host)
+func (cor *Tracker) Start(ctx context.Context, host component.Host) (err error) {
+	cor.correlation, err = newCorrelationClient(ctx, cor.cfg, cor.accessToken, cor.params, host)
 	if err != nil {
 		return err
 	}
@@ -150,6 +137,7 @@ func (cor *Tracker) Shutdown(_ context.Context) error {
 	if cor != nil {
 		if cor.correlation != nil {
 			cor.correlation.cancel()
+			cor.correlation.CorrelationClient.Shutdown()
 		}
 
 		if cor.pTicker != nil {

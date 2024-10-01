@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package redactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
@@ -22,6 +11,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
@@ -70,6 +61,22 @@ func (s *redaction) processTraces(ctx context.Context, batch ptrace.Traces) (ptr
 	return batch, nil
 }
 
+func (s *redaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		rl := logs.ResourceLogs().At(i)
+		s.processResourceLog(ctx, rl)
+	}
+	return logs, nil
+}
+
+func (s *redaction) processMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		s.processResourceMetric(ctx, rm)
+	}
+	return metrics, nil
+}
+
 // processResourceSpan processes the RS and all of its spans and then returns the last
 // view metric context. The context can be used for tests
 func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) {
@@ -86,6 +93,63 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 			// Attributes can also be part of span
 			s.processAttrs(ctx, spanAttrs)
+		}
+	}
+}
+
+// processResourceLog processes the log resource and all of its logs and then returns the last
+// view metric context. The context can be used for tests
+func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs) {
+	rsAttrs := rl.Resource().Attributes()
+
+	s.processAttrs(ctx, rsAttrs)
+
+	for j := 0; j < rl.ScopeLogs().Len(); j++ {
+		ils := rl.ScopeLogs().At(j)
+		for k := 0; k < ils.LogRecords().Len(); k++ {
+			log := ils.LogRecords().At(k)
+			s.processAttrs(ctx, log.Attributes())
+		}
+	}
+}
+
+func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.ResourceMetrics) {
+	rsAttrs := rm.Resource().Attributes()
+
+	s.processAttrs(ctx, rsAttrs)
+
+	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		ils := rm.ScopeMetrics().At(j)
+		for k := 0; k < ils.Metrics().Len(); k++ {
+			metric := ils.Metrics().At(k)
+			switch metric.Type() {
+			case pmetric.MetricTypeGauge:
+				dps := metric.Gauge().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeSum:
+				dps := metric.Sum().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeHistogram:
+				dps := metric.Histogram().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeExponentialHistogram:
+				dps := metric.ExponentialHistogram().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeSummary:
+				dps := metric.Summary().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeEmpty:
+			}
 		}
 	}
 }
@@ -124,13 +188,18 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 
 		// Mask any blocked values for the other attributes
 		strVal := value.Str()
+		var matched bool
 		for _, compiledRE := range s.blockRegexList {
 			match := compiledRE.MatchString(strVal)
 			if match {
-				toBlock = append(toBlock, k)
+				if !matched {
+					matched = true
+					toBlock = append(toBlock, k)
+				}
 
 				maskedValue := compiledRE.ReplaceAllString(strVal, "****")
 				value.SetStr(maskedValue)
+				strVal = maskedValue
 			}
 		}
 		return true

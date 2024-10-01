@@ -9,6 +9,7 @@ splunk_hec/allsettings:
   index: "metrics"
   log_data_enabled: true
   profiling_data_enabled: true
+  use_multi_metric_format: false
   export_raw: true
   tls:
     insecure_skip_verify: false
@@ -25,6 +26,11 @@ splunk_hec/allsettings:
     initial_interval: 10s
     max_interval: 60s
     max_elapsed_time: 10m
+  batcher:
+    enabled: true
+    flush_timeout: 1s
+    min_size_items: 1
+    max_size_items: 10
   splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
   splunk_app_version: "v0.0.1"
   hec_metadata_to_otel_attrs:
@@ -35,3 +41,12 @@ splunk_hec/allsettings:
   otel_to_hec_fields:
     severity_text: "myseverityfield"
     severity_number: "myseveritynumfield"
+  heartbeat:
+    interval: 30s
+  telemetry:
+    enabled: true
+    override_metrics_names:
+      otelcol_exporter_splunkhec_heartbeats_sent: app_heartbeats_success_total
+      otelcol_exporter_splunkhec_heartbeats_failed: app_heartbeats_failed_total
+    extra_attributes:
+      customKey: customVal

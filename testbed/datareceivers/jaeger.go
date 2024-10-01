@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 
@@ -44,11 +33,11 @@ func NewJaegerDataReceiver(port int) testbed.DataReceiver {
 func (jr *jaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
-	cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{Endpoint: fmt.Sprintf("127.0.0.1:%d", jr.Port), Transport: "tcp"},
+	cfg.Protocols.GRPC = &configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", jr.Port), Transport: confignet.TransportTypeTCP},
 	}
 	var err error
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	jr.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
 	if err != nil {
 		return err
@@ -63,13 +52,15 @@ func (jr *jaegerDataReceiver) Stop() error {
 
 func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
+	// The Jaeger exporter is no longer supported, therefore
+	// we export data using OTLP instead
 	return fmt.Sprintf(`
-  jaeger:
+  otlp/jaeger:
     endpoint: "127.0.0.1:%d"
     tls:
       insecure: true`, jr.Port)
 }
 
 func (jr *jaegerDataReceiver) ProtocolName() string {
-	return "jaeger"
+	return "otlp/jaeger"
 }

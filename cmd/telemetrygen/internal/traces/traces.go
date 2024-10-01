@@ -1,80 +1,65 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package traces
 
 import (
 	"context"
 	"fmt"
+	"math"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
 
-	grpcExpOpt := []otlptracegrpc.Option{
-		otlptracegrpc.WithEndpoint(cfg.Endpoint),
-		otlptracegrpc.WithDialOption(
-			grpc.WithBlock(),
-		),
-	}
-
-	httpExpOpt := []otlptracehttp.Option{
-		otlptracehttp.WithEndpoint(cfg.Endpoint),
-	}
-
-	if cfg.Insecure {
-		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithInsecure())
-		httpExpOpt = append(httpExpOpt, otlptracehttp.WithInsecure())
-	}
-
-	if len(cfg.Headers) > 0 {
-		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithHeaders(cfg.Headers))
-		httpExpOpt = append(httpExpOpt, otlptracehttp.WithHeaders(cfg.Headers))
-	}
-
 	var exp *otlptrace.Exporter
 	if cfg.UseHTTP {
+		var exporterOpts []otlptracehttp.Option
+
 		logger.Info("starting HTTP exporter")
-		exp, err = otlptracehttp.New(context.Background(), httpExpOpt...)
+		exporterOpts, err = httpExporterOptions(cfg)
+		if err != nil {
+			return err
+		}
+		exp, err = otlptracehttp.New(context.Background(), exporterOpts...)
+		if err != nil {
+			return fmt.Errorf("failed to obtain OTLP HTTP exporter: %w", err)
+		}
 	} else {
+		var exporterOpts []otlptracegrpc.Option
+
 		logger.Info("starting gRPC exporter")
-		exp, err = otlptracegrpc.New(context.Background(), grpcExpOpt...)
+		exporterOpts, err = grpcExporterOptions(cfg)
+		if err != nil {
+			return err
+		}
+		exp, err = otlptracegrpc.New(context.Background(), exporterOpts...)
+		if err != nil {
+			return fmt.Errorf("failed to obtain OTLP gRPC exporter: %w", err)
+		}
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to obtain OTLP exporter: %w", err)
-	}
 	defer func() {
 		logger.Info("stopping the exporter")
 		if tempError := exp.Shutdown(context.Background()); tempError != nil {
@@ -82,16 +67,19 @@ func Start(cfg *Config) error {
 		}
 	}()
 
-	ssp := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
-	defer func() {
-		logger.Info("stop the batch span processor")
-		if tempError := ssp.Shutdown(context.Background()); tempError != nil {
-			logger.Error("failed to stop the batch span processor", zap.Error(err))
-		}
-	}()
+	var ssp sdktrace.SpanProcessor
+	if cfg.Batch {
+		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
+		defer func() {
+			logger.Info("stop the batch span processor")
+			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
+				logger.Error("failed to stop the batch span processor", zap.Error(tempError))
+			}
+		}()
+	}
 
 	var attributes []attribute.KeyValue
-	// may be overridden by `-otlp-attributes service.name="foo"`
+	// may be overridden by `--otlp-attributes service.name="foo"`
 	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
 	attributes = append(attributes, cfg.GetAttributes()...)
 
@@ -99,7 +87,9 @@ func Start(cfg *Config) error {
 		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
 	)
 
-	tracerProvider.RegisterSpanProcessor(ssp)
+	if cfg.Batch {
+		tracerProvider.RegisterSpanProcessor(ssp)
+	}
 	otel.SetTracerProvider(tracerProvider)
 
 	if err = Run(cfg, logger); err != nil {
@@ -126,22 +116,43 @@ func Run(c *Config, logger *zap.Logger) error {
 		logger.Info("generation of traces is limited", zap.Float64("per-second", float64(limit)))
 	}
 
+	var statusCode codes.Code
+
+	switch strings.ToLower(c.StatusCode) {
+	case "0", "unset", "":
+		statusCode = codes.Unset
+	case "1", "error":
+		statusCode = codes.Error
+	case "2", "ok":
+		statusCode = codes.Ok
+	default:
+		return fmt.Errorf("expected `status-code` to be one of (Unset, Error, Ok) or (0, 1, 2), got %q instead", c.StatusCode)
+	}
+
 	wg := sync.WaitGroup{}
-	running := atomic.NewBool(true)
+
+	running := &atomic.Bool{}
+	running.Store(true)
+
+	telemetryAttributes := c.GetTelemetryAttributes()
 
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
 		w := worker{
 			numTraces:        c.NumTraces,
+			numChildSpans:    int(math.Max(1, float64(c.NumChildSpans))),
 			propagateContext: c.PropagateContext,
+			statusCode:       statusCode,
 			limitPerSecond:   limit,
 			totalDuration:    c.TotalDuration,
 			running:          running,
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
+			loadSize:         c.LoadSize,
+			spanDuration:     c.SpanDuration,
 		}
 
-		go w.simulateTraces()
+		go w.simulateTraces(telemetryAttributes)
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)

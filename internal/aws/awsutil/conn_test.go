@@ -1,16 +1,5 @@
-// Copyright, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsutil
 
@@ -32,7 +21,7 @@ type mockConn struct {
 	sn *session.Session
 }
 
-func (c *mockConn) getEC2Region(s *session.Session) (string, error) {
+func (c *mockConn) getEC2Region(_ *session.Session) (string, error) {
 	args := c.Called(nil)
 	errorStr := args.String(0)
 	var err error
@@ -43,7 +32,7 @@ func (c *mockConn) getEC2Region(s *session.Session) (string, error) {
 	return ec2Region, nil
 }
 
-func (c *mockConn) newAWSSession(logger *zap.Logger, roleArn string, region string) (*session.Session, error) {
+func (c *mockConn) newAWSSession(_ *zap.Logger, _ string, _ string) (*session.Session, error) {
 	return c.sn, nil
 }
 
@@ -57,9 +46,9 @@ func TestEC2Session(t *testing.T) {
 	expectedSession, _ = session.NewSession()
 	m.sn = expectedSession
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
-	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
+	assert.Equal(t, expectedSession, s, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, ec2Region, "Region value fetched from ec2-metadata service")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 // fetch region value from environment variable
@@ -74,9 +63,9 @@ func TestRegionEnv(t *testing.T) {
 	expectedSession, _ = session.NewSession()
 	m.sn = expectedSession
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
-	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
+	assert.Equal(t, expectedSession, s, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, region, "Region value fetched from environment")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
@@ -93,7 +82,7 @@ func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Nil(t, cfg)
 	assert.Nil(t, s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
@@ -109,7 +98,7 @@ func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Nil(t, cfg)
 	assert.Nil(t, s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestNewAWSSessionWithErr(t *testing.T) {
@@ -120,11 +109,11 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	conn := &Conn{}
 	se, err := conn.newAWSSession(logger, roleArn, region)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, se)
 	roleArn = ""
 	se, err = conn.newAWSSession(logger, roleArn, region)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, se)
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "regional")
@@ -133,7 +122,7 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	})
 	assert.NotNil(t, se)
 	_, err = conn.getEC2Region(se)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
@@ -154,7 +143,7 @@ func TestGetDefaultSession(t *testing.T) {
 	logger := zap.NewNop()
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err := GetDefaultSession(logger)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetSTSCreds(t *testing.T) {
@@ -162,8 +151,8 @@ func TestGetSTSCreds(t *testing.T) {
 	region := "fake_region"
 	roleArn := ""
 	_, err := getSTSCreds(logger, region, roleArn)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err = getSTSCreds(logger, region, roleArn)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

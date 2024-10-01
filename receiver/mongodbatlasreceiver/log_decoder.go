@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -82,7 +71,7 @@ func decode4_2(logger *zap.Logger, r io.Reader) ([]model.LogEntry, error) {
 		}
 
 		submatches := mongo4_2LogRegex.FindStringSubmatch(scanner.Text())
-		if submatches == nil || len(submatches) != 6 {
+		if len(submatches) != 6 {
 			// Match failed for line; We will skip this line and continue processing others.
 			logger.Error("Entry did not match regex", zap.String("entry", scanner.Text()))
 			continue

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package googlecloudspannerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 
@@ -27,13 +16,14 @@ const (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	TopMetricsQueryMaxRows            int       `mapstructure:"top_metrics_query_max_rows"`
 	BackfillEnabled                   bool      `mapstructure:"backfill_enabled"`
 	CardinalityTotalLimit             int       `mapstructure:"cardinality_total_limit"`
 	Projects                          []Project `mapstructure:"projects"`
 	HideTopnLockstatsRowrangestartkey bool      `mapstructure:"hide_topn_lockstats_rowrangestartkey"`
+	TruncateText                      bool      `mapstructure:"truncate_text"`
 }
 
 type Project struct {

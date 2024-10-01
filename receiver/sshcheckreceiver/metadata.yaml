@@ -1,4 +1,12 @@
-name: sshcheckreceiver
+type: sshcheck
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [nslaughter, codeboten]
 
 resource_attributes:
   ssh.endpoint:
@@ -16,9 +24,9 @@ metrics:
     enabled: true
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
-    unit: 1
+    unit: "1"
   sshcheck.duration:
     description: Measures the duration of SSH connection.
     enabled: true
@@ -30,7 +38,7 @@ metrics:
     enabled: true
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: "{error}"
     attributes: [error.message]
@@ -39,9 +47,9 @@ metrics:
     enabled: false
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
-    unit: 1
+    unit: "1"
   sshcheck.sftp_duration:
     description: Measures SFTP request duration.
     enabled: false
@@ -53,7 +61,7 @@ metrics:
     enabled: false
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: "{error}"
     attributes: [error.message]

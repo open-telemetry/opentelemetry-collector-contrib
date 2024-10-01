@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 
@@ -46,13 +35,13 @@ func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 // Start the receiver.
 func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	config := signalfxreceiver.Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
 	}
 	var err error
 	f := signalfxreceiver.NewFactory()
-	sr.receiver, err = f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), &config, mc)
+	sr.receiver, err = f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), &config, mc)
 	if err != nil {
 		return err
 	}

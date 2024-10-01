@@ -1,103 +1,176 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
 	"net/url"
+	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-	// QueueSettings is a subset of exporterhelper.QueueSettings,
-	// because only QueueSize is user-settable.
-	QueueSettings QueueSettings `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 
-	// Endpoint is the clickhouse server endpoint.
-	// TCP endpoint: tcp://ip1:port,ip2:port
-	// HTTP endpoint: http://ip:port,ip2:port
+	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
-	// Username is the authentication password.
-	Password string `mapstructure:"password"`
+	// Password is the authentication password.
+	Password configopaque.String `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
 	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
 	ConnectionParams map[string]string `mapstructure:"connection_params"`
 	// LogsTableName is the table name for logs. default is `otel_logs`.
 	LogsTableName string `mapstructure:"logs_table_name"`
-	// TracesTableName is the table name for logs. default is `otel_traces`.
+	// TracesTableName is the table name for traces. default is `otel_traces`.
 	TracesTableName string `mapstructure:"traces_table_name"`
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
 	MetricsTableName string `mapstructure:"metrics_table_name"`
-	// TTLDays is The data time-to-live in days, 0 means no ttl.
-	TTLDays uint `mapstructure:"ttl_days"`
+	// TTL is The data time-to-live example 30m, 48h. 0 means no ttl.
+	TTL time.Duration `mapstructure:"ttl"`
+	// TableEngine is the table engine to use. default is `MergeTree()`.
+	TableEngine TableEngine `mapstructure:"table_engine"`
+	// ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
+	ClusterName string `mapstructure:"cluster_name"`
+	// CreateSchema if set to true will run the DDL for creating the database and tables. default is true.
+	CreateSchema bool `mapstructure:"create_schema"`
+	// Compress controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4).
+	Compress string `mapstructure:"compress"`
+	// AsyncInsert if true will enable async inserts. Default is `true`.
+	// Ignored if async inserts are configured in the `endpoint` or `connection_params`.
+	// Async inserts may still be overridden server-side.
+	AsyncInsert bool `mapstructure:"async_insert"`
 }
 
-// QueueSettings is a subset of exporterhelper.QueueSettings.
-type QueueSettings struct {
-	// QueueSize set the length of the sending queue
-	QueueSize int `mapstructure:"queue_size"`
+// TableEngine defines the ENGINE string value when creating the table.
+type TableEngine struct {
+	Name   string `mapstructure:"name"`
+	Params string `mapstructure:"params"`
 }
 
 const defaultDatabase = "default"
+const defaultTableEngineName = "MergeTree"
 
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 )
 
-// Validate the clickhouse server configuration.
+// Validate the ClickHouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
-		err = multierr.Append(err, errConfigNoEndpoint)
+		err = errors.Join(err, errConfigNoEndpoint)
 	}
-	_, e := cfg.buildDSN(cfg.Database)
+	dsn, e := cfg.buildDSN()
 	if e != nil {
-		err = multierr.Append(err, e)
+		err = errors.Join(err, e)
 	}
+
+	// Validate DSN with clickhouse driver.
+	// Last chance to catch invalid config.
+	if _, e := clickhouse.ParseDSN(dsn); e != nil {
+		err = errors.Join(err, e)
+	}
+
 	return err
 }
 
-func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
-	return exporterhelper.QueueSettings{
-		Enabled:      true,
-		NumConsumers: 1,
-		QueueSize:    cfg.QueueSettings.QueueSize,
+func (cfg *Config) buildDSN() (string, error) {
+	dsnURL, err := url.Parse(cfg.Endpoint)
+	if err != nil {
+		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err.Error())
 	}
+
+	queryParams := dsnURL.Query()
+
+	// Add connection params to query params.
+	for k, v := range cfg.ConnectionParams {
+		queryParams.Set(k, v)
+	}
+
+	// Enable TLS if scheme is https. This flag is necessary to support https connections.
+	if dsnURL.Scheme == "https" {
+		queryParams.Set("secure", "true")
+	}
+
+	// Use async_insert from config if not specified in DSN.
+	if !queryParams.Has("async_insert") {
+		queryParams.Set("async_insert", fmt.Sprintf("%t", cfg.AsyncInsert))
+	}
+
+	if !queryParams.Has("compress") && (cfg.Compress == "" || cfg.Compress == "true") {
+		queryParams.Set("compress", "lz4")
+	} else if !queryParams.Has("compress") {
+		queryParams.Set("compress", cfg.Compress)
+	}
+
+	// Use database from config if not specified in path, or if config is not default.
+	if dsnURL.Path == "" || cfg.Database != defaultDatabase {
+		dsnURL.Path = cfg.Database
+	}
+
+	// Override username and password if specified in config.
+	if cfg.Username != "" {
+		dsnURL.User = url.UserPassword(cfg.Username, string(cfg.Password))
+	}
+
+	dsnURL.RawQuery = queryParams.Encode()
+
+	return dsnURL.String(), nil
 }
 
-func (cfg *Config) buildDSN(database string) (string, error) {
-	dsn, err := url.Parse(cfg.Endpoint)
+func (cfg *Config) buildDB() (*sql.DB, error) {
+	dsn, err := cfg.buildDSN()
 	if err != nil {
-		return "", errConfigInvalidEndpoint
+		return nil, err
 	}
-	if cfg.Username != "" {
-		dsn.User = url.UserPassword(cfg.Username, cfg.Password)
+
+	// ClickHouse sql driver will read clickhouse settings from the DSN string.
+	// It also ensures defaults.
+	// See https://github.com/ClickHouse/clickhouse-go/blob/08b27884b899f587eb5c509769cd2bdf74a9e2a1/clickhouse_std.go#L189
+	conn, err := sql.Open(driverName, dsn)
+	if err != nil {
+		return nil, err
 	}
-	dsn.Path = "/" + database
-	params := url.Values{}
-	for k, v := range cfg.ConnectionParams {
-		params.Set(k, v)
+
+	return conn, nil
+}
+
+// shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
+func (cfg *Config) shouldCreateSchema() bool {
+	return cfg.CreateSchema
+}
+
+// tableEngineString generates the ENGINE string.
+func (cfg *Config) tableEngineString() string {
+	engine := cfg.TableEngine.Name
+	params := cfg.TableEngine.Params
+
+	if cfg.TableEngine.Name == "" {
+		engine = defaultTableEngineName
+		params = ""
 	}
-	dsn.RawQuery = params.Encode()
-	return dsn.String(), nil
+
+	return fmt.Sprintf("%s(%s)", engine, params)
+}
+
+// clusterString generates the ON CLUSTER string. Returns empty string if not set.
+func (cfg *Config) clusterString() string {
+	if cfg.ClusterName == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("ON CLUSTER %s", cfg.ClusterName)
 }

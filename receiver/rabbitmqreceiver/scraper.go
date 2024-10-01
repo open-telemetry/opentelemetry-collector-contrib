@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 
@@ -57,18 +46,18 @@ type rabbitmqScraper struct {
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *rabbitmqScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *rabbitmqScraper {
 	return &rabbitmqScraper{
 		logger:   logger,
 		cfg:      cfg,
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
 
 // start starts the scraper by creating a new HTTP Client on the scraper
 func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) (err error) {
-	r.client, err = newClient(r.cfg, host, r.settings, r.logger)
+	r.client, err = newClient(ctx, r.cfg, host, r.settings, r.logger)
 	return
 }
 
@@ -130,17 +119,17 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 			r.mb.RecordRabbitmqMessageDroppedDataPoint(now, val64)
 		}
 	}
-	r.mb.EmitForResource(
-		metadata.WithRabbitmqQueueName(queue.Name),
-		metadata.WithRabbitmqNodeName(queue.Node),
-		metadata.WithRabbitmqVhostName(queue.VHost),
-	)
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRabbitmqQueueName(queue.Name)
+	rb.SetRabbitmqNodeName(queue.Node)
+	rb.SetRabbitmqVhostName(queue.VHost)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // convertValToInt64 values from message state unmarshal as float64s but should be int64.
 // Need to do a double cast to get an int64.
 // This should never fail but worth checking just in case.
-func convertValToInt64(val interface{}) (int64, bool) {
+func convertValToInt64(val any) (int64, bool) {
 	f64Val, ok := val.(float64)
 	if !ok {
 		return 0, ok

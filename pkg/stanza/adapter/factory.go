@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
@@ -19,10 +8,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
@@ -45,8 +36,8 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rc
 
 func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 	return func(
-		ctx context.Context,
-		params rcvr.CreateSettings,
+		_ context.Context,
+		params rcvr.Settings,
 		cfg component.Config,
 		nextConsumer consumer.Logs,
 	) (rcvr.Logs, error) {
@@ -55,17 +46,28 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		emitter := NewLogEmitter(params.Logger.Sugar())
+		var emitterOpts []helper.EmitterOption
+		if baseCfg.maxBatchSize > 0 {
+			emitterOpts = append(emitterOpts, helper.WithMaxBatchSize(baseCfg.maxBatchSize))
+		}
+		if baseCfg.flushInterval > 0 {
+			emitterOpts = append(emitterOpts, helper.WithFlushInterval(baseCfg.flushInterval))
+		}
+		emitter := helper.NewLogEmitter(params.TelemetrySettings, emitterOpts...)
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
-		}.Build(params.Logger.Sugar())
+		}.Build(params.TelemetrySettings)
 		if err != nil {
 			return nil, err
 		}
 
-		converter := NewConverter(params.Logger)
-		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		var converterOpts []converterOption
+		if baseCfg.numWorkers > 0 {
+			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
+		}
+		converter := NewConverter(params.TelemetrySettings, converterOpts...)
+		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 			ReceiverID:             params.ID,
 			ReceiverCreateSettings: params,
 		})
@@ -73,11 +75,11 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			return nil, err
 		}
 		return &receiver{
+			set:       params.TelemetrySettings,
 			id:        params.ID,
 			pipe:      pipe,
 			emitter:   emitter,
-			consumer:  nextConsumer,
-			logger:    params.Logger,
+			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
 			converter: converter,
 			obsrecv:   obsrecv,
 			storageID: baseCfg.StorageID,

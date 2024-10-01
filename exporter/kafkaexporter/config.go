@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
@@ -18,26 +7,53 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
+
+	// ResolveCanonicalBootstrapServersOnly makes Sarama do a DNS lookup for
+	// each of the provided brokers. It will then do a PTR lookup for each
+	// returned IP, and that set of names becomes the broker list. This can be
+	// required in SASL environments.
+	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
+
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
+
+	// ClientID to configure the Kafka client with. This can be leveraged by
+	// Kafka to enforce ACLs, throttling quotas, and more.
+	ClientID string `mapstructure:"client_id"`
+
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
+	// TopicFromAttribute is the name of the attribute to use as the topic name.
+	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
+
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
+
+	// PartitionTracesByID sets the message key of outgoing trace messages to the trace ID.
+	// Please note: does not have any effect on Jaeger encoding exporters since Jaeger exporters include
+	// trace ID as the message key by default.
+	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
+
+	PartitionMetricsByResourceAttributes bool `mapstructure:"partition_metrics_by_resource_attributes"`
+
+	PartitionLogsByResourceAttributes bool `mapstructure:"partition_logs_by_resource_attributes"`
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
@@ -47,7 +63,7 @@ type Config struct {
 	Producer Producer `mapstructure:"producer"`
 
 	// Authentication defines used authentication mechanism.
-	Authentication Authentication `mapstructure:"auth"`
+	Authentication kafka.Authentication `mapstructure:"auth"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.
@@ -70,7 +86,7 @@ type Producer struct {
 	MaxMessageBytes int `mapstructure:"max_message_bytes"`
 
 	// RequiredAcks Number of acknowledgements required to assume that a message has been sent.
-	// https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#RequiredAcks
+	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#RequiredAcks
 	// The options are:
 	//   0 -> NoResponse.  doesn't send any response
 	//   1 -> WaitForLocal. waits for only the local commit to succeed before responding ( default )
@@ -78,7 +94,7 @@ type Producer struct {
 	RequiredAcks sarama.RequiredAcks `mapstructure:"required_acks"`
 
 	// Compression Codec used to produce messages
-	// https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#CompressionCodec
+	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
 	// The options are: 'none', 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 
@@ -109,6 +125,33 @@ func (cfg *Config) Validate() error {
 	_, err := saramaProducerCompressionCodec(cfg.Producer.Compression)
 	if err != nil {
 		return err
+	}
+
+	return validateSASLConfig(cfg.Authentication.SASL)
+}
+
+func validateSASLConfig(c *kafka.SASLConfig) error {
+	if c == nil {
+		return nil
+	}
+
+	if c.Username == "" {
+		return fmt.Errorf("auth.sasl.username is required")
+	}
+
+	if c.Password == "" {
+		return fmt.Errorf("auth.sasl.password is required")
+	}
+
+	switch c.Mechanism {
+	case "PLAIN", "AWS_MSK_IAM", "SCRAM-SHA-256", "SCRAM-SHA-512":
+		// Do nothing, valid mechanism
+	default:
+		return fmt.Errorf("auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v", c.Mechanism)
+	}
+
+	if c.Version < 0 || c.Version > 1 {
+		return fmt.Errorf("auth.sasl.version has to be either 0 or 1. configured value %v", c.Version)
 	}
 
 	return nil

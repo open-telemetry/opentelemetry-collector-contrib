@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package cache // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
 
@@ -75,6 +64,11 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	return val, ok
 }
 
+// Remove removes a key from the cache if it exists.
+func (c *Cache[K, V]) Remove(key K) bool {
+	return c.lru.Remove(key)
+}
+
 // Len returns the number of items in the cache.
 func (c *Cache[K, V]) Len() int {
 	return c.lru.Len()
@@ -84,4 +78,18 @@ func (c *Cache[K, V]) Len() int {
 func (c *Cache[K, V]) Purge() {
 	c.lru.Purge()
 	c.RemoveEvictedItems()
+}
+
+// ForEach iterates over all the items within the cache, as well as the evicted items (if any).
+func (c *Cache[K, V]) ForEach(fn func(k K, v V)) {
+	for _, k := range c.lru.Keys() {
+		v, ok := c.lru.Get(k)
+		if ok {
+			fn(k.(K), v.(V))
+		}
+	}
+
+	for k, v := range c.evictedItems {
+		fn(k, v)
+	}
 }

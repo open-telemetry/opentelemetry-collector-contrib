@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fluentforwardreceiver
 
@@ -32,13 +21,13 @@ func TestMessageEventConversion(t *testing.T) {
 
 	var event MessageEventLogRecord
 	err := event.DecodeMsg(reader)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
-	expectedLog := Logs(
+	expectedLog := logConstructor(
 		Log{
 			Timestamp: 1593031012000000000,
 			Body:      pcommon.NewValueStr("..."),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"container_id":   "b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d",
 				"container_name": "/unruffled_cannon",
 				"fluent.tag":     "b00a67eb6458",
@@ -97,15 +86,15 @@ func TestAttributeTypeConversion(t *testing.T) {
 
 	var event MessageEventLogRecord
 	err = event.DecodeMsg(reader)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	le := event.LogRecords().At(0)
 
-	require.NoError(t, plogtest.CompareLogRecord(Logs(
+	require.NoError(t, plogtest.CompareLogRecord(logConstructor(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      pcommon.NewValueEmpty(),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"a":          5.0,
 				"b":          6.0,
 				"c":          true,
@@ -120,7 +109,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 				"k":          -1,
 				"l":          "(0+0i)",
 				"m":          "\001e\002",
-				"n":          []interface{}{"first", "second"},
+				"n":          []any{"first", "second"},
 				"o":          "cde",
 				"p":          nil,
 			},
@@ -140,7 +129,7 @@ func TestEventMode(t *testing.T) {
 
 func TestTimeFromTimestampBadType(t *testing.T) {
 	_, err := timeFromTimestamp("bad")
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestMessageEventConversionWithErrors(t *testing.T) {
@@ -159,7 +148,7 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 
 			var event MessageEventLogRecord
 			err := event.DecodeMsg(reader)
-			require.NotNil(t, err)
+			require.Error(t, err)
 		})
 	}
 }
@@ -173,7 +162,7 @@ func TestForwardEventConversionWithErrors(t *testing.T) {
 
 			var event ForwardEventLogRecords
 			err := event.DecodeMsg(reader)
-			require.NotNil(t, err)
+			require.Error(t, err)
 		})
 	}
 }
@@ -187,7 +176,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 
 			var event PackedForwardEventLogRecords
 			err := event.DecodeMsg(reader)
-			require.NotNil(t, err)
+			require.Error(t, err)
 		})
 	}
 
@@ -199,8 +188,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 
 		var event PackedForwardEventLogRecords
 		err := event.DecodeMsg(reader)
-		require.NotNil(t, err)
-		require.Contains(t, err.Error(), "gzip")
+		require.ErrorContains(t, err, "gzip")
 		fmt.Println(err.Error())
 	})
 }
@@ -233,7 +221,7 @@ func TestBodyConversion(t *testing.T) {
 
 	var event MessageEventLogRecord
 	err = event.DecodeMsg(reader)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	le := event.LogRecords().At(0)
 
@@ -247,11 +235,11 @@ func TestBodyConversion(t *testing.T) {
 	cv := body.Map().PutEmptyMap("c")
 	cv.PutInt("d", 24)
 
-	require.NoError(t, plogtest.CompareLogRecord(Logs(
+	require.NoError(t, plogtest.CompareLogRecord(logConstructor(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      body,
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "my-tag",
 			},
 		},

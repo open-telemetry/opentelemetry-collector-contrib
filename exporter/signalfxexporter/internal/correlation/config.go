@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package correlation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 
@@ -19,15 +8,16 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"go.opentelemetry.io/collector/config/confighttp"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 )
 
 // DefaultConfig returns default configuration correlation values.
 func DefaultConfig() *Config {
 	return &Config{
-		HTTPClientSettings:  confighttp.HTTPClientSettings{Timeout: 5 * time.Second},
+		ClientConfig:        confighttp.ClientConfig{Timeout: 5 * time.Second},
 		StaleServiceTimeout: 5 * time.Minute,
 		SyncAttributes: map[string]string{
 			conventions.AttributeK8SPodUID:   conventions.AttributeK8SPodUID,
@@ -46,8 +36,8 @@ func DefaultConfig() *Config {
 
 // Config defines configuration for correlation via traces.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	correlations.Config           `mapstructure:",squash"`
+	confighttp.ClientConfig `mapstructure:",squash"`
+	correlations.Config     `mapstructure:",squash"`
 
 	// How long to wait after a trace span's service name is last seen before
 	// uncorrelating that service.
@@ -57,11 +47,11 @@ type Config struct {
 }
 
 func (c *Config) validate() error {
-	if c.HTTPClientSettings.Endpoint == "" {
+	if c.ClientConfig.Endpoint == "" {
 		return errors.New("`correlation.endpoint` not specified")
 	}
 
-	_, err := url.Parse(c.HTTPClientSettings.Endpoint)
+	_, err := url.Parse(c.ClientConfig.Endpoint)
 	if err != nil {
 		return err
 	}

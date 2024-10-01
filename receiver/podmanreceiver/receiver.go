@@ -1,19 +1,7 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
@@ -25,51 +13,59 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
 )
 
-type receiver struct {
+type metricsReceiver struct {
 	config        *Config
-	set           rcvr.CreateSettings
+	set           receiver.Settings
 	clientFactory clientFactory
 	scraper       *ContainerScraper
+	mb            *metadata.MetricsBuilder
+	cancel        context.CancelFunc
 }
 
-func newReceiver(
-	_ context.Context,
-	set rcvr.CreateSettings,
+func newMetricsReceiver(
+	set receiver.Settings,
 	config *Config,
-	nextConsumer consumer.Metrics,
 	clientFactory clientFactory,
-) (rcvr.Metrics, error) {
-	err := config.Validate()
-	if err != nil {
-		return nil, err
-	}
-
+) *metricsReceiver {
 	if clientFactory == nil {
 		clientFactory = newLibpodClient
 	}
 
-	recv := &receiver{
+	return &metricsReceiver{
 		config:        config,
 		clientFactory: clientFactory,
 		set:           set,
+		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
+}
 
-	scrp, err := scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithStart(recv.start))
+func createMetricsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	config component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	podmanConfig := config.(*Config)
+
+	recv := newMetricsReceiver(params, podmanConfig, nil)
+	scrp, err := scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithStart(recv.start), scraperhelper.WithShutdown(recv.shutdown))
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
 }
 
-func (r *receiver) start(ctx context.Context, _ component.Host) error {
-	var err error
+func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
 	if err != nil {
 		return err
@@ -79,16 +75,30 @@ func (r *receiver) start(ctx context.Context, _ component.Host) error {
 	if err = r.scraper.loadContainerList(ctx); err != nil {
 		return err
 	}
-	go r.scraper.containerEventLoop(ctx)
+
+	// context for long-running operation
+	cctx, cancel := context.WithCancel(context.Background())
+	r.cancel = cancel
+
+	go r.scraper.containerEventLoop(cctx)
+
+	return nil
+}
+
+func (r *metricsReceiver) shutdown(context.Context) error {
+	if r.cancel != nil {
+		r.cancel()
+	}
 	return nil
 }
 
 type result struct {
-	md  pmetric.Metrics
-	err error
+	container      container
+	containerStats containerStats
+	err            error
 }
 
-func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (r *metricsReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	containers := r.scraper.getContainers()
 	results := make(chan result, len(containers))
 
@@ -98,11 +108,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		go func(c container) {
 			defer wg.Done()
 			stats, err := r.scraper.fetchContainerStats(ctx, c)
-			if err != nil {
-				results <- result{md: pmetric.Metrics{}, err: err}
-				return
-			}
-			results <- result{md: containerStatsToMetrics(time.Now(), c, &stats), err: nil}
+			results <- result{container: c, containerStats: stats, err: err}
 		}(c)
 	}
 
@@ -110,15 +116,61 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	close(results)
 
 	var errs error
-	md := pmetric.NewMetrics()
+	now := pcommon.NewTimestampFromTime(time.Now())
+
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed metrics, but one container fetch is a partial error.
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
-			fmt.Println("No stats found!")
 			continue
 		}
-		res.md.ResourceMetrics().CopyTo(md.ResourceMetrics())
+		r.recordContainerStats(now, res.container, &res.containerStats)
 	}
-	return md, nil
+	return r.mb.Emit(), errs
+}
+
+func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, container container, stats *containerStats) {
+	r.recordCPUMetrics(now, stats)
+	r.recordNetworkMetrics(now, stats)
+	r.recordMemoryMetrics(now, stats)
+	r.recordIOMetrics(now, stats)
+
+	rb := r.mb.NewResourceBuilder()
+	rb.SetContainerRuntime("podman")
+	rb.SetContainerName(stats.Name)
+	rb.SetContainerID(stats.ContainerID)
+	rb.SetContainerImageName(container.Image)
+
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, stats *containerStats) {
+	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(toSecondsWithNanosecondPrecision(stats.CPUSystemNano)))
+	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(toSecondsWithNanosecondPrecision(stats.CPUNano)))
+	r.mb.RecordContainerCPUPercentDataPoint(now, stats.CPU)
+
+	for i, cpu := range stats.PerCPU {
+		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(toSecondsWithNanosecondPrecision(cpu)), fmt.Sprintf("cpu%d", i))
+	}
+}
+
+func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, stats *containerStats) {
+	r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.NetOutput))
+	r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.NetInput))
+}
+
+func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, stats *containerStats) {
+	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(stats.MemUsage))
+	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(stats.MemLimit))
+	r.mb.RecordContainerMemoryPercentDataPoint(now, stats.MemPerc)
+}
+
+func (r *metricsReceiver) recordIOMetrics(now pcommon.Timestamp, stats *containerStats) {
+	r.mb.RecordContainerBlockioIoServiceBytesRecursiveReadDataPoint(now, int64(stats.BlockInput))
+	r.mb.RecordContainerBlockioIoServiceBytesRecursiveWriteDataPoint(now, int64(stats.BlockOutput))
+}
+
+// nanoseconds to seconds conversion truncating the fractional part
+func toSecondsWithNanosecondPrecision(nanoseconds uint64) uint64 {
+	return nanoseconds / 1e9
 }

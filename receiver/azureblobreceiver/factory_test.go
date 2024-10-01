@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
@@ -34,7 +23,7 @@ func TestNewFactory(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	receiver, err := f.CreateTracesReceiver(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
@@ -44,7 +33,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	receiver, err := f.CreateLogsReceiver(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
@@ -54,7 +43,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	config := getConfig()
 	logsReceiver, err := f.CreateLogsReceiver(ctx, params, config, consumertest.NewNop())
 	require.NoError(t, err)
@@ -67,6 +56,7 @@ func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 
 func getConfig() component.Config {
 	return &Config{
+		Authentication:   "connection_string",
 		ConnectionString: goodConnectionString,
 		Logs:             LogsConfig{ContainerName: logsContainerName},
 		Traces:           TracesConfig{ContainerName: tracesContainerName},

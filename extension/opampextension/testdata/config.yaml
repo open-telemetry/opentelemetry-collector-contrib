@@ -1,0 +1,4 @@
+server:
+  ws:
+    endpoint: wss://127.0.0.1:4320/v1/opamp
+instance_uid: 01BX5ZZKBKACTAV9WEVGEMMVRZ

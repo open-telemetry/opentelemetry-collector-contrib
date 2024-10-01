@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package dimensions
 
@@ -23,11 +12,11 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -101,7 +90,7 @@ func makeHandler(dimCh chan<- dim, forcedResp *atomic.Int32) http.HandlerFunc {
 func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.CancelFunc) {
 	dimCh := make(chan dim)
 
-	forcedResp := atomic.NewInt32(0)
+	forcedResp := &atomic.Int32{}
 	server := httptest.NewServer(makeHandler(dimCh, forcedResp))
 
 	serverURL, err := url.Parse(server.URL)
@@ -113,13 +102,14 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.Can
 		server.Close()
 	}()
 
-	client := NewDimensionClient(ctx, DimensionClientOptions{
-		APIURL:                serverURL,
-		LogUpdates:            true,
-		Logger:                zap.NewNop(),
-		SendDelay:             1,
-		PropertiesMaxBuffered: 10,
-	})
+	client := NewDimensionClient(
+		DimensionClientOptions{
+			APIURL:      serverURL,
+			LogUpdates:  true,
+			Logger:      zap.NewNop(),
+			SendDelay:   time.Second,
+			MaxBuffered: 10,
+		})
 	client.Start()
 
 	return client, dimCh, forcedResp, cancel
@@ -128,6 +118,7 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.Can
 func TestDimensionClient(t *testing.T) {
 	client, dimCh, forcedResp, cancel := setup(t)
 	defer cancel()
+	defer client.Shutdown()
 
 	t.Run("send dimension update with properties and tags", func(t *testing.T) {
 		require.NoError(t, client.acceptDimension(&DimensionUpdate{
@@ -145,7 +136,7 @@ func TestDimensionClient(t *testing.T) {
 		}))
 
 		dims := waitForDims(dimCh, 1, 3)
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "host",
 				Value: "test-box",
@@ -157,7 +148,7 @@ func TestDimensionClient(t *testing.T) {
 				Tags:         []string{"active"},
 				TagsToRemove: []string{"terminated"},
 			},
-		})
+		}, dims)
 	})
 
 	t.Run("same dimension with different values", func(t *testing.T) {
@@ -173,7 +164,7 @@ func TestDimensionClient(t *testing.T) {
 		}))
 
 		dims := waitForDims(dimCh, 1, 3)
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "host",
 				Value: "test-box",
@@ -182,7 +173,7 @@ func TestDimensionClient(t *testing.T) {
 				},
 				TagsToRemove: []string{"active"},
 			},
-		})
+		}, dims)
 	})
 
 	t.Run("send a distinct prop/tag set for existing dim with server error", func(t *testing.T) {
@@ -200,13 +191,13 @@ func TestDimensionClient(t *testing.T) {
 			},
 		}))
 		dims := waitForDims(dimCh, 1, 3)
-		require.Len(t, dims, 0)
+		require.Empty(t, dims)
 
 		forcedResp.Store(200)
 		dims = waitForDims(dimCh, 1, 3)
 
 		// After the server recovers the dim should be resent.
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "AWSUniqueID",
 				Value: "abcd",
@@ -215,7 +206,7 @@ func TestDimensionClient(t *testing.T) {
 				},
 				Tags: []string{"running"},
 			},
-		})
+		}, dims)
 	})
 
 	t.Run("does not retry 4xx responses", func(t *testing.T) {
@@ -230,11 +221,11 @@ func TestDimensionClient(t *testing.T) {
 			},
 		}))
 		dims := waitForDims(dimCh, 1, 3)
-		require.Len(t, dims, 0)
+		require.Empty(t, dims)
 
 		forcedResp.Store(200)
 		dims = waitForDims(dimCh, 1, 3)
-		require.Len(t, dims, 0)
+		require.Empty(t, dims)
 	})
 
 	t.Run("does retry 404 responses", func(t *testing.T) {
@@ -250,11 +241,11 @@ func TestDimensionClient(t *testing.T) {
 		}))
 
 		dims := waitForDims(dimCh, 1, 3)
-		require.Len(t, dims, 0)
+		require.Empty(t, dims)
 
 		forcedResp.Store(200)
 		dims = waitForDims(dimCh, 1, 3)
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "AWSUniqueID",
 				Value: "id404",
@@ -262,7 +253,7 @@ func TestDimensionClient(t *testing.T) {
 					"z": newString("x"),
 				},
 			},
-		})
+		}, dims)
 	})
 
 	t.Run("send successive quick updates to same dim", func(t *testing.T) {
@@ -303,7 +294,7 @@ func TestDimensionClient(t *testing.T) {
 
 		dims := waitForDims(dimCh, 1, 3)
 
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "AWSUniqueID",
 				Value: "abcd",
@@ -314,13 +305,14 @@ func TestDimensionClient(t *testing.T) {
 				Tags:         []string{"dev"},
 				TagsToRemove: []string{"running"},
 			},
-		})
+		}, dims)
 	})
 }
 
 func TestFlappyUpdates(t *testing.T) {
 	client, dimCh, _, cancel := setup(t)
 	defer cancel()
+	defer client.Shutdown()
 
 	// Do some flappy updates
 	for i := 0; i < 5; i++ {
@@ -359,6 +351,7 @@ func TestFlappyUpdates(t *testing.T) {
 func TestInvalidUpdatesNotSent(t *testing.T) {
 	client, dimCh, _, cancel := setup(t)
 	defer cancel()
+	defer client.Shutdown()
 	require.NoError(t, client.acceptDimension(&DimensionUpdate{
 		Name:  "host",
 		Value: "",
@@ -383,7 +376,7 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 	}))
 
 	dims := waitForDims(dimCh, 2, 3)
-	require.Len(t, dims, 0)
+	require.Empty(t, dims)
 }
 
 func newString(s string) *string {

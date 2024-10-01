@@ -1,62 +1,57 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 var _ exporter.Logs = (*logExporterImp)(nil)
 
 type logExporterImp struct {
-	loadBalancer loadBalancer
+	loadBalancer *loadBalancer
 
-	stopped    bool
+	started    bool
 	shutdownWg sync.WaitGroup
+	telemetry  *metadata.TelemetryBuilder
 }
 
 // Create new logs exporter
-func newLogsExporter(params exporter.CreateSettings, cfg component.Config) (*logExporterImp, error) {
+func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExporterImp, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	exporterFactory := otlpexporter.NewFactory()
-
-	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
+	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
 		return exporterFactory.CreateLogsExporter(ctx, params, &oCfg)
-	})
+	}
+
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
 	if err != nil {
 		return nil, err
 	}
 
 	return &logExporterImp{
 		loadBalancer: lb,
+		telemetry:    telemetry,
 	}, nil
 }
 
@@ -65,13 +60,18 @@ func (e *logExporterImp) Capabilities() consumer.Capabilities {
 }
 
 func (e *logExporterImp) Start(ctx context.Context, host component.Host) error {
+	e.started = true
 	return e.loadBalancer.Start(ctx, host)
 }
 
-func (e *logExporterImp) Shutdown(context.Context) error {
-	e.stopped = true
+func (e *logExporterImp) Shutdown(ctx context.Context) error {
+	if !e.started {
+		return nil
+	}
+	err := e.loadBalancer.Shutdown(ctx)
+	e.started = false
 	e.shutdownWg.Wait()
-	return nil
+	return err
 }
 
 func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
@@ -94,30 +94,22 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 		balancingKey = random()
 	}
 
-	endpoint := e.loadBalancer.Endpoint(balancingKey[:])
-	exp, err := e.loadBalancer.Exporter(endpoint)
+	le, _, err := e.loadBalancer.exporterAndEndpoint(balancingKey[:])
 	if err != nil {
 		return err
 	}
 
-	le, ok := exp.(exporter.Logs)
-	if !ok {
-		return fmt.Errorf("unable to export logs, unexpected exporter type: expected exporter.Logs but got %T", exp)
-	}
+	le.consumeWG.Add(1)
+	defer le.consumeWG.Done()
 
 	start := time.Now()
 	err = le.ConsumeLogs(ctx, ld)
 	duration := time.Since(start)
+	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(le.endpointAttr))
 	if err == nil {
-		_ = stats.RecordWithTags(
-			ctx,
-			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
-			mBackendLatency.M(duration.Milliseconds()))
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.successAttr))
 	} else {
-		_ = stats.RecordWithTags(
-			ctx,
-			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
-			mBackendLatency.M(duration.Milliseconds()))
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.failureAttr))
 	}
 
 	return err

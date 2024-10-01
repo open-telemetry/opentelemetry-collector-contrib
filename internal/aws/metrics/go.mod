@@ -1,10 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics
 
-go 1.19
+go 1.22.0
 
 require (
-	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/otel v1.13.0
+	github.com/stretchr/testify v1.9.0
+	go.opentelemetry.io/otel v1.30.0
+	go.uber.org/goleak v1.3.0
 )
 
 require (
@@ -15,4 +16,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

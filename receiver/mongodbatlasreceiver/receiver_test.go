@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver
 
@@ -28,14 +17,19 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	recv, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	require.Equal(t, 3*time.Minute, cfg.(*Config).ControllerConfig.CollectionInterval)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	recv, err := createMetricsReceiver(ctx, receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, recv, "receiver creation failed")
 
-	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	err = recv.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	err = recv.Shutdown(context.Background())
+	err = recv.Shutdown(ctx)
 	require.NoError(t, err)
 }
 
@@ -50,7 +44,7 @@ func TestTimeConstraints(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig().(*Config)
 				// lastRun is nil
-				recv := receiver{
+				recv := mongodbatlasreceiver{
 					cfg: cfg,
 				}
 				now := time.Now()
@@ -65,7 +59,7 @@ func TestTimeConstraints(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig().(*Config)
 				now := time.Now()
-				recv := receiver{
+				recv := mongodbatlasreceiver{
 					cfg: cfg,
 					// set last run to 1 collection ago
 					lastRun: now.Add(cfg.CollectionInterval * -1),
@@ -79,5 +73,71 @@ func TestTimeConstraints(t *testing.T) {
 
 	for _, testCase := range tt {
 		t.Run(testCase.name, testCase.run)
+	}
+}
+
+func TestShouldProcessCluster(t *testing.T) {
+	tests := []struct {
+		name        string
+		projectCfg  *ProjectConfig
+		clusterName string
+		want        bool
+	}{
+		{
+			name: "included cluster should be processed",
+			projectCfg: &ProjectConfig{
+				IncludeClusters: []string{"Cluster1"},
+			},
+			clusterName: "Cluster1",
+			want:        true,
+		},
+		{
+			name: "cluster not included should not be processed",
+			projectCfg: &ProjectConfig{
+				IncludeClusters: []string{"Cluster1"},
+			},
+			clusterName: "Cluster2",
+			want:        false,
+		},
+		{
+			name: "excluded cluster should not be processed",
+			projectCfg: &ProjectConfig{
+				ExcludeClusters: []string{"Cluster2"},
+			},
+			clusterName: "Cluster2",
+			want:        false,
+		},
+		{
+			name: "cluster not excluded should processed assuming it exists in the project",
+			projectCfg: &ProjectConfig{
+				ExcludeClusters: []string{"Cluster1"},
+			},
+			clusterName: "Cluster2",
+			want:        true,
+		},
+		{
+			name:        "cluster should be processed when no includes or excludes are set",
+			projectCfg:  &ProjectConfig{},
+			clusterName: "Cluster1",
+			want:        true,
+		},
+		{
+			name:        "cluster should be processed when no includes or excludes are set and cluster name is empty",
+			projectCfg:  nil,
+			clusterName: "Cluster1",
+			want:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.projectCfg != nil {
+				tt.projectCfg.populateIncludesAndExcludes()
+			}
+
+			if got := shouldProcessCluster(tt.projectCfg, tt.clusterName); got != tt.want {
+				t.Errorf("shouldProcessCluster() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

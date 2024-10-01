@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package hostmetadata
 
@@ -20,13 +9,13 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -266,10 +255,10 @@ func TestSyncMetadata(t *testing.T) {
 			syncer.Sync(tt.metricsData)
 
 			if tt.wantMetadataUpdate != nil {
-				require.Equal(t, 1, len(dimClient.getMetadataUpdates()))
+				require.Len(t, dimClient.getMetadataUpdates(), 1)
 				require.EqualValues(t, tt.wantMetadataUpdate, dimClient.getMetadataUpdates()[0])
 			} else {
-				require.Equal(t, 0, len(dimClient.getMetadataUpdates()))
+				require.Empty(t, dimClient.getMetadataUpdates())
 			}
 
 			require.Equal(t, len(tt.wantLogs), logs.Len())

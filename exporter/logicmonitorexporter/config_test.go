@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package logicmonitorexporter
 
@@ -24,8 +13,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/metadata"
 )
 
 func TestConfigValidation(t *testing.T) {
@@ -38,37 +31,37 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "empty endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "",
 				},
 			},
 			wantErr:      true,
-			errorMessage: "Endpoint should not be empty",
+			errorMessage: "endpoint should not be empty",
 		},
 		{
 			name: "missing http scheme",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "test.com/dummy",
 				},
 			},
 			wantErr:      true,
-			errorMessage: "Endpoint must be valid",
+			errorMessage: "endpoint must be valid",
 		},
 		{
 			name: "invalid endpoint format",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid.com@#$%",
 				},
 			},
 			wantErr:      true,
-			errorMessage: "Endpoint must be valid",
+			errorMessage: "endpoint must be valid",
 		},
 		{
 			name: "valid config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://validurl.com/rest",
 				},
 			},
@@ -107,11 +100,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "apitoken"),
+			id: component.NewIDWithName(metadata.Type, "apitoken"),
 			expected: &Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 				},
 				APIToken: APIToken{
@@ -121,15 +114,31 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "bearertoken"),
+			id: component.NewIDWithName(metadata.Type, "bearertoken"),
 			expected: &Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
 						"Authorization": "Bearer <token>",
 					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resource-mapping-op"),
+			expected: &Config{
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: "https://company.logicmonitor.com/rest",
+					Headers: map[string]configopaque.String{
+						"Authorization": "Bearer <token>",
+					},
+				},
+				Logs: LogsConfig{
+					ResourceMappingOperation: "or",
 				},
 			},
 		},
@@ -142,10 +151,42 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestUnmarshal(t *testing.T) {
+	tests := []struct {
+		name      string
+		configMap *confmap.Conf
+		cfg       *Config
+		err       string
+	}{
+		{
+			name: "invalid resource mapping operation",
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"logs": map[string]any{
+					"resource_mapping_op": "invalid_op",
+				},
+			}),
+			err: "'logs.resource_mapping_op': unsupported mapping operation \"invalid_op\"",
+		},
+	}
+
+	f := NewFactory()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := f.CreateDefaultConfig().(*Config)
+			err := tt.configMap.Unmarshal(cfg)
+			if err != nil || tt.err != "" {
+				assert.ErrorContains(t, err, tt.err)
+			} else {
+				assert.Equal(t, tt.cfg, cfg)
+			}
 		})
 	}
 }

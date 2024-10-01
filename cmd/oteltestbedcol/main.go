@@ -7,22 +7,39 @@ import (
 	"log"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	envprovider "go.opentelemetry.io/collector/confmap/provider/envprovider"
+	fileprovider "go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	httpprovider "go.opentelemetry.io/collector/confmap/provider/httpprovider"
+	httpsprovider "go.opentelemetry.io/collector/confmap/provider/httpsprovider"
+	yamlprovider "go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
 )
 
 func main() {
-	factories, err := components()
-	if err != nil {
-		log.Fatalf("failed to build components: %v", err)
-	}
-
 	info := component.BuildInfo{
 		Command:     "oteltestbedcol",
 		Description: "OpenTelemetry Collector binary for testbed only tests.",
-		Version:     "0.71.0-dev",
+		Version:     "0.110.0-dev",
 	}
 
-	if err := run(otelcol.CollectorSettings{BuildInfo: info, Factories: factories}); err != nil {
+	set := otelcol.CollectorSettings{
+		BuildInfo: info,
+		Factories: components,
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				ProviderFactories: []confmap.ProviderFactory{
+					envprovider.NewFactory(),
+					fileprovider.NewFactory(),
+					httpprovider.NewFactory(),
+					httpsprovider.NewFactory(),
+					yamlprovider.NewFactory(),
+				},
+			},
+		},
+	}
+
+	if err := run(set); err != nil {
 		log.Fatal(err)
 	}
 }

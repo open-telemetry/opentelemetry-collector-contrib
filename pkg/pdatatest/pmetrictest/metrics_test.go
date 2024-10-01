@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package pmetrictest
 
@@ -23,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestCompareMetrics(t *testing.T) {
@@ -252,6 +241,13 @@ func TestCompareMetrics(t *testing.T) {
 			withoutOptions: errors.New(`resource "map[]": scope "": metric "gauge.one": datapoint "map[]": double value doesn't match expected: 123.456000, actual: 654.321000`),
 		},
 		{
+			name: "ignore-data-point-value-double-precision",
+			compareOptions: []CompareMetricsOption{
+				IgnoreMetricFloatPrecision(3),
+			},
+			withoutOptions: errors.New(`resource "map[]": scope "": metric "gauge.one": datapoint "map[]": double value doesn't match expected: 654.321110, actual: 654.321000`),
+		},
+		{
 			name: "ignore-data-point-value-int-mismatch",
 			compareOptions: []CompareMetricsOption{
 				IgnoreMetricValues(),
@@ -316,9 +312,40 @@ func TestCompareMetrics(t *testing.T) {
 			),
 		},
 		{
+			name: "match-one-attribute-value",
+			compareOptions: []CompareMetricsOption{
+				MatchMetricAttributeValue("hostname", "also", "gauge.one", "sum.one"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value A hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value B hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value A hostname:random]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value B hostname:random]`),
+				errors.New(`resource "map[]": scope "": metric "sum.one": missing expected datapoint: map[hostname:also unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "sum.one": unexpected datapoint: map[hostname:also random]`),
+			),
+			withOptions: multierr.Combine(
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value A hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value B hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value A hostname:random]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value B hostname:random]`),
+			),
+		},
+		{
 			name: "ignore-one-resource-attribute",
 			compareOptions: []CompareMetricsOption{
 				IgnoreResourceAttributeValue("node_id"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("missing expected resource: map[node_id:a-different-random-id]"),
+				errors.New("unexpected resource: map[node_id:a-random-id]"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "match-one-resource-attribute",
+			compareOptions: []CompareMetricsOption{
+				MatchResourceAttributeValue("node_id", "random"),
 			},
 			withoutOptions: multierr.Combine(
 				errors.New("missing expected resource: map[node_id:a-different-random-id]"),
@@ -358,10 +385,10 @@ func TestCompareMetrics(t *testing.T) {
 				IgnoreMetricsOrder(),
 			},
 			withoutOptions: multierr.Combine(
-				errors.New(`resource "map[namespace:test]": scope "otelcol/aerospikereceiver": metrics are out of order: metric "aerospike.namespace.memory.free" expected at index 0, found at index 2`),
-				errors.New(`resource "map[namespace:test]": scope "otelcol/aerospikereceiver": metrics are out of order: metric "aerospike.namespace.memory.usage" expected at index 1, found at index 3`),
-				errors.New(`resource "map[namespace:test]": scope "otelcol/aerospikereceiver": metrics are out of order: metric "aerospike.namespace.disk.available" expected at index 2, found at index 1`),
-				errors.New(`resource "map[namespace:test]": scope "otelcol/aerospikereceiver": metrics are out of order: metric "aerospike.namespace.scan.count" expected at index 3, found at index 0`),
+				errors.New(`resource "map[namespace:test]": scope "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver": metrics are out of order: metric "aerospike.namespace.memory.free" expected at index 0, found at index 2`),
+				errors.New(`resource "map[namespace:test]": scope "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver": metrics are out of order: metric "aerospike.namespace.memory.usage" expected at index 1, found at index 3`),
+				errors.New(`resource "map[namespace:test]": scope "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver": metrics are out of order: metric "aerospike.namespace.disk.available" expected at index 2, found at index 1`),
+				errors.New(`resource "map[namespace:test]": scope "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver": metrics are out of order: metric "aerospike.namespace.scan.count" expected at index 3, found at index 0`),
 			),
 			withOptions: nil,
 		},
@@ -371,9 +398,9 @@ func TestCompareMetrics(t *testing.T) {
 				IgnoreMetricDataPointsOrder(),
 			},
 			withoutOptions: multierr.Combine(
-				errors.New(`resource "map[namespace:test]": scope "otelcol/aerospikereceiver": metric "aerospike.namespace.scan.count": datapoints are out of order: datapoint "map[result:complete type:aggr]" expected at index 1, found at index 2`),
-				errors.New(`resource "map[namespace:test]": scope "otelcol/aerospikereceiver": metric "aerospike.namespace.scan.count": datapoints are out of order: datapoint "map[result:error type:aggr]" expected at index 2, found at index 3`),
-				errors.New(`resource "map[namespace:test]": scope "otelcol/aerospikereceiver": metric "aerospike.namespace.scan.count": datapoints are out of order: datapoint "map[result:abort type:basic]" expected at index 3, found at index 1`),
+				errors.New(`resource "map[namespace:test]": scope "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver": metric "aerospike.namespace.scan.count": datapoints are out of order: datapoint "map[result:complete type:aggr]" expected at index 1, found at index 2`),
+				errors.New(`resource "map[namespace:test]": scope "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver": metric "aerospike.namespace.scan.count": datapoints are out of order: datapoint "map[result:error type:aggr]" expected at index 2, found at index 3`),
+				errors.New(`resource "map[namespace:test]": scope "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver": metric "aerospike.namespace.scan.count": datapoints are out of order: datapoint "map[result:abort type:basic]" expected at index 3, found at index 1`),
 			),
 			withOptions: nil,
 		},
@@ -427,10 +454,10 @@ func TestCompareMetrics(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := filepath.Join("testdata", tc.name)
 
-			expected, err := golden.ReadMetrics(filepath.Join(dir, "expected.json"))
+			expected, err := golden.ReadMetrics(filepath.Join(dir, "expected.yaml"))
 			require.NoError(t, err)
 
-			actual, err := golden.ReadMetrics(filepath.Join(dir, "actual.json"))
+			actual, err := golden.ReadMetrics(filepath.Join(dir, "actual.yaml"))
 			require.NoError(t, err)
 
 			err = CompareMetrics(expected, actual)

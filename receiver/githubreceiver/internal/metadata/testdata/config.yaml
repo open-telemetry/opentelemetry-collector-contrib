@@ -1,0 +1,83 @@
+default:
+all_set:
+  metrics:
+    vcs.repository.change.count:
+      enabled: true
+    vcs.repository.change.time_open:
+      enabled: true
+    vcs.repository.change.time_to_approval:
+      enabled: true
+    vcs.repository.change.time_to_merge:
+      enabled: true
+    vcs.repository.contributor.count:
+      enabled: true
+    vcs.repository.count:
+      enabled: true
+    vcs.repository.ref.count:
+      enabled: true
+    vcs.repository.ref.lines_added:
+      enabled: true
+    vcs.repository.ref.lines_deleted:
+      enabled: true
+    vcs.repository.ref.revisions_ahead:
+      enabled: true
+    vcs.repository.ref.revisions_behind:
+      enabled: true
+    vcs.repository.ref.time:
+      enabled: true
+  resource_attributes:
+    organization.name:
+      enabled: true
+    vcs.vendor.name:
+      enabled: true
+none_set:
+  metrics:
+    vcs.repository.change.count:
+      enabled: false
+    vcs.repository.change.time_open:
+      enabled: false
+    vcs.repository.change.time_to_approval:
+      enabled: false
+    vcs.repository.change.time_to_merge:
+      enabled: false
+    vcs.repository.contributor.count:
+      enabled: false
+    vcs.repository.count:
+      enabled: false
+    vcs.repository.ref.count:
+      enabled: false
+    vcs.repository.ref.lines_added:
+      enabled: false
+    vcs.repository.ref.lines_deleted:
+      enabled: false
+    vcs.repository.ref.revisions_ahead:
+      enabled: false
+    vcs.repository.ref.revisions_behind:
+      enabled: false
+    vcs.repository.ref.time:
+      enabled: false
+  resource_attributes:
+    organization.name:
+      enabled: false
+    vcs.vendor.name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    organization.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcs.vendor.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    organization.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "organization.name-val"
+    vcs.vendor.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcs.vendor.name-val"

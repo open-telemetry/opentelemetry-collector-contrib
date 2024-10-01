@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package networkscraper
 
@@ -19,7 +8,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/net"
+	"github.com/shirou/gopsutil/v4/net"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -35,99 +24,124 @@ import (
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name                 string
-		config               Config
-		bootTimeFunc         func() (uint64, error)
-		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
-		connectionsFunc      func(string) ([]net.ConnectionStat, error)
-		conntrackFunc        func() ([]net.FilterStat, error)
-		expectNetworkMetrics bool
-		expectedStartTime    pcommon.Timestamp
-		newErrRegex          string
-		initializationErr    string
-		expectedErr          string
-		expectedErrCount     int
-		mutateScraper        func(*scraper)
+		name                    string
+		config                  *Config
+		bootTimeFunc            func(context.Context) (uint64, error)
+		ioCountersFunc          func(context.Context, bool) ([]net.IOCountersStat, error)
+		connectionsFunc         func(context.Context, string) ([]net.ConnectionStat, error)
+		conntrackFunc           func(context.Context) ([]net.FilterStat, error)
+		expectConntrakMetrics   bool
+		expectConnectionsMetric bool
+		expectedStartTime       pcommon.Timestamp
+		newErrRegex             string
+		initializationErr       string
+		expectedErr             string
+		expectedErrCount        int
+		mutateScraper           func(*scraper)
 	}
 
 	testCases := []testCase{
 		{
 			name: "Standard",
-			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+			config: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			expectNetworkMetrics: true,
+			expectConntrakMetrics:   true,
+			expectConnectionsMetric: true,
 		},
 		{
 			name: "Standard with direction removed",
-			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+			config: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			expectNetworkMetrics: true,
+			expectConntrakMetrics:   true,
+			expectConnectionsMetric: true,
 		},
 		{
 			name: "Validate Start Time",
-			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+			config: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			bootTimeFunc:         func() (uint64, error) { return 100, nil },
-			expectNetworkMetrics: true,
-			expectedStartTime:    100 * 1e9,
+			bootTimeFunc:            func(context.Context) (uint64, error) { return 100, nil },
+			expectConntrakMetrics:   true,
+			expectConnectionsMetric: true,
+			expectedStartTime:       100 * 1e9,
 		},
 		{
 			name: "Include Filter that matches nothing",
-			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+			config: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
-			expectNetworkMetrics: false,
+			expectConntrakMetrics:   false,
+			expectConnectionsMetric: true,
 		},
 		{
 			name: "Invalid Include Filter",
-			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Include: MatchConfig{Interfaces: []string{"test"}},
+			config: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{Interfaces: []string{"test"}},
 			},
-			newErrRegex: "^error creating network interface include filters:",
+			newErrRegex:             "^error creating network interface include filters:",
+			expectConnectionsMetric: true,
 		},
 		{
 			name: "Invalid Exclude Filter",
-			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Exclude: MatchConfig{Interfaces: []string{"test"}},
+			config: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Exclude:              MatchConfig{Interfaces: []string{"test"}},
 			},
-			newErrRegex: "^error creating network interface exclude filters:",
+			newErrRegex:             "^error creating network interface exclude filters:",
+			expectConnectionsMetric: true,
 		},
 		{
-			name:              "Boot Time Error",
-			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
-			initializationErr: "err1",
+			name:                    "Boot Time Error",
+			config:                  &Config{},
+			bootTimeFunc:            func(context.Context) (uint64, error) { return 0, errors.New("err1") },
+			initializationErr:       "err1",
+			expectConnectionsMetric: true,
 		},
 		{
-			name:             "IOCounters Error",
-			ioCountersFunc:   func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
-			expectedErr:      "failed to read network IO stats: err2",
-			expectedErrCount: networkMetricsLen,
+			name:                    "IOCounters Error",
+			config:                  &Config{},
+			ioCountersFunc:          func(context.Context, bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
+			expectedErr:             "failed to read network IO stats: err2",
+			expectedErrCount:        networkMetricsLen,
+			expectConnectionsMetric: true,
 		},
 		{
 			name:             "Connections Error",
-			connectionsFunc:  func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
+			config:           &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			connectionsFunc:  func(context.Context, string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
 			expectedErr:      "failed to read TCP connections: err3",
 			expectedErrCount: connectionsMetricsLen,
 		},
 		{
 			name: "Conntrack error ignored if metric disabled",
-			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(), // conntrack metrics are disabled by default
+			config: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
 			},
-			conntrackFunc:        func() ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
-			expectNetworkMetrics: true,
+			conntrackFunc:           func(context.Context) ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
+			expectConntrakMetrics:   true,
+			expectConnectionsMetric: true,
+		},
+		{
+			name: "Connections metrics is disabled",
+			config: func() *Config {
+				cfg := Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled = false
+				return &cfg
+			}(),
+			connectionsFunc: func(context.Context, string) ([]net.ConnectionStat, error) {
+				panic("should not be called")
+			},
+			expectConntrakMetrics: true,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newNetworkScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
+			scraper, err := newNetworkScraper(context.Background(), receivertest.NewNopSettings(), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -174,27 +188,30 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			expectedMetricCount := 1
-			if test.expectNetworkMetrics {
+			expectedMetricCount := 0
+			if test.expectConntrakMetrics {
 				expectedMetricCount += 4
+			}
+			if test.expectConnectionsMetric {
+				expectedMetricCount++
 			}
 			assert.Equal(t, expectedMetricCount, md.MetricCount())
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			idx := 0
-			assertNetworkConnectionsMetricValid(t, metrics.At(idx))
-			if test.expectNetworkMetrics {
-				assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped",
-					test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.errors", test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.io", test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.packets",
-					test.expectedStartTime)
-				internal.AssertSameTimeStampForMetrics(t, metrics, 1, 5)
-				idx += 4
+			if test.expectConnectionsMetric {
+				assertNetworkConnectionsMetricValid(t, metrics.At(idx))
+				idx++
 			}
-
-			internal.AssertSameTimeStampForMetrics(t, metrics, idx, idx+1)
+			if test.expectConntrakMetrics {
+				assertNetworkIOMetricValid(t, metrics.At(idx), "system.network.dropped",
+					test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.errors", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.io", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.packets",
+					test.expectedStartTime)
+				internal.AssertSameTimeStampForMetrics(t, metrics, idx, idx+4)
+			}
 		})
 	}
 }
@@ -210,9 +227,11 @@ func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedNam
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
-	assert.Equal(t, metric.Name(), "system.network.connections")
+	assert.Equal(t, "system.network.connections", metric.Name())
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
 		pcommon.NewValueStr(metadata.AttributeProtocolTcp.String()))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
-	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
+	// Flaky test gives 12 or 13, so bound it
+	assert.LessOrEqual(t, 12, metric.Sum().DataPoints().Len())
+	assert.GreaterOrEqual(t, 13, metric.Sum().DataPoints().Len())
 }

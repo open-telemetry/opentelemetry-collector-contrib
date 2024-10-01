@@ -1,20 +1,10 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,7 +23,7 @@ type Client interface {
 }
 
 // NewClientProvider creates the default rest client provider
-func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, host component.Host, settings component.TelemetrySettings) ClientProvider {
+func NewClientProvider(baseURL url.URL, clientSettings confighttp.ClientConfig, host component.Host, settings component.TelemetrySettings) ClientProvider {
 	return &defaultClientProvider{
 		baseURL:        baseURL,
 		clientSettings: clientSettings,
@@ -49,13 +39,14 @@ type ClientProvider interface {
 
 type defaultClientProvider struct {
 	baseURL        url.URL
-	clientSettings confighttp.HTTPClientSettings
+	clientSettings confighttp.ClientConfig
 	host           component.Host
 	settings       component.TelemetrySettings
 }
 
 func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 	return defaultClient(
+		context.Background(),
 		dcp.baseURL,
 		dcp.clientSettings,
 		dcp.host,
@@ -64,12 +55,13 @@ func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 }
 
 func defaultClient(
+	ctx context.Context,
 	baseURL url.URL,
-	clientSettings confighttp.HTTPClientSettings,
+	clientSettings confighttp.ClientConfig,
 	host component.Host,
 	settings component.TelemetrySettings,
 ) (*clientImpl, error) {
-	client, err := clientSettings.ToClient(host, settings)
+	client, err := clientSettings.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}

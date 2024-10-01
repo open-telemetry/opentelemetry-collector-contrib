@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package lokiexporter
 
@@ -26,9 +15,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/metadata"
 )
 
 func TestLoadConfigNewExporter(t *testing.T) {
@@ -42,15 +34,15 @@ func TestLoadConfigNewExporter(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Headers: map[string]configopaque.String{
 						"X-Custom-Header": "loki_rocks",
 					},
 					Endpoint: "https://loki:3100/loki/api/v1/push",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile:   "/var/lib/mycert.pem",
 							CertFile: "certfile",
 							KeyFile:  "keyfile",
@@ -61,7 +53,7 @@ func TestLoadConfigNewExporter(t *testing.T) {
 					WriteBufferSize: 345,
 					Timeout:         time.Second * 10,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -69,10 +61,16 @@ func TestLoadConfigNewExporter(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+				},
+				DefaultLabelsEnabled: map[string]bool{
+					"exporter": false,
+					"job":      true,
+					"instance": true,
+					"level":    false,
 				},
 			},
 		},
@@ -85,88 +83,12 @@ func TestLoadConfigNewExporter(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
-}
-
-func TestIsLegacy(t *testing.T) {
-	testCases := []struct {
-		desc    string
-		cfg     *Config
-		outcome bool
-	}{
-		{
-			// the default mode for an empty config is the new logic
-			desc: "not legacy",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-			},
-			outcome: false,
-		},
-		{
-			desc: "format is set to body",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				Format: stringp("body"),
-			},
-			outcome: true,
-		},
-		{
-			desc: "a label is specified",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				Labels: &LabelsConfig{
-					Attributes: map[string]string{"some_attribute": "some_value"},
-				},
-			},
-			outcome: true,
-		},
-		{
-			desc: "a tenant is specified",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				Tenant: &Tenant{
-					Source: "static",
-					Value:  "acme",
-				},
-			},
-			outcome: true,
-		},
-		{
-			desc: "a tenant ID is specified",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				TenantID: stringp("acme"),
-			},
-			outcome: true,
-		},
-	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			assert.Equal(t, tC.outcome, tC.cfg.isLegacy())
-
-			// all configs from this table test are valid:
-			assert.NoError(t, tC.cfg.Validate())
-		})
-	}
-}
-
-func stringp(str string) *string {
-	return &str
 }
 
 func TestConfigValidate(t *testing.T) {
@@ -177,7 +99,7 @@ func TestConfigValidate(t *testing.T) {
 	}{
 		{
 			desc: "QueueSettings are invalid",
-			cfg:  &Config{QueueSettings: exporterhelper.QueueSettings{QueueSize: -1, Enabled: true}},
+			cfg:  &Config{QueueSettings: exporterhelper.QueueConfig{QueueSize: -1, Enabled: true}},
 			err:  fmt.Errorf("queue settings has invalid configuration"),
 		},
 		{
@@ -188,7 +110,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Config is valid",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://loki.example.com",
 				},
 			},
@@ -200,8 +122,7 @@ func TestConfigValidate(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := tc.cfg.Validate()
 			if tc.err != nil {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.err.Error())
+				assert.ErrorContains(t, err, tc.err.Error())
 			} else {
 				require.NoError(t, err)
 			}

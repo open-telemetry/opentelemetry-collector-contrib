@@ -1,0 +1,17 @@
+server:
+  endpoint: wss://127.0.0.1:4320/v1/opamp
+  tls:
+    insecure_skip_verify: true
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+
+storage:
+  directory: '{{.storage_dir}}'
+
+agent:
+  executable: ../../bin/otelcontribcol_darwin_arm64

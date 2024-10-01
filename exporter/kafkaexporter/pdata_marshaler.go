@@ -1,109 +1,169 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type pdataLogsMarshaler struct {
-	marshaler plog.Marshaler
-	encoding  string
+	marshaler              plog.Marshaler
+	encoding               string
+	partitionedByResources bool
 }
 
 func (p pdataLogsMarshaler) Marshal(ld plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.MarshalLogs(ld)
-	if err != nil {
-		return nil, err
-	}
-	return []*sarama.ProducerMessage{
-		{
+	var msgs []*sarama.ProducerMessage
+	if p.partitionedByResources {
+		logs := ld.ResourceLogs()
+
+		for i := 0; i < logs.Len(); i++ {
+			resourceMetrics := logs.At(i)
+			var hash = pdatautil.MapHash(resourceMetrics.Resource().Attributes())
+
+			newLogs := plog.NewLogs()
+			resourceMetrics.CopyTo(newLogs.ResourceLogs().AppendEmpty())
+
+			bts, err := p.marshaler.MarshalLogs(newLogs)
+			if err != nil {
+				return nil, err
+			}
+			msgs = append(msgs, &sarama.ProducerMessage{
+				Topic: topic,
+				Value: sarama.ByteEncoder(bts),
+				Key:   sarama.ByteEncoder(hash[:]),
+			})
+		}
+	} else {
+		bts, err := p.marshaler.MarshalLogs(ld)
+		if err != nil {
+			return nil, err
+		}
+		msgs = append(msgs, &sarama.ProducerMessage{
 			Topic: topic,
 			Value: sarama.ByteEncoder(bts),
-		},
-	}, nil
+		})
+	}
+	return msgs, nil
 }
 
 func (p pdataLogsMarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataLogsMarshaler(marshaler plog.Marshaler, encoding string) LogsMarshaler {
+func newPdataLogsMarshaler(marshaler plog.Marshaler, encoding string, partitionedByResources bool) LogsMarshaler {
 	return pdataLogsMarshaler{
-		marshaler: marshaler,
-		encoding:  encoding,
+		marshaler:              marshaler,
+		encoding:               encoding,
+		partitionedByResources: partitionedByResources,
 	}
 }
 
 type pdataMetricsMarshaler struct {
-	marshaler pmetric.Marshaler
-	encoding  string
+	marshaler              pmetric.Marshaler
+	encoding               string
+	partitionedByResources bool
 }
 
 func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.MarshalMetrics(ld)
-	if err != nil {
-		return nil, err
-	}
-	return []*sarama.ProducerMessage{
-		{
+	var msgs []*sarama.ProducerMessage
+	if p.partitionedByResources {
+		metrics := ld.ResourceMetrics()
+
+		for i := 0; i < metrics.Len(); i++ {
+			resourceMetrics := metrics.At(i)
+			var hash = pdatautil.MapHash(resourceMetrics.Resource().Attributes())
+
+			newMetrics := pmetric.NewMetrics()
+			resourceMetrics.CopyTo(newMetrics.ResourceMetrics().AppendEmpty())
+
+			bts, err := p.marshaler.MarshalMetrics(newMetrics)
+			if err != nil {
+				return nil, err
+			}
+			msgs = append(msgs, &sarama.ProducerMessage{
+				Topic: topic,
+				Value: sarama.ByteEncoder(bts),
+				Key:   sarama.ByteEncoder(hash[:]),
+			})
+		}
+	} else {
+		bts, err := p.marshaler.MarshalMetrics(ld)
+		if err != nil {
+			return nil, err
+		}
+		msgs = append(msgs, &sarama.ProducerMessage{
 			Topic: topic,
 			Value: sarama.ByteEncoder(bts),
-		},
-	}, nil
+		})
+	}
+
+	return msgs, nil
 }
 
 func (p pdataMetricsMarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataMetricsMarshaler(marshaler pmetric.Marshaler, encoding string) MetricsMarshaler {
-	return pdataMetricsMarshaler{
-		marshaler: marshaler,
-		encoding:  encoding,
+func newPdataMetricsMarshaler(marshaler pmetric.Marshaler, encoding string, partitionedByResources bool) MetricsMarshaler {
+	return &pdataMetricsMarshaler{
+		marshaler:              marshaler,
+		encoding:               encoding,
+		partitionedByResources: partitionedByResources,
 	}
 }
 
 type pdataTracesMarshaler struct {
-	marshaler ptrace.Marshaler
-	encoding  string
+	marshaler            ptrace.Marshaler
+	encoding             string
+	partitionedByTraceID bool
 }
 
-func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.MarshalTraces(td)
-	if err != nil {
-		return nil, err
-	}
-	return []*sarama.ProducerMessage{
-		{
+func (p *pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+	var msgs []*sarama.ProducerMessage
+	if p.partitionedByTraceID {
+		for _, trace := range batchpersignal.SplitTraces(td) {
+			bts, err := p.marshaler.MarshalTraces(trace)
+			if err != nil {
+				return nil, err
+			}
+			msgs = append(msgs, &sarama.ProducerMessage{
+				Topic: topic,
+				Value: sarama.ByteEncoder(bts),
+				Key:   sarama.ByteEncoder(traceutil.TraceIDToHexOrEmptyString(trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())),
+			})
+
+		}
+	} else {
+		bts, err := p.marshaler.MarshalTraces(td)
+		if err != nil {
+			return nil, err
+		}
+		msgs = append(msgs, &sarama.ProducerMessage{
 			Topic: topic,
 			Value: sarama.ByteEncoder(bts),
-		},
-	}, nil
+		})
+	}
+
+	return msgs, nil
 }
 
-func (p pdataTracesMarshaler) Encoding() string {
+func (p *pdataTracesMarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string) TracesMarshaler {
-	return pdataTracesMarshaler{
-		marshaler: marshaler,
-		encoding:  encoding,
+func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string, partitionedByTraceID bool) TracesMarshaler {
+	return &pdataTracesMarshaler{
+		marshaler:            marshaler,
+		encoding:             encoding,
+		partitionedByTraceID: partitionedByTraceID,
 	}
 }

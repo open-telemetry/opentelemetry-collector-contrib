@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
@@ -64,20 +53,22 @@ type BaseOTLPDataReceiver struct {
 	metricsReceiver receiver.Metrics
 	logReceiver     receiver.Logs
 	compression     string
+	retry           string
+	sendingQueue    string
 }
 
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	if bor.exporterType == "otlp" {
-		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: "tcp"}
+		cfg.GRPC.NetAddr = confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: confignet.TransportTypeTCP}
 		cfg.HTTP = nil
 	} else {
 		cfg.HTTP.Endpoint = fmt.Sprintf("127.0.0.1:%d", bor.Port)
 		cfg.GRPC = nil
 	}
 	var err error
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
@@ -88,12 +79,7 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		return err
 	}
 
-	if err = bor.traceReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
-		return err
-	}
-	if err = bor.metricsReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
-		return err
-	}
+	// we reuse the receiver across signals. Starting the log receiver starts the metrics and traces receiver.
 	return bor.logReceiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
@@ -102,13 +88,18 @@ func (bor *BaseOTLPDataReceiver) WithCompression(compression string) *BaseOTLPDa
 	return bor
 }
 
+func (bor *BaseOTLPDataReceiver) WithRetry(retry string) *BaseOTLPDataReceiver {
+	bor.retry = retry
+	return bor
+}
+
+func (bor *BaseOTLPDataReceiver) WithQueue(sendingQueue string) *BaseOTLPDataReceiver {
+	bor.sendingQueue = sendingQueue
+	return bor
+}
+
 func (bor *BaseOTLPDataReceiver) Stop() error {
-	if err := bor.traceReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	if err := bor.metricsReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
+	// we reuse the receiver across signals. Shutting down the log receiver shuts down the metrics and traces receiver.
 	return bor.logReceiver.Shutdown(context.Background())
 }
 
@@ -125,9 +116,10 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	str := fmt.Sprintf(`
   %s:
     endpoint: "%s"
+    %s
+    %s
     tls:
-      insecure: true`, bor.exporterType, addr)
-
+      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue)
 	comp := "none"
 	if bor.compression != "" {
 		comp = bor.compression

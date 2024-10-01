@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -28,14 +17,14 @@ import (
 func Test_isMatch(t *testing.T) {
 	tests := []struct {
 		name     string
-		target   ottl.Getter[interface{}]
+		target   ottl.StringLikeGetter[any]
 		pattern  string
 		expected bool
 	}{
 		{
 			name: "replace match true",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "hello world", nil
 				},
 			},
@@ -44,8 +33,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "replace match false",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "goodbye world", nil
 				},
 			},
@@ -54,8 +43,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "replace match complex",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "-12.001", nil
 				},
 			},
@@ -64,8 +53,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "target bool",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return true, nil
 				},
 			},
@@ -74,8 +63,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "target int",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return int64(1), nil
 				},
 			},
@@ -84,8 +73,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "target float",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return 1.1, nil
 				},
 			},
@@ -94,8 +83,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "target pcommon.Value",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
 					v := pcommon.NewValueEmpty()
 					v.SetStr("test")
 					return v, nil
@@ -106,8 +95,8 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "nil target",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return nil, nil
 				},
 			},
@@ -117,7 +106,7 @@ func Test_isMatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := IsMatch(tt.target, tt.pattern)
+			exprFunc, err := isMatch(tt.target, tt.pattern)
 			assert.NoError(t, err)
 			result, err := exprFunc(context.Background(), nil)
 			assert.NoError(t, err)
@@ -127,23 +116,22 @@ func Test_isMatch(t *testing.T) {
 }
 
 func Test_isMatch_validation(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardStringLikeGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return "anything", nil
 		},
 	}
-	_, err := IsMatch[interface{}](target, "\\K")
+	_, err := isMatch[any](target, "\\K")
 	require.Error(t, err)
 }
 
 func Test_isMatch_error(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-			v := ottl.Path{}
-			return v, nil
+	target := &ottl.StandardStringLikeGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return make(chan int), nil
 		},
 	}
-	exprFunc, err := IsMatch[interface{}](target, "test")
+	exprFunc, err := isMatch[any](target, "test")
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	require.Error(t, err)

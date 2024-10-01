@@ -1,0 +1,15 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 123.456
+                  startTimeUnixNano: "11651379494838206464"
+            name: gauge.one
+          - name: sum.one
+            sum:
+              dataPoints:
+                - asInt: "123"
+                  startTimeUnixNano: "11651379494838206464"
+        scope: {}

@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
@@ -23,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
 // generalResourceKey is the resource key for the no general "no attribute" resource
@@ -91,11 +82,11 @@ type otelMetricHelper struct {
 	// This is the timestamp that should be added to all created data points
 	dataPointTime pcommon.Timestamp
 	// This is used so that we can put the proper version on the scope metrics
-	settings receiver.CreateSettings
+	settings receiver.Settings
 }
 
 // newOtelMetricHelper returns a new otelMetricHelper with an initialized master Metrics
-func newOTELMetricHelper(settings receiver.CreateSettings, scraperStartTime pcommon.Timestamp) *otelMetricHelper {
+func newOTELMetricHelper(settings receiver.Settings, scraperStartTime pcommon.Timestamp) *otelMetricHelper {
 	metrics := pmetric.NewMetrics()
 	omh := otelMetricHelper{
 		metrics:              metrics,
@@ -122,7 +113,7 @@ func (h *otelMetricHelper) createResource(resourceKey string, resourceAttributes
 		resourceMetrics.Resource().Attributes().PutStr(key, value)
 	}
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
-	scopeMetrics.Scope().SetName("otelcol/snmpreceiver")
+	scopeMetrics.Scope().SetName(metadata.ScopeName)
 	scopeMetrics.Scope().SetVersion(h.settings.BuildInfo.Version)
 	h.resourcesByKey[resourceKey] = &resourceMetrics
 	h.metricsByResource[resourceKey] = map[string]*pmetric.Metric{}
@@ -200,13 +191,17 @@ func (h *otelMetricHelper) addMetricDataPoint(resourceKey string, metricName str
 		} else {
 			dp.SetIntValue(int64(rawValue))
 		}
-	default:
+	case integerVal:
 		rawValue := data.value.(int64)
 		if valueType == "int" {
 			dp.SetIntValue(rawValue)
 		} else {
 			dp.SetDoubleValue(float64(rawValue))
 		}
+	case stringVal:
+		return nil, fmt.Errorf("cannot create data point for metric %q from string value", metricName)
+	case notSupportedVal:
+		return nil, fmt.Errorf("cannot create data point for metric %q from unsupported value type", metricName)
 	}
 
 	// Add attributes to dp

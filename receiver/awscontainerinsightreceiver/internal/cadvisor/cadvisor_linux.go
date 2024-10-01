@@ -1,19 +1,7 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
-// +build linux
 
 package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 
@@ -63,7 +51,7 @@ type cadvisorManager interface {
 }
 
 // define a function type for creating a cadvisor manager
-type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.HouskeepingConfig, cadvisormetrics.MetricSet, *http.Client,
+type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig, cadvisormetrics.MetricSet, *http.Client,
 	[]string, string) (cadvisorManager, error)
 
 // this is the default function that are used in production code to create a cadvisor manager
@@ -72,10 +60,10 @@ type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.Hous
 // createCadvisorManager() to create a mock. However this means that we will not be able
 // to unit test the code in `initManager(...)`. For now, I will leave code as it is. Hopefully we can find
 // a better way to mock the cadvisor related part in the future.
-var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, housekeepingConfig manager.HousekeepingConfig,
 	includedMetricsSet cadvisormetrics.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 	perfEventsFile string) (cadvisorManager, error) {
-	return manager.New(memoryCache, sysfs, houskeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, []string{}, perfEventsFile, 0)
+	return manager.New(memoryCache, sysfs, housekeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, []string{}, perfEventsFile, 0)
 }
 
 // Option is a function that can be used to configure Cadvisor struct
@@ -121,6 +109,7 @@ type EcsInfo interface {
 
 type Decorator interface {
 	Decorate(*extractors.CAdvisorMetric) *extractors.CAdvisorMetric
+	Shutdown() error
 }
 
 type Cadvisor struct {
@@ -175,7 +164,19 @@ func GetMetricsExtractors() []extractors.MetricExtractor {
 	return metricsExtractors
 }
 
-func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV map[string]string) {
+func (c *Cadvisor) Shutdown() error {
+	var errs error
+	for _, ext := range metricsExtractors {
+		errs = errors.Join(errs, ext.Shutdown())
+	}
+
+	if c.k8sDecorator != nil {
+		errs = errors.Join(errs, c.k8sDecorator.Shutdown())
+	}
+	return errs
+}
+
+func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIDsUsedAsPV map[string]string) {
 	deviceName, ok := tags[ci.DiskDev]
 	if !ok {
 		return
@@ -189,7 +190,7 @@ func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV
 
 	if tags[ci.MetricType] == ci.TypeContainerFS || tags[ci.MetricType] == ci.TypeNodeFS ||
 		tags[ci.MetricType] == ci.TypeNodeDiskIO || tags[ci.MetricType] == ci.TypeContainerDiskIO {
-		if volID := ebsVolumeIdsUsedAsPV[deviceName]; volID != "" {
+		if volID := ebsVolumeIDsUsedAsPV[deviceName]; volID != "" {
 			tags[ci.EbsVolumeID] = volID
 		}
 	}
@@ -255,11 +256,11 @@ func addECSResources(tags map[string]string) {
 }
 
 func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric) []*extractors.CAdvisorMetric {
-	ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
+	ebsVolumeIDsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
 	var result []*extractors.CAdvisorMetric
 	for _, m := range cadvisormetrics {
 		tags := m.GetTags()
-		c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
+		c.addEbsVolumeInfo(tags, ebsVolumeIDsUsedAsPV)
 
 		// add version
 		tags[ci.Version] = c.version
@@ -372,7 +373,7 @@ func (c *Cadvisor) initManager(createManager createCadvisorManager) error {
 		cgroupRoots = []string{"/kubepods"}
 	}
 
-	houseKeepingConfig := manager.HouskeepingConfig{
+	houseKeepingConfig := manager.HousekeepingConfig{
 		Interval:     &maxHousekeepingInterval,
 		AllowDynamic: &allowDynamicHousekeeping,
 	}

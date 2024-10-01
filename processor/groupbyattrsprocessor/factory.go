@@ -1,57 +1,32 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package groupbyattrsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 
 import (
 	"context"
-	"sync"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
-)
 
-const (
-	// typeStr is the value of "type" for this processor in the configuration.
-	typeStr component.Type = "groupbyattrs"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
 
 var (
 	consumerCapabilities = consumer.Capabilities{MutatesData: true}
 )
 
-var once sync.Once
-
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() processor.Factory {
-	once.Do(func() {
-		// TODO: as with other -contrib factories registering metrics, this is causing the error being ignored
-		_ = view.Register(MetricViews()...)
-	})
-
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability),
-		processor.WithLogs(createLogsProcessor, stability),
-		processor.WithMetrics(createMetricsProcessor, stability))
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.
@@ -61,7 +36,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) *groupByAttrsProcessor {
+func createGroupByAttrsProcessor(set processor.Settings, attributes []string) (*groupByAttrsProcessor, error) {
 	var nonEmptyAttributes []string
 	presentAttributes := make(map[string]struct{})
 
@@ -69,7 +44,7 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) *group
 		if str != "" {
 			_, isPresent := presentAttributes[str]
 			if isPresent {
-				logger.Warn("A grouping key is already present", zap.String("key", str))
+				set.Logger.Warn("A grouping key is already present", zap.String("key", str))
 			} else {
 				nonEmptyAttributes = append(nonEmptyAttributes, str)
 				presentAttributes[str] = struct{}{}
@@ -77,18 +52,25 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) *group
 		}
 	}
 
-	return &groupByAttrsProcessor{logger: logger, groupByKeys: nonEmptyAttributes}
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	return &groupByAttrsProcessor{logger: set.Logger, groupByKeys: nonEmptyAttributes, telemetryBuilder: telemetryBuilder}, nil
 }
 
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces) (processor.Traces, error) {
 
 	oCfg := cfg.(*Config)
-	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
+	gap, err := createGroupByAttrsProcessor(set, oCfg.GroupByKeys)
+	if err != nil {
+		return nil, err
+	}
 
 	return processorhelper.NewTracesProcessor(
 		ctx,
@@ -102,12 +84,15 @@ func createTracesProcessor(
 // createLogsProcessor creates a logs processor based on this config.
 func createLogsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs) (processor.Logs, error) {
 
 	oCfg := cfg.(*Config)
-	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
+	gap, err := createGroupByAttrsProcessor(set, oCfg.GroupByKeys)
+	if err != nil {
+		return nil, err
+	}
 
 	return processorhelper.NewLogsProcessor(
 		ctx,
@@ -121,12 +106,15 @@ func createLogsProcessor(
 // createMetricsProcessor creates a metrics processor based on this config.
 func createMetricsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (processor.Metrics, error) {
 
 	oCfg := cfg.(*Config)
-	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
+	gap, err := createGroupByAttrsProcessor(set, oCfg.GroupByKeys)
+	if err != nil {
+		return nil, err
+	}
 
 	return processorhelper.NewMetricsProcessor(
 		ctx,

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
@@ -21,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -28,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
-// FromPdataConverter converts a set of entry.Entry into plog.Logs
+// FromPdataConverter converts plog.Logs into a set of entry.Entry
 //
 // The diagram below illustrates the internal communication inside the FromPdataConverter:
 //
@@ -49,6 +39,8 @@ import (
 //	    └─┤   and sends them along entriesChan                │
 //	      └───────────────────────────────────────────────────┘
 type FromPdataConverter struct {
+	set component.TelemetrySettings
+
 	// entriesChan is a channel on which converted logs will be sent out of the converter.
 	entriesChan chan []*entry.Entry
 
@@ -62,28 +54,26 @@ type FromPdataConverter struct {
 	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
 	// when Stop() is called.
 	wg sync.WaitGroup
-
-	logger *zap.Logger
 }
 
-func NewFromPdataConverter(workerCount int, logger *zap.Logger) *FromPdataConverter {
-	if logger == nil {
-		logger = zap.NewNop()
+func NewFromPdataConverter(set component.TelemetrySettings, workerCount int) *FromPdataConverter {
+	if set.Logger == nil {
+		set.Logger = zap.NewNop()
 	}
 	if workerCount <= 0 {
 		workerCount = int(math.Max(1, float64(runtime.NumCPU())))
 	}
 
 	return &FromPdataConverter{
+		set:         set,
 		workerChan:  make(chan fromConverterWorkerItem, workerCount),
 		entriesChan: make(chan []*entry.Entry),
 		stopChan:    make(chan struct{}),
-		logger:      logger,
 	}
 }
 
 func (c *FromPdataConverter) Start() {
-	c.logger.Debug("Starting log converter from pdata", zap.Int("worker_count", cap(c.workerChan)))
+	c.set.Logger.Debug("Starting log converter from pdata", zap.Int("worker_count", cap(c.workerChan)))
 
 	for i := 0; i < cap(c.workerChan); i++ {
 		c.wg.Add(1)

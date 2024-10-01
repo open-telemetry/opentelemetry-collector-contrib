@@ -1,0 +1,180 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 0.2
+                  attributes:
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+                    - key: plugin
+                      value:
+                        stringValue: fake
+                  timeUnixNano: "1000000"
+            name: load.low
+          - gauge:
+              dataPoints:
+                - asDouble: 0.9
+                  attributes:
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+                    - key: plugin
+                      value:
+                        stringValue: fake
+                  timeUnixNano: "1000000"
+            name: load.high
+          - gauge:
+              dataPoints:
+                - asDouble: 0.37
+                  attributes:
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+                    - key: plugin
+                      value:
+                        stringValue: load
+                  timeUnixNano: "1000000"
+            name: load.shortterm
+          - gauge:
+              dataPoints:
+                - asDouble: 0.61
+                  attributes:
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+                    - key: plugin
+                      value:
+                        stringValue: load
+                  timeUnixNano: "1000000"
+            name: load.midterm
+          - gauge:
+              dataPoints:
+                - asDouble: 0.76
+                  attributes:
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+                    - key: plugin
+                      value:
+                        stringValue: load
+                  timeUnixNano: "1000000"
+            name: load.longterm
+          - gauge:
+              dataPoints:
+                - asDouble: 1.52431e+09
+                  attributes:
+                    - key: dsname
+                      value:
+                        stringValue: value
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+                    - key: plugin
+                      value:
+                        stringValue: memory
+                  timeUnixNano: "1000000"
+            name: memory.used
+          - name: df_complex.free
+            sum:
+              dataPoints:
+                - asDouble: 1.9626e+09
+                  attributes:
+                    - key: dsname
+                      value:
+                        stringValue: value
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+                    - key: plugin
+                      value:
+                        stringValue: df
+                    - key: plugin_instance
+                      value:
+                        stringValue: dev
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+          - gauge:
+              dataPoints:
+                - asInt: "26790"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: b
+                    - key: dsname
+                      value:
+                        stringValue: value
+                    - key: f
+                      value:
+                        stringValue: x
+                    - key: host
+                      value:
+                        stringValue: mwp-signalbox
+                    - key: k1
+                      value:
+                        stringValue: v1
+                    - key: k2
+                      value:
+                        stringValue: v2
+                    - key: plugin
+                      value:
+                        stringValue: tail
+                    - key: plugin_instance
+                      value:
+                        stringValue: analytics
+                  timeUnixNano: "1000000"
+            name: memory.old_gen_end
+          - gauge:
+              dataPoints:
+                - asDouble: 1.03552e+06
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: b
+                    - key: dsname
+                      value:
+                        stringValue: value
+                    - key: f
+                      value:
+                        stringValue: x
+                    - key: host
+                      value:
+                        stringValue: mwp-signalbox
+                    - key: k1
+                      value:
+                        stringValue: v1
+                    - key: k2
+                      value:
+                        stringValue: v2
+                    - key: plugin
+                      value:
+                        stringValue: tail
+                    - key: plugin_instance
+                      value:
+                        stringValue: analytics
+                  timeUnixNano: "1000000"
+            name: memory.total_heap_space
+          - gauge:
+              dataPoints:
+                - asDouble: 12
+                  attributes:
+                    - key: dsname
+                      value:
+                        stringValue: value
+                    - key: env
+                      value:
+                        stringValue: dev
+                    - key: host
+                      value:
+                        stringValue: some-host
+                    - key: k1
+                      value:
+                        stringValue: v1
+                    - key: plugin
+                      value:
+                        stringValue: dogstatsd
+                  timeUnixNano: "1000000"
+            name: gauge.page.loadtime
+        scope: {}

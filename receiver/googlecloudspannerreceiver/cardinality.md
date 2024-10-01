@@ -13,7 +13,7 @@ This means that the number of streams that can be sent by OpenTelemetry collecto
 For simplicity purpose and for explaining of calculation, which is currently done in implementation, lets assume that we have 1 project, 1 instance and 1 database.
 Such calculations are done when the collector starts. If the cardinality total limit is different(for calculations below we assume it is 200,000) the numbers will be different.
 
-According to the metrics [metadata configuration](internal/metadataconfig/metadata.yaml)(at the moment of writing this document) we have:
+According to the metrics [metadata configuration](internal/metadataconfig/metrics.yaml)(at the moment of writing this document) we have:
 - 30 low cardinality metrics(amount of total N + active queries summary metrics);
 - 26 high cardinality metrics(amount of top N metrics).
 

@@ -1,0 +1,45 @@
+default:
+all_set:
+  resource_attributes:
+    azure.resourcegroup.name:
+      enabled: true
+    azure.vm.name:
+      enabled: true
+    azure.vm.scaleset.name:
+      enabled: true
+    azure.vm.size:
+      enabled: true
+    cloud.account.id:
+      enabled: true
+    cloud.platform:
+      enabled: true
+    cloud.provider:
+      enabled: true
+    cloud.region:
+      enabled: true
+    host.id:
+      enabled: true
+    host.name:
+      enabled: true
+none_set:
+  resource_attributes:
+    azure.resourcegroup.name:
+      enabled: false
+    azure.vm.name:
+      enabled: false
+    azure.vm.scaleset.name:
+      enabled: false
+    azure.vm.size:
+      enabled: false
+    cloud.account.id:
+      enabled: false
+    cloud.platform:
+      enabled: false
+    cloud.provider:
+      enabled: false
+    cloud.region:
+      enabled: false
+    host.id:
+      enabled: false
+    host.name:
+      enabled: false

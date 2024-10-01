@@ -2,6 +2,8 @@
 
 # hostmetricsreceiver/cpu
 
+**Parent Component:** hostmetrics
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -14,7 +16,7 @@ metrics:
 
 ### system.cpu.time
 
-Total CPU seconds broken down by different states.
+Total seconds each logical CPU spent on each mode.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -24,7 +26,7 @@ Total CPU seconds broken down by different states.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| cpu | CPU number starting at 0. | Any Str |
+| cpu | Logical CPU number starting at 0. | Any Str |
 | state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` |
 
 ## Optional Metrics
@@ -37,9 +39,39 @@ metrics:
     enabled: true
 ```
 
+### system.cpu.frequency
+
+Current frequency of the CPU core in Hz.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| Hz | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cpu | Logical CPU number starting at 0. | Any Str |
+
+### system.cpu.logical.count
+
+Number of available logical CPUs.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {cpu} | Sum | Int | Cumulative | false |
+
+### system.cpu.physical.count
+
+Number of available physical CPUs.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {cpu} | Sum | Int | Cumulative | false |
+
 ### system.cpu.utilization
 
-Percentage of CPU time broken down by different states.
+Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -49,5 +81,5 @@ Percentage of CPU time broken down by different states.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| cpu | CPU number starting at 0. | Any Str |
+| cpu | Logical CPU number starting at 0. | Any Str |
 | state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` |

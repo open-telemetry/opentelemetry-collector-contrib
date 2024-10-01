@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 
@@ -20,13 +9,13 @@ import (
 
 // LogEntry represents a MongoDB Atlas JSON log entry
 type LogEntry struct {
-	Timestamp  LogTimestamp           `json:"t"`
-	Severity   string                 `json:"s"`
-	Component  string                 `json:"c"`
-	ID         int64                  `json:"id"`
-	Context    string                 `json:"ctx"`
-	Message    string                 `json:"msg"`
-	Attributes map[string]interface{} `json:"attr"`
+	Timestamp  LogTimestamp   `json:"t"`
+	Severity   string         `json:"s"`
+	Component  string         `json:"c"`
+	ID         int64          `json:"id"`
+	Context    string         `json:"ctx"`
+	Message    string         `json:"msg"`
+	Attributes map[string]any `json:"attr"`
 	// Raw is the original log line. It is not a part of the payload, but transient data added during decoding.
 	Raw string `json:"-"`
 }

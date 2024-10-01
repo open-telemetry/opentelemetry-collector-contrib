@@ -1,4 +1,7 @@
 #!/bin/sh
+
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 set -e
 
 CONTAINER_NAME=${CONTAINER_NAME:-"couchbase_couchbase_1"}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
@@ -21,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
@@ -113,11 +102,17 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 		name:       name,
 		attributes: getAttributesSignature(kv),
 	}
-	if metric.Type() == pmetric.MetricTypeHistogram {
+	switch metric.Type() {
+	case pmetric.MetricTypeHistogram:
 		// There are 2 types of Histograms whose aggregation temporality needs distinguishing:
 		// * CumulativeHistogram
 		// * GaugeHistogram
 		key.aggTemporality = metric.Histogram().AggregationTemporality()
+	case pmetric.MetricTypeExponentialHistogram:
+		// There are 2 types of ExponentialHistograms whose aggregation temporality needs distinguishing:
+		// * CumulativeHistogram
+		// * GaugeHistogram
+		key.aggTemporality = metric.ExponentialHistogram().AggregationTemporality()
 	}
 
 	tsm.mark = true
@@ -296,6 +291,12 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 				case pmetric.MetricTypeSum:
 					a.adjustMetricSum(tsm, metric)
 
+				case pmetric.MetricTypeExponentialHistogram:
+					a.adjustMetricExponentialHistogram(tsm, metric)
+
+				case pmetric.MetricTypeEmpty:
+					fallthrough
+
 				default:
 					// this shouldn't happen
 					a.logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
@@ -308,6 +309,54 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 
 func (a *initialPointAdjuster) adjustMetricHistogram(tsm *timeseriesMap, current pmetric.Metric) {
 	histogram := current.Histogram()
+	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
+		// Only dealing with CumulativeDistributions.
+		return
+	}
+
+	currentPoints := histogram.DataPoints()
+	for i := 0; i < currentPoints.Len(); i++ {
+		currentDist := currentPoints.At(i)
+
+		// start timestamp was set from _created
+		if a.useCreatedMetric &&
+			!currentDist.Flags().NoRecordedValue() &&
+			currentDist.StartTimestamp() < currentDist.Timestamp() {
+			continue
+		}
+
+		tsi, found := tsm.get(current, currentDist.Attributes())
+		if !found {
+			// initialize everything.
+			tsi.histogram.startTime = currentDist.StartTimestamp()
+			tsi.histogram.previousCount = currentDist.Count()
+			tsi.histogram.previousSum = currentDist.Sum()
+			continue
+		}
+
+		if currentDist.Flags().NoRecordedValue() {
+			// TODO: Investigate why this does not reset.
+			currentDist.SetStartTimestamp(tsi.histogram.startTime)
+			continue
+		}
+
+		if currentDist.Count() < tsi.histogram.previousCount || currentDist.Sum() < tsi.histogram.previousSum {
+			// reset re-initialize everything.
+			tsi.histogram.startTime = currentDist.StartTimestamp()
+			tsi.histogram.previousCount = currentDist.Count()
+			tsi.histogram.previousSum = currentDist.Sum()
+			continue
+		}
+
+		// Update only previous values.
+		tsi.histogram.previousCount = currentDist.Count()
+		tsi.histogram.previousSum = currentDist.Sum()
+		currentDist.SetStartTimestamp(tsi.histogram.startTime)
+	}
+}
+
+func (a *initialPointAdjuster) adjustMetricExponentialHistogram(tsm *timeseriesMap, current pmetric.Metric) {
+	histogram := current.ExponentialHistogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
 		return

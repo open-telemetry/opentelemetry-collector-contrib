@@ -1,20 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,6 +12,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -30,15 +21,16 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	// Metrics defines which metrics to enable for the scraper
-	Metrics    metadata.MetricsSettings `mapstructure:"metrics"`
-	Hosts      []confignet.NetAddr      `mapstructure:"hosts"`
-	Username   string                   `mapstructure:"username"`
-	Password   string                   `mapstructure:"password"`
-	ReplicaSet string                   `mapstructure:"replica_set,omitempty"`
-	Timeout    time.Duration            `mapstructure:"timeout"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	// Deprecated - Transport option will be removed in v0.102.0
+	Hosts      []confignet.TCPAddrConfig `mapstructure:"hosts"`
+	Username   string                    `mapstructure:"username"`
+	Password   configopaque.String       `mapstructure:"password"`
+	ReplicaSet string                    `mapstructure:"replica_set,omitempty"`
+	Timeout    time.Duration             `mapstructure:"timeout"`
 }
 
 func (c *Config) Validate() error {
@@ -59,7 +51,7 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("password provided without user"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(); tlsErr != nil {
+	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
@@ -75,7 +67,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 		clientOptions.SetConnectTimeout(c.Timeout)
 	}
 
-	tlsConfig, err := c.LoadTLSConfig()
+	tlsConfig, err := c.LoadTLSConfig(context.Background())
 	if err == nil && tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}
@@ -87,7 +79,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 	if c.Username != "" && c.Password != "" {
 		clientOptions.SetAuth(options.Credential{
 			Username: c.Username,
-			Password: c.Password,
+			Password: string(c.Password),
 		})
 	}
 

@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package host
 
@@ -133,7 +122,7 @@ func (m *mockFileInfo) IsDir() bool {
 	return false
 }
 
-func (m *mockFileInfo) Sys() interface{} {
+func (m *mockFileInfo) Sys() any {
 	return nil
 }
 
@@ -180,9 +169,9 @@ func TestEBSVolume(t *testing.T) {
 	assert.Equal(t, "aws://us-west-2/vol-0c241693efb58734a", e.getEBSVolumeID("/dev/nvme0n2"))
 	assert.Equal(t, "", e.getEBSVolumeID("/dev/invalid"))
 
-	ebsIds := e.extractEbsIDsUsedByKubernetes()
-	assert.Equal(t, 1, len(ebsIds))
-	assert.Equal(t, "aws://us-west-2b/vol-0d9f0816149eb2050", ebsIds["/dev/nvme1n1"])
+	ebsIDs := e.extractEbsIDsUsedByKubernetes()
+	assert.Len(t, ebsIDs, 1)
+	assert.Equal(t, "aws://us-west-2b/vol-0d9f0816149eb2050", ebsIDs["/dev/nvme1n1"])
 
 	// set e.hostMounts to an invalid path
 	hostMountsOption = func(e *ebsVolume) {
@@ -190,6 +179,6 @@ func TestEBSVolume(t *testing.T) {
 	}
 	e = newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
 		clientOption, maxJitterOption, hostMountsOption, LstatOption, evalSymLinksOption)
-	ebsIds = e.extractEbsIDsUsedByKubernetes()
-	assert.Equal(t, 0, len(ebsIds))
+	ebsIDs = e.extractEbsIDsUsedByKubernetes()
+	assert.Empty(t, ebsIDs)
 }

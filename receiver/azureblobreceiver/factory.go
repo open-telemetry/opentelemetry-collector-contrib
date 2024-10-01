@@ -1,36 +1,27 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr             = "azureblob"
 	logsContainerName   = "logs"
 	tracesContainerName = "traces"
+	defaultCloud        = AzureCloudType
 )
 
 var (
@@ -48,22 +39,24 @@ func NewFactory() receiver.Factory {
 	}
 
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		f.createDefaultConfig,
-		receiver.WithTraces(f.createTracesReceiver, component.StabilityLevelBeta),
-		receiver.WithLogs(f.createLogsReceiver, component.StabilityLevelBeta))
+		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability))
 }
 
 func (f *blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
-		Logs:   LogsConfig{ContainerName: logsContainerName},
-		Traces: TracesConfig{ContainerName: tracesContainerName},
+		Logs:           LogsConfig{ContainerName: logsContainerName},
+		Traces:         TracesConfig{ContainerName: tracesContainerName},
+		Authentication: ConnectionStringAuth,
+		Cloud:          defaultCloud,
 	}
 }
 
 func (f *blobReceiverFactory) createLogsReceiver(
-	ctx context.Context,
-	set receiver.CreateSettings,
+	_ context.Context,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
@@ -81,8 +74,8 @@ func (f *blobReceiverFactory) createLogsReceiver(
 }
 
 func (f *blobReceiverFactory) createTracesReceiver(
-	ctx context.Context,
-	set receiver.CreateSettings,
+	_ context.Context,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
@@ -99,7 +92,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 }
 
 func (f *blobReceiverFactory) getReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config) (component.Component, error) {
 
 	var err error
@@ -130,9 +123,26 @@ func (f *blobReceiverFactory) getReceiver(
 }
 
 func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
-	bc, err := newBlobClient(cfg.ConnectionString, logger)
-	if err != nil {
-		return nil, err
+	var bc blobClient
+	var err error
+
+	switch cfg.Authentication {
+	case ConnectionStringAuth:
+		bc, err = newBlobClientFromConnectionString(cfg.ConnectionString, logger)
+		if err != nil {
+			return nil, err
+		}
+	case ServicePrincipalAuth:
+		cred, err := azidentity.NewClientSecretCredential(cfg.ServicePrincipal.TenantID, cfg.ServicePrincipal.ClientID, string(cfg.ServicePrincipal.ClientSecret), nil)
+		if err != nil {
+			return nil, err
+		}
+		bc, err = newBlobClientFromCredential(cfg.StorageAccountURL, cred, logger)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unknown authentication %v", cfg.Authentication)
 	}
 
 	return newBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),

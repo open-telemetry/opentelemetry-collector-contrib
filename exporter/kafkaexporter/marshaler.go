@@ -1,24 +1,17 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
-	"github.com/Shopify/sarama"
+	"fmt"
+
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
 // TracesMarshaler marshals traces into Message array.
@@ -48,38 +41,130 @@ type LogsMarshaler interface {
 	Encoding() string
 }
 
-// tracesMarshalers returns map of supported encodings with TracesMarshaler.
-func tracesMarshalers() map[string]TracesMarshaler {
-	otlpPb := newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding)
-	otlpJSON := newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json")
+// creates TracesMarshaler based on the provided config
+func createTracesMarshaler(config Config) (TracesMarshaler, error) {
+	encoding := config.Encoding
+	partitionTracesByID := config.PartitionTracesByID
+
 	jaegerProto := jaegerMarshaler{marshaler: jaegerProtoSpanMarshaler{}}
 	jaegerJSON := jaegerMarshaler{marshaler: newJaegerJSONMarshaler()}
-	return map[string]TracesMarshaler{
-		otlpPb.Encoding():      otlpPb,
-		otlpJSON.Encoding():    otlpJSON,
-		jaegerProto.Encoding(): jaegerProto,
-		jaegerJSON.Encoding():  jaegerJSON,
+
+	switch encoding {
+	case defaultEncoding:
+		return newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, partitionTracesByID), nil
+	case "otlp_json":
+		return newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json", partitionTracesByID), nil
+	case "zipkin_proto":
+		return newPdataTracesMarshaler(zipkinv2.NewProtobufTracesMarshaler(), "zipkin_proto", partitionTracesByID), nil
+	case "zipkin_json":
+		return newPdataTracesMarshaler(zipkinv2.NewJSONTracesMarshaler(), "zipkin_json", partitionTracesByID), nil
+	case jaegerProtoSpanMarshaler{}.encoding():
+		return jaegerProto, nil
+	case jaegerJSON.Encoding():
+		return jaegerJSON, nil
+	default:
+		return nil, errUnrecognizedEncoding
+	}
+
+}
+
+// creates MetricsMarshaler based on the provided config
+func createMetricMarshaler(config Config) (MetricsMarshaler, error) {
+	encoding := config.Encoding
+	partitionMetricsByResources := config.PartitionMetricsByResourceAttributes
+	switch encoding {
+	case defaultEncoding:
+		return newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, partitionMetricsByResources), nil
+	case "otlp_json":
+		return newPdataMetricsMarshaler(&pmetric.JSONMarshaler{}, "otlp_json", partitionMetricsByResources), nil
+	default:
+		return nil, errUnrecognizedEncoding
 	}
 }
 
-// metricsMarshalers returns map of supported encodings and MetricsMarshaler
-func metricsMarshalers() map[string]MetricsMarshaler {
-	otlpPb := newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding)
-	otlpJSON := newPdataMetricsMarshaler(&pmetric.JSONMarshaler{}, "otlp_json")
-	return map[string]MetricsMarshaler{
-		otlpPb.Encoding():   otlpPb,
-		otlpJSON.Encoding(): otlpJSON,
-	}
-}
+// creates LogsMarshalers based on the provided config
+func createLogMarshaler(config Config) (LogsMarshaler, error) {
+	encoding := config.Encoding
+	partitionLogsByAttributes := config.PartitionLogsByResourceAttributes
 
-// logsMarshalers returns map of supported encodings and LogsMarshaler
-func logsMarshalers() map[string]LogsMarshaler {
-	otlpPb := newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding)
-	otlpJSON := newPdataLogsMarshaler(&plog.JSONMarshaler{}, "otlp_json")
 	raw := newRawMarshaler()
-	return map[string]LogsMarshaler{
-		otlpPb.Encoding():   otlpPb,
-		otlpJSON.Encoding(): otlpJSON,
-		raw.Encoding():      raw,
+	switch encoding {
+	case defaultEncoding:
+		return newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, partitionLogsByAttributes), nil
+	case "otlp_json":
+		return newPdataLogsMarshaler(&plog.JSONMarshaler{}, "otlp_json", partitionLogsByAttributes), nil
+	case raw.Encoding():
+		return raw, nil
+	default:
+		return nil, errUnrecognizedEncoding
 	}
+}
+
+// tracesEncodingMarshaler is a wrapper around ptrace.Marshaler that implements TracesMarshaler.
+type tracesEncodingMarshaler struct {
+	marshaler ptrace.Marshaler
+	encoding  string
+}
+
+func (t *tracesEncodingMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+	var messages []*sarama.ProducerMessage
+	data, err := t.marshaler.MarshalTraces(traces)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal traces: %w", err)
+	}
+	messages = append(messages, &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(data),
+	})
+	return messages, nil
+}
+
+func (t *tracesEncodingMarshaler) Encoding() string {
+	return t.encoding
+}
+
+// metricsEncodingMarshaler is a wrapper around pmetric.Marshaler that implements MetricsMarshaler.
+type metricsEncodingMarshaler struct {
+	marshaler pmetric.Marshaler
+	encoding  string
+}
+
+func (m *metricsEncodingMarshaler) Marshal(metrics pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
+	var messages []*sarama.ProducerMessage
+	data, err := m.marshaler.MarshalMetrics(metrics)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal metrics: %w", err)
+	}
+	messages = append(messages, &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(data),
+	})
+	return messages, nil
+}
+
+func (m *metricsEncodingMarshaler) Encoding() string {
+	return m.encoding
+}
+
+// logsEncodingMarshaler is a wrapper around plog.Marshaler that implements LogsMarshaler.
+type logsEncodingMarshaler struct {
+	marshaler plog.Marshaler
+	encoding  string
+}
+
+func (l *logsEncodingMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
+	var messages []*sarama.ProducerMessage
+	data, err := l.marshaler.MarshalLogs(logs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal logs: %w", err)
+	}
+	messages = append(messages, &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(data),
+	})
+	return messages, nil
+}
+
+func (l *logsEncodingMarshaler) Encoding() string {
+	return l.encoding
 }

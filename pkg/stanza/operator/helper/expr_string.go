@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
@@ -20,8 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/ast"
+	"github.com/expr-lang/expr/vm"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -53,9 +43,8 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 			// so treat the rest as a string literal
 			subStrings = append(subStrings, s[rangeStart:])
 			break
-		} else {
-			indexStart = rangeStart + indexStart
 		}
+		indexStart = rangeStart + indexStart
 
 		// Restrict our end token search range to the next instance of the start token
 		nextIndexStart := strings.Index(s[indexStart+len(exprStartToken):], exprStartToken)
@@ -73,9 +62,8 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 			// as a string literal
 			subStrings = append(subStrings, s[rangeStart:])
 			break
-		} else {
-			indexEnd = indexStart + indexEnd
 		}
+		indexEnd = indexStart + indexEnd
 
 		// Unscope the indexes and add the partitioned strings
 		subStrings = append(subStrings, s[rangeStart:indexStart])
@@ -90,7 +78,7 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 
 	subExprs := make([]*vm.Program, 0, len(subExprStrings))
 	for _, subExprString := range subExprStrings {
-		program, err := expr.Compile(subExprString, expr.AllowUndefinedVariables())
+		program, err := expr.Compile(subExprString, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}))
 		if err != nil {
 			return nil, errors.Wrap(err, "compile embedded expression")
 		}
@@ -103,6 +91,14 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 	}, nil
 }
 
+func ExprCompile(input string) (*vm.Program, error) {
+	return expr.Compile(input, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}))
+}
+
+func ExprCompileBool(input string) (*vm.Program, error) {
+	return expr.Compile(input, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}), expr.AsBool())
+}
+
 // An ExprString is made up of a list of string literals
 // interleaved with expressions. len(SubStrings) == len(SubExprs) + 1
 type ExprString struct {
@@ -111,7 +107,7 @@ type ExprString struct {
 }
 
 // Render will render an ExprString as a string
-func (e *ExprString) Render(env map[string]interface{}) (string, error) {
+func (e *ExprString) Render(env map[string]any) (string, error) {
 	var b strings.Builder
 	for i := 0; i < len(e.SubExprs); i++ {
 		b.WriteString(e.SubStrings[i])
@@ -126,21 +122,36 @@ func (e *ExprString) Render(env map[string]interface{}) (string, error) {
 		b.WriteString(outString)
 	}
 	b.WriteString(e.SubStrings[len(e.SubStrings)-1])
-
 	return b.String(), nil
 }
 
+type patcher struct{}
+
+func (p *patcher) Visit(node *ast.Node) {
+	n, ok := (*node).(*ast.CallNode)
+	if !ok {
+		return
+	}
+	c, ok := (n.Callee).(*ast.IdentifierNode)
+	if !ok {
+		return
+	}
+	if c.Value == "env" {
+		c.Value = "os_env_func"
+	}
+}
+
 var envPool = sync.Pool{
-	New: func() interface{} {
-		return map[string]interface{}{
-			"env": os.Getenv,
+	New: func() any {
+		return map[string]any{
+			"os_env_func": os.Getenv,
 		}
 	},
 }
 
 // GetExprEnv returns a map of key/value pairs that can be be used to evaluate an expression
-func GetExprEnv(e *entry.Entry) map[string]interface{} {
-	env := envPool.Get().(map[string]interface{})
+func GetExprEnv(e *entry.Entry) map[string]any {
+	env := envPool.Get().(map[string]any)
 	env["$"] = e.Body
 	env["body"] = e.Body
 	env["attributes"] = e.Attributes
@@ -151,6 +162,6 @@ func GetExprEnv(e *entry.Entry) map[string]interface{} {
 }
 
 // PutExprEnv adds a key/value pair that will can be used to evaluate an expression
-func PutExprEnv(e map[string]interface{}) {
+func PutExprEnv(e map[string]any) {
 	envPool.Put(e)
 }

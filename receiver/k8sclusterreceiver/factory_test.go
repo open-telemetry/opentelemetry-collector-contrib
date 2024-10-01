@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclusterreceiver
 
@@ -21,20 +10,23 @@ import (
 
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	fakeQuota "github.com/openshift/client-go/quota/clientset/versioned/fake"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, component.Type("k8s_cluster"), f.Type())
+	require.Equal(t, metadata.Type, f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
@@ -47,10 +39,12 @@ func TestFactory(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		MetadataCollectionInterval: 5 * time.Minute,
+		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}, rCfg)
 
 	r, err := f.CreateTracesReceiver(
-		context.Background(), receivertest.NewNopCreateSettings(),
+		context.Background(), receivertest.NewNopSettings(),
 		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -70,7 +64,7 @@ func TestFactory(t *testing.T) {
 
 func TestFactoryDistributions(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, component.Type("k8s_cluster"), f.Type())
+	require.Equal(t, metadata.Type, f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
@@ -78,20 +72,20 @@ func TestFactoryDistributions(t *testing.T) {
 
 	// default
 	r := newTestReceiver(t, rCfg)
-	err := r.Start(context.Background(), componenttest.NewNopHost())
+	err := r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.Nil(t, r.resourceWatcher.osQuotaClient)
 
 	// openshift
 	rCfg.Distribution = "openshift"
 	r = newTestReceiver(t, rCfg)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.NotNil(t, r.resourceWatcher.osQuotaClient)
 }
 
 func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
-	r, err := newReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	r, err := newReceiver(context.Background(), receivertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	rcvr, ok := r.(*kubernetesReceiver)
@@ -111,14 +105,38 @@ type nopHostWithExporters struct {
 }
 
 func newNopHostWithExporters() component.Host {
-	return &nopHostWithExporters{Host: componenttest.NewNopHost()}
+	return &nopHostWithExporters{Host: newNopHost()}
 }
 
-func (n *nopHostWithExporters) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
-			component.NewIDWithName("nop", "withoutmetadata"): MockExporter{},
-			component.NewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
+func (n *nopHostWithExporters) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
+	return map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalMetrics: {
+			component.MustNewIDWithName("nop", "withoutmetadata"): MockExporter{},
+			component.MustNewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
 		},
 	}
+}
+
+func TestNewSharedReceiver(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig()
+
+	mc := consumertest.NewNop()
+	mr, err := newMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mc)
+	require.NoError(t, err)
+
+	// Verify that the metric consumer is correctly set.
+	kr := mr.(*sharedcomponent.SharedComponent).Unwrap().(*kubernetesReceiver)
+	assert.Equal(t, mc, kr.metricsConsumer)
+
+	lc := consumertest.NewNop()
+	lr, err := newLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, lc)
+	require.NoError(t, err)
+
+	// Verify that the log consumer is correct set.
+	kr = lr.(*sharedcomponent.SharedComponent).Unwrap().(*kubernetesReceiver)
+	assert.Equal(t, lc, kr.resourceWatcher.entityLogConsumer)
+
+	// Make sure only one receiver is created both for metrics and logs.
+	assert.Equal(t, mr, lr)
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver
 
@@ -32,9 +21,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -72,12 +62,12 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]any{
 					"mongodbatlas.group.id":        "some-group-id",
 					"mongodbatlas.alert.config.id": "123",
 				}))
 
-				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]any{
 					"created":      "2022-06-03T22:30:31Z",
 					"message":      "Some event happened",
 					"event.domain": "mongodbatlas",
@@ -129,14 +119,14 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]any{
 					"mongodbatlas.group.id":         "some-group-id",
 					"mongodbatlas.alert.config.id":  "123",
 					"mongodbatlas.cluster.name":     "cluster-name",
 					"mongodbatlas.replica_set.name": "replica-set",
 				}))
 
-				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]any{
 					"acknowledgement.comment":  "Scheduled maintenance",
 					"acknowledgement.until":    "2022-06-03T22:32:34Z",
 					"acknowledgement.username": "devops",
@@ -173,9 +163,8 @@ func TestPayloadToLogRecord(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			logs, err := payloadToLogs(now, []byte(tc.payload))
 			if tc.expectedErr != "" {
-				require.Error(t, err)
 				require.Nil(t, logs)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)
@@ -250,8 +239,7 @@ func TestVerifyHMACSignature(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := verifyHMACSignature(tc.secret, tc.payload, tc.signatureHeader)
 			if tc.expectedErr != "" {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 			}
@@ -411,7 +399,7 @@ func TestHandleRequest(t *testing.T) {
 				consumer = &consumertest.LogsSink{}
 			}
 
-			set := receivertest.NewNopCreateSettings()
+			set := receivertest.NewNopSettings()
 			set.Logger = zaptest.NewLogger(t)
 			ar, err := newAlertsReceiver(set, &Config{Alerts: AlertConfig{Secret: "some_secret"}}, consumer)
 			require.NoError(t, err, "Failed to create alerts receiver")
@@ -443,6 +431,8 @@ const (
 	testTypeName        = "OUTSIDE_METRIC_THRESHOLD"
 	testHostNameAndPort = "127.0.0.1:27017"
 	testClusterName     = "Cluster1"
+	testRegionName      = "region-name"
+	testProviderName    = "provider-name"
 )
 
 func TestAlertsRetrieval(t *testing.T) {
@@ -456,9 +446,9 @@ func TestAlertsRetrieval(t *testing.T) {
 			name: "default",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+					Granularity:      defaultGranularity,
+					BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 					Alerts: AlertConfig{
 						Mode: alertModePoll,
 						Projects: []*ProjectConfig{
@@ -494,7 +484,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				for k, v := range expectedResourceAttributes {
 					value, ok := ra.Get(k)
 					require.True(t, ok)
-					require.Equal(t, v, value)
+					require.Equal(t, v, value.AsString())
 				}
 			},
 		},
@@ -502,9 +492,9 @@ func TestAlertsRetrieval(t *testing.T) {
 			name: "project cluster inclusions",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+					Granularity:      defaultGranularity,
+					BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 					Alerts: AlertConfig{
 						Mode: alertModePoll,
 						Projects: []*ProjectConfig{
@@ -523,16 +513,16 @@ func TestAlertsRetrieval(t *testing.T) {
 				return testClient()
 			},
 			validateEntries: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.LogRecordCount(), 1)
+				require.Equal(t, 1, logs.LogRecordCount())
 			},
 		},
 		{
 			name: "hostname and port missing",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+					Granularity:      defaultGranularity,
+					BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 					Alerts: AlertConfig{
 						Mode: alertModePoll,
 						Projects: []*ProjectConfig{
@@ -559,7 +549,7 @@ func TestAlertsRetrieval(t *testing.T) {
 						{
 							ID:            testAlertID,
 							GroupID:       testGroupID,
-							AlertConfigID: "",
+							AlertConfigID: testAlertConfigID,
 							EventTypeName: testTypeName,
 							Created:       time.Now().Format(time.RFC3339),
 							Updated:       time.Now().Format(time.RFC3339),
@@ -580,7 +570,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return tc
 			},
 			validateEntries: func(t *testing.T, l plog.Logs) {
-				require.Equal(t, l.LogRecordCount(), 1)
+				require.Equal(t, 1, l.LogRecordCount())
 				rl := l.ResourceLogs().At(0)
 				sl := rl.ScopeLogs().At(0)
 				lr := sl.LogRecords().At(0)
@@ -593,14 +583,15 @@ func TestAlertsRetrieval(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			logSink := &consumertest.LogsSink{}
-			alertsRcvr, err := newAlertsReceiver(receivertest.NewNopCreateSettings(), tc.config(), logSink)
+			alertsRcvr, err := newAlertsReceiver(receivertest.NewNopSettings(), tc.config(), logSink)
 			require.NoError(t, err)
 			alertsRcvr.client = tc.client()
 
-			err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost())
+			err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
 			require.NoError(t, err)
 
 			require.Eventually(t, func() bool {
@@ -617,7 +608,7 @@ func TestAlertsRetrieval(t *testing.T) {
 
 func TestAlertPollingExclusions(t *testing.T) {
 	logSink := &consumertest.LogsSink{}
-	alertsRcvr, err := newAlertsReceiver(receivertest.NewNopCreateSettings(), &Config{
+	alertsRcvr, err := newAlertsReceiver(receivertest.NewNopSettings(), &Config{
 		Alerts: AlertConfig{
 			Enabled: true,
 			Mode:    alertModePoll,
@@ -635,7 +626,7 @@ func TestAlertPollingExclusions(t *testing.T) {
 	require.NoError(t, err)
 	alertsRcvr.client = testClient()
 
-	err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
 	require.NoError(t, err)
 
 	require.Never(t, func() bool {
@@ -665,7 +656,7 @@ func testAlert() mongodbatlas.Alert {
 	return mongodbatlas.Alert{
 		ID:            testAlertID,
 		GroupID:       testGroupID,
-		AlertConfigID: "",
+		AlertConfigID: testAlertConfigID,
 		EventTypeName: testTypeName,
 		Created:       time.Now().Format(time.RFC3339),
 		Updated:       time.Now().Format(time.RFC3339),
@@ -695,7 +686,7 @@ func validateAttributes(t *testing.T, expectedStringAttributes map[string]string
 				for k, v := range expectedStringAttributes {
 					val, ok := lr.Attributes().Get(k)
 					require.True(t, ok)
-					require.Equal(t, val.AsString(), v)
+					require.Equal(t, v, val.AsString())
 				}
 			}
 		}

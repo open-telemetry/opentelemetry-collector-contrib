@@ -1,18 +1,7 @@
 #!/usr/bin/env bash
 #
-#   Copyright The OpenTelemetry Authors.
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 #
 # This script checks for issues that have been inactive for a certain number
 # of days. Any inactive issues have codeowners pinged for labels corresponding
@@ -71,10 +60,10 @@ for ISSUE in ${ISSUES}; do
 
         gh issue comment "${ISSUE}" -b "${STALE_MESSAGE}"
     else
-        printf "Pinging code owners for issue #${ISSUE}:\n${OWNER_MENTIONS}"
+        echo -e "Pinging code owners for issue #${ISSUE}:\n${OWNER_MENTIONS}"
 
         # The GitHub CLI only offers multiline strings through file input.
-        printf "${STALE_MESSAGE}\n\nPinging code owners:\n${OWNER_MENTIONS}\nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
+        echo -e "${STALE_MESSAGE}\n\nPinging code owners:\n${OWNER_MENTIONS}\nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
           | gh issue comment "${ISSUE}" -F -
     fi
 

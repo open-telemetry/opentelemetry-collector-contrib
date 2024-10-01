@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclient
 
@@ -370,7 +359,7 @@ func setUpEndpointClient() (*epClient, chan struct{}) {
 func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	client, stopChan := setUpEndpointClient()
 	defer close(stopChan)
-	arrays := make([]interface{}, len(endpointsArray))
+	arrays := make([]any, len(endpointsArray))
 	for i := range arrays {
 		arrays[i] = endpointsArray[i]
 	}
@@ -417,7 +406,7 @@ func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 func TestTransformFuncEndpoint(t *testing.T) {
 	info, err := transformFuncEndpoint(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestNewEndpointClient(t *testing.T) {
@@ -427,5 +416,6 @@ func TestNewEndpointClient(t *testing.T) {
 	fakeClientSet := fake.NewSimpleClientset(endpointsArray...)
 	client := newEpClient(fakeClientSet, zap.NewNop(), setOption)
 	assert.NotNil(t, client)
+	client.shutdown()
 	removeTempKubeConfig()
 }

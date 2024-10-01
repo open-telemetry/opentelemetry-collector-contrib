@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterfactory
 
@@ -41,7 +30,7 @@ func TestFilterBuilder_BuildFilterByMetricZeroTotalLimit(t *testing.T) {
 	result := builder.buildFilterByMetricZeroTotalLimit()
 
 	// Because we have 2 groups and each group has 2 metrics
-	assert.Equal(t, len(metricPrefixes)*2, len(result))
+	assert.Len(t, result, len(metricPrefixes)*2)
 	for _, metadataItem := range metadataItems {
 		for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 			f, exists := result[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -93,7 +82,7 @@ func TestFilterBuilder_BuildFilterByMetricPositiveTotalLimit(t *testing.T) {
 			require.NoError(t, err)
 
 			// Because we have 2 groups and each group has 2 metrics
-			assert.Equal(t, len(testCase.metricPrefixes)*2, len(result))
+			assert.Len(t, result, len(testCase.metricPrefixes)*2)
 			for _, metadataItem := range metadataItems {
 				for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 					f, exists := result[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -107,6 +96,7 @@ func TestFilterBuilder_BuildFilterByMetricPositiveTotalLimit(t *testing.T) {
 						assert.Equal(t, expectedLimit, f.TotalLimit())
 						assert.Equal(t, expectedLimit, f.LimitByTimestamp())
 					}
+					assert.NoError(t, f.Shutdown())
 				}
 			}
 		})
@@ -148,7 +138,7 @@ func TestFilterBuilder_HandleLowCardinalityGroups(t *testing.T) {
 			require.NoError(t, err)
 
 			// Because we have 2 groups and each group has 2 metrics
-			assert.Equal(t, len(testCase.metricPrefixes)*2, len(filterByMetric))
+			assert.Len(t, filterByMetric, len(testCase.metricPrefixes)*2)
 			for _, metadataItem := range metadataItems {
 				for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 					f, exists := filterByMetric[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -158,6 +148,7 @@ func TestFilterBuilder_HandleLowCardinalityGroups(t *testing.T) {
 					assert.Equal(t, expectedLimit, f.TotalLimit())
 					assert.Equal(t, expectedLimit, f.LimitByTimestamp())
 					assert.Equal(t, testCase.expectedRemainingTotalLimit, remainingTotalLimit)
+					assert.NoError(t, f.Shutdown())
 				}
 			}
 		})
@@ -203,7 +194,7 @@ func TestFilterBuilder_HandleHighCardinalityGroups(t *testing.T) {
 			require.NoError(t, err)
 
 			// Because we have 2 groups and each group has 2 metrics
-			assert.Equal(t, len(testCase.metricPrefixes)*2, len(filterByMetric))
+			assert.Len(t, filterByMetric, len(testCase.metricPrefixes)*2)
 			for _, metadataItem := range metadataItems {
 				for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 					f, exists := filterByMetric[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -211,6 +202,7 @@ func TestFilterBuilder_HandleHighCardinalityGroups(t *testing.T) {
 					assert.Equal(t, testCase.expectedHighCardinalityTotalLimit, f.TotalLimit())
 					assert.Equal(t, testCase.expectedHighCardinalityLimitByTimestamp, f.LimitByTimestamp())
 					assert.Equal(t, testCase.expectedRemainingTotalLimit, remainingTotalLimit)
+					assert.NoError(t, f.Shutdown())
 				}
 			}
 		})
@@ -237,7 +229,7 @@ func TestFilterBuilder_TestConstructFiltersForGroups(t *testing.T) {
 	require.NoError(t, err)
 
 	// Because we have 2 groups and each group has 2 metrics
-	assert.Equal(t, len(metricPrefixes)*2, len(filterByMetric))
+	assert.Len(t, filterByMetric, len(metricPrefixes)*2)
 	for _, metadataItem := range metadataItems {
 		for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 			f, exists := filterByMetric[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -245,6 +237,7 @@ func TestFilterBuilder_TestConstructFiltersForGroups(t *testing.T) {
 			assert.Equal(t, totalLimitPerMetric, f.TotalLimit())
 			assert.Equal(t, limitPerMetricByTimestamp, f.LimitByTimestamp())
 			assert.Equal(t, expectedRemainingTotalLimit, result)
+			assert.NoError(t, f.Shutdown())
 		}
 	}
 }
@@ -264,12 +257,12 @@ func TestGroupByCardinality(t *testing.T) {
 
 	result := groupByCardinality(metadataItems)
 
-	assert.Equal(t, 2, len(result))
+	assert.Len(t, result, 2)
 
 	for _, metadataItem := range metadataItems {
 		groups, exists := result[metadataItem.HighCardinality]
 		assert.True(t, exists)
-		assert.Equal(t, 1, len(groups))
+		assert.Len(t, groups, 1)
 		assert.Equal(t, metadataItem, groups[0])
 	}
 }

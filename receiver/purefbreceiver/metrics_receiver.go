@@ -1,16 +1,5 @@
-// Copyright 2023 The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package purefbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver"
 
@@ -31,13 +20,13 @@ var _ receiver.Metrics = (*purefbMetricsReceiver)(nil)
 
 type purefbMetricsReceiver struct {
 	cfg  *Config
-	set  receiver.CreateSettings
+	set  receiver.Settings
 	next consumer.Metrics
 
 	wrapped receiver.Metrics
 }
 
-func newReceiver(cfg *Config, set receiver.CreateSettings, next consumer.Metrics) *purefbMetricsReceiver {
+func newReceiver(cfg *Config, set receiver.Settings, next consumer.Metrics) *purefbMetricsReceiver {
 	return &purefbMetricsReceiver{
 		cfg:  cfg,
 		set:  set,
@@ -76,7 +65,7 @@ func (r *purefbMetricsReceiver) Start(ctx context.Context, compHost component.Ho
 		return err
 	}
 	promRecvCfg := fact.CreateDefaultConfig().(*prometheusreceiver.Config)
-	promRecvCfg.PrometheusConfig = &config.Config{ScrapeConfigs: scrapeCfgs}
+	promRecvCfg.PrometheusConfig = &prometheusreceiver.PromConfig{ScrapeConfigs: scrapeCfgs}
 
 	wrapped, err := fact.CreateMetricsReceiver(ctx, r.set, promRecvCfg, r.next)
 	if err != nil {

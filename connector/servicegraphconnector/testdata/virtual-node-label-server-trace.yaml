@@ -1,0 +1,18 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: foo-server
+    scopeSpans:
+      - scope:
+          name: foo-server
+        spans:
+          - traceId: a0000000000000000000000000000000
+            spanId: a000000000000000
+            name: server
+            kind: 3
+            startTimeUnixNano: "1800000000000000000"
+            endTimeUnixNano:   "1800000000000001000"
+            parentSpanId: ""
+  

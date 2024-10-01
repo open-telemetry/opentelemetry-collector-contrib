@@ -1,0 +1,15 @@
+type: k8sobjects
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, hvaghani221, TylerHelmuth]
+
+tests:
+  config:
+  skip_lifecycle: true
+  goleak:
+    skip: true

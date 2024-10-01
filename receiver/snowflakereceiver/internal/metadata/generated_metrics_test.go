@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,152 +13,166 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testMetricsSet int
+type testDataSet int
 
 const (
-	testMetricsSetDefault testMetricsSet = iota
-	testMetricsSetAll
-	testMetricsSetNo
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
-		metricsSet testMetricsSet
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:       "default",
-			metricsSet: testMetricsSetDefault,
+			name: "default",
 		},
 		{
-			name:       "all_metrics",
-			metricsSet: testMetricsSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:       "no_metrics",
-			metricsSet: testMetricsSetNo,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 1, "service_type-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 1, "service_type-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts, 1, "service_type-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts, 1, "warehouse_name-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts, 1, "warehouse_name-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 1, "attr-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
-			allMetricsCount++
-			mb.RecordSnowflakeLoginsTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-			allMetricsCount++
-			mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+
+			allMetricsCount++
+			mb.RecordSnowflakeLoginsTotalDataPoint(ts, 1, "error_message-val", "reported_client_type-val", "is_success-val")
+
+			allMetricsCount++
+			mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 1, "pipe_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
-			allMetricsCount++
-			mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
-			allMetricsCount++
-			mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+
+			allMetricsCount++
+			mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+
+			allMetricsCount++
+			mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
-			allMetricsCount++
-			mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+
+			allMetricsCount++
+			mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
-			allMetricsCount++
-			mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+
+			allMetricsCount++
+			mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeSessionIDCountDataPoint(ts, 1, "attr-val")
+			mb.RecordSnowflakeSessionIDCountDataPoint(ts, 1, "user_name-val")
 
 			allMetricsCount++
 			mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 1)
@@ -177,35 +187,27 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
-			metrics := mb.Emit(WithSnowflakeAccountName("attr-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetSnowflakeAccountName("snowflake.account.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
-			if test.metricsSet == testMetricsSetNo {
+			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("snowflake.account.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SnowflakeAccountName.Enabled, ok)
-			if mb.resourceAttributesSettings.SnowflakeAccountName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 1)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testMetricsSetDefault {
+			if tt.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testMetricsSetAll {
+			if tt.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -222,10 +224,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("service_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service_type-val", attrVal.Str())
 				case "snowflake.billing.total_credit.total":
 					assert.False(t, validatedMetrics["snowflake.billing.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.total_credit.total")
 					validatedMetrics["snowflake.billing.total_credit.total"] = true
@@ -237,10 +239,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("service_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service_type-val", attrVal.Str())
 				case "snowflake.billing.virtual_warehouse.total":
 					assert.False(t, validatedMetrics["snowflake.billing.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.virtual_warehouse.total")
 					validatedMetrics["snowflake.billing.virtual_warehouse.total"] = true
@@ -252,10 +254,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("service_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service_type-val", attrVal.Str())
 				case "snowflake.billing.warehouse.cloud_service.total":
 					assert.False(t, validatedMetrics["snowflake.billing.warehouse.cloud_service.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.cloud_service.total")
 					validatedMetrics["snowflake.billing.warehouse.cloud_service.total"] = true
@@ -267,10 +269,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 				case "snowflake.billing.warehouse.total_credit.total":
 					assert.False(t, validatedMetrics["snowflake.billing.warehouse.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.total_credit.total")
 					validatedMetrics["snowflake.billing.warehouse.total_credit.total"] = true
@@ -282,10 +284,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 				case "snowflake.billing.warehouse.virtual_warehouse.total":
 					assert.False(t, validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.virtual_warehouse.total")
 					validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"] = true
@@ -297,10 +299,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 				case "snowflake.database.bytes_scanned.avg":
 					assert.False(t, validatedMetrics["snowflake.database.bytes_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.database.bytes_scanned.avg")
 					validatedMetrics["snowflake.database.bytes_scanned.avg"] = true
@@ -312,28 +314,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.database.query.count":
 					assert.False(t, validatedMetrics["snowflake.database.query.count"], "Found a duplicate in the metrics slice: snowflake.database.query.count")
 					validatedMetrics["snowflake.database.query.count"] = true
@@ -348,25 +350,25 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.logins.total":
 					assert.False(t, validatedMetrics["snowflake.logins.total"], "Found a duplicate in the metrics slice: snowflake.logins.total")
 					validatedMetrics["snowflake.logins.total"] = true
@@ -381,13 +383,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("reported_client_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "reported_client_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("is_success")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "is_success-val", attrVal.Str())
 				case "snowflake.pipe.credits_used.total":
 					assert.False(t, validatedMetrics["snowflake.pipe.credits_used.total"], "Found a duplicate in the metrics slice: snowflake.pipe.credits_used.total")
 					validatedMetrics["snowflake.pipe.credits_used.total"] = true
@@ -399,10 +401,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("pipe_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "pipe_name-val", attrVal.Str())
 				case "snowflake.query.blocked":
 					assert.False(t, validatedMetrics["snowflake.query.blocked"], "Found a duplicate in the metrics slice: snowflake.query.blocked")
 					validatedMetrics["snowflake.query.blocked"] = true
@@ -414,10 +416,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 				case "snowflake.query.bytes_deleted.avg":
 					assert.False(t, validatedMetrics["snowflake.query.bytes_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_deleted.avg")
 					validatedMetrics["snowflake.query.bytes_deleted.avg"] = true
@@ -429,28 +431,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.query.bytes_spilled.local.avg":
 					assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.local.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.local.avg")
 					validatedMetrics["snowflake.query.bytes_spilled.local.avg"] = true
@@ -462,28 +464,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.query.bytes_spilled.remote.avg":
 					assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.remote.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.remote.avg")
 					validatedMetrics["snowflake.query.bytes_spilled.remote.avg"] = true
@@ -495,28 +497,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.query.bytes_written.avg":
 					assert.False(t, validatedMetrics["snowflake.query.bytes_written.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_written.avg")
 					validatedMetrics["snowflake.query.bytes_written.avg"] = true
@@ -528,28 +530,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.query.compilation_time.avg":
 					assert.False(t, validatedMetrics["snowflake.query.compilation_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.compilation_time.avg")
 					validatedMetrics["snowflake.query.compilation_time.avg"] = true
@@ -561,28 +563,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.query.data_scanned_cache.avg":
 					assert.False(t, validatedMetrics["snowflake.query.data_scanned_cache.avg"], "Found a duplicate in the metrics slice: snowflake.query.data_scanned_cache.avg")
 					validatedMetrics["snowflake.query.data_scanned_cache.avg"] = true
@@ -594,28 +596,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.query.executed":
 					assert.False(t, validatedMetrics["snowflake.query.executed"], "Found a duplicate in the metrics slice: snowflake.query.executed")
 					validatedMetrics["snowflake.query.executed"] = true
@@ -627,10 +629,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 				case "snowflake.query.execution_time.avg":
 					assert.False(t, validatedMetrics["snowflake.query.execution_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.execution_time.avg")
 					validatedMetrics["snowflake.query.execution_time.avg"] = true
@@ -642,28 +644,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.query.partitions_scanned.avg":
 					assert.False(t, validatedMetrics["snowflake.query.partitions_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.query.partitions_scanned.avg")
 					validatedMetrics["snowflake.query.partitions_scanned.avg"] = true
@@ -675,28 +677,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.query.queued_overload":
 					assert.False(t, validatedMetrics["snowflake.query.queued_overload"], "Found a duplicate in the metrics slice: snowflake.query.queued_overload")
 					validatedMetrics["snowflake.query.queued_overload"] = true
@@ -708,10 +710,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 				case "snowflake.query.queued_provision":
 					assert.False(t, validatedMetrics["snowflake.query.queued_provision"], "Found a duplicate in the metrics slice: snowflake.query.queued_provision")
 					validatedMetrics["snowflake.query.queued_provision"] = true
@@ -723,10 +725,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 				case "snowflake.queued_overload_time.avg":
 					assert.False(t, validatedMetrics["snowflake.queued_overload_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_overload_time.avg")
 					validatedMetrics["snowflake.queued_overload_time.avg"] = true
@@ -738,28 +740,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.queued_provisioning_time.avg":
 					assert.False(t, validatedMetrics["snowflake.queued_provisioning_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_provisioning_time.avg")
 					validatedMetrics["snowflake.queued_provisioning_time.avg"] = true
@@ -771,28 +773,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.queued_repair_time.avg":
 					assert.False(t, validatedMetrics["snowflake.queued_repair_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_repair_time.avg")
 					validatedMetrics["snowflake.queued_repair_time.avg"] = true
@@ -804,28 +806,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.rows_deleted.avg":
 					assert.False(t, validatedMetrics["snowflake.rows_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_deleted.avg")
 					validatedMetrics["snowflake.rows_deleted.avg"] = true
@@ -837,28 +839,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.rows_inserted.avg":
 					assert.False(t, validatedMetrics["snowflake.rows_inserted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_inserted.avg")
 					validatedMetrics["snowflake.rows_inserted.avg"] = true
@@ -870,28 +872,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.rows_produced.avg":
 					assert.False(t, validatedMetrics["snowflake.rows_produced.avg"], "Found a duplicate in the metrics slice: snowflake.rows_produced.avg")
 					validatedMetrics["snowflake.rows_produced.avg"] = true
@@ -903,28 +905,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.rows_unloaded.avg":
 					assert.False(t, validatedMetrics["snowflake.rows_unloaded.avg"], "Found a duplicate in the metrics slice: snowflake.rows_unloaded.avg")
 					validatedMetrics["snowflake.rows_unloaded.avg"] = true
@@ -936,28 +938,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.rows_updated.avg":
 					assert.False(t, validatedMetrics["snowflake.rows_updated.avg"], "Found a duplicate in the metrics slice: snowflake.rows_updated.avg")
 					validatedMetrics["snowflake.rows_updated.avg"] = true
@@ -969,28 +971,28 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				case "snowflake.session_id.count":
 					assert.False(t, validatedMetrics["snowflake.session_id.count"], "Found a duplicate in the metrics slice: snowflake.session_id.count")
 					validatedMetrics["snowflake.session_id.count"] = true
@@ -1005,7 +1007,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("user_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "user_name-val", attrVal.Str())
 				case "snowflake.storage.failsafe_bytes.total":
 					assert.False(t, validatedMetrics["snowflake.storage.failsafe_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.failsafe_bytes.total")
 					validatedMetrics["snowflake.storage.failsafe_bytes.total"] = true
@@ -1053,40 +1055,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("schema_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("execution_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "execution_status-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error_message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error_message-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("query_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "query_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("warehouse_size")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "warehouse_size-val", attrVal.Str())
 				}
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsSettings {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

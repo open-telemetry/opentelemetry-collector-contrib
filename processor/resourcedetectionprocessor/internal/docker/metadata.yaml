@@ -1,0 +1,18 @@
+type: resourcedetectionprocessor/docker
+
+parent: resourcedetection
+
+status:
+  class: pkg
+  codeowners:
+    active:
+
+resource_attributes:
+  host.name:
+    description: The host.name
+    type: string
+    enabled: true
+  os.type:
+    description: The os.type
+    type: string
+    enabled: true

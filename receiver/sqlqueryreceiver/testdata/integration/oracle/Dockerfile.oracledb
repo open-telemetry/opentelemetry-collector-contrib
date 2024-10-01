@@ -1,0 +1,9 @@
+FROM gvenzl/oracle-xe:21-slim-faststart
+
+ENV ORACLE_PASSWORD=mysecurepassword
+
+RUN mkdir -p /container-entrypoint-initdb.d
+
+COPY init.sql /container-entrypoint-initdb.d/startup.sql
+
+HEALTHCHECK CMD "$ORACLE_BASE/healthcheck.sh"

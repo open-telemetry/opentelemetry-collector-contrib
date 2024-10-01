@@ -1,20 +1,10 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -76,7 +66,7 @@ type reflectorSyncChecker struct {
 }
 
 func (r *reflectorSyncChecker) Check(reflector cacheReflector, warnMessage string) {
-	if err := wait.Poll(r.pollInterval, r.pollTimeout, func() (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(context.Background(), r.pollInterval, r.pollTimeout, false, func(context.Context) (done bool, err error) {
 		return reflector.LastSyncResourceVersion() != "", nil
 	}); err != nil {
 		r.logger.Warn(warnMessage, zap.Error(err))
@@ -117,9 +107,9 @@ func InitSyncPollTimeout(pollTimeout time.Duration) Option {
 }
 
 func getStringifiedOptions(options ...Option) string {
-	var opts []string
-	for _, option := range options {
-		opts = append(opts, option.name)
+	opts := make([]string, len(options))
+	for i, option := range options {
+		opts[i] = option.name
 	}
 
 	sort.Strings(opts)

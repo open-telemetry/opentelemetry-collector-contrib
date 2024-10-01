@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package cloudfoundryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 
@@ -19,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"code.cloudfoundry.org/go-loggregator"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
@@ -33,12 +21,13 @@ type EnvelopeStreamFactory struct {
 }
 
 func newEnvelopeStreamFactory(
+	ctx context.Context,
 	settings component.TelemetrySettings,
 	authTokenProvider *UAATokenProvider,
-	httpConfig confighttp.HTTPClientSettings,
+	httpConfig confighttp.ClientConfig,
 	host component.Host) (*EnvelopeStreamFactory, error) {
 
-	httpClient, err := httpConfig.ToClient(host, settings)
+	httpClient, err := httpConfig.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("creating HTTP client for Cloud Foundry RLP Gateway: %w", err)
 	}
@@ -55,31 +44,41 @@ func newEnvelopeStreamFactory(
 	return &EnvelopeStreamFactory{gatewayClient}, nil
 }
 
-func (rgc *EnvelopeStreamFactory) CreateStream(
-	ctx context.Context,
-	shardID string) (loggregator.EnvelopeStream, error) {
-
-	if strings.TrimSpace(shardID) == "" {
-		return nil, errors.New("shardID cannot be empty")
-	}
-
-	stream := rgc.rlpGatewayClient.Stream(ctx, &loggregator_v2.EgressBatchRequest{
-		ShardId: shardID,
-		Selectors: []*loggregator_v2.Selector{
-			{
-				Message: &loggregator_v2.Selector_Counter{
-					Counter: &loggregator_v2.CounterSelector{},
-				},
-			},
-			{
-				Message: &loggregator_v2.Selector_Gauge{
-					Gauge: &loggregator_v2.GaugeSelector{},
-				},
+func (rgc *EnvelopeStreamFactory) CreateMetricsStream(ctx context.Context, baseShardID string) loggregator.EnvelopeStream {
+	newShardID := baseShardID + "_metrics"
+	selectors := []*loggregator_v2.Selector{
+		{
+			Message: &loggregator_v2.Selector_Counter{
+				Counter: &loggregator_v2.CounterSelector{},
 			},
 		},
+		{
+			Message: &loggregator_v2.Selector_Gauge{
+				Gauge: &loggregator_v2.GaugeSelector{},
+			},
+		},
+	}
+	stream := rgc.rlpGatewayClient.Stream(ctx, &loggregator_v2.EgressBatchRequest{
+		ShardId:   newShardID,
+		Selectors: selectors,
 	})
+	return stream
+}
 
-	return stream, nil
+func (rgc *EnvelopeStreamFactory) CreateLogsStream(ctx context.Context, baseShardID string) loggregator.EnvelopeStream {
+	newShardID := baseShardID + "_logs"
+	selectors := []*loggregator_v2.Selector{
+		{
+			Message: &loggregator_v2.Selector_Log{
+				Log: &loggregator_v2.LogSelector{},
+			},
+		},
+	}
+	stream := rgc.rlpGatewayClient.Stream(ctx, &loggregator_v2.EgressBatchRequest{
+		ShardId:   newShardID,
+		Selectors: selectors,
+	})
+	return stream
 }
 
 type authorizationProvider struct {

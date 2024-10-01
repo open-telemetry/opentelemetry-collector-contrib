@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 
@@ -21,12 +10,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
 
 func TestCreateTracesReceiver(t *testing.T) {
@@ -35,13 +29,15 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(componentType, "primary").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "primary").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
+	set := receivertest.NewNopSettings()
+	set.ID = component.MustNewIDWithName("solace", "factory")
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		set,
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -53,22 +49,15 @@ func TestCreateTracesReceiver(t *testing.T) {
 
 func TestCreateTracesReceiverWrongConfig(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), nil, nil)
-	assert.Equal(t, component.ErrDataTypeIsNotSupported, err)
-}
-
-func TestCreateTracesReceiverNilConsumer(t *testing.T) {
-	cfg := createDefaultConfig()
-	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
-	assert.Equal(t, component.ErrNilNextConsumer, err)
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), nil, nil)
+	assert.Equal(t, pipeline.ErrSignalNotSupported, err)
 }
 
 func TestCreateTracesReceiverBadConfigNoAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingAuthDetails, err)
 }
 
@@ -77,34 +66,45 @@ func TestCreateTracesReceiverBadConfigIncompleteAuth(t *testing.T) {
 	cfg.Queue = "some-queue"
 	cfg.Auth = Authentication{PlainText: &SaslPlainTextConfig{Username: "someUsername"}} // missing password
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingPlainTextParams, err)
 }
 
 func TestCreateTracesReceiverBadMetrics(t *testing.T) {
-	// register a metric first with the same name
-	statName := "solacereceiver/primary/failed_reconnections"
-	stat := stats.Int64(statName, "", stats.UnitDimensionless)
-	err := view.Register(&view.View{
-		Name:        buildReceiverCustomMetricName(statName),
-		Description: "some description",
-		Measure:     stat,
-		Aggregation: view.Sum(),
-	})
+	set := receivertest.NewNopSettings()
+	set.ID = component.MustNewIDWithName("solace", "factory")
+	// the code here sets up a custom meter provider
+	// to trigger the error condition required for this test
+	metricExp, err := stdoutmetric.New()
 	require.NoError(t, err)
-
+	provider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExp)),
+		sdkmetric.WithView(sdkmetric.NewView(
+			sdkmetric.Instrument{
+				Name: "otelcol_solacereceiver_failed_reconnections",
+			},
+			sdkmetric.Stream{
+				Aggregation: sdkmetric.AggregationLastValue{},
+			},
+		)),
+	)
+	defer func() {
+		require.NoError(t, provider.Shutdown(context.Background()))
+	}()
+	set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+		return provider
+	}
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(componentType, "primary").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "primary").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-
+	require.NoError(t, sub.Unmarshal(cfg))
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		set,
 		cfg,
 		consumertest.NewNop(),
 	)

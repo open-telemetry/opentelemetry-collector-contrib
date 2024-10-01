@@ -1,0 +1,146 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - scope: {}
+        logRecords:
+          - observedTimeUnixNano: "1696719286858415159"
+            body:
+              kvlistValue:
+                values:
+                  - key: type
+                    value:
+                      stringValue: ADDED
+                  - key: object
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: note
+                            value:
+                              stringValue: test event of type warning
+                          - key: eventTime
+                            value:
+                              stringValue: "2023-01-01T00:00:00.000000Z"
+                          - key: reportingInstance
+                            value:
+                              stringValue: k8sobjectsreceiver
+                          - key: action
+                            value:
+                              stringValue: test
+                          - key: reason
+                            value:
+                              stringValue: TestEvent
+                          - key: regarding
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: uid
+                                    value:
+                                      stringValue: fb799e35-7187-4a02-a07d-0f1fa4153b99
+                                  - key: kind
+                                    value:
+                                      stringValue: customresource
+                                  - key: namespace
+                                    value:
+                                      stringValue: default
+                                  - key: name
+                                    value:
+                                      stringValue: test-k8sobjects-receiver
+                          - key: apiVersion
+                            value:
+                              stringValue: events.k8s.io/v1
+                          - key: metadata
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: name
+                                    value:
+                                      stringValue: test-k8sobjects-receiver
+                                  - key: namespace
+                                    value:
+                                      stringValue: default
+                                  - key: uid
+                                    value:
+                                      stringValue: "12345"
+                                  - key: resourceVersion
+                                    value:
+                                      stringValue: "12345"
+                                  - key: creationTimestamp
+                                    value:
+                                      stringValue: "2000-01-01T00:00:00Z"
+                                  - key: managedFields
+                                    value:
+                                      arrayValue:
+                                        values:
+                                          - kvlistValue:
+                                              values:
+                                                - key: manager
+                                                  value:
+                                                    stringValue: k8sobjectsreceiver.test
+                                                - key: operation
+                                                  value:
+                                                    stringValue: Update
+                                                - key: apiVersion
+                                                  value:
+                                                    stringValue: events.k8s.io/v1
+                                                - key: time
+                                                  value:
+                                                    stringValue: "2000-01-01T00:00:00Z"
+                                                - key: fieldsType
+                                                  value:
+                                                    stringValue: FieldsV1
+                                                - key: fieldsV1
+                                                  value:
+                                                    kvlistValue:
+                                                      values:
+                                                        - key: f:reason
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:regarding
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:action
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:eventTime
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:note
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:reportingController
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:reportingInstance
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:type
+                                                          value:
+                                                            kvlistValue: {}
+                          - key: type
+                            value:
+                              stringValue: Warning
+                          - key: deprecatedSource
+                            value:
+                              kvlistValue: {}
+                          - key: deprecatedFirstTimestamp
+                            value: {}
+                          - key: deprecatedLastTimestamp
+                            value: {}
+                          - key: kind
+                            value:
+                              stringValue: Event
+                          - key: reportingController
+                            value:
+                              stringValue: e2etest
+            attributes:
+              - key: k8s.resource.name
+                value:
+                  stringValue: events
+              - key: event.domain
+                value:
+                  stringValue: k8s
+              - key: event.name
+                value:
+                  stringValue: test-k8sobjects-receiver
+            traceId: ""
+            spanId: ""

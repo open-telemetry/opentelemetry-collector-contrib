@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metricstestutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 
@@ -26,8 +15,8 @@ import (
 // testing. Two MetricDatas, when compared, could produce a list of MetricDiffs containing all of their
 // differences, which could be used to correct the differences between the expected and actual values.
 type MetricDiff struct {
-	ExpectedValue interface{}
-	ActualValue   interface{}
+	ExpectedValue any
+	ActualValue   any
 	Msg           string
 }
 
@@ -121,6 +110,7 @@ func DiffMetric(diffs []*MetricDiff, expected pmetric.Metric, actual pmetric.Met
 	if mismatch {
 		return diffs
 	}
+	//exhaustive:enforce
 	switch actual.Type() {
 	case pmetric.MetricTypeGauge:
 		diffs = diffNumberPts(diffs, expected.Gauge().DataPoints(), actual.Gauge().DataPoints())
@@ -134,8 +124,10 @@ func DiffMetric(diffs []*MetricDiff, expected pmetric.Metric, actual pmetric.Met
 	case pmetric.MetricTypeExponentialHistogram:
 		diffs = diff(diffs, expected.ExponentialHistogram().AggregationTemporality(), actual.ExponentialHistogram().AggregationTemporality(), "ExponentialHistogram AggregationTemporality")
 		diffs = diffExponentialHistogramPts(diffs, expected.ExponentialHistogram().DataPoints(), actual.ExponentialHistogram().DataPoints())
-	default:
+	case pmetric.MetricTypeSummary:
 		// Note: Summary data points are not currently handled
+		panic("unsupported test case for summary data")
+	default:
 		panic("unsupported test case")
 	}
 	return diffs
@@ -316,15 +308,15 @@ func diffMetricAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon.M
 	return diffs
 }
 
-func diff(diffs []*MetricDiff, expected interface{}, actual interface{}, msg string) []*MetricDiff {
+func diff(diffs []*MetricDiff, expected any, actual any, msg string) []*MetricDiff {
 	out, _ := diffValues(diffs, expected, actual, msg)
 	return out
 }
 
 func diffValues(
 	diffs []*MetricDiff,
-	expected interface{},
-	actual interface{},
+	expected any,
+	actual any,
 	msg string,
 ) ([]*MetricDiff, bool) {
 	if !reflect.DeepEqual(expected, actual) {

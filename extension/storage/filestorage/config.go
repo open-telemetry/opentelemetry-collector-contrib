@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filestorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 
@@ -19,8 +8,12 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strconv"
 	"time"
 )
+
+var errInvalidOctal = errors.New("directory_permissions value must be a valid octal representation")
+var errInvalidPermissionBits = errors.New("directory_permissions contain invalid bits for file access")
 
 // Config defines configuration for file storage extension.
 type Config struct {
@@ -28,6 +21,14 @@ type Config struct {
 	Timeout   time.Duration `mapstructure:"timeout,omitempty"`
 
 	Compaction *CompactionConfig `mapstructure:"compaction,omitempty"`
+
+	// FSync specifies that fsync should be called after each database write
+	FSync bool `mapstructure:"fsync,omitempty"`
+
+	// CreateDirectory specifies that the directory should be created automatically by the extension on start
+	CreateDirectory            bool   `mapstructure:"create_directory,omitempty"`
+	DirectoryPermissions       string `mapstructure:"directory_permissions,omitempty"`
+	directoryPermissionsParsed int64  `mapstructure:"-,omitempty"`
 }
 
 // CompactionConfig defines configuration for optional file storage compaction.
@@ -53,28 +54,30 @@ type CompactionConfig struct {
 	MaxTransactionSize int64 `mapstructure:"max_transaction_size,omitempty"`
 	// CheckInterval specifies frequency of compaction check
 	CheckInterval time.Duration `mapstructure:"check_interval,omitempty"`
+	// CleanupOnStart specifies removal of temporary files is performed on start.
+	// It will remove all the files in the compaction directory starting with tempdb,
+	// temp files will be left if a previous run of the process is killed while compacting.
+	CleanupOnStart bool `mapstructure:"cleanup_on_start,omitempty"`
 }
 
 func (cfg *Config) Validate() error {
 	var dirs []string
-	if cfg.Compaction.OnStart {
+	if cfg.Compaction.OnStart || cfg.Compaction.OnRebound {
 		dirs = []string{cfg.Directory, cfg.Compaction.Directory}
 	} else {
 		dirs = []string{cfg.Directory}
 	}
 	for _, dir := range dirs {
-		info, err := os.Stat(dir)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return fmt.Errorf("directory must exist: %w", err)
+		if info, err := os.Stat(dir); err != nil {
+			if !cfg.CreateDirectory && os.IsNotExist(err) {
+				return fmt.Errorf("directory must exist: %w. You can enable the create_directory option to automatically create it", err)
 			}
 
 			fsErr := &fs.PathError{}
-			if errors.As(err, &fsErr) {
+			if errors.As(err, &fsErr) && !os.IsNotExist(err) {
 				return fmt.Errorf("problem accessing configured directory: %s, err: %w", dir, fsErr)
 			}
-		}
-		if !info.IsDir() {
+		} else if !info.IsDir() {
 			return fmt.Errorf("%s is not a directory", dir)
 		}
 	}
@@ -85,6 +88,16 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Compaction.OnRebound && cfg.Compaction.CheckInterval <= 0 {
 		return errors.New("compaction check interval must be positive when rebound compaction is set")
+	}
+
+	if cfg.CreateDirectory {
+		permissions, err := strconv.ParseInt(cfg.DirectoryPermissions, 8, 32)
+		if err != nil {
+			return errInvalidOctal
+		} else if permissions&int64(os.ModePerm) != permissions {
+			return errInvalidPermissionBits
+		}
+		cfg.directoryPermissionsParsed = permissions
 	}
 
 	return nil

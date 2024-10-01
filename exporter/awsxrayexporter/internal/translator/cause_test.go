@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translator
 
@@ -23,12 +12,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 )
 
 func TestCauseWithExceptions(t *testing.T) {
 	errorMsg := "this is a test"
-	attributeMap := make(map[string]interface{})
+	attributeMap := make(map[string]any)
 
 	span := constructExceptionServerSpan(attributeMap, ptrace.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
@@ -70,6 +59,39 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	assert.Empty(t, cause.Exceptions[2].Message)
 }
 
+func TestMakeCauseAwsSdkSpan(t *testing.T) {
+	errorMsg := "this is a test"
+	attributeMap := make(map[string]any)
+	attributeMap[conventions.AttributeRPCSystem] = "aws-api"
+	span := constructExceptionServerSpan(attributeMap, ptrace.StatusCodeError)
+	span.Status().SetMessage(errorMsg)
+
+	event1 := span.Events().AppendEmpty()
+	event1.SetName(AwsIndividualHTTPEventName)
+	event1.Attributes().PutStr(AwsIndividualHTTPErrorCodeAttr, "503")
+	event1.Attributes().PutStr(AwsIndividualHTTPErrorMsgAttr, "service is temporarily unavailable")
+	timestamp := pcommon.NewTimestampFromTime(time.UnixMicro(1696954761000001))
+	event1.SetTimestamp(timestamp)
+
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, _, cause := makeCause(span, nil, res)
+
+	assert.False(t, isError)
+	assert.True(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, cause)
+
+	assert.Len(t, cause.CauseObject.Exceptions, 1)
+	exception := cause.CauseObject.Exceptions[0]
+	assert.Equal(t, AwsIndividualHTTPErrorEventType, *exception.Type)
+	assert.True(t, *exception.Remote)
+
+	messageParts := strings.SplitN(*exception.Message, "@", 3)
+	assert.Equal(t, "503", messageParts[0])
+	assert.Equal(t, "1696954761.000001", messageParts[1])
+	assert.Equal(t, "service is temporarily unavailable", messageParts[2])
+}
+
 func TestCauseExceptionWithoutError(t *testing.T) {
 	var nonErrorStatusCodes = []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
 
@@ -87,7 +109,7 @@ func ExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.StatusCode) {
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 Caused by: java.lang.IllegalArgumentException: bad argument`
 
-	attributeMap := make(map[string]interface{})
+	attributeMap := make(map[string]any)
 
 	span := constructExceptionServerSpan(attributeMap, statusCode)
 	span.Status().SetMessage(errorMsg)
@@ -127,7 +149,7 @@ func TestEventWithoutExceptionWithoutError(t *testing.T) {
 func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.StatusCode) {
 	errorMsg := "this is a test"
 
-	attributeMap := make(map[string]interface{})
+	attributeMap := make(map[string]any)
 
 	span := constructExceptionServerSpan(attributeMap, statusCode)
 	span.Status().SetMessage(errorMsg)
@@ -151,7 +173,7 @@ func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.Sta
 
 func TestCauseWithStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
@@ -176,7 +198,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 
 func TestCauseWithHttpStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
@@ -199,12 +221,35 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 }
 
-func TestCauseWithZeroStatusMessage(t *testing.T) {
+func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
+	attributes["http.status_text"] = errorMsg
+
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeUnset)
+	filtered, _ := makeHTTP(span)
+	// Status is used to determine whether an error or not.
+	// This span illustrates incorrect instrumentation,
+	// marking a success status with an error http status code, and status wins.
+	// We do not expect to see such spans in practice.
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
+
+	assert.False(t, isError)
+	assert.True(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, filtered)
+	assert.Nil(t, cause)
+}
+
+func TestNonHttpUnsetCodeSpan(t *testing.T) {
+	errorMsg := "this is a test"
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeUnset)
@@ -223,9 +268,79 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	assert.Nil(t, cause)
 }
 
+func TestNonHttpOkCodeSpan(t *testing.T) {
+	errorMsg := "this is a test"
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes["http.status_text"] = errorMsg
+
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeOk)
+	filtered, _ := makeHTTP(span)
+	// Status is used to determine whether an error or not.
+	// This span illustrates incorrect instrumentation,
+	// marking a success status with an error http status code, and status wins.
+	// We do not expect to see such spans in practice.
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
+
+	assert.False(t, isError)
+	assert.False(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, filtered)
+	assert.Nil(t, cause)
+}
+
+func TestNonHttpErrCodeSpan(t *testing.T) {
+	errorMsg := "this is a test"
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes["http.status_text"] = errorMsg
+
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
+	filtered, _ := makeHTTP(span)
+	// Status is used to determine whether an error or not.
+	// This span illustrates incorrect instrumentation,
+	// marking a success status with an error http status code, and status wins.
+	// We do not expect to see such spans in practice.
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
+
+	assert.False(t, isError)
+	assert.True(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, cause)
+}
+
+func TestCauseWithZeroStatusMessageAndFaultErrorCode(t *testing.T) {
+	errorMsg := "this is a test"
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 400
+	attributes["http.status_text"] = errorMsg
+
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeUnset)
+	filtered, _ := makeHTTP(span)
+	// Status is used to determine whether an error or not.
+	// This span illustrates incorrect instrumentation,
+	// marking a success status with an error http status code, and status wins.
+	// We do not expect to see such spans in practice.
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
+
+	assert.True(t, isError)
+	assert.False(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, filtered)
+	assert.Nil(t, cause)
+}
+
 func TestCauseWithClientErrorMessage(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 499
@@ -246,7 +361,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 
 func TestCauseWithThrottled(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
@@ -265,7 +380,7 @@ func TestCauseWithThrottled(t *testing.T) {
 	assert.NotNil(t, cause)
 }
 
-func constructExceptionServerSpan(attributes map[string]interface{}, statuscode ptrace.StatusCode) ptrace.Span {
+func constructExceptionServerSpan(attributes map[string]any, statuscode ptrace.StatusCode) ptrace.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -291,12 +406,14 @@ func TestParseExceptionWithoutStacktrace(t *testing.T) {
 	exceptionType := "com.foo.Exception"
 	message := "Error happened"
 	stacktrace := ""
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "com.foo.Exception", *exceptions[0].Type)
 	assert.Equal(t, "Error happened", *exceptions[0].Message)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 	assert.Nil(t, exceptions[0].Stack)
 }
 
@@ -304,12 +421,14 @@ func TestParseExceptionWithoutMessage(t *testing.T) {
 	exceptionType := "com.foo.Exception"
 	message := ""
 	stacktrace := ""
+	isRemote := false
 
-	exceptions := parseException(exceptionType, message, stacktrace, "")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "com.foo.Exception", *exceptions[0].Type)
 	assert.Empty(t, exceptions[0].Message)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 	assert.Nil(t, exceptions[0].Stack)
 }
 
@@ -321,8 +440,9 @@ func TestParseExceptionWithJavaStacktraceNoCause(t *testing.T) {
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "java")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "java")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "com.foo.Exception", *exceptions[0].Type)
@@ -337,6 +457,7 @@ func TestParseExceptionWithJavaStacktraceNoCause(t *testing.T) {
 	assert.Equal(t, "jdk.internal.reflect.NativeMethodAccessorImpl.invoke", *exceptions[0].Stack[2].Label)
 	assert.Equal(t, "NativeMethodAccessorImpl.java", *exceptions[0].Stack[2].Path)
 	assert.Equal(t, 62, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithStacktraceNotJava(t *testing.T) {
@@ -347,13 +468,15 @@ func TestParseExceptionWithStacktraceNotJava(t *testing.T) {
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "com.foo.Exception", *exceptions[0].Type)
 	assert.Equal(t, "Error happened", *exceptions[0].Message)
 	assert.Empty(t, exceptions[0].Stack)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithJavaStacktraceAndCauseWithoutStacktrace(t *testing.T) {
@@ -365,8 +488,9 @@ func TestParseExceptionWithJavaStacktraceAndCauseWithoutStacktrace(t *testing.T)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 Caused by: java.lang.IllegalArgumentException: bad argument`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "java")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "java")
 	assert.Len(t, exceptions, 2)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "com.foo.Exception", *exceptions[0].Type)
@@ -386,6 +510,7 @@ Caused by: java.lang.IllegalArgumentException: bad argument`
 	assert.Equal(t, "java.lang.IllegalArgumentException", *exceptions[1].Type)
 	assert.Equal(t, "bad argument", *exceptions[1].Message)
 	assert.Empty(t, exceptions[1].Stack)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithJavaStacktraceAndCauseWithoutMessageOrStacktrace(t *testing.T) {
@@ -397,8 +522,9 @@ func TestParseExceptionWithJavaStacktraceAndCauseWithoutMessageOrStacktrace(t *t
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 Caused by: java.lang.IllegalArgumentException`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "java")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "java")
 	assert.Len(t, exceptions, 2)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "com.foo.Exception", *exceptions[0].Type)
@@ -418,6 +544,7 @@ Caused by: java.lang.IllegalArgumentException`
 	assert.Equal(t, "java.lang.IllegalArgumentException", *exceptions[1].Type)
 	assert.Empty(t, *exceptions[1].Message)
 	assert.Empty(t, exceptions[1].Stack)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithJavaStacktraceAndCauseWithStacktrace(t *testing.T) {
@@ -431,8 +558,9 @@ func TestParseExceptionWithJavaStacktraceAndCauseWithStacktrace(t *testing.T) {
 Caused by: java.lang.IllegalArgumentException: bad argument
 	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73)
 	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java)`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "java")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "java")
 	assert.Len(t, exceptions, 2)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "com.foo.Exception", *exceptions[0].Type)
@@ -458,6 +586,7 @@ Caused by: java.lang.IllegalArgumentException: bad argument
 	assert.Equal(t, "org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively", *exceptions[1].Stack[1].Label)
 	assert.Equal(t, "NodeTestTask.java", *exceptions[1].Stack[1].Path)
 	assert.Equal(t, 0, *exceptions[1].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithJavaStacktraceAndCauseWithStacktraceSkipCommonAndSuppressedAndMalformed(t *testing.T) {
@@ -482,8 +611,9 @@ Caused by: java.lang.IllegalArgumentException: bad argument
 	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73)
 	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java)
 	... 99 more`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "java")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "java")
 	assert.Len(t, exceptions, 2)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "com.foo.Exception", *exceptions[0].Type)
@@ -513,6 +643,7 @@ Caused by: java.lang.IllegalArgumentException: bad argument
 	assert.Equal(t, "org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively", *exceptions[1].Stack[1].Label)
 	assert.Equal(t, "NodeTestTask.java", *exceptions[1].Stack[1].Path)
 	assert.Equal(t, 0, *exceptions[1].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithPythonStacktraceNoCause(t *testing.T) {
@@ -525,8 +656,9 @@ func TestParseExceptionWithPythonStacktraceNoCause(t *testing.T) {
   File "greetings.py", line 12, in greet_many
     print('hi, ' + person)
 TypeError: must be str, not int`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "python")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "TypeError", *exceptions[0].Type)
@@ -538,6 +670,7 @@ TypeError: must be str, not int`
 	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
 	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithPythonStacktraceAndCause(t *testing.T) {
@@ -559,8 +692,9 @@ Traceback (most recent call last):
   File "greetings.py", line 12, in greet_many
     print('hi, ' + person)
 TypeError: must be str, not int`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "python")
 	assert.Len(t, exceptions, 2)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "TypeError", *exceptions[0].Type)
@@ -583,6 +717,7 @@ TypeError: must be str, not int`
 	assert.Equal(t, "greet_many", *exceptions[1].Stack[1].Label)
 	assert.Equal(t, "bar.py", *exceptions[1].Stack[1].Path)
 	assert.Equal(t, 10, *exceptions[1].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithPythonStacktraceAndMultiLineCause(t *testing.T) {
@@ -606,8 +741,9 @@ Traceback (most recent call last):
   File "greetings.py", line 12, in greet_many
     print('hi, ' + person)
 TypeError: must be str, not int`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "python")
 	assert.Len(t, exceptions, 2)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "TypeError", *exceptions[0].Type)
@@ -630,6 +766,7 @@ TypeError: must be str, not int`
 	assert.Equal(t, "greet_many", *exceptions[1].Stack[1].Label)
 	assert.Equal(t, "bar.py", *exceptions[1].Stack[1].Path)
 	assert.Equal(t, 10, *exceptions[1].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithPythonStacktraceMalformedLines(t *testing.T) {
@@ -646,8 +783,9 @@ func TestParseExceptionWithPythonStacktraceMalformedLines(t *testing.T) {
   File "greetings.py", line 12, in greet_many
     print('hi, ' + person)
 TypeError: must be str, not int`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "python")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "TypeError", *exceptions[0].Type)
@@ -662,6 +800,7 @@ TypeError: must be str, not int`
 	assert.Equal(t, "<module>", *exceptions[0].Stack[2].Label)
 	assert.Equal(t, "main.py", *exceptions[0].Stack[2].Path)
 	assert.Equal(t, 0, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithPythonStacktraceAndMalformedCause(t *testing.T) {
@@ -679,8 +818,9 @@ Traceback (most recent call last):
   File "greetings.py", line 12, in greet_many
     print('hi, ' + person)
 TypeError: must be str, not int`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "python")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "TypeError", *exceptions[0].Type)
@@ -692,6 +832,7 @@ TypeError: must be str, not int`
 	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
 	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithPythonStacktraceAndMalformedCauseMessage(t *testing.T) {
@@ -713,8 +854,9 @@ Traceback (most recent call last):
   File "greetings.py", line 12, in greet_many
     print('hi, ' + person)
 TypeError: must be str, not int`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "python")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "TypeError", *exceptions[0].Type)
@@ -726,6 +868,7 @@ TypeError: must be str, not int`
 	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
 	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithJavaScriptStacktrace(t *testing.T) {
@@ -739,8 +882,9 @@ func TestParseExceptionWithJavaScriptStacktrace(t *testing.T) {
     at node.js:906:3
     at Array.forEach (native)
     at native`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "javascript")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "javascript")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "TypeError", *exceptions[0].Type)
@@ -764,6 +908,7 @@ func TestParseExceptionWithJavaScriptStacktrace(t *testing.T) {
 	assert.Equal(t, "", *exceptions[0].Stack[5].Label)
 	assert.Equal(t, "native", *exceptions[0].Stack[5].Path)
 	assert.Equal(t, 0, *exceptions[0].Stack[5].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithStacktraceNotJavaScript(t *testing.T) {
@@ -774,13 +919,15 @@ func TestParseExceptionWithStacktraceNotJavaScript(t *testing.T) {
     at speedy (/home/gbusey/file.js:6:11)
     at makeFaster (/home/gbusey/file.js:5:3)
     at Object.<anonymous> (/home/gbusey/file.js:10:1)`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "TypeError", *exceptions[0].Type)
 	assert.Equal(t, "Cannot read property 'value' of null", *exceptions[0].Message)
 	assert.Empty(t, exceptions[0].Stack)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithJavaScriptStactracekMalformedLines(t *testing.T) {
@@ -791,8 +938,9 @@ func TestParseExceptionWithJavaScriptStactracekMalformedLines(t *testing.T) {
     at speedy (/home/gbusey/file.js)
     at makeFaster (/home/gbusey/file.js:5:3)malformed123
     at Object.<anonymous> (/home/gbusey/file.js:10`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "javascript")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "javascript")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "TypeError", *exceptions[0].Type)
@@ -801,6 +949,7 @@ func TestParseExceptionWithJavaScriptStactracekMalformedLines(t *testing.T) {
 	assert.Equal(t, "speedy ", *exceptions[0].Stack[0].Label)
 	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[0].Path)
 	assert.Equal(t, 0, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithSimpleStacktrace(t *testing.T) {
@@ -814,8 +963,9 @@ func TestParseExceptionWithSimpleStacktrace(t *testing.T) {
 	at System.Int32.Parse(String s)
 	at MyNamespace.IntParser.Parse(String s) in C:\apps\MyNamespace\IntParser.cs:line 11
 	at MyNamespace.Program.Main(String[] args) in C:\apps\MyNamespace\Program.cs:line 12`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "dotnet")
 	assert.Len(t, exceptions, 1)
 	assert.Equal(t, "System.FormatException", *exceptions[0].Type)
 	assert.Equal(t, "Input string was not in a correct format", *exceptions[0].Message)
@@ -835,6 +985,7 @@ func TestParseExceptionWithSimpleStacktrace(t *testing.T) {
 	assert.Equal(t, "MyNamespace.Program.Main(String[] args)", *exceptions[0].Stack[4].Label)
 	assert.Equal(t, "C:\\apps\\MyNamespace\\Program.cs", *exceptions[0].Stack[4].Path)
 	assert.Equal(t, 12, *exceptions[0].Stack[4].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithInnerExceptionStacktrace(t *testing.T) {
@@ -848,8 +999,9 @@ func TestParseExceptionWithInnerExceptionStacktrace(t *testing.T) {
 		"   --- End of inner exception stack trace ---\r\n" +
 		"   at TestAppApi.Services.ForecastService.GetWeatherForecasts() in D:\\Users\\foobar\\test-app\\TestAppApi\\Services\\ForecastService.cs:line 12\r\n" +
 		"   at TestAppApi.Controllers.WeatherForecastController.Get() in D:\\Users\\foobar\\test-app\\TestAppApi\\Controllers\\WeatherForecastController.cs:line 31"
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "dotnet")
 	assert.Len(t, exceptions, 1)
 	assert.Equal(t, "System.Exception", *exceptions[0].Type)
 	assert.Equal(t, "test", *exceptions[0].Message)
@@ -860,6 +1012,7 @@ func TestParseExceptionWithInnerExceptionStacktrace(t *testing.T) {
 	assert.Equal(t, "TestAppApi.Controllers.WeatherForecastController.Get()", *exceptions[0].Stack[2].Label)
 	assert.Equal(t, "D:\\Users\\foobar\\test-app\\TestAppApi\\Controllers\\WeatherForecastController.cs", *exceptions[0].Stack[2].Path)
 	assert.Equal(t, 31, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionWithMalformedStacktrace(t *testing.T) {
@@ -871,8 +1024,9 @@ func TestParseExceptionWithMalformedStacktrace(t *testing.T) {
 	at integration_test_app.Controllers.AppController.OutgoingHttp() in /Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs:line 21
 	at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context malformed
 	at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean allowHttp2, CancellationToken cancellationToken) non-malformed`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "dotnet")
 	assert.Len(t, exceptions, 1)
 	assert.Equal(t, "System.Exception", *exceptions[0].Type)
 	assert.Equal(t, "test", *exceptions[0].Message)
@@ -883,6 +1037,7 @@ func TestParseExceptionWithMalformedStacktrace(t *testing.T) {
 	assert.Equal(t, "System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean allowHttp2, CancellationToken cancellationToken)", *exceptions[0].Stack[1].Label)
 	assert.Equal(t, "", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 0, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionPhpStacktrace(t *testing.T) {
@@ -894,8 +1049,9 @@ func TestParseExceptionPhpStacktrace(t *testing.T) {
 	at parent_func(test.php:51)
 	at child_func(test.php:44)
 	at main(test.php:63)`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "php")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "php")
 
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
@@ -914,6 +1070,7 @@ func TestParseExceptionPhpStacktrace(t *testing.T) {
 	assert.Equal(t, "main", *exceptions[0].Stack[3].Label)
 	assert.Equal(t, "test.php", *exceptions[0].Stack[3].Path)
 	assert.Equal(t, 63, *exceptions[0].Stack[3].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionPhpWithoutStacktrace(t *testing.T) {
@@ -921,14 +1078,16 @@ func TestParseExceptionPhpWithoutStacktrace(t *testing.T) {
 	message := "Thrown from grandparent"
 
 	stacktrace := ""
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "php")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "php")
 
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "Exception", *exceptions[0].Type)
 	assert.Equal(t, "Thrown from grandparent", *exceptions[0].Message)
 	assert.Nil(t, exceptions[0].Stack)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionPhpStacktraceWithCause(t *testing.T) {
@@ -940,8 +1099,9 @@ func TestParseExceptionPhpStacktraceWithCause(t *testing.T) {
 	at fail(test.php:81)
 	at main(test.php:89)
 Caused by: Exception: Thrown from class A`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "php")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "php")
 
 	assert.Len(t, exceptions, 2)
 	assert.Equal(t, "Exception", *exceptions[0].Type)
@@ -957,10 +1117,12 @@ Caused by: Exception: Thrown from class A`
 	assert.Equal(t, "main", *exceptions[0].Stack[2].Label)
 	assert.Equal(t, "test.php", *exceptions[0].Stack[2].Path)
 	assert.Equal(t, 89, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 
 	assert.Equal(t, "Exception", *exceptions[1].Type)
 	assert.Equal(t, "Thrown from class A", *exceptions[1].Message)
 	assert.Empty(t, exceptions[1].Stack)
+	assert.Equal(t, isRemote, *exceptions[1].Remote)
 }
 
 func TestParseExceptionPhpStacktraceWithCauseAndStacktrace(t *testing.T) {
@@ -975,8 +1137,9 @@ Caused by: Exception: Thrown from class A
 	at A.exc(test.php:48)
 	at B.exc(test.php:56)
 	... 2 more`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "php")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "php")
 
 	assert.Len(t, exceptions, 2)
 	assert.NotEmpty(t, exceptions[0].ID)
@@ -993,6 +1156,7 @@ Caused by: Exception: Thrown from class A
 	assert.Equal(t, "main", *exceptions[0].Stack[2].Label)
 	assert.Equal(t, "test.php", *exceptions[0].Stack[2].Path)
 	assert.Equal(t, 89, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 
 	assert.Len(t, exceptions[1].Stack, 2)
 	assert.NotEmpty(t, exceptions[1].ID)
@@ -1004,6 +1168,7 @@ Caused by: Exception: Thrown from class A
 	assert.Equal(t, "B.exc", *exceptions[1].Stack[1].Label)
 	assert.Equal(t, "test.php", *exceptions[1].Stack[1].Path)
 	assert.Equal(t, 56, *exceptions[1].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[1].Remote)
 }
 
 func TestParseExceptionPhpStacktraceWithMultipleCause(t *testing.T) {
@@ -1021,8 +1186,9 @@ Caused by: Exception: Thrown from class A
 	at A.exc(test.php:48)
 	at B.exc(test.php:56)
 	... 4 more`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "php")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "php")
 
 	assert.Len(t, exceptions, 3)
 	assert.NotEmpty(t, exceptions[0].ID)
@@ -1036,6 +1202,7 @@ Caused by: Exception: Thrown from class A
 	assert.Equal(t, "main", *exceptions[0].Stack[1].Label)
 	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 89, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 
 	assert.Len(t, exceptions[1].Stack, 2)
 	assert.Equal(t, *exceptions[1].Cause, *exceptions[2].ID)
@@ -1044,6 +1211,7 @@ Caused by: Exception: Thrown from class A
 	assert.Equal(t, "B.exc", *exceptions[1].Stack[0].Label)
 	assert.Equal(t, "test.php", *exceptions[1].Stack[0].Path)
 	assert.Equal(t, 59, *exceptions[1].Stack[0].Line)
+	assert.Equal(t, isRemote, *exceptions[1].Remote)
 
 	assert.Len(t, exceptions[2].Stack, 2)
 	assert.NotEmpty(t, exceptions[2].ID)
@@ -1052,6 +1220,7 @@ Caused by: Exception: Thrown from class A
 	assert.Equal(t, "B.exc", *exceptions[2].Stack[1].Label)
 	assert.Equal(t, "test.php", *exceptions[2].Stack[1].Path)
 	assert.Equal(t, 56, *exceptions[2].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[2].Remote)
 }
 
 func TestParseExceptionPhpStacktraceMalformedLines(t *testing.T) {
@@ -1062,8 +1231,9 @@ func TestParseExceptionPhpStacktraceMalformedLines(t *testing.T) {
 	at B.exc(test.php:59)
 	at fail(test.php:81 malformed
 	at main(test.php:89)`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "php")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "php")
 
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
@@ -1076,6 +1246,7 @@ func TestParseExceptionPhpStacktraceMalformedLines(t *testing.T) {
 	assert.Equal(t, "main", *exceptions[0].Stack[1].Label)
 	assert.Equal(t, "test.php", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 89, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
 func TestParseExceptionGoWithoutStacktrace(t *testing.T) {
@@ -1083,8 +1254,9 @@ func TestParseExceptionGoWithoutStacktrace(t *testing.T) {
 	message := "Thrown from grandparent"
 
 	stacktrace := ""
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "go")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "go")
 
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
@@ -1108,8 +1280,9 @@ testing.tRunner(0xc000102900, 0x1484410)
 	/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go:1193 +0x1a3
 created by testing.(*T).Run
 	/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go:1238 +0x63c`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "go")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "go")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "Exception", *exceptions[0].Type)
@@ -1158,8 +1331,9 @@ testing.tRunner(0xc000186600, 0x1484440)
 	/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go:1193 +0x1a3
 created by testing.(*T).Run
 	/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go:1238 +0x63c`
+	isRemote := true
 
-	exceptions := parseException(exceptionType, message, stacktrace, "go")
+	exceptions := parseException(exceptionType, message, stacktrace, isRemote, "go")
 	assert.Len(t, exceptions, 1)
 	assert.NotEmpty(t, exceptions[0].ID)
 	assert.Equal(t, "Exception", *exceptions[0].Type)
@@ -1178,4 +1352,5 @@ created by testing.(*T).Run
 	assert.True(t, strings.HasPrefix(*exceptions[0].Stack[10].Label, "created by testing.(*T).Run"))
 	assert.Equal(t, "/usr/local/Cellar/go/1.16.3/libexec/src/testing/testing.go", *exceptions[0].Stack[10].Path)
 	assert.Equal(t, 1238, *exceptions[0].Stack[10].Line)
+	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }

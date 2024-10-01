@@ -1,40 +1,30 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"sort"
-	"strings"
 	"sync"
 	"time"
-	"unicode"
 
-	"github.com/tilinna/clock"
+	"github.com/hashicorp/golang-lru/v2/simplelru"
+	"github.com/jonboulle/clockwork"
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 const (
@@ -44,23 +34,15 @@ const (
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 
-	defaultDimensionsCacheSize = 1000
+	defaultDimensionsCacheSize      = 1000
+	defaultResourceMetricsCacheSize = 1000
 
-	metricNameLatency = "latency"
-	metricNameCalls   = "calls"
+	metricNameDuration = "duration"
+	metricNameCalls    = "calls"
+	metricNameEvents   = "events"
+
+	defaultUnit = metrics.Milliseconds
 )
-
-var defaultLatencyHistogramBucketsMs = []float64{
-	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
-}
-
-type exemplar struct {
-	traceID pcommon.TraceID
-	spanID  pcommon.SpanID
-	value   float64
-}
-
-type metricKey string
 
 type connectorImp struct {
 	lock   sync.Mutex
@@ -70,153 +52,156 @@ type connectorImp struct {
 	metricsConsumer consumer.Metrics
 
 	// Additional dimensions to add to metrics.
-	dimensions []dimension
+	dimensions []utilattri.Dimension
 
-	// The starting time of the data points.
-	startTimestamp pcommon.Timestamp
+	resourceMetrics *cache.Cache[resourceKey, *resourceMetrics]
 
-	// Histogram.
-	histograms    map[metricKey]*histogram
-	latencyBounds []float64
+	resourceMetricsKeyAttributes map[string]struct{}
 
 	keyBuf *bytes.Buffer
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "span.name": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions *cache.Cache[metricKey, pcommon.Map]
+	metricKeyToDimensions *cache.Cache[metrics.Key, pcommon.Map]
 
-	ticker  *clock.Ticker
+	clock   clockwork.Clock
+	ticker  clockwork.Ticker
 	done    chan struct{}
 	started bool
 
 	shutdownOnce sync.Once
+
+	// Event dimensions to add to the events metric.
+	eDimensions []utilattri.Dimension
+
+	events EventsConfig
+
+	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
+	lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
 }
 
-type dimension struct {
-	name  string
-	value *pcommon.Value
+type resourceMetrics struct {
+	histograms metrics.HistogramMetrics
+	sums       metrics.SumMetrics
+	events     metrics.SumMetrics
+	attributes pcommon.Map
+	// startTimestamp captures when the first data points for this resource are recorded.
+	startTimestamp pcommon.Timestamp
+	// lastSeen captures when the last data points for this resource were recorded.
+	lastSeen time.Time
 }
 
-func newDimensions(cfgDims []Dimension) []dimension {
+func newDimensions(cfgDims []Dimension) []utilattri.Dimension {
 	if len(cfgDims) == 0 {
 		return nil
 	}
-	dims := make([]dimension, len(cfgDims))
+	dims := make([]utilattri.Dimension, len(cfgDims))
 	for i := range cfgDims {
-		dims[i].name = cfgDims[i].Name
+		dims[i].Name = cfgDims[i].Name
 		if cfgDims[i].Default != nil {
 			val := pcommon.NewValueStr(*cfgDims[i].Default)
-			dims[i].value = &val
+			dims[i].Value = &val
 		}
 	}
 	return dims
 }
 
-type histogram struct {
-	attributes pcommon.Map
+func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock) (*connectorImp, error) {
+	logger.Info("Building spanmetrics connector")
+	cfg := config.(*Config)
 
-	count        uint64
-	sum          float64
-	bucketCounts []uint64
-	exemplars    []exemplar
-
-	latencyBounds []float64
-}
-
-// observe a measurement and adds an exemplar.
-func (h *histogram) observe(latencyMs float64, traceID pcommon.TraceID, spanID pcommon.SpanID) {
-	h.sum += latencyMs
-	h.count++
-	// Binary search to find the latencyMs bucket index.
-	index := sort.SearchFloat64s(h.latencyBounds, latencyMs)
-	h.bucketCounts[index]++
-	h.exemplars = append(h.exemplars, exemplar{traceID: traceID, spanID: spanID, value: latencyMs})
-}
-
-func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*connectorImp, error) {
-	logger.Info("Building spanmetrics")
-	pConfig := config.(*Config)
-
-	bounds := defaultLatencyHistogramBucketsMs
-	if pConfig.LatencyHistogramBuckets != nil {
-		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
-	}
-
-	if err := validateDimensions(pConfig.Dimensions, pConfig.skipSanitizeLabel); err != nil {
-		return nil, err
-	}
-
-	if pConfig.DimensionsCacheSize <= 0 {
-		return nil, fmt.Errorf(
-			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
-			pConfig.DimensionsCacheSize,
-		)
-	}
-	metricKeyToDimensionsCache, err := cache.NewCache[metricKey, pcommon.Map](pConfig.DimensionsCacheSize)
+	metricKeyToDimensionsCache, err := cache.NewCache[metrics.Key, pcommon.Map](cfg.DimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}
 
+	resourceMetricsCache, err := cache.NewCache[resourceKey, *resourceMetrics](cfg.ResourceMetricsCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
+	resourceMetricsKeyAttributes := make(map[string]struct{}, len(cfg.ResourceMetricsKeyAttributes))
+	var s struct{}
+	for _, attr := range cfg.ResourceMetricsKeyAttributes {
+		resourceMetricsKeyAttributes[attr] = s
+	}
+
+	var lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		lastDeltaTimestamps, err = simplelru.NewLRU[metrics.Key, pcommon.Timestamp](cfg.GetDeltaTimestampCacheSize(), func(k metrics.Key, _ pcommon.Timestamp) {
+			logger.Info("Evicting cached delta timestamp", zap.String("key", string(k)))
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &connectorImp{
-		logger:                logger,
-		config:                *pConfig,
-		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
-		latencyBounds:         bounds,
-		histograms:            make(map[metricKey]*histogram),
-		dimensions:            newDimensions(pConfig.Dimensions),
-		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
-		metricKeyToDimensions: metricKeyToDimensionsCache,
-		ticker:                ticker,
-		done:                  make(chan struct{}),
+		logger:                       logger,
+		config:                       *cfg,
+		resourceMetrics:              resourceMetricsCache,
+		resourceMetricsKeyAttributes: resourceMetricsKeyAttributes,
+		dimensions:                   newDimensions(cfg.Dimensions),
+		keyBuf:                       bytes.NewBuffer(make([]byte, 0, 1024)),
+		metricKeyToDimensions:        metricKeyToDimensionsCache,
+		lastDeltaTimestamps:          lastDeltaTimestamps,
+		clock:                        clock,
+		ticker:                       clock.NewTicker(cfg.MetricsFlushInterval),
+		done:                         make(chan struct{}),
+		eDimensions:                  newDimensions(cfg.Events.Dimensions),
+		events:                       cfg.Events,
 	}, nil
 }
 
-// durationToMillis converts the given duration to the number of milliseconds it represents.
-// Note that this can return sub-millisecond (i.e. < 1ms) values as well.
-func durationToMillis(d time.Duration) float64 {
-	return float64(d.Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
+func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
+	if cfg.Histogram.Disable {
+		return nil
+	}
+	if cfg.Histogram.Exponential != nil {
+		maxSize := structure.DefaultMaxSize
+		if cfg.Histogram.Exponential.MaxSize != 0 {
+			maxSize = cfg.Histogram.Exponential.MaxSize
+		}
+		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint)
+	}
+
+	var bounds []float64
+	if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
+		bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
+	} else {
+		switch cfg.Histogram.Unit {
+		case metrics.Milliseconds:
+			bounds = defaultHistogramBucketsMs
+		case metrics.Seconds:
+			bounds = make([]float64, len(defaultHistogramBucketsMs))
+			for i, v := range defaultHistogramBucketsMs {
+				bounds[i] = v / float64(time.Second.Milliseconds())
+			}
+		}
+	}
+
+	return metrics.NewExplicitHistogramMetrics(bounds, cfg.Exemplars.MaxPerDataPoint)
 }
 
-func mapDurationsToMillis(vs []time.Duration) []float64 {
+// unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
+func unitDivider(u metrics.Unit) int64 {
+	return map[metrics.Unit]int64{
+		metrics.Seconds:      time.Second.Nanoseconds(),
+		metrics.Milliseconds: time.Millisecond.Nanoseconds(),
+	}[u]
+}
+
+func durationsToUnits(vs []time.Duration, unitDivider int64) []float64 {
 	vsm := make([]float64, len(vs))
 	for i, v := range vs {
-		vsm[i] = durationToMillis(v)
+		vsm[i] = float64(v.Nanoseconds()) / float64(unitDivider)
 	}
 	return vsm
 }
 
-// validateDimensions checks duplicates for reserved dimensions and additional dimensions. Considering
-// the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
-func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
-	labelNames := make(map[string]struct{})
-	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey} {
-		labelNames[key] = struct{}{}
-		labelNames[sanitize(key, skipSanitizeLabel)] = struct{}{}
-	}
-	labelNames[spanNameKey] = struct{}{}
-
-	for _, key := range dimensions {
-		if _, ok := labelNames[key.Name]; ok {
-			return fmt.Errorf("duplicate dimension name %s", key.Name)
-		}
-		labelNames[key.Name] = struct{}{}
-
-		sanitizedName := sanitize(key.Name, skipSanitizeLabel)
-		if sanitizedName == key.Name {
-			continue
-		}
-		if _, ok := labelNames[sanitizedName]; ok {
-			return fmt.Errorf("duplicate dimension name %s after sanitization", sanitizedName)
-		}
-		labelNames[sanitizedName] = struct{}{}
-	}
-
-	return nil
-}
-
 // Start implements the component.Component interface.
 func (p *connectorImp) Start(ctx context.Context, _ component.Host) error {
-	p.logger.Info("Starting spanmetricsconnector")
+	p.logger.Info("Starting spanmetrics connector")
 
 	p.started = true
 	go func() {
@@ -224,7 +209,7 @@ func (p *connectorImp) Start(ctx context.Context, _ component.Host) error {
 			select {
 			case <-p.done:
 				return
-			case <-p.ticker.C:
+			case <-p.ticker.Chan():
 				p.exportMetrics(ctx)
 			}
 		}
@@ -236,7 +221,7 @@ func (p *connectorImp) Start(ctx context.Context, _ component.Host) error {
 // Shutdown implements the component.Component interface.
 func (p *connectorImp) Shutdown(context.Context) error {
 	p.shutdownOnce.Do(func() {
-		p.logger.Info("Shutting down spanmetricsconnector")
+		p.logger.Info("Shutting down spanmetrics connector")
 		if p.started {
 			p.logger.Info("Stopping ticker")
 			p.ticker.Stop()
@@ -253,8 +238,7 @@ func (p *connectorImp) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeTraces implements the consumer.Traces interface.
-// It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
-// The original input trace data will be forwarded to the next consumer, unmodified.
+// It aggregates the trace data to generate metrics.
 func (p *connectorImp) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
 	p.lock.Lock()
 	p.aggregateMetrics(traces)
@@ -266,18 +250,7 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 	p.lock.Lock()
 
 	m := p.buildMetrics()
-
-	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
-	// regardless of error while building metrics, before the next batch of spans is received.
-	p.resetExemplars()
-
-	// If delta metrics, reset accumulated data
-	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		p.histograms = make(map[metricKey]*histogram)
-		p.metricKeyToDimensions.Purge()
-	} else {
-		p.metricKeyToDimensions.RemoveEvictedItems()
-	}
+	p.resetState()
 
 	// This component no longer needs to read the metrics once built, so it is safe to unlock.
 	p.lock.Unlock()
@@ -288,66 +261,115 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 	}
 }
 
-// buildMetrics collects the computed raw metrics data, builds the metrics object and
-// writes the raw metrics data into the metrics object.
+// buildMetrics collects the computed raw metrics data and builds OTLP metrics.
 func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
-	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName("spanmetricsconnector")
+	timestamp := pcommon.NewTimestampFromTime(p.clock.Now())
 
-	p.collectCallMetrics(ilm)
-	p.collectLatencyMetrics(ilm)
+	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
+		rm := m.ResourceMetrics().AppendEmpty()
+		rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("spanmetricsconnector")
+
+		/**
+		 * To represent an uninterrupted stream of metrics as per the spec, the (StartTimestamp, Timestamp)'s of successive data points should be:
+		 * - For cumulative metrics: (T1, T2), (T1, T3), (T1, T4) ...
+		 * - For delta metrics: (T1, T2), (T2, T3), (T3, T4) ...
+		 */
+		deltaMetricKeys := make(map[metrics.Key]bool)
+		startTimeGenerator := func(mk metrics.Key) pcommon.Timestamp {
+			startTime := rawMetrics.startTimestamp
+			if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(mk); ok {
+					startTime = lastTimestamp
+				}
+				// Collect lastDeltaTimestamps keys that need to be updated. Metrics can share the same key, so defer the update.
+				deltaMetricKeys[mk] = true
+			}
+			return startTime
+		}
+
+		metricsNamespace := p.config.Namespace
+		if legacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
+			metricsNamespace = ""
+		}
+
+		sums := rawMetrics.sums
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
+		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+
+		if !p.config.Histogram.Disable {
+			histograms := rawMetrics.histograms
+			metric = sm.Metrics().AppendEmpty()
+			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
+			metric.SetUnit(p.config.Histogram.Unit.String())
+			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+		}
+
+		events := rawMetrics.events
+		if p.events.Enabled {
+			metric = sm.Metrics().AppendEmpty()
+			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
+			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+		}
+
+		for mk := range deltaMetricKeys {
+			// For delta metrics, cache the current data point's timestamp, which will be the start timestamp for the next data points in the series
+			p.lastDeltaTimestamps.Add(mk, timestamp)
+		}
+	})
 
 	return m
 }
 
-// collectLatencyMetrics collects the raw latency metrics, writing the data
-// into the given instrumentation library metrics.
-func (p *connectorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
-	mLatency := ilm.Metrics().AppendEmpty()
-	mLatency.SetName(buildMetricName(p.config.Namespace, metricNameLatency))
-	mLatency.SetUnit("ms")
-	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
-	dps := mLatency.Histogram().DataPoints()
-	dps.EnsureCapacity(len(p.histograms))
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, hist := range p.histograms {
-		dpLatency := dps.AppendEmpty()
-		dpLatency.SetStartTimestamp(p.startTimestamp)
-		dpLatency.SetTimestamp(timestamp)
-		dpLatency.ExplicitBounds().FromRaw(p.latencyBounds)
-		dpLatency.BucketCounts().FromRaw(hist.bucketCounts)
-		dpLatency.SetCount(hist.count)
-		dpLatency.SetSum(hist.sum)
-		setExemplars(hist.exemplars, timestamp, dpLatency.Exemplars())
-		hist.attributes.CopyTo(dpLatency.Attributes())
-	}
-}
+func (p *connectorImp) resetState() {
+	// If delta metrics, reset accumulated data
+	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		p.resourceMetrics.Purge()
+		p.metricKeyToDimensions.Purge()
+	} else {
+		p.resourceMetrics.RemoveEvictedItems()
+		p.metricKeyToDimensions.RemoveEvictedItems()
 
-// collectCallMetrics collects the raw call count metrics, writing the data
-// into the given instrumentation library metrics.
-func (p *connectorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
-	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
-	mCalls.SetEmptySum().SetIsMonotonic(true)
-	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
-	dps := mCalls.Sum().DataPoints()
-	dps.EnsureCapacity(len(p.histograms))
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, hist := range p.histograms {
-		dpCalls := dps.AppendEmpty()
-		dpCalls.SetStartTimestamp(p.startTimestamp)
-		dpCalls.SetTimestamp(timestamp)
-		dpCalls.SetIntValue(int64(hist.count))
-		hist.attributes.CopyTo(dpCalls.Attributes())
+		// If none of these features are enabled then we can skip the remaining operations.
+		// Enabling either of these features requires to go over resource metrics and do operation on each.
+		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 && !p.config.Exemplars.Enabled {
+			return
+		}
+
+		now := p.clock.Now()
+		p.resourceMetrics.ForEach(func(k resourceKey, m *resourceMetrics) {
+			// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
+			if p.config.Exemplars.Enabled {
+				m.sums.ClearExemplars()
+				m.events.ClearExemplars()
+				if !p.config.Histogram.Disable {
+					m.histograms.ClearExemplars()
+				}
+			}
+
+			// If metrics expiration is configured, remove metrics that haven't been seen for longer than the expiration period.
+			if p.config.MetricsExpiration > 0 {
+				if now.Sub(m.lastSeen) >= p.config.MetricsExpiration {
+					p.resourceMetrics.Remove(k)
+				}
+			}
+		})
+
 	}
 }
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
+//
+// Metrics are grouped by resource attributes.
 // Each metric is identified by a key that is built from the service name
 // and span metadata such as name, kind, status_code and any additional
 // dimensions the user has configured.
 func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
+	startTimestamp := pcommon.NewTimestampFromTime(p.clock.Now())
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -355,6 +377,13 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 		if !ok {
 			continue
 		}
+
+		rm := p.getOrCreateResourceMetrics(resourceAttr, startTimestamp)
+		sums := rm.sums
+		histograms := rm.histograms
+		events := rm.events
+
+		unitDivider := unitDivider(p.config.Histogram.Unit)
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
 		for j := 0; j < ilsSlice.Len(); j++ {
@@ -363,64 +392,139 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				// Protect against end timestamps before start timestamps. Assume 0 duration.
-				latencyMs := float64(0)
+				duration := float64(0)
 				startTime := span.StartTimestamp()
 				endTime := span.EndTimestamp()
 				if endTime > startTime {
-					latencyMs = float64(endTime-startTime) / float64(time.Millisecond.Nanoseconds())
+					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
-				// Always reset the buffer before re-using.
-				p.keyBuf.Reset()
-				buildKey(p.keyBuf, serviceName, span, p.dimensions, resourceAttr)
-				key := metricKey(p.keyBuf.String())
+				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
 
 				attributes, ok := p.metricKeyToDimensions.Get(key)
 				if !ok {
-					attributes = p.buildAttributes(serviceName, span, resourceAttr)
+					attributes = p.buildAttributes(serviceName, span, resourceAttr, p.dimensions)
 					p.metricKeyToDimensions.Add(key, attributes)
 				}
+				if !p.config.Histogram.Disable {
+					// aggregate histogram metrics
+					h := histograms.GetOrCreate(key, attributes)
+					p.addExemplar(span, duration, h)
+					h.Observe(duration)
 
-				h := p.getOrCreateHistogram(key, attributes)
-				h.observe(latencyMs, span.TraceID(), span.SpanID())
+				}
+				// aggregate sums metrics
+				s := sums.GetOrCreate(key, attributes)
+				if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
+				}
+				s.Add(1)
+
+				// aggregate events metrics
+				if p.events.Enabled {
+					for l := 0; l < span.Events().Len(); l++ {
+						event := span.Events().At(l)
+						eDimensions := p.dimensions
+						eDimensions = append(eDimensions, p.eDimensions...)
+
+						rscAndEventAttrs := pcommon.NewMap()
+						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
+						resourceAttr.CopyTo(rscAndEventAttrs)
+						event.Attributes().CopyTo(rscAndEventAttrs)
+
+						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
+						eAttributes, ok := p.metricKeyToDimensions.Get(eKey)
+						if !ok {
+							eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions)
+							p.metricKeyToDimensions.Add(eKey, eAttributes)
+						}
+						e := events.GetOrCreate(eKey, eAttributes)
+						if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
+						}
+						e.Add(1)
+					}
+				}
 			}
 		}
 	}
 }
 
-func (p *connectorImp) getOrCreateHistogram(k metricKey, attr pcommon.Map) *histogram {
-	h, ok := p.histograms[k]
+func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics.Histogram) {
+	if !p.config.Exemplars.Enabled {
+		return
+	}
+	if span.TraceID().IsEmpty() {
+		return
+	}
+
+	h.AddExemplar(span.TraceID(), span.SpanID(), duration)
+}
+
+type resourceKey [16]byte
+
+func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
+	if len(p.resourceMetricsKeyAttributes) == 0 {
+		return pdatautil.MapHash(attr)
+	}
+	m := pcommon.NewMap()
+	attr.CopyTo(m)
+	m.RemoveIf(func(k string, _ pcommon.Value) bool {
+		_, ok := p.resourceMetricsKeyAttributes[k]
+		return !ok
+	})
+	return pdatautil.MapHash(m)
+}
+
+func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map, startTimestamp pcommon.Timestamp) *resourceMetrics {
+	key := p.createResourceKey(attr)
+	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
-		h = &histogram{
-			attributes:    attr,
-			bucketCounts:  make([]uint64, len(p.latencyBounds)+1),
-			latencyBounds: p.latencyBounds,
-			exemplars:     []exemplar{},
+		v = &resourceMetrics{
+			histograms:     initHistogramMetrics(p.config),
+			sums:           metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			events:         metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			attributes:     attr,
+			startTimestamp: startTimestamp,
 		}
-		p.histograms[k] = h
+		p.resourceMetrics.Add(key, v)
 	}
 
-	return h
-}
-
-// resetExemplars resets the entire exemplars map so the next trace will recreate all
-// the data structure. An exemplar is a punctual value that exists at specific moment in time
-// and should be not considered like a metrics that persist over time.
-func (p *connectorImp) resetExemplars() {
-	for _, histo := range p.histograms {
-		histo.exemplars = nil
+	// If expiration is enabled, track the last seen time.
+	if p.config.MetricsExpiration > 0 {
+		v.lastSeen = p.clock.Now()
 	}
+
+	return v
 }
 
-func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
+// contains checks if string slice contains a string value
+func contains(elements []string, value string) bool {
+	for _, element := range elements {
+		if value == element {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []utilattri.Dimension) pcommon.Map {
 	attr := pcommon.NewMap()
-	attr.EnsureCapacity(4 + len(p.dimensions))
-	attr.PutStr(serviceNameKey, serviceName)
-	attr.PutStr(spanNameKey, span.Name())
-	attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
-	attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
-	for _, d := range p.dimensions {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			v.CopyTo(attr.PutEmpty(d.name))
+	attr.EnsureCapacity(4 + len(dimensions))
+	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+		attr.PutStr(serviceNameKey, serviceName)
+	}
+	if !contains(p.config.ExcludeDimensions, spanNameKey) {
+		attr.PutStr(spanNameKey, span.Name())
+	}
+	if !contains(p.config.ExcludeDimensions, spanKindKey) {
+		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
+	}
+	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
+		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	}
+	for _, d := range dimensions {
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+			v.CopyTo(attr.PutEmpty(d.Name))
 		}
 	}
 	return attr
@@ -435,102 +539,31 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 
 // buildKey builds the metric key from the service name and span metadata such as name, kind, status_code and
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
-// or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
+// or resource/event attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) {
-	concatDimensionValue(dest, serviceName, false)
-	concatDimensionValue(dest, span.Name(), true)
-	concatDimensionValue(dest, traceutil.SpanKindStr(span.Kind()), true)
-	concatDimensionValue(dest, traceutil.StatusCodeStr(span.Status().Code()), true)
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
+	p.keyBuf.Reset()
+	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+		concatDimensionValue(p.keyBuf, serviceName, false)
+	}
+	if !contains(p.config.ExcludeDimensions, spanNameKey) {
+		concatDimensionValue(p.keyBuf, span.Name(), true)
+	}
+	if !contains(p.config.ExcludeDimensions, spanKindKey) {
+		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
+	}
+	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
+		concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+	}
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			concatDimensionValue(dest, v.AsString(), true)
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
+			concatDimensionValue(p.keyBuf, v.AsString(), true)
 		}
 	}
-}
 
-// getDimensionValue gets the dimension value for the given configured dimension.
-// It searches through the span's attributes first, being the more specific;
-// falling back to searching in resource attributes if it can't be found in the span.
-// Finally, falls back to the configured default value if provided.
-//
-// The ok flag indicates if a dimension value was fetched in order to differentiate
-// an empty string value from a state where no value was found.
-func getDimensionValue(d dimension, spanAttr pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
-	// The more specific span attribute should take precedence.
-	if attr, exists := spanAttr.Get(d.name); exists {
-		return attr, true
-	}
-	if attr, exists := resourceAttr.Get(d.name); exists {
-		return attr, true
-	}
-	// Set the default if configured, otherwise this metric will have no value set for the dimension.
-	if d.value != nil {
-		return *d.value, true
-	}
-	return v, ok
-}
-
-// copied from prometheus-go-metric-exporter
-// sanitize replaces non-alphanumeric characters with underscores in s.
-func sanitize(s string, skipSanitizeLabel bool) string {
-	if len(s) == 0 {
-		return s
-	}
-
-	// Note: No length limit for label keys because Prometheus doesn't
-	// define a length limit, thus we should NOT be truncating label keys.
-	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
-	s = strings.Map(sanitizeRune, s)
-	if unicode.IsDigit(rune(s[0])) {
-		s = "key_" + s
-	}
-	// replace labels starting with _ only when skipSanitizeLabel is disabled
-	if !skipSanitizeLabel && strings.HasPrefix(s, "_") {
-		s = "key" + s
-	}
-	// labels starting with __ are reserved in prometheus
-	if strings.HasPrefix(s, "__") {
-		s = "key" + s
-	}
-	return s
-}
-
-// copied from prometheus-go-metric-exporter
-// sanitizeRune converts anything that is not a letter or digit to an underscore
-func sanitizeRune(r rune) rune {
-	if unicode.IsLetter(r) || unicode.IsDigit(r) {
-		return r
-	}
-	// Everything else turns into an underscore
-	return '_'
-}
-
-// setExemplars sets the histogram exemplars.
-func setExemplars(exemplarsData []exemplar, timestamp pcommon.Timestamp, exemplars pmetric.ExemplarSlice) {
-	es := pmetric.NewExemplarSlice()
-	es.EnsureCapacity(len(exemplarsData))
-
-	for _, ed := range exemplarsData {
-		value := ed.value
-		traceID := ed.traceID
-		spanID := ed.spanID
-
-		exemplar := es.AppendEmpty()
-
-		if traceID.IsEmpty() {
-			continue
-		}
-
-		exemplar.SetDoubleValue(value)
-		exemplar.SetTimestamp(timestamp)
-		exemplar.SetTraceID(traceID)
-		exemplar.SetSpanID(spanID)
-	}
-
-	es.CopyTo(exemplars)
+	return metrics.Key(p.keyBuf.String())
 }
 
 // buildMetricName builds the namespace prefix for the metric name.

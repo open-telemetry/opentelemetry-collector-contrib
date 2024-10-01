@@ -1,53 +1,57 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 var _ processor.Metrics = (*metricsProcessor)(nil)
 
 type metricsProcessor struct {
-	logger *zap.Logger
-	config *Config
+	logger    *zap.Logger
+	telemetry *metadata.TelemetryBuilder
+	config    *Config
 
 	extractor extractor
 	router    router[exporter.Metrics, ottldatapoint.TransformContext]
 }
 
-func newMetricProcessor(settings component.TelemetrySettings, config component.Config) *metricsProcessor {
+func newMetricProcessor(settings component.TelemetrySettings, config component.Config) (*metricsProcessor, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings)
+	if err != nil {
+		return nil, err
+	}
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
-	dataPointParser, _ := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings)
+	dataPointParser, err := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings)
+	if err != nil {
+		return nil, err
+	}
 
 	return &metricsProcessor{
-		logger: settings.Logger,
-		config: cfg,
+		logger:    settings.Logger,
+		telemetry: telemetryBuilder,
+		config:    cfg,
 		router: newRouter[exporter.Metrics](
 			cfg.Table,
 			cfg.DefaultExporters,
@@ -55,11 +59,15 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 			dataPointParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
-	}
+	}, nil
 }
 
 func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeMetrics])
+	ge, ok := host.(getExporters)
+	if !ok {
+		return fmt.Errorf("unable to get exporters")
+	}
+	err := p.router.registerExporters(ge.GetExportersWithSignal()[pipeline.SignalMetrics])
 	if err != nil {
 		return err
 	}
@@ -98,17 +106,24 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 		rmetrics := tm.ResourceMetrics().At(i)
 		mtx := ottldatapoint.NewTransformContext(
 			nil,
-			pmetric.Metric{},
-			pmetric.MetricSlice{},
-			pcommon.InstrumentationScope{},
+			pmetric.NewMetric(),
+			pmetric.NewMetricSlice(),
+			pcommon.NewInstrumentationScope(),
 			rmetrics.Resource(),
+			pmetric.NewScopeMetrics(),
+			rmetrics,
 		)
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, mtx)
 			if err != nil {
-				return err
+				if p.config.ErrorMode == ottl.PropagateError {
+					return err
+				}
+				p.group("", groups, p.router.defaultExporters, rmetrics)
+				p.recordNonRoutedForResourceMetrics(ctx, "", rmetrics)
+				continue
 			}
 			if !isMatch {
 				matchCount--
@@ -120,6 +135,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 		if matchCount == 0 {
 			// no route conditions are matched, add resource metrics to default exporters group
 			p.group("", groups, p.router.defaultExporters, rmetrics)
+			p.recordNonRoutedForResourceMetrics(ctx, "", rmetrics)
 		}
 	}
 
@@ -146,14 +162,40 @@ func (p *metricsProcessor) group(
 	groups[key] = group
 }
 
+func (p *metricsProcessor) recordNonRoutedForResourceMetrics(ctx context.Context, routingKey string, rm pmetric.ResourceMetrics) {
+	metricPointsCount := 0
+	sm := rm.ScopeMetrics()
+	for j := 0; j < sm.Len(); j++ {
+		metricPointsCount += sm.At(j).Metrics().Len()
+	}
+
+	p.telemetry.RoutingProcessorNonRoutedMetricPoints.Add(
+		ctx,
+		int64(metricPointsCount),
+		metric.WithAttributes(
+			attribute.String("routing_key", routingKey),
+		),
+	)
+}
+
 func (p *metricsProcessor) routeForContext(ctx context.Context, m pmetric.Metrics) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
+	if value == "" { // "" is a  key for default exporters
+		p.telemetry.RoutingProcessorNonRoutedMetricPoints.Add(
+			ctx,
+			int64(m.MetricCount()),
+			metric.WithAttributes(
+				attribute.String("routing_key", p.extractor.fromAttr),
+			),
+		)
+	}
 
 	var errs error
 	for _, e := range exporters {
 		errs = multierr.Append(errs, e.ConsumeMetrics(ctx, m))
 	}
+
 	return errs
 }
 

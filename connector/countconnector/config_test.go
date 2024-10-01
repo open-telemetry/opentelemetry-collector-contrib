@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package countconnector
 
@@ -23,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -126,31 +117,31 @@ func TestLoadConfig(t *testing.T) {
 				Spans: map[string]MetricInfo{
 					"my.span.count": {
 						Description: "My span count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s")`},
 					},
 				},
 				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.count": {
 						Description: "My span event count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e")`},
 					},
 				},
 				Metrics: map[string]MetricInfo{
 					"my.metric.count": {
 						Description: "My metric count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m")`},
 					},
 				},
 				DataPoints: map[string]MetricInfo{
 					"my.datapoint.count": {
 						Description: "My data point count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d")`},
 					},
 				},
 				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
 						Description: "My log record count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
 					},
 				},
 			},
@@ -162,8 +153,8 @@ func TestLoadConfig(t *testing.T) {
 					"my.span.count": {
 						Description: "My span count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-s") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-s") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-s")`,
+							`IsMatch(resource.attributes["foo"], "bar-s")`,
 						},
 					},
 				},
@@ -171,8 +162,8 @@ func TestLoadConfig(t *testing.T) {
 					"my.spanevent.count": {
 						Description: "My span event count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-e") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-e") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-e")`,
+							`IsMatch(resource.attributes["foo"], "bar-e")`,
 						},
 					},
 				},
@@ -180,8 +171,8 @@ func TestLoadConfig(t *testing.T) {
 					"my.metric.count": {
 						Description: "My metric count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-m") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-m") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-m")`,
+							`IsMatch(resource.attributes["foo"], "bar-m")`,
 						},
 					},
 				},
@@ -189,8 +180,8 @@ func TestLoadConfig(t *testing.T) {
 					"my.datapoint.count": {
 						Description: "My data point count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-d") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-d") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-d")`,
+							`IsMatch(resource.attributes["foo"], "bar-d")`,
 						},
 					},
 				},
@@ -198,8 +189,50 @@ func TestLoadConfig(t *testing.T) {
 					"my.logrecord.count": {
 						Description: "My log record count.",
 						Conditions: []string{
-							`IsMatch(resource.attributes["host.name"], "pod-l") == true`,
-							`IsMatch(resource.attributes["foo"], "bar-l") == true`,
+							`IsMatch(resource.attributes["host.name"], "pod-l")`,
+							`IsMatch(resource.attributes["foo"], "bar-l")`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "attribute",
+			expect: &Config{
+				Spans: map[string]MetricInfo{
+					"my.span.count": {
+						Description: "My span count by environment.",
+						Attributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					"my.spanevent.count": {
+						Description: "My span event count by environment.",
+						Attributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				Metrics: map[string]MetricInfo{
+					"my.metric.count": {
+						Description: "My metric count.",
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					"my.datapoint.count": {
+						Description: "My data point count by environment.",
+						Attributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				Logs: map[string]MetricInfo{
+					"my.logrecord.count": {
+						Description: "My log record count by environment.",
+						Attributes: []AttributeConfig{
+							{Key: "env"},
 						},
 					},
 				},
@@ -210,18 +243,38 @@ func TestLoadConfig(t *testing.T) {
 			expect: &Config{
 				Spans: map[string]MetricInfo{
 					"my.span.count": {
-						Description: "My span count."},
+						Description: "My span count.",
+					},
 					"limited.span.count": {
 						Description: "Limited span count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s")`},
+						Attributes: []AttributeConfig{
+							{
+								Key: "env",
+							},
+							{
+								Key:          "component",
+								DefaultValue: "other",
+							},
+						},
 					},
 				},
 				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.count": {
-						Description: "My span event count."},
+						Description: "My span event count.",
+					},
 					"limited.spanevent.count": {
 						Description: "Limited span event count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e")`},
+						Attributes: []AttributeConfig{
+							{
+								Key: "env",
+							},
+							{
+								Key:          "component",
+								DefaultValue: "other",
+							},
+						},
 					},
 				},
 				Metrics: map[string]MetricInfo{
@@ -229,7 +282,7 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My metric count."},
 					"limited.metric.count": {
 						Description: "Limited metric count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m")`},
 					},
 				},
 				DataPoints: map[string]MetricInfo{
@@ -238,7 +291,16 @@ func TestLoadConfig(t *testing.T) {
 					},
 					"limited.datapoint.count": {
 						Description: "Limited data point count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d")`},
+						Attributes: []AttributeConfig{
+							{
+								Key: "env",
+							},
+							{
+								Key:          "component",
+								DefaultValue: "other",
+							},
+						},
 					},
 				},
 				Logs: map[string]MetricInfo{
@@ -247,7 +309,63 @@ func TestLoadConfig(t *testing.T) {
 					},
 					"limited.logrecord.count": {
 						Description: "Limited log record count.",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l") == true`},
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
+						Attributes: []AttributeConfig{
+							{
+								Key: "env",
+							},
+							{
+								Key:          "component",
+								DefaultValue: "other",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default_values",
+			expect: &Config{
+				Spans: map[string]MetricInfo{
+					defaultMetricNameSpans: {
+						Description: defaultMetricDescSpans,
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					defaultMetricNameSpanEvents: {
+						Description: defaultMetricDescSpanEvents,
+					},
+				},
+				Metrics: map[string]MetricInfo{
+					defaultMetricNameMetrics: {
+						Description: defaultMetricDescMetrics,
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					defaultMetricNameDataPoints: {
+						Description: defaultMetricDescDataPoints,
+					},
+				},
+				Logs: map[string]MetricInfo{
+					"my.logrecord.count": {
+						Description: "My log record count with default values.",
+					},
+					"limited.logrecord.count": {
+						Description: "Limited log record count.",
+						Attributes: []AttributeConfig{
+							{
+								Key:          "env",
+								DefaultValue: "local",
+							},
+							{
+								Key:          "http_code",
+								DefaultValue: int(200),
+							},
+							{
+								Key:          "request_success",
+								DefaultValue: float64(0.85),
+							},
+						},
 					},
 				},
 			},
@@ -262,9 +380,9 @@ func TestLoadConfig(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
-			sub, err := cm.Sub(component.NewIDWithName(typeStr, tc.name).String())
+			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, tc.name).String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.Equal(t, tc.expect, cfg)
 		})
@@ -342,7 +460,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("spans condition: metric %q: unable to parse OTTL statement", defaultMetricNameSpans),
+			expect: fmt.Sprintf("spans condition: metric %q: unable to parse OTTL condition", defaultMetricNameSpans),
 		},
 		{
 			name: "invalid_condition_spanevent",
@@ -354,7 +472,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("spanevents condition: metric %q: unable to parse OTTL statement", defaultMetricNameSpanEvents),
+			expect: fmt.Sprintf("spanevents condition: metric %q: unable to parse OTTL condition", defaultMetricNameSpanEvents),
 		},
 		{
 			name: "invalid_condition_metric",
@@ -366,7 +484,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("metrics condition: metric %q: unable to parse OTTL statement", defaultMetricNameMetrics),
+			expect: fmt.Sprintf("metrics condition: metric %q: unable to parse OTTL condition", defaultMetricNameMetrics),
 		},
 		{
 			name: "invalid_condition_datapoint",
@@ -378,7 +496,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("datapoints condition: metric %q: unable to parse OTTL statement", defaultMetricNameDataPoints),
+			expect: fmt.Sprintf("datapoints condition: metric %q: unable to parse OTTL condition", defaultMetricNameDataPoints),
 		},
 		{
 			name: "invalid_condition_log",
@@ -390,15 +508,14 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL statement", defaultMetricNameLogs),
+			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL condition", defaultMetricNameLogs),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.input.Validate()
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), tc.expect)
+			assert.ErrorContains(t, err, tc.expect)
 		})
 	}
 }

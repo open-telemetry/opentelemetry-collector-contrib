@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package carbonreceiver
 
@@ -24,17 +13,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
 )
 
 func Test_carbonreceiver_New(t *testing.T) {
@@ -59,7 +50,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "zero_value_parser",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  defaultConfig.Endpoint,
 						Transport: defaultConfig.Transport,
 					},
@@ -67,13 +58,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-		},
-		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "empty_endpoint",
@@ -87,9 +71,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "regex_parser",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  "localhost:2003",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					Parser: &protocol.Config{
 						Type: "regex",
@@ -108,7 +92,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			got, err := newMetricsReceiver(receivertest.NewNopSettings(), tt.args.config, tt.args.nextConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				require.NotNil(t, got)
@@ -134,7 +118,7 @@ func Test_carbonreceiver_Start(t *testing.T) {
 			name: "invalid_transport",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  "localhost:2003",
 						Transport: "unknown_transp",
 					},
@@ -147,28 +131,10 @@ func Test_carbonreceiver_Start(t *testing.T) {
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\""),
 		},
-		{
-			name: "negative_tcp_idle_timeout",
-			args: args{
-				config: Config{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "localhost:2003",
-						Transport: "tcp",
-					},
-					TCPIdleTimeout: -1 * time.Second,
-					Parser: &protocol.Config{
-						Type:   "plaintext",
-						Config: &protocol.PlaintextConfig{},
-					},
-				},
-				nextConsumer: consumertest.NewNop(),
-			},
-			wantErr: errors.New("invalid idle timeout: -1s"),
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			got, err := newMetricsReceiver(receivertest.NewNopSettings(), tt.args.config, tt.args.nextConsumer)
 			require.NoError(t, err)
 			err = got.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
@@ -182,30 +148,41 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 	tests := []struct {
 		name     string
 		configFn func() *Config
-		clientFn func(t *testing.T) *client.Graphite
+		clientFn func(t *testing.T) func(client.Metric) error
 	}{
 		{
 			name: "default_config",
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			clientFn: func(t *testing.T) *client.Graphite {
+			clientFn: func(t *testing.T) func(client.Metric) error {
 				c, err := client.NewGraphite(client.TCP, addr)
 				require.NoError(t, err)
-				return c
+				return c.SendMetric
+			},
+		},
+		{
+			name: "tcp_reconnect",
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+			clientFn: func(t *testing.T) func(client.Metric) error {
+				c, err := client.NewGraphite(client.TCP, addr)
+				require.NoError(t, err)
+				return c.SputterThenSendMetric
 			},
 		},
 		{
 			name: "default_config_udp",
 			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Transport = "udp"
+				cfg.Transport = confignet.TransportTypeUDP
 				return cfg
 			},
-			clientFn: func(t *testing.T) *client.Graphite {
+			clientFn: func(t *testing.T) func(client.Metric) error {
 				c, err := client.NewGraphite(client.UDP, addr)
 				require.NoError(t, err)
-				return c
+				return c.SendMetric
 			},
 		},
 	}
@@ -214,14 +191,25 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.Endpoint = addr
 			sink := new(consumertest.MetricsSink)
-			rcv, err := New(receivertest.NewNopCreateSettings(), *cfg, sink)
+			recorder := tracetest.NewSpanRecorder()
+			rt := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
+			cs := receivertest.NewNopSettings()
+			cs.TracerProvider = rt
+			rcv, err := newMetricsReceiver(cs, *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
 
-			mr := transport.NewMockReporter(1)
+			mr, err := newReporter(cs)
+			require.NoError(t, err)
 			r.reporter = mr
 
-			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			host := &nopHost{
+				reportFunc: func(event *componentstatus.Event) {
+					assert.NoError(t, event.Err())
+				},
+			}
+
+			require.NoError(t, r.Start(context.Background(), host))
 			runtime.Gosched()
 			defer func() {
 				require.NoError(t, r.Shutdown(context.Background()))
@@ -235,18 +223,43 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 				Value:     1.23,
 				Timestamp: ts,
 			}
-			err = snd.SendMetric(carbonMetric)
+
+			err = snd(carbonMetric)
 			require.NoError(t, err)
 
-			mr.WaitAllOnMetricsProcessedCalls()
+			require.Eventually(t, func() bool {
+				return len(recorder.Ended()) == 1
+			}, 30*time.Second, 100*time.Millisecond)
 
 			mdd := sink.AllMetrics()
 			require.Len(t, mdd, 1)
-			_, _, metrics := internaldata.ResourceMetricsToOC(mdd[0].ResourceMetrics().At(0))
-			require.Len(t, metrics, 1)
-			assert.Equal(t, carbonMetric.Name, metrics[0].GetMetricDescriptor().GetName())
-			tss := metrics[0].GetTimeseries()
-			require.Equal(t, 1, len(tss))
+			require.Equal(t, 1, mdd[0].MetricCount())
+			m := mdd[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+			assert.Equal(t, carbonMetric.Name, m.Name())
+			require.Equal(t, 1, m.Gauge().DataPoints().Len())
+			require.Equal(t, len(recorder.Ended()), len(recorder.Started()))
 		})
 	}
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return nil
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

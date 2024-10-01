@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package diskscraper
 
@@ -22,7 +10,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -33,21 +21,23 @@ import (
 func TestScrape_Others(t *testing.T) {
 	type testCase struct {
 		name           string
-		ioCountersFunc func(names ...string) (map[string]disk.IOCountersStat, error)
+		ioCountersFunc func(ctx context.Context, names ...string) (map[string]disk.IOCountersStat, error)
 		expectedErr    string
 	}
 
 	testCases := []testCase{
 		{
-			name:           "Error",
-			ioCountersFunc: func(names ...string) (map[string]disk.IOCountersStat, error) { return nil, errors.New("err1") },
-			expectedErr:    "err1",
+			name: "Error",
+			ioCountersFunc: func(context.Context, ...string) (map[string]disk.IOCountersStat, error) {
+				return nil, errors.New("err1")
+			},
+			expectedErr: "err1",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{})
+			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopSettings(), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
 			if test.ioCountersFunc != nil {

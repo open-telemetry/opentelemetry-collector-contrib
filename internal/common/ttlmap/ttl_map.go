@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ttlmap // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 
@@ -23,6 +12,7 @@ import (
 type TTLMap struct {
 	md            *ttlMapData
 	sweepInterval int64
+	done          chan struct{}
 }
 
 // New creates a TTLMap. The sweepIntervalSeconds arg indicates how often
@@ -30,19 +20,28 @@ type TTLMap struct {
 // entries can persist before getting evicted. Call Start() on the returned
 // TTLMap to begin periodic sweeps which check for expiration and evict entries
 // as needed.
-func New(sweepIntervalSeconds int64, maxAgeSeconds int64) *TTLMap {
+// done is the channel that will be used to signal to the timer to stop its work.
+func New(sweepIntervalSeconds int64, maxAgeSeconds int64, done chan struct{}) *TTLMap {
 	return &TTLMap{
 		sweepInterval: sweepIntervalSeconds,
 		md:            newTTLMapData(maxAgeSeconds),
+		done:          done,
 	}
 }
 
 // Start starts periodic sweeps for expired entries in the underlying map.
 func (m *TTLMap) Start() {
 	go func() {
-		d := time.Duration(m.sweepInterval) * time.Second
-		for now := range time.Tick(d) {
-			m.md.sweep(now.Unix())
+		ticker := time.NewTicker(time.Duration(m.sweepInterval) * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case now := <-ticker.C:
+				m.md.sweep(now.Unix())
+			case <-m.done:
+				return
+			}
 		}
 	}()
 }
@@ -50,19 +49,25 @@ func (m *TTLMap) Start() {
 // Put adds the passed-in key and value to the underlying map. The current time
 // is attached to the entry for periodic expiration checking and eviction when
 // necessary.
-func (m *TTLMap) Put(k string, v interface{}) {
+func (m *TTLMap) Put(k string, v any) {
 	m.md.put(k, v, time.Now().Unix())
 }
 
 // Get returns the object in the underlying map at the given key. If there is no
 // value at that key, Get returns nil.
-func (m *TTLMap) Get(k string) interface{} {
+func (m *TTLMap) Get(k string) any {
 	return m.md.get(k)
+}
+
+func (m *TTLMap) Shutdown() {
+	if m.done != nil {
+		close(m.done)
+	}
 }
 
 type entry struct {
 	createTime int64
-	v          interface{}
+	v          any
 }
 
 type ttlMapData struct {
@@ -79,13 +84,13 @@ func newTTLMapData(maxAgeSeconds int64) *ttlMapData {
 	}
 }
 
-func (d *ttlMapData) put(k string, v interface{}, currTime int64) {
+func (d *ttlMapData) put(k string, v any, currTime int64) {
 	d.mux.Lock()
 	d.m[k] = entry{v: v, createTime: currTime}
 	d.mux.Unlock()
 }
 
-func (d *ttlMapData) get(k string) interface{} {
+func (d *ttlMapData) get(k string) any {
 	d.mux.Lock()
 	defer d.mux.Unlock()
 	entry, ok := d.m[k]

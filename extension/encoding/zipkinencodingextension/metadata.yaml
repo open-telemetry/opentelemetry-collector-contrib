@@ -1,0 +1,12 @@
+type: zipkin_encoding
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: []
+  codeowners:
+    active: [MovieStoreGuy, dao-jun]
+
+tests:
+  config:

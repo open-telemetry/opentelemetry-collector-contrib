@@ -1,0 +1,548 @@
+\MSSQL$TEST_NAME:Memory Broker Clerks(*)\Memory broker clerk size
+\MSSQL$TEST_NAME:Memory Broker Clerks(*)\Simulation benefit
+\MSSQL$TEST_NAME:Memory Broker Clerks(*)\Simulation size
+\MSSQL$TEST_NAME:Memory Broker Clerks(*)\Internal benefit
+\MSSQL$TEST_NAME:Memory Broker Clerks(*)\Periodic evictions (pages)
+\MSSQL$TEST_NAME:Memory Broker Clerks(*)\Pressure evictions (pages/sec)
+\MSSQL$TEST_NAME:Buffer Manager\RBPEX cache hit ratio
+\MSSQL$TEST_NAME:Buffer Manager\Buffer cache hit ratio
+\MSSQL$TEST_NAME:Buffer Manager\Page lookups/sec
+\MSSQL$TEST_NAME:Buffer Manager\Free list stalls/sec
+\MSSQL$TEST_NAME:Buffer Manager\Database pages
+\MSSQL$TEST_NAME:Buffer Manager\Target pages
+\MSSQL$TEST_NAME:Buffer Manager\Integral Controller Slope
+\MSSQL$TEST_NAME:Buffer Manager\Lazy writes/sec
+\MSSQL$TEST_NAME:Buffer Manager\Readahead pages/sec
+\MSSQL$TEST_NAME:Buffer Manager\Readahead time/sec
+\MSSQL$TEST_NAME:Buffer Manager\Page reads/sec
+\MSSQL$TEST_NAME:Buffer Manager\Page writes/sec
+\MSSQL$TEST_NAME:Buffer Manager\Checkpoint pages/sec
+\MSSQL$TEST_NAME:Buffer Manager\Background writer pages/sec
+\MSSQL$TEST_NAME:Buffer Manager\Page life expectancy
+\MSSQL$TEST_NAME:Buffer Manager\Extension page writes/sec
+\MSSQL$TEST_NAME:Buffer Manager\Extension page reads/sec
+\MSSQL$TEST_NAME:Buffer Manager\Extension outstanding IO counter
+\MSSQL$TEST_NAME:Buffer Manager\Extension page evictions/sec
+\MSSQL$TEST_NAME:Buffer Manager\Extension allocated pages
+\MSSQL$TEST_NAME:Buffer Manager\Extension free pages
+\MSSQL$TEST_NAME:Buffer Manager\Extension in use as percentage
+\MSSQL$TEST_NAME:Buffer Manager\Extension page unreferenced time
+\MSSQL$TEST_NAME:Buffer Node(*)\Database pages
+\MSSQL$TEST_NAME:Buffer Node(*)\Page life expectancy
+\MSSQL$TEST_NAME:Buffer Node(*)\Local node page lookups/sec
+\MSSQL$TEST_NAME:Buffer Node(*)\Remote node page lookups/sec
+\MSSQL$TEST_NAME:General Statistics\Active Temp Tables
+\MSSQL$TEST_NAME:General Statistics\Temp Tables Creation Rate
+\MSSQL$TEST_NAME:General Statistics\Logins/sec
+\MSSQL$TEST_NAME:General Statistics\Connection Reset/sec
+\MSSQL$TEST_NAME:General Statistics\Logouts/sec
+\MSSQL$TEST_NAME:General Statistics\User Connections
+\MSSQL$TEST_NAME:General Statistics\Logical Connections
+\MSSQL$TEST_NAME:General Statistics\Transactions
+\MSSQL$TEST_NAME:General Statistics\Non-atomic yield rate
+\MSSQL$TEST_NAME:General Statistics\Mars Deadlocks
+\MSSQL$TEST_NAME:General Statistics\HTTP Authenticated Requests
+\MSSQL$TEST_NAME:General Statistics\SOAP Empty Requests
+\MSSQL$TEST_NAME:General Statistics\SOAP SQL Requests
+\MSSQL$TEST_NAME:General Statistics\SOAP Method Invocations
+\MSSQL$TEST_NAME:General Statistics\SOAP WSDL Requests
+\MSSQL$TEST_NAME:General Statistics\SOAP Session Initiate Requests
+\MSSQL$TEST_NAME:General Statistics\SOAP Session Terminate Requests
+\MSSQL$TEST_NAME:General Statistics\Processes blocked
+\MSSQL$TEST_NAME:General Statistics\Temp Tables For Destruction
+\MSSQL$TEST_NAME:General Statistics\Event Notifications Delayed Drop
+\MSSQL$TEST_NAME:General Statistics\Trace Event Notification Queue
+\MSSQL$TEST_NAME:General Statistics\SQL Trace IO Provider Lock Waits
+\MSSQL$TEST_NAME:General Statistics\Tempdb recovery unit id
+\MSSQL$TEST_NAME:General Statistics\Tempdb rowset id
+\MSSQL$TEST_NAME:Locks(*)\Lock Requests/sec
+\MSSQL$TEST_NAME:Locks(*)\Lock Timeouts/sec
+\MSSQL$TEST_NAME:Locks(*)\Number of Deadlocks/sec
+\MSSQL$TEST_NAME:Locks(*)\Lock Waits/sec
+\MSSQL$TEST_NAME:Locks(*)\Lock Wait Time (ms)
+\MSSQL$TEST_NAME:Locks(*)\Average Wait Time (ms)
+\MSSQL$TEST_NAME:Locks(*)\Lock Timeouts (timeout > 0)/sec
+\MSSQL$TEST_NAME:Databases(*)\Data File(s) Size (KB)
+\MSSQL$TEST_NAME:Databases(*)\Log File(s) Size (KB)
+\MSSQL$TEST_NAME:Databases(*)\Active parallel redo threads
+\MSSQL$TEST_NAME:Databases(*)\Log File(s) Used Size (KB)
+\MSSQL$TEST_NAME:Databases(*)\Percent Log Used
+\MSSQL$TEST_NAME:Databases(*)\XTP Memory Used (KB)
+\MSSQL$TEST_NAME:Databases(*)\XTP Controller Log Processed/sec
+\MSSQL$TEST_NAME:Databases(*)\XTP Controller DLC Latency/Fetch
+\MSSQL$TEST_NAME:Databases(*)\XTP Controller DLC Peak Latency
+\MSSQL$TEST_NAME:Databases(*)\Active Transactions
+\MSSQL$TEST_NAME:Databases(*)\Transactions/sec
+\MSSQL$TEST_NAME:Databases(*)\Repl. Pending Xacts
+\MSSQL$TEST_NAME:Databases(*)\Repl. Trans. Rate
+\MSSQL$TEST_NAME:Databases(*)\Log Cache Reads/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Cache Hit Ratio
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Requests/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Requests Old VLF/sec
+\MSSQL$TEST_NAME:Databases(*)\Avg Dist From EOL/LP Request
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Cache Misses/sec
+\MSSQL$TEST_NAME:Databases(*)\Tail Log Cache Misses/sec
+\MSSQL$TEST_NAME:Databases(*)\TLC Req. Behind Trunc/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Req. Behind Trunc/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Push Empty FreePool/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Push Low Memory/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Push No Free Buffer/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool LogWriter Pushes/sec
+\MSSQL$TEST_NAME:Databases(*)\TLC LogWriter Pushes/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Log Scan Pushes/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Hash Inserts/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Hash Deletes/sec
+\MSSQL$TEST_NAME:Databases(*)\Tail Log Cache Deletes/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Invalid Hash Entry/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Disk Reads/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Total Active Log Size
+\MSSQL$TEST_NAME:Databases(*)\Log Pool Total Shared Pool Size
+\MSSQL$TEST_NAME:Databases(*)\Bulk Copy Rows/sec
+\MSSQL$TEST_NAME:Databases(*)\Bulk Copy Throughput/sec
+\MSSQL$TEST_NAME:Databases(*)\Backup/Restore Throughput/sec
+\MSSQL$TEST_NAME:Databases(*)\DBCC Logical Scan Bytes/sec
+\MSSQL$TEST_NAME:Databases(*)\Shrink Data Movement Bytes/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Flushes/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Bytes Flushed/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Flush Waits/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Flush Wait Time
+\MSSQL$TEST_NAME:Databases(*)\Group Commit Time/sec
+\MSSQL$TEST_NAME:Databases(*)\Log Flush Write Time (ms)
+\MSSQL$TEST_NAME:Databases(*)\Log Truncations
+\MSSQL$TEST_NAME:Databases(*)\Log Growths
+\MSSQL$TEST_NAME:Databases(*)\Log Shrinks
+\MSSQL$TEST_NAME:Databases(*)\Tracked transactions/sec
+\MSSQL$TEST_NAME:Databases(*)\Write Transactions/sec
+\MSSQL$TEST_NAME:Databases(*)\Commit table entries
+\MSSQL$TEST_NAME:Databases(*)\PVS off-row record generated/sec
+\MSSQL$TEST_NAME:Databases(*)\PVS off-row record retrieved/sec
+\MSSQL$TEST_NAME:Databases(*)\PVS off-row pages allocated/sec
+\MSSQL$TEST_NAME:Databases(*)\PVS off-row pages deleted/sec
+\MSSQL$TEST_NAME:Databases(*)\PVS in-row diff generated/sec
+\MSSQL$TEST_NAME:Databases(*)\PVS in-row diff retrieved/sec
+\MSSQL$TEST_NAME:Databases(*)\WPR add lsn bucket miss
+\MSSQL$TEST_NAME:Databases(*)\WPR stale check bucket miss
+\MSSQL$TEST_NAME:Databases(*)\WPR bucket swaps
+\MSSQL$TEST_NAME:LogPool FreePool(*)\Free List Length
+\MSSQL$TEST_NAME:LogPool FreePool(*)\Free Buffer Refills/sec
+\MSSQL$TEST_NAME:TailLogCache(*)\Tail Log Cache Entry Count
+\MSSQL$TEST_NAME:TailLogCache(*)\Tail Log Cache Free List Length
+\MSSQL$TEST_NAME:Database Mirroring(*)\Bytes Sent/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Pages Sent/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Sends/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Transaction Delay
+\MSSQL$TEST_NAME:Database Mirroring(*)\Redo Queue KB
+\MSSQL$TEST_NAME:Database Mirroring(*)\Redo Bytes/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Send Queue KB
+\MSSQL$TEST_NAME:Database Mirroring(*)\Bytes Received/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Receives/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Bytes Received/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Bytes Sent/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Send/Receive Ack Time
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Compressed Bytes Rcvd/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Compressed Bytes Sent/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Mirrored Write Transactions/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Scanned for Undo KB
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Remaining for Undo KB
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Bytes Sent from Cache/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Bytes Redone from Cache/sec
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Send Flow Control Time (ms)
+\MSSQL$TEST_NAME:Database Mirroring(*)\Log Harden Time (ms)
+\MSSQL$TEST_NAME:Database Replica(*)\Recovery Queue
+\MSSQL$TEST_NAME:Database Replica(*)\Redone Bytes/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Redones/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Log Send Queue
+\MSSQL$TEST_NAME:Database Replica(*)\Log Apply Ready Queue
+\MSSQL$TEST_NAME:Database Replica(*)\Log Apply Pending Queue
+\MSSQL$TEST_NAME:Database Replica(*)\Log Bytes Received/sec
+\MSSQL$TEST_NAME:Database Replica(*)\File Bytes Received/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Mirrored Write Transactions/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Transaction Delay
+\MSSQL$TEST_NAME:Database Replica(*)\Group Commit Time
+\MSSQL$TEST_NAME:Database Replica(*)\Group Commits/Sec
+\MSSQL$TEST_NAME:Database Replica(*)\Log Bytes Compressed/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Log Compressions/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Log Compression Cache misses/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Log Compression Cache hits/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Log Bytes Decompressed/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Log Decompressions/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Database Flow Control Delay
+\MSSQL$TEST_NAME:Database Replica(*)\Database Flow Controls/sec
+\MSSQL$TEST_NAME:Database Replica(*)\Total Log requiring undo
+\MSSQL$TEST_NAME:Database Replica(*)\Log remaining for undo
+\MSSQL$TEST_NAME:Database Replica(*)\Redo Bytes Remaining
+\MSSQL$TEST_NAME:Database Replica(*)\Redo blocked/sec
+\MSSQL$TEST_NAME:Availability Replica(*)\Bytes Sent to Replica/sec
+\MSSQL$TEST_NAME:Availability Replica(*)\Sends to Replica/sec
+\MSSQL$TEST_NAME:Availability Replica(*)\Bytes Sent to Transport/sec
+\MSSQL$TEST_NAME:Availability Replica(*)\Sends to Transport/sec
+\MSSQL$TEST_NAME:Availability Replica(*)\Bytes Received from Replica/sec
+\MSSQL$TEST_NAME:Availability Replica(*)\Receives from Replica/sec
+\MSSQL$TEST_NAME:Availability Replica(*)\Flow Control Time (ms/sec)
+\MSSQL$TEST_NAME:Availability Replica(*)\Flow Control/sec
+\MSSQL$TEST_NAME:Availability Replica(*)\Resent Messages/sec
+\MSSQL$TEST_NAME:Latches\Latch Waits/sec
+\MSSQL$TEST_NAME:Latches\Average Latch Wait Time (ms)
+\MSSQL$TEST_NAME:Latches\Total Latch Wait Time (ms)
+\MSSQL$TEST_NAME:Latches\Number of SuperLatches
+\MSSQL$TEST_NAME:Latches\SuperLatch Promotions/sec
+\MSSQL$TEST_NAME:Latches\SuperLatch Demotions/sec
+\MSSQL$TEST_NAME:Access Methods\Full Scans/sec
+\MSSQL$TEST_NAME:Access Methods\Range Scans/sec
+\MSSQL$TEST_NAME:Access Methods\Probe Scans/sec
+\MSSQL$TEST_NAME:Access Methods\Scan Point Revalidations/sec
+\MSSQL$TEST_NAME:Access Methods\Workfiles Created/sec
+\MSSQL$TEST_NAME:Access Methods\Worktables Created/sec
+\MSSQL$TEST_NAME:Access Methods\Worktables From Cache Ratio
+\MSSQL$TEST_NAME:Access Methods\Forwarded Records/sec
+\MSSQL$TEST_NAME:Access Methods\Skipped Ghosted Records/sec
+\MSSQL$TEST_NAME:Access Methods\Index Searches/sec
+\MSSQL$TEST_NAME:Access Methods\FreeSpace Scans/sec
+\MSSQL$TEST_NAME:Access Methods\FreeSpace Page Fetches/sec
+\MSSQL$TEST_NAME:Access Methods\Pages Allocated/sec
+\MSSQL$TEST_NAME:Access Methods\Extents Allocated/sec
+\MSSQL$TEST_NAME:Access Methods\Mixed page allocations/sec
+\MSSQL$TEST_NAME:Access Methods\Extent Deallocations/sec
+\MSSQL$TEST_NAME:Access Methods\Page Deallocations/sec
+\MSSQL$TEST_NAME:Access Methods\Page Splits/sec
+\MSSQL$TEST_NAME:Access Methods\Table Lock Escalations/sec
+\MSSQL$TEST_NAME:Access Methods\Deferred Dropped rowsets
+\MSSQL$TEST_NAME:Access Methods\Dropped rowset cleanups/sec
+\MSSQL$TEST_NAME:Access Methods\Dropped rowsets skipped/sec
+\MSSQL$TEST_NAME:Access Methods\Deferred dropped AUs
+\MSSQL$TEST_NAME:Access Methods\AU cleanups/sec
+\MSSQL$TEST_NAME:Access Methods\AU cleanup batches/sec
+\MSSQL$TEST_NAME:Access Methods\Failed AU cleanup batches/sec
+\MSSQL$TEST_NAME:Access Methods\Used tree page cookie
+\MSSQL$TEST_NAME:Access Methods\Failed tree page cookie
+\MSSQL$TEST_NAME:Access Methods\Used leaf page cookie
+\MSSQL$TEST_NAME:Access Methods\Failed leaf page cookie
+\MSSQL$TEST_NAME:Access Methods\LobSS Provider Create Count
+\MSSQL$TEST_NAME:Access Methods\LobSS Provider Destroy Count
+\MSSQL$TEST_NAME:Access Methods\LobSS Provider Truncation Count
+\MSSQL$TEST_NAME:Access Methods\LobHandle Create Count
+\MSSQL$TEST_NAME:Access Methods\LobHandle Destroy Count
+\MSSQL$TEST_NAME:Access Methods\By-reference Lob Create Count
+\MSSQL$TEST_NAME:Access Methods\By-reference Lob Use Count
+\MSSQL$TEST_NAME:Access Methods\Count Push Off Row
+\MSSQL$TEST_NAME:Access Methods\Count Pull In Row
+\MSSQL$TEST_NAME:Access Methods\Count Lob Readahead
+\MSSQL$TEST_NAME:Access Methods\Page compression attempts/sec
+\MSSQL$TEST_NAME:Access Methods\Pages compressed/sec
+\MSSQL$TEST_NAME:Access Methods\InSysXact waits/sec
+\MSSQL$TEST_NAME:SQL Errors(*)\Errors/sec
+\MSSQL$TEST_NAME:SQL Statistics\Batch Requests/sec
+\MSSQL$TEST_NAME:SQL Statistics\Forced Parameterizations/sec
+\MSSQL$TEST_NAME:SQL Statistics\Auto-Param Attempts/sec
+\MSSQL$TEST_NAME:SQL Statistics\Failed Auto-Params/sec
+\MSSQL$TEST_NAME:SQL Statistics\Safe Auto-Params/sec
+\MSSQL$TEST_NAME:SQL Statistics\Unsafe Auto-Params/sec
+\MSSQL$TEST_NAME:SQL Statistics\SQL Compilations/sec
+\MSSQL$TEST_NAME:SQL Statistics\SQL Re-Compilations/sec
+\MSSQL$TEST_NAME:SQL Statistics\SQL Attention rate
+\MSSQL$TEST_NAME:SQL Statistics\Guided plan executions/sec
+\MSSQL$TEST_NAME:SQL Statistics\Misguided plan executions/sec
+\MSSQL$TEST_NAME:Plan Cache(*)\Cache Hit Ratio
+\MSSQL$TEST_NAME:Plan Cache(*)\Cache Pages
+\MSSQL$TEST_NAME:Plan Cache(*)\Cache Object Counts
+\MSSQL$TEST_NAME:Plan Cache(*)\Cache Objects in use
+\MSSQL$TEST_NAME:Cursor Manager by Type(*)\Cache Hit Ratio
+\MSSQL$TEST_NAME:Cursor Manager by Type(*)\Cached Cursor Counts
+\MSSQL$TEST_NAME:Cursor Manager by Type(*)\Cursor Cache Use Counts/sec
+\MSSQL$TEST_NAME:Cursor Manager by Type(*)\Cursor Requests/sec
+\MSSQL$TEST_NAME:Cursor Manager by Type(*)\Active cursors
+\MSSQL$TEST_NAME:Cursor Manager by Type(*)\Cursor memory usage
+\MSSQL$TEST_NAME:Cursor Manager by Type(*)\Cursor worktable usage
+\MSSQL$TEST_NAME:Cursor Manager by Type(*)\Number of active cursor plans
+\MSSQL$TEST_NAME:Cursor Manager Total\Cursor conversion rate
+\MSSQL$TEST_NAME:Cursor Manager Total\Async population count
+\MSSQL$TEST_NAME:Cursor Manager Total\Cursor flushes
+\MSSQL$TEST_NAME:Memory Manager\External benefit of memory
+\MSSQL$TEST_NAME:Memory Manager\Connection Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Database Cache Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Free Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Granted Workspace Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Lock Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Lock Blocks Allocated
+\MSSQL$TEST_NAME:Memory Manager\Lock Owner Blocks Allocated
+\MSSQL$TEST_NAME:Memory Manager\Lock Blocks
+\MSSQL$TEST_NAME:Memory Manager\Lock Owner Blocks
+\MSSQL$TEST_NAME:Memory Manager\Maximum Workspace Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Memory Grants Outstanding
+\MSSQL$TEST_NAME:Memory Manager\Memory Grants Pending
+\MSSQL$TEST_NAME:Memory Manager\Optimizer Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Reserved Server Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\SQL Cache Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Stolen Server Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Log Pool Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Decommit Memory (KB)/sec
+\MSSQL$TEST_NAME:Memory Manager\Target Server Memory (KB)
+\MSSQL$TEST_NAME:Memory Manager\Total Server Memory (KB)
+\MSSQL$TEST_NAME:Memory Node(*)\Database Node Memory (KB)
+\MSSQL$TEST_NAME:Memory Node(*)\Free Node Memory (KB)
+\MSSQL$TEST_NAME:Memory Node(*)\Foreign Node Memory (KB)
+\MSSQL$TEST_NAME:Memory Node(*)\Stolen Node Memory (KB)
+\MSSQL$TEST_NAME:Memory Node(*)\Decommit Node Memory (KB)/sec
+\MSSQL$TEST_NAME:Memory Node(*)\Target Node Memory (KB)
+\MSSQL$TEST_NAME:Memory Node(*)\Total Node Memory (KB)
+\MSSQL$TEST_NAME:User Settable(*)\Query
+\MSSQL$TEST_NAME:Replication Agents(*)\Running
+\MSSQL$TEST_NAME:Replication Merge(*)\Uploaded Changes/sec
+\MSSQL$TEST_NAME:Replication Merge(*)\Downloaded Changes/sec
+\MSSQL$TEST_NAME:Replication Merge(*)\Conflicts/sec
+\MSSQL$TEST_NAME:Replication Logreader(*)\Logreader:Delivery Latency
+\MSSQL$TEST_NAME:Replication Logreader(*)\Logreader:Delivered Cmds/sec
+\MSSQL$TEST_NAME:Replication Logreader(*)\Logreader:Delivered Trans/sec
+\MSSQL$TEST_NAME:Replication Dist.(*)\Dist:Delivery Latency
+\MSSQL$TEST_NAME:Replication Dist.(*)\Dist:Delivered Cmds/sec
+\MSSQL$TEST_NAME:Replication Dist.(*)\Dist:Delivered Trans/sec
+\MSSQL$TEST_NAME:Replication Snapshot(*)\Snapshot:Delivered Cmds/sec
+\MSSQL$TEST_NAME:Replication Snapshot(*)\Snapshot:Delivered Trans/sec
+\MSSQL$TEST_NAME:Backup Device(*)\Device Throughput Bytes/sec
+\MSSQL$TEST_NAME:Transactions\Transactions
+\MSSQL$TEST_NAME:Transactions\Snapshot Transactions
+\MSSQL$TEST_NAME:Transactions\Update Snapshot Transactions
+\MSSQL$TEST_NAME:Transactions\NonSnapshot Version Transactions
+\MSSQL$TEST_NAME:Transactions\Longest Transaction Running Time
+\MSSQL$TEST_NAME:Transactions\Update conflict ratio
+\MSSQL$TEST_NAME:Transactions\Free Space in tempdb (KB)
+\MSSQL$TEST_NAME:Transactions\Version Generation rate (KB/s)
+\MSSQL$TEST_NAME:Transactions\Version Cleanup rate (KB/s)
+\MSSQL$TEST_NAME:Transactions\Version Store Size (KB)
+\MSSQL$TEST_NAME:Transactions\Version Store unit count
+\MSSQL$TEST_NAME:Transactions\Version Store unit creation
+\MSSQL$TEST_NAME:Transactions\Version Store unit truncation
+\MSSQL$TEST_NAME:Broker Statistics\SQL SENDs/sec
+\MSSQL$TEST_NAME:Broker Statistics\SQL SEND Total
+\MSSQL$TEST_NAME:Broker Statistics\SQL RECEIVEs/sec
+\MSSQL$TEST_NAME:Broker Statistics\SQL RECEIVE Total
+\MSSQL$TEST_NAME:Broker Statistics\Broker Transaction Rollbacks
+\MSSQL$TEST_NAME:Broker Statistics\Dialog Timer Event Count
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P1 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P2 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P3 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P4 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P5 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P6 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P7 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P8 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P9 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued P10 Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued Local Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued Transport Msgs/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued Transport Msg Frags/sec
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued Messages Total
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued Local Messages Total
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued Transport Msgs Total
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued Transport Msg Frag Tot
+\MSSQL$TEST_NAME:Broker Statistics\Forwarded Pending Msg Count
+\MSSQL$TEST_NAME:Broker Statistics\Forwarded Pending Msg Bytes
+\MSSQL$TEST_NAME:Broker Statistics\Forwarded Msgs Discarded/sec
+\MSSQL$TEST_NAME:Broker Statistics\Forwarded Msg Discarded Total
+\MSSQL$TEST_NAME:Broker Statistics\Forwarded Messages/sec
+\MSSQL$TEST_NAME:Broker Statistics\Forwarded Messages Total
+\MSSQL$TEST_NAME:Broker Statistics\Forwarded Msg Bytes/sec
+\MSSQL$TEST_NAME:Broker Statistics\Forwarded Msg Byte Total
+\MSSQL$TEST_NAME:Broker Statistics\Enqueued TransmissionQ Msgs/sec
+\MSSQL$TEST_NAME:Broker Statistics\Dequeued TransmissionQ Msgs/sec
+\MSSQL$TEST_NAME:Broker Statistics\Dropped Messages Total
+\MSSQL$TEST_NAME:Broker Statistics\Corrupted Messages Total
+\MSSQL$TEST_NAME:Broker Statistics\Activation Errors Total
+\MSSQL$TEST_NAME:Broker/DBM Transport\Open Connection Count
+\MSSQL$TEST_NAME:Broker/DBM Transport\Send I/Os/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Send I/O bytes/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Send I/O Len Avg
+\MSSQL$TEST_NAME:Broker/DBM Transport\Encryption I/Os/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Encrypted I/O bytes/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Decryption I/Os/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Decrypted I/O bytes/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Send Flow Control Gate
+\MSSQL$TEST_NAME:Broker/DBM Transport\Send Flow Control Enters/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Send Flow Control Exits/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Receive Flow Control Gate
+\MSSQL$TEST_NAME:Broker/DBM Transport\Receive Flow Control Enters/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Receive Flow Control Exits/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Receive I/Os/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Receive I/O bytes/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Receive I/O Len Avg
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P1 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P2 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P3 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P4 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P5 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P6 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P7 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P8 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P9 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment P10 Sends/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Msg Fragment Send Size Avg
+\MSSQL$TEST_NAME:Broker/DBM Transport\Message Fragment Receives/sec
+\MSSQL$TEST_NAME:Broker/DBM Transport\Msg Fragment Recv Size Avg
+\MSSQL$TEST_NAME:Broker/DBM Transport\Pending Msg Frags for Send I/O
+\MSSQL$TEST_NAME:Broker/DBM Transport\Current Msg Frags for Send I/O
+\MSSQL$TEST_NAME:Broker/DBM Transport\Pending Bytes for Send I/O
+\MSSQL$TEST_NAME:Broker/DBM Transport\Current Bytes for Send I/O
+\MSSQL$TEST_NAME:Broker/DBM Transport\Pending Msg Frags for Recv I/O
+\MSSQL$TEST_NAME:Broker/DBM Transport\Current Bytes for Recv I/O
+\MSSQL$TEST_NAME:Broker/DBM Transport\Pending Bytes for Recv I/O
+\MSSQL$TEST_NAME:Broker/DBM Transport\Recv I/O Buffer Copies Count
+\MSSQL$TEST_NAME:Broker/DBM Transport\Recv I/O Buffer Copies bytes/sec
+\MSSQL$TEST_NAME:Broker Activation(*)\Tasks Started/sec
+\MSSQL$TEST_NAME:Broker Activation(*)\Tasks Running
+\MSSQL$TEST_NAME:Broker Activation(*)\Tasks Aborted/sec
+\MSSQL$TEST_NAME:Broker Activation(*)\Task Limit Reached/sec
+\MSSQL$TEST_NAME:Broker Activation(*)\Task Limit Reached
+\MSSQL$TEST_NAME:Broker Activation(*)\Stored Procedures Invoked/sec
+\MSSQL$TEST_NAME:Broker TO Statistics\Transmission Obj Gets/Sec
+\MSSQL$TEST_NAME:Broker TO Statistics\Transmission Obj Set Dirty/Sec
+\MSSQL$TEST_NAME:Broker TO Statistics\Transmission Obj Writes/Sec
+\MSSQL$TEST_NAME:Broker TO Statistics\Avg. Length of Batched Writes
+\MSSQL$TEST_NAME:Broker TO Statistics\Avg. Time to Write Batch (ms)
+\MSSQL$TEST_NAME:Broker TO Statistics\Avg. Time Between Batches (ms)
+\MSSQL$TEST_NAME:Wait Statistics(*)\Lock waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Memory grant queue waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Thread-safe memory objects waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Log write waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Log buffer waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Network IO waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Page IO latch waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Page latch waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Non-Page latch waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Wait for the worker
+\MSSQL$TEST_NAME:Wait Statistics(*)\Workspace synchronization waits
+\MSSQL$TEST_NAME:Wait Statistics(*)\Transaction ownership waits
+\MSSQL$TEST_NAME:Exec Statistics(*)\Extended Procedures
+\MSSQL$TEST_NAME:Exec Statistics(*)\DTC calls
+\MSSQL$TEST_NAME:Exec Statistics(*)\OLEDB calls
+\MSSQL$TEST_NAME:Exec Statistics(*)\Distributed Query
+\MSSQL$TEST_NAME:CLR\CLR Execution
+\MSSQL$TEST_NAME:Catalog Metadata(*)\Cache Hit Ratio
+\MSSQL$TEST_NAME:Catalog Metadata(*)\Cache Entries Count
+\MSSQL$TEST_NAME:Catalog Metadata(*)\Cache Entries Pinned Count
+\MSSQL$TEST_NAME:Deprecated Features(*)\Usage
+\MSSQL$TEST_NAME:Workload Group Stats(*)\CPU usage %
+\MSSQL$TEST_NAME:Workload Group Stats(*)\CPU effective %
+\MSSQL$TEST_NAME:Workload Group Stats(*)\CPU delayed %
+\MSSQL$TEST_NAME:Workload Group Stats(*)\CPU violated %
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Queued requests
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Active requests
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Requests completed/sec
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Max request cpu time (ms)
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Blocked tasks
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Reduced memory grants/sec
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Max request memory grant (KB)
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Query optimizations/sec
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Suboptimal plans/sec
+\MSSQL$TEST_NAME:Workload Group Stats(*)\Active parallel threads
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\CPU usage %
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\CPU usage target %
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\CPU control effect %
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\CPU effective %
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\CPU delayed %
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\CPU violated %
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Compile memory target (KB)
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Cache memory target (KB)
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Query exec memory target (KB)
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Memory grants/sec
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Active memory grants count
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Memory grant timeouts/sec
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Active memory grant amount (KB)
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Pending memory grants count
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Max memory (KB)
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Used memory (KB)
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Target memory (KB)
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Disk Read IO/sec
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Disk Read IO Throttled/sec
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Disk Read Bytes/sec
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Avg Disk Read IO (ms)
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Disk Write IO/sec
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Disk Write IO Throttled/sec
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Disk Write Bytes/sec
+\MSSQL$TEST_NAME:Resource Pool Stats(*)\Avg Disk Write IO (ms)
+\MSSQL$TEST_NAME:FileTable\FileTable db operations/sec
+\MSSQL$TEST_NAME:FileTable\FileTable table operations/sec
+\MSSQL$TEST_NAME:FileTable\FileTable item get requests/sec
+\MSSQL$TEST_NAME:FileTable\Avg time to get FileTable item
+\MSSQL$TEST_NAME:FileTable\FileTable item delete reqs/sec
+\MSSQL$TEST_NAME:FileTable\Avg time delete FileTable item
+\MSSQL$TEST_NAME:FileTable\FileTable item update reqs/sec
+\MSSQL$TEST_NAME:FileTable\Avg time update FileTable item
+\MSSQL$TEST_NAME:FileTable\FileTable item move reqs/sec
+\MSSQL$TEST_NAME:FileTable\Avg time move FileTable item
+\MSSQL$TEST_NAME:FileTable\FileTable item rename reqs/sec
+\MSSQL$TEST_NAME:FileTable\Avg time rename FileTable item
+\MSSQL$TEST_NAME:FileTable\FileTable enumeration reqs/sec
+\MSSQL$TEST_NAME:FileTable\Avg time FileTable enumeration
+\MSSQL$TEST_NAME:FileTable\FileTable file I/O requests/sec
+\MSSQL$TEST_NAME:FileTable\Avg time per file I/O request
+\MSSQL$TEST_NAME:FileTable\FileTable file I/O response/sec
+\MSSQL$TEST_NAME:FileTable\Avg time per file I/O response
+\MSSQL$TEST_NAME:FileTable\FileTable kill handle ops/sec
+\MSSQL$TEST_NAME:FileTable\Avg time FileTable handle kill
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000000ms & <000001ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000001ms & <000002ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000002ms & <000005ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000005ms & <000010ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000010ms & <000020ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000020ms & <000050ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000050ms & <000100ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000100ms & <000200ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000200ms & <000500ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=000500ms & <001000ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=001000ms & <002000ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=002000ms & <005000ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=005000ms & <010000ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=010000ms & <020000ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=020000ms & <050000ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=050000ms & <100000ms
+\MSSQL$TEST_NAME:Batch Resp Statistics(*)\Batches >=100000ms
+\MSSQL$TEST_NAME:HTTP Storage(*)\Read Bytes/Sec
+\MSSQL$TEST_NAME:HTTP Storage(*)\Write Bytes/Sec
+\MSSQL$TEST_NAME:HTTP Storage(*)\Total Bytes/Sec
+\MSSQL$TEST_NAME:HTTP Storage(*)\Reads/Sec
+\MSSQL$TEST_NAME:HTTP Storage(*)\Writes/Sec
+\MSSQL$TEST_NAME:HTTP Storage(*)\Transfers/Sec
+\MSSQL$TEST_NAME:HTTP Storage(*)\Avg. Bytes/Read
+\MSSQL$TEST_NAME:HTTP Storage(*)\Avg. Bytes/Write
+\MSSQL$TEST_NAME:HTTP Storage(*)\Avg. Bytes/Transfer
+\MSSQL$TEST_NAME:HTTP Storage(*)\Avg. microsec/Read
+\MSSQL$TEST_NAME:HTTP Storage(*)\Avg. microsec/Write
+\MSSQL$TEST_NAME:HTTP Storage(*)\Avg. microsec/Transfer
+\MSSQL$TEST_NAME:HTTP Storage(*)\Outstanding HTTP Storage IO
+\MSSQL$TEST_NAME:HTTP Storage(*)\HTTP Storage IO retry/sec
+\MSSQL$TEST_NAME:HTTP Storage(*)\HTTP Storage IO failed/sec
+\MSSQL$TEST_NAME:HTTP Storage(*)\Avg. microsec/Read Comp
+\MSSQL$TEST_NAME:HTTP Storage(*)\Avg. microsec/Write Comp
+\MSSQL$TEST_NAME:Query Store(*)\Query Store CPU usage
+\MSSQL$TEST_NAME:Query Store(*)\Query Store physical reads
+\MSSQL$TEST_NAME:Query Store(*)\Query Store logical reads
+\MSSQL$TEST_NAME:Query Store(*)\Query Store logical writes
+\MSSQL$TEST_NAME:Columnstore(*)\Delta Rowgroups Created
+\MSSQL$TEST_NAME:Columnstore(*)\Delta Rowgroups Closed
+\MSSQL$TEST_NAME:Columnstore(*)\Delta Rowgroups Compressed
+\MSSQL$TEST_NAME:Columnstore(*)\Total Rowgroups Compressed
+\MSSQL$TEST_NAME:Columnstore(*)\Total Delete Buffers Migrated
+\MSSQL$TEST_NAME:Columnstore(*)\Total Merge Policy Evaluations
+\MSSQL$TEST_NAME:Columnstore(*)\Total Source Rowgroups Merged
+\MSSQL$TEST_NAME:Columnstore(*)\Total Rowgroups Merge Compressed
+\MSSQL$TEST_NAME:Columnstore(*)\Total Rowgroups Fit For Merge
+\MSSQL$TEST_NAME:Columnstore(*)\Segment Cache Hit Ratio
+\MSSQL$TEST_NAME:Columnstore(*)\Segment Reads/Sec
+\MSSQL$TEST_NAME:External Scripts\Total Executions
+\MSSQL$TEST_NAME:External Scripts\Parallel Executions
+\MSSQL$TEST_NAME:External Scripts\Streaming Executions
+\MSSQL$TEST_NAME:External Scripts\SQL CC Executions
+\MSSQL$TEST_NAME:External Scripts\Implied Auth. Logins
+\MSSQL$TEST_NAME:External Scripts\Total Execution Time (ms)
+\MSSQL$TEST_NAME:External Scripts\Execution Errors
+\MSSQL$TEST_NAME:External Scripts\Partition By Executions
+\MSSQL$TEST_NAME:Advanced Analytics(*)\Predictions/sec
+\MSSQL$TEST_NAME:Availability Group(*)\Active Hadr Threads
+\MSSQL$TEST_NAME:JSON Doc Stats\Documents Less Than 8KB
+\MSSQL$TEST_NAME:JSON Doc Stats\Documents Between 8KB-16KB
+\MSSQL$TEST_NAME:JSON Doc Stats\Documents Between 16KB-32KB
+\MSSQL$TEST_NAME:JSON Doc Stats\Documents Between 32KB-100KB
+\MSSQL$TEST_NAME:JSON Doc Stats\Documents Greater Than 100KB
+\MSSQL$TEST_NAME:JSON Doc Stats\JSON Function Call Count

@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awscontainerinsightreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 
@@ -37,6 +26,7 @@ var _ receiver.Metrics = (*awsContainerInsightReceiver)(nil)
 
 type metricsProvider interface {
 	GetMetrics() []pmetric.Metrics
+	Shutdown() error
 }
 
 // awsContainerInsightReceiver implements the receiver.Metrics
@@ -54,9 +44,6 @@ func newAWSContainerInsightReceiver(
 	settings component.TelemetrySettings,
 	config *Config,
 	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	r := &awsContainerInsightReceiver{
 		settings:     settings,
@@ -136,10 +123,21 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 		return nil
 	}
 	acir.cancel()
-	return nil
+
+	var errs error
+
+	if acir.k8sapiserver != nil {
+		errs = errors.Join(errs, acir.k8sapiserver.Shutdown())
+	}
+	if acir.cadvisor != nil {
+		errs = errors.Join(errs, acir.cadvisor.Shutdown())
+	}
+
+	return errs
+
 }
 
-// collectData collects container stats from Amazon ECS Task Metadata Endpoint
+// collectData collects container stats from cAdvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) collectData(ctx context.Context) error {
 	var mds []pmetric.Metrics
 	if acir.cadvisor == nil && acir.k8sapiserver == nil {

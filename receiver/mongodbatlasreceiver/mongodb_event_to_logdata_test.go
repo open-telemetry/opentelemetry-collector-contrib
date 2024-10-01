@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver
 
@@ -29,13 +18,19 @@ import (
 )
 
 func TestMongoeventToLogData4_4(t *testing.T) {
-	mongoevent := GetTestEvent4_4()
+	mongoevent := getTestEvent4_4()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
+	clusterInfo := ClusterInfo{
+		ClusterName:         "clusterName",
+		RegionName:          "regionName",
+		ProviderName:        "providerName",
+		MongoDBMajorVersion: "4.4",
+	}
 
-	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "logName", "clusterName", "4.4")
+	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "logName", clusterInfo)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
@@ -43,11 +38,13 @@ func TestMongoeventToLogData4_4(t *testing.T) {
 	attrs := lr.Attributes()
 
 	assert.Equal(t, 1, ld.ResourceLogs().Len())
-	assert.Equal(t, 4, resourceAttrs.Len())
+	assert.Equal(t, 6, resourceAttrs.Len())
 	assertString(t, resourceAttrs, "mongodb_atlas.org", "Org")
 	assertString(t, resourceAttrs, "mongodb_atlas.project", "Project")
 	assertString(t, resourceAttrs, "mongodb_atlas.cluster", "clusterName")
 	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
+	assertString(t, resourceAttrs, "mongodb_atlas.region.name", "regionName")
+	assertString(t, resourceAttrs, "mongodb_atlas.provider.name", "providerName")
 
 	t.Logf("%+v", attrs.AsRaw())
 	assert.Equal(t, 8, attrs.Len())
@@ -67,13 +64,20 @@ func TestMongoeventToLogData4_4(t *testing.T) {
 }
 
 func TestMongoeventToLogData4_2(t *testing.T) {
-	mongoevent := GetTestEvent4_2()
+	mongoevent := getTestEvent4_2()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbEventToLogData(zaptest.NewLogger(t), []model.LogEntry{mongoevent}, pc, "hostname", "logName", "clusterName", "4.2")
+	clusterInfo := ClusterInfo{
+		ClusterName:         "clusterName",
+		RegionName:          "regionName",
+		ProviderName:        "providerName",
+		MongoDBMajorVersion: "4.2",
+	}
+
+	ld := mongodbEventToLogData(zaptest.NewLogger(t), []model.LogEntry{mongoevent}, pc, "hostname", "logName", clusterInfo)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
@@ -81,10 +85,12 @@ func TestMongoeventToLogData4_2(t *testing.T) {
 	attrs := lr.Attributes()
 
 	assert.Equal(t, 1, ld.ResourceLogs().Len())
-	assert.Equal(t, 4, resourceAttrs.Len())
+	assert.Equal(t, 6, resourceAttrs.Len())
 	assertString(t, resourceAttrs, "mongodb_atlas.org", "Org")
 	assertString(t, resourceAttrs, "mongodb_atlas.project", "Project")
 	assertString(t, resourceAttrs, "mongodb_atlas.cluster", "clusterName")
+	assertString(t, resourceAttrs, "mongodb_atlas.region.name", "regionName")
+	assertString(t, resourceAttrs, "mongodb_atlas.provider.name", "providerName")
 	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
 
 	assert.Equal(t, 4, attrs.Len())
@@ -103,41 +109,57 @@ func TestMongoeventToLogData4_2(t *testing.T) {
 }
 
 func TestUnknownSeverity(t *testing.T) {
-	mongoevent := GetTestEvent4_4()
+	mongoevent := getTestEvent4_4()
 	mongoevent.Severity = "Unknown"
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
+	clusterInfo := ClusterInfo{
+		ClusterName:         "clusterName",
+		RegionName:          "regionName",
+		ProviderName:        "providerName",
+		MongoDBMajorVersion: "4.4",
+	}
 
-	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "clusterName", "logName", "4.4")
+	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "clusterName", clusterInfo)
 	rl := ld.ResourceLogs().At(0)
 	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
 
-	assert.Equal(t, logEntry.SeverityNumber(), plog.SeverityNumberUnspecified)
-	assert.Equal(t, logEntry.SeverityText(), "")
+	assert.Equal(t, plog.SeverityNumberUnspecified, logEntry.SeverityNumber())
+	assert.Equal(t, "", logEntry.SeverityText())
 }
 
 func TestMongoEventToAuditLogData5_0(t *testing.T) {
-	mongoevent := GetTestAuditEvent5_0()
+	mongoevent := getTestAuditEvent5_0()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", "clusterName", "5.0")
+	clusterInfo := ClusterInfo{
+		ClusterName:         "clusterName",
+		RegionName:          "regionName",
+		ProviderName:        "providerName",
+		MongoDBMajorVersion: "5.0",
+	}
+
+	ld, err := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", clusterInfo)
+	require.NoError(t, err)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
 	lr := sl.LogRecords().At(0)
 	attrs := lr.Attributes()
 
-	assert.Equal(t, ld.ResourceLogs().Len(), 1)
-	assert.Equal(t, resourceAttrs.Len(), 4)
+	assert.Equal(t, 1, ld.ResourceLogs().Len())
+	assert.Equal(t, 6, resourceAttrs.Len())
 	assertString(t, resourceAttrs, "mongodb_atlas.org", "Org")
 	assertString(t, resourceAttrs, "mongodb_atlas.project", "Project")
 	assertString(t, resourceAttrs, "mongodb_atlas.cluster", "clusterName")
 	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
+	assertString(t, resourceAttrs, "mongodb_atlas.region.name", "regionName")
+	assertString(t, resourceAttrs, "mongodb_atlas.provider.name", "providerName")
 
 	assert.Equal(t, 14, attrs.Len())
 	assertString(t, attrs, "atype", "authenticate")
@@ -154,13 +176,13 @@ func TestMongoEventToAuditLogData5_0(t *testing.T) {
 
 	roles, ok := attrs.Get("roles")
 	require.True(t, ok, "roles key does not exist")
-	require.Equal(t, roles.Slice().Len(), 1)
+	require.Equal(t, 1, roles.Slice().Len())
 	assertString(t, roles.Slice().At(0).Map(), "role", "test_role")
 	assertString(t, roles.Slice().At(0).Map(), "db", "test_db")
 
 	users, ok := attrs.Get("users")
 	require.True(t, ok, "users key does not exist")
-	require.Equal(t, users.Slice().Len(), 1)
+	require.Equal(t, 1, users.Slice().Len())
 	assertString(t, users.Slice().At(0).Map(), "user", "mongo_user")
 	assertString(t, users.Slice().At(0).Map(), "db", "my_db")
 
@@ -175,25 +197,35 @@ func TestMongoEventToAuditLogData5_0(t *testing.T) {
 }
 
 func TestMongoEventToAuditLogData4_2(t *testing.T) {
-	mongoevent := GetTestAuditEvent4_2()
+	mongoevent := getTestAuditEvent4_2()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", "clusterName", "4.2")
+	clusterInfo := ClusterInfo{
+		ClusterName:         "clusterName",
+		RegionName:          "regionName",
+		ProviderName:        "providerName",
+		MongoDBMajorVersion: "4.2",
+	}
+
+	ld, err := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", clusterInfo)
+	require.NoError(t, err)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
 	lr := sl.LogRecords().At(0)
 	attrs := lr.Attributes()
 
-	assert.Equal(t, ld.ResourceLogs().Len(), 1)
-	assert.Equal(t, resourceAttrs.Len(), 4)
+	assert.Equal(t, 1, ld.ResourceLogs().Len())
+	assert.Equal(t, 6, resourceAttrs.Len())
 	assertString(t, resourceAttrs, "mongodb_atlas.org", "Org")
 	assertString(t, resourceAttrs, "mongodb_atlas.project", "Project")
 	assertString(t, resourceAttrs, "mongodb_atlas.cluster", "clusterName")
 	assertString(t, resourceAttrs, "mongodb_atlas.host.name", "hostname")
+	assertString(t, resourceAttrs, "mongodb_atlas.region.name", "regionName")
+	assertString(t, resourceAttrs, "mongodb_atlas.provider.name", "providerName")
 
 	assert.Equal(t, 10, attrs.Len())
 	assertString(t, attrs, "atype", "authenticate")
@@ -207,13 +239,13 @@ func TestMongoEventToAuditLogData4_2(t *testing.T) {
 
 	roles, ok := attrs.Get("roles")
 	require.True(t, ok, "roles key does not exist")
-	require.Equal(t, roles.Slice().Len(), 1)
+	require.Equal(t, 1, roles.Slice().Len())
 	assertString(t, roles.Slice().At(0).Map(), "role", "test_role")
 	assertString(t, roles.Slice().At(0).Map(), "db", "test_db")
 
 	users, ok := attrs.Get("users")
 	require.True(t, ok, "users key does not exist")
-	require.Equal(t, users.Slice().Len(), 1)
+	require.Equal(t, 1, users.Slice().Len())
 	assertString(t, users.Slice().At(0).Map(), "user", "mongo_user")
 	assertString(t, users.Slice().At(0).Map(), "db", "my_db")
 
@@ -227,7 +259,7 @@ func TestMongoEventToAuditLogData4_2(t *testing.T) {
 	assert.Equal(t, "RAW MESSAGE", lr.Body().Str())
 }
 
-func GetTestEvent4_4() model.LogEntry {
+func getTestEvent4_4() model.LogEntry {
 	return model.LogEntry{
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-12T18:10:27.215+00:00",
@@ -237,12 +269,12 @@ func GetTestEvent4_4() model.LogEntry {
 		ID:         12312,
 		Context:    "context",
 		Message:    "Connection ended",
-		Attributes: map[string]interface{}{"connectionCount": 47, "connectionId": 9052, "remote": "192.168.253.105:59742", "id": "93a8f190-afd0-422d-9de6-f6c5e833e35f"},
+		Attributes: map[string]any{"connectionCount": 47, "connectionId": 9052, "remote": "192.168.253.105:59742", "id": "93a8f190-afd0-422d-9de6-f6c5e833e35f"},
 		Raw:        "RAW MESSAGE",
 	}
 }
 
-func GetTestEvent4_2() model.LogEntry {
+func getTestEvent4_2() model.LogEntry {
 	return model.LogEntry{
 		Severity:  "I",
 		Component: "NETWORK",
@@ -255,7 +287,7 @@ func GetTestEvent4_2() model.LogEntry {
 	}
 }
 
-func GetTestAuditEvent5_0() model.AuditLog {
+func getTestAuditEvent5_0() model.AuditLog {
 	return model.AuditLog{
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-16T15:26:52.563+00:00",
@@ -297,7 +329,7 @@ func GetTestAuditEvent5_0() model.AuditLog {
 	}
 }
 
-func GetTestAuditEvent4_2() model.AuditLog {
+func getTestAuditEvent4_2() model.AuditLog {
 	return model.AuditLog{
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-16T15:26:52.563+0000",

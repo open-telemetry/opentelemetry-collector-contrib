@@ -1,30 +1,17 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
 	"fmt"
 	"strings"
-	"time"
 	"unicode"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -43,11 +30,13 @@ var (
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
 type MetricsConverter struct {
-	logger             *zap.Logger
-	metricTranslator   *MetricTranslator
-	filterSet          *dpfilters.FilterSet
-	datapointValidator *datapointValidator
-	translator         *signalfx.FromTranslator
+	logger               *zap.Logger
+	metricTranslator     *MetricTranslator
+	filterSet            *dpfilters.FilterSet
+	datapointValidator   *datapointValidator
+	translator           *signalfx.FromTranslator
+	dropHistogramBuckets bool
+	processHistograms    bool
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -58,26 +47,36 @@ func NewMetricsConverter(
 	t *MetricTranslator,
 	excludes []dpfilters.MetricFilter,
 	includes []dpfilters.MetricFilter,
-	nonAlphanumericDimChars string) (*MetricsConverter, error) {
+	nonAlphanumericDimChars string,
+	dropHistogramBuckets bool,
+	processHistograms bool) (*MetricsConverter, error) {
 	fs, err := dpfilters.NewFilterSet(excludes, includes)
 	if err != nil {
 		return nil, err
 	}
 	return &MetricsConverter{
-		logger:             logger,
-		metricTranslator:   t,
-		filterSet:          fs,
-		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
-		translator:         &signalfx.FromTranslator{},
+		logger:               logger,
+		metricTranslator:     t,
+		filterSet:            fs,
+		datapointValidator:   newDatapointValidator(logger, nonAlphanumericDimChars),
+		translator:           &signalfx.FromTranslator{},
+		dropHistogramBuckets: dropHistogramBuckets,
+		processHistograms:    processHistograms,
 	}, nil
 }
 
-// MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
-// returning those datapoints and the number of time series that had to be
+func (c *MetricsConverter) Start() {
+	if c.metricTranslator != nil {
+		c.metricTranslator.Start()
+	}
+}
+
+// MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints
+// and if processHistograms is set, histogram metrics are not converted to SFx format.
+// It returns those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
 func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
 	var sfxDataPoints []*sfxpb.DataPoint
-
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -86,9 +85,9 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			var initialDps []*sfxpb.DataPoint
-
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
+				currentMetric := ilm.Metrics().At(k)
+				dps := c.translator.FromMetric(currentMetric, extraDimensions, c.dropHistogramBuckets, c.processHistograms)
 				initialDps = append(initialDps, dps...)
 			}
 
@@ -168,6 +167,12 @@ func (c *MetricsConverter) ConvertDimension(dim string) string {
 	return filterKeyChars(res, c.datapointValidator.nonAlphanumericDimChars)
 }
 
+func (c *MetricsConverter) Shutdown() {
+	if c.metricTranslator != nil {
+		c.metricTranslator.Shutdown()
+	}
+}
+
 // Values obtained from https://dev.splunk.com/observability/docs/datamodel/ingest#Criteria-for-metric-and-dimension-names-and-values
 const (
 	maxMetricNameLength     = 256
@@ -193,7 +198,7 @@ type datapointValidator struct {
 }
 
 func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *datapointValidator {
-	return &datapointValidator{logger: CreateSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
+	return &datapointValidator{logger: logger, nonAlphanumericDimChars: nonAlphanumericDimChars}
 }
 
 // sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
@@ -285,24 +290,4 @@ func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 		return false
 	}
 	return true
-}
-
-// CreateSampledLogger was copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
-func CreateSampledLogger(logger *zap.Logger) *zap.Logger {
-	if logger.Core().Enabled(zapcore.DebugLevel) {
-		// Debugging is enabled. Don't do any sampling.
-		return logger
-	}
-
-	// Create a logger that samples all messages to 1 per 10 seconds initially,
-	// and 1/10000 of messages after that.
-	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return zapcore.NewSamplerWithOptions(
-			core,
-			10*time.Second,
-			1,
-			10000,
-		)
-	})
-	return logger.WithOptions(opts)
 }

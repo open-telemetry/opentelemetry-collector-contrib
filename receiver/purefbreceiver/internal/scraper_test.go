@@ -1,16 +1,5 @@
-// Copyright 2023 The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver/internal"
 
@@ -38,12 +27,12 @@ func TestToPrometheusConfig(t *testing.T) {
 	baCfg := baFactory.CreateDefaultConfig().(*bearertokenauthextension.Config)
 	baCfg.BearerToken = "the-token"
 
-	baExt, err := baFactory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), baCfg)
+	baExt, err := baFactory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), baCfg)
 	require.NoError(t, err)
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewIDWithName("bearertokenauth", "fb01"): baExt,
+			component.MustNewIDWithName("bearertokenauth", "fb01"): baExt,
 		},
 	}
 
@@ -53,7 +42,7 @@ func TestToPrometheusConfig(t *testing.T) {
 		{
 			Address: "fb01",
 			Auth: configauth.Authentication{
-				AuthenticatorID: component.NewIDWithName("bearertokenauth", "fb01"),
+				AuthenticatorID: component.MustNewIDWithName("bearertokenauth", "fb01"),
 			},
 		},
 	}

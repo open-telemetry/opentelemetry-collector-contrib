@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 
@@ -27,6 +16,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
@@ -56,7 +46,7 @@ type firehoseConsumer interface {
 // firehoseReceiver
 type firehoseReceiver struct {
 	// settings is the base receiver settings.
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	// config is the configuration for the receiver.
 	config *Config
 	// server is the HTTP/HTTPS server set up to listen
@@ -116,19 +106,19 @@ var _ http.Handler = (*firehoseReceiver)(nil)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
 // its processing.
-func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error {
+func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) error {
 	if host == nil {
 		return errMissingHost
 	}
 
 	var err error
-	fmr.server, err = fmr.config.HTTPServerSettings.ToServer(host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ServerConfig.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
 		return err
 	}
 
 	var listener net.Listener
-	listener, err = fmr.config.HTTPServerSettings.ToListener()
+	listener, err = fmr.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -137,7 +127,7 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 		defer fmr.shutdownWG.Done()
 
 		if errHTTP := fmr.server.Serve(listener); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			host.ReportFatalError(errHTTP)
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -243,10 +233,14 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // validate checks the Firehose access key in the header against
 // the one passed into the Config
 func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
-	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey != "" && accessKey != fmr.config.AccessKey {
-		return http.StatusUnauthorized, errInvalidAccessKey
+	if string(fmr.config.AccessKey) == "" {
+		// No access key is configured - accept all requests.
+		return http.StatusAccepted, nil
 	}
-	return http.StatusAccepted, nil
+	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey == string(fmr.config.AccessKey) {
+		return http.StatusAccepted, nil
+	}
+	return http.StatusUnauthorized, errInvalidAccessKey
 }
 
 // getBody reads the body from the request as a slice of bytes.

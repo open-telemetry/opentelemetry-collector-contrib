@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 
@@ -42,6 +31,78 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 // If you change this variable name, please open an issue in opentelemetry-java-contrib
 // so that repository's release automation can be updated
 var jmxMetricsGathererVersions = map[string]supportedJar{
+	"43543679b12c7772fffe78ad9dcde3421cb5dd2a704231f9901d32578b2cf69e": {
+		version: "1.39.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"75d03922df2306086b9eee2daccbfd8c9b94ce140a482fb4698a839ec3d3f192": {
+		version: "1.38.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"74d23e8714deab770c940a14175ab5dfd0cd0c16e198861e45a72fbb854bc727": {
+		version: "1.37.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"ab53c54b7cd8a6e31bb40e8ab3a9a9dedc9386cb4905c2a7f2188d3baae99f39": {
+		version: "1.36.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"60b2ee1a798c35d10f6e3602ea46f1b1c0298080262636d73b4fc652b7dcd0da": {
+		version: "1.35.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"a939251bbdb91ede2b5fbe891fd50775dd21f41c3369b5abec7dd74e4bf1a9fd": {
+		version: "1.34.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"50ad8ed45fa17bc6edafe4649008d1f0b57181d3162e64c76d6da9a49272db33": {
+		version: "1.33.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"0ba6647cc31b627dbe20de87d696c3cffb0f72f0fc2ad3d3fe2be8aa3582bf26": {
+		version: "1.32.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"9f4f7ab6fe7040dbeb91fae75dc17199c408a6339eb498d2f29088b78c621c2c": {
+		version: "1.31.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"0b4b280fa745702e83a0b3c0d191144c9069c215848c61d3092d41f000770e12": {
+		version: "1.30.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"0b947c255f3fd358343ab43475875dbb09233d369ff91a88a28c38f767a2a6fb": {
+		version: "1.29.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"32fead1e233e67dea56f0d08628540938a41ecd87a3b4c4bdf78193c3b62c6dd": {
+		version: "1.28.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"97d3a0767642297d7259ac274c4eb107b4e83d48fa2b8d91ceb800a31437a734": {
+		version: "1.27.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"12e6dba902d35872cd69b99f23863dc9536660620fc0eb9eed8d0e45b2354970": {
+		version: "1.26.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"6a41aa8fb8edcafac604324818216a405a96245255a66ba96cf3668ef59927b8": {
+		version: "1.25.1-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"b6f5030acdbef44afb79afe1c547f55a446f6e60c24db9cdcf6e8dba49f87a16": {
+		version: "1.25.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"7ac5485801bf5fea347aac0d828bade875686fecbed83b3ce44088c87bdf9d46": {
+		version: "1.24.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"af15e12aa1edb0f694408cbf0b7fae7fb8d36e7904d9b68c93c7645101769f63": {
+		version: "1.23.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
 	"b90f675c5722931d2ebbb4bae959841b78fe5f87fe461a23a8837f95dec517ff": {
 		version: "1.22.0-alpha",
 		jar:     "JMX metrics gatherer",
@@ -59,30 +120,30 @@ var jmxMetricsGathererVersions = map[string]supportedJar{
 		jar:     "JMX metrics gatherer",
 	},
 	"3c46cff8521cdb0d36bb2891b15cbc1bb2fcbca7c5344253403ab30fe9f693a6": {
-		version: "1.15.0",
+		version: "1.15.0-alpha",
 		jar:     "JMX metrics gatherer",
 	},
 	"0646639df98404bd9b1263b46e2fd4612bc378f9951a561f0a0be9725718db36": {
-		version: "1.14.0",
+		version: "1.14.0-alpha",
 		jar:     "JMX metrics gatherer",
 	},
 	"623572be30e3c546d60b0ac890935790bc3cb8d0b4ff5150a58b43a99f68ed05": {
-		version:         "1.13.0",
+		version:         "1.13.0-alpha",
 		jar:             "JMX metrics gatherer",
 		addedValidation: oldFormatProperties,
 	},
 	"c0b1a19c4965c7961abaaccfbb4d358e5f3b0b5b105578a4782702f126bfa8b7": {
-		version:         "1.12.0",
+		version:         "1.12.0-alpha",
 		jar:             "JMX metrics gatherer",
 		addedValidation: oldFormatProperties,
 	},
 	"ca689ca2da8a412c7f4ea0e816f47e8639b4270a48fb877c9a910b44757bc0a4": {
-		version:         "1.11.0",
+		version:         "1.11.0-alpha",
 		jar:             "JMX metrics gatherer",
 		addedValidation: oldFormatProperties,
 	},
 	"4b14d26fb383ed925fe1faf1b7fe2103559ed98ce6cf761ac9afc0158d2a218c": {
-		version:         "1.10.0",
+		version:         "1.10.0-alpha",
 		jar:             "JMX metrics gatherer",
 		addedValidation: oldFormatProperties,
 	},

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
@@ -22,25 +11,27 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/obsreport"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 type receiver struct {
-	id     component.ID
-	wg     sync.WaitGroup
-	cancel context.CancelFunc
+	set       component.TelemetrySettings
+	id        component.ID
+	emitWg    sync.WaitGroup
+	consumeWg sync.WaitGroup
+	cancel    context.CancelFunc
 
 	pipe      pipeline.Pipeline
-	emitter   *LogEmitter
+	emitter   *helper.LogEmitter
 	consumer  consumer.Logs
 	converter *Converter
-	logger    *zap.Logger
-	obsrecv   *obsreport.Receiver
+	obsrecv   *receiverhelper.ObsReport
 
 	storageID     *component.ID
 	storageClient storage.Client
@@ -53,7 +44,7 @@ var _ rcvr.Logs = (*receiver)(nil)
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	rctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
-	r.logger.Info("Starting stanza receiver")
+	r.set.Logger.Info("Starting stanza receiver")
 
 	if err := r.setStorageClient(ctx, host); err != nil {
 		return fmt.Errorf("storage client: %w", err)
@@ -69,13 +60,13 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	// * one which reads all the logs produced by the emitter and then forwards
 	//   them to converter
 	// ...
-	r.wg.Add(1)
-	go r.emitterLoop(rctx)
+	r.emitWg.Add(1)
+	go r.emitterLoop()
 
 	// ...
 	// * second one which reads all the logs produced by the converter
 	//   (aggregated by Resource) and then calls consumer to consumer them.
-	r.wg.Add(1)
+	r.consumeWg.Add(1)
 	go r.consumerLoop(rctx)
 
 	// Those 2 loops are started in separate goroutines because batching in
@@ -90,55 +81,40 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 
 // emitterLoop reads the log entries produced by the emitter and batches them
 // in converter.
-func (r *receiver) emitterLoop(ctx context.Context) {
-	defer r.wg.Done()
+func (r *receiver) emitterLoop() {
+	defer r.emitWg.Done()
 
 	// Don't create done channel on every iteration.
-	doneChan := ctx.Done()
-	for {
-		select {
-		case <-doneChan:
-			r.logger.Debug("Receive loop stopped")
-			return
-
-		case e, ok := <-r.emitter.logChan:
-			if !ok {
-				continue
-			}
-
-			if err := r.converter.Batch(e); err != nil {
-				r.logger.Error("Could not add entry to batch", zap.Error(err))
-			}
+	// emitter.OutChannel is closed on ctx.Done(), no need to handle ctx here
+	// instead we should drain and process the channel to let emitter cancel properly
+	for e := range r.emitter.OutChannel() {
+		if err := r.converter.Batch(e); err != nil {
+			r.set.Logger.Error("Could not add entry to batch", zap.Error(err))
 		}
 	}
+
+	r.set.Logger.Debug("Emitter loop stopped")
 }
 
 // consumerLoop reads converter log entries and calls the consumer to consumer them.
 func (r *receiver) consumerLoop(ctx context.Context) {
-	defer r.wg.Done()
+	defer r.consumeWg.Done()
 
 	// Don't create done channel on every iteration.
-	doneChan := ctx.Done()
-	pLogsChan := r.converter.OutChannel()
-	for {
-		select {
-		case <-doneChan:
-			r.logger.Debug("Consumer loop stopped")
-			return
+	// converter.OutChannel is closed on Shutdown before context is cancelled.
+	// Drain the channel and process events before exiting
+	for pLogs := range r.converter.OutChannel() {
+		obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
+		logRecordCount := pLogs.LogRecordCount()
 
-		case pLogs, ok := <-pLogsChan:
-			if !ok {
-				r.logger.Debug("Converter channel got closed")
-				continue
-			}
-			obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
-			cErr := r.consumer.ConsumeLogs(ctx, pLogs)
-			if cErr != nil {
-				r.logger.Error("ConsumeLogs() failed", zap.Error(cErr))
-			}
-			r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", pLogs.LogRecordCount(), cErr)
+		cErr := r.consumer.ConsumeLogs(ctx, pLogs)
+		if cErr != nil {
+			r.set.Logger.Error("ConsumeLogs() failed", zap.Error(cErr))
 		}
+		r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", logRecordCount, cErr)
 	}
+
+	r.set.Logger.Debug("Consumer loop stopped")
 }
 
 // Shutdown is invoked during service shutdown
@@ -147,11 +123,16 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	r.logger.Info("Stopping stanza receiver")
+	r.set.Logger.Info("Stopping stanza receiver")
 	pipelineErr := r.pipe.Stop()
+
+	// wait for emitter to finish batching and let consumers catch up
+	r.emitWg.Wait()
+
 	r.converter.Stop()
 	r.cancel()
-	r.wg.Wait()
+	// wait for consumers to catch up
+	r.consumeWg.Wait()
 
 	if r.storageClient != nil {
 		clientErr := r.storageClient.Close(ctx)

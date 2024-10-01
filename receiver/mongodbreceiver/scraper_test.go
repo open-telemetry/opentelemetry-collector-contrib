@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbreceiver
 
@@ -34,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -42,7 +31,7 @@ func TestNewMongodbScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newMongodbScraper(receivertest.NewNopSettings(), cfg)
 	require.NotEmpty(t, scraper.config.hostlist())
 }
 
@@ -51,7 +40,7 @@ func TestScraperLifecycle(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newMongodbScraper(receivertest.NewNopSettings(), cfg)
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, scraper.shutdown(context.Background()))
 
@@ -109,7 +98,6 @@ var (
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
 			[]string{
-				"failed to fetch admin server status metrics: some admin server status error",
 				"failed to fetch top stats metrics: some top stats error",
 				"failed to fetch database stats metrics: some database stats error",
 				"failed to fetch server status metrics: some server status error",
@@ -120,7 +108,6 @@ var (
 	errCollectionNames = errors.New(
 		strings.Join(
 			[]string{
-				"failed to fetch admin server status metrics: some admin server status error",
 				"failed to fetch top stats metrics: some top stats error",
 				"failed to fetch database stats metrics: some database stats error",
 				"failed to fetch server status metrics: some server status error",
@@ -132,17 +119,17 @@ func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
 		partialErr        bool
-		setupMockClient   func(t *testing.T) client
+		setupMockClient   func(t *testing.T) *fakeClient
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
 		expectedErr       error
 	}{
 		{
 			desc:       "Nil client",
 			partialErr: false,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) *fakeClient {
 				return nil
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errors.New("no client was initialized before calling scrape"),
@@ -150,7 +137,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Failed to fetch database names",
 			partialErr: true,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
@@ -158,7 +145,7 @@ func TestScraperScrape(t *testing.T) {
 				fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{}, errors.New("some database names error"))
 				return fc
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errors.New("failed to fetch database names: some database names error"),
@@ -166,23 +153,24 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Failed to fetch collection names",
 			partialErr: true,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
+				adminStatus, err := loadAdminStatusAsMap()
 				require.NoError(t, err)
 				fakeDatabaseName := "fakedatabase"
 				fc.On("GetVersion", mock.Anything).Return(mongo40, nil)
 				fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
 				fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(bson.M{}, errors.New("some server status error"))
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{}, errors.New("some admin server status error"))
+				fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
 				fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(bson.M{}, errors.New("some database stats error"))
 				fc.On("TopStats", mock.Anything).Return(bson.M{}, errors.New("some top stats error"))
 				fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{}, errors.New("some collection names error"))
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.json")
+				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -192,16 +180,17 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Failed to scrape client stats",
 			partialErr: true,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
+				adminStatus, err := loadAdminStatusAsMap()
 				require.NoError(t, err)
 				fakeDatabaseName := "fakedatabase"
 				fc.On("GetVersion", mock.Anything).Return(mongo40, nil)
 				fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
 				fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(bson.M{}, errors.New("some server status error"))
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{}, errors.New("some admin server status error"))
+				fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
 				fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(bson.M{}, errors.New("some database stats error"))
 				fc.On("TopStats", mock.Anything).Return(bson.M{}, errors.New("some top stats error"))
 				fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{"products", "orders"}, nil)
@@ -210,7 +199,7 @@ func TestScraperScrape(t *testing.T) {
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.json")
+				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -220,7 +209,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Failed to scrape with partial errors on metrics",
 			partialErr: true,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
@@ -241,7 +230,7 @@ func TestScraperScrape(t *testing.T) {
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.json")
+				goldenPath := filepath.Join("testdata", "scraper", "db_count_only.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -251,7 +240,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Successful scrape",
 			partialErr: false,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				adminStatus, err := loadAdminStatusAsMap()
 				require.NoError(t, err)
@@ -280,7 +269,7 @@ func TestScraperScrape(t *testing.T) {
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "expected.json")
+				goldenPath := filepath.Join("testdata", "scraper", "expected.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -293,13 +282,18 @@ func TestScraperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			scraperCfg := createDefaultConfig().(*Config)
 			// Enable any metrics set to `false` by default
-			scraperCfg.Metrics.MongodbOperationLatencyTime.Enabled = true
-			scraperCfg.Metrics.MongodbOperationReplCount.Enabled = true
-			scraperCfg.Metrics.MongodbUptime.Enabled = true
-			scraperCfg.Metrics.MongodbHealth.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationLatencyTime.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationReplCount.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbHealth.Enabled = true
 
-			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), scraperCfg)
-			scraper.client = tc.setupMockClient(t)
+			scraper := newMongodbScraper(receivertest.NewNopSettings(), scraperCfg)
+
+			mc := tc.setupMockClient(t)
+			if mc != nil {
+				scraper.client = mc
+			}
+
 			actualMetrics, err := scraper.scrape(context.Background())
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
@@ -312,10 +306,14 @@ func TestScraperScrape(t *testing.T) {
 					// The first error message would not have a leading whitespace and hence split on "; "
 					expectedErrs := strings.Split(tc.expectedErr.Error(), "; ")
 					sort.Strings(expectedErrs)
-					require.Equal(t, actualErrs, expectedErrs)
+					require.Equal(t, expectedErrs, actualErrs)
 				} else {
 					require.EqualError(t, err, tc.expectedErr.Error())
 				}
+			}
+
+			if mc != nil {
+				mc.AssertExpectations(t)
 			}
 
 			if tc.partialErr {
@@ -326,6 +324,7 @@ func TestScraperScrape(t *testing.T) {
 			expectedMetrics := tc.expectedMetricGen(t)
 
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
@@ -333,7 +332,6 @@ func TestScraperScrape(t *testing.T) {
 
 func TestTopMetricsAggregation(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
 
 	loadedTop, err := loadTop()
 	require.NoError(t, err)
@@ -383,4 +381,62 @@ func TestTopMetricsAggregation(t *testing.T) {
 		require.EqualValues(t, expectedGetmoreValues, actualOperationTimeValues["getmore"])
 		require.EqualValues(t, expectedCommandValues, actualOperationTimeValues["commands"])
 	})
+}
+
+func TestServerAddressAndPort(t *testing.T) {
+	tests := []struct {
+		name            string
+		serverStatus    bson.M
+		expectedAddress string
+		expectedPort    int64
+		expectedErr     error
+	}{
+		{
+			name: "address_only",
+			serverStatus: bson.M{
+				"host": "localhost",
+			},
+			expectedAddress: "localhost",
+			expectedPort:    defaultMongoDBPort,
+		},
+		{
+			name: "address_and_port",
+			serverStatus: bson.M{
+				"host": "localhost:27018",
+			},
+			expectedAddress: "localhost",
+			expectedPort:    27018,
+		},
+		{
+			name:         "missing_host",
+			serverStatus: bson.M{},
+			expectedErr:  errors.New("host field not found in server status"),
+		},
+		{
+			name: "invalid_port",
+			serverStatus: bson.M{
+				"host": "localhost:invalid",
+			},
+			expectedErr: errors.New("failed to parse port: strconv.ParseInt: parsing \"invalid\": invalid syntax"),
+		},
+		{
+			name: "invalid_host_format",
+			serverStatus: bson.M{
+				"host": "localhost:27018:extra",
+			},
+			expectedErr: errors.New("unexpected host format: localhost:27018:extra"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			address, port, err := serverAddressAndPort(tt.serverStatus)
+			if tt.expectedErr != nil {
+				require.EqualError(t, err, tt.expectedErr.Error())
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedAddress, address)
+				require.Equal(t, tt.expectedPort, port)
+			}
+		})
+	}
 }

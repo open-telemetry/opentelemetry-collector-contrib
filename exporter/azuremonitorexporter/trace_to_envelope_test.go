@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorexporter
 
@@ -24,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -78,21 +67,21 @@ var (
 	defaultMessagingStatusCodeAsString = strconv.FormatInt(defaultRPCStatusCode, 10)
 
 	// Required attribute for any HTTP Span
-	requiredHTTPAttributes = map[string]interface{}{
+	requiredHTTPAttributes = map[string]any{
 		conventions.AttributeHTTPMethod: defaultHTTPMethod,
 	}
 
 	// Required attribute for any RPC Span
-	requiredRPCAttributes = map[string]interface{}{
+	requiredRPCAttributes = map[string]any{
 		conventions.AttributeRPCSystem: defaultRPCSystem,
 	}
 
-	requiredDatabaseAttributes = map[string]interface{}{
+	requiredDatabaseAttributes = map[string]any{
 		conventions.AttributeDBSystem: defaultDBSystem,
 		conventions.AttributeDBName:   defaultDBName,
 	}
 
-	requiredMessagingAttributes = map[string]interface{}{
+	requiredMessagingAttributes = map[string]any{
 		conventions.AttributeMessagingSystem:      defaultMessagingSystem,
 		conventions.AttributeMessagingDestination: defaultMessagingDestination,
 	}
@@ -308,7 +297,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet3(t *testing.T) {
 }
 
 // Tests proper assignment for a HTTP client span
-// http.scheme, net.peer.ip, net.peer.port, http.target
+// http.scheme, net.peer.ip, net.peer.port, http.target, enduser.id
 func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	span := getDefaultHTTPClientSpan()
 	spanAttributes := span.Attributes()
@@ -318,6 +307,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	spanAttributes.PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
 	spanAttributes.PutInt(conventions.AttributeNetPeerPort, 81)
 	spanAttributes.PutStr(conventions.AttributeHTTPTarget, "/bar?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeEnduserID, "12345")
 
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, zap.NewNop())
 	envelope := envelopes[0]
@@ -325,6 +315,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultHTTPRemoteDependencyDataValidations(t, span, data)
 	assert.Equal(t, "https://127.0.0.1:81/bar?biz=baz", data.Data)
+	assert.Equal(t, "12345", envelope.Tags[contracts.UserId])
 }
 
 // Tests proper assignment for an RPC server span
@@ -472,18 +463,20 @@ func TestMessagingProducerSpanToRequestData(t *testing.T) {
 	assert.Equal(t, "foo:81", data.Target)
 }
 
-// Tests proper assignment for an internal span
+// Tests proper assignment for an internal span and enduser.id
 func TestUnknownInternalSpanToRemoteDependencyData(t *testing.T) {
 	span := getDefaultInternalSpan()
 	spanAttributes := span.Attributes()
 
 	spanAttributes.PutStr("foo", "bar")
+	spanAttributes.PutStr(conventions.AttributeEnduserID, "4567")
 
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultInternalRemoteDependencyDataValidations(t, span, data)
+	assert.Equal(t, "4567", envelope.Tags[contracts.UserId])
 }
 
 // Tests that spans with unspecified kind are treated similar to internal spans
@@ -501,14 +494,14 @@ func TestUnspecifiedSpanToInProcRemoteDependencyData(t *testing.T) {
 func TestSpanWithEventsToEnvelopes(t *testing.T) {
 	span := getDefaultRPCClientSpan()
 
-	spanEvent := getSpanEvent("foo", map[string]interface{}{"bar": "baz"})
+	spanEvent := getSpanEvent("foo", map[string]any{"bar": "baz"})
 	spanEvent.CopyTo(span.Events().AppendEmpty())
 
 	exceptionType := "foo"
 	exceptionMessage := "bar"
 	exceptionStackTrace := "baz"
 
-	exceptionEvent := getSpanEvent("exception", map[string]interface{}{
+	exceptionEvent := getSpanEvent("exception", map[string]any{
 		conventions.AttributeExceptionType:       exceptionType,
 		conventions.AttributeExceptionMessage:    exceptionMessage,
 		conventions.AttributeExceptionStacktrace: exceptionStackTrace,
@@ -519,13 +512,13 @@ func TestSpanWithEventsToEnvelopes(t *testing.T) {
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, zap.NewNop())
 
 	assert.NotNil(t, envelopes)
-	assert.Equal(t, 3, len(envelopes))
+	assert.Len(t, envelopes, 3)
 
 	validateEnvelope := func(spanEvent ptrace.SpanEvent, envelope *contracts.Envelope, targetEnvelopeName string) {
 		assert.Equal(t, targetEnvelopeName, envelope.Name)
 		assert.Equal(t, toTime(spanEvent.Timestamp()).Format(time.RFC3339Nano), envelope.Time)
 		assert.Equal(t, defaultTraceIDAsHex, envelope.Tags[contracts.OperationId])
-		assert.Equal(t, defaultParentSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
+		assert.Equal(t, defaultSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 		assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
 		assert.Equal(t, defaultServiceInstance, envelope.Tags[contracts.CloudRoleInstance])
 		assert.NotNil(t, envelope.Data)
@@ -581,6 +574,7 @@ func commonEnvelopeValidations(
 	assert.Equal(t, defaultParentSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 	assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
 	assert.Equal(t, defaultServiceInstance, envelope.Tags[contracts.CloudRoleInstance])
+	assert.Contains(t, envelope.Tags[contracts.InternalSdkVersion], "otelc-")
 	assert.NotNil(t, envelope.Data)
 
 	if expectedEnvelopeName == defaultRequestDataEnvelopeName {
@@ -595,7 +589,7 @@ func commonRequestDataValidations(
 	span ptrace.Span,
 	data *contracts.RequestData) {
 
-	assertAttributesCopiedToPropertiesOrMeasurements(t, span.Attributes(), data.Properties, data.Measurements)
+	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, defaultSpanDuration, data.Duration)
 
@@ -622,7 +616,7 @@ func commonRemoteDependencyDataValidations(
 	span ptrace.Span,
 	data *contracts.RemoteDependencyData) {
 
-	assertAttributesCopiedToPropertiesOrMeasurements(t, span.Attributes(), data.Properties, data.Measurements)
+	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, defaultSpanDuration, data.Duration)
 }
@@ -717,35 +711,29 @@ func defaultInternalRemoteDependencyDataValidations(
 	span ptrace.Span,
 	data *contracts.RemoteDependencyData) {
 
-	assertAttributesCopiedToPropertiesOrMeasurements(t, span.Attributes(), data.Properties, data.Measurements)
+	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, "InProc", data.Type)
 }
 
-// Verifies that all attributes are copies to either the properties or measurements maps of the envelope's data element
-func assertAttributesCopiedToPropertiesOrMeasurements(
+// Verifies that all attributes are copies to either the properties maps of the envelope's data element
+func assertAttributesCopiedToProperties(
 	t *testing.T,
 	attributeMap pcommon.Map,
-	properties map[string]string,
-	measurements map[string]float64) {
+	properties map[string]string) {
 
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
+		p, exists := properties[k]
+		assert.True(t, exists)
+
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
-			p, exists := properties[k]
-			assert.True(t, exists)
 			assert.Equal(t, v.Str(), p)
 		case pcommon.ValueTypeBool:
-			p, exists := properties[k]
-			assert.True(t, exists)
 			assert.Equal(t, strconv.FormatBool(v.Bool()), p)
 		case pcommon.ValueTypeInt:
-			m, exists := measurements[k]
-			assert.True(t, exists)
-			assert.Equal(t, float64(v.Int()), m)
+			assert.Equal(t, strconv.FormatInt(v.Int(), 10), p)
 		case pcommon.ValueTypeDouble:
-			m, exists := measurements[k]
-			assert.True(t, exists)
-			assert.Equal(t, v.Double(), m)
+			assert.Equal(t, strconv.FormatFloat(v.Double(), 'f', -1, 64), p)
 		}
 		return true
 	})
@@ -754,7 +742,7 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 /*
 The remainder of these methods are for building up test assets
 */
-func getSpan(spanName string, spanKind ptrace.SpanKind, initialAttributes map[string]interface{}) ptrace.Span {
+func getSpan(spanName string, spanKind ptrace.SpanKind, initialAttributes map[string]any) ptrace.Span {
 	span := ptrace.NewSpan()
 	span.SetTraceID(defaultTraceID)
 	span.SetSpanID(defaultSpanID)
@@ -769,7 +757,7 @@ func getSpan(spanName string, spanKind ptrace.SpanKind, initialAttributes map[st
 }
 
 // Returns a default span event
-func getSpanEvent(name string, initialAttributes map[string]interface{}) ptrace.SpanEvent {
+func getSpanEvent(name string, initialAttributes map[string]any) ptrace.SpanEvent {
 	spanEvent := ptrace.NewSpanEvent()
 	spanEvent.SetName(name)
 	spanEvent.SetTimestamp(defaultSpanEventTime)
@@ -779,27 +767,27 @@ func getSpanEvent(name string, initialAttributes map[string]interface{}) ptrace.
 }
 
 // Returns a default server span
-func getServerSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getServerSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindServer, initialAttributes)
 }
 
 // Returns a default client span
-func getClientSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getClientSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindClient, initialAttributes)
 }
 
 // Returns a default consumer span
-func getConsumerSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getConsumerSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindConsumer, initialAttributes)
 }
 
 // Returns a default producer span
-func getProducerSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getProducerSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindProducer, initialAttributes)
 }
 
 // Returns a default internal span
-func getInternalSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getInternalSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindInternal, initialAttributes)
 }
 
@@ -848,7 +836,7 @@ func getDefaultMessagingProducerSpan() ptrace.Span {
 func getDefaultInternalSpan() ptrace.Span {
 	return getInternalSpan(
 		defaultInternalSpanName,
-		map[string]interface{}{})
+		map[string]any{})
 }
 
 // Returns a default Resource

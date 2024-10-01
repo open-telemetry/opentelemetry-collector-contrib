@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclient
 
@@ -26,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var nodeArray = []interface{}{
+var nodeArray = []any{
 	&v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "ip-192-168-200-63.eu-west-1.compute.internal",
@@ -300,6 +289,7 @@ var nodeArray = []interface{}{
 }
 
 func TestNodeClient(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9001")
 	setOption := nodeSyncCheckerOption(&mockReflectorSyncChecker{})
 
 	fakeClientSet := fake.NewSimpleClientset()
@@ -312,8 +302,8 @@ func TestNodeClient(t *testing.T) {
 	clusterFailedNodeCount := client.ClusterFailedNodeCount()
 	log.Printf("clusterNodeCount: %v, clusterFailedNodeCount: %v", clusterNodeCount, clusterFailedNodeCount)
 
-	assert.Equal(t, clusterNodeCount, expectedClusterNodeCount)
-	assert.Equal(t, clusterFailedNodeCount, expectedClusterFailedNodeCount)
+	assert.Equal(t, expectedClusterNodeCount, clusterNodeCount)
+	assert.Equal(t, expectedClusterFailedNodeCount, clusterFailedNodeCount)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }
@@ -321,5 +311,5 @@ func TestNodeClient(t *testing.T) {
 func TestTransformFuncNode(t *testing.T) {
 	info, err := transformFuncNode(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

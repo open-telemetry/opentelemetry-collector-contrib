@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanprocessor
 
@@ -35,7 +24,7 @@ func TestLoadingConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName("span", "custom"),
+			id: component.MustNewIDWithName("span", "custom"),
 			expected: &Config{
 				Rename: Name{
 					FromAttributes: []string{"db.svc", "operation", "id"},
@@ -44,7 +33,7 @@ func TestLoadingConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("span", "no-separator"),
+			id: component.MustNewIDWithName("span", "no-separator"),
 			expected: &Config{
 				Rename: Name{
 					FromAttributes: []string{"db.svc", "operation", "id"},
@@ -53,7 +42,7 @@ func TestLoadingConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("span", "to_attributes"),
+			id: component.MustNewIDWithName("span", "to_attributes"),
 			expected: &Config{
 				Rename: Name{
 					ToAttributes: &ToAttributes{
@@ -63,7 +52,7 @@ func TestLoadingConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("span", "includeexclude"),
+			id: component.MustNewIDWithName("span", "includeexclude"),
 			expected: &Config{
 				MatchConfig: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
@@ -85,7 +74,7 @@ func TestLoadingConfig(t *testing.T) {
 		},
 		{
 			// Set name
-			id: component.NewIDWithName("span", "set_status_err"),
+			id: component.MustNewIDWithName("span", "set_status_err"),
 			expected: &Config{
 				SetStatus: &Status{
 					Code:        "Error",
@@ -94,7 +83,7 @@ func TestLoadingConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("span", "set_status_ok"),
+			id: component.MustNewIDWithName("span", "set_status_ok"),
 			expected: &Config{
 				MatchConfig: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
@@ -119,7 +108,7 @@ func TestLoadingConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

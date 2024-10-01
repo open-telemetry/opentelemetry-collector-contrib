@@ -1,0 +1,108 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+processors:
+  batch:
+    send_batch_size: 10
+    timeout: 5s
+  tail_sampling:
+    decision_wait: 1s
+    policies: [{name: sample_flag, type: boolean_attribute, boolean_attribute: {key: sampled, value: true}}]
+connectors:
+  datadog/connector:
+    traces:
+      ## @param ignore_resources - list of strings - optional
+      ## A blacklist of regular expressions can be provided to disable certain traces based on their resource name
+      ## all entries must be surrounded by double quotes and separated by commas.
+      #
+      ignore_resources: ["(GET|POST) /healthcheck"]
+      ## @param span_name_remappings - map of key/value pairs - optional
+      ## A map of Datadog span operation name keys and preferred name valuues to update those names to. This can be used to
+      ## automatically map Datadog Span Operation Names to an updated value, and is useful when a user wants to
+      ## shorten or modify span names to something more user friendly in the case of instrumentation libraries with
+      ## particularly verbose names.
+      #
+      span_name_remappings:
+        io.opentelemetry.javaagent.spring.client: spring.client
+        instrumentation:express.server: express
+        go.opentelemetry.io_contrib_instrumentation_net_http_otelhttp.client: http.client
+      ## @param span_name_as_resource_name - use OpenTelemetry semantic convention for span naming - optional
+      ## Option created to maintain similarity with the OpenTelemetry semantic conventions as discussed in the issue below.
+      ## https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/trace/semantic_conventions
+      ## https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909
+      #
+      span_name_as_resource_name: true
+      ## @param compute_stats_by_span_kind - enables APM stats computation based on `span.kind` - optional
+      ## If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
+      ## If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
+      ## NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
+      #
+      ## If you are sending OTel traces and want stats on non-top-level spans, this flag will need to be enabled.
+      ## If you are sending OTel traces and do not want stats computed by span kind, you need to disable this flag and disable `compute_top_level_by_span_kind`.
+      #
+      compute_stats_by_span_kind: true
+      ## @param compute_top_level_by_span_kind - enables top-level span identification based on `span.kind` - optional
+      ## If set to true, root spans and spans with a server or consumer `span.kind` will be marked as top-level.
+      ## Additionally, spans with a client or producer `span.kind` will have stats computed.
+      ## Enabling this config option may increase the number of spans that generate trace metrics, and may change which spans appear as top-level in Datadog.
+      #
+      compute_top_level_by_span_kind: false
+      ## @param peer_tags_aggregation - enables aggregation of peer related tags in Datadog exporter - optional
+      ## If set to true, enables aggregation of peer related tags (e.g., `peer.service`, `db.instance`, etc.) in Datadog exporter.
+      ## If disabled, aggregated trace stats will not include these tags as dimensions on trace metrics.
+      ## For the best experience with peer tags, Datadog also recommends enabling `compute_stats_by_span_kind`.
+      ## If you are using an OTel tracer, it's best to have both enabled because client/producer spans with relevant peer tags
+      ## may not be marked by Datadog exporter as top-level spans.
+      ## If enabling both causes Datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
+      ## A high cardinality of peer tags or APM resources can also contribute to higher CPU and memory consumption.
+      ## You can check for the cardinality of these fields by making trace search queries in the Datadog UI.
+      ## The default list of peer tags can be found in https://github.com/DataDog/datadog-agent/blob/main/pkg/trace/stats/concentrator.go.
+      #
+      peer_tags_aggregation: true
+      ## @param trace_buffer - specifies the number of outgoing trace payloads to buffer before dropping - optional
+      ## If unset, the default value is 1000.
+      ## If you start seeing log messages like `Payload in channel full. Dropped 1 payload.` in the datadog exporter, consider
+      ## setting a higher `trace_buffer` to avoid traces being dropped.
+      #
+      trace_buffer: 500
+      ## @param peer_tags - [BETA] Optional list of supplementary peer tags that go beyond the defaults. The Datadog backend validates all tags
+      ## and will drop ones that are unapproved. The default set of peer tags can be found at
+      ## https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
+      #
+      peer_tags: ["tag"]
+      ## @param resource_attributes_as_container_tags - enables the use of resource attributes as container tags - Optional
+      ## A list of resource attributes that should be used as container tags.
+      #
+      resource_attributes_as_container_tags: ["could.availability_zone", "could.region"]
+      ## @param bucket_interval specifies the time interval size of aggregation buckets that aggregate the Datadog trace metrics.
+      ## It is also the time interval that Datadog trace metrics payloads are flushed to the pipeline.
+      ## If you are concerned about the metric volume generated by the Datadog connector and the resulting networking egress, try increasing bucket_interval.
+      ## Default is 10s if unset.
+      #
+      bucket_interval: 30s
+exporters:
+  debug:
+    verbosity: detailed
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+    traces:
+      trace_buffer: 100
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog/connector]
+    traces/2: # this pipeline uses sampling
+      receivers: [datadog/connector]
+      processors: [tail_sampling, batch]
+      exporters: [datadog, debug]
+    metrics:
+      receivers: [datadog/connector]
+      processors: [batch]
+      exporters: [datadog, debug]

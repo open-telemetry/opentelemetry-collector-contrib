@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter
 
@@ -21,18 +10,20 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	apmcorrelation "github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
+	apmcorrelation "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -44,36 +35,96 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	// Realm doesn't have a default value so set it directly.
-	defaultCfg := createDefaultConfig().(*Config)
-	defaultCfg.AccessToken = "testToken"
-	defaultCfg.Realm = "ap0"
-	require.NoError(t, err)
-
 	seventy := 70
+	hundred := 100
+	idleConnTimeout := 30 * time.Second
 
 	tests := []struct {
 		id       component.ID
 		expected *Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
-			expected: defaultCfg,
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				AccessToken: "testToken",
+				Realm:       "ap0",
+				ClientConfig: confighttp.ClientConfig{
+					Timeout:              10 * time.Second,
+					Headers:              nil,
+					MaxIdleConns:         &hundred,
+					MaxIdleConnsPerHost:  &hundred,
+					IdleConnTimeout:      &idleConnTimeout,
+					HTTP2ReadIdleTimeout: 10 * time.Second,
+					HTTP2PingTimeout:     10 * time.Second,
+				},
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     5 * time.Second,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: true,
+				},
+				LogDimensionUpdates: false,
+				DimensionClient: DimensionClientConfig{
+					MaxBuffered:         10000,
+					SendDelay:           10 * time.Second,
+					MaxIdleConns:        20,
+					MaxIdleConnsPerHost: 20,
+					MaxConnsPerHost:     20,
+					IdleConnTimeout:     30 * time.Second,
+					Timeout:             10 * time.Second,
+				},
+				TranslationRules:    nil,
+				ExcludeMetrics:      nil,
+				IncludeMetrics:      nil,
+				DeltaTranslationTTL: 3600,
+				ExcludeProperties:   nil,
+				Correlation: &correlation.Config{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: "",
+						Timeout:  5 * time.Second,
+					},
+					StaleServiceTimeout: 5 * time.Minute,
+					SyncAttributes: map[string]string{
+						"k8s.pod.uid":  "k8s.pod.uid",
+						"container.id": "container.id",
+					},
+					Config: apmcorrelation.Config{
+						MaxRequests:     20,
+						MaxBuffered:     10_000,
+						MaxRetries:      2,
+						LogUpdates:      false,
+						RetryDelay:      30 * time.Second,
+						CleanupInterval: 1 * time.Minute,
+					},
+				},
+				NonAlphanumericDimensionChars: "_-.",
+				SendOTLPHistograms:            false,
+			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				AccessToken: "testToken",
 				Realm:       "us1",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second,
+				ClientConfig: confighttp.ClientConfig{
+					Timeout: 2 * time.Second,
 					Headers: map[string]configopaque.String{
 						"added-entry": "added value",
 						"dot.test":    "test",
 					},
-					MaxIdleConns:        &seventy,
-					MaxIdleConnsPerHost: &seventy,
+					MaxIdleConns:         &seventy,
+					MaxIdleConnsPerHost:  &seventy,
+					IdleConnTimeout:      &idleConnTimeout,
+					HTTP2ReadIdleTimeout: 10 * time.Second,
+					HTTP2PingTimeout:     10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -81,12 +132,22 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
 				}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
+				},
+				LogDimensionUpdates: true,
+				DimensionClient: DimensionClientConfig{
+					MaxBuffered:         1,
+					SendDelay:           time.Hour,
+					MaxIdleConns:        100,
+					MaxIdleConnsPerHost: 10,
+					MaxConnsPerHost:     10000,
+					IdleConnTimeout:     2 * time.Hour,
+					Timeout:             20 * time.Second,
 				},
 				TranslationRules: []translation.Rule{
 					{
@@ -131,14 +192,14 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						MetricName: "metric4",
-						Dimensions: map[string]interface{}{
+						Dimensions: map[string]any{
 							"dimension_key": "dimension_val",
 						},
 					},
 					{
 						MetricName: "metric5",
-						Dimensions: map[string]interface{}{
-							"dimension_key": []interface{}{"dimension_val1", "dimension_val2"},
+						Dimensions: map[string]any{
+							"dimension_key": []any{"dimension_val1", "dimension_val2"},
 						},
 					},
 					{
@@ -149,7 +210,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						MetricName: "cpu.utilization",
-						Dimensions: map[string]interface{}{
+						Dimensions: map[string]any{
 							"container_name": "/^[A-Z][A-Z]$/",
 						},
 					},
@@ -184,7 +245,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Correlation: &correlation.Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: "",
 						Timeout:  5 * time.Second,
 					},
@@ -203,6 +264,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				NonAlphanumericDimensionChars: "_-.",
+				SendOTLPHistograms:            true,
 			},
 		},
 	}
@@ -214,7 +276,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			// We need to add the default exclude rules.
@@ -225,6 +287,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestConfigGetMetricTranslator(t *testing.T) {
+	done := make(chan struct{})
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -237,7 +300,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 				DeltaTranslationTTL: 3600,
 			},
 			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
+				translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600, done)
 				require.NoError(t, err)
 				return translator
 			}(),
@@ -249,7 +312,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 				DeltaTranslationTTL: 3600,
 			},
 			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600, done)
 				require.NoError(t, err)
 				return translator
 			}(),
@@ -261,7 +324,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 				DeltaTranslationTTL:            3600,
 			},
 			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600, done)
 				require.NoError(t, err)
 				return translator
 			}(),
@@ -274,7 +337,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 				DeltaTranslationTTL:            3600,
 			},
 			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600, done)
 				require.NoError(t, err)
 				return translator
 			}(),
@@ -296,7 +359,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.cfg.getMetricTranslator(zap.NewNop())
+			got, err := tt.cfg.getMetricTranslator(zap.NewNop(), done)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -432,19 +495,11 @@ func TestConfigValidateErrors(t *testing.T) {
 			},
 		},
 		{
-			name: "Negative MaxConnections",
-			cfg: &Config{
-				Realm:          "us0",
-				AccessToken:    "access_token",
-				MaxConnections: -1,
-			},
-		},
-		{
 			name: "Negative Timeout",
 			cfg: &Config{
-				Realm:              "us0",
-				AccessToken:        "access_token",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: -1 * time.Second},
+				Realm:        "us0",
+				AccessToken:  "access_token",
+				ClientConfig: confighttp.ClientConfig{Timeout: -1 * time.Second},
 			},
 		},
 		{
@@ -452,7 +507,7 @@ func TestConfigValidateErrors(t *testing.T) {
 			cfg: &Config{
 				Realm:       "us0",
 				AccessToken: "access_token",
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:   true,
 					QueueSize: -1,
 				},
@@ -498,7 +553,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, tt.cfg.Unmarshal(confmap.NewFromStringMap(map[string]interface{}{})))
+			require.NoError(t, confmap.NewFromStringMap(map[string]any{}).Unmarshal(tt.cfg))
 			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
 		})
 	}
