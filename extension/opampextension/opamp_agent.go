@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -57,8 +56,6 @@ type opampAgent struct {
 	opampClient client.OpAMPClient
 
 	customCapabilityRegistry *customCapabilityRegistry
-
-	authExtension auth.Client
 }
 
 var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)

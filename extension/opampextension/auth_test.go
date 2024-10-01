@@ -98,15 +98,15 @@ func (m mockHost) GetExtensions() map[component.ID]component.Component {
 
 type mockComponent struct{}
 
-func (mockComponent) Start(ctx context.Context, host component.Host) error { return nil }
-func (mockComponent) Shutdown(ctx context.Context) error                   { return nil }
+func (mockComponent) Start(_ context.Context, _ component.Host) error { return nil }
+func (mockComponent) Shutdown(_ context.Context) error                { return nil }
 
 type mockAuthClient struct {
 	header http.Header
 }
 
-func (mockAuthClient) Start(ctx context.Context, host component.Host) error { return nil }
-func (mockAuthClient) Shutdown(ctx context.Context) error                   { return nil }
+func (mockAuthClient) Start(_ context.Context, _ component.Host) error { return nil }
+func (mockAuthClient) Shutdown(_ context.Context) error                { return nil }
 func (m mockAuthClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return mockRoundTripper{
 		header: m.header,
