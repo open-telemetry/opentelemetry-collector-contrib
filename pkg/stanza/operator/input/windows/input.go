@@ -172,7 +172,7 @@ func (i *Input) Stop() error {
 	return i.stopRemoteSession()
 }
 
-// readOnInterval will read events with respect to the polling interval until it reaches the end of the channel. 
+// readOnInterval will read events with respect to the polling interval until it reaches the end of the channel.
 func (i *Input) readOnInterval(ctx context.Context) {
 	defer i.wg.Done()
 
