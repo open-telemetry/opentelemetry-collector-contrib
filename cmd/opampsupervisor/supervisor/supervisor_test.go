@@ -6,8 +6,10 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -22,6 +24,72 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
+
+func setupSupervisorConfig(t *testing.T) config.Supervisor {
+	t.Helper()
+
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
+	require.NoError(t, err)
+
+	executablePath := filepath.Join(tmpDir, "binary")
+	err = os.WriteFile(executablePath, []byte{}, 0o600)
+	require.NoError(t, err)
+
+	configuration := `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+
+storage:
+  directory: %s
+
+agent:
+  executable: %s
+`
+	configuration = fmt.Sprintf(configuration, filepath.Join(tmpDir, "storage"), executablePath)
+
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err = os.WriteFile(cfgPath, []byte(configuration), 0o600)
+	require.NoError(t, err)
+
+	cfg, err := config.Load(cfgPath)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, os.Chmod(tmpDir, 0o700))
+		require.NoError(t, os.RemoveAll(tmpDir))
+	})
+
+	return cfg
+}
+
+func Test_NewSupervisor(t *testing.T) {
+	cfg := setupSupervisorConfig(t)
+	supervisor, err := NewSupervisor(zap.L(), cfg)
+	require.NoError(t, err)
+	require.NotNil(t, supervisor)
+}
+
+func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
+	cfg := setupSupervisorConfig(t)
+
+	dir := filepath.Dir(cfg.Storage.Directory)
+	require.NoError(t, os.Chmod(dir, 0o500))
+
+	supervisor, err := NewSupervisor(zap.L(), cfg)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "error creating storage dir")
+	require.Nil(t, supervisor)
+}
 
 func Test_composeEffectiveConfig(t *testing.T) {
 	acceptsRemoteConfig := true
@@ -104,10 +172,12 @@ func Test_onMessage(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: initialID},
 			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
 		}
+		require.NoError(t, s.createTemplates())
 
 		s.onMessage(context.Background(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
@@ -131,9 +201,11 @@ func Test_onMessage(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: testUUID},
 			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 		}
+		require.NoError(t, s.createTemplates())
 
 		s.onMessage(context.Background(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
@@ -175,6 +247,7 @@ func Test_onMessage(t *testing.T) {
 			hasNewConfig:                 make(chan struct{}, 1),
 			persistentState:              &persistentState{InstanceID: testUUID},
 			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    agentConnAtomic,
 			agentHealthCheckEndpoint:     "localhost:8000",
@@ -231,6 +304,61 @@ func Test_onMessage(t *testing.T) {
 		require.True(t, gotMessage, "Message was not sent to agent")
 	})
 
+	t.Run("Processes all ServerToAgent fields", func(t *testing.T) {
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "runtime.type",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "test",
+						},
+					},
+				},
+			},
+		})
+		initialID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		newID := uuid.MustParse("018fef3f-14a8-73ef-b63e-3b96b146ea38")
+		s := Supervisor{
+			logger:                       zap.NewNop(),
+			pidProvider:                  defaultPIDProvider{},
+			config:                       config.Supervisor{},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: initialID},
+			agentDescription:             agentDesc,
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			mergedConfig:                 &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			agentHealthCheckEndpoint:     "localhost:8000",
+			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+		}
+		require.NoError(t, s.createTemplates())
+
+		s.onMessage(context.Background(), &types.MessageData{
+			AgentIdentification: &protobufs.AgentIdentification{
+				NewInstanceUid: newID[:],
+			},
+			RemoteConfig: &protobufs.AgentRemoteConfig{
+				Config: &protobufs.AgentConfigMap{
+					ConfigMap: map[string]*protobufs.AgentConfigFile{
+						"": {
+							Body: []byte(""),
+						},
+					},
+				},
+			},
+			OwnMetricsConnSettings: &protobufs.TelemetryConnectionSettings{
+				DestinationEndpoint: "http://localhost:4318",
+			},
+		})
+
+		require.Equal(t, newID, s.persistentState.InstanceID)
+		t.Log(s.mergedConfig.Load())
+		require.Contains(t, s.mergedConfig.Load(), "prometheus/own_metrics")
+		require.Contains(t, s.mergedConfig.Load(), newID.String())
+		require.Contains(t, s.mergedConfig.Load(), "runtime.type: test")
+	})
 }
 
 func Test_handleAgentOpAMPMessage(t *testing.T) {

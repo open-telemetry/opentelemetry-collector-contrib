@@ -114,6 +114,7 @@ process:
   <include|exclude>:
     names: [ <process name>, ... ]
     match_type: <strict|regexp>
+  mute_process_all_errors: <true|false>
   mute_process_name_error: <true|false>
   mute_process_exe_error: <true|false>
   mute_process_io_error: <true|false>
@@ -123,12 +124,12 @@ process:
 ```
 
 The following settings are optional:
-
-- `mute_process_name_error` (default: false): mute the error encountered when trying to read a process name the collector does not have permission to read
-- `mute_process_io_error` (default: false): mute the error encountered when trying to read IO metrics of a process the collector does not have permission to read
-- `mute_process_cgroup_error` (default: false): mute the error encountered when trying to read the cgroup of a process the collector does not have permission to read
-- `mute_process_exe_error` (default: false): mute the error encountered when trying to read the executable path of a process the collector does not have permission to read (Linux only)
-- `mute_process_user_error` (default: false): mute the error encountered when trying to read a uid which doesn't exist on the system, eg. is owned by a user that only exists in a container.
+- `mute_process_all_errors` (default: false): mute all the errors encountered when trying to read metrics of a process. When this flag is enabled, there is no need to activate any other error suppression flags.
+- `mute_process_name_error` (default: false): mute the error encountered when trying to read a process name the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+- `mute_process_io_error` (default: false): mute the error encountered when trying to read IO metrics of a process the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+- `mute_process_cgroup_error` (default: false): mute the error encountered when trying to read the cgroup of a process the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+- `mute_process_exe_error` (default: false): mute the error encountered when trying to read the executable path of a process the collector does not have permission to read (Linux only). This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+- `mute_process_user_error` (default: false): mute the error encountered when trying to read a uid which doesn't exist on the system, eg. is owned by a user that only exists in a container. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 
 ## Advanced Configuration
 
@@ -201,19 +202,3 @@ export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service
 ## Entity Events
 
 **Entity Events as logs are experimental** and might eventually be replaced by the result of [the OTEP](https://github.com/open-telemetry/oteps/blob/main/text/entities/0256-entities-data-model.md#entity-events). For now, the hostmetrics receiver can send the host entity event as a log records. By default, the hostmetrics receiver sends periodic EntityState events every 5 minutes. You can change that by setting `metadata_collection_interval`. Entity Events as logs are experimental. The result of the OTEP might eventually replace that.
-
-## Feature Gates
-
-See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
-
-### `receiver.hostmetrics.normalizeProcessCPUUtilization`
-
-When enabled, normalizes the `process.cpu.utilization` metric onto the interval [0-1] by dividing the value by the number of logical processors. With this feature gate disabled, the value of the `process.cpu.utilization` metric may exceed 1.
-
-For example, if you have 4 logical cores on your system, and a process is occupying 2 logical cores for an entire scrape interval, with this feature gate disabled a `process.cpu.utilization` metric will be emitted with a value of 2.  if this feature gate is enabled in the same scenario, the value of the emitted metric will be 0.5.
-
-The schedule for this feature gate is:
-- Introduced in v0.97.0 (March 2024) as `alpha` - disabled by default.
-- Moved to `beta` in v0.100.0 (May 2024) - enabled by default.
-- Moved to `stable` in v0.102.0 (June 2024) - cannot be disabled.
-- Removed three releases after `stable`.
