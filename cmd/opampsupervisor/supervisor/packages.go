@@ -19,10 +19,10 @@ import (
 
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
-	"github.com/sigstore/cosign/cmd/cosign/cli/rekor"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/fulcio"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	"github.com/sigstore/cosign/v2/pkg/oci/static"
+	"github.com/sigstore/rekor/pkg/client"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 
@@ -417,7 +417,7 @@ func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOp
 		return nil, fmt.Errorf("fetch intermediate certs: %w", err)
 	}
 
-	rekorClient, err := rekor.NewClient("https://rekor.sigstore.dev")
+	rekorClient, err := client.GetRekorClient("https://rekor.sigstore.dev")
 	if err != nil {
 		return nil, fmt.Errorf("create rekot client: %w", err)
 	}
