@@ -370,19 +370,19 @@ func TestExpectedStatus(t *testing.T) {
 		name              string
 		err               error
 		expectedGrpcError string
-		expectedHttpError string
+		expectedHTTPError string
 	}{
 		{
 			name:              "permanent-error",
 			err:               consumererror.NewPermanent(errors.New("permanent")),
-			expectedGrpcError: "rpc error: code = Internal desc = Permanent error: permanent",
-			expectedHttpError: "failed to upload logs; HTTP status code: 400",
+			expectedGrpcError: "rpc error: code = Unknown desc = Permanent error: permanent",
+			expectedHTTPError: "failed to upload logs; HTTP status code: 400",
 		},
 		{
 			name:              "non-permanent-error",
 			err:               errors.New("non-permanent"),
 			expectedGrpcError: "rpc error: code = Unavailable desc = non-permanent",
-			expectedHttpError: "failed to upload logs; HTTP status code: 503",
+			expectedHTTPError: "failed to upload logs; HTTP status code: 503",
 		},
 	}
 	for _, tt := range testcases {
@@ -433,7 +433,7 @@ func TestExpectedStatus(t *testing.T) {
 
 			_, port, _ := net.SplitHostPort(httpAddr)
 			collectorAddr := fmt.Sprintf("http://localhost:%s/loki/api/v1/push", port)
-			require.EqualError(t, sendToCollector(collectorAddr, "application/json", "", []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ]]}]}`)), tt.expectedHttpError)
+			require.EqualError(t, sendToCollector(collectorAddr, "application/json", "", []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ]]}]}`)), tt.expectedHTTPError)
 		})
 	}
 }

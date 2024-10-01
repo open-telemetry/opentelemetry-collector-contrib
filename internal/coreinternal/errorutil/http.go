@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-func HttpError(w http.ResponseWriter, err error) {
+func HTTPError(w http.ResponseWriter, err error) {
 	if err == nil {
 		return
 	}

@@ -226,7 +226,7 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, r *lokiReceiver) {
 	err = r.nextConsumer.ConsumeLogs(ctx, logs)
 	r.obsrepHTTP.EndLogsOp(ctx, "json", logRecordCount, err)
 	if err != nil {
-		errorutil.HttpError(resp, err)
+		errorutil.HTTPError(resp, err)
 		return
 	}
 
