@@ -1963,8 +1963,8 @@ github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1y
 github.com/onsi/gomega v1.13.0/go.mod h1:lRk9szgn8TxENtWd0Tp4c3wjlRfMTMH27I+3Je41yGY=
 github.com/onsi/gomega v1.33.1 h1:dsYjIxxSR755MDmKVsaFQTE22ChNBcuuTWgkUDSubOk=
 github.com/onsi/gomega v1.33.1/go.mod h1:U4R44UsT+9eLIaYRB2a5qajjtQYn0hauxvRm16AVYg0=
-github.com/open-telemetry/opamp-go v0.16.0 h1:mMXDjjqtL6iOpMvucWxY2A8QE91il9mIVRKBJOIBLWo=
-github.com/open-telemetry/opamp-go v0.16.0/go.mod h1:SGDhUoAx7uGutO4ENNMQla/tiSujxgZmMPJXIOPGBdk=
+github.com/open-telemetry/opamp-go v0.17.0 h1:3R4+B/6Sy8mknLBbzO3gqloqwTT02rCSRcr4ac2B124=
+github.com/open-telemetry/opamp-go v0.17.0/go.mod h1:SGDhUoAx7uGutO4ENNMQla/tiSujxgZmMPJXIOPGBdk=
 github.com/open-telemetry/otel-arrow v0.26.0 h1:zizyFFtYfVzkjXGtY5iFSR5ognddzwJlD8fGPsVgCLo=
 github.com/open-telemetry/otel-arrow v0.26.0/go.mod h1:QGueLcxK3nVjRnVCevyyeCEnI2YkFqgT/TWgw58eVy4=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=

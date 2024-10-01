@@ -620,7 +620,7 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.11.0 // indirect
 	github.com/oklog/ulid/v2 v2.1.0 // indirect
-	github.com/open-telemetry/opamp-go v0.16.0 // indirect
+	github.com/open-telemetry/opamp-go v0.17.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.110.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.110.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.110.0 // indirect
