@@ -35,12 +35,18 @@ func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = defaultHTTPClientTimeout
+	clientConfig.MaxIdleConns = nil
+	clientConfig.MaxIdleConnsPerHost = nil
+	clientConfig.MaxConnsPerHost = nil
+	clientConfig.IdleConnTimeout = nil
+	clientConfig.Headers = nil
+
 	return &Config{
-		ControllerConfig: cfg,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: defaultEndpoint,
-			Timeout:  defaultHTTPClientTimeout,
-		},
+		ControllerConfig:     cfg,
+		ClientConfig:         clientConfig,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		Nodes:                []string{"_all"},
 		Indices:              []string{"_all"},
