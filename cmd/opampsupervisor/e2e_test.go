@@ -1778,7 +1778,6 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 		ServerProvidedAllPackagesHash: []byte{0x03, 0x04},
 	}, ps)
 
-	// TODO: Sample agent description to make sure new agent is running/bootstrapped
 	agentDesc := <-agentDescriptionChan
 	versionFound := false
 	for _, v := range agentDesc.IdentifyingAttributes {
