@@ -114,6 +114,7 @@ process:
   <include|exclude>:
     names: [ <process name>, ... ]
     match_type: <strict|regexp>
+  mute_process_all_errors: <true|false>
   mute_process_name_error: <true|false>
   mute_process_exe_error: <true|false>
   mute_process_io_error: <true|false>
@@ -123,12 +124,12 @@ process:
 ```
 
 The following settings are optional:
-
-- `mute_process_name_error` (default: false): mute the error encountered when trying to read a process name the collector does not have permission to read
-- `mute_process_io_error` (default: false): mute the error encountered when trying to read IO metrics of a process the collector does not have permission to read
-- `mute_process_cgroup_error` (default: false): mute the error encountered when trying to read the cgroup of a process the collector does not have permission to read
-- `mute_process_exe_error` (default: false): mute the error encountered when trying to read the executable path of a process the collector does not have permission to read (Linux only)
-- `mute_process_user_error` (default: false): mute the error encountered when trying to read a uid which doesn't exist on the system, eg. is owned by a user that only exists in a container.
+- `mute_process_all_errors` (default: false): mute all the errors encountered when trying to read metrics of a process. When this flag is enabled, there is no need to activate any other error suppression flags.
+- `mute_process_name_error` (default: false): mute the error encountered when trying to read a process name the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+- `mute_process_io_error` (default: false): mute the error encountered when trying to read IO metrics of a process the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+- `mute_process_cgroup_error` (default: false): mute the error encountered when trying to read the cgroup of a process the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+- `mute_process_exe_error` (default: false): mute the error encountered when trying to read the executable path of a process the collector does not have permission to read (Linux only). This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+- `mute_process_user_error` (default: false): mute the error encountered when trying to read a uid which doesn't exist on the system, eg. is owned by a user that only exists in a container. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 
 ## Advanced Configuration
 

@@ -13,8 +13,7 @@ import (
 
 func TestParseGoTimeBadLocation(t *testing.T) {
 	_, err := ParseGotime(time.RFC822, "02 Jan 06 15:04 BST", time.UTC)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to load location BST")
+	require.ErrorContains(t, err, "failed to load location BST")
 }
 
 func Test_setTimestampYear(t *testing.T) {
