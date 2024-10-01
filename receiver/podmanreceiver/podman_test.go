@@ -92,8 +92,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	defer fetchCancel()
 
 	container, err := cli.fetchContainerStats(ctx, container{})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expectedError)
+	assert.ErrorContains(t, err, expectedError)
 	assert.Empty(t, container)
 
 	assert.GreaterOrEqual(
@@ -176,7 +175,7 @@ func TestEventLoopHandles(t *testing.T) {
 	cli := newContainerScraper(&eventClient, zap.NewNop(), &Config{})
 	assert.NotNil(t, cli)
 
-	assert.Len(t, cli.containers, 0)
+	assert.Empty(t, cli.containers)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go cli.containerEventLoop(ctx)
@@ -195,7 +194,7 @@ func TestEventLoopHandles(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		cli.containersLock.Lock()
 		defer cli.containersLock.Unlock()
-		return assert.Len(t, cli.containers, 0)
+		return assert.Empty(t, cli.containers)
 	}, 1*time.Second, 1*time.Millisecond, "failed to update containers list.")
 }
 
@@ -210,7 +209,7 @@ func TestInspectAndPersistContainer(t *testing.T) {
 	cli := newContainerScraper(&inspectClient, zap.NewNop(), &Config{})
 	assert.NotNil(t, cli)
 
-	assert.Len(t, cli.containers, 0)
+	assert.Empty(t, cli.containers)
 
 	stats, ok := cli.inspectAndPersistContainer(context.Background(), "c1")
 	assert.True(t, ok)

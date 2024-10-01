@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
@@ -297,7 +298,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				assert.Len(t, sink.AllLogs(), 1)
 			},
 			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
-				assert.Len(t, sink.AllMetrics(), 0)
+				assert.Empty(t, sink.AllMetrics())
 			},
 		},
 		{
@@ -312,7 +313,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				assertHecSuccessResponse(t, resp, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Len(t, sink.AllLogs(), 0)
+				assert.Empty(t, sink.AllLogs())
 			},
 			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
 				assert.Len(t, sink.AllMetrics(), 1)
@@ -500,7 +501,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	t.Log("Sending Splunk HEC data Request")
 
 	body, err := json.Marshal(buildSplunkHecMsg(sec, 0))
-	require.NoError(t, err, fmt.Sprintf("failed to marshal Splunk message: %v", err))
+	require.NoErrorf(t, err, "failed to marshal Splunk message: %v", err)
 
 	url := fmt.Sprintf("https://%s", addr)
 
@@ -1614,7 +1615,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assert.Equal(t, map[string]any{"code": float64(10), "text": "Data channel is missing"}, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Len(t, sink.AllLogs(), 0)
+				assert.Empty(t, sink.AllLogs())
 			},
 		},
 		{
@@ -1635,7 +1636,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assert.Equal(t, map[string]any{"text": "Invalid data channel", "code": float64(11)}, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Len(t, sink.AllLogs(), 0)
+				assert.Empty(t, sink.AllLogs())
 			},
 		},
 		{
@@ -1768,7 +1769,7 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-	assert.Equal(t, string(respBytes), responseHecHealthy)
+	assert.Equal(t, responseHecHealthy, string(respBytes))
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
@@ -2116,7 +2117,7 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

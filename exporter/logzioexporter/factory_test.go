@@ -92,6 +92,6 @@ func TestGetListenerURL(t *testing.T) {
 	}
 	for _, test := range getListenerURLTests {
 		output := getListenerURL(test.arg1)
-		require.Equal(t, output, test.expected)
+		require.Equal(t, test.expected, output)
 	}
 }

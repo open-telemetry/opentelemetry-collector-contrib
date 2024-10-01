@@ -101,7 +101,7 @@ func TestBuildAPipelineDefaultOperator(t *testing.T) {
 			require.Equal(t, "fake", op.GetOutputIDs()[0])
 			exists["noop1"] = true
 		case "fake":
-			require.Len(t, op.GetOutputIDs(), 0)
+			require.Empty(t, op.GetOutputIDs())
 			exists["fake"] = true
 		}
 	}
@@ -243,7 +243,7 @@ func TestDeduplicateIDs(t *testing.T) {
 		t.Run("Deduplicate/"+tc.name, func(t *testing.T) {
 			ops := tc.ops()
 			dedeplucateIDs(ops)
-			require.Equal(t, ops, tc.expectedOps)
+			require.Equal(t, tc.expectedOps, ops)
 		})
 	}
 }

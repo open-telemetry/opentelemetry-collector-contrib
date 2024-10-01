@@ -233,7 +233,7 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 			},
 		},
 	}
-	assert.Equal(t, got, want)
+	assert.Equal(t, want, got)
 
 	// For a full sanity/logical check, assert that EVERY
 	// Sample has a Timestamp bigger than its prior values.

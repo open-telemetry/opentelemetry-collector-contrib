@@ -113,7 +113,7 @@ func TestMapWithExpiryAdd(t *testing.T) {
 	defer store.Unlock()
 	val, ok = store.Get(Key{MetricMetadata: "key2"})
 	assert.False(t, ok)
-	assert.True(t, val == nil)
+	assert.Nil(t, val)
 	require.NoError(t, store.Shutdown())
 }
 
@@ -144,7 +144,7 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	store.Lock()
 	val, ok = store.Get(Key{MetricMetadata: "key1"})
 	assert.False(t, ok)
-	assert.True(t, val == nil)
+	assert.Nil(t, val)
 	assert.Equal(t, 0, store.Size())
 	store.Unlock()
 }

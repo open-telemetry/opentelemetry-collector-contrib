@@ -176,10 +176,13 @@ func (s *Supervisor) Start() error {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
-	healthCheckPort, err := s.findRandomPort()
+	healthCheckPort := s.config.Agent.HealthCheckPort
+	if healthCheckPort == 0 {
+		healthCheckPort, err = s.findRandomPort()
 
-	if err != nil {
-		return fmt.Errorf("could not find port for health check: %w", err)
+		if err != nil {
+			return fmt.Errorf("could not find port for health check: %w", err)
+		}
 	}
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
@@ -337,8 +340,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}()
 
 	select {
-	// TODO make timeout configurable
-	case <-time.After(3 * time.Second):
+	case <-time.After(s.config.Agent.BootstrapTimeout):
 		if connected.Load() {
 			return errors.New("collector connected but never responded with an AgentDescription message")
 		} else {
@@ -1168,16 +1170,17 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	configChanged := false
+
+	if msg.AgentIdentification != nil {
+		configChanged = s.processAgentIdentificationMessage(msg.AgentIdentification) || configChanged
+	}
+
 	if msg.RemoteConfig != nil {
-		configChanged = configChanged || s.processRemoteConfigMessage(msg.RemoteConfig)
+		configChanged = s.processRemoteConfigMessage(msg.RemoteConfig) || configChanged
 	}
 
 	if msg.OwnMetricsConnSettings != nil {
-		configChanged = configChanged || s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings)
-	}
-
-	if msg.AgentIdentification != nil {
-		configChanged = configChanged || s.processAgentIdentificationMessage(msg.AgentIdentification)
+		configChanged = s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings) || configChanged
 	}
 
 	// Update the agent config if any messages have touched the config
@@ -1287,7 +1290,14 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 		s.logger.Error("Failed to send agent description to OpAMP server")
 	}
 
-	return true
+	// Need to recalculate the Agent config so that the new agent identification is included in it.
+	configChanged, err := s.composeMergedConfig(s.remoteConfig)
+	if err != nil {
+		s.logger.Error("Error composing merged config with new instance ID", zap.Error(err))
+		return false
+	}
+
+	return configChanged
 }
 
 func (s *Supervisor) persistentStateFilePath() string {

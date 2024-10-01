@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -512,7 +512,7 @@ func TestLogGroupsWithAmpersandFromStringResourceAttribute(t *testing.T) {
 	filtered, awsData = makeAws(attributes, resource, nil)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.Len(t, awsData.CWLogs, 0)
+	assert.Empty(t, awsData.CWLogs)
 }
 
 func TestLogGroupsInvalidType(t *testing.T) {
@@ -524,7 +524,7 @@ func TestLogGroupsInvalidType(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.Len(t, awsData.CWLogs, 0)
+	assert.Empty(t, awsData.CWLogs)
 }
 
 // Simulate Log groups arns being set using OTEL_RESOURCE_ATTRIBUTES

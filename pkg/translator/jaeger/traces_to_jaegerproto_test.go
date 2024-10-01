@@ -333,7 +333,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			jbs, err := ProtoFromTraces(test.td)
 			assert.EqualValues(t, test.err, err)
 			if test.jb == nil {
-				assert.Len(t, jbs, 0)
+				assert.Empty(t, jbs)
 			} else {
 				require.Len(t, jbs, 1)
 				assert.EqualValues(t, test.jb, jbs[0])

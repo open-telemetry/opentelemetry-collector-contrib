@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -39,7 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func Test_signalfxeceiver_New(t *testing.T) {
+func Test_signalfxreceiver_New(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
@@ -78,11 +79,14 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			}
 			err = got.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantStartErr, err)
+			if err == nil {
+				assert.NoError(t, got.Shutdown(context.Background()))
+			}
 		})
 	}
 }
 
-func Test_signalfxeceiver_EndToEnd(t *testing.T) {
+func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
@@ -660,7 +664,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	sfxMsg := buildSFxDatapointMsg(msec, 13, 3)
 	body, err := sfxMsg.Marshal()
-	require.NoError(t, err, fmt.Sprintf("failed to marshal SFx message: %v", err))
+	require.NoErrorf(t, err, "failed to marshal SFx message: %v", err)
 
 	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
 
@@ -1071,7 +1075,7 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

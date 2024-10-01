@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -39,8 +40,8 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockLogsExporter{}
 	lExp := &mockLogsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeLogs: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): lExp,
 		},
@@ -72,7 +73,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 			})),
 			l,
 		))
-		assert.Len(t, defaultExp.AllLogs(), 0,
+		assert.Empty(t, defaultExp.AllLogs(),
 			"log should not be routed to default exporter",
 		)
 		assert.Len(t, lExp.AllLogs(), 1,
@@ -131,8 +132,8 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockLogsExporter{}
 	lExp := &mockLogsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeLogs: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): lExp,
 		},
@@ -159,7 +160,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
-		assert.Len(t, defaultExp.AllLogs(), 0,
+		assert.Empty(t, defaultExp.AllLogs(),
 			"log should not be routed to default exporter",
 		)
 		assert.Len(t, lExp.AllLogs(), 1,
@@ -186,8 +187,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 	defaultExp := &mockLogsExporter{}
 	lExp := &mockLogsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeLogs: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): lExp,
 		},
@@ -230,8 +231,8 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	defaultExp := &mockLogsExporter{}
 	lExp := &mockLogsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeLogs: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): lExp,
 		},
@@ -284,8 +285,8 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	firstExp := &mockLogsExporter{}
 	secondExp := &mockLogsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeLogs: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "1"): firstExp,
 			component.MustNewIDWithName("otlp", "2"): secondExp,
@@ -322,8 +323,8 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
 
 		assert.Len(t, defaultExp.AllLogs(), 1)
-		assert.Len(t, firstExp.AllLogs(), 0)
-		assert.Len(t, secondExp.AllLogs(), 0)
+		assert.Empty(t, firstExp.AllLogs())
+		assert.Empty(t, secondExp.AllLogs())
 	})
 
 	t.Run("logs matched one of two expressions", func(t *testing.T) {
@@ -339,9 +340,9 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
 
-		assert.Len(t, defaultExp.AllLogs(), 0)
+		assert.Empty(t, defaultExp.AllLogs())
 		assert.Len(t, firstExp.AllLogs(), 1)
-		assert.Len(t, secondExp.AllLogs(), 0)
+		assert.Empty(t, secondExp.AllLogs())
 	})
 
 	t.Run("logs matched by all expressions", func(t *testing.T) {
@@ -361,12 +362,12 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
 
-		assert.Len(t, defaultExp.AllLogs(), 0)
+		assert.Empty(t, defaultExp.AllLogs())
 		assert.Len(t, firstExp.AllLogs(), 1)
 		assert.Len(t, secondExp.AllLogs(), 1)
 
-		assert.Equal(t, firstExp.AllLogs()[0].LogRecordCount(), 2)
-		assert.Equal(t, secondExp.AllLogs()[0].LogRecordCount(), 2)
+		assert.Equal(t, 2, firstExp.AllLogs()[0].LogRecordCount())
+		assert.Equal(t, 2, secondExp.AllLogs()[0].LogRecordCount())
 		assert.Equal(t, firstExp.AllLogs(), secondExp.AllLogs())
 	})
 
@@ -396,7 +397,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		rspan := defaultExp.AllLogs()[0].ResourceLogs().At(0)
 		attr, ok := rspan.Resource().Attributes().Get("X-Tenant")
 		assert.True(t, ok, "routing attribute must exists")
-		assert.Equal(t, attr.AsString(), "something-else")
+		assert.Equal(t, "something-else", attr.AsString())
 	})
 }
 
@@ -406,8 +407,8 @@ func TestLogsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	defaultExp := &mockLogsExporter{}
 	firstExp := &mockLogsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeLogs: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "1"): firstExp,
 		},
@@ -438,7 +439,7 @@ func TestLogsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 
 	// verify
 	assert.Len(t, defaultExp.AllLogs(), 1)
-	assert.Len(t, firstExp.AllLogs(), 0)
+	assert.Empty(t, firstExp.AllLogs())
 }
 
 type mockLogsExporter struct {

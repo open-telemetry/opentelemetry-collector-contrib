@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/healthcheck"
@@ -26,7 +26,7 @@ type healthCheckExtension struct {
 	settings component.TelemetrySettings
 }
 
-var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
+var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
 

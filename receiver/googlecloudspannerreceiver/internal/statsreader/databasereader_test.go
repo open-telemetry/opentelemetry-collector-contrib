@@ -50,7 +50,7 @@ func TestNewDatabaseReader(t *testing.T) {
 
 	assert.Equal(t, databaseID, reader.database.DatabaseID())
 	assert.Equal(t, logger, reader.logger)
-	assert.Len(t, reader.readers, 0)
+	assert.Empty(t, reader.readers)
 }
 
 func TestNewDatabaseReaderWithError(t *testing.T) {

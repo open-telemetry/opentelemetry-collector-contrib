@@ -41,7 +41,7 @@ import (
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPRWExporter(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings: exporterhelper.TimeoutSettings{},
+		TimeoutSettings: exporterhelper.TimeoutConfig{},
 		BackOffConfig:   configretry.BackOffConfig{},
 		Namespace:       "",
 		ExternalLabels:  map[string]string{},
@@ -137,7 +137,7 @@ func Test_NewPRWExporter(t *testing.T) {
 // Test_Start checks if the client is properly created as expected.
 func Test_Start(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings:   exporterhelper.TimeoutSettings{},
+		TimeoutSettings:   exporterhelper.TimeoutConfig{},
 		BackOffConfig:     configretry.BackOffConfig{},
 		MaxBatchSizeBytes: 3000000,
 		Namespace:         "",

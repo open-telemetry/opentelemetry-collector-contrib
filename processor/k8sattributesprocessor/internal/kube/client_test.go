@@ -47,12 +47,12 @@ func newPodIdentifier(from string, name string, value string) PodIdentifier {
 }
 
 func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
-	assert.Len(t, c.Pods, 0)
+	assert.Empty(t, c.Pods)
 
 	// pod without IP
 	pod := &api_v1.Pod{}
 	handler(pod)
-	assert.Len(t, c.Pods, 0)
+	assert.Empty(t, c.Pods)
 
 	pod = &api_v1.Pod{}
 	pod.Name = "podA"
@@ -92,11 +92,11 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 }
 
 func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
-	assert.Len(t, c.Namespaces, 0)
+	assert.Empty(t, c.Namespaces)
 
 	namespace := &api_v1.Namespace{}
 	handler(namespace)
-	assert.Len(t, c.Namespaces, 0)
+	assert.Empty(t, c.Namespaces)
 
 	namespace = &api_v1.Namespace{}
 	namespace.Name = "namespaceA"
@@ -117,11 +117,11 @@ func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj an
 }
 
 func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
-	assert.Len(t, c.Nodes, 0)
+	assert.Empty(t, c.Nodes)
 
 	node := &api_v1.Node{}
 	handler(node)
-	assert.Len(t, c.Nodes, 0)
+	assert.Empty(t, c.Nodes)
 
 	node = &api_v1.Node{}
 	node.Name = "nodeA"
@@ -227,11 +227,11 @@ func TestNodeAdd(t *testing.T) {
 
 func TestReplicaSetHandler(t *testing.T) {
 	c, _ := newTestClient(t)
-	assert.Len(t, c.ReplicaSets, 0)
+	assert.Empty(t, c.ReplicaSets)
 
 	replicaset := &apps_v1.ReplicaSet{}
 	c.handleReplicaSetAdd(replicaset)
-	assert.Len(t, c.ReplicaSets, 0)
+	assert.Empty(t, c.ReplicaSets)
 
 	// test add replicaset
 	replicaset = &apps_v1.ReplicaSet{}
@@ -258,13 +258,13 @@ func TestReplicaSetHandler(t *testing.T) {
 	c.handleReplicaSetAdd(replicaset)
 	assert.Len(t, c.ReplicaSets, 1)
 	got := c.ReplicaSets[string(replicaset.UID)]
-	assert.Equal(t, got.Name, "deployment-aaa")
-	assert.Equal(t, got.Namespace, "namespaceA")
-	assert.Equal(t, got.UID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-	assert.Equal(t, got.Deployment, Deployment{
+	assert.Equal(t, "deployment-aaa", got.Name)
+	assert.Equal(t, "namespaceA", got.Namespace)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.UID)
+	assert.Equal(t, Deployment{
 		Name: "deployment",
 		UID:  "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjj",
-	})
+	}, got.Deployment)
 
 	// test update replicaset
 	updatedReplicaset := replicaset
@@ -272,30 +272,30 @@ func TestReplicaSetHandler(t *testing.T) {
 	c.handleReplicaSetUpdate(replicaset, updatedReplicaset)
 	assert.Len(t, c.ReplicaSets, 1)
 	got = c.ReplicaSets[string(replicaset.UID)]
-	assert.Equal(t, got.Name, "deployment-aaa")
-	assert.Equal(t, got.Namespace, "namespaceA")
-	assert.Equal(t, got.UID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-	assert.Equal(t, got.Deployment, Deployment{
+	assert.Equal(t, "deployment-aaa", got.Name)
+	assert.Equal(t, "namespaceA", got.Namespace)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.UID)
+	assert.Equal(t, Deployment{
 		Name: "deployment",
 		UID:  "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjj",
-	})
+	}, got.Deployment)
 
 	// test delete replicaset
 	c.handleReplicaSetDelete(updatedReplicaset)
-	assert.Len(t, c.ReplicaSets, 0)
+	assert.Empty(t, c.ReplicaSets)
 	// test delete replicaset when DeletedFinalStateUnknown
 	c.handleReplicaSetAdd(replicaset)
 	require.Len(t, c.ReplicaSets, 1)
 	c.handleReplicaSetDelete(cache.DeletedFinalStateUnknown{
 		Obj: replicaset,
 	})
-	assert.Len(t, c.ReplicaSets, 0)
+	assert.Empty(t, c.ReplicaSets)
 
 }
 
 func TestPodHostNetwork(t *testing.T) {
 	c, _ := newTestClient(t)
-	assert.Len(t, c.Pods, 0)
+	assert.Empty(t, c.Pods)
 
 	// pod will not be added if no rule matches
 	pod := &api_v1.Pod{}
@@ -303,7 +303,7 @@ func TestPodHostNetwork(t *testing.T) {
 	pod.Status.PodIP = "1.1.1.1"
 	pod.Spec.HostNetwork = true
 	c.handlePodAdd(pod)
-	assert.Len(t, c.Pods, 0)
+	assert.Empty(t, c.Pods)
 
 	// pod will be added if rule matches
 	pod.Name = "podB"
@@ -323,7 +323,7 @@ func TestPodHostNetwork(t *testing.T) {
 // correctly
 func TestPodCreate(t *testing.T) {
 	c, _ := newTestClient(t)
-	assert.Len(t, c.Pods, 0)
+	assert.Empty(t, c.Pods)
 
 	// pod is created in Pending phase. At this point it has a UID but no start time or pod IP address
 	pod := &api_v1.Pod{}
@@ -377,7 +377,7 @@ func TestPodAddOutOfSync(t *testing.T) {
 			},
 		},
 	})
-	assert.Len(t, c.Pods, 0)
+	assert.Empty(t, c.Pods)
 
 	pod := &api_v1.Pod{}
 	pod.Name = "podA"
@@ -449,7 +449,7 @@ func TestPodDelete(t *testing.T) {
 	assert.Len(t, c.Pods, 5)
 	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, "1.1.1.1", got.Address)
-	assert.Len(t, c.deleteQueue, 0)
+	assert.Empty(t, c.deleteQueue)
 
 	// delete matching IP with wrong name/different pod
 	c.deleteQueue = c.deleteQueue[:0]
@@ -459,7 +459,7 @@ func TestPodDelete(t *testing.T) {
 	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Len(t, c.Pods, 5)
 	assert.Equal(t, "1.1.1.1", got.Address)
-	assert.Len(t, c.deleteQueue, 0)
+	assert.Empty(t, c.deleteQueue)
 
 	// delete matching IP and name
 	c.deleteQueue = c.deleteQueue[:0]
@@ -530,7 +530,7 @@ func TestNamespaceDelete(t *testing.T) {
 	// delete namespace B when DeletedFinalStateUnknown
 	namespace.Name = "namespaceB"
 	c.handleNamespaceDelete(cache.DeletedFinalStateUnknown{Obj: namespace})
-	assert.Len(t, c.Namespaces, 0)
+	assert.Empty(t, c.Namespaces)
 }
 
 func TestNodeDelete(t *testing.T) {
@@ -565,7 +565,7 @@ func TestNodeDelete(t *testing.T) {
 	// delete node B when DeletedFinalStateUnknown
 	node.Name = "nodeB"
 	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
-	assert.Len(t, c.Nodes, 0)
+	assert.Empty(t, c.Nodes)
 }
 
 func TestDeleteQueue(t *testing.T) {
@@ -591,7 +591,7 @@ func TestDeleteLoop(t *testing.T) {
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodAdd(pod)
 	assert.Len(t, c.Pods, 2)
-	assert.Len(t, c.deleteQueue, 0)
+	assert.Empty(t, c.deleteQueue)
 
 	c.handlePodDelete(pod)
 	assert.Len(t, c.Pods, 2)
@@ -610,10 +610,10 @@ func TestDeleteLoop(t *testing.T) {
 
 		time.Sleep(gracePeriod + (time.Millisecond * 50))
 		c.m.Lock()
-		assert.Len(t, c.Pods, 0)
+		assert.Empty(t, c.Pods)
 		c.m.Unlock()
 		c.deleteMut.Lock()
-		assert.Len(t, c.deleteQueue, 0)
+		assert.Empty(t, c.deleteQueue)
 		c.deleteMut.Unlock()
 		close(c.stopCh)
 	}()
