@@ -18,6 +18,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -88,6 +89,10 @@ func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
 func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
+	if prometheustranslator.AllowUTF8FeatureGate.IsEnabled() {
+		model.NameValidationScheme = model.UTF8Validation
+	}
+
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err

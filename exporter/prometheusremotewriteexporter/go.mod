@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.111.0
+	github.com/prometheus/common v0.60.0
 	github.com/prometheus/prometheus v0.54.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/wal v1.1.7
@@ -55,7 +56,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.60.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

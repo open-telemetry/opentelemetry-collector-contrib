@@ -11,9 +11,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type prometheusExporter struct {
@@ -30,6 +33,10 @@ type prometheusExporter struct {
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
 func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusExporter, error) {
+	if prometheustranslator.AllowUTF8FeatureGate.IsEnabled() {
+		model.NameValidationScheme = model.UTF8Validation
+	}
+
 	addr := strings.TrimSpace(config.Endpoint)
 	if strings.TrimSpace(config.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
