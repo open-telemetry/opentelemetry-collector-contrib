@@ -68,6 +68,9 @@ func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) er
 	srv, err := pe.config.ToServer(ctx, host, pe.settings, mux)
 	pe.shutdownFunc = func(ctx context.Context) error {
 		err := ln.Close()
+		if srv == nil {
+			return err
+		}
 		err2 := srv.Shutdown(ctx)
 		return errors.Join(err, err2)
 	}
