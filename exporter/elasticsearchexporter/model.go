@@ -12,6 +12,7 @@ import (
 	"hash"
 	"hash/fnv"
 	"math"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -90,6 +91,7 @@ type dataPoint interface {
 	Value() (pcommon.Value, error)
 	DynamicTemplate(pmetric.Metric) string
 	DocCount() uint64
+	HasMappingHint(mappingHint) bool
 }
 
 const (
@@ -304,8 +306,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 	}
 
-	// Emit _doc_count if data point contains attribute _doc_count: true
-	if val, ok := dp.Attributes().Get("_doc_count"); ok && val.Bool() {
+	if dp.HasMappingHint(hintDocCount) {
 		docCount := dp.DocCount()
 		document.AddInt("_doc_count", int64(docCount))
 	}
@@ -332,6 +333,11 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 
 type summaryDataPoint struct {
 	pmetric.SummaryDataPoint
+	mappingHintGetter
+}
+
+func newSummaryDataPoint(dp pmetric.SummaryDataPoint) summaryDataPoint {
+	return summaryDataPoint{SummaryDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
 }
 
 func (dp summaryDataPoint) Value() (pcommon.Value, error) {
@@ -345,7 +351,7 @@ func (dp summaryDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp summaryDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	return "summary_metrics"
+	return "summary"
 }
 
 func (dp summaryDataPoint) DocCount() uint64 {
@@ -354,9 +360,22 @@ func (dp summaryDataPoint) DocCount() uint64 {
 
 type exponentialHistogramDataPoint struct {
 	pmetric.ExponentialHistogramDataPoint
+	mappingHintGetter
+}
+
+func newExponentialHistogramDataPoint(dp pmetric.ExponentialHistogramDataPoint) exponentialHistogramDataPoint {
+	return exponentialHistogramDataPoint{ExponentialHistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
 }
 
 func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
+		vm := pcommon.NewValueMap()
+		m := vm.Map()
+		m.PutDouble("sum", dp.Sum())
+		m.PutInt("value_count", int64(dp.Count()))
+		return vm, nil
+	}
+
 	counts, values := exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
 
 	vm := pcommon.NewValueMap()
@@ -376,6 +395,9 @@ func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
+		return "summary"
+	}
 	return "histogram"
 }
 
@@ -385,13 +407,28 @@ func (dp exponentialHistogramDataPoint) DocCount() uint64 {
 
 type histogramDataPoint struct {
 	pmetric.HistogramDataPoint
+	mappingHintGetter
+}
+
+func newHistogramDataPoint(dp pmetric.HistogramDataPoint) histogramDataPoint {
+	return histogramDataPoint{HistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
 }
 
 func (dp histogramDataPoint) Value() (pcommon.Value, error) {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
+		vm := pcommon.NewValueMap()
+		m := vm.Map()
+		m.PutDouble("sum", dp.Sum())
+		m.PutInt("value_count", int64(dp.Count()))
+		return vm, nil
+	}
 	return histogramToValue(dp.HistogramDataPoint)
 }
 
 func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
+		return "summary"
+	}
 	return "histogram"
 }
 
@@ -449,6 +486,11 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 
 type numberDataPoint struct {
 	pmetric.NumberDataPoint
+	mappingHintGetter
+}
+
+func newNumberDataPoint(dp pmetric.NumberDataPoint) numberDataPoint {
+	return numberDataPoint{NumberDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
 }
 
 func (dp numberDataPoint) Value() (pcommon.Value, error) {
@@ -556,6 +598,8 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 			// updated by the router.
 			// Move them to the top of the document and remove them from the record
 			document.AddAttribute(key, val)
+			return true
+		case mappingHintsAttrKey:
 			return true
 		}
 		return false
@@ -829,7 +873,7 @@ func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
 	hasher.Write(timestampBuf)
 
-	mapHashExcludeDataStreamAttr(hasher, attributes)
+	mapHashExcludeReservedAttrs(hasher, attributes)
 
 	return hasher.Sum32()
 }
@@ -846,18 +890,21 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 
 	hasher.Write([]byte(unit))
 
-	mapHashExcludeDataStreamAttr(hasher, scopeAttrs)
-	mapHashExcludeDataStreamAttr(hasher, dp.Attributes())
+	mapHashExcludeReservedAttrs(hasher, scopeAttrs)
+	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), mappingHintsAttrKey)
 
 	return hasher.Sum32()
 }
 
-// mapHashExcludeDataStreamAttr is mapHash but ignoring DS attributes.
-// It is useful for cases where index is already considered during routing and no need to be considered in hashing.
-func mapHashExcludeDataStreamAttr(hasher hash.Hash, m pcommon.Map) {
+// mapHashExcludeReservedAttrs is mapHash but ignoring some reserved attributes.
+// e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
+func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
 	m.Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		if slices.Contains(extra, k) {
 			return true
 		}
 		hasher.Write([]byte(k))

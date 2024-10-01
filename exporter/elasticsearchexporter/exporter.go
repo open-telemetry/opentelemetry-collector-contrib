@@ -156,7 +156,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeLogRecord(record, scope, resource, fIndex, e.otel)
+		fIndex = routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -223,7 +223,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newNumberDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -232,25 +232,33 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newNumberDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}
 					}
 				case pmetric.MetricTypeExponentialHistogram:
+					if metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
+						errs = append(errs, fmt.Errorf("dropping cumulative temporality exponential histogram %q", metric.Name()))
+						continue
+					}
 					dps := metric.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(exponentialHistogramDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newExponentialHistogramDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}
 					}
 				case pmetric.MetricTypeHistogram:
+					if metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
+						errs = append(errs, fmt.Errorf("dropping cumulative temporality histogram %q", metric.Name()))
+						continue
+					}
 					dps := metric.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(histogramDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newHistogramDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -259,7 +267,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(summaryDataPoint{dp}); err != nil {
+						if err := upsertDataPoint(newSummaryDataPoint(dp)); err != nil {
 							errs = append(errs, err)
 							continue
 						}
@@ -305,7 +313,7 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 ) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeDataPoint(dataPoint, scope, resource, fIndex, e.otel)
+		fIndex = routeDataPoint(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -379,7 +387,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpan(span, scope, resource, fIndex, e.otel)
+		fIndex = routeSpan(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, span.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -409,7 +417,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpanEvent(spanEvent, scope, resource, fIndex, e.otel)
+		fIndex = routeSpanEvent(spanEvent.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
