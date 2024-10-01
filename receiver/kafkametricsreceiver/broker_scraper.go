@@ -34,10 +34,6 @@ const (
 	logRetentionHours = "log.retention.hours"
 )
 
-func (s *brokerScraper) Name() string {
-	return brokersScraperName
-}
-
 func (s *brokerScraper) start(_ context.Context, _ component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
@@ -115,7 +111,7 @@ func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		saramaConfig: saramaConfig,
 	}
 	return scraperhelper.NewScraper(
-		s.Name(),
+		brokersScraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 		scraperhelper.WithShutdown(s.shutdown),

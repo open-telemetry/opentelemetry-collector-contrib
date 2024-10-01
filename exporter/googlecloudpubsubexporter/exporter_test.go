@@ -36,7 +36,7 @@ func TestGenerateClientOptions(t *testing.T) {
 	exporterConfig.Insecure = true
 	exporterConfig.ProjectID = "my-project"
 	exporterConfig.Topic = "projects/my-project/topics/otlp"
-	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+	exporterConfig.TimeoutSettings = exporterhelper.TimeoutConfig{
 		Timeout: 12 * time.Second,
 	}
 	exporter := ensureExporter(exportertest.NewNopSettings(), exporterConfig)
@@ -67,7 +67,7 @@ func TestExporterDefaultSettings(t *testing.T) {
 	exporterConfig.Insecure = true
 	exporterConfig.ProjectID = "my-project"
 	exporterConfig.Topic = "projects/my-project/topics/otlp"
-	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+	exporterConfig.TimeoutSettings = exporterhelper.TimeoutConfig{
 		Timeout: 12 * time.Second,
 	}
 	exporter := ensureExporter(exportertest.NewNopSettings(), exporterConfig)
@@ -96,7 +96,7 @@ func TestExporterCompression(t *testing.T) {
 	exporterConfig.Insecure = true
 	exporterConfig.ProjectID = "my-project"
 	exporterConfig.Topic = "projects/my-project/topics/otlp"
-	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+	exporterConfig.TimeoutSettings = exporterhelper.TimeoutConfig{
 		Timeout: 12 * time.Second,
 	}
 	exporterConfig.Compression = "gzip"

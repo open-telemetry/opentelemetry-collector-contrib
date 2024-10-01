@@ -7,12 +7,12 @@ import (
 	"errors"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
 )
 
-type consumerProvider[C any] func(...component.ID) (C, error)
+type consumerProvider[C any] func(...pipeline.ID) (C, error)
 
 type failoverRouter[C any] struct {
 	consumerProvider consumerProvider[C]

@@ -48,6 +48,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		resourceLog.Resource().Attributes().PutStr("k0", "should use ILL attr value instead")
 		resourceLog.Resource().Attributes().PutStr("k3", "v3")
 		resourceLog.Resource().Attributes().PutInt("k4", 123)
+		resourceLog.Resource().Attributes().PutStr("com.splunk.signalfx.access_token", "hunter2")
 
 		ilLogs := resourceLog.ScopeLogs()
 		logSlice := ilLogs.AppendEmpty().LogRecords()

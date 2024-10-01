@@ -34,8 +34,7 @@ func TestInputStart_LocalSubscriptionError(t *testing.T) {
 	input.pollInterval = 1 * time.Second
 
 	err := input.Start(persister)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "The specified channel could not be found")
+	assert.ErrorContains(t, err, "The specified channel could not be found")
 }
 
 // TestInputStart_RemoteSubscriptionError ensures the input correctly handles remote subscription errors.
@@ -52,8 +51,7 @@ func TestInputStart_RemoteSubscriptionError(t *testing.T) {
 	}
 
 	err := input.Start(persister)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "The specified channel could not be found")
+	assert.ErrorContains(t, err, "The specified channel could not be found")
 }
 
 // TestInputStart_RemoteSessionError ensures the input correctly handles remote session errors.
@@ -72,8 +70,7 @@ func TestInputStart_RemoteSessionError(t *testing.T) {
 	}
 
 	err := input.Start(persister)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to start remote session for server remote-server: remote session error")
+	assert.ErrorContains(t, err, "failed to start remote session for server remote-server: remote session error")
 }
 
 // TestInputStart_RemoteAccessDeniedError ensures the input correctly handles remote access denied errors.
@@ -97,9 +94,8 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 	}
 
 	err := input.Start(persister)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to open subscription for remote server")
-	assert.Contains(t, err.Error(), "Access is denied")
+	assert.ErrorContains(t, err, "failed to open subscription for remote server")
+	assert.ErrorContains(t, err, "Access is denied")
 }
 
 // TestInputStart_BadChannelName ensures the input correctly handles bad channel names.
@@ -123,7 +119,6 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	}
 
 	err := input.Start(persister)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to open subscription for remote server")
-	assert.Contains(t, err.Error(), "The specified channel could not be found")
+	assert.ErrorContains(t, err, "failed to open subscription for remote server")
+	assert.ErrorContains(t, err, "The specified channel could not be found")
 }

@@ -54,8 +54,8 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottl
 		metric.SetEmptySum().SetAggregationTemporality(aggTemp)
 		metric.Sum().SetIsMonotonic(monotonic)
 
-		// Setting the data type removed all the data points, so we must copy them back to the metric.
-		dps.CopyTo(metric.Sum().DataPoints())
+		// Setting the data type removed all the data points, so we must move them back to the metric.
+		dps.MoveAndAppendTo(metric.Sum().DataPoints())
 
 		return nil, nil
 	}, nil

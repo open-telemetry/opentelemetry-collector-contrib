@@ -54,40 +54,9 @@ var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
 
-// withTracesUnmarshalers adds Unmarshalers.
-func withTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
-	return func(factory *kafkaReceiverFactory) {
-		for _, unmarshaler := range tracesUnmarshalers {
-			factory.tracesUnmarshalers[unmarshaler.Encoding()] = unmarshaler
-		}
-	}
-}
-
-// withMetricsUnmarshalers adds MetricsUnmarshalers.
-func withMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryOption {
-	return func(factory *kafkaReceiverFactory) {
-		for _, unmarshaler := range metricsUnmarshalers {
-			factory.metricsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
-		}
-	}
-}
-
-// withLogsUnmarshalers adds LogsUnmarshalers.
-func withLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
-	return func(factory *kafkaReceiverFactory) {
-		for _, unmarshaler := range logsUnmarshalers {
-			factory.logsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
-		}
-	}
-}
-
 // NewFactory creates Kafka receiver factory.
 func NewFactory(options ...FactoryOption) receiver.Factory {
-	f := &kafkaReceiverFactory{
-		tracesUnmarshalers:  map[string]TracesUnmarshaler{},
-		metricsUnmarshalers: map[string]MetricsUnmarshaler{},
-		logsUnmarshalers:    map[string]LogsUnmarshaler{},
-	}
+	f := &kafkaReceiverFactory{}
 	for _, o := range options {
 		o(f)
 	}
@@ -133,11 +102,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-type kafkaReceiverFactory struct {
-	tracesUnmarshalers  map[string]TracesUnmarshaler
-	metricsUnmarshalers map[string]MetricsUnmarshaler
-	logsUnmarshalers    map[string]LogsUnmarshaler
-}
+type kafkaReceiverFactory struct{}
 
 func (f *kafkaReceiverFactory) createTracesReceiver(
 	_ context.Context,
@@ -145,20 +110,12 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-	for encoding, unmarshal := range defaultTracesUnmarshalers() {
-		f.tracesUnmarshalers[encoding] = unmarshal
-	}
-
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	unmarshaler := f.tracesUnmarshalers[oCfg.Encoding]
-	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
 
-	r, err := newTracesReceiver(oCfg, set, unmarshaler, nextConsumer)
+	r, err := newTracesReceiver(oCfg, set, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -171,20 +128,12 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	for encoding, unmarshal := range defaultMetricsUnmarshalers() {
-		f.metricsUnmarshalers[encoding] = unmarshal
-	}
-
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	unmarshaler := f.metricsUnmarshalers[oCfg.Encoding]
-	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
 
-	r, err := newMetricsReceiver(oCfg, set, unmarshaler, nextConsumer)
+	r, err := newMetricsReceiver(oCfg, set, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -197,20 +146,12 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	for encoding, unmarshaler := range defaultLogsUnmarshalers(set.BuildInfo.Version, set.Logger) {
-		f.logsUnmarshalers[encoding] = unmarshaler
-	}
-
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
-	unmarshaler, err := getLogsUnmarshaler(oCfg.Encoding, f.logsUnmarshalers)
-	if err != nil {
-		return nil, err
-	}
 
-	r, err := newLogsReceiver(oCfg, set, unmarshaler, nextConsumer)
+	r, err := newLogsReceiver(oCfg, set, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

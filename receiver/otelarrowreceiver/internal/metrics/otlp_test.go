@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,10 +19,20 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/trace/noop"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/testconsumer"
+)
+
+const (
+	maxWaiters = 10
+	maxBytes   = int64(250)
 )
 
 func TestExport(t *testing.T) {
@@ -57,6 +69,61 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }
 
+func TestExport_AdmissionLimitBytesExceeded(t *testing.T) {
+	md := testdata.GenerateMetrics(10)
+	metricSink := new(consumertest.MetricsSink)
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
+
+	metricsClient := makeMetricsServiceClient(t, metricSink)
+	resp, err := metricsClient.Export(context.Background(), req)
+	assert.EqualError(t, err, "rpc error: code = Unknown desc = rejecting request, request size larger than configured limit")
+	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
+}
+
+func TestExport_TooManyWaiters(t *testing.T) {
+	bc := testconsumer.NewBlockingConsumer()
+
+	metricsClient := makeMetricsServiceClient(t, bc)
+	bg := context.Background()
+	var errs, err error
+	md := testdata.GenerateMetrics(1)
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
+	var mtx sync.Mutex
+	numResponses := 0
+	// Send request that will acquire all of the semaphores bytes and block.
+	go func() {
+		_, err = metricsClient.Export(bg, req)
+		mtx.Lock()
+		errs = multierr.Append(errs, err)
+		numResponses++
+		mtx.Unlock()
+	}()
+
+	for i := 0; i < maxWaiters+1; i++ {
+		go func() {
+			_, err := metricsClient.Export(bg, req)
+			mtx.Lock()
+			errs = multierr.Append(errs, err)
+			numResponses++
+			mtx.Unlock()
+		}()
+	}
+
+	// sleep so all async requests are blocked on semaphore Acquire.
+	time.Sleep(1 * time.Second)
+
+	// unblock and wait for errors to be returned and written.
+	bc.Unblock()
+	assert.Eventually(t, func() bool {
+		mtx.Lock()
+		defer mtx.Unlock()
+		errSlice := multierr.Errors(errs)
+		return numResponses == maxWaiters+2 && len(errSlice) == 1
+	}, 3*time.Second, 10*time.Millisecond)
+
+	assert.ErrorContains(t, errs, "too many waiters")
+}
+
 func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, mc)
 
@@ -85,7 +152,9 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 		ReceiverCreateSettings: set,
 	})
 	require.NoError(t, err)
-	r := New(mc, obsrecv)
+
+	bq := admission.NewBoundedQueue(noop.NewTracerProvider(), maxBytes, maxWaiters)
+	r := New(zap.NewNop(), mc, obsrecv, bq)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	pmetricotlp.RegisterGRPCServer(srv, r)

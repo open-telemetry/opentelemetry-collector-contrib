@@ -102,3 +102,33 @@ func (s *Staleness[T]) Evict() (identity.Stream, bool) {
 func (s *Staleness[T]) Clear() {
 	s.items.Clear()
 }
+
+type Tracker struct {
+	pq PriorityQueue
+}
+
+func NewTracker() Tracker {
+	return Tracker{pq: NewPriorityQueue()}
+}
+
+func (stale Tracker) Refresh(ts time.Time, ids ...identity.Stream) {
+	for _, id := range ids {
+		stale.pq.Update(id, ts)
+	}
+}
+
+func (stale Tracker) Collect(max time.Duration) []identity.Stream {
+	now := NowFunc()
+
+	var ids []identity.Stream
+	for stale.pq.Len() > 0 {
+		_, ts := stale.pq.Peek()
+		if now.Sub(ts) < max {
+			break
+		}
+		id, _ := stale.pq.Pop()
+		ids = append(ids, id)
+	}
+
+	return ids
+}

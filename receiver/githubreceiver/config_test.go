@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
 	defaultConfigGitHubScraper := factory.CreateDefaultConfig()
 	defaultConfigGitHubScraper.(*Config).Scrapers = map[string]internal.Config{
-		githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
+		metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
 
 	assert.Equal(t, defaultConfigGitHubScraper, r0)
@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 			InitialDelay:       1 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
+			metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 		},
 	}
 
@@ -67,7 +67,7 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
 
-	require.Contains(t, err.Error(), "must specify at least one scraper")
+	require.ErrorContains(t, err, "must specify at least one scraper")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
@@ -80,7 +80,7 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.Contains(t, err.Error(), "error reading configuration for \"github\": invalid scraper key: \"invalidscraperkey\"")
+	require.ErrorContains(t, err, "error reading configuration for \"github\": invalid scraper key: \"invalidscraperkey\"")
 }
 
 func TestConfig_Unmarshal(t *testing.T) {

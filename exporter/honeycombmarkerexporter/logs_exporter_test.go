@@ -124,7 +124,7 @@ func TestExportMarkers(t *testing.T) {
 				decodedBody := map[string]any{}
 				err := json.NewDecoder(req.Body).Decode(&decodedBody)
 
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				assert.Equal(t, len(tt.attributeMap), len(decodedBody))
 

@@ -12,14 +12,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Extensions are treated as a pseudo pipeline and extsID is used as a map key
-var extsID = component.MustNewID("extensions")
+var extsID = pipeline.MustNewID("extensions")
 
 // extensionIDIter is an iterator that is substituted for AllPipelineIDs for
 // the extensions pseudo pipeline.
-func extensionIDIter(f func(component.ID) bool) {
+func extensionIDIter(f func(pipeline.ID) bool) {
 	_ = f(extsID)
 }
 
@@ -133,7 +134,7 @@ func (a *Aggregator) AggregateStatus(scope Scope, verbosity Verbosity) (*Aggrega
 
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
 func (a *Aggregator) RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event) {
-	allPipelineIDs := source.AllPipelineIDs
+	allPipelineIDs := source.AllPipelineIDsWithPipelineIDs
 	// extensions are treated as a pseudo-pipeline
 	if source.Kind() == component.KindExtension {
 		allPipelineIDs = extensionIDIter
@@ -142,7 +143,7 @@ func (a *Aggregator) RecordStatus(source *componentstatus.InstanceID, event *com
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	allPipelineIDs(func(compID component.ID) bool {
+	allPipelineIDs(func(compID pipeline.ID) bool {
 		var pipelineStatus *AggregateStatus
 		pipelineScope := Scope(compID.String())
 		pipelineKey := pipelineScope.toKey()

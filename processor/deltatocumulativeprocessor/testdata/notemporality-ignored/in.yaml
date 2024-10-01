@@ -1,0 +1,27 @@
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    resource:
+      attributes:
+        - key: resattr
+          value: { stringValue: stringoo }
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+          attributes:
+            - key: scopeattr
+              value: { stringValue: string }
+        metrics:
+          - name: test.gauge
+            gauge:
+              dataPoints:
+                - timeUnixNano: 1
+                  asDouble: 1
+          - name: test.summary
+            summary:
+              dataPoints:
+                - timeUnixNano: 1
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 25

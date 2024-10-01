@@ -1,0 +1,14 @@
+{
+    "records": [
+        {
+            "time": "2024-04-24T12:06:12.0000000Z",
+            "resourceId": "/RESOURCE_ID",
+            "category": "AppServiceConsoleLogs",
+            "operationName": "ConsoleLog",
+            "properties": {
+                "ContainerId": "CONTAINER_ID",
+                "Host": "HOST"
+            }
+        }
+    ]
+}

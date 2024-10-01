@@ -41,7 +41,7 @@ func createDefaultConfig() component.Config {
 				"User-Agent": "OpenTelemetry -> Influx",
 			},
 		},
-		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:       exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
 		MetricsSchema:       common.MetricsSchemaTelegrafPrometheusV1.String(),
 		SpanDimensions:      otel2influx.DefaultOtelTracesToLineProtocolConfig().SpanDimensions,

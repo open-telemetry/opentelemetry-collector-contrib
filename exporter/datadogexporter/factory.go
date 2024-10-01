@@ -22,7 +22,6 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -37,6 +36,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -53,6 +53,13 @@ var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegis
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
 )
 
+var metricRemappingDisableddFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricremappingdisabled",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled the Datadog Exporter remaps OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use."),
+	featuregate.WithRegisterReferenceURL("https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/"),
+)
+
 // noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
 var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.DisableAPMStats",
@@ -63,6 +70,11 @@ var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
 	return metricExportNativeClientFeatureGate.IsEnabled()
+}
+
+// isMetricRemappingDisabled returns true if the datadogexporter should generate Datadog-compliant metrics from OpenTelemetry metrics
+func isMetricRemappingDisabled() bool {
+	return metricRemappingDisableddFeatureGate.IsEnabled()
 }
 
 func isLogsAgentExporterEnabled() bool {
@@ -178,66 +190,14 @@ func NewFactory() exporter.Factory {
 }
 
 func defaultClientConfig() confighttp.ClientConfig {
-	// do not use NewDefaultClientConfig for backwards-compatibility
-	return confighttp.ClientConfig{
-		Timeout: 15 * time.Second,
-	}
+	client := confighttp.NewDefaultClientConfig()
+	client.Timeout = 15 * time.Second
+	return client
 }
 
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
-	return &Config{
-		ClientConfig:  defaultClientConfig(),
-		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-
-		API: APIConfig{
-			Site: "datadoghq.com",
-		},
-
-		Metrics: MetricsConfig{
-			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "https://api.datadoghq.com",
-			},
-			DeltaTTL: 3600,
-			ExporterConfig: MetricsExporterConfig{
-				ResourceAttributesAsTags:           false,
-				InstrumentationScopeMetadataAsTags: false,
-			},
-			HistConfig: HistogramConfig{
-				Mode:             "distributions",
-				SendAggregations: false,
-			},
-			SumConfig: SumConfig{
-				CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
-				InitialCumulativeMonotonicMode: InitialValueModeAuto,
-			},
-			SummaryConfig: SummaryConfig{
-				Mode: SummaryModeGauges,
-			},
-		},
-
-		Traces: TracesConfig{
-			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "https://trace.agent.datadoghq.com",
-			},
-			IgnoreResources: []string{},
-		},
-
-		Logs: LogsConfig{
-			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "https://http-intake.logs.datadoghq.com",
-			},
-			UseCompression:   true,
-			CompressionLevel: 6,
-			BatchWait:        5,
-		},
-
-		HostMetadata: HostMetadataConfig{
-			Enabled:        true,
-			HostnameSource: HostnameSourceConfigOrSystem,
-		},
-	}
+	return datadogconfig.CreateDefaultConfig()
 }
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to
@@ -247,7 +207,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	if !ok {
 		panic("programming error: config structure is not of type *datadogexporter.Config")
 	}
-	cfg.logWarnings(logger)
+	cfg.LogWarnings(logger)
 	return cfg
 }
 
@@ -289,7 +249,7 @@ func (f *factory) createMetricsExporter(
 	c component.Config,
 ) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.sourceTimeout)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.GetSourceTimeout())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -364,7 +324,7 @@ func (f *factory) createMetricsExporter(
 		cfg,
 		pushMetricsFn,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		// We use our own custom mechanism for retries, since we hit several endpoints.
 		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		// The metrics remapping code mutates data
@@ -409,7 +369,7 @@ func (f *factory) createTracesExporter(
 		wg     sync.WaitGroup // waits for agent to exit
 	)
 
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.sourceTimeout)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.GetSourceTimeout())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -478,7 +438,7 @@ func (f *factory) createTracesExporter(
 		cfg,
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		// We don't do retries on traces because of deduping concerns on APM Events.
 		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
@@ -494,9 +454,22 @@ func (f *factory) createLogsExporter(
 ) (exporter.Logs, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
 
+	if cfg.Logs.DumpPayloads && isLogsAgentExporterEnabled() {
+		set.Logger.Warn("logs::dump_payloads is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is enabled")
+	}
+	if cfg.Logs.UseCompression && !isLogsAgentExporterEnabled() {
+		set.Logger.Warn("logs::use_compression is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is disabled")
+	}
+	if cfg.Logs.CompressionLevel != 0 && !isLogsAgentExporterEnabled() {
+		set.Logger.Warn("logs::compression_level is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is disabled")
+	}
+	if cfg.Logs.BatchWait != 0 && !isLogsAgentExporterEnabled() {
+		set.Logger.Warn("logs::batch_wait is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is disabled")
+	}
+
 	var pusher consumer.ConsumeLogsFunc
 	var logsAgent logsagentpipeline.LogsAgent
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.sourceTimeout)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.GetSourceTimeout())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -552,7 +525,7 @@ func (f *factory) createLogsExporter(
 		cfg,
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {

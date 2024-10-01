@@ -132,7 +132,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 			if tc.expectedErr != "" {
 				require.Error(t, err)
 				require.Nil(t, logs)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)

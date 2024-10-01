@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
@@ -87,4 +88,35 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 	te, err := createMetricsExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
+}
+
+func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
+	config := &Config{
+		Token: "testToken",
+		ClientConfig: confighttp.ClientConfig{
+			Endpoint: "https://example.com:8000",
+		},
+	}
+
+	me, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.False(t, me.Capabilities().MutatesData)
+	te, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.False(t, te.Capabilities().MutatesData)
+	le, err := createLogsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.False(t, le.Capabilities().MutatesData)
+
+	config.BatcherConfig = exporterbatcher.NewDefaultConfig()
+
+	me, err = createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.True(t, me.Capabilities().MutatesData)
+	te, err = createTracesExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.True(t, te.Capabilities().MutatesData)
+	le, err = createLogsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	require.NoError(t, err)
+	assert.True(t, le.Capabilities().MutatesData)
 }

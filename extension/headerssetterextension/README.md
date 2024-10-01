@@ -34,11 +34,12 @@ The following settings are required:
         - `delete`: Deletes the header.
     - `value`: The header value is looked up from the `value` property of the
       extension configuration.
+    - `default_value`: (Optional) Value used if no entry for header key specified in `from_context` is present in request metadata.
     - `from_context`: The header value is looked up from the request metadata,
       such as HTTP headers, using the property value as the key (likely a header
       name).
 
-The `value` and `from_context` properties are mutually exclusive.
+The `value` and `from_context,default_value` properties are mutually exclusive.
 
 In order for `from_context` to work, other components in the pipeline also need to be configured appropriately:
 * If a [batch processor][batch-processor] is present in the pipeline, it must be configured to [preserve client metadata][batch-processor-preserve-metadata]. 
@@ -54,6 +55,7 @@ extensions:
       - action: insert
         key: X-Scope-OrgID
         from_context: tenant_id
+        default_value: Org-ID
       - action: upsert
         key: User-ID
         value: user_id

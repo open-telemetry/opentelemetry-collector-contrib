@@ -94,7 +94,7 @@ func TestValidate(t *testing.T) {
 			if tc.expected == nil {
 				require.NoError(t, err)
 			} else {
-				require.Contains(t, err.Error(), tc.expected.Error())
+				require.ErrorContains(t, err, tc.expected.Error())
 			}
 		})
 	}

@@ -154,16 +154,16 @@ func newDefaultServerHostSettings() ServerHostSettings {
 const debugDefault = false
 
 type Config struct {
-	DatasetURL                     string              `mapstructure:"dataset_url"`
-	APIKey                         configopaque.String `mapstructure:"api_key"`
-	Debug                          bool                `mapstructure:"debug"`
-	BufferSettings                 `mapstructure:"buffer"`
-	TracesSettings                 `mapstructure:"traces"`
-	LogsSettings                   `mapstructure:"logs"`
-	ServerHostSettings             `mapstructure:"server_host"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.TimeoutSettings `mapstructure:"timeout"`
+	DatasetURL                string              `mapstructure:"dataset_url"`
+	APIKey                    configopaque.String `mapstructure:"api_key"`
+	Debug                     bool                `mapstructure:"debug"`
+	BufferSettings            `mapstructure:"buffer"`
+	TracesSettings            `mapstructure:"traces"`
+	LogsSettings              `mapstructure:"logs"`
+	ServerHostSettings        `mapstructure:"server_host"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:"timeout"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

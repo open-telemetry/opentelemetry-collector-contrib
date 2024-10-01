@@ -9,9 +9,9 @@ import (
 )
 
 func TestResourceBuilder(t *testing.T) {
-	for _, test := range []string{"default", "all_set", "none_set"} {
-		t.Run(test, func(t *testing.T) {
-			cfg := loadResourceAttributesConfig(t, test)
+	for _, tt := range []string{"default", "all_set", "none_set"} {
+		t.Run(tt, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetFileName("file.name-val")
 			rb.SetFilePath("file.path-val")
@@ -19,7 +19,7 @@ func TestResourceBuilder(t *testing.T) {
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
-			switch test {
+			switch tt {
 			case "default":
 				assert.Equal(t, 1, res.Attributes().Len())
 			case "all_set":
@@ -28,7 +28,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
-				assert.Failf(t, "unexpected test case: %s", test)
+				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
 			val, ok := res.Attributes().Get("file.name")
@@ -37,7 +37,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "file.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("file.path")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "file.path-val", val.Str())
 			}

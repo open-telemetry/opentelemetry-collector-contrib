@@ -1,0 +1,99 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: The sum of beep values observed in spans.
+            name: trace.span.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127920605000"
+              isMonotonic: true
+          - description: The sum of beep values observed in span events.
+            name: trace.span.event.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23.9"
+                  timeUnixNano: "1678392127920605000"
+              isMonotonic: true
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: The sum of beep values observed in spans.
+            name: trace.span.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127920632000"
+              isMonotonic: true
+          - description: The sum of beep values observed in span events.
+            name: trace.span.event.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23.3"
+                  timeUnixNano: "1678392127920632000"
+              isMonotonic: true
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeMetrics:
+      - metrics:
+          - description: The sum of beep values observed in spans.
+            name: trace.span.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127920635000"
+              isMonotonic: true
+          - description: The sum of beep values observed in span events.
+            name: trace.span.event.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23"
+                  timeUnixNano: "1678392127920635000"
+              isMonotonic: true
+
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: The sum of beep values observed in spans.
+            name: trace.span.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127920638000"
+              isMonotonic: true
+          - description: The sum of beep values observed in span events.
+            name: trace.span.event.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23"
+                  timeUnixNano: "1678392127920638000"
+              isMonotonic: true
+

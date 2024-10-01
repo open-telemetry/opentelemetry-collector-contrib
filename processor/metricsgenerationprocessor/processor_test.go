@@ -5,15 +5,21 @@ package metricsgenerationprocessor
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 type testMetric struct {
@@ -383,4 +389,108 @@ func getOutputForIntGaugeTest() pmetric.Metrics {
 	neweDoubleDataPoint.SetDoubleValue(105)
 
 	return intGaugeOutputMetrics
+}
+
+func TestSumCalculateNewMetric(t *testing.T) {
+	next := new(consumertest.MetricsSink)
+	cfg := &Config{
+		Rules: []Rule{
+			{
+				Name:      "system.filesystem.capacity",
+				Unit:      "bytes",
+				Type:      "calculate",
+				Metric1:   "system.filesystem.usage",
+				Metric2:   "system.filesystem.utilization",
+				Operation: "divide",
+			},
+		},
+	}
+	factory := NewFactory()
+	mgp, err := factory.CreateMetricsProcessor(
+		context.Background(),
+		processortest.NewNopSettings(),
+		cfg,
+		next,
+	)
+	assert.NotNil(t, mgp)
+	assert.NoError(t, err)
+
+	assert.True(t, mgp.Capabilities().MutatesData)
+	require.NoError(t, mgp.Start(context.Background(), nil))
+
+	inputMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "filesystem_metrics_input.yaml"))
+	assert.NoError(t, err)
+
+	err = mgp.ConsumeMetrics(context.Background(), inputMetrics)
+	assert.NoError(t, err)
+
+	got := next.AllMetrics()
+	// golden.WriteMetrics(t, filepath.Join(".", "testdata", "filesystem_metrics_expected.yaml"), got[0])
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "filesystem_metrics_expected.yaml"))
+	assert.NoError(t, err)
+	assert.Len(t, got, 1)
+	err = pmetrictest.CompareMetrics(expected, got[0],
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp())
+	assert.NoError(t, err)
+}
+
+func TestResultingMetricTypes(t *testing.T) {
+	testCaseNames := []string{
+		"add_sum_sum",
+		"add_gauge_gauge",
+		"add_gauge_sum",
+		"add_sum_gauge",
+		"multiply_gauge_sum",
+		"multiply_sum_gauge",
+		"divide_gauge_sum",
+		"divide_sum_gauge",
+		"subtract_gauge_sum",
+		"subtract_sum_gauge",
+		"percent_sum_gauge",
+		"percent_gauge_sum",
+	}
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "metric_types", "gauge_sum_metrics_config.yaml"))
+	assert.NoError(t, err)
+
+	for _, testCase := range testCaseNames {
+		next := new(consumertest.MetricsSink)
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig()
+
+		sub, err := cm.Sub(fmt.Sprintf("%s/%s", "experimental_metricsgeneration", testCase))
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(cfg))
+
+		mgp, err := factory.CreateMetricsProcessor(
+			context.Background(),
+			processortest.NewNopSettings(),
+			cfg,
+			next,
+		)
+		assert.NotNil(t, mgp)
+		assert.NoError(t, err)
+
+		assert.True(t, mgp.Capabilities().MutatesData)
+		require.NoError(t, mgp.Start(context.Background(), nil))
+
+		inputMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metric_types", "gauge_sum_metrics_input.yaml"))
+		assert.NoError(t, err)
+
+		err = mgp.ConsumeMetrics(context.Background(), inputMetrics)
+		assert.NoError(t, err)
+
+		got := next.AllMetrics()
+		// golden.WriteMetrics(t, filepath.Join("testdata", "metric_types", fmt.Sprintf("%s_%s", testCase, "expected.yaml")), got[0])
+		expected, err := golden.ReadMetrics(filepath.Join("testdata", "metric_types", fmt.Sprintf("%s_%s", testCase, "expected.yaml")))
+		assert.NoError(t, err)
+		assert.Len(t, got, 1)
+		err = pmetrictest.CompareMetrics(expected, got[0],
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp())
+		assert.NoError(t, err)
+	}
 }

@@ -565,6 +565,7 @@ func runLogsTest(
 	inBatch := plog.NewLogs()
 	rl := inBatch.ResourceLogs().AppendEmpty()
 	ils := rl.ScopeLogs().AppendEmpty()
+	_ = rl.ScopeLogs().AppendEmpty()
 
 	library := ils.Scope()
 	library.SetName("first-library")
