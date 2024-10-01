@@ -22,14 +22,8 @@ const (
 
 // Sanitize the datastream fields (dataset, namespace) to apply restrictions
 // as outlined in https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html
-func sanitizeDataStreamField(field, disallowed string, otel bool) string {
-	// For Dataset, the naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
-	// This is in order to match the built-in logs-*.otel-* index template.
-	var suffix string
-	if otel {
-		suffix += ".otel"
-	}
-
+// The suffix will be appended after truncation of max bytes.
+func sanitizeDataStreamField(field, disallowed, appendSuffix string) string {
 	field = strings.Map(func(r rune) rune {
 		if strings.ContainsRune(disallowed, r) {
 			return '_'
@@ -37,10 +31,10 @@ func sanitizeDataStreamField(field, disallowed string, otel bool) string {
 		return unicode.ToLower(r)
 	}, field)
 
-	if len(field) > maxDataStreamBytes-len(suffix) {
-		field = field[:maxDataStreamBytes-len(suffix)]
+	if len(field) > maxDataStreamBytes-len(appendSuffix) {
+		field = field[:maxDataStreamBytes-len(appendSuffix)]
 	}
-	field += suffix
+	field += appendSuffix
 
 	return field
 }
@@ -86,8 +80,15 @@ func routeWithDefaults(defaultDSType string) func(
 			dataset = receiverName
 		}
 
-		dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, otel)
-		namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, false)
+		// For Dataset, the naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
+		// This is in order to match the built-in logs-*.otel-* index template.
+		var datasetSuffix string
+		if otel {
+			datasetSuffix += ".otel"
+		}
+
+		dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, datasetSuffix)
+		namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, "")
 
 		recordAttr.PutStr(dataStreamDataset, dataset)
 		recordAttr.PutStr(dataStreamNamespace, namespace)
