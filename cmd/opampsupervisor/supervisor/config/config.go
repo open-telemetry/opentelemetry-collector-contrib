@@ -121,12 +121,17 @@ type Agent struct {
 	Executable              string
 	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription `mapstructure:"description"`
+	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
 	HealthCheckPort         int              `mapstructure:"health_check_port"`
 }
 
 func (a Agent) Validate() error {
 	if a.OrphanDetectionInterval <= 0 {
 		return errors.New("agent::orphan_detection_interval must be positive")
+	}
+
+	if a.BootstrapTimeout <= 0 {
+		return errors.New("agent::bootstrap_timeout must be positive")
 	}
 
 	if a.HealthCheckPort < 0 || a.HealthCheckPort > 65535 {
@@ -180,6 +185,7 @@ func DefaultSupervisor() Supervisor {
 		},
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
+			BootstrapTimeout:        3 * time.Second,
 		},
 	}
 }

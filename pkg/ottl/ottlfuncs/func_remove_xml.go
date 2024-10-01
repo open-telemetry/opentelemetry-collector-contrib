@@ -47,7 +47,13 @@ func removeXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K
 		} else if doc, err = parseNodesXML(targetVal); err != nil {
 			return nil, err
 		}
-		xmlquery.FindEach(doc, xPath, func(_ int, n *xmlquery.Node) {
+
+		nodes, err := xmlquery.QueryAll(doc, xPath)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, n := range nodes {
 			switch n.Type {
 			case xmlquery.ElementNode:
 				xmlquery.RemoveFromTree(n)
@@ -60,7 +66,7 @@ func removeXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K
 			case xmlquery.CharDataNode:
 				xmlquery.RemoveFromTree(n)
 			}
-		})
+		}
 		return doc.OutputXML(false), nil
 	}
 }
@@ -82,7 +88,7 @@ func parseNodesXML(targetVal string) (*xmlquery.Node, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse xml: %w", err)
 	}
-	if !preserveDeclearation {
+	if !preserveDeclearation && top.FirstChild != nil {
 		xmlquery.RemoveFromTree(top.FirstChild)
 	}
 	return top, nil

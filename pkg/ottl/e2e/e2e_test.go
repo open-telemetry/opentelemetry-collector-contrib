@@ -421,6 +421,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], InsertXML("<a></a>", "/a", "<b></b>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "<a><b></b></a>")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Int(1.0))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutInt("test", 1)
@@ -442,6 +448,12 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], Int(1))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutInt("test", 1)
+			},
+		},
+		{
+			statement: `set(attributes["test"], GetXML("<a><b>1</b><c><b>2</b></c></a>", "/a//b"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "<b>1</b><b>2</b>")
 			},
 		},
 		{
