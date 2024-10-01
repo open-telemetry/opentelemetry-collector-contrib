@@ -36,29 +36,25 @@ func TestParserBuildFailure(t *testing.T) {
 	cfg.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `on_error` field")
+	require.ErrorContains(t, err, "invalid `on_error` field")
 }
 
 func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>test)", 0)
 	_, err := parser.parse([]byte("invalid"))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]uint8' cannot be parsed as regex")
+	require.ErrorContains(t, err, "type '[]uint8' cannot be parsed as regex")
 }
 
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>test)", 0)
 	_, err := parser.parse("invalid")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "regex pattern does not match")
+	require.ErrorContains(t, err, "regex pattern does not match")
 }
 
 func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>test)", 0)
 	_, err := parser.parse([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as regex")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as regex")
 }
 
 func TestParserCache(t *testing.T) {
@@ -67,8 +63,7 @@ func TestParserCache(t *testing.T) {
 		require.NoError(t, parser.Stop())
 	}()
 	_, err := parser.parse([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as regex")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as regex")
 	require.NotNil(t, parser.cache, "expected cache to be configured")
 	require.Equal(t, uint16(200), parser.cache.maxSize())
 }
@@ -197,8 +192,7 @@ func TestBuildParserRegex(t *testing.T) {
 		c.Regex = ".*"
 		set := componenttest.NewNopTelemetrySettings()
 		_, err := c.Build(set)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "no named capture groups")
+		require.ErrorContains(t, err, "no named capture groups")
 	})
 
 	t.Run("NoNamedGroups", func(t *testing.T) {
@@ -206,8 +200,7 @@ func TestBuildParserRegex(t *testing.T) {
 		c.Regex = "(.*)"
 		set := componenttest.NewNopTelemetrySettings()
 		_, err := c.Build(set)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "no named capture groups")
+		require.ErrorContains(t, err, "no named capture groups")
 	})
 }
 
