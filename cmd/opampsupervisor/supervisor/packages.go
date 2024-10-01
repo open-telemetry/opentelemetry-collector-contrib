@@ -450,8 +450,6 @@ func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOp
 		RekorClient:                  rekorClient,
 		RekorPubKeys:                 rekorKeys,
 		CTLogPubKeys:                 ctLogPubKeys,
-		// Offline:                      true,
-		// IgnoreTlog:                   true,
 	}, nil
 }
 
