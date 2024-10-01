@@ -5,6 +5,7 @@ package lokiexporter
 
 import (
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -24,6 +25,7 @@ import (
 )
 
 func TestLoadConfigNewExporter(t *testing.T) {
+	defaultTransport := http.DefaultTransport.(*http.Transport)
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -49,9 +51,13 @@ func TestLoadConfigNewExporter(t *testing.T) {
 						},
 						Insecure: true,
 					},
-					ReadBufferSize:  123,
-					WriteBufferSize: 345,
-					Timeout:         time.Second * 10,
+					ReadBufferSize:      123,
+					WriteBufferSize:     345,
+					Timeout:             time.Second * 10,
+					MaxIdleConns:        &defaultTransport.MaxIdleConns,
+					MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+					MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+					IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
