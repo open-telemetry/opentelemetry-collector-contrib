@@ -345,7 +345,7 @@ func (dp summaryDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp summaryDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	return "summary_metrics"
+	return "summary"
 }
 
 func (dp summaryDataPoint) DocCount() uint64 {
