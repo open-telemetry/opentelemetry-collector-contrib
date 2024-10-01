@@ -12,8 +12,8 @@ require (
 	github.com/knadh/koanf/v2 v2.2.0
 	github.com/open-telemetry/opamp-go v0.19.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.125.0
-	github.com/sigstore/cosign v1.13.6
 	github.com/sigstore/cosign/v2 v2.4.0
+	github.com/sigstore/rekor v1.3.6
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.31.1-0.20250430101735-2ecd0b7f95cd
 	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250430101735-2ecd0b7f95cd
@@ -143,7 +143,6 @@ require (
 	github.com/google/gnostic-models v0.6.9-0.20230804172637-c7be7c783f49 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-containerregistry v0.20.1 // indirect
-	github.com/google/go-github/v45 v45.2.0 // indirect
 	github.com/google/go-github/v55 v55.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
@@ -232,7 +231,6 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.3 // indirect
 	github.com/sigstore/fulcio v1.5.1 // indirect
 	github.com/sigstore/protobuf-specs v0.3.2 // indirect
-	github.com/sigstore/rekor v1.3.6 // indirect
 	github.com/sigstore/sigstore v1.8.8 // indirect
 	github.com/sigstore/timestamp-authority v1.2.2 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
@@ -357,6 +355,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gotest.tools/v3 v3.1.0 // indirect
 	k8s.io/api v0.31.1 // indirect
 	k8s.io/apimachinery v0.31.4 // indirect
 	k8s.io/client-go v0.31.1 // indirect
