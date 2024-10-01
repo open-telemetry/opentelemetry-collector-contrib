@@ -5,7 +5,7 @@ package unmarshalertest // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
-	
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 )
 
@@ -18,13 +18,13 @@ type NopLogsUnmarshaler struct {
 
 var _ unmarshaler.LogsUnmarshaler = (*NopLogsUnmarshaler)(nil)
 
-// NewNopMetrics provides a nop logs unmarshaler with the default
+// NewNopLogs provides a nop logs unmarshaler with the default
 // plog.Logs and no error.
 func NewNopLogs() *NopLogsUnmarshaler {
 	return &NopLogsUnmarshaler{}
 }
 
-// NewWithMetrics provides a nop logs unmarshaler with the passed
+// NewWithLogs provides a nop logs unmarshaler with the passed
 // in logs as the result of the Unmarshal and no error.
 func NewWithLogs(logs plog.Logs) *NopLogsUnmarshaler {
 	return &NopLogsUnmarshaler{logs: logs}

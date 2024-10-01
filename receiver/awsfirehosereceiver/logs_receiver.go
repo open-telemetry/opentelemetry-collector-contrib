@@ -17,9 +17,9 @@ import (
 const defaultLogsRecordType = cwlog.TypeStr
 
 // The logsConsumer implements the firehoseConsumer
-// to use a metrics consumer and unmarshaler.
+// to use a logs consumer and unmarshaler.
 type logsConsumer struct {
-	// consumer passes the translated metrics on to the
+	// consumer passes the translated logs on to the
 	// next consumer.
 	consumer consumer.Logs
 	// unmarshaler is the configured LogsUnmarshaler
@@ -60,8 +60,7 @@ func newLogsReceiver(
 }
 
 // Consume uses the configured unmarshaler to deserialize the records into a
-// single pmetric.Metrics. If there are common attributes available, then it will
-// attach those to each of the pcommon.Resources. It will send the final result
+// single plog.Logs. It will send the final result
 // to the next consumer.
 func (mc *logsConsumer) Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error) {
 	md, err := mc.unmarshaler.Unmarshal(records)
