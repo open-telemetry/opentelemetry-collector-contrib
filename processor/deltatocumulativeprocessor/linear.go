@@ -110,7 +110,7 @@ func (p *Linear) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 			acc, err := func() (data.Number, error) {
 				if !ok {
 					// new stream: there is no existing aggregation, so start new with current dp
-					return dp, nil
+					return dp.Clone(), nil
 				}
 				// tracked stream: add incoming delta dp to existing cumulative aggregation
 				return acc, delta.AccumulateInto(acc, dp)
