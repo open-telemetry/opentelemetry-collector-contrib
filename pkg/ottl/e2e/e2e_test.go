@@ -920,6 +920,34 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "where clause with Contains return value",
+			statement: `set(attributes["test"], "pass") where Contains(["hello", "world"], "hello")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "where clause with Contains ints return value",
+			statement: `set(attributes["test"], "pass") where Contains([1, 2, 3, 4], 4)`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "where clause with Contains floats return value",
+			statement: `set(attributes["test"], "pass") where Contains([1.1, 2.2, 3.3, 4.4], 4.4)`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      `set attribute when tag "staging" is in tags attributes slice using Contains`,
+			statement: `set(attributes["staging"], "true") where Contains(attributes["foo"]["slice"], "val")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("staging", "true")
+			},
+		},
+		{
 			name:      "complex indexing found",
 			statement: `set(attributes["test"], attributes["foo"]["bar"])`,
 			want: func(tCtx ottllog.TransformContext) {
