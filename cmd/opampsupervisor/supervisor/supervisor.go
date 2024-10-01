@@ -346,18 +346,24 @@ func (s *Supervisor) Start() error {
 		}
 	}
 
-	packageManager, err := newPackageManager(
-		s.config.Agent.Executable,
-		s.config.Storage.Directory,
-		agentVersion,
-		s.config.Agent.Signature,
-		s,
-	)
-	if err != nil {
-		return fmt.Errorf("error creating package state manager: %w", err)
+	if s.config.Capabilities.AcceptsPackageAvailable || s.config.Capabilities.ReportsPackageStatuses {
+		s.packageManager, err = newPackageManager(
+			s.config.Agent.Executable,
+			s.config.Storage.Directory,
+			agentVersion,
+			s.config.Agent.Signature,
+			s,
+		)
+		if err != nil {
+			return fmt.Errorf("error creating package state manager: %w", err)
+		}
+	} else {
+		s.packageManager = nil
 	}
 
-	s.packageManager = packageManager
+	if err != nil {
+		return fmt.Errorf("could not find port for health check: %w", err)
+	}
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
@@ -649,12 +655,18 @@ func (s *Supervisor) startOpAMPClient() error {
 	}
 
 	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
+
+	var pkgStateProvider types.PackagesStateProvider
+	if s.packageManager != nil {
+		pkgStateProvider = s.packageManager
+	}
+
 	settings := types.StartSettings{
 		OpAMPServerURL:        s.config.Server.Endpoint,
 		Header:                s.config.Server.Headers,
 		TLSConfig:             tlsConfig,
 		InstanceUid:           types.InstanceUid(s.persistentState.InstanceID),
-		PackagesStateProvider: s.packageManager,
+		PackagesStateProvider: pkgStateProvider,
 		Callbacks: types.Callbacks{
 			OnConnect: func(_ context.Context) {
 				s.telemetrySettings.Logger.Debug("Connected to the server.")
