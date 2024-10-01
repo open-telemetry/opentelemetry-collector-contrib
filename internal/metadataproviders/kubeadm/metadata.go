@@ -14,7 +14,7 @@ import (
 )
 
 type Provider interface {
-	// ClusterName returns the current K8S Node Name
+	// ClusterName returns the current K8S cluster name
 	ClusterName(ctx context.Context) (string, error)
 }
 

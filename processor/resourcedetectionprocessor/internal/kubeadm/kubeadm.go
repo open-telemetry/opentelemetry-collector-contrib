@@ -36,13 +36,13 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		return nil, err
 	}
 
-	k8snodeProvider, err := kubeadm.NewProvider(cfg.configMapName, cfg.configMapNamespace, cfg.APIConfig)
+	kubeadmProvider, err := kubeadm.NewProvider(cfg.configMapName, cfg.configMapNamespace, cfg.APIConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating kubeadm provider: %w", err)
 	}
 
 	return &detector{
-		provider: k8snodeProvider,
+		provider: kubeadmProvider,
 		logger:   set.Logger,
 		ra:       &cfg.ResourceAttributes,
 		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
