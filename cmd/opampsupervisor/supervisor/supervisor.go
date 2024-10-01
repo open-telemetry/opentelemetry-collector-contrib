@@ -150,8 +150,9 @@ type Supervisor struct {
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
 
-	doneChan chan struct{}
-	agentWG  sync.WaitGroup
+	doneChan      chan struct{}
+	agentWG       sync.WaitGroup
+	agentStopChan chan agentStopRequest
 
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
@@ -178,6 +179,7 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
 		doneChan:                     make(chan struct{}),
+		agentStopChan:                make(chan agentStopRequest),
 		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                    &atomic.Value{},
 	}
@@ -1121,12 +1123,31 @@ func (s *Supervisor) startAgentProcess() {
 	}()
 }
 
-func (s *Supervisor) stopAgentProcess(ctx context.Context) {
-	err := s.commander.Stop(ctx)
-	if err != nil {
-		s.logger.Error("Error stopping commander", zap.Error(err))
+// stopAgentProcess stops the agent process. The process can be started again by closing the returned channel.
+func (s *Supervisor) stopAgentProcess(ctx context.Context) (chan struct{}, error) {
+	start := make(chan struct{})
+	processStopped := make(chan struct{})
+
+	s.agentStopChan <- agentStopRequest{
+		processStopped: processStopped,
+		start:          start,
 	}
-	s.agentWG.Wait()
+
+	select {
+	case <-processStopped:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+
+	return start, nil
+}
+
+// agentStopRequest is a request to the agent goroutine to stop the agent.
+type agentStopRequest struct {
+	// processStopped is closed by the agent goroutine when the agent process has been shutdown.
+	processStopped chan struct{}
+	// start is closed by the requester in order to signal to the agent goroutine to start the agent again.
+	start chan struct{}
 }
 
 func (s *Supervisor) runAgentProcess() {
@@ -1225,6 +1246,23 @@ func (s *Supervisor) runAgentProcess() {
 				s.logger.Error("Could not stop agent process", zap.Error(err))
 			}
 			return
+
+		case stopRequest := <-s.agentStopChan:
+			err := s.commander.Stop(context.Background())
+			if err != nil {
+				s.logger.Error("Could not stop agent process", zap.Error(err))
+			}
+
+			close(stopRequest.processStopped)
+
+			select {
+			case <-stopRequest.start:
+				err := s.commander.Start(context.Background())
+				if err != nil {
+					s.logger.Error("Could not start agent process", zap.Error(err))
+				}
+			case <-s.doneChan:
+			}
 		}
 	}
 }
