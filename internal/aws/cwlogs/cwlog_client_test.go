@@ -13,13 +13,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client/metadata"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/sdk/service/cloudwatchlogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/sdk/service/cloudwatchlogs/cloudwatchlogsiface"
 )
 
 func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *Client {
@@ -82,18 +81,6 @@ var previousSequenceToken = "0000"
 var expectedNextSequenceToken = "1111"
 var logGroup = "logGroup"
 var logStreamName = "logStream"
-
-var entity = cloudwatchlogs.Entity{
-	KeyAttributes: map[string]*string{
-		"Type":        aws.String("Service"),
-		"Name":        aws.String("myService"),
-		"Environment": aws.String("myEnvironment"),
-	},
-	Attributes: map[string]*string{
-		"Instance": aws.String("i-1234567"),
-		"Type":     aws.String("AWS::EC2"),
-	},
-}
 var emptySequenceToken = ""
 
 func TestPutLogEvents_HappyCase(t *testing.T) {
@@ -103,7 +90,6 @@ func TestPutLogEvents_HappyCase(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &previousSequenceToken,
-		Entity:        &entity,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken: &expectedNextSequenceToken}
@@ -124,7 +110,6 @@ func TestPutLogEvents_HappyCase_SomeRejectedInfo(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &previousSequenceToken,
-		Entity:        &entity,
 	}
 	rejectedLogEventsInfo := &cloudwatchlogs.RejectedLogEventsInfo{
 		ExpiredLogEventEndIndex:  aws.Int64(1),
@@ -151,7 +136,6 @@ func TestPutLogEvents_NonAWSError(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &previousSequenceToken,
-		Entity:        &entity,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken: &expectedNextSequenceToken}
@@ -172,7 +156,6 @@ func TestPutLogEvents_InvalidParameterException(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &previousSequenceToken,
-		Entity:        &entity,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken: &expectedNextSequenceToken}
@@ -194,7 +177,6 @@ func TestPutLogEvents_OperationAbortedException(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &previousSequenceToken,
-		Entity:        &entity,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken: &expectedNextSequenceToken}
@@ -216,7 +198,6 @@ func TestPutLogEvents_ServiceUnavailableException(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &previousSequenceToken,
-		Entity:        &entity,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken: &expectedNextSequenceToken}
@@ -238,7 +219,6 @@ func TestPutLogEvents_UnknownException(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &previousSequenceToken,
-		Entity:        &entity,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken: &expectedNextSequenceToken}
@@ -260,7 +240,6 @@ func TestPutLogEvents_ThrottlingException(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &previousSequenceToken,
-		Entity:        &entity,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken: &expectedNextSequenceToken}
@@ -282,7 +261,6 @@ func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &emptySequenceToken,
-		Entity:        &entity,
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
@@ -310,7 +288,6 @@ func TestLogRetention_NeverExpire(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &emptySequenceToken,
-		Entity:        &entity,
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
@@ -346,7 +323,6 @@ func TestLogRetention_RetentionDaysInputted(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &emptySequenceToken,
-		Entity:        &entity,
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
@@ -383,7 +359,6 @@ func TestSetTags_NotCalled(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &emptySequenceToken,
-		Entity:        &entity,
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
@@ -419,7 +394,6 @@ func TestSetTags_Called(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &emptySequenceToken,
-		Entity:        &entity,
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
@@ -456,7 +430,6 @@ func TestPutLogEvents_AllRetriesFail(t *testing.T) {
 		LogGroupName:  &logGroup,
 		LogStreamName: &logStreamName,
 		SequenceToken: &emptySequenceToken,
-		Entity:        &entity,
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{

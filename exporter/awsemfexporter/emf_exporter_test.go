@@ -10,9 +10,7 @@ import (
 	"testing"
 
 	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -25,7 +23,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/sdk/service/cloudwatchlogs"
 )
 
 const defaultRetryCount = 1
@@ -195,16 +192,10 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
-	streamKey := &cwlogs.StreamKey{
+	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  expCfg.LogGroupName,
 		LogStreamName: expCfg.LogStreamName,
-		Entity: &cloudwatchlogs.Entity{
-			KeyAttributes: map[string]*string{},
-			Attributes:    map[string]*string{},
-		},
-	}
-	expectedStreamKeyHash := streamKey.Hash()
-	pusherMap, ok := exp.pusherMap.Get(expectedStreamKeyHash)
+	}]
 	assert.True(t, ok)
 	assert.NotNil(t, pusherMap)
 }
@@ -226,31 +217,16 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
 		resourceAttributeMap: map[string]any{
-			"aws.ecs.cluster.name":                  "test-cluster-name",
-			"aws.ecs.task.id":                       "test-task-id",
-			keyAttributeEntityServiceName:           "myService",
-			keyAttributeEntityDeploymentEnvironment: "myEnvironment",
-			attributeEntityCluster:                  "test-cluster-name",
-			keyAttributeEntityType:                  "Service",
+			"aws.ecs.cluster.name": "test-cluster-name",
+			"aws.ecs.task.id":      "test-task-id",
 		},
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
-	streamKey := &cwlogs.StreamKey{
+	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  "/aws/ecs/containerinsights/test-cluster-name/performance",
 		LogStreamName: "test-task-id",
-		Entity: &cloudwatchlogs.Entity{
-			KeyAttributes: map[string]*string{
-				"Type":        aws.String("Service"),
-				"Name":        aws.String("myService"),
-				"Environment": aws.String("myEnvironment"),
-			},
-			Attributes: map[string]*string{
-				"Cluster": aws.String("test-cluster-name"),
-			},
-		},
-	}
-	pusherMap, ok := exp.pusherMap.Get(streamKey.Hash())
+	}]
 	assert.True(t, ok)
 	assert.NotNil(t, pusherMap)
 }
@@ -267,34 +243,21 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
-	var entity = &cloudwatchlogs.Entity{
-		KeyAttributes: map[string]*string{
-			"Type":        aws.String("Service"),
-			"Name":        aws.String("myService"),
-			"Environment": aws.String("myEnvironment"),
-		},
-		Attributes: map[string]*string{},
-	}
 
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
 		resourceAttributeMap: map[string]any{
-			"aws.ecs.cluster.name":                  "test-cluster-name",
-			"aws.ecs.task.id":                       "test-task-id",
-			keyAttributeEntityServiceName:           "myService",
-			keyAttributeEntityDeploymentEnvironment: "myEnvironment",
-			keyAttributeEntityType:                  service,
+			"aws.ecs.cluster.name": "test-cluster-name",
+			"aws.ecs.task.id":      "test-task-id",
 		},
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
-	streamKey := cwlogs.StreamKey{
+	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  expCfg.LogGroupName,
 		LogStreamName: "test-task-id",
-		Entity:        entity,
-	}
-	pusherMap, ok := exp.pusherMap.Get(streamKey.Hash())
+	}]
 	assert.True(t, ok)
 	assert.NotNil(t, pusherMap)
 }
@@ -316,28 +279,16 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
 		resourceAttributeMap: map[string]any{
-			"aws.ecs.cluster.name":                  "test-cluster-name",
-			"aws.ecs.task.id":                       "test-task-id",
-			keyAttributeEntityType:                  service,
-			keyAttributeEntityServiceName:           "myService",
-			keyAttributeEntityDeploymentEnvironment: "myEnvironment",
+			"aws.ecs.cluster.name": "test-cluster-name",
+			"aws.ecs.task.id":      "test-task-id",
 		},
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
-	streamKey := cwlogs.StreamKey{
+	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  expCfg.LogGroupName,
 		LogStreamName: expCfg.LogStreamName,
-		Entity: &cloudwatchlogs.Entity{
-			KeyAttributes: map[string]*string{
-				"Name":        aws.String("myService"),
-				"Environment": aws.String("myEnvironment"),
-				"Type":        aws.String("Service"),
-			},
-			Attributes: map[string]*string{},
-		},
-	}
-	pusherMap, ok := exp.pusherMap.Get(streamKey.Hash())
+	}]
 	assert.True(t, ok)
 	assert.NotNil(t, pusherMap)
 }
@@ -361,17 +312,12 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
 	logPusher.On("ForceFlush", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
-	exp.pusherMap, err = lru.New[string, cwlogs.Pusher](pusherMapLimit)
-	assert.Nil(t, err)
-	streamKey := cwlogs.StreamKey{
+	exp.pusherMap = map[cwlogs.StreamKey]cwlogs.Pusher{}
+	exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  "test-logGroupName",
 		LogStreamName: "test-logStreamName",
-		Entity: &cloudwatchlogs.Entity{
-			Attributes:    map[string]*string{},
-			KeyAttributes: map[string]*string{},
-		},
-	}
-	exp.pusherMap.Add(streamKey.Hash(), logPusher)
+	}] = logPusher
+
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},

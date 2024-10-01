@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -172,17 +171,4 @@ func attrMaptoStringMap(attrMap pcommon.Map) map[string]string {
 		return true
 	})
 	return strMap
-}
-
-// processAttributes fetches the aws.entity fields and creates an entity to be sent at the PutLogEvent call. It also
-// removes the entity attributes so that it is not tagged as a dimension, and reduces the size of the PLE payload.
-func processAttributes(entityMap map[string]string, targetMap map[string]*string, mutableResourceAttributes pcommon.Map) {
-	for entityField, shortName := range entityMap {
-		if val, ok := mutableResourceAttributes.Get(entityField); ok {
-			if strVal := val.Str(); strVal != "" {
-				targetMap[shortName] = aws.String(strVal)
-			}
-			mutableResourceAttributes.Remove(entityField)
-		}
-	}
 }

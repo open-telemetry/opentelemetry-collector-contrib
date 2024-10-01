@@ -6,7 +6,6 @@ require (
 	github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware v0.0.0-20240419190856-2f880467f335
 	github.com/aws/aws-sdk-go v1.53.11
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.103.0

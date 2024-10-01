@@ -6,17 +6,15 @@ package cwlogs
 import (
 	"fmt"
 	"math/rand"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/sdk/service/cloudwatchlogs"
 )
 
 // logEvent Tests
@@ -115,7 +113,6 @@ func newMockPusher() *logPusher {
 	return newLogPusher(StreamKey{
 		LogGroupName:  logGroup,
 		LogStreamName: logStreamName,
-		Entity:        &entity,
 	}, *svc, zap.NewNop())
 }
 
@@ -132,7 +129,6 @@ func TestPusher_newLogEventBatch(t *testing.T) {
 	logEventBatch := newEventBatch(StreamKey{
 		LogGroupName:  logGroup,
 		LogStreamName: logStreamName,
-		Entity:        &entity,
 	})
 	assert.Equal(t, int64(0), logEventBatch.maxTimestampMs)
 	assert.Equal(t, int64(0), logEventBatch.minTimestampMs)
@@ -280,33 +276,4 @@ func TestMultiStreamPusher(t *testing.T) {
 	assert.Equal(t, 1, len(inputs[1].LogEvents))
 	assert.Equal(t, "foo", *inputs[1].LogGroupName)
 	assert.Equal(t, "bar2", *inputs[1].LogStreamName)
-}
-
-func TestStreamKeyFieldCount(t *testing.T) {
-	expectedFields := map[string]string{
-		"LogGroupName":  "string",
-		"LogStreamName": "string",
-		"Entity":        "*cloudwatchlogs.Entity",
-	}
-	testStructFields(t, reflect.TypeOf(StreamKey{}), expectedFields, "StreamKey")
-}
-
-func TestEntityFieldCount(t *testing.T) {
-	expectedFields := map[string]string{
-		"_":             "struct {}",
-		"KeyAttributes": "map[string]*string",
-		"Attributes":    "map[string]*string",
-	}
-	testStructFields(t, reflect.TypeOf(cloudwatchlogs.Entity{}), expectedFields, "Entity")
-}
-
-func testStructFields(t *testing.T, structType reflect.Type, expectedFields map[string]string, structName string) {
-	assert.Equal(t, len(expectedFields), structType.NumField(), "%s should have exactly %d fields", structName, len(expectedFields))
-
-	for i := 0; i < structType.NumField(); i++ {
-		field := structType.Field(i)
-		expectedType, exists := expectedFields[field.Name]
-		assert.True(t, exists, "Unexpected field in %s: %s", structName, field.Name)
-		assert.Equal(t, expectedType, field.Type.String(), "Incorrect type for field %s in %s", field.Name, structName)
-	}
 }
