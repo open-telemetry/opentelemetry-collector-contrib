@@ -232,8 +232,6 @@ func (s *Supervisor) Start() error {
 		if err != nil {
 			return fmt.Errorf("error creating package state manager: %w", err)
 		}
-	} else {
-		s.packageManager = nil
 	}
 
 	if err != nil {
