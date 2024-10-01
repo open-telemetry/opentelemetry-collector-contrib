@@ -2,6 +2,7 @@ package supervisor
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -15,10 +16,10 @@ import (
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/sigstore/cosign/cmd/cosign/cli/rekor"
 	"github.com/sigstore/cosign/v2/cmd/cosign/cli/fulcio"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	"github.com/sigstore/cosign/v2/pkg/oci/static"
-	"github.com/sigstore/rekor/pkg/generated/client"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 )
@@ -32,6 +33,8 @@ var (
 	packagesStateFileName     = "package-state.yaml"
 	lastPackageStatusFileName = "last-reported-package-statuses.proto"
 )
+
+const maxAgentBytes = 1024 * 1024 * 1024
 
 type hexEncodedBytes []byte
 
@@ -68,8 +71,7 @@ type packageManager struct {
 }
 
 type agentManager interface {
-	stopAgentProcess(context.Context)
-	startAgentProcess()
+	stopAgentProcess(ctx context.Context) (chan struct{}, error)
 }
 
 func newPackageManager(agentPath, storageDir, agentVersion string, signatureOpts config.AgentSignature, am agentManager) (*packageManager, error) {
@@ -202,26 +204,63 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	}
 
 	// overwrite agent process
-	p.am.stopAgentProcess(ctx)
+	startAgent, err := p.am.stopAgentProcess(ctx)
+	if err != nil {
+		return fmt.Errorf("stop agent process: %w", err)
+	}
+
 	// We always want to start the agent process again, even if we fail to write the agent file
-	defer p.am.startAgentProcess()
+	defer close(startAgent)
 
 	// Create a backup in case we fail to write the agent
 	agentBackupPath := filepath.Join(p.storageDir, "collector.bak")
-	err = os.WriteFile(agentBackupPath, by, 0600)
+	backupFile, err := os.OpenFile(agentBackupPath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
-		return fmt.Errorf("create agent backup: %w", err)
+		return fmt.Errorf("open backup file: %w", err)
 	}
+	defer backupFile.Close()
 
-	f, err := os.OpenFile(p.agentPath, os.O_WRONLY|os.O_TRUNC, 0700)
+	agentFile, err := os.OpenFile(p.agentPath, os.O_RDWR, 0700)
 	if err != nil {
 		return fmt.Errorf("open file: %w", err)
 	}
-	defer f.Close()
+	defer agentFile.Close()
 
-	if _, err := io.Copy(f, bytes.NewBuffer(by)); err != nil {
+	// Copy to backup
+	_, err = io.Copy(backupFile, agentFile)
+	if err != nil {
+		return fmt.Errorf("write backup file: %w", err)
+	}
+
+	// Create reader for new agent
+	var r io.Reader
+	r, err = gzip.NewReader(bytes.NewBuffer(by))
+	if err != nil {
+		return fmt.Errorf("create gzip reader: %w", err)
+	}
+
+	// Truncate and seek to beginning of agent file
+	_, err = agentFile.Seek(0, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("seek to beginning of agent file: %w", err)
+	}
+
+	err = agentFile.Truncate(0)
+	if err != nil {
+		return fmt.Errorf("truncate agent file: %w", err)
+	}
+
+	// Write new agent to existing agent file.
+	// We only copy up to maxAgentBytes to avoid compression bombs.
+	_, err = io.CopyN(agentFile, r, maxAgentBytes)
+	switch {
+	case errors.Is(err, io.EOF): // OK
+	case err != nil:
 		restoreErr := restoreBackup(agentBackupPath, p.agentPath)
 		return errors.Join(fmt.Errorf("write package to file: %w", err), restoreErr)
+	default:
+		restoreErr := restoreBackup(agentBackupPath, p.agentPath)
+		return errors.Join(fmt.Errorf("agent package met or exceeded %d bytes", maxAgentBytes), restoreErr)
 	}
 
 	return nil
@@ -360,6 +399,21 @@ func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOp
 		return nil, fmt.Errorf("fetch intermediate certs: %w", err)
 	}
 
+	rekorClient, err := rekor.NewClient("https://rekor.sigstore.dev")
+	if err != nil {
+		return nil, fmt.Errorf("create rekot client: %w", err)
+	}
+
+	rekorKeys, err := cosign.GetRekorPubs(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("get rekor public keys: %w", err)
+	}
+
+	ctLogPubKeys, err := cosign.GetCTLogPubs(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("get CT log public keys: %w", err)
+	}
+
 	identities := make([]cosign.Identity, 0, len(signatureOpts.Identities))
 	for _, ident := range signatureOpts.Identities {
 		identities = append(identities, cosign.Identity{
@@ -375,7 +429,9 @@ func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOp
 		IntermediateCerts:            intermediateCerts,
 		CertGithubWorkflowRepository: signatureOpts.CertGithubWorkflowRepository,
 		Identities:                   identities,
-		RekorClient:                  client.Default,
+		RekorClient:                  rekorClient,
+		RekorPubKeys:                 rekorKeys,
+		CTLogPubKeys:                 ctLogPubKeys,
 		// Offline:                      true,
 		// IgnoreTlog:                   true,
 	}, nil
