@@ -33,10 +33,6 @@ func createDefaultConfig() component.Config {
 	client := confighttp.NewDefaultClientConfig()
 	client.Endpoint = "localhost:8126"
 	return client
-
-	return &Config{
-		ClientConfig: client,
-	}
 }
 
 func CreateTracesExporter(
