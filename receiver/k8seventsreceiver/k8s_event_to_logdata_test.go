@@ -20,7 +20,7 @@ func TestK8sEventToLogData(t *testing.T) {
 	lr := rl.ScopeLogs().At(0)
 	attrs := lr.LogRecords().At(0).Attributes()
 	assert.Equal(t, 1, ld.ResourceLogs().Len())
-	assert.Equal(t, 7, resourceAttrs.Len())
+	assert.Equal(t, 8, resourceAttrs.Len())
 	assert.Equal(t, 7, attrs.Len())
 
 	// Count attribute will not be present in the LogData
