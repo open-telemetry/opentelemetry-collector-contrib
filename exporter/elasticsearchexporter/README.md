@@ -344,3 +344,5 @@ In case the record contains `timestamp`, this value is used. Otherwise, the `obs
 ### version_conflict_engine_exception
 
 When sending high traffic of metrics to a TSDB metrics data stream, e.g. using OTel mapping mode to a 8.16 Elasticsearch, it is possible to get error logs "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists". It is due to Elasticsearch grouping metrics using `@timestamp` in milliseconds precision as opposed to nanoseconds in elasticsearchexporter. This will be fixed in a future version of Elasticsearch.
+
+However, if `@timestamp` precision is not the problem, it is possible that the error indicates an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer). Check your metrics pipeline setup for misconfiguration.
