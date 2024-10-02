@@ -4,6 +4,7 @@
 package prometheusremotewriteexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -24,6 +25,11 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
+
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -73,6 +79,10 @@ func TestLoadConfig(t *testing.T) {
 					Headers: map[string]configopaque.String{
 						"Prometheus-Remote-Write-Version": "0.1.0",
 						"X-Scope-OrgID":                   "234"},
+					MaxIdleConns:        &defaultMaxIdleConns,
+					MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+					MaxConnsPerHost:     &defaultMaxConnsPerHost,
+					IdleConnTimeout:     &defaultIdleConnTimeout,
 				},
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				TargetInfo: &TargetInfo{
