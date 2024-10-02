@@ -6,7 +6,6 @@ package elasticsearchexporter
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -189,9 +188,9 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
 			assert.NoError(t, bulkIndexer.Close(context.Background()))
 			messages := observed.FilterMessage(tt.wantMessage)
-			require.Equal(t, 1, messages.Len(), fmt.Sprintf("message not found; observed.All()=%v", observed.All()))
+			require.Equal(t, 1, messages.Len(), "message not found; observed.All()=%v", observed.All())
 			for _, wantField := range tt.wantFields {
-				assert.Equal(t, 1, messages.FilterField(wantField).Len(), fmt.Sprintf("message with field not found; observed.All()=%v", observed.All()))
+				assert.Equal(t, 1, messages.FilterField(wantField).Len(), "message with field not found; observed.All()=%v", observed.All())
 			}
 		})
 	}
