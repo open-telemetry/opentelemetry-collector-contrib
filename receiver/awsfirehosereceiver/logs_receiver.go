@@ -16,7 +16,7 @@ import (
 
 const defaultLogsRecordType = cwlog.TypeStr
 
-// The logsConsumer implements the firehoseConsumer
+// logsConsumer implements the firehoseConsumer
 // to use a logs consumer and unmarshaler.
 type logsConsumer struct {
 	// consumer passes the translated logs on to the

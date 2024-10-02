@@ -9,6 +9,11 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
+const (
+	attributeAWSCloudWatchLogGroupName  = "aws.cloudwatch.log_group_name"
+	attributeAWSCloudWatchLogStreamName = "aws.cloudwatch.log_stream_name"
+)
+
 // resourceAttributes are the CloudWatch log attributes that define a unique resource.
 type resourceAttributes struct {
 	owner, logGroup, logStream string
@@ -23,6 +28,8 @@ type resourceLogsBuilder struct {
 func (ra *resourceAttributes) setAttributes(resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeCloudAccountID, ra.owner)
+	attrs.PutStr(attributeAWSCloudWatchLogGroupName, ra.logGroup)
+	attrs.PutStr(attributeAWSCloudWatchLogStreamName, ra.logStream)
 }
 
 // newResourceLogsBuilder to capture logs for the Resource defined by the provided attributes.

@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 )
 
+// Zip returns a gzip-compressed representation of the input bytes.
 func Zip(data []byte) ([]byte, error) {
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
@@ -28,6 +29,7 @@ func Zip(data []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
+// Unzip expects gzip-compressed input bytes and returns their uncompressed form.
 func Unzip(data []byte) ([]byte, error) {
 	b := bytes.NewBuffer(data)
 
