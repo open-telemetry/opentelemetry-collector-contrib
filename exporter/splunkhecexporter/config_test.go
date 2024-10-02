@@ -4,6 +4,7 @@
 package splunkhecexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -24,6 +26,8 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -77,6 +81,8 @@ func TestLoadConfig(t *testing.T) {
 					IdleConnTimeout:      &idleConnTimeout,
 					HTTP2ReadIdleTimeout: 10 * time.Second,
 					HTTP2PingTimeout:     10 * time.Second,
+					Headers:              map[string]configopaque.String{},
+					MaxConnsPerHost:      &defaultMaxConnsPerHost,
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
