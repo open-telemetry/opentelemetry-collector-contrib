@@ -273,6 +273,9 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 
 func (m *Manager) instantiateTracker() {
 	opts := []tracker.OptionFunc{tracker.WithMaxBatchFiles(m.maxBatchFiles)}
+	if m.noTracking {
+		opts = append(opts, tracker.WithNoTracking())
+	}
 	if m.pollsToArchive > 0 {
 		opts = append(opts, tracker.WithPollsToArchive(m.pollsToArchive), tracker.WithPersister(m.persister))
 	}
