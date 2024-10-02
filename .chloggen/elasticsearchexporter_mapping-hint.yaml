@@ -7,15 +7,18 @@ change_type: enhancement
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Emit _doc_count for metric documents in OTel mode when data point attribute _doc_count is true
+note: Implement elasticsearch.mapping.hints attribute handling for data points in OTel mapping mode
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [35348]
+issues: [35479]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
+  elasticsearch.mapping.hints takes a slice of strings.
+  `_doc_count` enables emitting `_doc_count` for the document.
+  `aggregate_metric_double` causes histogram or exponential histogram to be emitted as aggregate_metric_double.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

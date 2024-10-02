@@ -118,6 +118,10 @@ gogci:
 gotidy:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
 
+.PHONY: remove-toolchain
+remove-toolchain:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="toolchain"
+
 .PHONY: gomoddownload
 gomoddownload:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="moddownload"
@@ -404,11 +408,12 @@ update-otel:$(MULTIMOD)
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(MAKE) gotidy
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml) 
+	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml)
 	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) oteltestbedcol
+	$(MAKE) remove-toolchain
 
 .PHONY: otel-from-tree
 otel-from-tree:
