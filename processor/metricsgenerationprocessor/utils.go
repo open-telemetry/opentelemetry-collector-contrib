@@ -60,34 +60,28 @@ func generateMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internal
 		for j := 0; j < metricSlice.Len(); j++ {
 			metric := metricSlice.At(j)
 			if metric.Name() == rule.metric1 {
-				newMetric := appendMetric(ilm, rule.name, rule.unit)
-				addDoubleDataPoints(metric, newMetric, operand2, rule.operation, logger)
+				newMetric := generateMetric(metric, operand2, rule.operation, logger)
+
+				dataPointCount := 0
+				switch newMetric.Type() {
+				case pmetric.MetricTypeSum:
+					dataPointCount = newMetric.Sum().DataPoints().Len()
+				case pmetric.MetricTypeGauge:
+					dataPointCount = newMetric.Gauge().DataPoints().Len()
+				}
+
+				// Only create a new metric if valid data points were calculated successfully
+				if dataPointCount > 0 {
+					appendMetric(ilm, newMetric, rule.name, rule.unit)
+				}
 			}
 		}
 	}
-
-	// Remove any calculated metric if there are no data points
-	for i := 0; i < ilms.Len(); i++ {
-		ilm := ilms.At(i)
-		ilm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
-			if m.Name() != rule.name {
-				return false
-			}
-
-			switch m.Type() {
-			case pmetric.MetricTypeSum:
-				return m.Sum().DataPoints().Len() == 0
-			case pmetric.MetricTypeGauge:
-				return m.Gauge().DataPoints().Len() == 0
-			default:
-				return true
-			}
-		})
-	}
 }
 
-func addDoubleDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 float64, operation string, logger *zap.Logger) {
+func generateMetric(from pmetric.Metric, operand2 float64, operation string, logger *zap.Logger) pmetric.Metric {
 	var dataPoints pmetric.NumberDataPointSlice
+	to := pmetric.NewMetric()
 
 	switch metricType := from.Type(); metricType {
 	case pmetric.MetricTypeGauge:
@@ -98,7 +92,7 @@ func addDoubleDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 float6
 		dataPoints = from.Sum().DataPoints()
 	default:
 		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type `%s`", from.Name(), metricType.String()))
-		return
+		return pmetric.NewMetric()
 	}
 
 	for i := 0; i < dataPoints.Len(); i++ {
@@ -116,24 +110,29 @@ func addDoubleDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 float6
 		if err != nil {
 			logger.Debug(err.Error())
 		} else {
-			var neweDoubleDataPoint pmetric.NumberDataPoint
+			var newDoubleDataPoint pmetric.NumberDataPoint
 			switch to.Type() {
 			case pmetric.MetricTypeGauge:
-				neweDoubleDataPoint = to.Gauge().DataPoints().AppendEmpty()
+				newDoubleDataPoint = to.Gauge().DataPoints().AppendEmpty()
 			case pmetric.MetricTypeSum:
-				neweDoubleDataPoint = to.Sum().DataPoints().AppendEmpty()
+				newDoubleDataPoint = to.Sum().DataPoints().AppendEmpty()
 			}
 
-			fromDataPoint.CopyTo(neweDoubleDataPoint)
-			neweDoubleDataPoint.SetDoubleValue(value)
+			fromDataPoint.CopyTo(newDoubleDataPoint)
+			newDoubleDataPoint.SetDoubleValue(value)
 		}
 	}
+
+	return to
 }
 
-func appendMetric(ilm pmetric.ScopeMetrics, name, unit string) pmetric.Metric {
+// Append the scope metrics with the new metric
+func appendMetric(ilm pmetric.ScopeMetrics, newMetric pmetric.Metric, name, unit string) pmetric.Metric {
 	metric := ilm.Metrics().AppendEmpty()
-	metric.SetName(name)
+	newMetric.MoveTo(metric)
+
 	metric.SetUnit(unit)
+	metric.SetName(name)
 
 	return metric
 }
