@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.22.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.132
+	github.com/DataDog/agent-payload/v5 v5.0.133
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.57.1
 	github.com/DataDog/datadog-agent/pkg/proto v0.57.1
 	github.com/DataDog/datadog-agent/pkg/trace v0.57.1
@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.110.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tinylib/msgp v1.2.1
+	github.com/tinylib/msgp v1.2.2
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.opentelemetry.io/collector/component v0.110.0
 	go.opentelemetry.io/collector/component/componentstatus v0.110.0
@@ -65,7 +65,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.110.0 // indirect
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
-	github.com/philhofer/fwd v1.1.3-0.20240612014219-fbbf4953d986 // indirect
+	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
