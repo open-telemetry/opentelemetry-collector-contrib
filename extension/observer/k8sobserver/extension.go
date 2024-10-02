@@ -132,7 +132,7 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 	if config.ObserveIngresses {
 		var ingressSelector = fields.Everything()
 		set.Logger.Debug("observing ingresses")
-		cache.NewListWatchFromClient(restClient, "ingresses", v1.NamespaceAll, ingressSelector)
+		ingressListerWatcher = cache.NewListWatchFromClient(client.NetworkingV1().RESTClient(), "ingresses", v1.NamespaceAll, ingressSelector)
 	}
 	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.TelemetrySettings.Logger}
 	obs := &k8sObserver{
