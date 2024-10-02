@@ -6,8 +6,10 @@ package opampextension
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -53,6 +55,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 func TestCreateAgentDescription(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
+	osDescription := getOSDescription(t)
 
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
@@ -76,6 +79,7 @@ func TestCreateAgentDescription(t *testing.T) {
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 					stringKeyValue(semconv.AttributeHostName, hostname),
+					stringKeyValue(semconv.AttributeOSDescription, osDescription),
 					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 				},
 			},
@@ -99,6 +103,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 					stringKeyValue(semconv.AttributeHostName, hostname),
 					stringKeyValue(semconv.AttributeK8SPodName, "my-very-cool-pod"),
+					stringKeyValue(semconv.AttributeOSDescription, osDescription),
 					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 				},
 			},
@@ -119,6 +124,7 @@ func TestCreateAgentDescription(t *testing.T) {
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 					stringKeyValue(semconv.AttributeHostName, "override-host"),
+					stringKeyValue(semconv.AttributeOSDescription, osDescription),
 					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 				},
 			},
@@ -277,4 +283,39 @@ func TestOpAMPAgent_Dependencies(t *testing.T) {
 
 		require.Equal(t, []component.ID{authID}, o.Dependencies())
 	})
+}
+
+func getOSDescription(t *testing.T) string {
+	switch runtime.GOOS {
+	case "linux":
+		output, err := exec.Command("lsb_release", "-a").Output()
+		require.NoError(t, err)
+		for _, line := range strings.Split(string(output), "\n") {
+			if raw, ok := strings.CutPrefix(line, "Description:"); ok {
+				return strings.TrimSpace(raw)
+			}
+		}
+	case "darwin":
+		output, err := exec.Command("sw_vers").Output()
+		require.NoError(t, err)
+		var productName string
+		var productVersion string
+		for _, line := range strings.Split(string(output), "\n") {
+			if raw, ok := strings.CutPrefix(line, "ProductName:"); ok {
+				productName = strings.TrimSpace(raw)
+			} else if raw, ok = strings.CutPrefix(line, "ProductVersion:"); ok {
+				productVersion = strings.TrimSpace(raw)
+			}
+		}
+		if productName != "" && productVersion != "" {
+			return productName + " " + productVersion
+		}
+	case "windows":
+		output, err := exec.Command("cmd", "/c", "ver").Output()
+		require.NoError(t, err)
+		if string(output) != "" {
+			return strings.TrimSpace(string(output))
+		}
+	}
+	return ""
 }

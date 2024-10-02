@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"runtime"
 	"sort"
 	"strings"
@@ -278,6 +279,10 @@ func (o *opampAgent) createAgentDescription() error {
 	if err != nil {
 		return err
 	}
+	description, err := o.getOSDescription()
+	if err != nil {
+		return err
+	}
 
 	ident := []*protobufs.KeyValue{
 		stringKeyValue(semconv.AttributeServiceInstanceID, o.instanceID.String()),
@@ -289,6 +294,7 @@ func (o *opampAgent) createAgentDescription() error {
 	// are both automatically determined and defined in the config
 	nonIdentifyingAttributeMap := map[string]string{}
 	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
+	nonIdentifyingAttributeMap[semconv.AttributeOSDescription] = description
 	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
 	nonIdentifyingAttributeMap[semconv.AttributeHostName] = hostname
 
@@ -366,4 +372,45 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 			o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 	}
+}
+
+func (o *opampAgent) getOSDescription() (string, error) {
+	switch runtime.GOOS {
+	case "linux":
+		output, err := exec.Command("lsb_release", "-a").Output()
+		if err != nil {
+			return "", fmt.Errorf("get linux details: %w", err)
+		}
+		for _, line := range strings.Split(string(output), "\n") {
+			if raw, ok := strings.CutPrefix(line, "Description:"); ok {
+				return strings.TrimSpace(raw), nil
+			}
+		}
+	case "darwin":
+		output, err := exec.Command("sw_vers").Output()
+		if err != nil {
+			return "", fmt.Errorf("get darwin details: %w", err)
+		}
+		var productName string
+		var productVersion string
+		for _, line := range strings.Split(string(output), "\n") {
+			if raw, ok := strings.CutPrefix(line, "ProductName:"); ok {
+				productName = strings.TrimSpace(raw)
+			} else if raw, ok = strings.CutPrefix(line, "ProductVersion:"); ok {
+				productVersion = strings.TrimSpace(raw)
+			}
+		}
+		if productName != "" && productVersion != "" {
+			return productName + " " + productVersion, nil
+		}
+	case "windows":
+		output, err := exec.Command("cmd", "/c", "ver").Output()
+		if err != nil {
+			return "", fmt.Errorf("get windows details: %w", err)
+		}
+		if string(output) != "" {
+			return strings.TrimSpace(string(output)), nil
+		}
+	}
+	return "", fmt.Errorf("unrecognized os")
 }
