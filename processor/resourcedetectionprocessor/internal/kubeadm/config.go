@@ -18,17 +18,11 @@ type Config struct {
 const defaultConfigMapName = "kubeadm-config"
 const defaultConfigMapNamespace = "kube-system"
 
-// UpdateDefaults validates and update the default config with user's provided settings
-func (c *Config) UpdateDefaults() error {
-	c.configMapName = defaultConfigMapName
-	c.configMapNamespace = defaultConfigMapNamespace
-
-	return nil
-}
-
 func CreateDefaultConfig() Config {
 	return Config{
 		APIConfig:          k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+		configMapName:      defaultConfigMapName,
+		configMapNamespace: defaultConfigMapNamespace,
 	}
 }
