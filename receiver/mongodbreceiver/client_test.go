@@ -229,8 +229,7 @@ func TestGetVersionFailures(t *testing.T) {
 			}
 
 			_, err := client.GetVersion(context.TODO())
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.partialError)
+			require.ErrorContains(t, err, tc.partialError)
 		})
 	}
 

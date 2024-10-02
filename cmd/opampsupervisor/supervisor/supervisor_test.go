@@ -6,8 +6,10 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -22,6 +24,72 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
+
+func setupSupervisorConfig(t *testing.T) config.Supervisor {
+	t.Helper()
+
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
+	require.NoError(t, err)
+
+	executablePath := filepath.Join(tmpDir, "binary")
+	err = os.WriteFile(executablePath, []byte{}, 0o600)
+	require.NoError(t, err)
+
+	configuration := `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+
+storage:
+  directory: %s
+
+agent:
+  executable: %s
+`
+	configuration = fmt.Sprintf(configuration, filepath.Join(tmpDir, "storage"), executablePath)
+
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err = os.WriteFile(cfgPath, []byte(configuration), 0o600)
+	require.NoError(t, err)
+
+	cfg, err := config.Load(cfgPath)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, os.Chmod(tmpDir, 0o700))
+		require.NoError(t, os.RemoveAll(tmpDir))
+	})
+
+	return cfg
+}
+
+func Test_NewSupervisor(t *testing.T) {
+	cfg := setupSupervisorConfig(t)
+	supervisor, err := NewSupervisor(zap.L(), cfg)
+	require.NoError(t, err)
+	require.NotNil(t, supervisor)
+}
+
+func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
+	cfg := setupSupervisorConfig(t)
+
+	dir := filepath.Dir(cfg.Storage.Directory)
+	require.NoError(t, os.Chmod(dir, 0o500))
+
+	supervisor, err := NewSupervisor(zap.L(), cfg)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "error creating storage dir")
+	require.Nil(t, supervisor)
+}
 
 func Test_composeEffectiveConfig(t *testing.T) {
 	acceptsRemoteConfig := true

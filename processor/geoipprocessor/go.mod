@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.110.0
 	go.opentelemetry.io/otel v1.30.0
 	go.uber.org/goleak v1.3.0
+	go.uber.org/zap v1.27.0
 )
 
 require go.opentelemetry.io/collector/pdata/pprofile v0.110.0 // indirect
@@ -108,7 +109,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
 	go4.org/netipx v0.0.0-20230824141953-6213f710f925 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.29.0 // indirect

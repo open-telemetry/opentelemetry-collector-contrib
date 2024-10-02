@@ -59,7 +59,6 @@ body:
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
-      - exporter/instana
       - exporter/kafka
       - exporter/kinetica
       - exporter/loadbalancing
@@ -266,6 +265,7 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
+      - receiver/prometheusremotewrite
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
