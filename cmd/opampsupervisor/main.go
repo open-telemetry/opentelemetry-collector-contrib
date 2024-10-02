@@ -5,6 +5,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -26,21 +27,23 @@ func runInteractive() error {
 
 	cfg, err := config.Load(*configFlag)
 	if err != nil {
-		log.Fatal("failed to load config: %w", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
 	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
 	if err != nil {
-		log.Fatal("failed to create logger: %w", err)
+		return fmt.Errorf("failed to create logger: %w", err)
 	}
 
 	supervisor, err := supervisor.NewSupervisor(logger, cfg)
 	if err != nil {
+		logger.Error(err.Error())
 		return err
 	}
 
 	err = supervisor.Start()
 	if err != nil {
+		logger.Error(err.Error())
 		return err
 	}
 

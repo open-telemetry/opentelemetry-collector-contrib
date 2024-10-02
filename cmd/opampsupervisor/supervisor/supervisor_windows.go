@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sys/windows"
@@ -69,7 +70,12 @@ func (ws *windowsService) start(elog *eventlog.Log) error {
 
 	logger, _ := zap.NewDevelopment(zap.WrapCore(withWindowsCore(elog)))
 
-	sup, err := NewSupervisor(logger, *configFlag)
+	cfg, err := config.Load(*configFlag)
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	sup, err := NewSupervisor(logger, cfg)
 	if err != nil {
 		return fmt.Errorf("new supervisor: %w", err)
 	}
