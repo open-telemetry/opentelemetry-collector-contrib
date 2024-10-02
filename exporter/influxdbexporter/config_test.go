@@ -23,7 +23,10 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	defaultTransport := http.DefaultTransport.(*http.Transport)
+	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -44,10 +47,10 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint:            "http://localhost:8080",
 					Timeout:             500 * time.Millisecond,
 					Headers:             map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Influx"},
-					MaxIdleConns:        &defaultTransport.MaxIdleConns,
-					MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
-					MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
-					IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
+					MaxIdleConns:        &defaultMaxIdleConns,
+					MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+					MaxConnsPerHost:     &defaultMaxConnsPerHost,
+					IdleConnTimeout:     &defaultIdleConnTimeout,
 				},
 				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
