@@ -33,7 +33,7 @@ func setupSupervisorConfig(t *testing.T) config.Supervisor {
 	require.NoError(t, err)
 
 	executablePath := filepath.Join(tmpDir, "binary")
-	err = os.WriteFile(executablePath, []byte{}, 0600)
+	err = os.WriteFile(executablePath, []byte{}, 0o600)
 	require.NoError(t, err)
 
 	configuration := `
@@ -59,14 +59,14 @@ agent:
 	configuration = fmt.Sprintf(configuration, filepath.Join(tmpDir, "storage"), executablePath)
 
 	cfgPath := filepath.Join(tmpDir, "config.yaml")
-	err = os.WriteFile(cfgPath, []byte(configuration), 0600)
+	err = os.WriteFile(cfgPath, []byte(configuration), 0o600)
 	require.NoError(t, err)
 
 	cfg, err := config.Load(cfgPath)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, os.Chmod(tmpDir, 0700))
+		require.NoError(t, os.Chmod(tmpDir, 0o700))
 		require.NoError(t, os.RemoveAll(tmpDir))
 	})
 
@@ -87,7 +87,7 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 	cfg := setupSupervisorConfig(t)
 
 	dir := filepath.Dir(cfg.Storage.Directory)
-	require.NoError(t, os.Chmod(dir, 0500))
+	require.NoError(t, os.Chmod(dir, 0o500))
 
 	supervisor, err := NewSupervisor(zap.L(), cfg)
 	require.Error(t, err)
