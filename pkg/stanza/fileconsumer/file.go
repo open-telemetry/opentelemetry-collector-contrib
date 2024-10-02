@@ -30,6 +30,7 @@ type Manager struct {
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
+	noTracking    bool
 
 	pollInterval   time.Duration
 	persister      operator.Persister
@@ -47,6 +48,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
 		m.set.Logger.Warn("finding files", zap.Error(err))
 	}
+
+	// instantiate the tracker
+	m.instantiateTracker()
 
 	if persister != nil {
 		m.persister = persister
@@ -79,7 +83,9 @@ func (m *Manager) Stop() error {
 		m.cancel = nil
 	}
 	m.wg.Wait()
-	m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	if m.tracker != nil {
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	}
 	if m.persister != nil {
 		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
 			m.set.Logger.Error("save offsets", zap.Error(err))
@@ -266,4 +272,12 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	}
 	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 	return r, nil
+}
+
+func (m *Manager) instantiateTracker() {
+	opts := []tracker.OptionFunc{tracker.WithMaxBatchFiles(m.maxBatchFiles)}
+	if m.noTracking {
+		opts = append(opts, tracker.WithNoTracking())
+	}
+	m.tracker = tracker.NewFileTracker(m.set, opts...)
 }

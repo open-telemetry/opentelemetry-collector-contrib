@@ -31,7 +31,6 @@ type Tracker interface {
 	EndPoll()
 	EndConsume() int
 	TotalReaders() int
-	EnableArchiving(persister operator.Persister)
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -55,6 +54,7 @@ type fileTracker struct {
 type option struct {
 	maxBatchFiles  int
 	pollsToArchive int
+	persister      operator.Persister
 }
 
 type OptionFunc func(*option)
@@ -68,6 +68,12 @@ func WithMaxBatchFiles(maxBatchFiles int) OptionFunc {
 func WithPollsToArchive(pollsToArchive int) OptionFunc {
 	return func(fto *option) {
 		fto.pollsToArchive = pollsToArchive
+	}
+}
+
+func WithPersister(persister operator.Persister) OptionFunc {
+	return func(fto *option) {
+		fto.persister = persister
 	}
 }
 
@@ -146,10 +152,6 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 		filesClosed++
 	}
 	return
-}
-
-func (t *fileTracker) EnableArchiving(persister operator.Persister) {
-	t.persister = persister
 }
 
 func (t *fileTracker) EndPoll() {
@@ -256,5 +258,3 @@ func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
-
-func (t *noStateTracker) EnableArchiving(operator.Persister) {}
