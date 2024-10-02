@@ -7,14 +7,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	promconfig "github.com/prometheus/prometheus/config"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
 )
@@ -90,7 +95,28 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	// After parsing the content-type header, the next step would be to handle content-encoding.
 	// Luckly confighttp's Server has middleware that already decompress the request body for us.
 
-	// The next step in follow up PRs would be to decode the request body.
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var prw2Req writev2.Request
+	if err = proto.Unmarshal(body, &prw2Req); err != nil {
+		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, stats, err := prw.translateV2(req.Context(), &prw2Req)
+	stats.SetHeaders(w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
@@ -121,4 +147,11 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 
 	// No "proto=" parameter found, assume v1.
 	return promconfig.RemoteWriteProtoMsgV1, nil
+}
+
+// translateV2 translates a v2 remote-write request into OTLP metrics.
+// For now translateV2 is not implemented and returns an empty metrics.
+// nolint
+func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, _ *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+	return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil
 }
