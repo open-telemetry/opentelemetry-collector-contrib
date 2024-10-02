@@ -22,7 +22,10 @@ The metrics generation processor (`experimental_metricsgenerationprocessor`) can
 `pod.memory.utilization` = (`pod.memory.usage.bytes` / `node.memory.limit`)
 1. It can create a new metric by scaling the value of an existing metric with a given constant number. One use case is to convert `pod.memory.usage` metric values from Megabytes to Bytes (multiply the existing metric's value by 1,048,576)
 
-Note: The created metric's type is inherited from the metric configured as `metric1`.
+A couple notes on functionality:
+- The created metric's type is inherited from the metric configured as `metric1`.
+- If no valid data points are calculated for the created metric, it will not be created.
+This ensures the processor is not emitting new metrics that are empty.
 
 ## Configuration
 
