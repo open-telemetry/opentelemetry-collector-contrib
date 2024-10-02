@@ -44,7 +44,17 @@ func TestCreateLogs(t *testing.T) {
 				Interval:          defaultInterval,
 				Timezone:          defaultTimezone,
 				ExcludeFields:     []string{},
-				Condition:         "false",
+				Conditions:        []string{"false"},
+			},
+		},
+		{
+			name: "valid multiple conditions",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Conditions:        []string{"false", `(attributes["ID"] == 1)`},
 			},
 		},
 		{
@@ -54,7 +64,7 @@ func TestCreateLogs(t *testing.T) {
 				Interval:          defaultInterval,
 				Timezone:          defaultTimezone,
 				ExcludeFields:     []string{},
-				Condition:         "x",
+				Conditions:        []string{"x"},
 			},
 			expectedErr: "invalid condition",
 		},

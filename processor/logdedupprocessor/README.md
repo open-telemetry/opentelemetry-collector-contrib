@@ -15,7 +15,7 @@ This processor is used to deduplicate logs by detecting identical logs over a ra
 
 ## How It Works
 1. The user configures the log deduplication processor in the desired logs pipeline.
-2. Each log entry for which the `condition` evaluates `true` is aggregated over the configured `interval`. Logs that do not match the `condition` are passed onward in the pipeline without aggregating. Logs are considered identical if they have the same body, resource attributes, severity, and log attributes.
+2. Each log entry for which any of the `conditions` evaluates `true` is aggregated over the configured `interval`. Logs that do not match any condition in `conditions` are passed onward in the pipeline without aggregating. Logs are considered identical if they have the same body, resource attributes, severity, and log attributes.
 3. After the interval, the processor emits a single log with the count of logs that were deduplicated. The emitted log will have the same body, resource attributes, severity, and log attributes as the original log. The emitted log will also have the following new attributes:
 
     - `log_count`: The count of logs that were deduplicated over the interval. The name of the attribute is configurable via the `log_count_attribute` parameter.
@@ -28,7 +28,7 @@ This processor is used to deduplicate logs by detecting identical logs over a ra
 | Field               | Type     | Default     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ---                 | ---      | ---         | ---                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | interval            | duration | `10s`       | The interval at which logs are aggregated. The counter will reset after each interval.                                                                                                                                                                                                                                                                                                                                                                  |
-| condition           | string   | `true`      | An [OTTL] expression used to evaluate which log records are deduped. All paths in the [log context] are available to reference. All [converters] are available to use.                                                                                                                                                                                                                                                                                  |
+| conditions          | []string | `[]`        | A slice of [OTTL] expressions used to evaluate which log records are deduped.  All paths in the [log context] are available to reference. All [converters] are available to use.                                                                                                                                                                                                                                                                        |
 | log_count_attribute | string   | `log_count` | The name of the count attribute of deduplicated logs that will be added to the emitted aggregated log.                                                                                                                                                                                                                                                                                                                                                  |
 | timezone            | string   | `UTC`       | The timezone of the `first_observed_timestamp` and `last_observed_timestamp` timestamps on the emitted aggregated log. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`.                                                                                                                               |
 | exclude_fields      | []string | `[]`        | Fields to exclude from duplication matching. Fields can be excluded from the log `body` or `attributes`. These fields will not be present in the emitted aggregated log. Nested fields must be `.` delimited. If a field contains a `.` it can be escaped by using a `\` see [example config](#example-config-with-excluded-fields).<br><br>**Note**: The entire `body` cannot be excluded. If the body is a map then fields within it can be excluded. |
@@ -88,8 +88,8 @@ service:
 ```
 
 
-### Example Config with Condition
-The following config is an example configuration that only performs the deduping process on telemetry where Attribute "ID" equals 1:
+### Example Config with Conditions
+The following config is an example configuration that only performs the deduping process on telemetry where Attribute `ID` equals `1` OR where Resource Attribute `service.name` equals `my-service`:
 
 ```yaml
 receivers:
@@ -97,7 +97,9 @@ receivers:
         include: [./example/*.log]
 processors:
     logdedup:
-        condition: (attributes["ID"] == 1)
+        conditions:
+            - attributes["ID"] == 1
+            - resource.attributes["service.name"] == "my-service"
         interval: 60s
         log_count_attribute: dedup_count
         timezone: 'America/Los_Angeles'

@@ -24,7 +24,7 @@ import (
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
 type logDedupProcessor struct {
 	emitInterval time.Duration
-	condition    expr.BoolExpr[ottllog.TransformContext]
+	conditions   expr.BoolExpr[ottllog.TransformContext]
 	aggregator   *logAggregator
 	remover      *fieldRemover
 	nextConsumer consumer.Logs
@@ -96,15 +96,15 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 			logs := sl.LogRecords()
 
 			logs.RemoveIf(func(logRecord plog.LogRecord) bool {
-				if p.condition == nil {
+				if p.conditions == nil {
 					p.aggregateLog(logRecord, scope, resource)
 					return true
 				}
 
 				logCtx := ottllog.NewTransformContext(logRecord, scope, resource, sl, rl)
-				logMatch, err := p.condition.Eval(ctx, logCtx)
+				logMatch, err := p.conditions.Eval(ctx, logCtx)
 				if err != nil {
-					p.logger.Error("error matching condition", zap.Error(err))
+					p.logger.Error("error matching conditions", zap.Error(err))
 					return false
 				}
 				if logMatch {
@@ -115,7 +115,7 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 		}
 	}
 
-	// immediately consume any logs that didn't match the condition
+	// immediately consume any logs that didn't match any conditions
 	if pl.LogRecordCount() > 0 {
 		err := p.nextConsumer.ConsumeLogs(ctx, pl)
 		if err != nil {

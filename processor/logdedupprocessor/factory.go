@@ -37,11 +37,11 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 		return nil, fmt.Errorf("error creating processor: %w", err)
 	}
 
-	if processorCfg.Condition == defaultCondition {
-		processor.condition = nil
+	if len(processorCfg.Conditions) == 0 {
+		processor.conditions = nil
 	} else {
-		condition, err := filterottl.NewBoolExprForLog(
-			[]string{processorCfg.Condition},
+		conditions, err := filterottl.NewBoolExprForLog(
+			processorCfg.Conditions,
 			filterottl.StandardLogFuncs(),
 			ottl.PropagateError,
 			settings.TelemetrySettings,
@@ -49,7 +49,7 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 		if err != nil {
 			return nil, fmt.Errorf("invalid condition: %w", err)
 		}
-		processor.condition = condition
+		processor.conditions = conditions
 	}
 
 	return processor, nil
