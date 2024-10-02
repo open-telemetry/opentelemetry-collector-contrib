@@ -32,9 +32,6 @@ type detector struct {
 
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	if err := cfg.UpdateDefaults(); err != nil {
-		return nil, err
-	}
 
 	kubeadmProvider, err := kubeadm.NewProvider(cfg.configMapName, cfg.configMapNamespace, cfg.APIConfig)
 	if err != nil {
