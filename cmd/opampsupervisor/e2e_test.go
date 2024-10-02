@@ -352,7 +352,12 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
 	time.Sleep(250 * time.Millisecond)
 	_, err := http.DefaultClient.Get("http://localhost:12345")
-	require.ErrorContains(t, err, "connection refused")
+
+	if runtime.GOOS != "windows" {
+		require.ErrorContains(t, err, "connection refused")
+	} else {
+		require.ErrorContains(t, err, "No connection could be made")
+	}
 
 	// Start the server and wait for the supervisor to connect
 	server.start()
@@ -1341,7 +1346,11 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
 	time.Sleep(250 * time.Millisecond)
 	_, err := http.DefaultClient.Get("http://localhost:12345")
-	require.ErrorContains(t, err, "connection refused")
+	if runtime.GOOS != "windows" {
+		require.ErrorContains(t, err, "connection refused")
+	} else {
+		require.ErrorContains(t, err, "No connection could be made")
+	}
 
 }
 
