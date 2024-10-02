@@ -7,15 +7,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.110.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.110.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v1.16.0
+	go.opentelemetry.io/collector/client v1.16.1-0.20240927195042-40396d5fc50c
 	go.opentelemetry.io/collector/component v0.110.0
 	go.opentelemetry.io/collector/component/componentstatus v0.110.0
-	go.opentelemetry.io/collector/config/confignet v1.16.0
+	go.opentelemetry.io/collector/config/confignet v1.16.1-0.20240927195042-40396d5fc50c
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.0
-	go.opentelemetry.io/collector/confmap v1.16.0
+	go.opentelemetry.io/collector/confmap v1.16.1-0.20240927195042-40396d5fc50c
 	go.opentelemetry.io/collector/consumer v0.110.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.110.0
-	go.opentelemetry.io/collector/pdata v1.16.0
+	go.opentelemetry.io/collector/pdata v1.16.1-0.20240927195042-40396d5fc50c
 	go.opentelemetry.io/collector/receiver v0.110.0
 	go.opentelemetry.io/collector/semconv v0.110.0
 	go.opentelemetry.io/otel v1.30.0
@@ -48,7 +48,7 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.110.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.16.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.16.1-0.20240927195042-40396d5fc50c // indirect
 	go.opentelemetry.io/collector/internal/globalsignal v0.110.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.110.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.110.0 // indirect

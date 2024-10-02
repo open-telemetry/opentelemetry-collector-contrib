@@ -10,11 +10,11 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.110.0
-	go.opentelemetry.io/collector/confmap v1.16.0
+	go.opentelemetry.io/collector/confmap v1.16.1-0.20240927195042-40396d5fc50c
 	go.opentelemetry.io/collector/consumer v0.110.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.110.0
 	go.opentelemetry.io/collector/exporter v0.110.0
-	go.opentelemetry.io/collector/pdata v1.16.0
+	go.opentelemetry.io/collector/pdata v1.16.1-0.20240927195042-40396d5fc50c
 	go.opentelemetry.io/collector/receiver v0.110.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -57,7 +57,7 @@ require (
 	go.einride.tech/aip v0.68.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.110.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.16.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.16.1-0.20240927195042-40396d5fc50c // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/extension v0.110.0 // indirect

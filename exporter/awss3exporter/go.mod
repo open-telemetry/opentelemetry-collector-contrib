@@ -6,12 +6,12 @@ require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.110.0
-	go.opentelemetry.io/collector/config/configcompression v1.16.0
-	go.opentelemetry.io/collector/confmap v1.16.0
+	go.opentelemetry.io/collector/config/configcompression v1.16.1-0.20240927195042-40396d5fc50c
+	go.opentelemetry.io/collector/confmap v1.16.1-0.20240927195042-40396d5fc50c
 	go.opentelemetry.io/collector/consumer v0.110.0
 	go.opentelemetry.io/collector/exporter v0.110.0
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.110.0
-	go.opentelemetry.io/collector/pdata v1.16.0
+	go.opentelemetry.io/collector/pdata v1.16.1-0.20240927195042-40396d5fc50c
 	go.opentelemetry.io/collector/pipeline v0.110.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -60,10 +60,10 @@ require (
 	go.opentelemetry.io/collector v0.110.0 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.110.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.16.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.16.1-0.20240927195042-40396d5fc50c // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.16.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.16.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.16.1-0.20240927195042-40396d5fc50c // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.16.1-0.20240927195042-40396d5fc50c // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.110.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.110.0 // indirect
 	go.opentelemetry.io/collector/connector v0.110.0 // indirect
@@ -74,7 +74,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.110.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.110.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.110.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.16.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.16.1-0.20240927195042-40396d5fc50c // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.110.0 // indirect
 	go.opentelemetry.io/collector/internal/globalsignal v0.110.0 // indirect
 	go.opentelemetry.io/collector/otelcol v0.110.0 // indirect
