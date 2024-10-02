@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -329,12 +330,22 @@ func flushBulkIndexer(
 		logger.Error("bulk indexer flush error", zap.Error(err))
 	}
 	for _, resp := range stat.FailedDocs {
-		logger.Error(
-			"failed to index document",
+		fields := []zap.Field{
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
-		)
+		}
+		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
+			fields = append(fields, zap.String("hint", hint))
+		}
+		logger.Error("failed to index document", fields...)
 	}
 	return stat, err
+}
+
+func getErrorHint(index, errorType string) string {
+	if strings.HasPrefix(index, ".ds-metrics-") && errorType == "version_conflict_engine_exception" {
+		return "check the known issues section of elasticsearchexporter"
+	}
+	return ""
 }
