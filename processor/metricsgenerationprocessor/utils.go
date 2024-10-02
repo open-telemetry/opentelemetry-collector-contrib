@@ -60,15 +60,28 @@ func generateMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internal
 		for j := 0; j < metricSlice.Len(); j++ {
 			metric := metricSlice.At(j)
 			if metric.Name() == rule.metric1 {
-				newMetric := appendMetric(ilm, rule.name, rule.unit)
-				addDoubleDataPoints(metric, newMetric, operand2, rule.operation, logger)
+				newMetric := generateMetric(metric, operand2, rule.operation, logger)
+
+				dataPointCount := 0
+				switch newMetric.Type() {
+				case pmetric.MetricTypeSum:
+					dataPointCount = newMetric.Sum().DataPoints().Len()
+				case pmetric.MetricTypeGauge:
+					dataPointCount = newMetric.Gauge().DataPoints().Len()
+				}
+
+				// Only create a new metric if valid data points were calculated successfully
+				if dataPointCount > 0 {
+					appendMetric(ilm, newMetric, rule.name, rule.unit)
+				}
 			}
 		}
 	}
 }
 
-func addDoubleDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 float64, operation string, logger *zap.Logger) {
+func generateMetric(from pmetric.Metric, operand2 float64, operation string, logger *zap.Logger) pmetric.Metric {
 	var dataPoints pmetric.NumberDataPointSlice
+	to := pmetric.NewMetric()
 
 	switch metricType := from.Type(); metricType {
 	case pmetric.MetricTypeGauge:
@@ -79,7 +92,7 @@ func addDoubleDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 float6
 		dataPoints = from.Sum().DataPoints()
 	default:
 		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type `%s`", from.Name(), metricType.String()))
-		return
+		return pmetric.NewMetric()
 	}
 
 	for i := 0; i < dataPoints.Len(); i++ {
@@ -91,49 +104,58 @@ func addDoubleDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 float6
 		case pmetric.NumberDataPointValueTypeInt:
 			operand1 = float64(fromDataPoint.IntValue())
 		}
+		value, err := calculateValue(operand1, operand2, operation, to.Name())
 
-		var neweDoubleDataPoint pmetric.NumberDataPoint
-		switch to.Type() {
-		case pmetric.MetricTypeGauge:
-			neweDoubleDataPoint = to.Gauge().DataPoints().AppendEmpty()
-		case pmetric.MetricTypeSum:
-			neweDoubleDataPoint = to.Sum().DataPoints().AppendEmpty()
+		// Only add a new data point if it was a valid operation
+		if err != nil {
+			logger.Debug(err.Error())
+		} else {
+			var newDoubleDataPoint pmetric.NumberDataPoint
+			switch to.Type() {
+			case pmetric.MetricTypeGauge:
+				newDoubleDataPoint = to.Gauge().DataPoints().AppendEmpty()
+			case pmetric.MetricTypeSum:
+				newDoubleDataPoint = to.Sum().DataPoints().AppendEmpty()
+			}
+
+			fromDataPoint.CopyTo(newDoubleDataPoint)
+			newDoubleDataPoint.SetDoubleValue(value)
 		}
-
-		fromDataPoint.CopyTo(neweDoubleDataPoint)
-		value := calculateValue(operand1, operand2, operation, logger, to.Name())
-		neweDoubleDataPoint.SetDoubleValue(value)
 	}
+
+	return to
 }
 
-func appendMetric(ilm pmetric.ScopeMetrics, name, unit string) pmetric.Metric {
+// Append the scope metrics with the new metric
+func appendMetric(ilm pmetric.ScopeMetrics, newMetric pmetric.Metric, name, unit string) pmetric.Metric {
 	metric := ilm.Metrics().AppendEmpty()
-	metric.SetName(name)
+	newMetric.MoveTo(metric)
+
 	metric.SetUnit(unit)
+	metric.SetName(name)
 
 	return metric
 }
 
-func calculateValue(operand1 float64, operand2 float64, operation string, logger *zap.Logger, metricName string) float64 {
+func calculateValue(operand1 float64, operand2 float64, operation string, metricName string) (float64, error) {
 	switch operation {
 	case string(add):
-		return operand1 + operand2
+		return operand1 + operand2, nil
 	case string(subtract):
-		return operand1 - operand2
+		return operand1 - operand2, nil
 	case string(multiply):
-		return operand1 * operand2
+		return operand1 * operand2, nil
 	case string(divide):
 		if operand2 == 0 {
-			logger.Debug("Divide by zero was attempted while calculating metric", zap.String("metric_name", metricName))
-			return 0
+			return 0, fmt.Errorf("Divide by zero was attempted while calculating metric: %s", metricName)
 		}
-		return operand1 / operand2
+		return operand1 / operand2, nil
 	case string(percent):
 		if operand2 == 0 {
-			logger.Debug("Divide by zero was attempted while calculating metric", zap.String("metric_name", metricName))
-			return 0
+			return 0, fmt.Errorf("Divide by zero was attempted while calculating metric: %s", metricName)
 		}
-		return (operand1 / operand2) * 100
+		return (operand1 / operand2) * 100, nil
+	default:
+		return 0, fmt.Errorf("Invalid operation option was specified: %s", operation)
 	}
-	return 0
 }
