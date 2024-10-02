@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -80,6 +81,9 @@ func Test_NewSupervisor(t *testing.T) {
 }
 
 func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows because chmod doesn't affect permissions on Windows, so this test won't work.")
+	}
 	cfg := setupSupervisorConfig(t)
 
 	dir := filepath.Dir(cfg.Storage.Directory)
