@@ -25,7 +25,11 @@ import (
 )
 
 func TestLoadConfigNewExporter(t *testing.T) {
-	defaultTransport := http.DefaultTransport.(*http.Transport)
+	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
+
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -54,10 +58,10 @@ func TestLoadConfigNewExporter(t *testing.T) {
 					ReadBufferSize:      123,
 					WriteBufferSize:     345,
 					Timeout:             time.Second * 10,
-					MaxIdleConns:        &defaultTransport.MaxIdleConns,
-					MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
-					MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
-					IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
+					MaxIdleConns:        &defaultMaxIdleConns,
+					MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+					MaxConnsPerHost:     &defaultMaxConnsPerHost,
+					IdleConnTimeout:     &defaultIdleConnTimeout,
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
