@@ -94,6 +94,7 @@ func NewFileTracker(set component.TelemetrySettings, opts ...OptionFunc) Tracker
 		previousPollFiles: fileset.New[*reader.Reader](option.maxBatchFiles),
 		knownFiles:        knownFiles,
 		pollsToArchive:    option.pollsToArchive,
+		persister:         option.persister,
 		archiveIndex:      0,
 	}
 }
@@ -190,7 +191,7 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	//                   start
 	//                   index
 
-	if t.pollsToArchive == 0 || t.persister == nil {
+	if t.pollsToArchive <= 0 || t.persister == nil {
 		return
 	}
 	key := fmt.Sprintf("knownFiles%d", t.archiveIndex)

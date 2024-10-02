@@ -63,9 +63,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 			m.readerFactory.FromBeginning = true
 			m.tracker.LoadMetadata(offsets)
 		}
-		if m.pollsToArchive > 0 {
-			m.tracker.EnableArchiving(persister)
-		}
 	} else if m.pollsToArchive > 0 {
 		m.set.Logger.Error("archiving is not supported in memory, please use a storage extension")
 	}
@@ -276,8 +273,8 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 
 func (m *Manager) instantiateTracker() {
 	opts := []tracker.OptionFunc{tracker.WithMaxBatchFiles(m.maxBatchFiles)}
-	if m.noTracking {
-		opts = append(opts, tracker.WithNoTracking())
+	if m.pollsToArchive > 0 {
+		opts = append(opts, tracker.WithPollsToArchive(m.pollsToArchive), tracker.WithPersister(m.persister))
 	}
 	m.tracker = tracker.NewFileTracker(m.set, opts...)
 }
