@@ -28,14 +28,15 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a windows event log operator.
 type Config struct {
-	helper.InputConfig `mapstructure:",squash"`
-	Channel            string        `mapstructure:"channel"`
-	MaxReads           int           `mapstructure:"max_reads,omitempty"`
-	StartAt            string        `mapstructure:"start_at,omitempty"`
-	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty"`
-	Raw                bool          `mapstructure:"raw,omitempty"`
-	ExcludeProviders   []string      `mapstructure:"exclude_providers,omitempty"`
-	Remote             RemoteConfig  `mapstructure:"remote,omitempty"`
+	helper.InputConfig    `mapstructure:",squash"`
+	Channel               string        `mapstructure:"channel"`
+	MaxReads              int           `mapstructure:"max_reads,omitempty"`
+	StartAt               string        `mapstructure:"start_at,omitempty"`
+	PollInterval          time.Duration `mapstructure:"poll_interval,omitempty"`
+	Raw                   bool          `mapstructure:"raw,omitempty"`
+	SuppressRenderingInfo bool          `mapstructure:"suppress_rendering_info,omitempty"`
+	ExcludeProviders      []string      `mapstructure:"exclude_providers,omitempty"`
+	Remote                RemoteConfig  `mapstructure:"remote,omitempty"`
 }
 
 // RemoteConfig is the configuration for a remote server.

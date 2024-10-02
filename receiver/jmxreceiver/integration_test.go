@@ -157,5 +157,5 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	}()
 
 	err := receiver.Start(context.Background(), componenttest.NewNopHost())
-	require.Contains(t, err.Error(), "listen tcp: lookup <invalid>:")
+	require.ErrorContains(t, err, "listen tcp: lookup <invalid>:")
 }

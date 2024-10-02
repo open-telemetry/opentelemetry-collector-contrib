@@ -383,7 +383,7 @@ func TestScrape(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
-				assert.Contains(t, err.Error(), test.expectedErr)
+				assert.ErrorContains(t, err, test.expectedErr)
 
 				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)

@@ -110,7 +110,7 @@ func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
-	return scraperhelper.NewScraperWithComponentType(
+	return scraperhelper.NewScraper(
 		brokersScraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),

@@ -126,6 +126,9 @@ agent:
   # The interval on which the Collector checks to see if it's been orphaned.
   orphan_detection_interval: 5s
 
+  # The maximum wait duration for retrieving bootstrapping information from the agent 
+  bootstrap_timeout: 3s
+
   # Extra command line flags to pass to the Collector executable.
   args:
 

@@ -9,30 +9,30 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
-	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
-	metrics0 := component.NewIDWithName(component.DataTypeMetrics, "0")
-	metrics1 := component.NewIDWithName(component.DataTypeMetrics, "1")
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+	metrics1 := pipeline.NewIDWithName(pipeline.SignalMetrics, "1")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{metricsDefault},
+		DefaultPipelines: []pipeline.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where attributes["X-Tenant"] == "acme"`,
-				Pipelines: []component.ID{metrics0},
+				Pipelines: []pipeline.ID{metrics0},
 			},
 			{
 				Statement: `route() where attributes["X-Tenant"] == "*"`,
-				Pipelines: []component.ID{metrics0, metrics1},
+				Pipelines: []pipeline.ID{metrics0, metrics1},
 			},
 		},
 	}
@@ -41,7 +41,7 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.MetricsSink
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsDefault: &defaultSink,
 		metrics0:       &sink0,
 		metrics1:       &sink1,
@@ -76,31 +76,31 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 }
 
 func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
-	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
-	metrics0 := component.NewIDWithName(component.DataTypeMetrics, "0")
-	metrics1 := component.NewIDWithName(component.DataTypeMetrics, "1")
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+	metrics1 := pipeline.NewIDWithName(pipeline.SignalMetrics, "1")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{metricsDefault},
+		DefaultPipelines: []pipeline.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where attributes["value"] > 2.5`,
-				Pipelines: []component.ID{metrics0},
+				Pipelines: []pipeline.ID{metrics0},
 			},
 			{
 				Statement: `route() where attributes["value"] > 3.0`,
-				Pipelines: []component.ID{metrics1},
+				Pipelines: []pipeline.ID{metrics1},
 			},
 			{
 				Statement: `route() where attributes["value"] == 1.0`,
-				Pipelines: []component.ID{metricsDefault, metrics0},
+				Pipelines: []pipeline.ID{metricsDefault, metrics0},
 			},
 		},
 	}
 
 	var defaultSink, sink0, sink1 consumertest.MetricsSink
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsDefault: &defaultSink,
 		metrics0:       &sink0,
 		metrics1:       &sink1,
@@ -246,24 +246,24 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 }
 
 func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
-	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
-	metrics0 := component.NewIDWithName(component.DataTypeMetrics, "0")
-	metrics1 := component.NewIDWithName(component.DataTypeMetrics, "1")
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+	metrics1 := pipeline.NewIDWithName(pipeline.SignalMetrics, "1")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{metricsDefault},
+		DefaultPipelines: []pipeline.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where attributes["value"] > 2.5`,
-				Pipelines: []component.ID{metrics0},
+				Pipelines: []pipeline.ID{metrics0},
 			},
 			{
 				Statement: `route() where attributes["value"] > 3.0`,
-				Pipelines: []component.ID{metrics1},
+				Pipelines: []pipeline.ID{metrics1},
 			},
 			{
 				Statement: `route() where attributes["value"] == 1.0`,
-				Pipelines: []component.ID{metricsDefault, metrics0},
+				Pipelines: []pipeline.ID{metricsDefault, metrics0},
 			},
 		},
 		MatchOnce: true,
@@ -271,7 +271,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.MetricsSink
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsDefault: &defaultSink,
 		metrics0:       &sink0,
 		metrics1:       &sink1,
@@ -413,22 +413,22 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 }
 
 func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
-	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
-	metricsOther := component.NewIDWithName(component.DataTypeMetrics, "other")
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metricsOther := pipeline.NewIDWithName(pipeline.SignalMetrics, "other")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{metricsDefault},
+		DefaultPipelines: []pipeline.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `delete_key(attributes, "X-Tenant") where attributes["X-Tenant"] == "acme"`,
-				Pipelines: []component.ID{metricsOther},
+				Pipelines: []pipeline.ID{metricsOther},
 			},
 		},
 	}
 
 	var sink0, sink1 consumertest.MetricsSink
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsDefault: &sink0,
 		metricsOther:   &sink1,
 	})
@@ -469,17 +469,17 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 }
 
 func TestMetricsConnectorCapabilities(t *testing.T) {
-	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
-	metricsOther := component.NewIDWithName(component.DataTypeMetrics, "other")
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metricsOther := pipeline.NewIDWithName(pipeline.SignalMetrics, "other")
 
 	cfg := &Config{
 		Table: []RoutingTableItem{{
 			Statement: `route() where attributes["X-Tenant"] == "acme"`,
-			Pipelines: []component.ID{metricsOther},
+			Pipelines: []pipeline.ID{metricsOther},
 		}},
 	}
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsDefault: consumertest.NewNop(),
 		metricsOther:   consumertest.NewNop(),
 	})

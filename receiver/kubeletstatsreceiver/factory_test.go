@@ -14,11 +14,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -49,7 +49,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		factory.CreateDefaultConfig(),
 		nil,
 	)
-	require.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	require.Nil(t, traceReceiver)
 }
 

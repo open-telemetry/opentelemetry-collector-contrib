@@ -180,7 +180,7 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
-	return scraperhelper.NewScraperWithComponentType(
+	return scraperhelper.NewScraper(
 		consumersScraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),

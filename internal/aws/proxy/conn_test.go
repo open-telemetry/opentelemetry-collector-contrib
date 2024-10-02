@@ -255,8 +255,7 @@ func TestLoadEnvConfigCreds(t *testing.T) {
 	assert.Equal(t, cases.Val, value, "Expect the credentials value to match")
 
 	_, err = newAWSSession("ROLEARN", "TEST", zap.NewNop())
-	assert.Error(t, err, "expected error")
-	assert.Contains(t, err.Error(), "unable to handle AWS error", "expected error message")
+	assert.ErrorContains(t, err, "unable to handle AWS error", "expected error message")
 }
 
 func TestGetProxyUrlProxyAddressNotValid(t *testing.T) {
@@ -339,8 +338,7 @@ func TestProxyServerTransportInvalidProxyAddr(t *testing.T) {
 	_, err := proxyServerTransport(&Config{
 		ProxyAddress: "invalid\n",
 	})
-	assert.Error(t, err, "expected error")
-	assert.Contains(t, err.Error(), "invalid control character in URL")
+	assert.ErrorContains(t, err, "invalid control character in URL")
 }
 
 func TestProxyServerTransportHappyCase(t *testing.T) {

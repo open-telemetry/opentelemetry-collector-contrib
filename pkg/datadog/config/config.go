@@ -147,7 +147,7 @@ func validateClientConfig(cfg confighttp.ClientConfig) error {
 	if cfg.Compression != "" {
 		unsupported = append(unsupported, "compression")
 	}
-	if cfg.Headers != nil {
+	if len(cfg.Headers) > 0 {
 		unsupported = append(unsupported, "headers")
 	}
 	if cfg.HTTP2ReadIdleTimeout != 0 {
@@ -281,10 +281,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 }
 
 func defaultClientConfig() confighttp.ClientConfig {
-	// do not use NewDefaultClientConfig for backwards-compatibility
-	return confighttp.ClientConfig{
-		Timeout: 15 * time.Second,
-	}
+	client := confighttp.NewDefaultClientConfig()
+	client.Timeout = 15 * time.Second
+	return client
 }
 
 // CreateDefaultConfig creates the default exporter configuration

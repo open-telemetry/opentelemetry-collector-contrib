@@ -33,29 +33,25 @@ func TestParserBuildFailure(t *testing.T) {
 	cfg.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `on_error` field")
+	require.ErrorContains(t, err, "invalid `on_error` field")
 }
 
 func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]uint8' cannot be parsed as URI")
+	require.ErrorContains(t, err, "type '[]uint8' cannot be parsed as URI")
 }
 
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse \"invalid\": invalid URI for request")
+	require.ErrorContains(t, err, "parse \"invalid\": invalid URI for request")
 }
 
 func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as URI")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as URI")
 }
 
 func TestProcess(t *testing.T) {

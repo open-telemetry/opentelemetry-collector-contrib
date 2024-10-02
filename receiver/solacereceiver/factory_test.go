@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/metric"
@@ -49,7 +50,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateTracesReceiverWrongConfig(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), nil, nil)
-	assert.Equal(t, component.ErrDataTypeIsNotSupported, err)
+	assert.Equal(t, pipeline.ErrSignalNotSupported, err)
 }
 
 func TestCreateTracesReceiverBadConfigNoAuth(t *testing.T) {

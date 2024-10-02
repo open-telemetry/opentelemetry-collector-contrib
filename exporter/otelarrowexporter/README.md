@@ -115,6 +115,17 @@ streams.
 
 - `prioritizer` (default: "leastloaded"): policy for distributing load across multiple streams.
 
+### Matching Metadata Per Stream
+
+The following configuration values allow for separate streams per unique 
+metadata combinations:
+- `metadata_keys` (default = empty): When set, this exporter will create one
+  arrow exporter instance per distinct combination of values in the 
+  client.Metadata.
+- `metadata_cardinality_limit` (default = 1000): When metadata_keys is not empty, 
+  this setting limits the number of unique combinations of metadata key values
+  that will be processed over the lifetime of the exporter.
+
 ### Network Configuration
 
 This component uses `round_robin` by default as the gRPC load

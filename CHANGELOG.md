@@ -7,6 +7,79 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.110.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Move `filelog.container.removeOriginalTimeField` feature gate to beta (#33389)
+  - Disable the `filelog.container.removeOriginalTimeField` feature gate to get the old behavior.
+  
+- `resourcedetectionprocessor`: Move `processor.resourcedetection.hostCPUSteppingAsString` feature gate to stable. (#31136)
+- `resourcedetectionprocessor`: Remove `processor.resourcedetection.hostCPUModelAndFamilyAsString` feature gate. (#29025)
+
+### 🚩 Deprecations 🚩
+
+- `hostmetricsreceiver`: Set the receiver.hostmetrics.normalizeProcessCPUUtilization feature gate to stable. (#34763)
+
+### 🚀 New components 🚀
+
+- `azurelogs_translater`: Adds a new translater that converts Azure EventHub logs to OpenTelemetry logs used by the Azure Events Hub receiver. (#39704)
+- `dorisexporter`: logs implementation (#33479)
+- `dorisexporter`: traces implementation (#33479)
+
+### 💡 Enhancements 💡
+
+- `otelarrowexporter`: Allow separate arrow exporter per unique value of configured metadataKeys. (#34178)
+- `processor/transform`: Add custom function to the transform processor to convert exponential histograms to explicit histograms. (#33827)
+- `datadogconnector`: Map the new OTel semantic convention `deployment.environment.name` to `env` for OTLP traces in APM stats. (#35147)
+  The old convention `deployment.environment` still works
+- `datadogexporter`: Map the new OTel semantic convention `deployment.environment.name` to `env` for OTLP traces, metrics and logs. (#35147)
+  The old convention `deployment.environment` still works
+- `file_storage`: provide a new option to the user to create a directory on start (#34939)
+- `headersetterextension`: adding default_value config (#34412)
+  default_value config item applied in case context value is empty
+  
+- `kafkaexporter`: Add support for encoding extensions in the Kafka exporter. (#34384)
+  This change adds support for encoding extensions in the Kafka exporter. Loading extensions takes precedence over the internally supported encodings.
+  
+- `datadogexporter`: Adds exporter.datadogexporter.metricremappingdisabled featuregate which disables renaming OpenTelemetry metrics to match Datadog semantics. This feature gate is only for internal use. (#35025)
+- `otelarrowexporter`: Add BatcherConfig field following similar in OTLP exporter. (#34802)
+- `otelarrowreceiver`: Add gRPC timeout propagation. (#34742)
+- `kafkareceiver`: Add support for `otlp_json` encoding to Kafka receiver. The payload is deserialized into OpenTelemetry traces using JSON format. (#33627)
+  This encoding allows the Kafka receiver to handle trace data in JSON format,
+  enabling integration with systems that export traces as JSON-encoded data.
+  
+- `pkg/ottl`: Improved JSON unmarshaling performance by 10-20% by switching dependencies. (#35130)
+- `pkg/ottl`: Added support for locale in the Time converter (#32978)
+- `datadogexporter`: Upgrade logs in Datadog Exporter to beta (#35359)
+- `remotetapprocessor`: Origin header is no longer required for websocket connections (#34925)
+- `deltatorateprocessor`: Remove unnecessary data copies. (#35165)
+- `transformprocessor`: Remove unnecessary data copy when transform sum to/from gauge (#35177)
+- `sapmexporter`: Prioritize token in context when accesstokenpassthrough is enabled (#35123)
+- `tailsamplingprocessor`: Fix the behavior for numeric tag filters with `inverse_match` set to `true`. (#34296)
+
+### 🧰 Bug fixes 🧰
+
+- `splunkenterprise`: Fix a flaky search related to iops metrics. (#35081)
+- `azuremonitorexporter`: fix issue for property endpoint is ignored when using instrumentation_key (#33971)
+- `groupbytraceprocessor`: Ensure processor_groupbytrace_incomplete_releases metric has a unit. (#35221)
+- `datadogreceiver`: Fix numeric span attributes (#35087)
+- `deltatocumulative`: do not drop gauges and summaries (#35284)
+  Gauges and Summaries are no longer dropped from processor output.
+  Instead, they are passed through as-is
+  
+- `pkg/stanza`: Do not get formatted message for Windows events without an event provider. (#35135)
+  Attempting to get the formatted message for Windows events without an event provider can result in an error being logged. |
+  This change ensures that the formatted message is not retrieved for such events.
+  
+- `cmd/opampsupervisor`: Ensure the Supervisor processes all fields in a ServerToAgent message. (#34349)
+- `signalfxexporter`: Ensure token is not sent through for event data (#35154)
+- `prometheusreceiver`: Fix the retrieval of scrape configurations by also considering scrape config files (#34786)
+- `redactionprocessor`: Fix panic when using the redaction processor in a logs pipeline (#35331)
+- `exporter/splunkhec`: Fix incorrect claim that the exporter doesn't mutate data when batching is enabled. (#35306)
+  The bug lead to runtime panics when the exporter was used with the batcher enabled in a fanout scenario.
+  
+
 ## v0.109.0
 
 ### 🛑 Breaking changes 🛑

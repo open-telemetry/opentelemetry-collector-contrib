@@ -7,6 +7,36 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.110.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: TimeoutSettings/QueueSettings fields in various Config structs are no longer embedded (#35158)
+  Structs in which .TimeoutSettings is no longer embedded:
+  * carbonexporter.Config
+  * googlecloudpubsubreceiver.Config
+  Structs in which .TimeoutSettings and .QueueSettings are no longer embedded:
+  * alertmanagerexporter.Config
+  * googlecloudexporter.Config
+  * googlemanagedprometheusexporter.Config
+  * otelarrowexporter.Config
+  
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: The datadog exporter config has been deprecated in favor of the new `datadog/config` package. The new package is shared between the Datadog exporter and the Datadog Connector.
+ (#35067)
+  The new `datadog/config` package is a shared module for Datadog exporter configuration. The module is shared between the Datadog exporter and the Datadog Connector.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: Create a new module for Datadog exporter configuration.
+ (#35067)
+  This change introduces a new module for Datadog exporter configuration. The module is shared between the Datadog exporter and the Datadog Connector.
+  
+- `kafkaexporter`: Add option to supply destination topic through context. (#34503, #34432)
+
 ## v0.109.0
 
 ### 🛑 Breaking changes 🛑

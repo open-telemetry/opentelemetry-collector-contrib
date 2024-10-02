@@ -40,29 +40,25 @@ func TestConfigBuildFailure(t *testing.T) {
 	config.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `on_error` field")
+	require.ErrorContains(t, err, "invalid `on_error` field")
 }
 
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "expected { character for map value")
+	require.ErrorContains(t, err, "expected { character for map value")
 }
 
 func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type []uint8 cannot be parsed as JSON")
+	require.ErrorContains(t, err, "type []uint8 cannot be parsed as JSON")
 }
 
 func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type []int cannot be parsed as JSON")
+	require.ErrorContains(t, err, "type []int cannot be parsed as JSON")
 }
 
 func TestJSONImplementations(t *testing.T) {

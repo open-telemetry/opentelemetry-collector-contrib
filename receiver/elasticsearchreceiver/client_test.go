@@ -370,8 +370,7 @@ func TestDoRequest404(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = client.doRequest(context.Background(), "invalid_path")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "404")
+	require.ErrorContains(t, err, "404")
 }
 
 func TestIndexStatsNoPassword(t *testing.T) {

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pipeline"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -74,7 +75,7 @@ func (run *receiverRunner) start(
 	var createError error
 	if consumer.logs != nil {
 		if wr.logs, err = run.createLogsRuntimeReceiver(receiverFactory, id, cfg, consumer); err != nil {
-			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			if errors.Is(err, pipeline.ErrSignalNotSupported) {
 				run.logger.Info("instantiated receiver doesn't support logs", zap.String("receiver", receiver.id.String()), zap.Error(err))
 				wr.logs = nil
 			} else {
@@ -84,7 +85,7 @@ func (run *receiverRunner) start(
 	}
 	if consumer.metrics != nil {
 		if wr.metrics, err = run.createMetricsRuntimeReceiver(receiverFactory, id, cfg, consumer); err != nil {
-			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			if errors.Is(err, pipeline.ErrSignalNotSupported) {
 				run.logger.Info("instantiated receiver doesn't support metrics", zap.String("receiver", receiver.id.String()), zap.Error(err))
 				wr.metrics = nil
 			} else {
@@ -94,7 +95,7 @@ func (run *receiverRunner) start(
 	}
 	if consumer.traces != nil {
 		if wr.traces, err = run.createTracesRuntimeReceiver(receiverFactory, id, cfg, consumer); err != nil {
-			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			if errors.Is(err, pipeline.ErrSignalNotSupported) {
 				run.logger.Info("instantiated receiver doesn't support traces", zap.String("receiver", receiver.id.String()), zap.Error(err))
 				wr.traces = nil
 			} else {
@@ -135,6 +136,9 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiverCfg := factory.CreateDefaultConfig()
 	if err := mergedConfig.Unmarshal(receiverCfg); err != nil {
 		return nil, "", fmt.Errorf("failed to load %q template config: %w", receiver.id.String(), err)
+	}
+	if err := component.ValidateConfig(receiverCfg); err != nil {
+		return nil, "", fmt.Errorf("invalid runtime receiver config: receivers::%s: %w", receiver.id, err)
 	}
 	return receiverCfg, targetEndpoint, nil
 }

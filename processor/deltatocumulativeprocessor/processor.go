@@ -138,7 +138,10 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 	var errs error
 	metrics.Filter(md, func(m metrics.Metric) bool {
 		var n int
+		//exhaustive:enforce
 		switch m.Type() {
+		case pmetric.MetricTypeGauge:
+			n = m.Gauge().DataPoints().Len()
 		case pmetric.MetricTypeSum:
 			sum := m.Sum()
 			if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
@@ -163,6 +166,8 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 				expo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
 			n = expo.DataPoints().Len()
+		case pmetric.MetricTypeSummary:
+			n = m.Summary().DataPoints().Len()
 		}
 		return n > 0
 	})

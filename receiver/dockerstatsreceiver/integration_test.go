@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -169,7 +170,7 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

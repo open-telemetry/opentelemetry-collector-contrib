@@ -24,6 +24,7 @@ func Test_Time(t *testing.T) {
 		format   string
 		expected time.Time
 		location string
+		locale   string
 	}{
 		{
 			name: "simple short form",
@@ -188,14 +189,52 @@ func Test_Time(t *testing.T) {
 			format:   "%Y-%m-%dT%H:%M:%S %Z",
 			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
 		},
+		{
+			name: "with locale",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "Febrero 25 lunes, 2002, 02:03:04 p.m.", nil
+				},
+			},
+			format:   "%B %d %A, %Y, %r",
+			locale:   "es-ES",
+			expected: time.Date(2002, 2, 25, 14, 03, 04, 0, time.Local),
+		},
+		{
+			name: "with locale - date only",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "mercoledì set 4 2024", nil
+				},
+			},
+			format:   "%A %h %e %Y",
+			locale:   "it",
+			expected: time.Date(2024, 9, 4, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "with locale and location",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "Febrero 25 lunes, 2002, 02:03:04 p.m.", nil
+				},
+			},
+			format:   "%B %d %A, %Y, %r",
+			location: "America/New_York",
+			locale:   "es-ES",
+			expected: time.Date(2002, 2, 25, 14, 03, 04, 0, locationAmericaNewYork),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
+			var locationOptional ottl.Optional[string]
 			if tt.location != "" {
-				locOptional = ottl.NewTestingOptional(tt.location)
+				locationOptional = ottl.NewTestingOptional(tt.location)
 			}
-			exprFunc, err := Time(tt.time, tt.format, locOptional)
+			var localeOptional ottl.Optional[string]
+			if tt.locale != "" {
+				localeOptional = ottl.NewTestingOptional(tt.locale)
+			}
+			exprFunc, err := Time(tt.time, tt.format, locationOptional, localeOptional)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -234,8 +273,9 @@ func Test_TimeError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
-			exprFunc, err := Time[any](tt.time, tt.format, locOptional)
+			var locationOptional ottl.Optional[string]
+			var localeOptional ottl.Optional[string]
+			exprFunc, err := Time[any](tt.time, tt.format, locationOptional, localeOptional)
 			require.NoError(t, err)
 			_, err = exprFunc(context.Background(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
@@ -250,6 +290,7 @@ func Test_TimeFormatError(t *testing.T) {
 		format        string
 		expectedError string
 		location      string
+		locale        string
 	}{
 		{
 			name: "invalid short with no format",
@@ -272,14 +313,29 @@ func Test_TimeFormatError(t *testing.T) {
 			location:      "Jupiter/Ganymede",
 			expectedError: "unknown time zone Jupiter/Ganymede",
 		},
+		{
+			name: "with unsupported locale",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "2023-05-26 12:34:56", nil
+				},
+			},
+			format:        "%Y-%m-%d %H:%M:%S",
+			locale:        "foo-bar",
+			expectedError: "unsupported locale 'foo-bar'",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
+			var locationOptional ottl.Optional[string]
 			if tt.location != "" {
-				locOptional = ottl.NewTestingOptional(tt.location)
+				locationOptional = ottl.NewTestingOptional(tt.location)
 			}
-			_, err := Time[any](tt.time, tt.format, locOptional)
+			var localeOptional ottl.Optional[string]
+			if tt.locale != "" {
+				localeOptional = ottl.NewTestingOptional(tt.locale)
+			}
+			_, err := Time[any](tt.time, tt.format, locationOptional, localeOptional)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -465,7 +521,7 @@ func Benchmark_Time(t *testing.B) {
 		if tt.location != "" {
 			locOptional = ottl.NewTestingOptional(tt.location)
 		}
-		exprFunc, err := Time(tt.time, tt.format, locOptional)
+		exprFunc, err := Time(tt.time, tt.format, locOptional, ottl.Optional[string]{})
 		assert.NoError(t, err)
 
 		t.Run(tt.name, func(t *testing.B) {

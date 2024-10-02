@@ -74,7 +74,7 @@ func TestNewClient(t *testing.T) {
 			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 
@@ -126,7 +126,7 @@ func TestGetQueuesDetails(t *testing.T) {
 
 				clusters, err := tc.GetQueues(context.Background())
 				require.Nil(t, clusters)
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 			},
 		},
 		{

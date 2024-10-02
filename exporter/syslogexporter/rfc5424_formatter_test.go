@@ -80,7 +80,7 @@ func TestRFC5424Formatter(t *testing.T) {
 	assert.NoError(t, err)
 	matched, err := regexp.MatchString(expectedRegex, actual)
 	assert.NoError(t, err)
-	assert.True(t, matched, fmt.Sprintf("unexpected form of formatted message, formatted message: %s, regexp: %s", actual, expectedRegex))
+	assert.Truef(t, matched, "unexpected form of formatted message, formatted message: %s, regexp: %s", actual, expectedRegex)
 	assert.True(t, strings.Contains(actual, "Realm=\"SecureAuth0\""))
 	assert.True(t, strings.Contains(actual, "UserHostAddress=\"192.168.2.132\""))
 	assert.True(t, strings.Contains(actual, "UserID=\"Tester2\""))

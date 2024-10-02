@@ -5,6 +5,7 @@ package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/open-telemetry/otel-arrow/pkg/config"
@@ -45,6 +46,23 @@ type Config struct {
 	// exporter is built and configured via code instead of yaml.
 	// Uses include custom dialer, custom user-agent, etc.
 	UserDialOptions []grpc.DialOption `mapstructure:"-"`
+
+	// MetadataKeys is a list of client.Metadata keys that will be
+	// used to form distinct exporters.  If this setting is empty,
+	// a single exporter instance will be used.  When this setting
+	// is not empty, one exporter will be used per distinct
+	// combination of values for the listed metadata keys.
+	//
+	// Empty value and unset metadata are treated as distinct cases.
+	//
+	// Entries are case-insensitive.  Duplicated entries will
+	// trigger a validation error.
+	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// MetadataCardinalityLimit indicates the maximum number of
+	// exporter instances that will be created through a distinct
+	// combination of MetadataKeys.
+	MetadataCardinalityLimit uint32 `mapstructure:"metadata_cardinality_limit"`
 }
 
 // ArrowConfig includes whether Arrow is enabled and the number of
@@ -89,6 +107,24 @@ type ArrowConfig struct {
 var _ component.Config = (*Config)(nil)
 
 var _ component.ConfigValidator = (*ArrowConfig)(nil)
+
+func (cfg *Config) Validate() error {
+	err := cfg.Arrow.Validate()
+	if err != nil {
+		return err
+	}
+
+	uniq := map[string]bool{}
+	for _, k := range cfg.MetadataKeys {
+		l := strings.ToLower(k)
+		if _, has := uniq[l]; has {
+			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
+		}
+		uniq[l] = true
+	}
+
+	return nil
+}
 
 // Validate returns an error when the number of streams is less than 1.
 func (cfg *ArrowConfig) Validate() error {
