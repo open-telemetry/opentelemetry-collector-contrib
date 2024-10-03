@@ -132,9 +132,6 @@
     "container.memory.rss": null
   },
   {
-    "container.memory.working_set": null
-  },
-  {
     "k8s.pod.memory.available": null
   },
   {

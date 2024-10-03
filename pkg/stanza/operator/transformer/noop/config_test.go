@@ -23,6 +23,5 @@ func TestBuildInvalid(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = nil
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "build context is missing a logger")
+	require.ErrorContains(t, err, "build context is missing a logger")
 }

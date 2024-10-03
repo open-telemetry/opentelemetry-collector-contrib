@@ -414,6 +414,8 @@ Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Day](#day)
+- [Double](#double)
+- [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
@@ -422,8 +424,7 @@ Available Converters:
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
-- [Double](#double)
-- [Duration](#duration)
+- [InsertXML](#insertxml)
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
@@ -458,6 +459,7 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
+- [ToKeyValueString](#tokeyvaluestring)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -828,6 +830,35 @@ The returned type is `float64`.
 Examples:
 
 - `Hours(Duration("1h"))`
+
+### InsertXML
+
+`InsertXML(target, xpath, value)`
+
+The `InsertXML` Converter returns an edited version of an XML string with child elements added to selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be modified. If `target` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements.
+
+`value` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be inserted into `target`. If `value` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+Examples:
+
+Add an element "foo" to the root of the document
+
+- `InsertXML(body, "/", "<foo/>")`
+
+Add an element "bar" to any element called "foo"
+
+- `InsertXML(body, "//foo", "<bar/>")`
+
+Fetch and insert an xml document into another
+
+- `InsertXML(body, "/subdoc", attributes["subdoc"])`
 
 ### Int
 
@@ -1629,6 +1660,44 @@ Examples:
 
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
+
+### ToKeyValueString
+
+`ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter], Optional[sort_output])`
+
+The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
+
+- `target` is a Getter that returns a `pcommon.Map`. 
+- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
+- `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
+- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead. 
+
+For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
+
+```
+`k1=v1 k2=v2 k3=v3`
+```
+
+**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function. 
+
+For example, `{"k1":"v1","k2":{"k3":"v3","k4":["v4","v5"]}}` will be converted to:
+
+```
+`k1=v1 k2={\"k3\":\"v3\",\"k4\":[\"v4\",\"v5\"]}`
+```
+
+**Note:** If any keys or values contain either delimiter, they will be double quoted. If any double quotes are present in the quoted value, they will be escaped.
+
+For example, `{"k1":"v1","k2":"v=2","k3"="\"v=3\""}` will be converted to:
+
+```
+`k1=v1 k2="v=2" k3="\"v=3\""`
+```
+
+Examples:
+
+- `ToKeyValueString(body)`
+- `ToKeyValueString(body, ":", ",", true)`
 
 ### TraceID
 
