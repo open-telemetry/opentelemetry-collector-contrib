@@ -1414,7 +1414,6 @@ func TestSupervisorInfoLoggingLevel(t *testing.T) {
 	// Read from log file checking for Info level logs
 	logFile, err := os.Open(supervisorLogFilePath)
 	require.NoError(t, err)
-	defer logFile.Close()
 
 	scanner := bufio.NewScanner(logFile)
 	check := false
@@ -1434,6 +1433,7 @@ func TestSupervisorInfoLoggingLevel(t *testing.T) {
 	}
 	// verify at least 1 log was read
 	require.True(t, check)
+	require.NoError(t, logFile.Close())
 }
 
 func findRandomPort() (int, error) {
