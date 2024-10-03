@@ -10,8 +10,8 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"runtime"
 	"regexp"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -443,7 +443,7 @@ service:
 			effectiveConfig:              &atomic.Value{},
 			opampClient:                  mc,
 			agentDescription:             &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
@@ -463,7 +463,7 @@ service:
 		fileContent, err := os.ReadFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile))
 		require.NoError(t, err)
 		assert.Contains(t, string(fileContent), testConfigMessage)
-		assert.Equal(t, expectedMergedConfig, s.mergedConfig.Load())
+		assert.Equal(t, expectedMergedConfig, s.cfgState.Load().(*configState).mergedConfig)
 		assert.True(t, remoteConfigStatusUpdated)
 	})
 	t.Run("RemoteConfig - Remote Config message is processed but OpAmp Client fails", func(t *testing.T) {
@@ -542,7 +542,7 @@ service:
 			effectiveConfig:              &atomic.Value{},
 			opampClient:                  mc,
 			agentDescription:             &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
@@ -562,7 +562,7 @@ service:
 		fileContent, err := os.ReadFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile))
 		require.NoError(t, err)
 		assert.Contains(t, string(fileContent), testConfigMessage)
-		assert.Equal(t, expectedMergedConfig, s.mergedConfig.Load())
+		assert.Equal(t, expectedMergedConfig, s.cfgState.Load().(*configState).mergedConfig)
 		assert.True(t, remoteConfigStatusUpdated)
 	})
 	t.Run("RemoteConfig - Invalid Remote Config message is detected and status is set appropriately", func(t *testing.T) {
@@ -611,7 +611,7 @@ service:
 			effectiveConfig:              &atomic.Value{},
 			opampClient:                  mc,
 			agentDescription:             &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
@@ -631,7 +631,7 @@ service:
 		fileContent, err := os.ReadFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile))
 		require.NoError(t, err)
 		assert.Contains(t, string(fileContent), testConfigMessage)
-		assert.Nil(t, s.mergedConfig.Load())
+		assert.Nil(t, s.cfgState.Load())
 		assert.True(t, remoteConfigStatusUpdated)
 	})
 
@@ -1067,7 +1067,7 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 		s := Supervisor{
 			logger:                       zap.NewNop(),
 			agentConfigOwnMetricsSection: &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			persistentState:              &persistentState{InstanceID: testUUID},
 			pidProvider:                  staticPIDProvider(1234),
 		}
@@ -1100,7 +1100,7 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 		s := Supervisor{
 			logger:                       zap.NewNop(),
 			agentConfigOwnMetricsSection: &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			persistentState:              &persistentState{InstanceID: testUUID},
 			pidProvider:                  staticPIDProvider(1234),
 		}
@@ -1167,7 +1167,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	t.Run("empty config", func(t *testing.T) {
 		s := Supervisor{
 			effectiveConfig: &atomic.Value{},
-			mergedConfig:    &atomic.Value{},
+			cfgState:        &atomic.Value{},
 		}
 		got := s.createEffectiveConfigMsg()
 
@@ -1176,11 +1176,11 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	t.Run("effective and merged config set - prefer effective config", func(t *testing.T) {
 		s := Supervisor{
 			effectiveConfig: &atomic.Value{},
-			mergedConfig:    &atomic.Value{},
+			cfgState:        &atomic.Value{},
 		}
 
 		s.effectiveConfig.Store("effective")
-		s.mergedConfig.Store("merged")
+		s.cfgState.Store("merged")
 
 		got := s.createEffectiveConfigMsg()
 
@@ -1189,10 +1189,10 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	t.Run("only merged config set", func(t *testing.T) {
 		s := Supervisor{
 			effectiveConfig: &atomic.Value{},
-			mergedConfig:    &atomic.Value{},
+			cfgState:        &atomic.Value{},
 		}
 
-		s.mergedConfig.Store("merged")
+		s.cfgState.Store(&configState{mergedConfig: "merged"})
 
 		got := s.createEffectiveConfigMsg()
 
@@ -1292,7 +1292,7 @@ service:
 				},
 			},
 			agentConfigOwnMetricsSection: &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			persistentState: &persistentState{
 				InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
 			},
@@ -1319,7 +1319,7 @@ service:
 
 		assert.Equal(t, remoteCfg.String(), s.remoteConfig.String())
 
-		gotMergedConfig := s.mergedConfig.Load().(string)
+		gotMergedConfig := s.cfgState.Load().(*configState).mergedConfig
 		// replace random port numbers
 		portRegex := regexp.MustCompile(":[0-9]{5}")
 		replacedMergedConfig := portRegex.ReplaceAll([]byte(gotMergedConfig), []byte(":55555"))
