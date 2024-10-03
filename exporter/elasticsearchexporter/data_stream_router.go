@@ -80,7 +80,7 @@ func routeWithDefaults(defaultDSType string) func(
 			dataset = receiverName
 		}
 
-		// For Dataset, the naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
+		// For dataset, the naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
 		// This is in order to match the built-in logs-*.otel-* index template.
 		var datasetSuffix string
 		if otel {

@@ -1224,7 +1224,6 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			// expected := "traces-span.dataset-default"
 			expected := "traces-span.dataset.____________-default"
 			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
