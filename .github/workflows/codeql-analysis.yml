@@ -31,6 +31,7 @@ jobs:
 
       - name: Build Artifact
         run: |
+          make genotelcontribcol
           make otelcontribcol
 
       - name: Perform CodeQL Analysis
