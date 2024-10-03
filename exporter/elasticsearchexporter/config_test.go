@@ -94,7 +94,7 @@ func TestConfig(t *testing.T) {
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
-					MaxRequests:     5,
+					MaxRetries:      5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
@@ -164,7 +164,7 @@ func TestConfig(t *testing.T) {
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
-					MaxRequests:     5,
+					MaxRetries:      5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
@@ -234,7 +234,7 @@ func TestConfig(t *testing.T) {
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
-					MaxRequests:     5,
+					MaxRetries:      5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},

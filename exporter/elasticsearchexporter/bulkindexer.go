@@ -60,9 +60,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Co
 func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) *syncBulkIndexer {
 	var maxDocRetry int
 	if config.Retry.Enabled {
-		// max_requests includes initial attempt
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
-		maxDocRetry = config.Retry.MaxRequests - 1
+		maxDocRetry = config.Retry.MaxRetries
 	}
 	return &syncBulkIndexer{
 		config: docappender.BulkIndexerConfig{
@@ -166,9 +164,7 @@ func newAsyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, confi
 
 	var maxDocRetry int
 	if config.Retry.Enabled {
-		// max_requests includes initial attempt
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
-		maxDocRetry = config.Retry.MaxRequests - 1
+		maxDocRetry = config.Retry.MaxRetries
 	}
 
 	pool := &asyncBulkIndexer{
