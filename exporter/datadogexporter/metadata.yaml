@@ -3,8 +3,7 @@ type: datadog
 status:
   class: exporter
   stability:
-    alpha: [logs]
-    beta: [traces, metrics]
+    beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
     active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96]

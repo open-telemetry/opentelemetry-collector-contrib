@@ -253,7 +253,8 @@ func (v *value) checkForCustomError() error {
 
 // path represents a telemetry path mathExpression.
 type path struct {
-	Fields []field `parser:"@@ ( '.' @@ )*"`
+	Context string  `parser:"(@Lowercase '.')?"`
+	Fields  []field `parser:"@@ ( '.' @@ )*"`
 }
 
 // field is an item within a path.

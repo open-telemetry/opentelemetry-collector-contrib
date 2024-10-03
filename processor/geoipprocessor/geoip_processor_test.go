@@ -100,6 +100,12 @@ var testCases = []struct {
 		lookupAttributes: defaultResourceAttributes,
 	},
 	{
+		name:             "default source.address attribute no geo metadata found by providers",
+		goldenDir:        "source_address_geo_not_found",
+		context:          resource,
+		lookupAttributes: defaultResourceAttributes,
+	},
+	{
 		name:             "default source.ip attribute with an unspecified IP address should be skipped",
 		goldenDir:        "unspecified_address",
 		context:          resource,
@@ -145,7 +151,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		require.NoError(t, err)
 
 		actualMetrics := nextMetrics.AllMetrics()
-		require.Equal(t, 1, len(actualMetrics))
+		require.Len(t, actualMetrics, 1)
 		// golden.WriteMetrics(t, filepath.Join(dir, "output-metrics.yaml"), actualMetrics[0])
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics[0]))
 
@@ -164,7 +170,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		require.NoError(t, err)
 
 		actualTraces := nextTraces.AllTraces()
-		require.Equal(t, 1, len(actualTraces))
+		require.Len(t, actualTraces, 1)
 		// golden.WriteTraces(t, filepath.Join(dir, "output-traces.yaml"), actualTraces[0])
 		require.NoError(t, ptracetest.CompareTraces(expectedTraces, actualTraces[0]))
 
@@ -183,7 +189,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		require.NoError(t, err)
 
 		actualLogs := nextLogs.AllLogs()
-		require.Equal(t, 1, len(actualLogs))
+		require.Len(t, actualLogs, 1)
 		// golden.WriteLogs(t, filepath.Join(dir, "output-logs.yaml"), actualLogs[0])
 		require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs[0]))
 	}
@@ -196,21 +202,24 @@ func TestProcessor(t *testing.T) {
 		return &baseProviderMock, nil
 	}
 
-	baseProviderMock.LocationF = func(context.Context, net.IP) (attribute.Set, error) {
-		return attribute.NewSet([]attribute.KeyValue{
-			semconv.SourceAddress("1.2.3.4"),
-			attribute.String(conventions.AttributeGeoCityName, "Boxford"),
-			attribute.String(conventions.AttributeGeoContinentCode, "EU"),
-			attribute.String(conventions.AttributeGeoContinentName, "Europe"),
-			attribute.String(conventions.AttributeGeoCountryIsoCode, "GB"),
-			attribute.String(conventions.AttributeGeoCountryName, "United Kingdom"),
-			attribute.String(conventions.AttributeGeoTimezone, "Europe/London"),
-			attribute.String(conventions.AttributeGeoRegionIsoCode, "WBK"),
-			attribute.String(conventions.AttributeGeoRegionName, "West Berkshire"),
-			attribute.String(conventions.AttributeGeoPostalCode, "OX1"),
-			attribute.Float64(conventions.AttributeGeoLocationLat, 1234),
-			attribute.Float64(conventions.AttributeGeoLocationLon, 5678),
-		}...), nil
+	baseProviderMock.LocationF = func(_ context.Context, sourceIP net.IP) (attribute.Set, error) {
+		if sourceIP.Equal(net.IPv4(1, 2, 3, 4)) {
+			return attribute.NewSet([]attribute.KeyValue{
+				semconv.SourceAddress("1.2.3.4"),
+				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
+				attribute.String(conventions.AttributeGeoContinentCode, "EU"),
+				attribute.String(conventions.AttributeGeoContinentName, "Europe"),
+				attribute.String(conventions.AttributeGeoCountryIsoCode, "GB"),
+				attribute.String(conventions.AttributeGeoCountryName, "United Kingdom"),
+				attribute.String(conventions.AttributeGeoTimezone, "Europe/London"),
+				attribute.String(conventions.AttributeGeoRegionIsoCode, "WBK"),
+				attribute.String(conventions.AttributeGeoRegionName, "West Berkshire"),
+				attribute.String(conventions.AttributeGeoPostalCode, "OX1"),
+				attribute.Float64(conventions.AttributeGeoLocationLat, 1234),
+				attribute.Float64(conventions.AttributeGeoLocationLon, 5678),
+			}...), nil
+		}
+		return attribute.Set{}, provider.ErrNoMetadataFound
 	}
 	const providerKey string = "mock"
 	providerFactories[providerKey] = &baseMockFactory

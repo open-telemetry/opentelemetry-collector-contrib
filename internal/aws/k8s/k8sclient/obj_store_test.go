@@ -25,7 +25,7 @@ var transformFuncWithError = func(v any) (any, error) {
 
 func TestResync(t *testing.T) {
 	o := NewObjStore(transformFunc, zap.NewNop())
-	assert.Nil(t, o.Resync())
+	assert.NoError(t, o.Resync())
 }
 
 func TestGet(t *testing.T) {
@@ -68,7 +68,7 @@ func TestGetList(t *testing.T) {
 		"20036b33-cb03-489b-b778-e516b4dae519": "a",
 	}
 	val := o.List()
-	assert.Equal(t, 1, len(val))
+	assert.Len(t, val, 1)
 	expected := o.objs["20036b33-cb03-489b-b778-e516b4dae519"]
 	assert.Equal(t, expected, val[0])
 }
@@ -119,7 +119,7 @@ func TestDelete(t *testing.T) {
 	assert.True(t, o.refreshed)
 
 	keys := o.ListKeys()
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 	assert.Equal(t, "75ab40d2-552a-4c05-82c9-0ddcb3008657", keys[0])
 }
 
@@ -174,11 +174,11 @@ func TestUpdate(t *testing.T) {
 	assert.NoError(t, err)
 
 	keys := o.ListKeys()
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 	assert.Equal(t, "bc5f5839-f62e-44b9-a79e-af250d92dcb1", keys[0])
 
 	values := o.List()
-	assert.Equal(t, 1, len(values))
+	assert.Len(t, values, 1)
 	assert.Equal(t, updatedObj, values[0])
 }
 

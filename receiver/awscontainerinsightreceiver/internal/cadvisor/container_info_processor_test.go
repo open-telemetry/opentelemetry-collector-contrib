@@ -64,7 +64,7 @@ func TestProcessContainers(t *testing.T) {
 	containerInfos = append(containerInfos, containerInContainerInfos...)
 	mInfo := testutils.MockCPUMemInfo{}
 	metrics := processContainers(containerInfos, mInfo, "eks", zap.NewNop())
-	assert.Equal(t, 3, len(metrics))
+	assert.Len(t, metrics, 3)
 
 	// restore the original value of metrics extractors
 	metricsExtractors = originalMetricsExtractors

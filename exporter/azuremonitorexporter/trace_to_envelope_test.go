@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -512,7 +512,7 @@ func TestSpanWithEventsToEnvelopes(t *testing.T) {
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, zap.NewNop())
 
 	assert.NotNil(t, envelopes)
-	assert.Equal(t, 3, len(envelopes))
+	assert.Len(t, envelopes, 3)
 
 	validateEnvelope := func(spanEvent ptrace.SpanEvent, envelope *contracts.Envelope, targetEnvelopeName string) {
 		assert.Equal(t, targetEnvelopeName, envelope.Name)

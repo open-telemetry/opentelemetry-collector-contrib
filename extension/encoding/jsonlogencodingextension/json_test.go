@@ -24,7 +24,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 
 	buf, err := e.MarshalLogs(ld)
 	assert.NoError(t, err)
-	assert.True(t, len(buf) > 0)
+	assert.NotEmpty(t, buf)
 	assert.Equal(t, json, string(buf))
 }
 
@@ -59,7 +59,7 @@ func TestPrettyLogProcessor(t *testing.T) {
 	lp, err := j.logProcessor(sampleLog())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
-	assert.Equal(t, string(lp), `[{"body":{"log":"test"},"logAttributes":{"foo":"bar"},"resourceAttributes":{"test":"logs-test"}},{"body":"log testing","resourceAttributes":{"test":"logs-test"}}]`)
+	assert.Equal(t, `[{"body":{"log":"test"},"logAttributes":{"foo":"bar"},"resourceAttributes":{"test":"logs-test"}},{"body":"log testing","resourceAttributes":{"test":"logs-test"}}]`, string(lp))
 }
 
 func sampleLog() plog.Logs {

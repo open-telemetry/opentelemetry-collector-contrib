@@ -60,7 +60,7 @@ func TestPods(t *testing.T) {
 			podsMetadata, err := metadataProvider.Pods()
 			if tt.wantError == "" {
 				require.NoError(t, err)
-				require.Less(t, 0, len(podsMetadata.Items))
+				require.NotEmpty(t, podsMetadata.Items)
 			} else {
 				assert.Equal(t, tt.wantError, err.Error())
 			}

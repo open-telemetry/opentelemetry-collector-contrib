@@ -22,3 +22,5 @@ tomasmota
 m1rp
 jriguera
 abhishek-at-cloudwerx
+joker-star-l
+ArthurSens

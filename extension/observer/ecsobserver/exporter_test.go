@@ -4,7 +4,6 @@
 package ecsobserver
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -27,7 +26,7 @@ func TestTaskExporter(t *testing.T) {
 		})
 		assert.Error(t, err)
 		v := &errPrivateIPNotFound{}
-		assert.True(t, errors.As(err, &v))
+		assert.ErrorAs(t, err, &v)
 	})
 
 	awsVpcTask := &ecs.Task{
@@ -118,7 +117,7 @@ func TestTaskExporter(t *testing.T) {
 		merr := multierr.Errors(err)
 		require.Len(t, merr, 1)
 		v := &errMappedPortNotFound{}
-		assert.True(t, errors.As(merr[0], &v))
+		assert.ErrorAs(t, merr[0], &v)
 		assert.Len(t, targets, 2)
 	})
 

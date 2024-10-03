@@ -37,7 +37,7 @@ func TestParseMetadataConfig(t *testing.T) {
 				require.Nil(t, metadataSlice)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 2, len(metadataSlice))
+				assert.Len(t, metadataSlice, 2)
 
 				mData := metadataSlice[0]
 
@@ -58,12 +58,12 @@ func assertMetricsMetadata(t *testing.T, expectedName string, metricsMetadata *m
 	assert.Equal(t, "query", metricsMetadata.Query)
 	assert.Equal(t, "metric_name_prefix", metricsMetadata.MetricNamePrefix)
 
-	assert.Equal(t, 1, len(metricsMetadata.QueryLabelValuesMetadata))
+	assert.Len(t, metricsMetadata.QueryLabelValuesMetadata, 1)
 	assert.Equal(t, "label_name", metricsMetadata.QueryLabelValuesMetadata[0].Name())
 	assert.Equal(t, "LABEL_NAME", metricsMetadata.QueryLabelValuesMetadata[0].ColumnName())
 	assert.Equal(t, metadata.StringValueType, metricsMetadata.QueryLabelValuesMetadata[0].ValueType())
 
-	assert.Equal(t, 1, len(metricsMetadata.QueryMetricValuesMetadata))
+	assert.Len(t, metricsMetadata.QueryMetricValuesMetadata, 1)
 	assert.Equal(t, "metric_name", metricsMetadata.QueryMetricValuesMetadata[0].Name())
 	assert.Equal(t, "METRIC_NAME", metricsMetadata.QueryMetricValuesMetadata[0].ColumnName())
 	assert.Equal(t, "metric_unit", metricsMetadata.QueryMetricValuesMetadata[0].Unit())

@@ -13,6 +13,9 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -23,6 +26,33 @@ type Supervisor struct {
 	Agent        Agent
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
+}
+
+// Load loads the Supervisor config from a file.
+func Load(configFile string) (Supervisor, error) {
+	if configFile == "" {
+		return Supervisor{}, errors.New("path to config file cannot be empty")
+	}
+
+	k := koanf.New("::")
+	if err := k.Load(file.Provider(configFile), yaml.Parser()); err != nil {
+		return Supervisor{}, err
+	}
+
+	decodeConf := koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	}
+
+	cfg := DefaultSupervisor()
+	if err := k.UnmarshalWithConf("", &cfg, decodeConf); err != nil {
+		return Supervisor{}, fmt.Errorf("cannot parse %s: %w", configFile, err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return Supervisor{}, fmt.Errorf("cannot validate supervisor config %s: %w", configFile, err)
+	}
+
+	return cfg, nil
 }
 
 func (s Supervisor) Validate() error {
@@ -121,11 +151,21 @@ type Agent struct {
 	Executable              string
 	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription `mapstructure:"description"`
+	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
+	HealthCheckPort         int              `mapstructure:"health_check_port"`
 }
 
 func (a Agent) Validate() error {
 	if a.OrphanDetectionInterval <= 0 {
 		return errors.New("agent::orphan_detection_interval must be positive")
+	}
+
+	if a.BootstrapTimeout <= 0 {
+		return errors.New("agent::bootstrap_timeout must be positive")
+	}
+
+	if a.HealthCheckPort < 0 || a.HealthCheckPort > 65535 {
+		return errors.New("agent::health_check_port must be a valid port number")
 	}
 
 	if a.Executable == "" {
@@ -175,6 +215,7 @@ func DefaultSupervisor() Supervisor {
 		},
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
+			BootstrapTimeout:        3 * time.Second,
 		},
 	}
 }

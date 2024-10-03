@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -158,7 +158,7 @@ func TestContainerTags(t *testing.T) {
 	err = connector.ConsumeTraces(context.Background(), trace2)
 	assert.NoError(t, err)
 	// check if the container tags are added to the cache
-	assert.Equal(t, 1, len(connector.containerTagCache.Items()))
+	assert.Len(t, connector.containerTagCache.Items(), 1)
 	count := 0
 	connector.containerTagCache.Items()["my-container-id"].Object.(*sync.Map).Range(func(_, _ any) bool {
 		count++
@@ -175,7 +175,7 @@ func TestContainerTags(t *testing.T) {
 
 	// check if the container tags are added to the metrics
 	metrics := metricsSink.AllMetrics()
-	assert.Equal(t, 1, len(metrics))
+	assert.Len(t, metrics, 1)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
@@ -188,7 +188,7 @@ func TestContainerTags(t *testing.T) {
 	require.NoError(t, err)
 
 	tags := sp.Stats[0].Tags
-	assert.Equal(t, 3, len(tags))
+	assert.Len(t, tags, 3)
 	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
 }
 

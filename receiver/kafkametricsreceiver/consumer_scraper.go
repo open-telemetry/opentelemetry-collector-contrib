@@ -31,10 +31,6 @@ type consumerScraper struct {
 	mb           *metadata.MetricsBuilder
 }
 
-func (s *consumerScraper) Name() string {
-	return consumersScraperName
-}
-
 func (s *consumerScraper) start(_ context.Context, _ component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
@@ -185,7 +181,7 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		saramaConfig: saramaConfig,
 	}
 	return scraperhelper.NewScraper(
-		s.Name(),
+		consumersScraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 		scraperhelper.WithShutdown(s.shutdown),

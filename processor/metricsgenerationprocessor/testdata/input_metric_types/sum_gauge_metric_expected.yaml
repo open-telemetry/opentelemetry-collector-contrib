@@ -1,0 +1,1205 @@
+resourceMetrics:
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: FileSystem inodes used.
+            name: system.filesystem.inodes.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2183953600"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4770142"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2183953600"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1813"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2183953600"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s4s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "404475"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s4s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2183953600"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "24"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2183953600"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: devfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "666"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: devfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: autofs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: autofs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{inodes}'
+          - description: Filesystem bytes used.
+            name: system.filesystem.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "223636848640"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "276326326272"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "223636848640"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "276326326272"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "223636848640"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s4s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s4s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "276326326272"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s4s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "223636848640"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "276326326272"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "223636848640"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "276326326272"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: devfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: devfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "197120"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: devfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: autofs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: autofs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: autofs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Fraction of filesystem bytes used.
+            gauge:
+              dataPoints:
+                - asDouble: 0.5526933585071281
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.5526933585071281
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.5526933585071281
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s4s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.5526933585071281
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.5526933585071281
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: type
+                      value:
+                        stringValue: devfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: type
+                      value:
+                        stringValue: autofs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: system.filesystem.utilization
+            unit: "1"
+          - name: system.filesystem.capacity
+            sum:
+              dataPoints:
+                - asDouble: 4.046309679639759e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.99963174912e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s1
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.046309679639759e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.99963174912e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s2
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Preboot
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.046309679639759e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s4s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s4s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.99963174912e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s4s1
+                    - key: mode
+                      value:
+                        stringValue: ro
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.046309679639759e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.99963174912e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s5
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Update
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.046309679639759e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.99963174912e+11
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1s6
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/VM
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: apfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: devfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: devfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 356653.46247770725
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: devfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /dev
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: devfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: type
+                      value:
+                        stringValue: autofs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: state
+                      value:
+                        stringValue: reserved
+                    - key: type
+                      value:
+                        stringValue: autofs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: map auto_home
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /System/Volumes/Data/home
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: autofs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: bytes
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper
+          version: 0.110.0-dev

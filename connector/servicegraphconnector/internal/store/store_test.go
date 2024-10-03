@@ -30,7 +30,7 @@ func TestStoreUpsertEdge(t *testing.T) {
 		e.ClientService = clientService
 	})
 	require.NoError(t, err)
-	require.Equal(t, true, isNew)
+	require.True(t, isNew)
 	assert.Equal(t, 1, s.Len())
 
 	// Nothing should be evicted as TTL is set to 1h
@@ -44,7 +44,7 @@ func TestStoreUpsertEdge(t *testing.T) {
 		e.ServerService = "server"
 	})
 	require.NoError(t, err)
-	require.Equal(t, false, isNew)
+	require.False(t, isNew)
 	// Edge is complete and should have been removed
 	assert.Equal(t, 0, s.Len())
 
@@ -57,7 +57,7 @@ func TestStoreUpsertEdge(t *testing.T) {
 		e.expiration = time.UnixMicro(0)
 	})
 	require.NoError(t, err)
-	require.Equal(t, true, isNew)
+	require.True(t, isNew)
 	assert.Equal(t, 1, s.Len())
 	assert.Equal(t, 1, onCompletedCount)
 	assert.Equal(t, 0, onExpireCount)
@@ -80,7 +80,7 @@ func TestStoreUpsertEdge_errTooManyItems(t *testing.T) {
 		e.ClientService = clientService
 	})
 	require.NoError(t, err)
-	require.Equal(t, true, isNew)
+	require.True(t, isNew)
 	assert.Equal(t, 1, s.Len())
 
 	_, err = s.UpsertEdge(key2, func(e *Edge) {
@@ -93,7 +93,7 @@ func TestStoreUpsertEdge_errTooManyItems(t *testing.T) {
 		e.ClientService = clientService
 	})
 	require.NoError(t, err)
-	require.Equal(t, false, isNew)
+	require.False(t, isNew)
 	assert.Equal(t, 1, s.Len())
 
 	assert.Equal(t, 0, onCallbackCounter)
@@ -120,7 +120,7 @@ func TestStoreExpire(t *testing.T) {
 	for key := range keys {
 		isNew, err := s.UpsertEdge(key, noopCallback)
 		require.NoError(t, err)
-		require.Equal(t, true, isNew)
+		require.True(t, isNew)
 	}
 
 	s.Expire()
