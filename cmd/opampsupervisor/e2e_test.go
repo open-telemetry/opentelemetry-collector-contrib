@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build e2e
+
 package main
 
 import (
@@ -1415,8 +1417,12 @@ func TestSupervisorInfoLoggingLevel(t *testing.T) {
 	defer logFile.Close()
 
 	scanner := bufio.NewScanner(logFile)
-
+	check := false
 	for scanner.Scan() {
+		if !check {
+			check = true
+		}
+
 		line := scanner.Bytes()
 		var log LogEntry
 		err := json.Unmarshal(line, &log)
@@ -1426,6 +1432,8 @@ func TestSupervisorInfoLoggingLevel(t *testing.T) {
 		require.NoError(t, err)
 		require.GreaterOrEqual(t, level, zapcore.InfoLevel)
 	}
+	// verify at least 1 log was read
+	require.True(t, check)
 }
 
 func findRandomPort() (int, error) {
