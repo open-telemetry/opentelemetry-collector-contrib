@@ -7,6 +7,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
@@ -121,6 +122,39 @@ func TestScrape_NoClient(t *testing.T) {
 	require.ErrorContains(t, err, "unable to connect to vSphere SDK")
 	require.Equal(t, 0, metrics.MetricCount())
 	require.NoError(t, scraper.Shutdown(ctx))
+}
+
+func TestCheckCollectionTime(t *testing.T) {
+	testCases := []struct {
+		name     string
+		duration time.Duration
+		expected int32
+	}{
+		{
+			name:     "Less than 1 hour",
+			duration: 30 * time.Minute,
+			expected: 20,
+		},
+		{
+			name:     "Exactly 1 hour",
+			duration: time.Hour,
+			expected: 20,
+		},
+		{
+			name:     "More than 1 hour",
+			duration: 2 * time.Hour,
+			expected: 300,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := checkCollectionTime(tc.duration)
+			if result != tc.expected {
+				t.Errorf("checkCollectionTime(%v) = %d; want %d", tc.duration, result, tc.expected)
+			}
+		})
+	}
 }
 
 func TestStartFailures_Metrics(t *testing.T) {

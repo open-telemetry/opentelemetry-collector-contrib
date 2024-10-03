@@ -361,22 +361,22 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(entityMetric *perfor
 			case "net.bytesRx.average":
 				v.mb.RecordVcenterHostNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.packetsTx.summation":
-				txRate := float64(nestedValue) / 20
+				txRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterHostNetworkPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
 			case "net.packetsRx.summation":
-				rxRate := float64(nestedValue) / 20
+				rxRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterHostNetworkPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.droppedTx.summation":
-				txRate := float64(nestedValue) / 20
+				txRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterHostNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
 			case "net.droppedRx.summation":
-				rxRate := float64(nestedValue) / 20
+				rxRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterHostNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.errorsRx.summation":
-				rxRate := float64(nestedValue) / 20
+				rxRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.errorsTx.summation":
-				txRate := float64(nestedValue) / 20
+				txRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
 			case "cpu.reservedCapacity.average":
 				v.mb.RecordVcenterHostCPUReservedDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUReservationTypeUsed)
@@ -449,16 +449,16 @@ func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performa
 			case "net.bytesRx.average":
 				v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.packetsTx.summation":
-				txRate := float64(nestedValue) / 20
+				txRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterVMNetworkPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
 			case "net.packetsRx.summation":
-				rxRate := float64(nestedValue) / 20
+				rxRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterVMNetworkPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.droppedTx.summation":
-				txRate := float64(nestedValue) / 20
+				txRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterVMNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
 			case "net.droppedRx.summation":
-				rxRate := float64(nestedValue) / 20
+				rxRate := float64(nestedValue) / float64(si.Interval)
 				v.mb.RecordVcenterVMNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			}
 		}

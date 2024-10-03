@@ -4,6 +4,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
@@ -19,6 +20,7 @@ import (
 )
 
 var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
+var previousCollectionTime time.Time
 
 type vmGroupInfo struct {
 	poweredOn  int64
@@ -96,9 +98,11 @@ func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) erro
 	}
 	return nil
 }
+
 func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 	return v.client.Disconnect(ctx)
 }
+
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if v.client == nil {
 		v.client = newVcenterClient(v.logger, v.config)
@@ -109,6 +113,11 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 	}
 
 	errs := &scrapererror.ScrapeErrors{}
+
+	if previousCollectionTime.IsZero() {
+		previousCollectionTime = time.Now()
+	}
+
 	err := v.scrapeAndProcessAllMetrics(ctx, errs)
 
 	return v.mb.Emit(), err
@@ -269,13 +278,17 @@ func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacente
 		v.scrapeData.hostsByRef[hosts[i].Reference().Value] = &hosts[i]
 	}
 
+	now := time.Now()
+
 	spec := types.PerfQuerySpec{
 		MaxSample: 1,
 		Format:    string(types.PerfFormatNormal),
 		// Just grabbing real time performance metrics of the current
 		// supported metrics by this receiver. If more are added we may need
 		// a system of making this user customizable or adapt to use a 5 minute interval per metric
-		IntervalId: int32(20),
+		IntervalId: checkCollectionTime(v.client.cfg.CollectionInterval),
+		StartTime:  &previousCollectionTime,
+		EndTime:    &now,
 	}
 	// Get all HostSystem performance metrics and store for later retrieval
 	results, err := v.client.PerfMetricsQuery(ctx, spec, hostPerfMetricList, hsRefs)
@@ -326,12 +339,16 @@ func (v *vcenterMetricScraper) scrapeVirtualMachines(ctx context.Context, dc *mo
 		v.scrapeData.vmsByRef[vms[i].Reference().Value] = &vms[i]
 	}
 
+	now := time.Now()
+
 	spec := types.PerfQuerySpec{
 		Format: string(types.PerfFormatNormal),
 		// Just grabbing real time performance metrics of the current
 		// supported metrics by this receiver. If more are added we may need
 		// a system of making this user customizable or adapt to use a 5 minute interval per metric
-		IntervalId: int32(20),
+		IntervalId: checkCollectionTime(v.client.cfg.CollectionInterval),
+		StartTime:  &previousCollectionTime,
+		EndTime:    &now,
 	}
 	// Get all VirtualMachine performance metrics and store for later retrieval
 	results, err := v.client.PerfMetricsQuery(ctx, spec, vmPerfMetricList, vmRefs)
@@ -349,4 +366,13 @@ func (v *vcenterMetricScraper) scrapeVirtualMachines(ctx context.Context, dc *mo
 	}
 
 	v.scrapeData.vmVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
+}
+
+// checks whether the difference between the current collection time  and previous collection time is greater than 1 hour and returns according collection interval
+func checkCollectionTime(scrapeTime time.Duration) int32 {
+	if scrapeTime > time.Hour {
+		return 300
+	}
+	return 20
+
 }
