@@ -4,11 +4,12 @@
 package remotetapprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor"
 
 import (
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"golang.org/x/time/rate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 const defaultPort = 12001
@@ -24,7 +25,7 @@ type Config struct {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: localhostgate.EndpointForPort(defaultPort),
+			Endpoint: testutil.EndpointForPort(defaultPort),
 		},
 		Limit: 1,
 	}
