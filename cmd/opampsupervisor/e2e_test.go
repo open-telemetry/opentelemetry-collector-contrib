@@ -6,9 +6,11 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -40,10 +42,12 @@ import (
 	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
 var _ clientTypes.Logger = testLogger{}
@@ -1352,6 +1356,84 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 		require.ErrorContains(t, err, "No connection could be made")
 	}
 
+}
+
+type LogEntry struct {
+	Level string `json:"level"`
+}
+
+func TestSupervisorInfoLoggingLevel(t *testing.T) {
+	storageDir := t.TempDir()
+	remoteCfgFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
+
+	collectorCfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+	remoteCfgProto := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"": {Body: collectorCfg.Bytes()},
+			},
+		},
+		ConfigHash: hash,
+	}
+	marshalledRemoteCfg, err := proto.Marshal(remoteCfgProto)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(remoteCfgFilePath, marshalledRemoteCfg, 0600))
+
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{
+		OnConnectedFunc: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+	})
+	defer server.shutdown()
+
+	supervisorLogFilePath := filepath.Join(storageDir, "supervisor_log.log")
+	cfgFile := getSupervisorConfig(t, "logging", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+		"log_level":   "0",
+		"log_file":    supervisorLogFilePath,
+	})
+
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(logger, cfg)
+	require.NoError(t, err)
+	require.Nil(t, s.Start())
+
+	// Start the server and wait for the supervisor to connect
+	server.start()
+	waitForSupervisorConnection(server.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+
+	s.Shutdown()
+
+	// Read from log file checking for Info level logs
+	logFile, err := os.Open(supervisorLogFilePath)
+	require.NoError(t, err)
+	defer logFile.Close()
+
+	scanner := bufio.NewScanner(logFile)
+	check := false
+	for scanner.Scan() {
+		if !check {
+			check = true
+		}
+
+		line := scanner.Bytes()
+		var log LogEntry
+		err := json.Unmarshal(line, &log)
+		require.NoError(t, err)
+
+		level, err := zapcore.ParseLevel(log.Level)
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, level, zapcore.InfoLevel)
+	}
+	// verify at least 1 log was read
+	require.True(t, check)
 }
 
 func findRandomPort() (int, error) {

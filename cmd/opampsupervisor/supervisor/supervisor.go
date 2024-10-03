@@ -168,7 +168,6 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
-
 	s.config = cfg
 
 	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
@@ -200,7 +199,7 @@ func (s *Supervisor) Start() error {
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
-	s.logger.Debug("Supervisor starting",
+	s.logger.Info("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
 	err = s.loadAndWriteInitialMergedConfig()
