@@ -4,7 +4,7 @@ Ex. Adding a feature - Explain what this achieves.-->
 
 <!-- Issue number if applicable -->
 #### Link to tracking issue
-Fixes #
+Fixes
 
 <!--Describe what testing was performed and which tests were added.-->
 #### Testing
