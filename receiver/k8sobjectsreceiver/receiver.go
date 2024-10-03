@@ -273,9 +273,49 @@ func (kr *k8sobjectsreceiver) getResourceVersion(ctx context.Context, config *K8
 			logRecordCount := logs.LogRecordCount()
 			err = kr.consumer.ConsumeLogs(obsCtx, logs)
 			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+			if config.Interval != 0 {
+				go kr.startPeriodicList(ctx, config, resource)
+			}
 		}
 	}
 	return resourceVersion, nil
+}
+
+func (kr *k8sobjectsreceiver) startPeriodicList(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
+	stopperChan := make(chan struct{})
+	kr.mu.Lock()
+	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
+	kr.mu.Unlock()
+	ticker := time.NewTicker(config.Interval)
+	listOption := metav1.ListOptions{
+		FieldSelector: config.FieldSelector,
+		LabelSelector: config.LabelSelector,
+	}
+
+	if config.ResourceVersion != "" {
+		listOption.ResourceVersion = config.ResourceVersion
+		listOption.ResourceVersionMatch = metav1.ResourceVersionMatchExact
+	}
+
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			objects, err := resource.List(ctx, listOption)
+			if err != nil {
+				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
+			} else if len(objects.Items) > 0 {
+				logs := pullObjectsToLogData(objects, time.Now(), config)
+				obsCtx := kr.obsrecv.StartLogsOp(ctx)
+				logRecordCount := logs.LogRecordCount()
+				err = kr.consumer.ConsumeLogs(obsCtx, logs)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+			}
+		case <-stopperChan:
+			return
+		}
+
+	}
 }
 
 // Start ticking immediately.
