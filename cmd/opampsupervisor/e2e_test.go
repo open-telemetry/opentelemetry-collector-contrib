@@ -1363,6 +1363,10 @@ type LogEntry struct {
 }
 
 func TestSupervisorInfoLoggingLevel(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Zap does not close the log file and Windows disallows removing files that are still opened.")
+	}
+
 	storageDir := t.TempDir()
 	remoteCfgFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
 
