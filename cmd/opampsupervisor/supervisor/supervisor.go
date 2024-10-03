@@ -150,7 +150,6 @@ type Supervisor struct {
 
 func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
 	s := &Supervisor{
-		config:                       cfg,
 		logger:                       logger,
 		pidProvider:                  defaultPIDProvider{},
 		hasNewConfig:                 make(chan struct{}, 1),
@@ -200,7 +199,7 @@ func (s *Supervisor) Start() error {
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
-	s.logger.Debug("Supervisor starting",
+	s.logger.Info("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
 	err = s.loadAndWriteInitialMergedConfig()
