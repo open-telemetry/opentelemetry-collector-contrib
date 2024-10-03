@@ -36,6 +36,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -48,6 +49,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
+      - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
   check-codeowners:
@@ -102,6 +104,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -171,6 +174,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -194,6 +198,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -201,6 +206,7 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - run: make genotelcontribcol
       - name: CheckDoc
         run: make checkdoc
       - name: CheckMetadata
@@ -219,14 +225,6 @@ jobs:
         run: |
           make gotidy
           git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
-      - name: Gen genotelcontribcol
-        run: |
-          make genotelcontribcol
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genotelcontribcol" and commit the changes in this PR.' && exit 1)
-      - name: Gen genoteltestbedcol
-        run: |
-          make genoteltestbedcol
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genoteltestbedcol" and commit the changes in this PR.' && exit 1)
       - name: Gen distributions
         run: |
           make gendistributions
@@ -289,6 +287,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -379,6 +378,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
         run: make gointegration-test GROUP=${{ matrix.group }}
@@ -417,6 +417,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -443,6 +444,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -458,6 +460,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
+      - run: make genotelcontribcol
       - name: Build Examples
         run: make build-examples
 
@@ -513,6 +516,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -520,6 +524,8 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Generate collector files
+        run: make genotelcontribcol
       - name: Build Collector ${{ matrix.binary }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
@@ -563,6 +569,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
