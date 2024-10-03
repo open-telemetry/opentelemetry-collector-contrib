@@ -188,7 +188,8 @@ type AgentDescription struct {
 }
 
 type Telemetry struct {
-	// TODO: flesh out other configurable telemetry options
+	// TODO: Add more telemetry options
+	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
 	Logs Logs `mapstructure:"logs"`
 }
 

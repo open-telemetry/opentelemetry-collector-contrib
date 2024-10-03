@@ -18,13 +18,11 @@ func main() {
 	configFlag := flag.String("config", "", "Path to a supervisor configuration file")
 	flag.Parse()
 
-	// load & validate config
 	cfg, err := config.Load(*configFlag)
 	if err != nil {
 		log.Fatal("failed to load config: %w", err)
 	}
 
-	// create logger
 	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
 	if err != nil {
 		log.Fatal("failed to create logger: %w", err)
