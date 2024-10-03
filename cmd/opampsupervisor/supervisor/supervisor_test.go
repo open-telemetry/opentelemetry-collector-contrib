@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -80,6 +81,9 @@ func Test_NewSupervisor(t *testing.T) {
 }
 
 func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows because chmod doesn't affect permissions on Windows, so this test won't work.")
+	}
 	cfg := setupSupervisorConfig(t)
 
 	dir := filepath.Dir(cfg.Storage.Directory)
@@ -100,7 +104,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 		pidProvider:                  staticPIDProvider(1234),
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
-		mergedConfig:                 &atomic.Value{},
+		cfgState:                     &atomic.Value{},
 		agentHealthCheckEndpoint:     "localhost:8000",
 	}
 
@@ -155,7 +159,7 @@ service:
 	expectedConfig = bytes.ReplaceAll(expectedConfig, []byte("\r\n"), []byte("\n"))
 
 	require.True(t, configChanged)
-	require.Equal(t, string(expectedConfig), s.mergedConfig.Load().(string))
+	require.Equal(t, string(expectedConfig), s.cfgState.Load().(*configState).mergedConfig)
 }
 
 func Test_onMessage(t *testing.T) {
@@ -172,7 +176,7 @@ func Test_onMessage(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: initialID},
 			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
@@ -201,7 +205,7 @@ func Test_onMessage(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: testUUID},
 			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 		}
@@ -247,7 +251,7 @@ func Test_onMessage(t *testing.T) {
 			hasNewConfig:                 make(chan struct{}, 1),
 			persistentState:              &persistentState{InstanceID: testUUID},
 			agentConfigOwnMetricsSection: &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    agentConnAtomic,
 			agentHealthCheckEndpoint:     "localhost:8000",
@@ -328,7 +332,7 @@ func Test_onMessage(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: initialID},
 			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
-			mergedConfig:                 &atomic.Value{},
+			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
 			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
@@ -354,10 +358,11 @@ func Test_onMessage(t *testing.T) {
 		})
 
 		require.Equal(t, newID, s.persistentState.InstanceID)
-		t.Log(s.mergedConfig.Load())
-		require.Contains(t, s.mergedConfig.Load(), "prometheus/own_metrics")
-		require.Contains(t, s.mergedConfig.Load(), newID.String())
-		require.Contains(t, s.mergedConfig.Load(), "runtime.type: test")
+		t.Log(s.cfgState.Load())
+		mergedCfg := s.cfgState.Load().(*configState).mergedConfig
+		require.Contains(t, mergedCfg, "prometheus/own_metrics")
+		require.Contains(t, mergedCfg, newID.String())
+		require.Contains(t, mergedCfg, "runtime.type: test")
 	})
 }
 
