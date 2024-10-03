@@ -162,7 +162,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				}, nil
 			},
 			wantMessage: "failed to index document",
-			wantFields:  []zap.Field{zap.String("hint", "check the known issues section of elasticsearchexporter")},
+			wantFields:  []zap.Field{zap.String("hint", "check the \"Known issues\" section of Elasticsearch Exporter docs")},
 		},
 	}
 

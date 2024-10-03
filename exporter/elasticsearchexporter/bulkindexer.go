@@ -345,7 +345,7 @@ func flushBulkIndexer(
 
 func getErrorHint(index, errorType string) string {
 	if strings.HasPrefix(index, ".ds-metrics-") && errorType == "version_conflict_engine_exception" {
-		return "check the known issues section of elasticsearchexporter"
+		return "check the \"Known issues\" section of Elasticsearch Exporter docs"
 	}
 	return ""
 }
