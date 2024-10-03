@@ -25,9 +25,6 @@ type kubeadmProvider struct {
 }
 
 func NewProvider(configMapName string, configMapNamespace string, apiConf k8sconfig.APIConfig) (Provider, error) {
-	if configMapName == "" || configMapNamespace == "" {
-		return nil, fmt.Errorf("configMapName and configMapNamespace can't be empty")
-	}
 	k8sAPIClient, err := k8sconfig.MakeClient(apiConf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create K8s API client: %w", err)

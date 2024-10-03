@@ -20,16 +20,7 @@ func TestNewProvider(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	_, err := NewProvider("", "", k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone})
-	assert.EqualError(t, err, "configMapName and configMapNamespace can't be empty")
-
-	_, err = NewProvider("", "ns", k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone})
-	assert.EqualError(t, err, "configMapName and configMapNamespace can't be empty")
-
-	_, err = NewProvider("name", "", k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone})
-	assert.EqualError(t, err, "configMapName and configMapNamespace can't be empty")
-
-	_, err = NewProvider("name", "ns", k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone})
+	_, err := NewProvider("name", "ns", k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone})
 	assert.NoError(t, err)
 }
 
