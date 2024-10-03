@@ -51,64 +51,20 @@ type fileTracker struct {
 	archiveIndex   int
 }
 
-type option struct {
-	noTracking     bool
-	maxBatchFiles  int
-	pollsToArchive int
-	persister      operator.Persister
-}
-
-type OptionFunc func(*option)
-
-func WithMaxBatchFiles(maxBatchFiles int) OptionFunc {
-	return func(fto *option) {
-		fto.maxBatchFiles = maxBatchFiles
-	}
-}
-
-func WithPollsToArchive(pollsToArchive int) OptionFunc {
-	return func(fto *option) {
-		fto.pollsToArchive = pollsToArchive
-	}
-}
-
-func WithPersister(persister operator.Persister) OptionFunc {
-	return func(fto *option) {
-		fto.persister = persister
-	}
-}
-
-func WithNoTracking() OptionFunc {
-	return func(fto *option) {
-		fto.noTracking = true
-	}
-}
-
-func NewFileTracker(set component.TelemetrySettings, opts ...OptionFunc) Tracker {
-	option := &option{}
-	for _, opt := range opts {
-		opt(option)
-	}
-	if option.noTracking {
-		return &noStateTracker{
-			set:              set,
-			maxBatchFiles:    option.maxBatchFiles,
-			currentPollFiles: fileset.New[*reader.Reader](option.maxBatchFiles),
-		}
-	}
+func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, pollsToArchive int, persister operator.Persister) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
-		knownFiles[i] = fileset.New[*reader.Metadata](option.maxBatchFiles)
+		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
 	}
 	set.Logger = set.Logger.With(zap.String("tracker", "fileTracker"))
 	return &fileTracker{
 		set:               set,
-		maxBatchFiles:     option.maxBatchFiles,
-		currentPollFiles:  fileset.New[*reader.Reader](option.maxBatchFiles),
-		previousPollFiles: fileset.New[*reader.Reader](option.maxBatchFiles),
+		maxBatchFiles:     maxBatchFiles,
+		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
+		previousPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 		knownFiles:        knownFiles,
-		pollsToArchive:    option.pollsToArchive,
-		persister:         option.persister,
+		pollsToArchive:    pollsToArchive,
+		persister:         persister,
 		archiveIndex:      0,
 	}
 }
@@ -222,6 +178,15 @@ type noStateTracker struct {
 	set              component.TelemetrySettings
 	maxBatchFiles    int
 	currentPollFiles *fileset.Fileset[*reader.Reader]
+}
+
+func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
+	set.Logger = set.Logger.With(zap.String("tracker", "noStateTracker"))
+	return &noStateTracker{
+		set:              set,
+		maxBatchFiles:    maxBatchFiles,
+		currentPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
+	}
 }
 
 func (t *noStateTracker) Add(reader *reader.Reader) {
