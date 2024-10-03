@@ -22,5 +22,5 @@ func TestFromMetricsV2(t *testing.T) {
 
 	tsMap, err := FromMetricsV2(payload.Metrics(), settings)
 	require.NoError(t, err)
-	println(tsMap)
+	require.NotNil(t, tsMap)
 }
