@@ -81,6 +81,8 @@ go.opentelemetry.io/collector/extension v0.110.0 h1:AYFk57W25f7xOo3I6pV0rWNWVtOL
 go.opentelemetry.io/collector/extension v0.110.0/go.mod h1:zD/pw9o83SFyn/DCbBdBcH0eUPyGtYgpMSAOqotFYRc=
 go.opentelemetry.io/collector/extension/auth v0.110.0 h1:9SHC2sF/KR99LciHABDXRIsXLiujzIjTJpWHO0V8Bqg=
 go.opentelemetry.io/collector/extension/auth v0.110.0/go.mod h1:NjpHds6mjeT8Zn2KJVxZtV9c59AoIr6RlBha1RpmScQ=
+go.opentelemetry.io/collector/extension/extensioncapabilities v0.110.0 h1:VVqGHUh1A5ljEoQVeMCMUs1i7oLMKRQRpLCAim4WwpU=
+go.opentelemetry.io/collector/extension/extensioncapabilities v0.110.0/go.mod h1:0T/UKqU5t5mUI3CkZfbyzsbEUbmMmmYUswDOsianqGg=
 go.opentelemetry.io/collector/internal/globalsignal v0.110.0 h1:S6bfFEiek8vJeXAbciWS7W8UR6ZrVJB3ftNyFTMHQaY=
 go.opentelemetry.io/collector/internal/globalsignal v0.110.0/go.mod h1:GqMXodPWOxK5uqpX8MaMXC2389y2XJTa5nPwf8FYDK8=
 go.opentelemetry.io/collector/pdata v1.16.0 h1:g02K8jlRnmQ7TQDuXpdgVL6vIxIVqr5Gbb1qIR27rto=

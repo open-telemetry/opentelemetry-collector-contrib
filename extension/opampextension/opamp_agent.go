@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -59,6 +60,8 @@ type opampAgent struct {
 }
 
 var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
+var _ extensioncapabilities.Dependent = (*opampAgent)(nil)
+var _ extensioncapabilities.ConfigWatcher = (*opampAgent)(nil)
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.reportFunc = func(event *componentstatus.Event) {
@@ -148,6 +151,7 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	return err
 }
 
+// Dependencies implements extensioncapabilities.Dependent
 func (o *opampAgent) Dependencies() []component.ID {
 	if o.cfg.Server == nil {
 		return nil
