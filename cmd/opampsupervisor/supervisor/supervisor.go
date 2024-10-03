@@ -6,11 +6,13 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	_ "embed"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -65,6 +67,17 @@ const (
 
 const maxBufferedCustomMessages = 10
 
+type configState struct {
+	// Supervisor-assembled config to be given to the Collector.
+	mergedConfig string
+	// true if the server provided configmap was empty
+	configMapIsEmpty bool
+}
+
+func (c *configState) equal(other *configState) bool {
+	return other.mergedConfig == c.mergedConfig && other.configMapIsEmpty == c.configMapIsEmpty
+}
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -105,8 +118,8 @@ type Supervisor struct {
 	// will listen on for health check requests from the Supervisor.
 	agentHealthCheckEndpoint string
 
-	// Supervisor-assembled config to be given to the Collector.
-	mergedConfig *atomic.Value
+	// Internal config state for agent use. See the configState struct for more details.
+	cfgState *atomic.Value
 
 	// Final effective config of the Collector.
 	effectiveConfig *atomic.Value
@@ -141,7 +154,7 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		pidProvider:                  defaultPIDProvider{},
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
-		mergedConfig:                 &atomic.Value{},
+		cfgState:                     &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
 		doneChan:                     make(chan struct{}),
@@ -155,7 +168,6 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
-
 	s.config = cfg
 
 	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
@@ -187,7 +199,7 @@ func (s *Supervisor) Start() error {
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
-	s.logger.Debug("Supervisor starting",
+	s.logger.Info("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
 	err = s.loadAndWriteInitialMergedConfig()
@@ -366,9 +378,17 @@ func (s *Supervisor) startOpAMP() error {
 func (s *Supervisor) startOpAMPClient() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
-	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
+	// determine if we need to load a TLS config or not
+	var tlsConfig *tls.Config
+	parsedURL, err := url.Parse(s.config.Server.Endpoint)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse server endpoint: %w", err)
+	}
+	if parsedURL.Scheme == "wss" || parsedURL.Scheme == "https" {
+		tlsConfig, err = s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
+		if err != nil {
+			return err
+		}
 	}
 
 	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
@@ -783,8 +803,8 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	}
 
 	// write the initial merged config to disk
-	cfg := s.mergedConfig.Load().(string)
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
+	cfgState := s.cfgState.Load().(*configState)
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
@@ -796,9 +816,11 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 	cfgStr, ok := s.effectiveConfig.Load().(string)
 	if !ok {
-		cfgStr, ok = s.mergedConfig.Load().(string)
+		cfgState, ok := s.cfgState.Load().(*configState)
 		if !ok {
 			cfgStr = ""
+		} else {
+			cfgStr = cfgState.mergedConfig
 		}
 	}
 
@@ -860,7 +882,11 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	var k = koanf.New("::")
 
-	if c := config.GetConfig(); c != nil {
+	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
+
+	if !configMapIsEmpty {
+		c := config.GetConfig()
+
 		// Sort to make sure the order of merging is stable.
 		var names []string
 		for name := range c.ConfigMap {
@@ -929,11 +955,16 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 	}
 
 	// Check if supervisor's merged config is changed.
-	newMergedConfig := string(newMergedConfigBytes)
+
+	newConfigState := &configState{
+		mergedConfig:     string(newMergedConfigBytes),
+		configMapIsEmpty: configMapIsEmpty,
+	}
+
 	configChanged = false
 
-	oldConfig := s.mergedConfig.Swap(newMergedConfig)
-	if oldConfig == nil || oldConfig.(string) != newMergedConfig {
+	oldConfigState := s.cfgState.Swap(newConfigState)
+	if oldConfigState == nil || !oldConfigState.(*configState).equal(newConfigState) {
 		s.logger.Debug("Merged config changed.")
 		configChanged = true
 	}
@@ -953,6 +984,12 @@ func (s *Supervisor) handleRestartCommand() error {
 }
 
 func (s *Supervisor) startAgent() {
+	if s.cfgState.Load().(*configState).configMapIsEmpty {
+		// Don't start the agent if there is no config to run
+		s.logger.Info("No config present, not starting agent.")
+		return
+	}
+
 	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
@@ -1094,14 +1131,14 @@ func (s *Supervisor) runAgentProcess() {
 
 func (s *Supervisor) stopAgentApplyConfig() {
 	s.logger.Debug("Stopping the agent to apply new config")
-	cfg := s.mergedConfig.Load().(string)
+	cfgState := s.cfgState.Load().(*configState)
 	err := s.commander.Stop(context.Background())
 
 	if err != nil {
 		s.logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 }
