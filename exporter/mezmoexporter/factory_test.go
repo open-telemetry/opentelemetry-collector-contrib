@@ -5,12 +5,14 @@ package mezmoexporter
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -24,20 +26,30 @@ func TestType(t *testing.T) {
 	assert.Equal(t, pType, metadata.Type)
 }
 
+var defaultMaxIdleConns = http.DefaultTransport.(*http.Transport).MaxIdleConns
+var defaultMaxIdleConnsPerHost = http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+var defaultMaxConnsPerHost = http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+var defaultIdleConnTimeout = http.DefaultTransport.(*http.Transport).IdleConnTimeout
+
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		IngestURL: defaultIngestURL,
 		IngestKey: "",
 
 		ClientConfig: confighttp.ClientConfig{
-			Timeout: 5 * time.Second,
+			Timeout:             5 * time.Second,
+			MaxIdleConns:        &defaultMaxIdleConns,
+			MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+			MaxConnsPerHost:     &defaultMaxConnsPerHost,
+			IdleConnTimeout:     &defaultIdleConnTimeout,
+			Headers:             map[string]configopaque.String{},
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-	})
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 

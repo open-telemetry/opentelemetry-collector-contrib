@@ -363,8 +363,8 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 	actual, err := ProtoToTraces([]*model.Batch{jb})
 	assert.NoError(t, err)
 
-	assert.Equal(t, actual.ResourceSpans().Len(), 1)
-	assert.Equal(t, actual.ResourceSpans().At(0).ScopeSpans().Len(), 2)
+	assert.Equal(t, 1, actual.ResourceSpans().Len())
+	assert.Equal(t, 2, actual.ResourceSpans().At(0).ScopeSpans().Len())
 
 	ils0 := actual.ResourceSpans().At(0).ScopeSpans().At(0)
 	ils1 := actual.ResourceSpans().At(0).ScopeSpans().At(1)

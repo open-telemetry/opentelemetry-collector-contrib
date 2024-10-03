@@ -187,22 +187,36 @@ AFTER
 
 #### Grafana visualizations migration
 
+Navigation between traces and logs must be updated to account for the new Loki format form OpenTelemetry logs.
+
 ##### Tempo data source: Trace to Logs
 
-To enable the "trace to logs" navigation from Tempo to Loki, navigate to the Grafana Tempo data source configuration screen, in the "Trace to logs" section, select "use custom query" and specify the query:
+To enable the "trace to logs" navigation from Tempo to Loki, navigate to the Grafana Tempo data source configuration screen, in the "Trace to logs" section, 
 
-```
-{service_name="${__span.tags["service.name"]}"} | trace_id="${__span.traceId}"
-```
+* Select a Loki data source on which logs to trace is configured for the new Loki format for OTel logs as described in the next section
+* Select "Use custom query" and specify the query:
+
+    ```
+    {${__tags}} | trace_id="${__span.traceId}"
+    ```
+
+Configuration screenshot:
+
+![Grafana / Data Source / A Tempo datasource / Trace to logs](https://github.com/user-attachments/assets/f9728223-d6ba-4ce4-a377-77d6452a2014)
+
 
 ##### Loki data source: Log to Trace
 
 To enable the "logs to trace" navigation from Loki to Tempo, navigate to the Grafana Loki data source configuration screen, in the "Derived fields" section, update or create a derived field with:
 * Name: `Trace ID`
-* Type: `Label` (this `Label` name is missleading because it also supports Loki message metadata)
+* Type: `Label` (note that this `Label` name may be missleading because it also supports Loki message metadata)
 * Label: `trace_id`
 * Internal link: activated
-* Select the Tempo data source on which "trace to logs" is configured
+* Select the Tempo data source on which "trace to logs" is configured as described above
+
+Configuration screenshot:
+
+![Grafana / Data Source / A Loki datasource / Log to trace](https://github.com/user-attachments/assets/579a58bc-4fb2-4dcd-ade8-81c9fb0055f6)
 
 
 ### See Also

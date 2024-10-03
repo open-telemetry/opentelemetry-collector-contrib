@@ -47,11 +47,6 @@ func TestBrokerShutdown_closed(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
-func TestBrokerScraper_Name(t *testing.T) {
-	s := brokerScraper{}
-	assert.Equal(t, s.Name(), brokersScraperName)
-}
-
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient

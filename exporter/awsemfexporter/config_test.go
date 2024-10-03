@@ -267,7 +267,7 @@ func TestNoDimensionRollupFeatureGate(t *testing.T) {
 	require.NoError(t, err)
 	cfg := createDefaultConfig()
 
-	assert.Equal(t, cfg.(*Config).DimensionRollupOption, "NoDimensionRollup")
+	assert.Equal(t, "NoDimensionRollup", cfg.(*Config).DimensionRollupOption)
 	_ = featuregate.GlobalRegistry().Set("awsemf.nodimrollupdefault", false)
 }
 
@@ -320,7 +320,7 @@ func TestIsApplicationSignalsEnabled(t *testing.T) {
 				cfg.LogGroupName = tc.logGroupName
 			}
 
-			assert.Equal(t, cfg.isAppSignalsEnabled(), tc.expectedResult)
+			assert.Equal(t, tc.expectedResult, cfg.isAppSignalsEnabled())
 		})
 	}
 }
