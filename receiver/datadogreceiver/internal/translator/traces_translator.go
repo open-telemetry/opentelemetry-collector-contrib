@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
 	"io"
 	"mime"
 	"net/http"
@@ -16,12 +17,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -39,7 +42,28 @@ const (
 	// Requirement Level: Optional
 	// Examples: '228114450199004348'
 	attributeDatadogSpanID = "datadog.span.id"
+
+	tagRedisRawCommand  = "redis.raw_command"
+	tagMemcachedCommand = "memcached.command"
+	tagMongoDBQuery     = "mongodb.query"
+	tagElasticBody      = "elasticsearch.body"
+	tagOpenSearchBody   = "opensearch.body"
+	tagSQLQuery         = "sql.query"
+	tagHTTPURL          = "http.url"
 )
+
+type TracesTranslator struct {
+	obfuscator *obfuscate.Obfuscator
+
+	conf *internal.TracesConfig
+}
+
+func NewTracesTranslator(config *internal.Config) *TracesTranslator {
+	return &TracesTranslator{
+		obfuscator: obfuscate.NewObfuscator(config.Traces.Obfuscation.Export()),
+		conf:       &config.Traces,
+	}
+}
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	if ddTracerVersion := req.Header.Get(header.TracerVersion); ddTracerVersion != "" {
@@ -54,7 +78,7 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	}
 }
 
-func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
+func (tt *TracesTranslator) ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	var traces pb.Traces
 	for _, p := range payload.GetChunks() {
 		traces = append(traces, p.GetSpans())
@@ -91,6 +115,8 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 
 	for _, trace := range traces {
 		for _, span := range trace {
+			tt.obfuscateSpan(span)
+
 			slice, exist := groupByService[span.Service]
 			if !exist {
 				slice = ptrace.NewSpanSlice()
@@ -366,4 +392,87 @@ func uInt64ToSpanID(id uint64) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
 	return spanID
+}
+
+func (tt *TracesTranslator) obfuscateSpan(span *pb.Span) {
+	if !tt.conf.Obfuscation.Enabled {
+		return
+	}
+
+	o := tt.obfuscator
+	if tt.conf.Obfuscation.CreditCards.Enabled {
+		for k, v := range span.Meta {
+			newV := o.ObfuscateCreditCardNumber(k, v)
+			if v != newV {
+				span.Meta[k] = newV
+			}
+		}
+	}
+
+	switch span.Type {
+	case "sql", "cassandra":
+		if span.Resource == "" {
+			return
+		}
+		oq, err := o.ObfuscateSQLString(span.Resource)
+		if err != nil {
+			// we have an error, discard the SQL to avoid polluting user resources.
+			span.Resource = textNonParsable
+			traceutil.SetMeta(span, tagSQLQuery, textNonParsable)
+			return
+		}
+
+		span.Resource = oq.Query
+		if len(oq.Metadata.TablesCSV) > 0 {
+			traceutil.SetMeta(span, "sql.tables", oq.Metadata.TablesCSV)
+		}
+		traceutil.SetMeta(span, tagSQLQuery, oq.Query)
+	case "redis":
+		span.Resource = o.QuantizeRedisString(span.Resource)
+		if tt.conf.Obfuscation.Redis.Enabled {
+			if span.Meta == nil || span.Meta[tagRedisRawCommand] == "" {
+				return
+			}
+			if tt.conf.Obfuscation.Redis.RemoveAllArgs {
+				span.Meta[tagRedisRawCommand] = o.RemoveAllRedisArgs(span.Meta[tagRedisRawCommand])
+				return
+			}
+			span.Meta[tagRedisRawCommand] = o.ObfuscateRedisString(span.Meta[tagRedisRawCommand])
+		}
+	case "memcached":
+		if !tt.conf.Obfuscation.Memcached.Enabled {
+			return
+		}
+		if span.Meta == nil || span.Meta[tagMemcachedCommand] == "" {
+			return
+		}
+		span.Meta[tagMemcachedCommand] = o.ObfuscateMemcachedString(span.Meta[tagMemcachedCommand])
+	case "web", "http":
+		if span.Meta == nil || span.Meta[tagHTTPURL] == "" {
+			return
+		}
+		span.Meta[tagHTTPURL] = o.ObfuscateURLString(span.Meta[tagHTTPURL])
+	case "mongodb":
+		if !tt.conf.Obfuscation.Mongo.Enabled {
+			return
+		}
+		if span.Meta == nil || span.Meta[tagMongoDBQuery] == "" {
+			return
+		}
+		span.Meta[tagMongoDBQuery] = o.ObfuscateMongoDBString(span.Meta[tagMongoDBQuery])
+	case "elasticsearch", "opensearch":
+		if span.Meta == nil {
+			return
+		}
+		if tt.conf.Obfuscation.ES.Enabled {
+			if span.Meta[tagElasticBody] != "" {
+				span.Meta[tagElasticBody] = o.ObfuscateElasticSearchString(span.Meta[tagElasticBody])
+			}
+		}
+		if tt.conf.Obfuscation.OpenSearch.Enabled {
+			if span.Meta[tagOpenSearchBody] != "" {
+				span.Meta[tagOpenSearchBody] = o.ObfuscateOpenSearchString(span.Meta[tagOpenSearchBody])
+			}
+		}
+	}
 }

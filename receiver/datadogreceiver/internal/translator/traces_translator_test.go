@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"testing"
@@ -19,6 +20,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -90,7 +92,9 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	tracePayloads, _ := HandleTracesPayload(req)
 	assert.Len(t, tracePayloads, 1, "Expected one translated payload")
 	tracePayload := tracePayloads[0]
-	translated := ToTraces(tracePayload, req)
+
+	tt := NewTracesTranslator(internal.NewConfig())
+	translated := tt.ToTraces(tracePayload, req)
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
@@ -103,6 +107,50 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	assert.Equal(t, "1.0.1", serviceVersionValue.AsString())
 	spanResource, _ := span.Attributes().Get("dd.span.Resource")
 	assert.Equal(t, "my-resource", spanResource.Str())
+	spanResource1, _ := span.Attributes().Get("sampling.priority")
+	assert.Equal(t, fmt.Sprintf("%f", 1.0), spanResource1.Str())
+	numericAttributeValue, _ := span.Attributes().Get("numeric_attribute")
+	numericAttributeFloat, _ := strconv.ParseFloat(numericAttributeValue.AsString(), 64)
+	assert.Equal(t, 1.2, numericAttributeFloat)
+}
+
+func TestTracePayloadV05UnmarshallingObfuscateSQL(t *testing.T) {
+	stringSlice, ok := data[0].([]string)
+	if !ok {
+		log.Fatal("Type assertion failed for data[0]")
+	}
+
+	// Resource
+	stringSlice[7] = "/* query.digest=46f6d7bdae8dd8e8c907aed02b0e6525 tx=vjxn46eyxp */ \nselect /*+ MAX_EXECUTION_TIME(?) */ table.id as id1_6_0_, table.created_at as created_2_6_0_, table.updated_at as updated_3_6_0_, table.description as descript4_6_0_, table.is_internal as is_inter5_6_0_, table.name as name6_6_0_ \nfrom \ntable \nwhere table.id in (?, ?, ?, ?)"
+
+	payload, err := vmsgp.Marshal(&data)
+	assert.NoError(t, err)
+
+	var traces pb.Traces
+	require.NoError(t, traces.UnmarshalMsgDictionary(payload), "Must not error when marshaling content")
+	req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
+
+	tracePayloads, _ := HandleTracesPayload(req)
+	assert.Len(t, tracePayloads, 1, "Expected one translated payload")
+	tracePayload := tracePayloads[0]
+
+	cfg := internal.NewConfig()
+	cfg.Traces.Obfuscation.Enabled = true
+
+	tt := NewTracesTranslator(cfg)
+	translated := tt.ToTraces(tracePayload, req)
+	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
+	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.NotNil(t, span)
+	assert.Equal(t, "my-name", span.Name())
+	assert.Equal(t, 11, span.Attributes().Len(), "missing attributes")
+	value, exists := span.Attributes().Get("service.name")
+	assert.True(t, exists, "service.name missing")
+	assert.Equal(t, "my-service", value.AsString(), "service.name attribute value incorrect")
+	serviceVersionValue, _ := span.Attributes().Get("service.version")
+	assert.Equal(t, "1.0.1", serviceVersionValue.AsString())
+	spanResource, _ := span.Attributes().Get("dd.span.Resource")
+	assert.Equal(t, "select table.id, table.created_at, table.updated_at, table.description, table.is_internal, table.name from table where table.id in ( ? )", spanResource.Str())
 	spanResource1, _ := span.Attributes().Get("sampling.priority")
 	assert.Equal(t, fmt.Sprintf("%f", 1.0), spanResource1.Str())
 	numericAttributeValue, _ := span.Attributes().Get("numeric_attribute")
