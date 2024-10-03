@@ -1434,6 +1434,7 @@ func TestSupervisorInfoLoggingLevel(t *testing.T) {
 	// verify at least 1 log was read
 	require.True(t, check)
 	require.NoError(t, logFile.Close())
+	require.NoError(t, os.Remove(supervisorLogFilePath))
 }
 
 func findRandomPort() (int, error) {
