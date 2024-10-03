@@ -60,7 +60,6 @@ body:
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
-      - exporter/instana
       - exporter/kafka
       - exporter/kinetica
       - exporter/loadbalancing
@@ -142,8 +141,10 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
+      - pkg/kafka/topic
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil
@@ -152,6 +153,7 @@ body:
       - pkg/stanza
       - pkg/stanza/fileconsumer
       - pkg/translator/azure
+      - pkg/translator/azurelogs
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
@@ -264,6 +266,7 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
+      - receiver/prometheusremotewrite
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb

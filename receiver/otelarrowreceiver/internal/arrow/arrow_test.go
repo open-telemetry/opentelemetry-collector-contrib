@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/http2/hpack"
@@ -49,8 +50,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 )
 
+var noopTraces = noop.NewTracerProvider()
+
 func defaultBQ() *admission.BoundedQueue {
-	return admission.NewBoundedQueue(int64(100000), int64(10))
+	return admission.NewBoundedQueue(noopTraces, int64(100000), int64(10))
 }
 
 type compareJSONTraces struct{ ptrace.Traces }
@@ -133,6 +136,21 @@ func (u unhealthyTestChannel) onConsume(ctx context.Context) error {
 	default:
 		return status.Errorf(codes.Unavailable, "consumer unhealthy")
 	}
+}
+
+type blockingTestChannel struct {
+	t  *testing.T
+	cf func(context.Context)
+}
+
+func newBlockingTestChannel(t *testing.T, cf func(context.Context)) *blockingTestChannel {
+	return &blockingTestChannel{t: t, cf: cf}
+}
+
+func (h blockingTestChannel) onConsume(ctx context.Context) error {
+	h.cf(ctx)
+	<-ctx.Done()
+	return status.Error(codes.DeadlineExceeded, ctx.Err().Error())
 }
 
 type recvResult struct {
@@ -296,6 +314,14 @@ func statusUnavailableFor(batchID int64, msg string) *arrowpb.BatchStatus {
 	return &arrowpb.BatchStatus{
 		BatchId:       batchID,
 		StatusCode:    arrowpb.StatusCode_UNAVAILABLE,
+		StatusMessage: msg,
+	}
+}
+
+func statusDeadlineExceededFor(batchID int64, msg string) *arrowpb.BatchStatus {
+	return &arrowpb.BatchStatus{
+		BatchId:       batchID,
+		StatusCode:    arrowpb.StatusCode_DEADLINE_EXCEEDED,
 		StatusMessage: msg,
 	}
 }
@@ -464,10 +490,10 @@ func TestBoundedQueueWithPdataHeaders(t *testing.T) {
 			var bq *admission.BoundedQueue
 			if tt.rejected {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
-				bq = admission.NewBoundedQueue(int64(sizer.TracesSize(td)-100), 10)
+				bq = admission.NewBoundedQueue(noopTraces, int64(sizer.TracesSize(td)-100), 10)
 			} else {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
-				bq = admission.NewBoundedQueue(defaultBoundedQueueLimit, 10)
+				bq = admission.NewBoundedQueue(noopTraces, defaultBoundedQueueLimit, 10)
 			}
 
 			ctc.start(ctc.newRealConsumer, bq)
@@ -565,8 +591,7 @@ func TestReceiverRecvError(t *testing.T) {
 	ctc.putBatch(nil, fmt.Errorf("test recv error"))
 
 	err := ctc.wait()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "test recv error")
+	require.ErrorContains(t, err, "test recv error")
 }
 
 func TestReceiverSendError(t *testing.T) {
@@ -598,6 +623,50 @@ func TestReceiverSendError(t *testing.T) {
 	close(ctc.receive)
 	err = ctc.wait()
 	requireUnavailableStatus(t, err)
+}
+
+func TestReceiverTimeoutError(t *testing.T) {
+	tc := newBlockingTestChannel(t, func(ctx context.Context) {
+		deadline, has := ctx.Deadline()
+		require.True(t, has, "context has deadline")
+		timeout := time.Until(deadline)
+		require.Less(t, time.Second/2, timeout)
+		require.GreaterOrEqual(t, time.Second, timeout)
+	})
+	ctc := newCommonTestCase(t, tc)
+
+	ld := testdata.GenerateLogs(2)
+	batch, err := ctc.testProducer.BatchArrowRecordsFromLogs(ld)
+	require.NoError(t, err)
+
+	ctc.stream.EXPECT().Send(statusDeadlineExceededFor(batch.BatchId, "context deadline exceeded")).Times(1).Return(nil)
+
+	var hpb bytes.Buffer
+	hpe := hpack.NewEncoder(&hpb)
+	err = hpe.WriteField(hpack.HeaderField{
+		Name:  "grpc-timeout",
+		Value: "1000m",
+	})
+	assert.NoError(t, err)
+	batch.Headers = make([]byte, hpb.Len())
+	copy(batch.Headers, hpb.Bytes())
+
+	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.putBatch(batch, nil)
+
+	assert.EqualValues(t, ld, (<-ctc.consume).Data)
+
+	start := time.Now()
+	for time.Since(start) < 5*time.Second {
+		if ctc.ctrl.Satisfied() {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+
+	close(ctc.receive)
+	err = ctc.wait()
+	require.NoError(t, err)
 }
 
 func TestReceiverConsumeError(t *testing.T) {
@@ -781,7 +850,7 @@ func TestReceiverEOF(t *testing.T) {
 			expectData = append(expectData, td)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -794,7 +863,7 @@ func TestReceiverEOF(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		require.NoError(t, ctc.wait())
+		assert.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -848,7 +917,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 			td := testdata.GenerateTraces(2)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -860,7 +929,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 							Name:  key,
 							Value: val,
 						})
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}
 
@@ -876,7 +945,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Add(1)
 
 	go func() {
-		require.NoError(t, ctc.wait())
+		assert.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -1240,7 +1309,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			td := testdata.GenerateTraces(2)
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			batch = copyBatch(batch)
 
@@ -1253,7 +1322,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 							Name:  strings.ToLower(key),
 							Value: val,
 						})
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}
 

@@ -30,9 +30,9 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		ErrorMode: ottl.PropagateError,
-	})
+	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 

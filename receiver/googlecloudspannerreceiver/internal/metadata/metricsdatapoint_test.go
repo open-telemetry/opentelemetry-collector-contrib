@@ -169,7 +169,7 @@ func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
 	metricsDataPoint.TruncateQueryText(6)
 
 	assert.Len(t, metricsDataPoint.labelValues, 1)
-	assert.Equal(t, metricsDataPoint.labelValues[0].Value(), "SELECT")
+	assert.Equal(t, "SELECT", metricsDataPoint.labelValues[0].Value())
 }
 
 func allPossibleLabelValues() []LabelValue {

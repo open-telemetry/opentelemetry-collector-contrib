@@ -12,6 +12,7 @@ import (
 	"hash"
 	"hash/fnv"
 	"math"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -66,7 +68,8 @@ var resourceAttrsToPreserve = map[string]bool{
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
-	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint, pcommon.Value) error
+	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document
+	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint) error
 	encodeDocument(objmodel.Document) ([]byte, error)
 }
 
@@ -85,6 +88,10 @@ type dataPoint interface {
 	Timestamp() pcommon.Timestamp
 	StartTimestamp() pcommon.Timestamp
 	Attributes() pcommon.Map
+	Value() (pcommon.Value, error)
+	DynamicTemplate(pmetric.Metric) string
+	DocCount() uint64
+	HasMappingHint(mappingHint) bool
 }
 
 const (
@@ -240,19 +247,24 @@ func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error)
 }
 
 // upsertMetricDataPointValue upserts a datapoint value to documents which is already hashed by resource and index
-func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint) error {
 	switch m.mode {
 	case MappingOTel:
-		return m.upsertMetricDataPointValueOTelMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
+		return m.upsertMetricDataPointValueOTelMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp)
 	case MappingECS:
-		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp)
 	default:
 		// Defaults to ECS for backward compatibility
-		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp, value)
+		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp)
 	}
 }
 
-func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, metric pmetric.Metric, dp dataPoint) error {
+	value, err := dp.Value()
+	if err != nil {
+		return err
+	}
+
 	hash := metricECSHash(dp.Timestamp(), dp.Attributes())
 	var (
 		document objmodel.Document
@@ -270,7 +282,12 @@ func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]obj
 	return nil
 }
 
-func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
+func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint) error {
+	value, err := dp.Value()
+	if err != nil {
+		return err
+	}
+
 	// documents is per-resource. Therefore, there is no need to hash resource attributes
 	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit())
 	var (
@@ -289,6 +306,11 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 	}
 
+	if dp.HasMappingHint(hintDocCount) {
+		docCount := dp.DocCount()
+		document.AddInt("_doc_count", int64(docCount))
+	}
+
 	switch value.Type() {
 	case pcommon.ValueTypeMap:
 		m := pcommon.NewMap()
@@ -300,57 +322,118 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 	// TODO: support quantiles
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
 
-	document.AddDynamicTemplate("metrics."+metric.Name(), metricDpToDynamicTemplate(metric, dp))
+	// DynamicTemplate returns the name of dynamic template that applies to the metric and data point,
+	// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
+	// dynamic template that is defined in ES mapping, e.g.
+	// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
+	document.AddDynamicTemplate("metrics."+metric.Name(), dp.DynamicTemplate(metric))
 	documents[hash] = document
 	return nil
 }
 
-// metricDpToDynamicTemplate returns the name of dynamic template that applies to the metric and data point,
-// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
-// dynamic template that is defined in ES mapping, e.g.
-// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
-func metricDpToDynamicTemplate(metric pmetric.Metric, dp dataPoint) string {
-	switch metric.Type() {
-	case pmetric.MetricTypeSum:
-		switch dp.(pmetric.NumberDataPoint).ValueType() {
-		case pmetric.NumberDataPointValueTypeDouble:
-			if metric.Sum().IsMonotonic() {
-				return "counter_double"
-			}
-			return "gauge_double"
-		case pmetric.NumberDataPointValueTypeInt:
-			if metric.Sum().IsMonotonic() {
-				return "counter_long"
-			}
-			return "gauge_long"
-		default:
-			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
-		}
-	case pmetric.MetricTypeGauge:
-		switch dp.(pmetric.NumberDataPoint).ValueType() {
-		case pmetric.NumberDataPointValueTypeDouble:
-			return "gauge_double"
-		case pmetric.NumberDataPointValueTypeInt:
-			return "gauge_long"
-		default:
-			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
-		}
-	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram:
-		return "histogram"
-	case pmetric.MetricTypeSummary:
-		return "summary_metrics"
-	}
-	return ""
+type summaryDataPoint struct {
+	pmetric.SummaryDataPoint
+	mappingHintGetter
 }
 
-func summaryToValue(dp pmetric.SummaryDataPoint) pcommon.Value {
+func newSummaryDataPoint(dp pmetric.SummaryDataPoint) summaryDataPoint {
+	return summaryDataPoint{SummaryDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
+}
+
+func (dp summaryDataPoint) Value() (pcommon.Value, error) {
 	// TODO: Add support for quantiles
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
 	m.PutDouble("sum", dp.Sum())
 	m.PutInt("value_count", int64(dp.Count()))
-	return vm
+	return vm, nil
+}
+
+func (dp summaryDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	return "summary"
+}
+
+func (dp summaryDataPoint) DocCount() uint64 {
+	return dp.Count()
+}
+
+type exponentialHistogramDataPoint struct {
+	pmetric.ExponentialHistogramDataPoint
+	mappingHintGetter
+}
+
+func newExponentialHistogramDataPoint(dp pmetric.ExponentialHistogramDataPoint) exponentialHistogramDataPoint {
+	return exponentialHistogramDataPoint{ExponentialHistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
+}
+
+func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
+		vm := pcommon.NewValueMap()
+		m := vm.Map()
+		m.PutDouble("sum", dp.Sum())
+		m.PutInt("value_count", int64(dp.Count()))
+		return vm, nil
+	}
+
+	counts, values := exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
+
+	vm := pcommon.NewValueMap()
+	m := vm.Map()
+	vmCounts := m.PutEmptySlice("counts")
+	vmCounts.EnsureCapacity(len(counts))
+	for _, c := range counts {
+		vmCounts.AppendEmpty().SetInt(c)
+	}
+	vmValues := m.PutEmptySlice("values")
+	vmValues.EnsureCapacity(len(values))
+	for _, v := range values {
+		vmValues.AppendEmpty().SetDouble(v)
+	}
+
+	return vm, nil
+}
+
+func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
+		return "summary"
+	}
+	return "histogram"
+}
+
+func (dp exponentialHistogramDataPoint) DocCount() uint64 {
+	return dp.Count()
+}
+
+type histogramDataPoint struct {
+	pmetric.HistogramDataPoint
+	mappingHintGetter
+}
+
+func newHistogramDataPoint(dp pmetric.HistogramDataPoint) histogramDataPoint {
+	return histogramDataPoint{HistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
+}
+
+func (dp histogramDataPoint) Value() (pcommon.Value, error) {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
+		vm := pcommon.NewValueMap()
+		m := vm.Map()
+		m.PutDouble("sum", dp.Sum())
+		m.PutInt("value_count", int64(dp.Count()))
+		return vm, nil
+	}
+	return histogramToValue(dp.HistogramDataPoint)
+}
+
+func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
+	if dp.HasMappingHint(hintAggregateMetricDouble) {
+		return "summary"
+	}
+	return "histogram"
+}
+
+func (dp histogramDataPoint) DocCount() uint64 {
+	return dp.HistogramDataPoint.Count()
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
@@ -401,9 +484,16 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 	return vm, nil
 }
 
-var errInvalidNumberDataPoint = errors.New("invalid number data point")
+type numberDataPoint struct {
+	pmetric.NumberDataPoint
+	mappingHintGetter
+}
 
-func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
+func newNumberDataPoint(dp pmetric.NumberDataPoint) numberDataPoint {
+	return numberDataPoint{NumberDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
+}
+
+func (dp numberDataPoint) Value() (pcommon.Value, error) {
 	switch dp.ValueType() {
 	case pmetric.NumberDataPointValueTypeDouble:
 		value := dp.DoubleValue()
@@ -416,6 +506,42 @@ func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
 	}
 	return pcommon.Value{}, errInvalidNumberDataPoint
 }
+
+func (dp numberDataPoint) DynamicTemplate(metric pmetric.Metric) string {
+	switch metric.Type() {
+	case pmetric.MetricTypeSum:
+		switch dp.NumberDataPoint.ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			if metric.Sum().IsMonotonic() {
+				return "counter_double"
+			}
+			return "gauge_double"
+		case pmetric.NumberDataPointValueTypeInt:
+			if metric.Sum().IsMonotonic() {
+				return "counter_long"
+			}
+			return "gauge_long"
+		default:
+			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
+		}
+	case pmetric.MetricTypeGauge:
+		switch dp.NumberDataPoint.ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			return "gauge_double"
+		case pmetric.NumberDataPointValueTypeInt:
+			return "gauge_long"
+		default:
+			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
+		}
+	}
+	return ""
+}
+
+func (dp numberDataPoint) DocCount() uint64 {
+	return 1
+}
+
+var errInvalidNumberDataPoint = errors.New("invalid number data point")
 
 func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string) {
 	resourceMapVal := pcommon.NewValueMap()
@@ -463,7 +589,9 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 }
 
 func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
-	attributeMap.RemoveIf(func(key string, val pcommon.Value) bool {
+	attrsCopy := pcommon.NewMap() // Copy to avoid mutating original map
+	attributeMap.CopyTo(attrsCopy)
+	attrsCopy.RemoveIf(func(key string, val pcommon.Value) bool {
 		switch key {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
 			// At this point the data_stream attributes are expected to be in the record attributes,
@@ -471,10 +599,12 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 			// Move them to the top of the document and remove them from the record
 			document.AddAttribute(key, val)
 			return true
+		case mappingHintsAttrKey:
+			return true
 		}
 		return false
 	})
-	document.AddAttributes("attributes", attributeMap)
+	document.AddAttributes("attributes", attrsCopy)
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
@@ -529,8 +659,6 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
-	// TODO: add span events to log data streams
-
 	return document
 }
 
@@ -552,6 +680,26 @@ func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptra
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 	return document
+}
+
+func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document {
+	if m.mode != MappingOTel {
+		// Currently span events are stored separately only in OTel mapping mode.
+		// In other modes, they are stored within the span document.
+		return nil
+	}
+	var document objmodel.Document
+	document.AddTimestamp("@timestamp", spanEvent.Timestamp())
+	document.AddString("attributes.event.name", spanEvent.Name())
+	document.AddSpanID("span_id", span.SpanID())
+	document.AddTraceID("trace_id", span.TraceID())
+	document.AddInt("dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
+
+	m.encodeAttributesOTelMode(&document, spanEvent.Attributes())
+	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
+	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+
+	return &document
 }
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
@@ -725,7 +873,7 @@ func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
 	hasher.Write(timestampBuf)
 
-	mapHashExcludeDataStreamAttr(hasher, attributes)
+	mapHashExcludeReservedAttrs(hasher, attributes)
 
 	return hasher.Sum32()
 }
@@ -742,18 +890,21 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 
 	hasher.Write([]byte(unit))
 
-	mapHashExcludeDataStreamAttr(hasher, scopeAttrs)
-	mapHashExcludeDataStreamAttr(hasher, dp.Attributes())
+	mapHashExcludeReservedAttrs(hasher, scopeAttrs)
+	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), mappingHintsAttrKey)
 
 	return hasher.Sum32()
 }
 
-// mapHashExcludeDataStreamAttr is mapHash but ignoring DS attributes.
-// It is useful for cases where index is already considered during routing and no need to be considered in hashing.
-func mapHashExcludeDataStreamAttr(hasher hash.Hash, m pcommon.Map) {
+// mapHashExcludeReservedAttrs is mapHash but ignoring some reserved attributes.
+// e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
+func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
 	m.Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+			return true
+		}
+		if slices.Contains(extra, k) {
 			return true
 		}
 		hasher.Write([]byte(k))

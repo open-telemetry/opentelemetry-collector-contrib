@@ -187,6 +187,10 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
+	if s.config.MuteProcessAllErrors {
+		return s.mb.Emit(), nil
+	}
+
 	return s.mb.Emit(), errs.Combine()
 }
 

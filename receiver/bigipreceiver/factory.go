@@ -49,7 +49,7 @@ func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf co
 	}
 
 	bigipScraper := newScraper(params.Logger, cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), bigipScraper.scrape, scraperhelper.WithStart(bigipScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, bigipScraper.scrape, scraperhelper.WithStart(bigipScraper.start))
 	if err != nil {
 		return nil, err
 	}
