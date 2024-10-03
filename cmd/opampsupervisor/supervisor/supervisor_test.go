@@ -626,7 +626,6 @@ service:
 		fileContent, err := os.ReadFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile))
 		require.NoError(t, err)
 		assert.Contains(t, string(fileContent), testConfigMessage)
-		// replace the ppid as that changes with each run
 		assert.Nil(t, s.mergedConfig.Load())
 		assert.True(t, remoteConfigStatusUpdated)
 	})
@@ -807,7 +806,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		assert.Equal(t, "test", s.effectiveConfig.Load())
 		assert.True(t, updatedClientEffectiveConfig)
 	})
-	t.Run("EffectiveConfig - Effective config message does not contain instance config", func(t *testing.T) {
+	t.Run("EffectiveConfig - Effective config message contains an empty config", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
 			updateEffectiveConfigFunc: func(_ context.Context) error {
@@ -1067,7 +1066,7 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 			persistentState:              &persistentState{InstanceID: testUUID},
 			pidProvider:                  staticPIDProvider(1234),
 		}
-		err := s.createTemplates()
+		require.NoError(t, s.createTemplates())
 
 		agentDesc := &atomic.Value{}
 		agentDesc.Store(&protobufs.AgentDescription{
@@ -1084,8 +1083,6 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 		})
 
 		s.agentDescription = agentDesc
-
-		require.NoError(t, err)
 
 		configChanged := s.setupOwnMetrics(context.Background(), &protobufs.TelemetryConnectionSettings{
 			DestinationEndpoint: "",
