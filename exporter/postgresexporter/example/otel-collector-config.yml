@@ -3,24 +3,18 @@ receivers:
     protocols:
       grpc:
         endpoint: 0.0.0.0:4317
+      http:
 exporters:
-  cassandra:
-    dsn: 127.0.0.1
-    port: 9042
-    timeout: 10s
-    keyspace: "otel"
-    trace_table: "otel_spans"
-    logs_table: "otel_logs"
-    replication:
-      class: "SimpleStrategy"
-      replication_factor: 1
-    compression:
-      algorithm: "ZstdCompressor"
+  postgresexporter:
+    connectionString: "postgrs://postgres:postgres@localhost:5432/postgres" 
 service:
   pipelines:
     traces:
       receivers: [ otlp ]
-      exporters: [ cassandra ]
+      exporters: [ postgresexporter ]
     logs:
       receivers: [ otlp ]
-      exporters: [ cassandra ]
+      exporters: [ postgresexporter ]
+    metrics:
+      receivers: [ otlp ]
+      exporters: [ postgresexporter ]
