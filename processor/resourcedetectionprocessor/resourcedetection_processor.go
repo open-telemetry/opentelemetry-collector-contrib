@@ -36,6 +36,8 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component
 
 // processTraces implements the ProcessTracesFunc type.
 func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	// TODO: only merge if the incoming data is from the local host.
+	// We can use the context to check that.
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		rss := rs.At(i)
@@ -48,6 +50,8 @@ func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td ptrac
 
 // processMetrics implements the ProcessMetricsFunc type.
 func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	// TODO: only merge if the incoming data is from the local host.
+	// We can use the context to check that.
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		rss := rm.At(i)
@@ -60,6 +64,8 @@ func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pmet
 
 // processLogs implements the ProcessLogsFunc type.
 func (rdp *resourceDetectionProcessor) processLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
+	// TODO: only merge if the incoming data is from the local host.
+	// We can use the context to check that.
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
 		rss := rl.At(i)

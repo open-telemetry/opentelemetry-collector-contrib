@@ -38,6 +38,16 @@ func (rb *ResourceBuilder) SetK8sNodeUID(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundK8sNodeUID := r.Attributes().Get("k8s.node.uid")
+	if foundK8sNodeUID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("k8s.node")
+		ref.IdAttrKeys().Append("k8s.node.uid")
+		if _, ok := r.Attributes().Get("k8s.node.name"); ok {
+			ref.DescrAttrKeys().Append("k8s.node.name")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

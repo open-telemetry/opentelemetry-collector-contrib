@@ -39,7 +39,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateTraces(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 	}

@@ -69,7 +69,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorGroupbytraceEventLatency, err = builder.meters[configtelemetry.LevelBasic].Int64Histogram(
 		"otelcol_processor_groupbytrace_event_latency",
 		metric.WithDescription("How long the queue events are taking to be processed"),
-		metric.WithUnit("ms"), metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
+		metric.WithUnit("ms"),
+		metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorGroupbytraceIncompleteReleases, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(

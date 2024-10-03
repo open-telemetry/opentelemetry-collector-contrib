@@ -129,6 +129,48 @@ func (rb *ResourceBuilder) SetCloudRegion(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundAwsEcsTaskArn := r.Attributes().Get("aws.ecs.task.arn")
+	if foundAwsEcsTaskArn {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("aws.ecs.task")
+		ref.IdAttrKeys().Append("aws.ecs.task.arn")
+		if _, ok := r.Attributes().Get("aws.ecs.cluster.arn"); ok {
+			ref.DescrAttrKeys().Append("aws.ecs.cluster.arn")
+		}
+		if _, ok := r.Attributes().Get("aws.ecs.task.family"); ok {
+			ref.DescrAttrKeys().Append("aws.ecs.task.family")
+		}
+		if _, ok := r.Attributes().Get("aws.ecs.task.id"); ok {
+			ref.DescrAttrKeys().Append("aws.ecs.task.id")
+		}
+		if _, ok := r.Attributes().Get("aws.ecs.task.revision"); ok {
+			ref.DescrAttrKeys().Append("aws.ecs.task.revision")
+		}
+		if _, ok := r.Attributes().Get("aws.ecs.launchtype"); ok {
+			ref.DescrAttrKeys().Append("aws.ecs.launchtype")
+		}
+		if _, ok := r.Attributes().Get("aws.log.group.names"); ok {
+			ref.DescrAttrKeys().Append("aws.log.group.names")
+		}
+		if _, ok := r.Attributes().Get("aws.log.group.arns"); ok {
+			ref.DescrAttrKeys().Append("aws.log.group.arns")
+		}
+		if _, ok := r.Attributes().Get("aws.log.stream.names"); ok {
+			ref.DescrAttrKeys().Append("aws.log.stream.names")
+		}
+		if _, ok := r.Attributes().Get("aws.log.stream.arns"); ok {
+			ref.DescrAttrKeys().Append("aws.log.stream.arns")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
+	_, foundCloudProvider := r.Attributes().Get("cloud.provider")
+	_, foundCloudAccountID := r.Attributes().Get("cloud.account.id")
+	if foundCloudProvider && foundCloudAccountID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("cloud_account")
+		ref.IdAttrKeys().Append("cloud.provider", "cloud.account.id")
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

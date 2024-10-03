@@ -94,8 +94,6 @@ go.opentelemetry.io/collector/featuregate v1.16.0 h1:mNA/ga+5FErnbJ/47KsGsF+CWqg
 go.opentelemetry.io/collector/featuregate v1.16.0/go.mod h1:47xrISO71vJ83LSMm8+yIDsUbKktUp48Ovt7RR6VbRs=
 go.opentelemetry.io/collector/internal/globalsignal v0.110.0 h1:S6bfFEiek8vJeXAbciWS7W8UR6ZrVJB3ftNyFTMHQaY=
 go.opentelemetry.io/collector/internal/globalsignal v0.110.0/go.mod h1:GqMXodPWOxK5uqpX8MaMXC2389y2XJTa5nPwf8FYDK8=
-go.opentelemetry.io/collector/pdata v1.16.0 h1:g02K8jlRnmQ7TQDuXpdgVL6vIxIVqr5Gbb1qIR27rto=
-go.opentelemetry.io/collector/pdata v1.16.0/go.mod h1:YZZJIt2ehxosYf/Y1pbvexjNWsIGNNrzzlCTO9jC1F4=
 go.opentelemetry.io/collector/pipeline v0.110.0 h1:nArQj8lt2R6ajbbmZ0f7JqkzAzvIOSwxsxDEv9HGKHw=
 go.opentelemetry.io/collector/pipeline v0.110.0/go.mod h1:qWk90kohDYBgI/1Kw4DQaQU82+y9GJY8MDse7H2JTWg=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0 h1:ZIg3ZT/aQ7AfKqdwp7ECpOK6vHqquXXuyTjIO8ZdmPs=

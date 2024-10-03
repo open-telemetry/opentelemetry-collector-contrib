@@ -143,6 +143,58 @@ func (rb *ResourceBuilder) SetK8sClusterName(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundHostID := r.Attributes().Get("host.id")
+	if foundHostID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("host")
+		ref.IdAttrKeys().Append("host.id")
+		if _, ok := r.Attributes().Get("host.name"); ok {
+			ref.DescrAttrKeys().Append("host.name")
+		}
+		if _, ok := r.Attributes().Get("host.type"); ok {
+			ref.DescrAttrKeys().Append("host.type")
+		}
+		if _, ok := r.Attributes().Get("cloud.provider"); ok {
+			ref.DescrAttrKeys().Append("cloud.provider")
+		}
+		if _, ok := r.Attributes().Get("cloud.platform"); ok {
+			ref.DescrAttrKeys().Append("cloud.platform")
+		}
+		if _, ok := r.Attributes().Get("cloud.region"); ok {
+			ref.DescrAttrKeys().Append("cloud.region")
+		}
+		if _, ok := r.Attributes().Get("cloud.availability_zone"); ok {
+			ref.DescrAttrKeys().Append("cloud.availability_zone")
+		}
+		if _, ok := r.Attributes().Get("gcp.gce.instance.name"); ok {
+			ref.DescrAttrKeys().Append("gcp.gce.instance.name")
+		}
+		if _, ok := r.Attributes().Get("gcp.gce.instance.hostname"); ok {
+			ref.DescrAttrKeys().Append("gcp.gce.instance.hostname")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
+	_, foundCloudProvider := r.Attributes().Get("cloud.provider")
+	_, foundCloudAccountID := r.Attributes().Get("cloud.account.id")
+	if foundCloudProvider && foundCloudAccountID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("cloud_account")
+		ref.IdAttrKeys().Append("cloud.provider", "cloud.account.id")
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
+	_, foundFaasInstance := r.Attributes().Get("faas.instance")
+	if foundFaasInstance {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("faas.function")
+		ref.IdAttrKeys().Append("faas.instance")
+		if _, ok := r.Attributes().Get("faas.name"); ok {
+			ref.DescrAttrKeys().Append("faas.name")
+		}
+		if _, ok := r.Attributes().Get("faas.version"); ok {
+			ref.DescrAttrKeys().Append("faas.version")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

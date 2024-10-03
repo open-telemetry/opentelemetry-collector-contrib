@@ -16,3 +16,9 @@ resource_attributes:
     description: The os.type
     type: string
     enabled: true
+
+
+entities:
+  - type: host
+    id_attributes: [host.name]
+    descriptive_attributes: [os.type]

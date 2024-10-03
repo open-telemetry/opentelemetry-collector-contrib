@@ -40,3 +40,9 @@ resource_attributes:
     description: Heroku relese version set as service.version.
     enabled: true
     type: string
+
+
+entities:
+  - type: service
+    id_attributes: [service.instance.id]
+    descriptive_attributes: [service.name, service.version]

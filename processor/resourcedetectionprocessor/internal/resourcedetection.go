@@ -9,6 +9,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -140,6 +142,13 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 	if len(droppedAttributes) > 0 {
 		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
 	}
+	if res.Entities().Len() > 0 {
+		types := make([]string, 0, res.Entities().Len())
+		for i := 0; i < res.Entities().Len(); i++ {
+			types = append(types, res.Entities().At(i).Type())
+		}
+		p.logger.Info("detected entities: " + strings.Join(types, ", "))
+	}
 
 	p.detectedResource.resource = res
 	p.detectedResource.schemaURL = mergedSchemaURL
@@ -191,8 +200,70 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 		}
 		return true
 	})
+
+	for i := 0; i < from.Entities().Len(); i++ {
+		fromEntity := from.Entities().At(i)
+		isNewEntity := true
+		for j := 0; j < to.Entities().Len(); j++ {
+			toEntity := to.Entities().At(j)
+			if toEntity.Type() == fromEntity.Type() {
+				isNewEntity = false
+				MergeEntity(toEntity, fromEntity, overrideTo)
+			}
+		}
+		if isNewEntity {
+			fromEntity.CopyTo(to.Entities().AppendEmpty())
+		}
+	}
 }
 
 func IsEmptyResource(res pcommon.Resource) bool {
 	return res.Attributes().Len() == 0
+}
+
+func MergeEntity(to, from pcommon.ResourceEntityRef, overrideTo bool) {
+	fromID := from.IdAttrKeys().AsRaw()
+	slices.Sort(fromID)
+	toID := to.IdAttrKeys().AsRaw()
+	slices.Sort(toID)
+	if slices.Equal(fromID, toID) {
+		to.DescrAttrKeys().FromRaw(slicesUnion(from.DescrAttrKeys().AsRaw(), to.DescrAttrKeys().AsRaw()))
+	} else if overrideTo {
+		// If the entity IDs are different, we are not able to merge them.
+		// We pick one of them and ignore the other based on the overrideTo flag.
+		to.CopyTo(from)
+	}
+}
+
+func slicesUnion(a, b []string) []string {
+	slices.Sort(a)
+	slices.Sort(b)
+	i, j := 0, 0
+	var result []string
+
+	for i < len(a) && j < len(b) {
+		if a[i] < b[j] {
+			result = append(result, a[i])
+			i++
+		} else if a[i] > b[j] {
+			result = append(result, b[j])
+			j++
+		} else { // a[i] == b[j]
+			result = append(result, a[i])
+			i++
+			j++
+		}
+	}
+
+	// Append remaining elements from either slice
+	for i < len(a) {
+		result = append(result, a[i])
+		i++
+	}
+	for j < len(b) {
+		result = append(result, b[j])
+		j++
+	}
+
+	return result
 }

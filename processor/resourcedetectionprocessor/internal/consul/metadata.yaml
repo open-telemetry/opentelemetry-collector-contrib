@@ -20,3 +20,8 @@ resource_attributes:
     description: The host.id
     type: string
     enabled: true
+
+entities:
+  - type: host
+    id_attributes: [host.id]
+    descriptive_attributes: [host.name, cloud.region]

@@ -180,7 +180,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-  
+
   process.context_switches:
     enabled: false
     description: Number of times the process has been context switched.
@@ -201,3 +201,8 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction]
+
+entities:
+  - type: process
+    id_attributes: [process.pid]
+    descriptive_attributes: [process.parent_pid, process.executable.name, process.executable.path, process.command, process.command_line, process.owner, process.cgroup]
