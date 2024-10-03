@@ -76,7 +76,7 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.cmd.SysProcAttr = sysProcAttrs()
 
 	// PassthroughLogging changes how collector start up happens
-	if c.cfg.PassthroughLogging {
+	if c.cfg.PassthroughLogs {
 		return c.startWithPassthroughLogging()
 	}
 	return c.startNormal()
