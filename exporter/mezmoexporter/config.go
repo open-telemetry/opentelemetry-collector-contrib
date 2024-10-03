@@ -46,9 +46,9 @@ type Config struct {
 
 // returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
-	return confighttp.ClientConfig{
-		Timeout: defaultTimeout,
-	}
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultTimeout
+	return clientConfig
 }
 
 func (c *Config) Validate() error {

@@ -40,6 +40,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
@@ -101,6 +103,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol

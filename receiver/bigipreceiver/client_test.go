@@ -83,7 +83,7 @@ func TestNewClient(t *testing.T) {
 			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 
@@ -135,7 +135,7 @@ func TestGetNewToken(t *testing.T) {
 				tc := createTestClient(t, ts.URL)
 
 				err := tc.GetNewToken(context.Background())
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 				hasToken := tc.HasToken()
 				require.False(t, hasToken)
 			},
@@ -215,7 +215,7 @@ func TestGetVirtualServers(t *testing.T) {
 
 				pools, err := tc.GetPools(context.Background())
 				require.Nil(t, pools)
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 			},
 		},
 		{
@@ -413,7 +413,7 @@ func TestGetPools(t *testing.T) {
 
 				pools, err := tc.GetPools(context.Background())
 				require.Nil(t, pools)
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 			},
 		},
 		{
@@ -666,7 +666,7 @@ func TestGetNodes(t *testing.T) {
 
 				nodes, err := tc.GetNodes(context.Background())
 				require.Nil(t, nodes)
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 			},
 		},
 		{
