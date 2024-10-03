@@ -63,7 +63,7 @@ func createDefaultConfig() component.Config {
 		},
 		Retry: RetrySettings{
 			Enabled:         true,
-			MaxRetries:      3,
+			MaxRetries:      2,
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
 			RetryOnStatus: []int{
