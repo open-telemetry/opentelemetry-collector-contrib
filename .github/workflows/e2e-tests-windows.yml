@@ -110,7 +110,7 @@ jobs:
       - name: Download Collector Binary
         uses: actions/download-artifact@v4
         with:
-          name: otelcontribcol_windows_amd64.exe
+          name: collector-binary
           path: bin/
       - name: Build supervisor
         run: cd cmd/opampsupervisor; go build

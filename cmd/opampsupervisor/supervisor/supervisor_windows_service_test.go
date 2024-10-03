@@ -27,7 +27,7 @@ const (
 // The test assumes that the service and respective event source are already created.
 //
 // To test locally:
-// * Build the supervisor and collector binaries:
+// * Build the supervisor and collector binaries. Note you'll need to update the name of the collector binary in the supervisor config file
 //   - cd cmd/opampsupervisor; go build
 //   - make otelcontribcol
 //

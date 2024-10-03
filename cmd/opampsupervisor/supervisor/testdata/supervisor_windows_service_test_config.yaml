@@ -10,7 +10,7 @@ capabilities:
   accepts_restart_command: true
 
 agent:
-  executable: ../../../bin/otelcontribcol_windows_amd64.exe
+  executable: ../../../bin/collector_binary
   health_check_port: 12345
 
 storage:
