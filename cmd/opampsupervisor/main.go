@@ -37,14 +37,12 @@ func runInteractive() error {
 
 	supervisor, err := supervisor.NewSupervisor(logger, cfg)
 	if err != nil {
-		logger.Error(err.Error())
-		return err
+		return fmt.Errorf("failed to create supervisor: %w", err)
 	}
 
 	err = supervisor.Start()
 	if err != nil {
-		logger.Error(err.Error())
-		return err
+		return fmt.Errorf("failed to start supervisor: %w", err)
 	}
 
 	interrupt := make(chan os.Signal, 1)
