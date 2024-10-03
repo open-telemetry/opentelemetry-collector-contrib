@@ -9,11 +9,12 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testdata/random"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"golang.org/x/tools/txtar"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testdata/random"
 )
 
 const (
@@ -22,7 +23,6 @@ const (
 	nmetric = 2
 	total   = nres * nscope * nmetric
 )
-
 
 func main() {
 	rand.Seed(0)
