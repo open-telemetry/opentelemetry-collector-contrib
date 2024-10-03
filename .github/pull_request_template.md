@@ -2,7 +2,7 @@
 Ex. Adding a feature - Explain what this achieves.-->
 #### Description
 
-<!-- Issue number if applicable -->
+<!-- Issue number (e.g. #1234) or full URL to issue, if applicable. -->
 #### Link to tracking issue
 Fixes
 
