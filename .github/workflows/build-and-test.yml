@@ -592,6 +592,7 @@ jobs:
       - name: Build Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
+          make genotelcontribcol
           make docker-otelcontribcol
           docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
           docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest

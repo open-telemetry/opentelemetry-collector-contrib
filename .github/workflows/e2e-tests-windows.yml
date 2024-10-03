@@ -41,6 +41,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-mod-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
