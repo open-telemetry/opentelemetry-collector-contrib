@@ -33,6 +33,8 @@ type S3UploaderConfig struct {
 	S3ForcePathStyle bool `mapstructure:"s3_force_path_style"`
 	// DisableSLL forces communication to happen via HTTP instead of HTTPS.
 	DisableSSL bool `mapstructure:"disable_ssl"`
+
+	StorageClass string `mapstructure:"storage_class"`
 	// Compression sets the algorithm used to process the payload
 	// before uploading to S3.
 	// Valid values are: `gzip` or no value set.
@@ -68,6 +70,10 @@ func (c *Config) Validate() error {
 	if c.S3Uploader.S3Bucket == "" && c.S3Uploader.Endpoint == "" {
 		errs = multierr.Append(errs, errors.New("bucket or endpoint is required"))
 	}
+	if c.S3Uploader.StorageClass == "" {
+		c.S3Uploader.StorageClass = "STANDARD"
+	}
+
 	compression := c.S3Uploader.Compression
 	if compression.IsCompressed() {
 		if compression != configcompression.TypeGzip {
