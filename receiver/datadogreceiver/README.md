@@ -29,6 +29,9 @@ receivers:
   datadog:
     endpoint: localhost:8126
     read_timeout: 60s
+    traces:
+      obfuscation:
+        enabled: true
 
 exporters:
   debug:
@@ -47,6 +50,10 @@ service:
 The read timeout of the HTTP Server
 
 Default: 60s
+
+### Traces (Optional)
+#### Obfuscation
+The obfuscation configuration allows you to obfuscate and cleanup sensitive information in the trace data. The complete list of obfuscation rules and configuration can be found [here](internal/config.go).
 
 ### HTTP Service Config
 
