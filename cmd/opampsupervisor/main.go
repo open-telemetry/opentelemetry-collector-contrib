@@ -5,26 +5,27 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
 func main() {
 	configFlag := flag.String("config", "", "Path to a supervisor configuration file")
 	flag.Parse()
 
-	logger, _ := zap.NewDevelopment()
-
 	cfg, err := config.Load(*configFlag)
 	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(-1)
-		return
+		log.Fatal("failed to load config: %w", err)
+	}
+
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	if err != nil {
+		log.Fatal("failed to create logger: %w", err)
 	}
 
 	supervisor, err := supervisor.NewSupervisor(logger, cfg)
@@ -36,9 +37,7 @@ func main() {
 
 	err = supervisor.Start()
 	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(-1)
-		return
+		log.Fatal("failed to start supervisor: %w", err)
 	}
 
 	interrupt := make(chan os.Signal, 1)
