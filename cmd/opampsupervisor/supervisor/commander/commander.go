@@ -75,9 +75,9 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
 	c.cmd.SysProcAttr = sysProcAttrs()
 
-	// containerized affects collector logging which changes how start up happens
-	if c.cfg.Containerized {
-		return c.startContainerized()
+	// PassthroughLogging changes how collector start up happens
+	if c.cfg.PassthroughLogging {
+		return c.startWithPassthroughLogging()
 	}
 	return c.startNormal()
 }
@@ -119,7 +119,7 @@ func (c *Commander) startNormal() error {
 	return nil
 }
 
-func (c *Commander) startContainerized() error {
+func (c *Commander) startWithPassthroughLogging() error {
 	// grab cmd pipes
 	stdoutPipe, err := c.cmd.StdoutPipe()
 	if err != nil {
@@ -132,7 +132,7 @@ func (c *Commander) startContainerized() error {
 
 	// start agent
 	if err := c.cmd.Start(); err != nil {
-		return fmt.Errorf("startContainerized: %w", err)
+		return fmt.Errorf("start: %w", err)
 	}
 	c.running.Store(1)
 
