@@ -124,6 +124,7 @@ func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Con
 		Bucket:          aws.String(config.S3Uploader.S3Bucket),
 		Key:             aws.String(key),
 		Body:            reader,
+		StorageClass:    aws.String(config.S3Uploader.StorageClass), // Set the storage class here
 		ContentEncoding: &encoding,
 	})
 	if err != nil {
