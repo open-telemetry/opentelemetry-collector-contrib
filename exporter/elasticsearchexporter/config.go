@@ -273,6 +273,14 @@ func (cfg *Config) Validate() error {
 		// TODO support confighttp.ClientConfig.Compression
 		return errors.New("compression is not currently configurable")
 	}
+
+	if cfg.Retry.MaxRequests < 0 {
+		return errors.New("retry::max_requests should be non-negative")
+	}
+	if cfg.Retry.MaxRetries < 0 {
+		return errors.New("retry::max_retries should be non-negative")
+	}
+
 	return nil
 }
 
