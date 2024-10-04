@@ -41,6 +41,12 @@ all_set:
       enabled: true
     splunk.io.avg.iops:
       enabled: true
+    splunk.kvstore.backup.status:
+      enabled: true
+    splunk.kvstore.replication.status:
+      enabled: true
+    splunk.kvstore.status:
+      enabled: true
     splunk.license.index.usage:
       enabled: true
     splunk.parse.queue.ratio:
@@ -100,6 +106,12 @@ none_set:
     splunk.indexes.size:
       enabled: false
     splunk.io.avg.iops:
+      enabled: false
+    splunk.kvstore.backup.status:
+      enabled: false
+    splunk.kvstore.replication.status:
+      enabled: false
+    splunk.kvstore.status:
       enabled: false
     splunk.license.index.usage:
       enabled: false
