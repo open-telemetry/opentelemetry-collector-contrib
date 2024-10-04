@@ -4,7 +4,6 @@
 package splunkhecexporter
 
 import (
-	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -26,8 +24,6 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
-
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -40,6 +36,23 @@ func TestLoadConfig(t *testing.T) {
 
 	hundred := 100
 	idleConnTimeout := 10 * time.Second
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 10 * time.Second
+	clientConfig.Endpoint = "https://splunk:8088/services/collector"
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "",
+			CertFile: "",
+			KeyFile:  "",
+		},
+		InsecureSkipVerify: false,
+	}
+	clientConfig.HTTP2PingTimeout = 10 * time.Second
+	clientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
+	clientConfig.MaxIdleConns = &hundred
+	clientConfig.MaxIdleConnsPerHost = &hundred
+	clientConfig.IdleConnTimeout = &idleConnTimeout
 
 	tests := []struct {
 		id       component.ID
@@ -65,25 +78,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxContentLengthLogs:    2 * 1024 * 1024,
 				MaxContentLengthMetrics: 2 * 1024 * 1024,
 				MaxContentLengthTraces:  2 * 1024 * 1024,
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:  10 * time.Second,
-					Endpoint: "https://splunk:8088/services/collector",
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile:   "",
-							CertFile: "",
-							KeyFile:  "",
-						},
-						InsecureSkipVerify: false,
-					},
-					MaxIdleConns:         &hundred,
-					MaxIdleConnsPerHost:  &hundred,
-					IdleConnTimeout:      &idleConnTimeout,
-					HTTP2ReadIdleTimeout: 10 * time.Second,
-					HTTP2PingTimeout:     10 * time.Second,
-					Headers:              map[string]configopaque.String{},
-					MaxConnsPerHost:      &defaultMaxConnsPerHost,
-				},
+				ClientConfig:            clientConfig,
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
