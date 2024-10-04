@@ -64,7 +64,7 @@ func generateCalculatedMetrics(rm pmetric.ResourceMetrics, metric2 pmetric.Metri
 
 			if metric.Name() == rule.metric1 {
 				newMetric := generateMetricFromMatchingAttributes(metric, metric2, rule, logger)
-				appendMetric(ilm, newMetric, rule.name, rule.unit)
+				appendNewMetric(ilm, newMetric, rule.name, rule.unit)
 			}
 		}
 	}
@@ -178,7 +178,7 @@ func generateScalarMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule in
 			metric := metricSlice.At(j)
 			if metric.Name() == rule.metric1 {
 				newMetric := generateMetricFromOperand(metric, operand2, rule.operation, logger)
-				appendMetric(ilm, newMetric, rule.name, rule.unit)
+				appendNewMetric(ilm, newMetric, rule.name, rule.unit)
 			}
 		}
 	}
@@ -231,9 +231,9 @@ func generateMetricFromOperand(from pmetric.Metric, operand2 float64, operation 
 	return to
 }
 
-// Append the scope metrics with the new metric. This will only append the passed in metric if it
+// Append the new metric to the scope metrics. This will only append the new metric if it
 // has data points.
-func appendMetric(ilm pmetric.ScopeMetrics, newMetric pmetric.Metric, name, unit string) {
+func appendNewMetric(ilm pmetric.ScopeMetrics, newMetric pmetric.Metric, name, unit string) {
 	dataPointCount := 0
 	switch newMetric.Type() {
 	case pmetric.MetricTypeSum:
