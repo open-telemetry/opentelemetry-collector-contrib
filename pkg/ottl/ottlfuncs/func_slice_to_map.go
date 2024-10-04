@@ -54,18 +54,17 @@ func SliceToMap[K any](target ottl.Getter[K], keyPath []string, valuePath ottl.O
 func sliceToMap(v []any, keyPath []string, valuePath ottl.Optional[[]string]) (any, error) {
 	result := make(map[string]any, len(v))
 	for _, elem := range v {
-		switch e := elem.(type) {
-		case map[string]any:
+		e, ok := elem.(map[string]any)
+		if !ok {
+			continue
+		}
 			obj, err := extractValue(e, keyPath)
 			if err != nil {
 				continue
 			}
 
-			var key string
-			switch k := obj.(type) {
-			case string:
-				key = k
-			default:
+			key, ok := obj.(string)
+			if !ok {
 				continue
 			}
 
@@ -102,10 +101,9 @@ func extractValue(v map[string]any, path []string) (any, error) {
 		return obj, nil
 	}
 
-	switch o := obj.(type) {
-	case map[string]any:
+	if o, ok := obj.(map[string]any); ok {
 		return extractValue(o, path[1:])
-	default:
+	} else {
 		return nil, fmt.Errorf("provided object does not contain the path %v", path)
 	}
 }
