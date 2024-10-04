@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	ErrInvalidIntervalValue = errors.New("invalid interval value")
+	ErrInvalidIntervalValue               = errors.New("invalid interval value")
+	ErrIntervalLowesetGranularityIsSecond = errors.New("interval should should not contain milli or nano seconds")
 )
 
 var _ component.Config = (*Config)(nil)
@@ -37,8 +38,12 @@ type PassThrough struct {
 // Validate checks whether the input configuration has all of the required fields for the processor.
 // An error is returned if there are any invalid inputs.
 func (config *Config) Validate() error {
-	if config.Interval <= 0 {
+	if config.Interval <= time.Second {
 		return ErrInvalidIntervalValue
+	}
+
+	if config.Interval%time.Second != 0 {
+		return ErrIntervalLowesetGranularityIsSecond
 	}
 
 	return nil
