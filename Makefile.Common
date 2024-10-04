@@ -211,6 +211,10 @@ tidy:
 	rm -fr go.sum
 	$(GOCMD) mod tidy -compat=1.22.0
 
+.PHONY: toolchain
+toolchain:
+	$(GOCMD) get toolchain@none
+
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"

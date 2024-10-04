@@ -195,7 +195,7 @@ type mockComponent struct {
 	component.ShutdownFunc
 }
 
-func (*nopWithEndpointFactory) CreateLogsReceiver(
+func (*nopWithEndpointFactory) CreateLogs(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -207,7 +207,7 @@ func (*nopWithEndpointFactory) CreateLogsReceiver(
 	}, nil
 }
 
-func (*nopWithEndpointFactory) CreateMetricsReceiver(
+func (*nopWithEndpointFactory) CreateMetrics(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -219,7 +219,7 @@ func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	}, nil
 }
 
-func (*nopWithEndpointFactory) CreateTracesReceiver(
+func (*nopWithEndpointFactory) CreateTraces(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -255,7 +255,7 @@ func (*nopWithoutEndpointFactory) CreateDefaultConfig() component.Config {
 	}
 }
 
-func (*nopWithoutEndpointFactory) CreateLogsReceiver(
+func (*nopWithoutEndpointFactory) CreateLogs(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -267,7 +267,7 @@ func (*nopWithoutEndpointFactory) CreateLogsReceiver(
 	}, nil
 }
 
-func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
+func (*nopWithoutEndpointFactory) CreateMetrics(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -279,7 +279,7 @@ func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 	}, nil
 }
 
-func (*nopWithoutEndpointFactory) CreateTracesReceiver(
+func (*nopWithoutEndpointFactory) CreateTraces(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
