@@ -411,6 +411,7 @@ Available Converters:
 
 - [Base64Decode](#base64decode)
 - [Decode](#decode)
+- [CompileMap](#compilemap)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Day](#day)
@@ -503,6 +504,22 @@ Examples:
 
 
 - `Decode(attributes["encoded field"], "us-ascii")`
+
+### CompileMap
+
+`CompileMap(object, pattern)`
+
+The `CompileMap` Converter parses the map object and returns a new map only with keys matching the pattern.
+
+The `object` is a `map[string]any`. `pcommon.Map` or a `pcommon.ValueTypeMap`. Otherwise the function returns an error.
+
+The `pattern` is a regex in string format.
+
+Examples:
+
+- `CompileMap(attributes["foo"], "bar")`
+
+- `set(attributes["resultMap"], CompileMap(attributes["foo"], "bar"))`
 
 ### Concat
 

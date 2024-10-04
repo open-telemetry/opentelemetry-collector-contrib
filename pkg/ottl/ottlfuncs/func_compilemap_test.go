@@ -30,7 +30,7 @@ func Test_CompileMap(t *testing.T) {
 	}{
 		{
 			name: "map",
-			objectGetter: func(ctx context.Context, a any) (any, error) {
+			objectGetter: func(context.Context, any) (any, error) {
 				return map[string]any{
 					"pattern": "item",
 					"x":       "y",
@@ -42,7 +42,7 @@ func Test_CompileMap(t *testing.T) {
 		},
 		{
 			name: "common map",
-			objectGetter: func(ctx context.Context, a any) (any, error) {
+			objectGetter: func(context.Context, any) (any, error) {
 				return map2, nil
 			},
 			pattern:  "pattern",
@@ -51,7 +51,7 @@ func Test_CompileMap(t *testing.T) {
 		},
 		{
 			name: "error",
-			objectGetter: func(ctx context.Context, a any) (any, error) {
+			objectGetter: func(context.Context, any) (any, error) {
 				return nil, fmt.Errorf("err")
 			},
 			pattern:  "pattern",
