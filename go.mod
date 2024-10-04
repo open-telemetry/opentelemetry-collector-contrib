@@ -29,8 +29,5 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 // see https://github.com/DataDog/agent-payload/issues/218
 exclude github.com/DataDog/agent-payload/v5 v5.0.59
 
-// see https://github.com/mattn/go-ieproxy/issues/45
-replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
-
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37

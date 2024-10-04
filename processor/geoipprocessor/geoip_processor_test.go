@@ -138,7 +138,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		// compare metrics
 		nextMetrics := new(consumertest.MetricsSink)
-		metricsProcessor, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, nextMetrics)
+		metricsProcessor, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, nextMetrics)
 		require.NoError(t, err)
 
 		inputMetrics, err := golden.ReadMetrics(filepath.Join(dir, "input-metrics.yaml"))
@@ -157,7 +157,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		// compare traces
 		nextTraces := new(consumertest.TracesSink)
-		tracesProcessor, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, nextTraces)
+		tracesProcessor, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), cfg, nextTraces)
 		require.NoError(t, err)
 
 		inputTraces, err := golden.ReadTraces(filepath.Join(dir, "input-traces.yaml"))
@@ -176,7 +176,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		// compare logs
 		nextLogs := new(consumertest.LogsSink)
-		logsProcessor, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, nextLogs)
+		logsProcessor, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, nextLogs)
 		require.NoError(t, err)
 
 		inputLogs, err := golden.ReadLogs(filepath.Join(dir, "input-logs.yaml"))

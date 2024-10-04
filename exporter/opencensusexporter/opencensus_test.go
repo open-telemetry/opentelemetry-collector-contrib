@@ -30,7 +30,7 @@ func TestSendTraces(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.ServerConfig.NetAddr.Endpoint = endpoint
 	set := receivertest.NewNopSettings()
-	recv, err := rFactory.CreateTracesReceiver(context.Background(), set, rCfg, sink)
+	recv, err := rFactory.CreateTraces(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
@@ -129,7 +129,7 @@ func TestSendMetrics(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.ServerConfig.NetAddr.Endpoint = endpoint
 	set := receivertest.NewNopSettings()
-	recv, err := rFactory.CreateMetricsReceiver(context.Background(), set, rCfg, sink)
+	recv, err := rFactory.CreateMetrics(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
