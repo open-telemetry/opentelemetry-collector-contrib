@@ -1608,9 +1608,9 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
-	require.Contains(t, err.Error(), "HTTP/0.0 400")
+	require.ErrorContains(t, err, "HTTP/0.0 400")
 	// The returned error should contain the response body responseBody.
-	assert.Contains(t, err.Error(), responseBody)
+	assert.ErrorContains(t, err, responseBody)
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
 	httpClient, _ = newTestClient(500, responseBody)
@@ -1618,7 +1618,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
-	require.Contains(t, err.Error(), "HTTP 500")
+	require.ErrorContains(t, err, "HTTP 500")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
 }
@@ -1953,7 +1953,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		require.Error(t, err)
 
 		assert.True(t, consumererror.IsPermanent(err))
-		assert.Contains(t, err.Error(), "dropped log event")
+		assert.ErrorContains(t, err, "dropped log event")
 	}
 }
 

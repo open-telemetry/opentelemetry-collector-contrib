@@ -50,18 +50,18 @@ func createDefaultConfig() component.Config {
 	maxConnCount := defaultMaxConns
 	idleConnTimeout := 30 * time.Second
 	timeout := 10 * time.Second
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultHTTPTimeout
+	clientConfig.MaxIdleConns = &maxConnCount
+	clientConfig.MaxIdleConnsPerHost = &maxConnCount
+	clientConfig.IdleConnTimeout = &idleConnTimeout
+	clientConfig.HTTP2ReadIdleTimeout = defaultHTTP2ReadIdleTimeout
+	clientConfig.HTTP2PingTimeout = defaultHTTP2PingTimeout
 
 	return &Config{
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
-		ClientConfig: confighttp.ClientConfig{
-			Timeout:              defaultHTTPTimeout,
-			MaxIdleConns:         &maxConnCount,
-			MaxIdleConnsPerHost:  &maxConnCount,
-			IdleConnTimeout:      &idleConnTimeout,
-			HTTP2ReadIdleTimeout: defaultHTTP2ReadIdleTimeout,
-			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
-		},
+		ClientConfig:  clientConfig,
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},

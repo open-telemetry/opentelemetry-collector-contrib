@@ -23,8 +23,7 @@ func TestInputConfigMissingBase(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required `type` field.")
+	require.ErrorContains(t, err, "missing required `type` field.")
 }
 
 func TestInputConfigMissingOutput(t *testing.T) {
