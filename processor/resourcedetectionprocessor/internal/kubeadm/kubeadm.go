@@ -18,7 +18,9 @@ import (
 )
 
 const (
-	TypeStr = "kubeadm"
+	TypeStr                   = "kubeadm"
+	defaultConfigMapName      = "kubeadm-config"
+	defaultConfigMapNamespace = "kube-system"
 )
 
 var _ internal.Detector = (*detector)(nil)
@@ -33,7 +35,7 @@ type detector struct {
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
-	kubeadmProvider, err := kubeadm.NewProvider(cfg.configMapName, cfg.configMapNamespace, cfg.APIConfig)
+	kubeadmProvider, err := kubeadm.NewProvider(defaultConfigMapName, defaultConfigMapNamespace, cfg.APIConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating kubeadm provider: %w", err)
 	}
