@@ -8,7 +8,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.48.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.110.1-0.20241004063257-d6cd5935eefc
-	go.opentelemetry.io/collector/confmap v1.16.1-0.20241004063257-d6cd5935eefc
+	go.opentelemetry.io/collector/confmap v1.17.0
 	go.opentelemetry.io/collector/extension v0.110.1-0.20241004063257-d6cd5935eefc
 	go.uber.org/goleak v1.3.0
 )
@@ -34,7 +34,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.1-0.20241004063257-d6cd5935eefc // indirect
-	go.opentelemetry.io/collector/pdata v1.16.1-0.20241004063257-d6cd5935eefc // indirect
+	go.opentelemetry.io/collector/pdata v1.17.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
