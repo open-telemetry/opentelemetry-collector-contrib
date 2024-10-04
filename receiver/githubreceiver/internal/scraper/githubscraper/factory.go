@@ -24,11 +24,11 @@ const (
 type Factory struct{}
 
 func (f *Factory) CreateDefaultConfig() internal.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultHTTPTimeout
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: defaultHTTPTimeout,
-		},
+		ClientConfig:         clientConfig,
 	}
 }
 
