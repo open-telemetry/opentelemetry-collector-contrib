@@ -29,47 +29,71 @@ func createCompileMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 		return nil, fmt.Errorf("CompileFactory args must be of type *CompileArguments[K]")
 	}
 
-	return compileMap(args.Object, args.Pattern), nil
+	return compileMap(args.Object, args.Pattern)
 }
 
-func compileMap[K any](object ottl.Getter[K], pattern ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func compileMap[K any](object ottl.Getter[K], pattern ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		val, err := object.Get(ctx, tCtx)
+		mapObject, err := object.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		val2, err := pattern.Get(ctx, tCtx)
+		stringPattern, err := pattern.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		var result map[string]any
-		switch r := val.(type) {
-		case pcommon.Map:
-			result = r.AsRaw()
-		case map[string]any:
-			result = r
-		default:
-			return nil, fmt.Errorf("type, %T, not supported for compileMap function", r)
-		}
-		return compileTarget(result, val2)
-	}
-}
 
-func compileTarget(object map[string]any, pattern string) (pcommon.Map, error) {
-	tmpMap := make(map[string]any, len(object))
-	res := pcommon.NewMap()
-	for k, v := range object {
-		matched, err := regexp.MatchString(pattern, k)
+		res := pcommon.NewMap()
+		var dataMap map[string]any
+
+		switch r := mapObject.(type) {
+		case pcommon.Map:
+			dataMap = r.AsRaw()
+		case map[string]any:
+			dataMap = r
+		default:
+			return res, fmt.Errorf("type, %T, not supported for compileMap function", r)
+		}
+
+		tmpResult, err := compileTarget(dataMap, stringPattern)
 		if err != nil {
 			return res, err
 		}
+
+		if err := res.FromRaw(tmpResult); err != nil {
+			return res, err
+		}
+
+		return res, nil
+	}, nil
+}
+
+func compileTarget(object map[string]any, pattern string) (map[string]any, error) {
+	result := make(map[string]any, len(object))
+	for k, v := range object {
+		matched, err := regexp.MatchString(pattern, k)
+		if err != nil {
+			return result, err
+		}
 		if matched {
-			tmpMap[k] = v
+			switch r := v.(type) {
+			case pcommon.Map:
+				m, err := compileTarget(r.AsRaw(), pattern)
+				if err != nil {
+					return result, err
+				}
+				result[k] = m
+			case map[string]any:
+				m, err := compileTarget(r, pattern)
+				if err != nil {
+					return result, err
+				}
+				result[k] = m
+			default:
+				result[k] = v
+			}
 		}
 	}
 
-	if err := res.FromRaw(tmpMap); err != nil {
-		return res, err
-	}
-	return res, nil
+	return result, nil
 }
