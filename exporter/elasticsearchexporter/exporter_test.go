@@ -82,6 +82,39 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish with bodymap encoding", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			assert.JSONEq(t,
+				`{"@timestamp":"2024-03-12T20:00:41.123456789Z","id":1,"key":"value"}`,
+				string(docs[0].Document),
+			)
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "bodymap"
+		})
+
+		logs := plog.NewLogs()
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		logRecords := scopeLogs.LogRecords()
+		observedTimestamp := pcommon.Timestamp(time.Now().UnixNano())
+		logRecord := logRecords.AppendEmpty()
+
+		logRecord.SetObservedTimestamp(observedTimestamp)
+		bodyMap := pcommon.NewMap()
+		bodyMap.PutStr("@timestamp", "2024-03-12T20:00:41.123456789Z")
+		bodyMap.PutInt("id", 1)
+		bodyMap.PutStr("key", "value")
+		bodyMap.CopyTo(logRecord.Body().SetEmptyMap())
+
+		mustSendLogs(t, exporter, logs)
+		rec.WaitItems(1)
+	})
+
 	t.Run("publish with dedot", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {

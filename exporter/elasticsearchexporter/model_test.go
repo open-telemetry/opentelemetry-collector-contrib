@@ -1208,3 +1208,33 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	fooValue = gjson.GetBytes(encoded, "Attributes\\.foo\\.value")
 	assert.Equal(t, "foovalue", fooValue.Str)
 }
+
+func TestEncodeLogBodyMapMode(t *testing.T) {
+	// craft a log record with a body map
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	logRecords := scopeLogs.LogRecords()
+	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano())
+
+	logRecord := logRecords.AppendEmpty()
+	logRecord.SetObservedTimestamp(observedTimestamp)
+
+	bodyMap := pcommon.NewMap()
+	bodyMap.PutStr("@timestamp", "2024-03-12T20:00:41.123456789Z")
+	bodyMap.PutInt("id", 1)
+	bodyMap.PutStr("key", "value")
+	bodyMap.CopyTo(logRecord.Body().SetEmptyMap())
+
+	var buf bytes.Buffer
+	m := encodeModel{}
+	doc := m.encodeLogBodyMapMode(logRecord)
+	require.NoError(t, doc.Serialize(&buf, false, false))
+
+	got := buf.String()
+	require.JSONEq(t, `{
+		"@timestamp":                 "2024-03-12T20:00:41.123456789Z",
+		"id":                         1,
+		"key":                        "value"	
+	}`, got)
+}

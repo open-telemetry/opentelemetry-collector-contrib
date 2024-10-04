@@ -162,7 +162,10 @@ behaviours, which may be configured through the following settings:
 
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
-             field names for span events. 
+             field names for span events.
+    - `bodymap`: Provides fine-grained control over the final documents to be ingested.
+            It  works only for logs where the log record body is a map. Each LogRecord
+            body is serialized to JSON as-is and becomes a separate document for ingestion.
   - `dedup` (DEPRECATED). This configuration is deprecated and non-operational,
     and will be removed in the future. Object keys are always deduplicated to
     avoid Elasticsearch rejecting documents.

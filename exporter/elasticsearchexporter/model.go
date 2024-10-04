@@ -107,6 +107,8 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 		document = m.encodeLogECSMode(resource, record, scope)
 	case MappingOTel:
 		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+	case MappingBodyMap:
+		document = m.encodeLogBodyMapMode(record)
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
@@ -136,6 +138,14 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 
 	return document
+}
+
+func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) objmodel.Document {
+	body := record.Body()
+	if body.Type() != pcommon.ValueTypeMap {
+		return objmodel.Document{}
+	}
+	return objmodel.DocumentFromAttributes(body.Map())
 }
 
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
