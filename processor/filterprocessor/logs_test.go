@@ -580,7 +580,7 @@ func TestFilterLogProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			flp, err := factory.CreateLogsProcessor(
+			flp, err := factory.CreateLogs(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -676,7 +676,7 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 		Exclude: nil,
 	}
 	ctx := context.Background()
-	proc, _ := factory.CreateLogsProcessor(
+	proc, _ := factory.CreateLogs(
 		ctx,
 		processortest.NewNopSettings(),
 		cfg,

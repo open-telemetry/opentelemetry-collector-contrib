@@ -62,7 +62,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 		}(),
 	}
 
-	_, err := newFactoryAdapter().CreateLogsReceiver(
+	_, err := newFactoryAdapter().CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
@@ -106,7 +106,7 @@ func BenchmarkReadWindowsEventLogger(b *testing.B) {
 				cfg.InputConfig.MaxReads = tt.count
 				sink := new(consumertest.LogsSink)
 
-				receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+				receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 				require.NoError(b, err)
 
 				_ = receiver.Start(ctx, componenttest.NewNopHost())
@@ -134,7 +134,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
 
-	receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+	receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 	require.NoError(t, err)
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
@@ -188,7 +188,7 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	cfg.InputConfig.Raw = true
 	sink := new(consumertest.LogsSink)
 
-	receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+	receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 	require.NoError(t, err)
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
@@ -254,7 +254,7 @@ func TestExcludeProvider(t *testing.T) {
 			cfg.InputConfig.ExcludeProviders = []string{excludedSrc}
 			sink := new(consumertest.LogsSink)
 
-			receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+			receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 			require.NoError(t, err)
 
 			err = receiver.Start(ctx, componenttest.NewNopHost())

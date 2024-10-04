@@ -39,6 +39,7 @@ func Apply[P data.Point[P], List filterable[P]](dps List, fn func(Ident, P) (P, 
 		next, err := fn(id, dp)
 		if err != nil {
 			if !errors.Is(err, Drop) {
+				err = Error(id, err)
 				errs = errors.Join(errs, err)
 			}
 			return false
