@@ -44,8 +44,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.1-0.20241004063257-d6cd5935eefc // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.110.1-0.20241004063257-d6cd5935eefc // indirect
-	go.opentelemetry.io/collector/pipeline v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

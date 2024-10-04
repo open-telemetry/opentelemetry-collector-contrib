@@ -43,7 +43,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.17.10 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
@@ -57,7 +57,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/collector/client v1.16.1-0.20241004063257-d6cd5935eefc // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/config/configauth v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.16.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.16.1-0.20241004063257-d6cd5935eefc // indirect

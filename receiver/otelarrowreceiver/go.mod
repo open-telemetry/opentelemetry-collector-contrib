@@ -70,7 +70,6 @@ require (
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.16.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.16.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/config/internal v0.110.1-0.20241004063257-d6cd5935eefc // indirect

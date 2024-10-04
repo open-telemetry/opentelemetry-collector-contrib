@@ -53,7 +53,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/internal/globalsignal v0.110.1-0.20241004063257-d6cd5935eefc // indirect

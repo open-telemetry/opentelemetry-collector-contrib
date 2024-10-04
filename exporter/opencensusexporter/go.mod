@@ -55,7 +55,6 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/client v1.16.1-0.20241004063257-d6cd5935eefc // indirect
-	go.opentelemetry.io/collector/component/componentprofiles v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/config/configauth v0.110.1-0.20241004063257-d6cd5935eefc // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.16.1-0.20241004063257-d6cd5935eefc // indirect
