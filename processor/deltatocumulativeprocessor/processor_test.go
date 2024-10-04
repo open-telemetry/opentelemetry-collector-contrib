@@ -35,11 +35,15 @@ func TestProcessor(t *testing.T) {
 			continue
 		}
 
-		ar := reader()
-
 		type Stage struct {
 			In  pmetric.Metrics `testar:"in,pmetric"`
 			Out pmetric.Metrics `testar:"out,pmetric"`
+		}
+
+		read := func(file string, into *Stage) error {
+			return testar.ReadFile(file, into,
+				testar.Parser("pmetric", UnmarshalMetrics),
+			)
 		}
 
 		dir := fi.Name()
@@ -55,7 +59,7 @@ func TestProcessor(t *testing.T) {
 			stages, _ := filepath.Glob(file("*.test"))
 			for _, file := range stages {
 				var stage Stage
-				err := ar.ReadFile(file, &stage)
+				err := read(file, &stage)
 				require.NoError(t, err)
 
 				sink.Reset()
@@ -85,28 +89,6 @@ func config(t *testing.T, file string) *self.Config {
 	return cfg
 }
 
-func reader() testar.Reader {
-	return testar.Reader{
-		Formats: testar.Formats{
-			"pmetric": func(data []byte, into any) error {
-				var tmp any
-				if err := yaml.Unmarshal(data, &tmp); err != nil {
-					return err
-				}
-				data, err := json.Marshal(tmp)
-				if err != nil {
-					return err
-				}
-				md, err := (&pmetric.JSONUnmarshaler{}).UnmarshalMetrics(data)
-				if err != nil {
-					return err
-				}
-				*(into.(*pmetric.Metrics)) = md
-				return nil
-			},
-		},
-	}
-}
 
 func setup(t *testing.T, cfg *self.Config) (processor.Metrics, *consumertest.MetricsSink) {
 	t.Helper()
@@ -125,4 +107,21 @@ func setup(t *testing.T, cfg *self.Config) (processor.Metrics, *consumertest.Met
 	require.NoError(t, err)
 
 	return proc, next
+}
+
+func UnmarshalMetrics(data []byte, into any) error {
+	var tmp any
+	if err := yaml.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	data, err := json.Marshal(tmp)
+	if err != nil {
+		return err
+	}
+	md, err := (&pmetric.JSONUnmarshaler{}).UnmarshalMetrics(data)
+	if err != nil {
+		return err
+	}
+	*(into.(*pmetric.Metrics)) = md
+	return nil
 }
