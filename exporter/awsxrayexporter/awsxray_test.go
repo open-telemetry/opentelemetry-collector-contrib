@@ -6,6 +6,7 @@ package awsxrayexporter
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"testing"
@@ -120,6 +121,79 @@ func TestMiddleware(t *testing.T) {
 	handler.AssertCalled(t, "HandleResponse", mock.Anything, mock.Anything)
 }
 
+func TestTraceExportOtlpFormat(t *testing.T) {
+	config := generateConfig(t)
+	config.TransitSpansInOtlpFormat = true
+
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
+	ctx := context.Background()
+	td := constructSpanData()
+	err := traceExporter.ConsumeTraces(ctx, td)
+	assert.Error(t, err)
+	err = traceExporter.Shutdown(ctx)
+	assert.NoError(t, err)
+}
+
+func TestEncodingOtlpFormat(t *testing.T) {
+	config1 := generateConfig(t)
+	config1.IndexAllAttributes = true
+	config1.IndexedAttributes = []string{"test", "test1", "test2"}
+	testEncodingOtlpFormatWithIndexConfiguration(t, config1)
+
+	config2 := generateConfig(t)
+	config2.IndexedAttributes = []string{"test", "test1", "test2"}
+	testEncodingOtlpFormatWithIndexConfiguration(t, config2)
+
+	config3 := generateConfig(t)
+	config3.IndexAllAttributes = true
+	testEncodingOtlpFormatWithIndexConfiguration(t, config3)
+
+	config4 := generateConfig(t)
+	config4.IndexedAttributes = []string{}
+	testEncodingOtlpFormatWithIndexConfiguration(t, config4)
+
+	config5 := generateConfig(t)
+	config5.IndexAllAttributes = false
+	testEncodingOtlpFormatWithIndexConfiguration(t, config5)
+
+	config6 := generateConfig(t)
+	config6.IndexAllAttributes = false
+	config6.IndexedAttributes = []string{}
+	testEncodingOtlpFormatWithIndexConfiguration(t, config6)
+}
+
+func testEncodingOtlpFormatWithIndexConfiguration(t *testing.T, config *Config) {
+	// 1. prepare 50 resource spans and encode them
+	td := constructMultiSpanData(50)
+	documents, err := encodeOtlpAsBase64(td, config)
+	assert.NoError(t, err)
+	assert.EqualValues(t, td.ResourceSpans().Len(), len(documents), "ensure #resourcespans same as #documents")
+
+	// 2. ensure documents can be decoded back
+	unmarshaler := &ptrace.ProtoUnmarshaler{}
+	for i, document := range documents {
+		assert.EqualValues(t, "T1S", (*document)[0:3], "ensure protocol prefix")
+		decodedBytes, err := base64.StdEncoding.DecodeString((*document)[3:])
+		assert.NoError(t, err)
+
+		trace, err := unmarshaler.UnmarshalTraces(decodedBytes)
+		assert.NoError(t, err)
+
+		trace.CopyTo(trace)
+
+		// 3. ensure index configurations are carried
+		injectIndexConfigIntoOtlpPayload(td.ResourceSpans().At(i), config)
+		assert.EqualValues(t, td.ResourceSpans().At(i), trace.ResourceSpans().At(0))
+	}
+}
+
+func TestEncodingOtlpFormatWithEmptySpans(t *testing.T) {
+	td := constructMultiSpanData(0)
+	documents, err := encodeOtlpAsBase64(td, generateConfig(t))
+	assert.NoError(t, err)
+	assert.EqualValues(t, 0, len(documents), "expect 0 document")
+}
+
 func BenchmarkForTracesExporter(b *testing.B) {
 	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
 	for i := 0; i < b.N; i++ {
@@ -156,12 +230,23 @@ func generateConfig(t testing.TB) *Config {
 
 func constructSpanData() ptrace.Traces {
 	resource := constructResource()
-
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
 	ispans := rspans.ScopeSpans().AppendEmpty()
 	constructXrayTraceSpanData(ispans)
+	return traces
+}
+
+func constructMultiSpanData(numSpans int) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	for range numSpans {
+		resource := constructResource()
+		rspans := traces.ResourceSpans().AppendEmpty()
+		resource.CopyTo(rspans.Resource())
+		ispans := rspans.ScopeSpans().AppendEmpty()
+		constructXrayTraceSpanData(ispans)
+	}
 	return traces
 }
 

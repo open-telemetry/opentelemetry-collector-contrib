@@ -30,6 +30,9 @@ type Config struct {
 	// AWS client.
 	MiddlewareID *component.ID `mapstructure:"middleware,omitempty"`
 
+	// X-Ray Export sends spans in its original otlp format to X-Ray Service when this flag is on
+	TransitSpansInOtlpFormat bool `mapstructure:"transit_spans_in_otlp_format,omitempty"`
+
 	// skipTimestampValidation if enabled, will skip timestamp validation logic on the trace ID
 	skipTimestampValidation bool
 }
