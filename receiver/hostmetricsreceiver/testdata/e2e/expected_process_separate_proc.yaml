@@ -22,7 +22,7 @@ resourceMetrics:
         - key: process.pid
           value:
             intValue: "4668"
-    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    schemaUrl: https://opentelemetry.io/schemas/1.27.0
     scopeMetrics:
       - metrics:
           - description: Total CPU seconds broken down by different states.
