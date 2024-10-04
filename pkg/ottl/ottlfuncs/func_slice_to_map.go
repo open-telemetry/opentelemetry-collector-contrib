@@ -31,10 +31,10 @@ func sliceToMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 }
 
 func SliceToMap[K any](target ottl.Getter[K], keyPath []string, valuePath ottl.Optional[[]string]) (ottl.ExprFunc[K], error) {
+	if len(keyPath) == 0 {
+		return nil, fmt.Errorf("key path must contain at least one element")
+	}
 	return func(ctx context.Context, tCtx K) (any, error) {
-		if len(keyPath) == 0 {
-			return nil, fmt.Errorf("key path must contain at least one element")
-		}
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
@@ -58,28 +58,25 @@ func sliceToMap(v []any, keyPath []string, valuePath ottl.Optional[[]string]) (a
 		if !ok {
 			continue
 		}
-			obj, err := extractValue(e, keyPath)
-			if err != nil {
-				continue
-			}
-
-			key, ok := obj.(string)
-			if !ok {
-				continue
-			}
-
-			if valuePath.IsEmpty() {
-				result[key] = e
-				continue
-			}
-			obj, err = extractValue(e, valuePath.Get())
-			if err != nil {
-				continue
-			}
-			result[key] = obj
-		default:
+		extractedKey, err := extractValue(e, keyPath)
+		if err != nil {
 			continue
 		}
+
+		key, ok := extractedKey.(string)
+		if !ok {
+			continue
+		}
+
+		if valuePath.IsEmpty() {
+			result[key] = e
+			continue
+		}
+		extractedValue, err := extractValue(e, valuePath.Get())
+		if err != nil {
+			continue
+		}
+		result[key] = extractedValue
 	}
 	m := pcommon.NewMap()
 	if err := m.FromRaw(result); err != nil {

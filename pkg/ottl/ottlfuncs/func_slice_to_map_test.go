@@ -15,12 +15,13 @@ import (
 
 func Test_SliceToMap(t *testing.T) {
 	type testCase struct {
-		name      string
-		value     func() any
-		keyPath   []string
-		valuePath []string
-		want      func() pcommon.Map
-		wantErr   string
+		name             string
+		value            func() any
+		keyPath          []string
+		valuePath        []string
+		want             func() pcommon.Map
+		wantExecutionErr string
+		wantConfigErr    string
 	}
 	tests := []testCase{
 		{
@@ -215,7 +216,7 @@ func Test_SliceToMap(t *testing.T) {
 			value: func() any {
 				return pcommon.NewMap()
 			},
-			wantErr: "unsupported type provided to SliceToMap function: pcommon.Map",
+			wantExecutionErr: "unsupported type provided to SliceToMap function: pcommon.Map",
 		},
 		{
 			name:    "slice containing unsupported value type",
@@ -236,7 +237,7 @@ func Test_SliceToMap(t *testing.T) {
 			value: func() any {
 				return pcommon.NewMap()
 			},
-			wantErr: "key path must contain at least one element",
+			wantConfigErr: "key path must contain at least one element",
 		},
 		{
 			name:      "mixed data types with invalid element",
@@ -306,11 +307,15 @@ func Test_SliceToMap(t *testing.T) {
 				ValuePath: valuePathOptional,
 			})
 
+			if tt.wantConfigErr != "" {
+				require.ErrorContains(t, err, tt.wantConfigErr)
+				return
+			}
 			require.NoError(t, err)
 
 			result, err := associateFunc(nil, nil)
-			if tt.wantErr != "" {
-				require.ErrorContains(t, err, tt.wantErr)
+			if tt.wantExecutionErr != "" {
+				require.ErrorContains(t, err, tt.wantExecutionErr)
 				return
 			}
 
