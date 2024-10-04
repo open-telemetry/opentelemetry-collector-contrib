@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -21,44 +22,48 @@ func Test_CompileMap(t *testing.T) {
 	map2.PutStr("x", "x")
 
 	tests := []struct {
-		name     string
-		object   any
-		pattern  any
-		expected pcommon.Map
-		err      bool
+		name         string
+		objectGetter func(context.Context, any) (any, error)
+		pattern      any
+		expected     any
+		err          bool
 	}{
 		{
 			name: "map",
-			object: map[string]any{
-				"pattern": "item",
-				"x":       "y",
+			objectGetter: func(ctx context.Context, a any) (any, error) {
+				return map[string]any{
+					"pattern": "item",
+					"x":       "y",
+				}, nil
 			},
 			pattern:  "pattern",
 			expected: map1,
 			err:      false,
 		},
 		{
-			name:     "common map",
-			object:   map2,
+			name: "common map",
+			objectGetter: func(ctx context.Context, a any) (any, error) {
+				return map2, nil
+			},
 			pattern:  "pattern",
 			expected: map1,
 			err:      false,
 		},
 		{
-			name:     "unsupported datatype",
-			object:   "str",
+			name: "error",
+			objectGetter: func(ctx context.Context, a any) (any, error) {
+				return nil, fmt.Errorf("err")
+			},
 			pattern:  "pattern",
-			expected: pcommon.NewMap(),
+			expected: nil,
 			err:      true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := compileMap[any](
-				&ottl.StandardGetSetter[any]{
-					Getter: func(context.Context, any) (any, error) {
-						return tt.object, nil
-					},
+				&ottl.StandardPMapGetter[any]{
+					Getter: tt.objectGetter,
 				},
 				&ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {

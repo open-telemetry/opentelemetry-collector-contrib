@@ -14,12 +14,12 @@ import (
 )
 
 type CompileMapArguments[K any] struct {
-	Object  ottl.Getter[K]
+	Object  ottl.PMapGetter[K]
 	Pattern ottl.StringGetter[K]
 }
 
 func NewCompileMapFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("compileMap", &CompileMapArguments[K]{}, createCompileMapFunction[K])
+	return ottl.NewFactory("CompileMap", &CompileMapArguments[K]{}, createCompileMapFunction[K])
 }
 
 func createCompileMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
@@ -32,7 +32,7 @@ func createCompileMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 	return compileMap(args.Object, args.Pattern), nil
 }
 
-func compileMap[K any](object ottl.Getter[K], pattern ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func compileMap[K any](object ottl.PMapGetter[K], pattern ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		mapObject, err := object.Get(ctx, tCtx)
 		if err != nil {
@@ -44,18 +44,7 @@ func compileMap[K any](object ottl.Getter[K], pattern ottl.StringGetter[K]) ottl
 		}
 
 		res := pcommon.NewMap()
-		var dataMap map[string]any
-
-		switch r := mapObject.(type) {
-		case pcommon.Map:
-			dataMap = r.AsRaw()
-		case map[string]any:
-			dataMap = r
-		default:
-			return res, fmt.Errorf("type, %T, not supported for compileMap function", r)
-		}
-
-		tmpResult, err := compileTarget(dataMap, stringPattern)
+		tmpResult, err := compileTarget(mapObject.AsRaw(), stringPattern)
 		if err != nil {
 			return res, err
 		}

@@ -30,6 +30,11 @@ var (
 
 	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
+
+	testMap = map[string]any{
+		"pattern": "item",
+		"x":       "y",
+	}
 )
 
 func Test_e2e_editors(t *testing.T) {
@@ -966,6 +971,14 @@ func Test_e2e_ottl_features(t *testing.T) {
 			statement: `set(attributes["test"], attributes["foo"]["bar"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "compileMap with set",
+			statement: `set(attributes["resultMap"], CompileMap(attributes["foo"], "bar"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("resultMap")
+				m.PutStr("bar", "pass")
 			},
 		},
 		{
