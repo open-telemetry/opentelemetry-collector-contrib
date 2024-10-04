@@ -45,7 +45,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// CreateMetricsReceiver creates zookeeper (metrics) receiver.
+// CreateMetrics creates zookeeper (metrics) receiver.
 func createMetricsReceiver(
 	_ context.Context,
 	params receiver.Settings,
