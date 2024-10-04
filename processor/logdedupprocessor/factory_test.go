@@ -17,7 +17,7 @@ import (
 func TestNewProcessorFactory(t *testing.T) {
 	f := NewFactory()
 	require.Equal(t, metadata.Type, f.Type())
-	require.Equal(t, metadata.LogsStability, f.LogsProcessorStability())
+	require.Equal(t, metadata.LogsStability, f.LogsStability())
 	require.NotNil(t, f.CreateDefaultConfig())
 	require.NotNil(t, f.CreateLogs)
 }
