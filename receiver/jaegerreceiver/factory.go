@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
 
@@ -65,19 +65,19 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
+					Endpoint:  testutil.EndpointForPort(defaultGRPCPort),
 					Transport: confignet.TransportTypeTCP,
 				},
 			},
 			ThriftHTTP: &confighttp.ServerConfig{
-				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+				Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 			},
 			ThriftBinary: &ProtocolUDP{
-				Endpoint:        localhostgate.EndpointForPort(defaultThriftBinaryPort),
+				Endpoint:        testutil.EndpointForPort(defaultThriftBinaryPort),
 				ServerConfigUDP: defaultServerConfigUDP(),
 			},
 			ThriftCompact: &ProtocolUDP{
-				Endpoint:        localhostgate.EndpointForPort(defaultThriftCompactPort),
+				Endpoint:        testutil.EndpointForPort(defaultThriftCompactPort),
 				ServerConfigUDP: defaultServerConfigUDP(),
 			},
 		},
