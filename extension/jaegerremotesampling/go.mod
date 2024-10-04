@@ -6,7 +6,7 @@ require (
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/jaegertracing/jaeger v1.61.0
 	github.com/jonboulle/clockwork v0.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.110.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.111.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.0
 	go.opentelemetry.io/collector/component/componentstatus v0.111.0
