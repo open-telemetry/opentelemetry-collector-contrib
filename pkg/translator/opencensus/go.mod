@@ -11,7 +11,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/pdata v1.16.1-0.20241004063257-d6cd5935eefc
-	go.opentelemetry.io/collector/semconv v0.110.0
+	go.opentelemetry.io/collector/semconv v0.110.1-0.20241004063257-d6cd5935eefc
 	go.uber.org/goleak v1.3.0
 	google.golang.org/protobuf v1.34.2
 )
@@ -31,9 +31,9 @@ require (
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240604185151-ef581f913117 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240814211410-ddb44dafa142 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
-	google.golang.org/grpc v1.66.2 // indirect
+	google.golang.org/grpc v1.67.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
