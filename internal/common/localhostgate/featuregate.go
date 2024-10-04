@@ -10,10 +10,8 @@ package localhostgate // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
 )
 
 const UseLocalHostAsDefaultHostID = "component.UseLocalHostAsDefaultHost"
@@ -23,7 +21,8 @@ const UseLocalHostAsDefaultHostID = "component.UseLocalHostAsDefaultHost"
 var UseLocalHostAsDefaultHostfeatureGate = mustRegisterOrLoad(
 	featuregate.GlobalRegistry(),
 	UseLocalHostAsDefaultHostID,
-	featuregate.StageBeta,
+	featuregate.StageStable,
+	featuregate.WithRegisterToVersion("v0.111.0"),
 	featuregate.WithRegisterDescription("controls whether server-like receivers and extensions such as the OTLP receiver use localhost as the default host for their endpoints"),
 )
 
@@ -46,23 +45,4 @@ func mustRegisterOrLoad(reg *featuregate.Registry, id string, stage featuregate.
 	}
 
 	return gate
-}
-
-// EndpointForPort gets the endpoint for a given port using localhost or 0.0.0.0 depending on the feature gate.
-func EndpointForPort(port int) string {
-	host := "localhost"
-	if !UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
-		host = "0.0.0.0"
-	}
-	return fmt.Sprintf("%s:%d", host, port)
-}
-
-// LogAboutUseLocalHostAsDefault logs about the upcoming change from 0.0.0.0 to localhost on server-like components.
-func LogAboutUseLocalHostAsDefault(logger *zap.Logger) {
-	if !UseLocalHostAsDefaultHostfeatureGate.IsEnabled() {
-		logger.Info(
-			"The default endpoints for all servers in components have changed to use localhost instead of 0.0.0.0. Use the feature gate to temporarily revert to the previous default.",
-			zap.String("feature gate ID", UseLocalHostAsDefaultHostID),
-		)
-	}
 }
