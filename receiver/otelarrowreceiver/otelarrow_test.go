@@ -154,7 +154,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 	}
 
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
@@ -224,11 +224,11 @@ func newReceiver(t *testing.T, factory receiver.Factory, settings component.Tele
 	var r component.Component
 	var err error
 	if tc != nil {
-		r, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
+		r, err = factory.CreateTraces(context.Background(), set, cfg, tc)
 		require.NoError(t, err)
 	}
 	if mc != nil {
-		r, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
+		r, err = factory.CreateMetrics(context.Background(), set, cfg, mc)
 		require.NoError(t, err)
 	}
 	return r
@@ -247,7 +247,7 @@ func TestStandardShutdown(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	set := receivertest.NewNopSettings()
 	set.ID = testReceiverID
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		set,
 		cfg,
@@ -327,7 +327,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 			set.TelemetrySettings.Logger = zap.New(core)
 
 			set.ID = testReceiverID
-			r, err := NewFactory().CreateTracesReceiver(
+			r, err := NewFactory().CreateTraces(
 				ctx,
 				set,
 				cfg,
@@ -822,7 +822,7 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 	set := receivertest.NewNopSettings()
 
 	set.ID = testReceiverID
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		ctx,
 		set,
 		cfg,
