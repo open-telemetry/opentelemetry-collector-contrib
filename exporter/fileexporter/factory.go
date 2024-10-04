@@ -120,7 +120,7 @@ func createLogsExporter(
 
 // getOrCreateFileExporter creates a FileExporter and caches it for a particular configuration,
 // or returns the already cached one. Caching is required because the factory is asked trace and
-// metric receivers separately when it gets CreateTracesReceiver() and CreateMetricsReceiver()
+// metric receivers separately when it gets CreateTraces() and CreateMetrics()
 // but they must not create separate objects, they must use one Exporter object per configuration.
 func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) FileExporter {
 	conf := cfg.(*Config)
@@ -180,6 +180,6 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 
 // This is the map of already created File exporters for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
+// when it gets CreateTraces() and CreateMetrics() but they must not
 // create separate objects, they must use one Exporter object per configuration.
 var exporters = sharedcomponent.NewSharedComponents()

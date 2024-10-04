@@ -33,7 +33,7 @@ func TestStart(t *testing.T) {
 
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
-	logsReceiver, err := factory.CreateLogsReceiver(
+	logsReceiver, err := factory.CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig(),
@@ -66,7 +66,7 @@ func TestHandleStartError(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
 	cfg.Input = NewUnstartableConfig()
 
-	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockConsumer)
+	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = receiver.Start(context.Background(), componenttest.NewNopHost())
@@ -77,7 +77,7 @@ func TestHandleConsume(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), factory.CreateDefaultConfig(), mockConsumer)
+	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), factory.CreateDefaultConfig(), mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
@@ -104,7 +104,7 @@ func TestHandleConsumeRetry(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*TestConfig).BaseConfig.RetryOnFailure.Enabled = true
 	cfg.(*TestConfig).BaseConfig.RetryOnFailure.InitialInterval = 10 * time.Millisecond
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockConsumer)
+	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	require.NoError(t, logsReceiver.Start(context.Background(), componenttest.NewNopHost()))
@@ -126,7 +126,7 @@ func TestShutdownFlush(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), factory.CreateDefaultConfig(), mockConsumer)
+	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), factory.CreateDefaultConfig(), mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())

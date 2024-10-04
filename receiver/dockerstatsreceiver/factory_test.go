@@ -28,11 +28,11 @@ func TestCreateReceiver(t *testing.T) {
 	config := factory.CreateDefaultConfig()
 
 	params := receivertest.NewNopSettings()
-	traceReceiver, err := factory.CreateTracesReceiver(context.Background(), params, config, consumertest.NewNop())
+	traceReceiver, err := factory.CreateTraces(context.Background(), params, config, consumertest.NewNop())
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, traceReceiver)
 
-	metricReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, config, consumertest.NewNop())
+	metricReceiver, err := factory.CreateMetrics(context.Background(), params, config, consumertest.NewNop())
 	assert.NoError(t, err, "Metric receiver creation failed")
 	assert.NotNil(t, metricReceiver, "receiver creation failed")
 }
