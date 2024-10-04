@@ -207,7 +207,7 @@ func generateMetric(fields map[string]any, tags map[string]string) CIMetric {
 
 func TestPodStore_decorateCpu(t *testing.T) {
 	podStore := getPodStore()
-	defer require.NoError(t, podStore.Shutdown())
+	defer func() { require.NoError(t, podStore.Shutdown()) }()
 
 	pod := getBaseTestPodInfo()
 
@@ -237,7 +237,8 @@ func TestPodStore_decorateCpu(t *testing.T) {
 
 func TestPodStore_decorateMem(t *testing.T) {
 	podStore := getPodStore()
-	defer require.NoError(t, podStore.Shutdown())
+	defer func() { require.NoError(t, podStore.Shutdown()) }()
+
 	pod := getBaseTestPodInfo()
 
 	tags := map[string]string{ci.MetricType: ci.TypePod}
@@ -288,7 +289,7 @@ func TestPodStore_addStatus(t *testing.T) {
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.K8sPodNameKey: "cpu-limit"}
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	podStore := getPodStore()
-	defer require.NoError(t, podStore.Shutdown())
+	defer func() { require.NoError(t, podStore.Shutdown()) }()
 	metric := generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -580,7 +581,8 @@ func (m *mockPodClient) ListPods() ([]corev1.Pod, error) {
 
 func TestPodStore_RefreshTick(t *testing.T) {
 	podStore := getPodStore()
-	defer require.NoError(t, podStore.Shutdown())
+	defer func() { require.NoError(t, podStore.Shutdown()) }()
+
 	podStore.podClient = &mockPodClient{}
 	podStore.lastRefreshed = time.Now().Add(-time.Minute)
 	podStore.RefreshTick(context.Background())
@@ -596,7 +598,8 @@ func TestPodStore_decorateNode(t *testing.T) {
 	pod := getBaseTestPodInfo()
 	podList := []corev1.Pod{*pod}
 	podStore := getPodStore()
-	defer require.NoError(t, podStore.Shutdown())
+	defer func() { require.NoError(t, podStore.Shutdown()) }()
+
 	podStore.refreshInternal(time.Now(), podList)
 
 	tags := map[string]string{ci.MetricType: ci.TypeNode}
@@ -626,7 +629,7 @@ func TestPodStore_decorateNode(t *testing.T) {
 
 func TestPodStore_decorateNode_multiplePodStates(t *testing.T) {
 	podStore := getPodStore()
-	defer require.NoError(t, podStore.Shutdown())
+	defer func() { require.NoError(t, podStore.Shutdown()) }()
 
 	tags := map[string]string{ci.MetricType: ci.TypeNode}
 	fields := map[string]any{
@@ -690,7 +693,8 @@ func TestPodStore_Decorate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	podStore := getPodStore()
-	defer require.NoError(t, podStore.Shutdown())
+	defer func() { require.NoError(t, podStore.Shutdown()) }()
+
 	podStore.podClient = &mockPodClient{}
 	kubernetesBlob := map[string]any{}
 	ok := podStore.Decorate(ctx, metric, kubernetesBlob)
