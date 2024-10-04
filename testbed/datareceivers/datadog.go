@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -28,7 +29,7 @@ func NewDataDogDataReceiver() testbed.DataReceiver {
 
 func (dd *datadogDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := datadogreceiver.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*datadogreceiver.Config)
+	cfg := factory.CreateDefaultConfig().(*common.Config)
 	cfg.Endpoint = "0.0.0.0:8126"
 
 	set := receiver.Settings{}

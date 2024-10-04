@@ -26,13 +26,13 @@ import (
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/common"
 )
 
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*internal.Config).Endpoint = "localhost:0"
+	cfg.(*common.Config).Endpoint = "localhost:0"
 	ddr, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Traces receiver should be created")
 
@@ -46,7 +46,7 @@ func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*internal.Config).Endpoint = "localhost:0"
+	cfg.(*common.Config).Endpoint = "localhost:0"
 	ddr, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Metrics receiver should be created")
 
@@ -58,7 +58,7 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 }
 
 func TestDatadogServer(t *testing.T) {
-	cfg := createDefaultConfig().(*internal.Config)
+	cfg := createDefaultConfig().(*common.Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	dd, err := newDataDogReceiver(
 		cfg,
@@ -217,7 +217,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			cfg := createDefaultConfig().(*internal.Config)
+			cfg := createDefaultConfig().(*common.Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
 			dd, err := newDataDogReceiver(
@@ -256,7 +256,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 }
 
 func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
-	cfg := createDefaultConfig().(*internal.Config)
+	cfg := createDefaultConfig().(*common.Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
@@ -318,7 +318,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 }
 
 func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
-	cfg := createDefaultConfig().(*internal.Config)
+	cfg := createDefaultConfig().(*common.Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
@@ -398,7 +398,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 }
 
 func TestDatadogSketches_EndToEnd(t *testing.T) {
-	cfg := createDefaultConfig().(*internal.Config)
+	cfg := createDefaultConfig().(*common.Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
@@ -485,7 +485,7 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 }
 
 func TestStats_EndToEnd(t *testing.T) {
-	cfg := createDefaultConfig().(*internal.Config)
+	cfg := createDefaultConfig().(*common.Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
@@ -576,7 +576,7 @@ func TestStats_EndToEnd(t *testing.T) {
 }
 
 func TestDatadogServices_EndToEnd(t *testing.T) {
-	cfg := createDefaultConfig().(*internal.Config)
+	cfg := createDefaultConfig().(*common.Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 

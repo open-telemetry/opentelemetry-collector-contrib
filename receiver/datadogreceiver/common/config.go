@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
+package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
 import (
 	"time"

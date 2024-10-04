@@ -21,14 +21,14 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
 type datadogReceiver struct {
 	address string
-	config  *internal.Config
+	config  *common.Config
 	params  receiver.Settings
 
 	nextTracesConsumer  consumer.Traces
@@ -134,7 +134,7 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 	return endpoints
 }
 
-func newDataDogReceiver(config *internal.Config, params receiver.Settings) (component.Component, error) {
+func newDataDogReceiver(config *common.Config, params receiver.Settings) (component.Component, error) {
 	instance, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err

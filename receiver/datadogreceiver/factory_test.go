@@ -11,13 +11,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/common"
 )
 
 func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*internal.Config).Endpoint = "http://localhost:0"
+	cfg.(*common.Config).Endpoint = "http://localhost:0"
 
 	tReceiver, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
@@ -27,7 +27,7 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*internal.Config).Endpoint = "http://localhost:0"
+	cfg.(*common.Config).Endpoint = "http://localhost:0"
 
 	tReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)

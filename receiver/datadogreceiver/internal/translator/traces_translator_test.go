@@ -20,7 +20,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -93,7 +93,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	assert.Len(t, tracePayloads, 1, "Expected one translated payload")
 	tracePayload := tracePayloads[0]
 
-	tt := NewTracesTranslator(internal.NewConfig())
+	tt := NewTracesTranslator(common.NewConfig())
 	translated := tt.ToTraces(tracePayload, req)
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
@@ -134,7 +134,7 @@ func TestTracePayloadV05UnmarshallingObfuscateSQL(t *testing.T) {
 	assert.Len(t, tracePayloads, 1, "Expected one translated payload")
 	tracePayload := tracePayloads[0]
 
-	cfg := internal.NewConfig()
+	cfg := common.NewConfig()
 	cfg.Traces.Obfuscation.Enabled = true
 
 	tt := NewTracesTranslator(cfg)

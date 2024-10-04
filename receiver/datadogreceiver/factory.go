@@ -5,12 +5,13 @@ package datadogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
@@ -25,12 +26,12 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return internal.NewConfig()
+	return common.NewConfig()
 }
 
 func createTracesReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Traces) (receiver.Traces, error) {
 	var err error
-	rcfg := cfg.(*internal.Config)
+	rcfg := cfg.(*common.Config)
 	r := receivers.GetOrAdd(rcfg, func() (dd component.Component) {
 		dd, err = newDataDogReceiver(rcfg, params)
 		return dd
@@ -45,7 +46,7 @@ func createTracesReceiver(_ context.Context, params receiver.Settings, cfg compo
 
 func createMetricsReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	var err error
-	rcfg := cfg.(*internal.Config)
+	rcfg := cfg.(*common.Config)
 	r := receivers.GetOrAdd(cfg, func() (dd component.Component) {
 		dd, err = newDataDogReceiver(rcfg, params)
 		return dd
