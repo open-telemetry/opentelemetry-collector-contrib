@@ -53,7 +53,7 @@ Default: 60s
 
 ### Traces (Optional)
 #### Obfuscation
-The obfuscation configuration allows you to obfuscate and cleanup sensitive information in the trace data. The complete list of obfuscation rules and configuration can be found [here](internal/config.go).
+The obfuscation configuration allows you to obfuscate and cleanup sensitive information in the trace data. The complete list of obfuscation rules and configuration can be found [here](common/config.go).
 
 ### HTTP Service Config
 
