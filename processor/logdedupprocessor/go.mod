@@ -4,7 +4,9 @@ go 1.22.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.111.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.111.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.111.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.0
