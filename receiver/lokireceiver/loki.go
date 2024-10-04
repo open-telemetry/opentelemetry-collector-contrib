@@ -20,8 +20,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
@@ -160,7 +158,7 @@ func (r *lokiReceiver) Push(ctx context.Context, pushRequest *push.PushRequest) 
 	logs, err := loki.PushRequestToLogs(pushRequest, r.conf.KeepTimestamp)
 	if err != nil {
 		r.settings.Logger.Warn(ErrAtLeastOneEntryFailedToProcess, zap.Error(err))
-		return &push.PushResponse{}, status.New(codes.InvalidArgument, err.Error()).Err()
+		return &push.PushResponse{}, err
 	}
 	ctx = r.obsrepGRPC.StartLogsOp(ctx)
 	logRecordCount := logs.LogRecordCount()
