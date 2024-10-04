@@ -6,9 +6,11 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -40,10 +42,12 @@ import (
 	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
 var _ clientTypes.Logger = testLogger{}
@@ -352,7 +356,12 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
 	time.Sleep(250 * time.Millisecond)
 	_, err := http.DefaultClient.Get("http://localhost:12345")
-	require.ErrorContains(t, err, "connection refused")
+
+	if runtime.GOOS != "windows" {
+		require.ErrorContains(t, err, "connection refused")
+	} else {
+		require.ErrorContains(t, err, "No connection could be made")
+	}
 
 	// Start the server and wait for the supervisor to connect
 	server.start()
@@ -1341,8 +1350,96 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
 	time.Sleep(250 * time.Millisecond)
 	_, err := http.DefaultClient.Get("http://localhost:12345")
-	require.ErrorContains(t, err, "connection refused")
+	if runtime.GOOS != "windows" {
+		require.ErrorContains(t, err, "connection refused")
+	} else {
+		require.ErrorContains(t, err, "No connection could be made")
+	}
 
+}
+
+type LogEntry struct {
+	Level  string `json:"level"`
+	Logger string `json:"logger"`
+}
+
+func TestSupervisorLogging(t *testing.T) {
+	// Tests that supervisor only logs at Info level and above && that collector logs passthrough and are present in supervisor log file
+	if runtime.GOOS == "windows" {
+		t.Skip("Zap does not close the log file and Windows disallows removing files that are still opened.")
+	}
+
+	storageDir := t.TempDir()
+	remoteCfgFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
+
+	collectorCfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+	remoteCfgProto := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"": {Body: collectorCfg.Bytes()},
+			},
+		},
+		ConfigHash: hash,
+	}
+	marshalledRemoteCfg, err := proto.Marshal(remoteCfgProto)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(remoteCfgFilePath, marshalledRemoteCfg, 0600))
+
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{
+		OnConnectedFunc: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+	})
+	defer server.shutdown()
+
+	supervisorLogFilePath := filepath.Join(storageDir, "supervisor_log.log")
+	cfgFile := getSupervisorConfig(t, "logging", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+		"log_level":   "0",
+		"log_file":    supervisorLogFilePath,
+	})
+
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(logger, cfg)
+	require.NoError(t, err)
+	require.Nil(t, s.Start())
+
+	// Start the server and wait for the supervisor to connect
+	server.start()
+	waitForSupervisorConnection(server.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+
+	s.Shutdown()
+
+	// Read from log file checking for Info level logs
+	logFile, err := os.Open(supervisorLogFilePath)
+	require.NoError(t, err)
+
+	scanner := bufio.NewScanner(logFile)
+	seenCollectorLog := false
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		var log LogEntry
+		err := json.Unmarshal(line, &log)
+		require.NoError(t, err)
+
+		level, err := zapcore.ParseLevel(log.Level)
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, level, zapcore.InfoLevel)
+
+		if log.Logger == "collector" {
+			seenCollectorLog = true
+		}
+	}
+	// verify a collector log was read
+	require.True(t, seenCollectorLog)
+	require.NoError(t, logFile.Close())
 }
 
 func findRandomPort() (int, error) {
