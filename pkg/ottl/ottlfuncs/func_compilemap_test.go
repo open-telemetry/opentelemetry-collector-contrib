@@ -54,19 +54,18 @@ func Test_CompileMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := compileMap[any](
+			exprFunc := compileMap[any](
 				&ottl.StandardGetSetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.object, nil
 					},
 				},
 				&ottl.StandardStringGetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return tt.pattern, nil
 					},
 				},
 			)
-			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)

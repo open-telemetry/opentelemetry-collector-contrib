@@ -29,10 +29,10 @@ func createCompileMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 		return nil, fmt.Errorf("CompileFactory args must be of type *CompileArguments[K]")
 	}
 
-	return compileMap(args.Object, args.Pattern)
+	return compileMap(args.Object, args.Pattern), nil
 }
 
-func compileMap[K any](object ottl.Getter[K], pattern ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func compileMap[K any](object ottl.Getter[K], pattern ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		mapObject, err := object.Get(ctx, tCtx)
 		if err != nil {
@@ -65,7 +65,7 @@ func compileMap[K any](object ottl.Getter[K], pattern ottl.StringGetter[K]) (ott
 		}
 
 		return res, nil
-	}, nil
+	}
 }
 
 func compileTarget(object map[string]any, pattern string) (map[string]any, error) {
