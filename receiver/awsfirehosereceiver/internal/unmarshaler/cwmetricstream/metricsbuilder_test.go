@@ -4,7 +4,7 @@
 package cwmetricstream
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 	"time"
 
@@ -208,5 +208,5 @@ func TestResourceMetricsBuilder(t *testing.T) {
 
 // testCWMetricValue is a convenience function for creating a test cWMetricValue
 func testCWMetricValue() *cWMetricValue {
-	return &cWMetricValue{100, 0, float64(rand.Int63n(100)), float64(rand.Int63n(4))}
+	return &cWMetricValue{100, 0, float64(rand.Int64N(100)), float64(rand.Int64N(4))}
 }

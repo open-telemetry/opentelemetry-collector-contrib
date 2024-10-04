@@ -5,7 +5,7 @@ package random
 
 import (
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"time"
 
@@ -90,7 +90,7 @@ func randStr() string {
 }
 
 func randInt() int64 {
-	return int64(rand.Intn(math.MaxInt16))
+	return int64(rand.IntN(math.MaxInt16))
 }
 
 func randFloat() float64 {

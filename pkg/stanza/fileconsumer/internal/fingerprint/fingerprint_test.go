@@ -5,7 +5,7 @@ package fingerprint
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand" //nolint TODO: Migrate to math/rand once Go 1.23 is supported.
 	"os"
 	"testing"
 
