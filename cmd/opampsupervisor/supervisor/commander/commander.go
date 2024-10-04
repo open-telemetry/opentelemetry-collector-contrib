@@ -4,6 +4,7 @@
 package commander
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -71,31 +72,14 @@ func (c *Commander) Start(ctx context.Context) error {
 
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
-	logFilePath := filepath.Join(c.logsDir, "agent.log")
-	stdoutFile, err := os.Create(logFilePath)
-	if err != nil {
-		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
-	}
-
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
 	c.cmd.SysProcAttr = sysProcAttrs()
 
-	// Capture standard output and standard error.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
-	c.cmd.Stdout = stdoutFile
-	c.cmd.Stderr = stdoutFile
-
-	if err := c.cmd.Start(); err != nil {
-		stdoutFile.Close()
-		return err
+	// PassthroughLogging changes how collector start up happens
+	if c.cfg.PassthroughLogs {
+		return c.startWithPassthroughLogging()
 	}
-
-	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
-	c.running.Store(1)
-
-	go c.watch(stdoutFile)
-
-	return nil
+	return c.startNormal()
 }
 
 func (c *Commander) Restart(ctx context.Context) error {
@@ -107,9 +91,82 @@ func (c *Commander) Restart(ctx context.Context) error {
 	return c.Start(ctx)
 }
 
-func (c *Commander) watch(stdoutFile *os.File) {
-	defer stdoutFile.Close()
+func (c *Commander) startNormal() error {
+	logFilePath := filepath.Join(c.logsDir, "agent.log")
+	stdoutFile, err := os.Create(logFilePath)
+	if err != nil {
+		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
+	}
 
+	// Capture standard output and standard error.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
+	c.cmd.Stdout = stdoutFile
+	c.cmd.Stderr = stdoutFile
+
+	if err := c.cmd.Start(); err != nil {
+		stdoutFile.Close()
+		return fmt.Errorf("startNormal: %w", err)
+	}
+
+	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
+	c.running.Store(1)
+
+	go func() {
+		defer stdoutFile.Close()
+		c.watch()
+	}()
+
+	return nil
+}
+
+func (c *Commander) startWithPassthroughLogging() error {
+	// grab cmd pipes
+	stdoutPipe, err := c.cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("stdoutPipe: %w", err)
+	}
+	stderrPipe, err := c.cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("stderrPipe: %w", err)
+	}
+
+	// start agent
+	if err := c.cmd.Start(); err != nil {
+		return fmt.Errorf("start: %w", err)
+	}
+	c.running.Store(1)
+
+	colLogger := c.logger.Named("collector")
+
+	// capture agent output
+	go func() {
+		scanner := bufio.NewScanner(stdoutPipe)
+		for scanner.Scan() {
+			line := scanner.Text()
+			colLogger.Info(line)
+		}
+		if err := scanner.Err(); err != nil {
+			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
+		}
+	}()
+	go func() {
+		scanner := bufio.NewScanner(stderrPipe)
+		for scanner.Scan() {
+			line := scanner.Text()
+			colLogger.Info(line)
+		}
+		if err := scanner.Err(); err != nil {
+			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
+		}
+	}()
+
+	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
+
+	go c.watch()
+	return nil
+}
+
+func (c *Commander) watch() {
 	err := c.cmd.Wait()
 
 	// cmd.Wait returns an exec.ExitError when the Collector exits unsuccessfully or stops
