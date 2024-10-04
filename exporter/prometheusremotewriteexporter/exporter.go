@@ -42,15 +42,15 @@ type prwTelemetry interface {
 
 type prwTelemetryOtel struct {
 	telemetryBuilder *metadata.TelemetryBuilder
-	otelAttrs        []attribute.KeyValue
+	otelAttrs        metric.MeasurementOption
 }
 
 func (p *prwTelemetryOtel) recordTranslationFailure(ctx context.Context) {
-	p.telemetryBuilder.ExporterPrometheusremotewriteFailedTranslations.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+	p.telemetryBuilder.ExporterPrometheusremotewriteFailedTranslations.Add(ctx, 1, p.otelAttrs)
 }
 
 func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS int) {
-	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
+	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), p.otelAttrs)
 }
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
@@ -80,9 +80,7 @@ func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
 
 	return &prwTelemetryOtel{
 		telemetryBuilder: telemetryBuilder,
-		otelAttrs: []attribute.KeyValue{
-			attribute.String("exporter", set.ID.String()),
-		},
+		otelAttrs:        metric.WithAttributeSet(attribute.NewSet(attribute.String("exporter", set.ID.String()))),
 	}, nil
 }
 

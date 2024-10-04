@@ -16,6 +16,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 )
 
+const reason = "reason"
+
+var (
+	reasonOlderStart  = metric.WithAttributeSet(attribute.NewSet(attribute.String(reason, "older-start")))
+	reasonOutOfOrder  = metric.WithAttributeSet(attribute.NewSet(attribute.String(reason, "out-of-order")))
+	reasonStreamLimit = metric.WithAttributeSet(attribute.NewSet(attribute.String(reason, "stream-limit")))
+)
+
 type Telemetry struct {
 	Metrics
 }
@@ -83,19 +91,19 @@ type Items[T any] struct {
 }
 
 func (i Items[T]) Store(id streams.Ident, v T) error {
-	inc(i.dps.total)
+	i.dps.total.Add(context.Background(), 1)
 
 	_, old := i.Map.Load(id)
 	err := i.Map.Store(id, v)
 	if err == nil && !old {
-		inc(i.streams.tracked)
+		i.streams.tracked.Add(context.Background(), 1)
 	}
 
 	return err
 }
 
 func (i Items[T]) Delete(id streams.Ident) {
-	dec(i.streams.tracked)
+	i.streams.tracked.Add(context.TODO(), -1)
 	i.Map.Delete(id)
 }
 
@@ -118,17 +126,17 @@ func (f Faults[T]) Store(id streams.Ident, v T) error {
 	default:
 		return err
 	case errors.As(err, &olderStart):
-		inc(f.dps.dropped, reason("older-start"))
+		f.dps.dropped.Add(context.TODO(), 1, reasonOlderStart)
 		return streams.Drop
 	case errors.As(err, &outOfOrder):
-		inc(f.dps.dropped, reason("out-of-order"))
+		f.dps.dropped.Add(context.TODO(), 1, reasonOutOfOrder)
 		return streams.Drop
 	case errors.As(err, &limit):
-		inc(f.dps.dropped, reason("stream-limit"))
+		f.dps.dropped.Add(context.TODO(), 1, reasonStreamLimit)
 		// no space to store stream, drop it instead of failing silently
 		return streams.Drop
 	case errors.As(err, &evict):
-		inc(f.streams.evicted)
+		f.streams.evicted.Add(context.TODO(), 1)
 	case errors.As(err, &gap):
 		from := gap.From.AsTime()
 		to := gap.To.AsTime()
@@ -143,19 +151,3 @@ var (
 	_ streams.Map[any] = (*Items[any])(nil)
 	_ streams.Map[any] = (*Faults[any])(nil)
 )
-
-type addable[Opts any] interface {
-	Add(context.Context, int64, ...Opts)
-}
-
-func inc[A addable[O], O any](a A, opts ...O) {
-	a.Add(context.Background(), 1, opts...)
-}
-
-func dec[A addable[O], O any](a A, opts ...O) {
-	a.Add(context.Background(), -1, opts...)
-}
-
-func reason(reason string) metric.AddOption {
-	return metric.WithAttributes(attribute.String("reason", reason))
-}

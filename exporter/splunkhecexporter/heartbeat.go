@@ -42,7 +42,7 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 	}
 
 	var heartbeatsSent, heartbeatsFailed metric.Int64Counter
-	var attrs attribute.Set
+	attrs := metric.WithAttributeSet(attribute.NewSet())
 	if config.Telemetry.Enabled {
 		overrides := config.Telemetry.OverrideMetricsNames
 		extraAttributes := config.Telemetry.ExtraAttributes
@@ -50,7 +50,7 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 		for key, val := range extraAttributes {
 			tags = append(tags, attribute.String(key, val))
 		}
-		attrs = attribute.NewSet(tags...)
+		attrs = metric.WithAttributeSet(attribute.NewSet(tags...))
 		var err error
 		heartbeatsSent, err = meter.Int64Counter(
 			getMetricsName(overrides, defaultHBSentMetricsName),
@@ -101,11 +101,11 @@ func (h *heartbeater) sendHeartbeat(config *Config, buildInfo component.BuildInf
 }
 
 // there is only use case for open census metrics recording for now. Extend to use open telemetry in the future.
-func observe(heartbeatsSent, heartbeatsFailed metric.Int64Counter, attrs attribute.Set, err error) {
+func observe(heartbeatsSent, heartbeatsFailed metric.Int64Counter, attrs metric.MeasurementOption, err error) {
 	if err == nil {
-		heartbeatsSent.Add(context.Background(), 1, metric.WithAttributeSet(attrs))
+		heartbeatsSent.Add(context.Background(), 1, attrs)
 	} else {
-		heartbeatsFailed.Add(context.Background(), 1, metric.WithAttributeSet(attrs))
+		heartbeatsFailed.Add(context.Background(), 1, attrs)
 	}
 
 }

@@ -519,7 +519,8 @@ func commonShouldSampleLogic[T any](
 		}
 	}
 
-	counter.Add(ctx, 1, metric.WithAttributes(attribute.String("policy", rnd.policyName()), attribute.String("sampled", strconv.FormatBool(sampled))))
+	attrs := attribute.NewSet(attribute.String("policy", rnd.policyName()), attribute.String("sampled", strconv.FormatBool(sampled)))
+	counter.Add(ctx, 1, metric.WithAttributeSet(attrs))
 
 	return sampled
 }

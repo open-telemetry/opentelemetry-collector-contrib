@@ -63,7 +63,7 @@ type solaceTracesReceiver struct {
 	// retryTimeout is the timeout between connection attempts
 	retryTimeout time.Duration
 	// Other Attributes including the ID of the receiver Solace broker's component name
-	metricAttrs attribute.Set
+	metricAttrs metric.MeasurementOption
 }
 
 // newTracesReceiver creates a new solaceTraceReceiver as a receiver.Traces
@@ -88,9 +88,9 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 	} else {
 		receiverName = "solace"
 	}
-	solaceBrokerAttrs := attribute.NewSet(
+	solaceBrokerAttrs := metric.WithAttributeSet(attribute.NewSet(
 		attribute.String(brokerComponenteNameAttr, receiverName),
-	)
+	))
 
 	unmarshaller := newTracesUnmarshaller(set.Logger, telemetryBuilder, solaceBrokerAttrs)
 
@@ -111,8 +111,8 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 // Start implements component.Receiver::Start
 func (s *solaceTracesReceiver) Start(ctx context.Context, _ component.Host) error {
 	// set the component name for the connected Solace broker
-	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(ctx, int64(receiverStateStarting), metric.WithAttributeSet(s.metricAttrs))
-	s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateClear), metric.WithAttributeSet(s.metricAttrs))
+	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(ctx, int64(receiverStateStarting), s.metricAttrs)
+	s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateClear), s.metricAttrs)
 	var cancelableContext context.Context
 	cancelableContext, s.cancel = context.WithCancel(context.Background())
 
@@ -131,12 +131,12 @@ func (s *solaceTracesReceiver) Shutdown(_ context.Context) error {
 	}
 	// set the component name for the connected Solace broker
 	s.terminating.Store(true)
-	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateTerminating), metric.WithAttributeSet(s.metricAttrs))
+	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateTerminating), s.metricAttrs)
 	s.settings.Logger.Info("Shutdown waiting for all components to complete")
 	s.cancel() // cancels the context passed to the reconnection loop
 	s.shutdownWaitGroup.Wait()
 	s.settings.Logger.Info("Receiver shutdown successfully")
-	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateTerminated), metric.WithAttributeSet(s.metricAttrs))
+	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateTerminated), s.metricAttrs)
 	return nil
 }
 
@@ -152,7 +152,7 @@ func (s *solaceTracesReceiver) connectAndReceive(ctx context.Context) {
 	disable := false
 
 	// indicate we are in connecting state at the start
-	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateConnecting), metric.WithAttributeSet(s.metricAttrs))
+	s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(receiverStateConnecting), s.metricAttrs)
 
 reconnectionLoop:
 	for !disable {
@@ -178,7 +178,7 @@ reconnectionLoop:
 
 			if err := service.dial(ctx); err != nil {
 				s.settings.Logger.Debug("Encountered error while connecting messaging service", zap.Error(err))
-				s.telemetryBuilder.SolacereceiverFailedReconnections.Add(ctx, 1, metric.WithAttributeSet(s.metricAttrs))
+				s.telemetryBuilder.SolacereceiverFailedReconnections.Add(ctx, 1, s.metricAttrs)
 				return
 			}
 			// dial was successful, record the connected state
@@ -187,7 +187,7 @@ reconnectionLoop:
 			if err := s.receiveMessages(ctx, service); err != nil {
 				s.settings.Logger.Debug("Encountered error while receiving messages", zap.Error(err))
 				if errors.Is(err, errUpgradeRequired) {
-					s.telemetryBuilder.SolacereceiverNeedUpgrade.Record(ctx, 1, metric.WithAttributeSet(s.metricAttrs))
+					s.telemetryBuilder.SolacereceiverNeedUpgrade.Record(ctx, 1, s.metricAttrs)
 					disable = true
 					return
 				}
@@ -204,7 +204,7 @@ reconnectionLoop:
 // this state transition were to happen, it would be short lived.
 func (s *solaceTracesReceiver) recordConnectionState(state receiverState) {
 	if !s.terminating.Load() {
-		s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(state), metric.WithAttributeSet(s.metricAttrs))
+		s.telemetryBuilder.SolacereceiverReceiverStatus.Record(context.Background(), int64(state), s.metricAttrs)
 	}
 }
 
@@ -242,18 +242,18 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 		}
 	}()
 	// message received successfully
-	s.telemetryBuilder.SolacereceiverReceivedSpanMessages.Add(ctx, 1, metric.WithAttributeSet(s.metricAttrs))
+	s.telemetryBuilder.SolacereceiverReceivedSpanMessages.Add(ctx, 1, s.metricAttrs)
 	// unmarshal the message. unmarshalling errors are not fatal unless the version is unknown
 	traces, unmarshalErr := s.unmarshaller.unmarshal(msg)
 	if unmarshalErr != nil {
 		s.settings.Logger.Error("Encountered error while unmarshalling message", zap.Error(unmarshalErr))
-		s.telemetryBuilder.SolacereceiverFatalUnmarshallingErrors.Add(ctx, 1, metric.WithAttributeSet(s.metricAttrs))
+		s.telemetryBuilder.SolacereceiverFatalUnmarshallingErrors.Add(ctx, 1, s.metricAttrs)
 		if errors.Is(unmarshalErr, errUpgradeRequired) {
 			disposition = service.failed // if we don't know the version, reject the trace message since we will disable the receiver
 			return unmarshalErr
 		}
-		s.telemetryBuilder.SolacereceiverDroppedSpanMessages.Add(ctx, 1, metric.WithAttributeSet(s.metricAttrs)) // if the error is some other unmarshalling error, we will ack the message and drop the content
-		return nil                                                                                               // don't propagate error, but don't continue forwarding traces
+		s.telemetryBuilder.SolacereceiverDroppedSpanMessages.Add(ctx, 1, s.metricAttrs) // if the error is some other unmarshalling error, we will ack the message and drop the content
+		return nil                                                                      // don't propagate error, but don't continue forwarding traces
 	}
 
 	var flowControlCount int64
@@ -267,10 +267,10 @@ flowControlLoop:
 				s.settings.Logger.Info("Encountered temporary error while forwarding traces to next receiver, will allow redelivery", zap.Error(forwardErr))
 				// handle flow control metrics
 				if flowControlCount == 0 {
-					s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateControlled), metric.WithAttributeSet(s.metricAttrs))
+					s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateControlled), s.metricAttrs)
 				}
 				flowControlCount++
-				s.telemetryBuilder.SolacereceiverReceiverFlowControlRecentRetries.Record(ctx, flowControlCount, metric.WithAttributeSet(s.metricAttrs))
+				s.telemetryBuilder.SolacereceiverReceiverFlowControlRecentRetries.Record(ctx, flowControlCount, s.metricAttrs)
 				// Backpressure scenario. For now, we are only delayed retry, eventually we may need to handle this
 				delayTimer := time.NewTimer(s.config.Flow.DelayedRetry.Delay)
 				select {
@@ -283,21 +283,21 @@ flowControlLoop:
 				}
 			} else { // error is permanent, we want to accept the message and increment the number of dropped messages
 				s.settings.Logger.Warn("Encountered permanent error while forwarding traces to next receiver, will swallow trace", zap.Error(forwardErr))
-				s.telemetryBuilder.SolacereceiverDroppedSpanMessages.Add(ctx, 1, metric.WithAttributeSet(s.metricAttrs))
+				s.telemetryBuilder.SolacereceiverDroppedSpanMessages.Add(ctx, 1, s.metricAttrs)
 				break flowControlLoop
 			}
 		} else {
 			// no forward error
-			s.telemetryBuilder.SolacereceiverReportedSpans.Add(ctx, int64(traces.SpanCount()), metric.WithAttributeSet(s.metricAttrs))
+			s.telemetryBuilder.SolacereceiverReportedSpans.Add(ctx, int64(traces.SpanCount()), s.metricAttrs)
 			break flowControlLoop
 		}
 	}
 	// Make sure to clear the stats no matter what, unless we were interrupted in which case we should preserve the last state
 	if flowControlCount != 0 {
-		s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateClear), metric.WithAttributeSet(s.metricAttrs))
-		s.telemetryBuilder.SolacereceiverReceiverFlowControlTotal.Add(ctx, 1, metric.WithAttributeSet(s.metricAttrs))
+		s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateClear), s.metricAttrs)
+		s.telemetryBuilder.SolacereceiverReceiverFlowControlTotal.Add(ctx, 1, s.metricAttrs)
 		if flowControlCount == 1 {
-			s.telemetryBuilder.SolacereceiverReceiverFlowControlWithSingleSuccessfulRetry.Add(ctx, 1, metric.WithAttributeSet(s.metricAttrs))
+			s.telemetryBuilder.SolacereceiverReceiverFlowControlWithSingleSuccessfulRetry.Add(ctx, 1, s.metricAttrs)
 		}
 	}
 	return nil

@@ -172,9 +172,7 @@ func (p *metricsProcessor) recordNonRoutedForResourceMetrics(ctx context.Context
 	p.telemetry.RoutingProcessorNonRoutedMetricPoints.Add(
 		ctx,
 		int64(metricPointsCount),
-		metric.WithAttributes(
-			attribute.String("routing_key", routingKey),
-		),
+		metric.WithAttributeSet(attribute.NewSet(attribute.String("routing_key", routingKey))),
 	)
 }
 
@@ -185,9 +183,7 @@ func (p *metricsProcessor) routeForContext(ctx context.Context, m pmetric.Metric
 		p.telemetry.RoutingProcessorNonRoutedMetricPoints.Add(
 			ctx,
 			int64(m.MetricCount()),
-			metric.WithAttributes(
-				attribute.String("routing_key", p.extractor.fromAttr),
-			),
+			metric.WithAttributeSet(attribute.NewSet(attribute.String("routing_key", p.extractor.fromAttr))),
 		)
 	}
 

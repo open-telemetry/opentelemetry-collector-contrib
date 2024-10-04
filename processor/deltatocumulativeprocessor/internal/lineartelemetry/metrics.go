@@ -4,7 +4,6 @@
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/lineartelemetry"
 
 import (
-	"context"
 	"errors"
 	"reflect"
 
@@ -39,19 +38,19 @@ type Metrics struct {
 	tracked func() int
 }
 
-func (m Metrics) Datapoints() Counter {
-	return Counter{Int64Counter: m.DeltatocumulativeDatapointsLinear}
+func (m Metrics) Datapoints() metric.Int64Counter {
+	return m.DeltatocumulativeDatapointsLinear
 }
 
 func (m *Metrics) WithTracked(streams func() int) {
 	m.tracked = streams
 }
 
-func Error(msg string) attribute.KeyValue {
-	return attribute.String("error", msg)
+func Error(msg string) metric.MeasurementOption {
+	return metric.WithAttributeSet(attribute.NewSet(attribute.String("error", msg)))
 }
 
-func Cause(err error) attribute.KeyValue {
+func Cause(err error) metric.MeasurementOption {
 	for {
 		uw := errors.Unwrap(err)
 		if uw == nil {
@@ -61,10 +60,4 @@ func Cause(err error) attribute.KeyValue {
 	}
 
 	return Error(reflect.TypeOf(err).String())
-}
-
-type Counter struct{ metric.Int64Counter }
-
-func (c Counter) Inc(ctx context.Context, attrs ...attribute.KeyValue) {
-	c.Add(ctx, 1, metric.WithAttributes(attrs...))
 }

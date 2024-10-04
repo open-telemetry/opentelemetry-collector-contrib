@@ -100,7 +100,7 @@ func (p *Linear) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 			acc, ok := state.Load(id)
 			// if at stream limit and stream not seen before, reject
 			if !ok && p.state.Len() >= p.cfg.MaxStreams {
-				p.tel.Datapoints().Inc(ctx, telemetry.Error("limit"))
+				p.tel.Datapoints().Add(ctx, 1, telemetry.Error("limit"))
 				return dp, streams.Drop
 			}
 
@@ -118,12 +118,12 @@ func (p *Linear) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 			// aggregation failed, record as metric and drop datapoint
 			if err != nil {
-				p.tel.Datapoints().Inc(ctx, telemetry.Cause(err))
+				p.tel.Datapoints().Add(ctx, 1, telemetry.Cause(err))
 				return acc, streams.Drop
 			}
 
 			// store aggregated result in state and return
-			p.tel.Datapoints().Inc(ctx)
+			p.tel.Datapoints().Add(ctx, 1)
 			_ = state.Store(id, acc)
 			return acc, nil
 		})
