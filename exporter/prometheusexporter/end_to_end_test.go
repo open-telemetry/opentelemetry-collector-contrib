@@ -99,7 +99,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		PrometheusConfig: receiverConfig,
 	}
 	// 3.5 Create the Prometheus receiver and pass in the previously created Prometheus exporter.
-	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)
+	prometheusReceiver, err := receiverFactory.CreateMetrics(ctx, receiverCreateSet, rcvCfg, exporter)
 	if err != nil {
 		t.Fatal(err)
 	}

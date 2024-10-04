@@ -17,12 +17,12 @@ import (
 func TestNewProcessorFactory(t *testing.T) {
 	f := NewFactory()
 	require.Equal(t, metadata.Type, f.Type())
-	require.Equal(t, metadata.LogsStability, f.LogsProcessorStability())
+	require.Equal(t, metadata.LogsStability, f.LogsStability())
 	require.NotNil(t, f.CreateDefaultConfig())
-	require.NotNil(t, f.CreateLogsProcessor)
+	require.NotNil(t, f.CreateLogs)
 }
 
-func TestCreateLogsProcessor(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	var testCases = []struct {
 		name        string
 		cfg         component.Config
@@ -42,7 +42,7 @@ func TestCreateLogsProcessor(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			f := NewFactory()
-			p, err := f.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), tc.cfg, nil)
+			p, err := f.CreateLogs(context.Background(), processortest.NewNopSettings(), tc.cfg, nil)
 			if tc.expectedErr == "" {
 				require.NoError(t, err)
 				require.IsType(t, &logDedupProcessor{}, p)

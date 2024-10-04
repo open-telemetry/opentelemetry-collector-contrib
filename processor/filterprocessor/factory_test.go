@@ -87,12 +87,12 @@ func TestCreateProcessors(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, sub.Unmarshal(cfg))
 
-				tp, tErr := factory.CreateTracesProcessor(
+				tp, tErr := factory.CreateTraces(
 					context.Background(),
 					processortest.NewNopSettings(),
 					cfg, consumertest.NewNop(),
 				)
-				mp, mErr := factory.CreateMetricsProcessor(
+				mp, mErr := factory.CreateMetrics(
 					context.Background(),
 					processortest.NewNopSettings(),
 					cfg,

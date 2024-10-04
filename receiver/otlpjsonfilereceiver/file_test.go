@@ -42,7 +42,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.TracesSink)
-	receiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.MetricsSink)
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -99,7 +99,7 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	cfg.Config.PollInterval = 5 * time.Second
 
 	sink := new(consumertest.MetricsSink)
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -134,7 +134,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.LogsSink)
-	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -199,17 +199,17 @@ func TestFileMixedSignals(t *testing.T) {
 	cfg.Config.StartAt = "beginning"
 	cs := receivertest.NewNopSettings()
 	ms := new(consumertest.MetricsSink)
-	mr, err := factory.CreateMetricsReceiver(context.Background(), cs, cfg, ms)
+	mr, err := factory.CreateMetrics(context.Background(), cs, cfg, ms)
 	assert.NoError(t, err)
 	err = mr.Start(context.Background(), nil)
 	assert.NoError(t, err)
 	ts := new(consumertest.TracesSink)
-	tr, err := factory.CreateTracesReceiver(context.Background(), cs, cfg, ts)
+	tr, err := factory.CreateTraces(context.Background(), cs, cfg, ts)
 	assert.NoError(t, err)
 	err = tr.Start(context.Background(), nil)
 	assert.NoError(t, err)
 	ls := new(consumertest.LogsSink)
-	lr, err := factory.CreateLogsReceiver(context.Background(), cs, cfg, ls)
+	lr, err := factory.CreateLogs(context.Background(), cs, cfg, ls)
 	assert.NoError(t, err)
 	err = lr.Start(context.Background(), nil)
 	assert.NoError(t, err)

@@ -18,6 +18,7 @@ import (
 	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap/zapcore"
 )
 
 // Supervisor is the Supervisor config file format.
@@ -26,6 +27,7 @@ type Supervisor struct {
 	Agent        Agent
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
+	Telemetry    Telemetry    `mapstructure:"telemetry"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -153,6 +155,7 @@ type Agent struct {
 	Description             AgentDescription `mapstructure:"description"`
 	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
 	HealthCheckPort         int              `mapstructure:"health_check_port"`
+	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
 }
 
 func (a Agent) Validate() error {
@@ -183,6 +186,17 @@ func (a Agent) Validate() error {
 type AgentDescription struct {
 	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+}
+
+type Telemetry struct {
+	// TODO: Add more telemetry options
+	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
+	Logs Logs `mapstructure:"logs"`
+}
+
+type Logs struct {
+	Level       zapcore.Level `mapstructure:"level"`
+	OutputPaths []string      `mapstructure:"output_paths"`
 }
 
 // DefaultSupervisor returns the default supervisor config
@@ -216,6 +230,13 @@ func DefaultSupervisor() Supervisor {
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
+			PassthroughLogs:         false,
+		},
+		Telemetry: Telemetry{
+			Logs: Logs{
+				Level:       zapcore.InfoLevel,
+				OutputPaths: []string{"stdout", "stderr"},
+			},
 		},
 	}
 }
