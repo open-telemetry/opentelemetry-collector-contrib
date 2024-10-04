@@ -1560,3 +1560,56 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 		s.mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(now, currentQueueSizeBytes, name)
 	}
 }
+
+// Scrape introspection kv store status
+func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+		return
+	}
+
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	var kvs KVStoreStatus
+
+	ept := apiDict[`SplunkKVStoreStatus`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	err = json.Unmarshal(body, &kvs)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	var st, brs, rs, se, ext string
+	for _, kv := range kvs.Entries {
+		st = kv.Content.Current.Status // overall status
+		brs = kv.Content.Current.BackupRestoreStatus
+		rs = kv.Content.Current.ReplicationStatus
+		se = kv.Content.Current.StorageEngine
+		ext = kv.Content.KVService.Status
+		if ext != "" {
+
+		}
+
+		s.mb.RecordSplunkKvstoreStatusDataPoint(now, 1, se, ext, st)
+		s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs)
+		s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 1, rs)
+	}
+}
