@@ -20,7 +20,6 @@ import (
 )
 
 var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
-var previousCollectionTime time.Time
 
 type vmGroupInfo struct {
 	poweredOn  int64
@@ -47,11 +46,12 @@ type vcenterScrapeData struct {
 }
 
 type vcenterMetricScraper struct {
-	client     *vcenterClient
-	config     *Config
-	mb         *metadata.MetricsBuilder
-	logger     *zap.Logger
-	scrapeData *vcenterScrapeData
+	client                 *vcenterClient
+	config                 *Config
+	mb                     *metadata.MetricsBuilder
+	logger                 *zap.Logger
+	scrapeData             *vcenterScrapeData
+	previousCollectionTime time.Time
 }
 
 func newVmwareVcenterScraper(
@@ -63,11 +63,12 @@ func newVmwareVcenterScraper(
 	scrapeData := newVcenterScrapeData()
 
 	return &vcenterMetricScraper{
-		client:     client,
-		config:     config,
-		logger:     logger,
-		mb:         metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		scrapeData: scrapeData,
+		client:                 client,
+		config:                 config,
+		logger:                 logger,
+		mb:                     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		scrapeData:             scrapeData,
+		previousCollectionTime: time.Time{},
 	}
 }
 
@@ -114,8 +115,8 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	errs := &scrapererror.ScrapeErrors{}
 
-	if previousCollectionTime.IsZero() {
-		previousCollectionTime = time.Now()
+	if v.previousCollectionTime.IsZero() {
+		v.previousCollectionTime = time.Now()
 	}
 
 	err := v.scrapeAndProcessAllMetrics(ctx, errs)
@@ -279,15 +280,17 @@ func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacente
 	}
 
 	now := time.Now()
+	interval := checkCollectionTime(v.client.cfg.CollectionInterval)
+	maxSample := int32(v.client.cfg.CollectionInterval.Seconds()) / interval
 
 	spec := types.PerfQuerySpec{
-		MaxSample: 1,
+		MaxSample: maxSample,
 		Format:    string(types.PerfFormatNormal),
 		// Just grabbing real time performance metrics of the current
 		// supported metrics by this receiver. If more are added we may need
 		// a system of making this user customizable or adapt to use a 5 minute interval per metric
-		IntervalId: checkCollectionTime(v.client.cfg.CollectionInterval),
-		StartTime:  &previousCollectionTime,
+		IntervalId: interval,
+		StartTime:  &v.previousCollectionTime,
 		EndTime:    &now,
 	}
 	// Get all HostSystem performance metrics and store for later retrieval
@@ -340,14 +343,17 @@ func (v *vcenterMetricScraper) scrapeVirtualMachines(ctx context.Context, dc *mo
 	}
 
 	now := time.Now()
+	interval := checkCollectionTime(v.client.cfg.CollectionInterval)
+	maxSample := int32(v.client.cfg.CollectionInterval.Seconds()) / interval
 
 	spec := types.PerfQuerySpec{
-		Format: string(types.PerfFormatNormal),
+		MaxSample: maxSample,
+		Format:    string(types.PerfFormatNormal),
 		// Just grabbing real time performance metrics of the current
 		// supported metrics by this receiver. If more are added we may need
 		// a system of making this user customizable or adapt to use a 5 minute interval per metric
-		IntervalId: checkCollectionTime(v.client.cfg.CollectionInterval),
-		StartTime:  &previousCollectionTime,
+		IntervalId: interval,
+		StartTime:  &v.previousCollectionTime,
 		EndTime:    &now,
 	}
 	// Get all VirtualMachine performance metrics and store for later retrieval
@@ -374,5 +380,4 @@ func checkCollectionTime(scrapeTime time.Duration) int32 {
 		return 300
 	}
 	return 20
-
 }
