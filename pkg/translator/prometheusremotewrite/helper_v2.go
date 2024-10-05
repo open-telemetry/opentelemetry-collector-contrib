@@ -15,7 +15,6 @@ import (
 	"slices"
 )
 
-// TODO implement this fully
 // getOrCreateTimeSeries returns the time series corresponding to the label set if existent, and false.
 // Otherwise it creates a new one and returns that, and true.
 func (c *prometheusConverterV2) getOrCreateTimeSeries(lbls labels.Labels) (*writev2.TimeSeries, bool) {
@@ -47,7 +46,7 @@ func (c *prometheusConverterV2) getOrCreateTimeSeries(lbls labels.Labels) (*writ
 	// This metric is new
 	ts = &writev2.TimeSeries{}
 	ts.LabelsRefs = c.symbolTable.SymbolizeLabels(lbls, ts.LabelsRefs)
-	c.unique[0] = ts
+	c.unique[h] = ts
 	return ts, true
 }
 
