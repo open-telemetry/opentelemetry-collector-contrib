@@ -596,16 +596,15 @@ func ScenarioMemoryLimiterHit(
 		if !logFound {
 			dataChannel <- true
 			return false
-		} else {
-			// Log found. But keep the collector under stress for 10 more seconds so it starts refusing data
-			if timer == nil {
-				timer = time.NewTimer(10 * time.Second)
-			}
-			select {
-			case <-timer.C:
-			default:
-				return false
-			}
+		}
+		// Log found. But keep the collector under stress for 10 more seconds so it starts refusing data
+		if timer == nil {
+			timer = time.NewTimer(10 * time.Second)
+		}
+		select {
+		case <-timer.C:
+		default:
+			return false
 		}
 		close(dataChannel)
 		return logFound
