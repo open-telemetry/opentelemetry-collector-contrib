@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +69,7 @@ func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component
 	}
 }
 
-func (h hostWithExtensions) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (h hostWithExtensions) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	panic("unsupported")
 }
 

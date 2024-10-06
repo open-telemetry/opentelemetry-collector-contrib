@@ -48,9 +48,15 @@ import (
 type testParams struct {
 	threadCount  int
 	requestUntil func(*testConsumer) bool
+
+	// missingDeadline is configured so the zero value implies a deadline,
+	// which is the default.
+	missingDeadline bool
 }
 
 type testConsumer struct {
+	t *testing.T
+
 	sink      consumertest.TracesSink
 	sentSpans atomic.Int64
 
@@ -62,6 +68,8 @@ type testConsumer struct {
 
 	recvSpans *tracetest.InMemoryExporter
 	expSpans  *tracetest.InMemoryExporter
+
+	expectDeadline bool
 }
 
 var _ consumer.Traces = &testConsumer{}
@@ -80,6 +88,19 @@ func (*testConsumer) Capabilities() consumer.Capabilities {
 
 func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	time.Sleep(time.Duration(float64(time.Millisecond) * (1 + rand.Float64())))
+
+	dead, hasDeadline := ctx.Deadline()
+	timeout := time.Until(dead)
+
+	require.Equal(tc.t, tc.expectDeadline, hasDeadline, "deadline set or not set: %v", timeout)
+	if tc.expectDeadline {
+		// expect allows 1/6 of the deadline to elapse in transit,
+		// so 1m becomes 50s.
+		expect := tc.expCfg.TimeoutSettings.Timeout * 5 / 6
+		require.Less(tc.t, expect, timeout)
+		require.Greater(tc.t, tc.expCfg.TimeoutSettings.Timeout, timeout)
+	}
+
 	return tc.sink.ConsumeTraces(ctx, td)
 }
 
@@ -100,7 +121,7 @@ func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.Ob
 	return tset, obslogs, exp
 }
 
-func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces, receiver.Traces) {
+func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, exporter.Traces, receiver.Traces) {
 	ctx := context.Background()
 
 	efact := otelarrowexporter.NewFactory()
@@ -115,6 +136,7 @@ func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	receiverCfg.Protocols.GRPC.NetAddr.Endpoint = addr
+
 	exporterCfg.ClientConfig.Endpoint = addr
 	exporterCfg.ClientConfig.WaitForReady = true
 	exporterCfg.ClientConfig.TLSSetting.Insecure = true
@@ -123,6 +145,7 @@ func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces
 	exporterCfg.RetryConfig.Enabled = true
 	exporterCfg.Arrow.NumStreams = 1
 	exporterCfg.Arrow.MaxStreamLifetime = 5 * time.Second
+	exporterCfg.Arrow.DisableDowngrade = true
 
 	if cfgF != nil {
 		cfgF(exporterCfg, receiverCfg)
@@ -132,6 +155,8 @@ func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces
 	recvTset, recvLogs, recvSpans := testLoggerSettings(t)
 
 	testCon := &testConsumer{
+		t: t,
+
 		recvCfg: receiverCfg,
 		expCfg:  exporterCfg,
 
@@ -140,9 +165,11 @@ func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces
 
 		recvSpans: recvSpans,
 		expSpans:  expSpans,
+
+		expectDeadline: !tp.missingDeadline,
 	}
 
-	receiver, err := rfact.CreateTracesReceiver(ctx, receiver.Settings{
+	receiver, err := rfact.CreateTraces(ctx, receiver.Settings{
 		ID:                component.MustNewID("otelarrowreceiver"),
 		TelemetrySettings: recvTset,
 	}, receiverCfg, testCon)
@@ -161,7 +188,7 @@ func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces
 func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfgf CfgFunc, mkgen MkGen, errf ConsumerErrFunc, endf EndFunc) {
 	host := componenttest.NewNopHost()
 
-	testCon, exporter, receiver := basicTestConfig(t, cfgf)
+	testCon, exporter, receiver := basicTestConfig(t, tp, cfgf)
 
 	var startWG sync.WaitGroup
 	var exporterShutdownWG sync.WaitGroup
@@ -421,6 +448,33 @@ func TestIntegrationTracesSimple(t *testing.T) {
 
 			testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, _ *RecvConfig) {
 				ecfg.Arrow.NumStreams = n
+			}, func() GenFunc { return makeTestTraces }, consumerSuccess, standardEnding)
+		})
+	}
+}
+
+func TestIntegrationDeadlinePropagation(t *testing.T) {
+	for _, hasDeadline := range []bool{false, true} {
+		t.Run(fmt.Sprint("deadline=", hasDeadline), func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			// Until at least one span is written.
+			var params = testParams{
+				threadCount: 1,
+				requestUntil: func(test *testConsumer) bool {
+					return test.sink.SpanCount() < 1
+				},
+				missingDeadline: !hasDeadline,
+			}
+
+			testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, _ *RecvConfig) {
+				if !hasDeadline {
+					// 0 disables the exporthelper-set timeout.
+					ecfg.TimeoutSettings.Timeout = 0
+				} else {
+					ecfg.TimeoutSettings.Timeout = 37 * time.Minute
+				}
 			}, func() GenFunc { return makeTestTraces }, consumerSuccess, standardEnding)
 		})
 	}

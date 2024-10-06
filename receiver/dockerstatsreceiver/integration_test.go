@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -80,7 +81,7 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	recv, err := f.CreateMetrics(ctx, params, config, consumer)
 
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, recv.Start(ctx, &nopHost{
@@ -103,7 +104,7 @@ func TestMonitoringAddedAndRemovedContainerIntegration(t *testing.T) {
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	recv, err := f.CreateMetrics(ctx, params, config, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, recv.Start(ctx, &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
@@ -140,7 +141,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	config.ExcludedImages = append(config.ExcludedImages, "*nginx*")
 
 	consumer := new(consumertest.MetricsSink)
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	recv, err := f.CreateMetrics(ctx, params, config, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, recv.Start(ctx, &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
@@ -169,7 +170,7 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

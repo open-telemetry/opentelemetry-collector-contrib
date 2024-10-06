@@ -52,7 +52,7 @@ func TestSplitHeaderBodyNonJsonHeader(t *testing.T) {
 
 	var errRecv *recvErr.ErrRecoverable
 	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
-	assert.Contains(t, err.Error(), "invalid character 'o'")
+	assert.ErrorContains(t, err, "invalid character 'o'")
 }
 
 func TestSplitHeaderBodyEmptyBody(t *testing.T) {
@@ -76,7 +76,7 @@ func TestSplitHeaderBodyInvalidJsonHeader(t *testing.T) {
 
 	var errRecv *recvErr.ErrRecoverable
 	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
-	assert.Contains(t, err.Error(),
+	assert.ErrorContains(t, err,
 		fmt.Sprintf("invalid header %+v", Header{
 			Format:  "json",
 			Version: 20,

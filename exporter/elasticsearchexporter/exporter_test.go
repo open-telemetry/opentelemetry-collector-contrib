@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestExporterLogs(t *testing.T) {
@@ -729,7 +730,9 @@ func TestExporterMetrics(t *testing.T) {
 		metricSlice := scopeA.Metrics()
 		fooMetric := metricSlice.AppendEmpty()
 		fooMetric.SetName("metric.foo")
-		fooDps := fooMetric.SetEmptyHistogram().DataPoints()
+		fooHistogram := fooMetric.SetEmptyHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		fooDps := fooHistogram.DataPoints()
 		fooDp := fooDps.AppendEmpty()
 		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
 		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
@@ -773,7 +776,9 @@ func TestExporterMetrics(t *testing.T) {
 		metricSlice := scopeA.Metrics()
 		fooMetric := metricSlice.AppendEmpty()
 		fooMetric.SetName("metric.foo")
-		fooDps := fooMetric.SetEmptyExponentialHistogram().DataPoints()
+		fooHistogram := fooMetric.SetEmptyExponentialHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		fooDps := fooHistogram.DataPoints()
 		fooDp := fooDps.AppendEmpty()
 		fooDp.SetZeroCount(2)
 		fooDp.Positive().SetOffset(1)
@@ -796,6 +801,64 @@ func TestExporterMetrics(t *testing.T) {
 		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
+	t.Run("publish histogram cumulative temporality", func(t *testing.T) {
+		server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
+			require.Fail(t, "unexpected request")
+			return nil, nil
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooHistogram := fooMetric.SetEmptyHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		fooDps := fooHistogram.DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+
+		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		assert.ErrorContains(t, err, "dropping cumulative temporality histogram \"metric.foo\"")
+	})
+
+	t.Run("publish exponential histogram cumulative temporality", func(t *testing.T) {
+		server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
+			require.Fail(t, "unexpected request")
+			return nil, nil
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeA.Metrics()
+		fooMetric := metricSlice.AppendEmpty()
+		fooMetric.SetName("metric.foo")
+		fooHistogram := fooMetric.SetEmptyExponentialHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		fooDps := fooHistogram.DataPoints()
+		fooDp := fooDps.AppendEmpty()
+		fooDp.SetZeroCount(2)
+		fooDp.Positive().SetOffset(1)
+		fooDp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+
+		fooDp.Negative().SetOffset(1)
+		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+
+		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		assert.ErrorContains(t, err, "dropping cumulative temporality exponential histogram \"metric.foo\"")
+	})
+
 	t.Run("publish only valid data points", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -813,7 +876,9 @@ func TestExporterMetrics(t *testing.T) {
 		metricSlice := scopeA.Metrics()
 		fooMetric := metricSlice.AppendEmpty()
 		fooMetric.SetName("metric.foo")
-		fooDps := fooMetric.SetEmptyHistogram().DataPoints()
+		fooHistogram := fooMetric.SetEmptyHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		fooDps := fooHistogram.DataPoints()
 		fooDp := fooDps.AppendEmpty()
 		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
 		fooDp.BucketCounts().FromRaw([]uint64{})
@@ -866,7 +931,9 @@ func TestExporterMetrics(t *testing.T) {
 		metricSlice := scopeA.Metrics()
 		fooMetric := metricSlice.AppendEmpty()
 		fooMetric.SetName("metric.foo")
-		fooDps := fooMetric.SetEmptyHistogram().DataPoints()
+		fooHistogram := fooMetric.SetEmptyHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		fooDps := fooHistogram.DataPoints()
 		fooDp := fooDps.AppendEmpty()
 		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
 		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
@@ -910,7 +977,7 @@ func TestExporterMetrics(t *testing.T) {
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"start_timestamp":"1970-01-01T02:00:00.000000000Z"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T03:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"start_timestamp":"1970-01-01T03:00:00.000000000Z"}`),
 			},
 		}
@@ -941,10 +1008,106 @@ func TestExporterMetrics(t *testing.T) {
 
 		assert.Len(t, rec.Items(), 1)
 		doc := rec.Items()[0].Document
-		// Workaround TSDB limitation by stringifying array values
-		assert.Equal(t, `{"some.record.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.Equal(t, `{"some.scope.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.Equal(t, `{"some.resource.attribute":"[\"foo\",\"bar\"]"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+		assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
+
+	t.Run("otel mode _doc_count hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		sumMetric := scopeMetric.Metrics().AppendEmpty()
+		sumMetric.SetName("sum")
+		sumDP := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+		sumDP.SetIntValue(0)
+
+		summaryMetric := scopeMetric.Metrics().AppendEmpty()
+		summaryMetric.SetName("summary")
+		summaryDP := summaryMetric.SetEmptySummary().DataPoints().AppendEmpty()
+		summaryDP.SetSum(1)
+		summaryDP.SetCount(10)
+		fillAttributeMap(summaryDP.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count"},
+		})
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("otel mode aggregate_metric_double hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		histogramMetric := scopeMetric.Metrics().AppendEmpty()
+		histogramMetric.SetName("histogram.summary")
+		fooHistogram := histogramMetric.SetEmptyHistogram()
+		fooHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		fooDp := fooHistogram.DataPoints().AppendEmpty()
+		fooDp.SetSum(1)
+		fooDp.SetCount(10)
+		fillAttributeMap(fooDp.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count", "aggregate_metric_double"},
+		})
+
+		exphistogramMetric := scopeMetric.Metrics().AppendEmpty()
+		exphistogramMetric.SetName("exphistogram.summary")
+		fooExpHistogram := exphistogramMetric.SetEmptyExponentialHistogram()
+		fooExpHistogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		fooExpDp := fooExpHistogram.DataPoints().AppendEmpty()
+		fooExpDp.SetTimestamp(pcommon.Timestamp(time.Hour))
+		fooExpDp.SetSum(1)
+		fooExpDp.SetCount(10)
+		fillAttributeMap(fooExpDp.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count", "aggregate_metric_double"},
+		})
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.exphistogram.summary":"summary"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
 	t.Run("publish summary", func(t *testing.T) {
@@ -1445,7 +1608,7 @@ func (h *mockHost) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
 }
 
-func (h *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (h *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	panic(fmt.Errorf("expected call to GetExporters"))
 }
 

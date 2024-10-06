@@ -32,22 +32,32 @@ type EventXML struct {
 	Security         *Security   `xml:"System>Security"`
 	Execution        *Execution  `xml:"System>Execution"`
 	EventData        EventData   `xml:"EventData"`
-	RemoteServer     string      `xml:"RemoteServer,omitempty"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
-func (e *EventXML) parseTimestamp() time.Time {
-	if timestamp, err := time.Parse(time.RFC3339Nano, e.TimeCreated.SystemTime); err == nil {
+func parseTimestamp(ts string) time.Time {
+	if timestamp, err := time.Parse(time.RFC3339Nano, ts); err == nil {
 		return timestamp
 	}
 	return time.Now()
 }
 
 // parseRenderedSeverity will parse the severity of the event.
-func (e *EventXML) parseRenderedSeverity() entry.Severity {
-	switch e.RenderedLevel {
+func parseSeverity(renderedLevel, level string) entry.Severity {
+	switch renderedLevel {
 	case "":
-		return e.parseSeverity()
+		switch level {
+		case "1":
+			return entry.Fatal
+		case "2":
+			return entry.Error
+		case "3":
+			return entry.Warn
+		case "4":
+			return entry.Info
+		default:
+			return entry.Default
+		}
 	case "Critical":
 		return entry.Fatal
 	case "Error":
@@ -61,25 +71,9 @@ func (e *EventXML) parseRenderedSeverity() entry.Severity {
 	}
 }
 
-// parseSeverity will parse the severity of the event when RenderingInfo is not populated
-func (e *EventXML) parseSeverity() entry.Severity {
-	switch e.Level {
-	case "1":
-		return entry.Fatal
-	case "2":
-		return entry.Error
-	case "3":
-		return entry.Warn
-	case "4":
-		return entry.Info
-	default:
-		return entry.Default
-	}
-}
-
-// parseBody will parse a body from the event.
-func (e *EventXML) parseBody() map[string]any {
-	message, details := e.parseMessage()
+// formattedBody will parse a body from the event.
+func formattedBody(e *EventXML) map[string]any {
+	message, details := parseMessage(e.Channel, e.Message)
 
 	level := e.RenderedLevel
 	if level == "" {
@@ -123,10 +117,6 @@ func (e *EventXML) parseBody() map[string]any {
 		"event_data":  parseEventData(e.EventData),
 	}
 
-	if e.RemoteServer != "" {
-		body["remote_server"] = e.RemoteServer
-	}
-
 	if len(details) > 0 {
 		body["details"] = details
 	}
@@ -145,12 +135,12 @@ func (e *EventXML) parseBody() map[string]any {
 }
 
 // parseMessage will attempt to parse a message into a message and details
-func (e *EventXML) parseMessage() (string, map[string]any) {
-	switch e.Channel {
+func parseMessage(channel, message string) (string, map[string]any) {
+	switch channel {
 	case "Security":
-		return parseSecurity(e.Message)
+		return parseSecurity(message)
 	default:
-		return e.Message, nil
+		return message, nil
 	}
 }
 
@@ -261,11 +251,11 @@ func (e Execution) asMap() map[string]any {
 }
 
 // unmarshalEventXML will unmarshal EventXML from xml bytes.
-func unmarshalEventXML(bytes []byte) (EventXML, error) {
+func unmarshalEventXML(bytes []byte) (*EventXML, error) {
 	var eventXML EventXML
 	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
-		return EventXML{}, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
+		return nil, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
 	}
 	eventXML.Original = string(bytes)
-	return eventXML, nil
+	return &eventXML, nil
 }

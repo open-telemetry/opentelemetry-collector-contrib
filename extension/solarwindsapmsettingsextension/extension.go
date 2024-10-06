@@ -16,6 +16,7 @@ import (
 
 	"github.com/solarwindscloud/apm-proto/go/collectorpb"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -51,7 +52,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	if err != nil {
 		return err
 	}
-	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool})))
+	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings, configgrpc.WithGrpcDialOption(grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool}))))
 	if err != nil {
 		return err
 	}

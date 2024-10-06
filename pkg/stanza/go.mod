@@ -11,22 +11,22 @@ require (
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
-	github.com/leodido/go-syslog/v4 v4.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.109.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.109.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.109.0
+	github.com/leodido/go-syslog/v4 v4.2.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.111.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.111.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.111.0
 	github.com/stretchr/testify v1.9.0
 	github.com/valyala/fastjson v1.6.4
-	go.opentelemetry.io/collector/component v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/config/configtls v1.15.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/consumer v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/consumer/consumertest v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/extension/experimental/storage v0.109.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/featuregate v1.15.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/pdata v1.15.1-0.20240918193345-a3c0565031b0
-	go.opentelemetry.io/collector/receiver v0.109.1-0.20240918193345-a3c0565031b0
+	go.opentelemetry.io/collector/component v0.111.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.111.0
+	go.opentelemetry.io/collector/config/configtls v1.17.0
+	go.opentelemetry.io/collector/confmap v1.17.0
+	go.opentelemetry.io/collector/consumer v0.111.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
+	go.opentelemetry.io/collector/extension/experimental/storage v0.111.0
+	go.opentelemetry.io/collector/featuregate v1.17.0
+	go.opentelemetry.io/collector/pdata v1.17.0
+	go.opentelemetry.io/collector/receiver v0.111.0
 	go.opentelemetry.io/otel/metric v1.30.0
 	go.opentelemetry.io/otel/sdk/metric v1.30.0
 	go.opentelemetry.io/otel/trace v1.30.0
@@ -62,17 +62,19 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.15.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/extension v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.109.1-0.20240918193345-a3c0565031b0 // indirect
-	go.opentelemetry.io/collector/semconv v0.109.1-0.20240918193345-a3c0565031b0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.17.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
+	go.opentelemetry.io/collector/extension v0.111.0 // indirect
+	go.opentelemetry.io/collector/internal/globalsignal v0.111.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.111.0 // indirect
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.111.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.111.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
-	google.golang.org/grpc v1.66.2 // indirect
+	google.golang.org/grpc v1.67.1 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

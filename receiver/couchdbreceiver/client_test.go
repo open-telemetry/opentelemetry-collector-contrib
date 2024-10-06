@@ -33,23 +33,23 @@ func defaultClient(t *testing.T, endpoint string) client {
 }
 
 func TestNewCouchDBClient(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
 	t.Run("Invalid config", func(t *testing.T) {
 		couchdbClient, err := newCouchDBClient(
 			context.Background(),
 			&Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "/non/existent",
-						},
-					},
-				}},
+				ClientConfig: clientConfig,
+			},
 			componenttest.NewNopHost(),
 			componenttest.NewNopTelemetrySettings())
 
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create HTTP Client: ")
+		require.ErrorContains(t, err, "failed to create HTTP Client: ")
 		require.Nil(t, couchdbClient)
 	})
 	t.Run("no error", func(t *testing.T) {
@@ -87,38 +87,36 @@ func TestGet(t *testing.T) {
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "invalid port ")
+		require.ErrorContains(t, err, "invalid port ")
 	})
 	t.Run("invalid endpoint", func(t *testing.T) {
 		url := ts.URL + "/invalid_endpoint"
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "404 Not Found")
+		require.ErrorContains(t, err, "404 Not Found")
 	})
 	t.Run("invalid body", func(t *testing.T) {
 		url := ts.URL + "/invalid_body"
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "failed to read response body ")
+		require.ErrorContains(t, err, "failed to read response body ")
 	})
 	t.Run("401 Unauthorized", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
+		clientConfig := confighttp.NewDefaultClientConfig()
+		clientConfig.Endpoint = url
+
 		couchdbClient, err := newCouchDBClient(
 			context.Background(),
 			&Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: url,
-				},
-				Username: "unauthorized",
-				Password: "unauthorized",
+				ClientConfig: clientConfig,
+				Username:     "unauthorized",
+				Password:     "unauthorized",
 			},
 			componenttest.NewNopHost(),
 			componenttest.NewNopTelemetrySettings())
@@ -127,8 +125,7 @@ func TestGet(t *testing.T) {
 
 		result, err := couchdbClient.Get(url)
 		require.Nil(t, result)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "401 Unauthorized")
+		require.ErrorContains(t, err, "401 Unauthorized")
 	})
 	t.Run("no error", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
@@ -184,14 +181,15 @@ func TestGetNodeStats(t *testing.T) {
 }
 
 func TestBuildReq(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+
 	couchdbClient := couchDBClient{
 		client: &http.Client{},
 		cfg: &Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: defaultEndpoint,
-			},
-			Username: "otelu",
-			Password: "otelp",
+			ClientConfig: clientConfig,
+			Username:     "otelu",
+			Password:     "otelp",
 		},
 		logger: zap.NewNop(),
 	}
@@ -206,12 +204,13 @@ func TestBuildReq(t *testing.T) {
 }
 
 func TestBuildBadReq(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+
 	couchdbClient := couchDBClient{
 		client: &http.Client{},
 		cfg: &Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: defaultEndpoint,
-			},
+			ClientConfig: clientConfig,
 		},
 		logger: zap.NewNop(),
 	}

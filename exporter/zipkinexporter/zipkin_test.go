@@ -70,7 +70,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 			Endpoint: addr,
 		},
 	}
-	zi, err := zipkinreceiver.NewFactory().CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), recvCfg, zexp)
+	zi, err := zipkinreceiver.NewFactory().CreateTraces(context.Background(), receivertest.NewNopSettings(), recvCfg, zexp)
 	assert.NoError(t, err)
 	require.NotNil(t, zi)
 
@@ -318,7 +318,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 			Endpoint: addr,
 		},
 	}
-	zi, err := zipkinreceiver.NewFactory().CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), recvCfg, zexp)
+	zi, err := zipkinreceiver.NewFactory().CreateTraces(context.Background(), receivertest.NewNopSettings(), recvCfg, zexp)
 	require.NoError(t, err)
 
 	err = zi.Start(context.Background(), componenttest.NewNopHost())
