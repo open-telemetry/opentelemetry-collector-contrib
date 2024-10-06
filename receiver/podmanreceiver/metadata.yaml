@@ -39,7 +39,7 @@ metrics:
     description: "System CPU usage."
     unit: s
     sum:
-      value_type: int
+      value_type: double
       monotonic: true
       aggregation_temporality: cumulative
   container.cpu.usage.total:
@@ -47,7 +47,7 @@ metrics:
     description: "Total CPU time consumed."
     unit: s
     sum:
-      value_type: int
+      value_type: double
       monotonic: true
       aggregation_temporality: cumulative
   container.cpu.usage.percpu:
@@ -55,7 +55,7 @@ metrics:
     description: "Total CPU time consumed per CPU-core."
     unit: s
     sum:
-      value_type: int
+      value_type: double
       monotonic: true
       aggregation_temporality: cumulative
     attributes:

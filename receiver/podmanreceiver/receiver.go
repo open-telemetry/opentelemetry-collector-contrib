@@ -145,12 +145,12 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, container 
 }
 
 func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, stats *containerStats) {
-	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(toSecondsWithNanosecondPrecision(stats.CPUSystemNano)))
-	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(toSecondsWithNanosecondPrecision(stats.CPUNano)))
+	r.mb.RecordContainerCPUUsageSystemDataPoint(now, toSecondsWithNanosecondPrecision(stats.CPUSystemNano))
+	r.mb.RecordContainerCPUUsageTotalDataPoint(now, toSecondsWithNanosecondPrecision(stats.CPUNano))
 	r.mb.RecordContainerCPUPercentDataPoint(now, stats.CPU)
 
 	for i, cpu := range stats.PerCPU {
-		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(toSecondsWithNanosecondPrecision(cpu)), fmt.Sprintf("cpu%d", i))
+		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, toSecondsWithNanosecondPrecision(cpu), fmt.Sprintf("cpu%d", i))
 	}
 }
 
@@ -170,7 +170,7 @@ func (r *metricsReceiver) recordIOMetrics(now pcommon.Timestamp, stats *containe
 	r.mb.RecordContainerBlockioIoServiceBytesRecursiveWriteDataPoint(now, int64(stats.BlockOutput))
 }
 
-// nanoseconds to seconds conversion truncating the fractional part
-func toSecondsWithNanosecondPrecision(nanoseconds uint64) uint64 {
-	return nanoseconds / 1e9
+// nanoseconds to seconds conversion
+func toSecondsWithNanosecondPrecision(nanoseconds uint64) float64 {
+	return float64(nanoseconds) / 1e9
 }

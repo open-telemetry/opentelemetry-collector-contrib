@@ -46,7 +46,7 @@ Total CPU time consumed per CPU-core.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| s | Sum | Double | Cumulative | true |
 
 #### Attributes
 
@@ -60,7 +60,7 @@ System CPU usage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| s | Sum | Double | Cumulative | true |
 
 ### container.cpu.usage.total
 
@@ -68,7 +68,7 @@ Total CPU time consumed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| s | Sum | Double | Cumulative | true |
 
 ### container.memory.percent
 
